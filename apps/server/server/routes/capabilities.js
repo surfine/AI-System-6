@@ -1,0 +1,156 @@
+// GET /api/capabilities
+//
+// Gives the browser a single deployment-aware feature switchboard. The local
+// profile advertises the complete desktop surface; the public profile only
+// advertises routes intentionally registered by router.js.
+
+"use strict";
+
+const { sendJson } = require("../lib/http.js");
+const {
+  deploymentProfile,
+  deploymentTarget,
+  isPublicDeployment,
+  publicGuestBridgeEnabled,
+} = require("../runtime-profile.js");
+const {
+  publicReadiness,
+  SESSION_TTL_SECONDS,
+  TURNSTILE_ACTION,
+} = require("../security/public-session.js");
+const {
+  sharedCloudBudgetConfig,
+  sharedCloudConfigured,
+} = require("../shared-cloud-budget.js");
+const { embeddingsRelayConfig } = require("../embeddings-relay.js");
+const { browseConfig } = require("../browse/relay-node.js");
+const { agentCloudEnabled } = require("../agent-cloud/config.js");
+
+/**
+ * @param {import("node:http").IncomingMessage} _req
+ * @param {import("node:http").ServerResponse} res
+ */
+function handleCapabilities(_req, res) {
+  const publicAccessReady = publicReadiness().ready;
+  const sharedCloud = isPublicDeployment && publicAccessReady && sharedCloudConfigured();
+  // The public site borrows the Pages deployment's Workers AI route; a local
+  // install reaches its own LM Studio. Either way the client is told which model
+  // answers, because a route that cannot name its model cannot be compared with
+  // the vectors it produced.
+  const embeddingsRelay = isPublicDeployment ? embeddingsRelayConfig() : null;
+  const cloudFilesAvailable = !isPublicDeployment || publicAccessReady;
+  const macSharedAvailable = sharedCloud;
+  const sharedCloudBudget = sharedCloudBudgetConfig();
+  let safariHttpLocalOrigin = "";
+  try {
+    const candidate = new URL(String(process.env.AI_SYSTEM6_HTTP_LOCAL_ORIGIN || ""));
+    if (
+      candidate.protocol === "http:"
+      && !candidate.username
+      && !candidate.password
+      && candidate.pathname === "/"
+      && !candidate.search
+      && !candidate.hash
+    ) {
+      safariHttpLocalOrigin = candidate.origin;
+    }
+  } catch {}
+  const browse = browseConfig();
+  sendJson(res, 200, {
+    deployment_profile: deploymentProfile,
+    // Time Machine's web engine: the separate origin its proxied pages run
+    // on. Empty when this server has none, and the window keeps its snapshot.
+    browse: {
+      available: browse.available,
+      origin: browse.available ? browse.origin : "",
+      reason: browse.available ? "" : browse.reason,
+    },
+    deployment_target: deploymentTarget,
+    public_deployment: isPublicDeployment,
+    // Where an agent connects. The page shows this in Chooser as the exact
+    // line to paste, so the port is never a guess.
+    mcp: {
+      served: !isPublicDeployment || publicGuestBridgeEnabled,
+      endpoint: "/mcp",
+      transport: "streamable-http",
+      invitation_required: isPublicDeployment,
+    },
+    public_access: {
+      turnstile_required: isPublicDeployment,
+      turnstile_site_key: isPublicDeployment
+        ? String(process.env.TURNSTILE_SITE_KEY || "")
+        : "",
+      turnstile_action: isPublicDeployment ? TURNSTILE_ACTION : "",
+      session_ttl_seconds: isPublicDeployment ? SESSION_TTL_SECONDS : 0,
+      safari_http_local_origin: isPublicDeployment ? safariHttpLocalOrigin : "",
+      shared_cloud: {
+        available: sharedCloud,
+        daily_request_limit: sharedCloud ? sharedCloudBudget.dailyRequestLimit : 0,
+        session_request_limit: sharedCloud ? sharedCloudBudget.sessionRequestLimit : 0,
+        max_input_tokens: sharedCloud ? sharedCloudBudget.maxInputTokens : 0,
+        max_output_tokens: sharedCloud ? sharedCloudBudget.maxOutputTokens : 0,
+      },
+      mac_shared_session: {
+        available: macSharedAvailable,
+        token_endpoint: macSharedAvailable ? "/api/session/mac-token" : "",
+      },
+      mac_shared_relay: {
+        available: deploymentTarget === "mac",
+        session_endpoint: deploymentTarget === "mac" ? "/api/mac-shared/session" : "",
+        chat_endpoint: deploymentTarget === "mac" ? "/api/mac-shared/chat" : "",
+        quota_endpoint: deploymentTarget === "mac" ? "/api/mac-shared/quota" : "",
+      },
+    },
+    features: {
+      cloud_byok: true,
+      cloud_shared: sharedCloud,
+      cloud_embeddings: !isPublicDeployment || Boolean(embeddingsRelay),
+      cloud_embeddings_model: embeddingsRelay ? embeddingsRelay.model : "",
+      cloud_embeddings_dimensions: embeddingsRelay ? embeddingsRelay.dimensions : 0,
+      search: true,
+      reader: true,
+      time_machine: true,
+      time_machine_web_engine: browse.available,
+      endfield_search: true,
+      endfield_ask: true,
+      bureaucracy_captions: true,
+      // The guest bridge: always on this Mac, opt-in on the public
+      // deployment. The page reads this before it subscribes as an executor.
+      guest_bridge: !isPublicDeployment || publicGuestBridgeEnabled,
+      // ClioTalk's engine host: dsh in a shadow copy of a shared folder, this
+      // Mac only (docs/AGENT-HARNESS.md). /api/agent/folders says whether the
+      // engine is installed.
+      agent_harness: !isPublicDeployment,
+      // The same agent mode in a disposable container per run on this host
+      // (docs/AGENT-HARNESS.md, "Cloud sandbox (web)"). Opt-in; the page asks
+      // /api/agent-cloud/status whether the sandbox image is ready.
+      agent_cloud: agentCloudEnabled(),
+      local_models: !isPublicDeployment,
+      // Claude / Codex subscription CLIs run on this Mac only (docs/SUBSCRIPTION-CLI.md).
+      subscription_cli: !isPublicDeployment,
+      // Anthropic's Messages API, with the key in this Mac's Keychain.
+      anthropic_api: !isPublicDeployment,
+      local_vision: !isPublicDeployment,
+      // Cloud vision rides the same BYOK / shared-allowance path as chat, so
+      // the public deployment can read images for the first time.
+      cloud_vision: true,
+      cloud_files_byok: cloudFilesAvailable,
+      cloud_files: {
+        available: cloudFilesAvailable,
+        max_file_bytes: 64 * 1024 * 1024,
+        max_request_bytes: 200 * 1024 * 1024,
+        max_files_per_request: 4,
+        expires_after_seconds: 3600,
+      },
+      server_import: !isPublicDeployment,
+      server_ocr: !isPublicDeployment,
+      audio_transcription: !isPublicDeployment,
+      cmf_rendering: true,
+      image_generation: !isPublicDeployment,
+    },
+  }, {
+    "Cache-Control": "no-store",
+  });
+}
+
+module.exports = { handleCapabilities };

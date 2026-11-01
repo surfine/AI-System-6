@@ -1,0 +1,157 @@
+// A returning visitor's first navigation runs the build they saw last time.
+//
+// The service worker answers a navigation from its cached shell and refreshes
+// that shell behind the page — deliberately, so a cold start does not wait on
+// the network. The cost is that the page the visitor is looking at names the
+// previous build's bundle, and clicking something that was fixed in the release
+// they just missed does nothing. Reported on both public deployments: Cover
+// Glass "would not open", on sites whose live bundle already carried the fix,
+// from a tab still running the build before it.
+//
+// So the running build asks the deployment what it is serving. If they differ,
+// the page reloads once and the visitor is on the current build. One attempt per
+// tab: a worker that somehow kept serving its stale shell would otherwise put
+// the page in a reload loop, and a stale page is better than a spinning one.
+
+(function installBuildFreshness(global) {
+  "use strict";
+
+  const ATTEMPT_KEY = "ai-system6-build-reload";
+
+  function runningBuild() {
+    return String(global.AISystem6BuildInfo?.build || "").trim();
+  }
+
+  async function deployedBuild() {
+    // Through the service boundary, like every other /api call in the app: one
+    // place decides which deployment answers, and a contract holds the rule.
+    const capabilities = global.AISystem6Capabilities;
+    if (typeof capabilities?.requestService !== "function") return "";
+    if (typeof capabilities.capabilityAvailable === "function"
+      && !capabilities.capabilityAvailable("system.version")) {
+      return "";
+    }
+    const response = await capabilities.requestService("system.version", {
+      init: { cache: "no-store", headers: { Accept: "application/json" } },
+    });
+    if (!response?.ok) return "";
+    const data = await response.json();
+    return String(data?.build || "").trim();
+  }
+
+  async function checkForNewerBuild() {
+    // Only a page served by the worker can be holding a stale shell; without one
+    // the navigation came from the network and there is nothing to correct.
+    if (!global.navigator?.serviceWorker?.controller) return "no-worker";
+    const running = runningBuild();
+    if (!running) return "no-running-build";
+    let attempted = "";
+    try {
+      attempted = global.sessionStorage?.getItem(ATTEMPT_KEY) || "";
+    } catch {
+      return "no-session-storage";
+    }
+    if (attempted === running) return "already-tried";
+    let deployed = "";
+    try {
+      deployed = await deployedBuild();
+    } catch {
+      return "deployment-unreachable";
+    }
+    if (!deployed || deployed === running) return "current";
+    try {
+      global.sessionStorage?.setItem(ATTEMPT_KEY, running);
+    } catch {}
+    await settleShell();
+    // D2 (2026-10-16): a reload under the writer's fingers dropped the last
+    // words typed (2 of 4 runs lost 12-16 characters). While someone is
+    // writing, the update waits until the page is put away; either way the
+    // desk's own record is flushed before the page goes.
+    if (writerIsBusy()) {
+      console.warn(`AI System 6: build ${deployed} is ready; reloading once this page is put away.`);
+      global.document.addEventListener("visibilitychange", () => {
+        if (global.document.visibilityState === "hidden") void reloadAfterFlush();
+      });
+      return "deferred";
+    }
+    console.warn(`AI System 6: this page is running build ${running}; the deployment serves ${deployed}. Reloading once.`);
+    await reloadAfterFlush();
+    return "reloading";
+  }
+
+  let lastInputAt = 0;
+  global.document?.addEventListener?.("input", () => { lastInputAt = Date.now(); }, true);
+
+  function writerIsBusy() {
+    const field = global.document?.activeElement;
+    const editing = !!field?.closest?.("textarea, input:not([type=checkbox]):not([type=radio]):not([type=button]), [contenteditable='true']");
+    return editing || Date.now() - lastInputAt < 15000;
+  }
+
+  async function reloadAfterFlush() {
+    const flush = Promise.all([
+      typeof global.flushWorkingSessionCommit === "function" ? global.flushWorkingSessionCommit() : null,
+      typeof global.saveDeskState === "function" ? global.saveDeskState() : null,
+    ]).catch(() => {});
+    await Promise.race([flush, new Promise((resolve) => global.setTimeout(resolve, 2000))]);
+    global.location.reload();
+  }
+
+  /**
+   * Ask the worker to put the deployment's current document in its cache first.
+   *
+   * The worker answers a navigation from the cached shell and refreshes it
+   * behind the page, so a reload can arrive before the refresh lands and run
+   * the same build a second time. That would spend this tab's one attempt on
+   * the build it was trying to leave, and the visitor would keep the old one
+   * until they next opened the app — on a Home Screen icon, that is days. One
+   * round trip buys the guarantee that the reload is the new build.
+   *
+   * Bounded, and silent about failure: a worker that cannot answer in time
+   * still gets the plain reload, which is what happened before this existed —
+   * an older page, not a page that never comes back.
+   */
+  function settleShell(timeoutMs = 3000) {
+    const serviceWorker = global.navigator?.serviceWorker;
+    const worker = serviceWorker?.controller;
+    if (!worker || typeof worker.postMessage !== "function") return Promise.resolve(false);
+    // One listener, one timer, and no bookkeeping between them: a promise
+    // settles once, so whichever of the two answers first is the answer, and
+    // the other is a no-op. The boot budget is counted in bytes.
+    return new Promise((resolve) => {
+      serviceWorker.addEventListener("message", (event) => {
+        if (event.data?.type === "shell-refreshed") resolve(true);
+      }, { once: true });
+      global.setTimeout(() => resolve(false), timeoutMs);
+      worker.postMessage({ type: "refresh-shell" });
+    });
+  }
+
+  global.AISystem6BuildFreshness = Object.freeze({
+    checkForNewerBuild,
+    runningBuild,
+  });
+
+  function checkQuietly() {
+    return checkForNewerBuild().catch(() => {});
+  }
+
+  // After load, so the check never competes with the desk's own first paint.
+  if (typeof global.addEventListener === "function") {
+    global.addEventListener("load", checkQuietly, { once: true });
+  }
+
+  // A page on the Home Screen is suspended, not reloaded: on a phone it can sit
+  // on the build it was opened with for days, because `load` never fires again
+  // and the worker keeps answering navigations from the shell it cached. Coming
+  // back to the foreground is the only moment such a page gets — and it is the
+  // moment this was reported from, a menu bar still wearing the system material
+  // two releases after the fix that took it off shipped to both deployments.
+  // The attempt guard is unchanged: this adds one reload per build, never a
+  // loop, and it stays quiet while the page is going the other way.
+  if (typeof global.document?.addEventListener === "function") {
+    global.document.addEventListener("visibilitychange", () => {
+      if (global.document.visibilityState === "visible") return checkQuietly();
+    });
+  }
+})(window);

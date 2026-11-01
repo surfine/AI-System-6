@@ -1,0 +1,204 @@
+node_modules/
+.pkg-cache/
+.cache/
+.DS_Store
+test-results/
+playwright-report/
+/apps/desktop/app.bundle.js
+internal/archive/runtime-legacy/
+/apps/desktop/styles.bundle.css
+/apps/desktop/styles.theme-lab.css
+/apps/desktop/styles.draft-desk.css
+/apps/desktop/styles.control-strip.css
+/apps/desktop/styles.finder-spatial.css
+/apps/desktop/styles.cmf-studio.css
+/apps/desktop/styles.soundscape.css
+/apps/desktop/styles.liquid-cover.css
+/apps/desktop/styles.image-prompt-studio.css
+/apps/desktop/styles.clio-paint.css
+/apps/desktop/styles.one-more-tune.css
+/apps/desktop/styles.one-more-take.css
+/apps/desktop/styles.rootline.css
+/apps/desktop/styles.joyride.css
+/apps/desktop/styles.project-disks.css
+/apps/desktop/styles.clio-project.css
+/apps/desktop/styles.edit-kernel.css
+/apps/desktop/styles.about.css
+/apps/desktop/styles.extensions.css
+/apps/desktop/styles.about-this-mac.css
+/apps/desktop/styles.cliotalk-agent.css
+/apps/desktop/styles.cliotalk-shell.css
+/apps/desktop/styles.chooser-book.css
+/apps/desktop/styles.docmap.css
+/apps/desktop/styles.searcher.css
+/apps/desktop/styles.reader-pages.css
+/apps/desktop/styles.big-sur.css
+/apps/desktop/styles.tiger.css
+/apps/desktop/styles.system-7.css
+/apps/desktop/styles.drawing-board.css
+/apps/desktop/styles.platinum.css
+/apps/desktop/styles.desk-dock.css
+/apps/desktop/styles.lion.css
+/apps/desktop/styles.nextstep.css
+/apps/desktop/styles.aqua.css
+/apps/desktop/styles.liquid-glass.css
+apps/desktop/app/vendor/markmap/*.js
+apps/desktop/app/vendor/embed-model/
+apps/desktop/app/vendor/cutout-model/
+apps/desktop/app/vendor/embed/ort-wasm-simd-threaded*
+.venv-markitdown/
+.venv-markitdown-trim/
+marked/
+markitdown/
+markmap/
+readability/
+platform/macos/native/.build/
+platform/macos/native/.swiftpm/
+platform/macos/shell/macos-webview/.build/
+platform/macos/shell/macos-webview/.swiftpm/
+ai-system-6-mac
+ai-system-6.exe
+ai-system-6-macos
+ai-system-6-win.exe
+dist/
+builds/
+
+# Secrets never enter the repo. Production values live only in
+# /etc/ai-system6/env on the server; platform/web/ai-system6.env.example (committed)
+# carries placeholders. tooling/verify-web-release-safety.mjs is the gate that
+# stops a stray one from reaching the public site.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+!**/system.css-reference/**/*.key
+!tests/fixtures/clioworks-n9/*.key
+system.css-reference/fonts/modern/
+*.7z
+*.mp4
+# The official-site hero clip is a shipped asset, not a working file.
+!site/img/hero-desktop.mp4
+internal/evidence/drafts/hero-frames/
+*.pdf
+# The real-file corpus's four PDFs are tracked and published (owner's
+# confirmation, 2026-10-28). `*.pdf` above is what keeps stray working copies
+# out; these four are an explicit, licensed exception rather than a hole in it.
+!tests/fixtures/real-corpus/pdf/
+!tests/fixtures/real-corpus/pdf/*.pdf
+
+# vendored reference clones (own .git) and local scratch output
+external/
+internal/evidence/drafts/codex-snapshots/
+internal/evidence/drafts/promo-video-work/
+internal/evidence/drafts/official-site/
+internal/archive/promo/output/
+internal/archive/promo/recordings/
+internal/evidence/drafts/css-refactor-snapshots/
+internal/evidence/drafts/ui-reform-before/
+internal/evidence/drafts/ui-reform-after/
+internal/evidence/drafts/ui-reform-after-pareto/
+internal/evidence/drafts/theme-lab-current/
+internal/evidence/drafts/theme-lab-fidelity-cache/
+# Appearance pixel baselines are machine-local: font rasterization differs per
+# host, so a committed baseline would false-fail on every other machine. The
+# gate is a local release condition (verify:ship), like the fidelity cache.
+internal/evidence/drafts/appearance-baseline/
+internal/evidence/drafts/appearance-current/
+internal/evidence/drafts/appearance-retry/
+internal/evidence/drafts/appearance-noise/
+tests/appearance-snapshot.json
+internal/evidence/drafts/theme-lab-fidelity/
+internal/evidence/drafts/appearance-app-coverage/
+internal/evidence/drafts/appearance-phase5/
+# local era icon reference caches (third-party captures / scratch renders);
+# owned measurements, provenance and built icons live in apps/desktop/assets/themes/*/icons
+internal/evidence/drafts/snow-leopard-icon-reference/
+internal/evidence/drafts/liquid-glass-reference/
+internal/evidence/drafts/yosemite-icon-reference/
+internal/evidence/drafts/yosemite-icon-render/
+internal/evidence/drafts/classic-icon-references/
+# three-family coverage evidence (window sweeps, computed-style records,
+# icon-crop review sheets); owned metrics live in docs/THEME-FAMILY-REPORT.md
+internal/evidence/drafts/theme-coverage/
+# era icon comparison/reference boards (rendered evidence, not product assets)
+internal/evidence/drafts/era-icons/
+internal/evidence/drafts/icon-generation/
+# before/after render evidence for the Liquid Glass icon family
+internal/evidence/drafts/liquid-glass-icons/
+# local Python scratch caches
+tooling/__pycache__/
+__pycache__/
+# local personal scratch output (audit dumps, temp exports)
+internal/evidence/drafts/coverage/
+# Endfield archive capture cache: browser session, saved HTML corpus, logs
+.scratch/endfield-capture/
+# Endfield official-source scratch pipeline (superseded by internal/archive/endfield/work-skland)
+.scratch/skland-v15/
+.scratch/skland-v15-capture.log
+# Endfield official-source (Skland) work products: raw task payloads, parsed
+# sections, drafts. The pipeline scripts live in internal/archive/endfield/scripts/.
+internal/archive/endfield/work-skland/
+# Per-commit HIG interaction audit screenshots, traces, videos, and device receipts.
+# The canonical report and machine-readable ledgers live outside drafts/.
+internal/evidence/drafts/hig-ui-ux-audit/
+# local 15MB test photo (bg-1..6 are the shipped backgrounds)
+internal/evidence/drafts/liquid-cover/test-shot.jpg
+# lane image-gen masters and review boards (candidate evidence; manifests and
+# layered runtime sources stay the product of record until approved)
+internal/evidence/drafts/aqua-imagegen-redraw/
+internal/evidence/drafts/cover-glass-five-era-redraw/
+internal/evidence/drafts/game-six-era-icons/
+internal/evidence/drafts/get-info-icon-stage/
+internal/evidence/drafts/lightroom-six-era-icons/
+internal/evidence/drafts/liquid-glass-golden-gate-redraw/
+internal/evidence/drafts/project-disk-imagegen/
+internal/evidence/drafts/snow-leopard-imagegen-redraw/
+internal/evidence/drafts/yosemite-imagegen-redraw/
+# lightroom lane design preview board (canonical design doc is the tracked .md)
+.claude/design/lightroom-app-design.html
+platform/macos/native/nohup.out
+.wrangler/
+# j-space controller ledger (per-task state, never committed)
+.jspace/
+# StateM run state (per-task execution ledger, never committed)
+.statem/
+# execution-based control-census reports (tooling/control-census.mjs); the
+# committed ratchet ceiling lives in tooling/control-census-baseline.json
+internal/evidence/drafts/control-census/
+HANDOFF.md
+HANDOFF.zh-CN.md
+# local capture evidence (screenshots, CLI logs, Playwright traces) from a
+# working session; durable evidence lives under internal/evidence/
+output/
+# downloaded third-party reference art for the aaronlau-me proposal; local
+# only, never committed or deployed (see that proposal's CONTINUE.md)
+internal/design-proposals/aaronlau-me/assets/_ref/
+
+# Time Machine ad blocking: compiled from the pinned uBlock Origin Lite
+# release by `npm run browse:build-filters` (GPL-3.0 data, see vendor/ubol).
+/apps/browse/filters/
+# Claude-Pop promo video: generated audio, renders, downloaded voice models
+/docs/film/claude-pop/build/
+/docs/film/claude-pop/.cache/
+
+# A session's own scratch plans — never workspace content.
+.zcode/
+internal/plans/creator-blueprint/
+
+# Stale verification state and template accidents at the root.
+.batch-*.json
+.drain-*.json
+{{HOMEBREW_PREFIX}}/
+{{pkgetc}}/
+test-results/
+output/
+.DS_Store
+platform/macos/tinyjs/signing.local.json
+
+# Slim DeepSeek Harness install for the ClioTalk engine (tooling/build-dsh-slim.mjs).
+/vendor-runtime/
+.playwright-cli/
+
+# Break-UI fixtures (tooling/dev/worst-case-disks.mjs); dev only, never released
+/apps/desktop/app/dev/worst-case/

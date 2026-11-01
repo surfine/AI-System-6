@@ -1,0 +1,3330 @@
+{
+  "target": "Mac OS X 10.2 Jaguar Aqua",
+  "generatedBy": "tooling/build-era-icons.mjs",
+  "sharedGeometryAcrossEras": false,
+  "completeFamily": true,
+  "reviewedFamily": [
+    "startupDisk",
+    "hardDisk",
+    "folder",
+    "document",
+    "applications",
+    "trash",
+    "finderApp",
+    "fileFloppy",
+    "assistant",
+    "quickDraft",
+    "writingStudio",
+    "projectDisk",
+    "projectDisc",
+    "cloudModel",
+    "cloudModelOff",
+    "questionSheet",
+    "outline",
+    "sectionDrafts",
+    "manuscript",
+    "reviewDesk",
+    "searcher",
+    "reader",
+    "timeMachine",
+    "docMap",
+    "clioStage",
+    "clioChart",
+    "liquidCover",
+    "cmfStudio",
+    "soundscape",
+    "scrapbook",
+    "systemFolder",
+    "helpFolder",
+    "importUtility",
+    "controlPanel",
+    "chooser",
+    "systemHelp",
+    "dictionary",
+    "teachText",
+    "writingDemo",
+    "chatFile",
+    "chatImport",
+    "systemStatus",
+    "contextPanel",
+    "rebuildArticle",
+    "bureaucracyMeme",
+    "endfieldTerminal",
+    "documents",
+    "alias",
+    "systemFile",
+    "multiFinderApp",
+    "daHandler",
+    "writingBell",
+    "trashFull",
+    "control",
+    "localModel",
+    "controlStrip"
+  ],
+  "fallback": [],
+  "runtimeSize": "contextual",
+  "runtimeSizesByContext": {
+    "compactMenuList": 16,
+    "ordinary": 32,
+    "desktopLargeRetina": 128
+  },
+  "compatibilityManifest": "aqua-icon-manifest.json",
+  "compatibilityManifestMeaning": "Stable 32 px semantic mapping only; app/core/system-icons.js selects 16, 32, or 128 px by rendering context.",
+  "runtimeDispatch": "apps/desktop/app/core/system-icons.js",
+  "icons": {
+    "startupDisk": {
+      "genre": "hardware",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 1.0722
+      },
+      "physicalMetaphor": "a bootable system disk volume with one small illuminated startup indicator in a lower corner, clearly distinct from the plain local hard disk; no arrow, upload symbol, download symbol, or large badge",
+      "semanticMark": "startup",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/startupDisk-16.png",
+        "32": "icons/startupDisk-32.png",
+        "128": "icons/startupDisk-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5039,
+          "meanLum": 142.42,
+          "lumStd": 40.65,
+          "edgeEnergy": 33
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.4922,
+          "meanLum": 145.14,
+          "lumStd": 45.49,
+          "edgeEnergy": 188
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4836,
+          "meanLum": 145.16,
+          "lumStd": 46,
+          "edgeEnergy": 236
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "hardDisk": {
+      "genre": "hardware",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 1.0722
+      },
+      "physicalMetaphor": "a mounted local hard-disk volume, clearly hardware rather than a folder or document",
+      "semanticMark": "disk",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/hardDisk-16.png",
+        "32": "icons/hardDisk-32.png",
+        "128": "icons/hardDisk-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5703,
+          "meanLum": 166.48,
+          "lumStd": 43.4,
+          "edgeEnergy": 44
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5107,
+          "meanLum": 164.52,
+          "lumStd": 47.18,
+          "edgeEnergy": 136
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.483,
+          "meanLum": 163.28,
+          "lumStd": 48.81,
+          "edgeEnergy": 226
+        }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "folder": {
+      "genre": "file",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.8728,
+        "scale": 1.0156
+      },
+      "physicalMetaphor": "the era's system folder as one unmistakable tabbed folder object",
+      "semanticMark": "none",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/folder-16.png",
+        "32": "icons/folder-32.png",
+        "128": "icons/folder-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6172,
+          "meanLum": 166.75,
+          "lumStd": 30.75,
+          "edgeEnergy": 43
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6025,
+          "meanLum": 166.46,
+          "lumStd": 35.44,
+          "edgeEnergy": 163
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5986,
+          "meanLum": 166.82,
+          "lumStd": 36.2,
+          "edgeEnergy": 258
+        }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "document": {
+      "genre": "document",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.8461,
+        "scale": 1.0515
+      },
+      "physicalMetaphor": "a generic white document sheet with one folded top corner and only a few neutral text marks",
+      "semanticMark": "none",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/document-16.png",
+        "32": "icons/document-32.png",
+        "128": "icons/document-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5156,
+          "meanLum": 209.75,
+          "lumStd": 33.39,
+          "edgeEnergy": 58
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.4863,
+          "meanLum": 212.06,
+          "lumStd": 40.67,
+          "edgeEnergy": 233
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4773,
+          "meanLum": 212.81,
+          "lumStd": 41.88,
+          "edgeEnergy": 347
+        }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "applications": {
+      "genre": "file",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.8906,
+        "scale": 1.0364
+      },
+      "physicalMetaphor": "a tabbed Applications catalogue folder holding a staggered fan of three non-tile app objects: one manuscript sheet, one open Reader book, and one small Writing Studio typewriter keyboard or paper carriage; it represents AI System 6's high-frequency writing, reading, and long-form work and must contain no conversation bubble, no magnifying glass, no grid, no square tiles, no App Store letter, and no launcher dot matrix",
+      "semanticMark": "applications",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/applications-16.png",
+        "32": "icons/applications-32.png",
+        "128": "icons/applications-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5508,
+          "meanLum": 129.85,
+          "lumStd": 53.52,
+          "edgeEnergy": 112
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5303,
+          "meanLum": 130.28,
+          "lumStd": 63.12,
+          "edgeEnergy": 350
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.521,
+          "meanLum": 130.98,
+          "lumStd": 64.21,
+          "edgeEnergy": 493
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "trash": {
+      "genre": "hardware",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8369,
+        "scale": 1.0875
+      },
+      "physicalMetaphor": "an empty waste basket with an open top and a readable woven or perforated body",
+      "semanticMark": "empty",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/trash-16.png",
+        "32": "icons/trash-32.png",
+        "128": "icons/trash-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5938,
+          "meanLum": 144.89,
+          "lumStd": 40.48,
+          "edgeEnergy": 93
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5576,
+          "meanLum": 146.44,
+          "lumStd": 48.01,
+          "edgeEnergy": 520
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5482,
+          "meanLum": 146.72,
+          "lumStd": 49.85,
+          "edgeEnergy": 854
+        }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "finderApp": {
+      "genre": "application",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 0.9905
+      },
+      "physicalMetaphor": "the target era's real Finder identity, preserving its documented facial fields, eyes, and continuous smile without importing a computer chassis from another era",
+      "semanticMark": "finder",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/finderApp-16.png",
+        "32": "icons/finderApp-32.png",
+        "128": "icons/finderApp-128.png"
+      },
+      "metaphorKey": "target-era-finder-identity",
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.7656,
+          "meanLum": 170.84,
+          "lumStd": 37.31,
+          "edgeEnergy": 103
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.751,
+          "meanLum": 170.76,
+          "lumStd": 43.75,
+          "edgeEnergy": 304
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.7409,
+          "meanLum": 170.4,
+          "lumStd": 45.19,
+          "edgeEnergy": 457
+        }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "reference-validated",
+      "runtimeAsset": true,
+      "blindMixStatus": "not-run",
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "fileFloppy": {
+      "genre": "hardware",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.8906,
+        "scale": 1.0755
+      },
+      "physicalMetaphor": "one 3.5-inch floppy disk with a readable metal shutter and label panel, clearly removable storage rather than a hard drive",
+      "semanticMark": "floppy",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/fileFloppy-16.png",
+        "32": "icons/fileFloppy-32.png",
+        "128": "icons/fileFloppy-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6211,
+          "meanLum": 135.49,
+          "lumStd": 68.43,
+          "edgeEnergy": 103
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6064,
+          "meanLum": 136.47,
+          "lumStd": 74.6,
+          "edgeEnergy": 305
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5947,
+          "meanLum": 136.65,
+          "lumStd": 75.4,
+          "edgeEnergy": 409
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "assistant": {
+      "genre": "application",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.8906,
+        "scale": 1.1515
+      },
+      "physicalMetaphor": "two overlapping speech balloons: the user's turn is a solid filled balloon and the reply is a separate balloon drawn with a clearly dashed outline to show that it remains provisional until saved",
+      "semanticMark": "assistant",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/assistant-16.png",
+        "32": "icons/assistant-32.png",
+        "128": "icons/assistant-128.png"
+      },
+      "metaphorKey": "solid-user-dashed-reply-balloons",
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5469,
+          "meanLum": 178.36,
+          "lumStd": 45.43,
+          "edgeEnergy": 77
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5205,
+          "meanLum": 179.44,
+          "lumStd": 48.77,
+          "edgeEnergy": 218
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5113,
+          "meanLum": 180.24,
+          "lumStd": 48.91,
+          "edgeEnergy": 303
+        }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "quickDraft": {
+      "genre": "document",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.8906,
+        "scale": 1.1068
+      },
+      "physicalMetaphor": "one loose draft sheet with a pencil crossing a few rough horizontal marks, visibly provisional rather than a finished manuscript",
+      "semanticMark": "pencil",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/quickDraft-16.png",
+        "32": "icons/quickDraft-32.png",
+        "128": "icons/quickDraft-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6445,
+          "meanLum": 198.95,
+          "lumStd": 42.15,
+          "edgeEnergy": 116
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6221,
+          "meanLum": 198.85,
+          "lumStd": 48.62,
+          "edgeEnergy": 387
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6145,
+          "meanLum": 198.76,
+          "lumStd": 49.56,
+          "edgeEnergy": 600
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "writingStudio": {
+      "genre": "application",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 0.9123
+      },
+      "physicalMetaphor": "a compact mechanical typewriter with one blank manuscript sheet emerging from the carriage",
+      "semanticMark": "writing",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/writingStudio-16.png",
+        "32": "icons/writingStudio-32.png",
+        "128": "icons/writingStudio-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5977,
+          "meanLum": 109.28,
+          "lumStd": 69.24,
+          "edgeEnergy": 103
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5723,
+          "meanLum": 108.24,
+          "lumStd": 74.86,
+          "edgeEnergy": 492
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5624,
+          "meanLum": 108.68,
+          "lumStd": 76.63,
+          "edgeEnergy": 798
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "projectDisk": {
+      "genre": "hardware",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 1.0722
+      },
+      "physicalMetaphor": "a labelled external storage volume with one restrained project label cue, distinct from the unlabelled local hard disk",
+      "semanticMark": "project",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/projectDisk-16.png",
+        "32": "icons/projectDisk-32.png",
+        "128": "icons/projectDisk-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.4063,
+          "meanLum": 142.74,
+          "lumStd": 44.11,
+          "edgeEnergy": 54
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.3887,
+          "meanLum": 143.75,
+          "lumStd": 50.38,
+          "edgeEnergy": 215
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.3776,
+          "meanLum": 144.48,
+          "lumStd": 50.88,
+          "edgeEnergy": 316
+        }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "historically-reviewed",
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "projectDisc": {
+      "genre": "hardware",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 0.9905
+      },
+      "physicalMetaphor": "one optical project disc partly seated in a compact protective sleeve, with a small blank project tab and visible rainbow diffraction",
+      "semanticMark": "project",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/projectDisc-16.png",
+        "32": "icons/projectDisc-32.png",
+        "128": "icons/projectDisc-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5547,
+          "meanLum": 160.67,
+          "lumStd": 40.63,
+          "edgeEnergy": 81
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5146,
+          "meanLum": 162.52,
+          "lumStd": 44.93,
+          "edgeEnergy": 199
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5051,
+          "meanLum": 162.38,
+          "lumStd": 46.4,
+          "edgeEnergy": 310
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "cloudModel": {
+      "genre": "utility",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 1.0097
+      },
+      "physicalMetaphor": "a compact remote server unit paired with one active cloud-shaped status light, clearly a network model service rather than local hardware",
+      "semanticMark": "cloud",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/cloudModel-16.png",
+        "32": "icons/cloudModel-32.png",
+        "128": "icons/cloudModel-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6797,
+          "meanLum": 136.82,
+          "lumStd": 55.48,
+          "edgeEnergy": 128
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6543,
+          "meanLum": 135.32,
+          "lumStd": 60.31,
+          "edgeEnergy": 422
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6536,
+          "meanLum": 134.16,
+          "lumStd": 61.29,
+          "edgeEnergy": 596
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "cloudModelOff": {
+      "genre": "utility",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 1.0097
+      },
+      "physicalMetaphor": "the same compact remote server concept with an unlit cloud-shaped status light and one visibly unplugged network cable",
+      "semanticMark": "cloudOff",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/cloudModelOff-16.png",
+        "32": "icons/cloudModelOff-32.png",
+        "128": "icons/cloudModelOff-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5547,
+          "meanLum": 132.91,
+          "lumStd": 42.46,
+          "edgeEnergy": 83
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5049,
+          "meanLum": 133.96,
+          "lumStd": 46.85,
+          "edgeEnergy": 273
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4966,
+          "meanLum": 133.59,
+          "lumStd": 47.7,
+          "edgeEnergy": 412
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "questionSheet": {
+      "genre": "document",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.8906,
+        "scale": 1.1068
+      },
+      "physicalMetaphor": "one white worksheet with a large centred question mark and two short blank response lines, no other text",
+      "semanticMark": "question",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/questionSheet-16.png",
+        "32": "icons/questionSheet-32.png",
+        "128": "icons/questionSheet-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.582,
+          "meanLum": 209.15,
+          "lumStd": 37.44,
+          "edgeEnergy": 85
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5498,
+          "meanLum": 209.37,
+          "lumStd": 43.61,
+          "edgeEnergy": 282
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5442,
+          "meanLum": 209.38,
+          "lumStd": 44.96,
+          "edgeEnergy": 383
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "outline": {
+      "genre": "document",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.8906,
+        "scale": 1.0806
+      },
+      "physicalMetaphor": "three stacked index cards showing only indented bullets and horizontal hierarchy bars, clearly an outline rather than prose",
+      "semanticMark": "outline",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/outline-16.png",
+        "32": "icons/outline-32.png",
+        "128": "icons/outline-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6797,
+          "meanLum": 200.05,
+          "lumStd": 39.45,
+          "edgeEnergy": 90
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6445,
+          "meanLum": 201.29,
+          "lumStd": 47.69,
+          "edgeEnergy": 431
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6383,
+          "meanLum": 201.84,
+          "lumStd": 49.17,
+          "edgeEnergy": 626
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "sectionDrafts": {
+      "genre": "document",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.8906,
+        "scale": 1.0806
+      },
+      "physicalMetaphor": "three staggered draft pages with distinct coloured section tabs and rough line blocks, clearly separate sections of one work",
+      "semanticMark": "sections",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/sectionDrafts-16.png",
+        "32": "icons/sectionDrafts-32.png",
+        "128": "icons/sectionDrafts-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6641,
+          "meanLum": 186.96,
+          "lumStd": 41.86,
+          "edgeEnergy": 107
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6338,
+          "meanLum": 189.96,
+          "lumStd": 48.88,
+          "edgeEnergy": 414
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6253,
+          "meanLum": 190.19,
+          "lumStd": 51.15,
+          "edgeEnergy": 696
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "manuscript": {
+      "genre": "document",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 1.0505
+      },
+      "physicalMetaphor": "a substantial bound manuscript stack with a cloth spine and one bookmark, clearly a finished long-form document",
+      "semanticMark": "manuscript",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/manuscript-16.png",
+        "32": "icons/manuscript-32.png",
+        "128": "icons/manuscript-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6367,
+          "meanLum": 117.52,
+          "lumStd": 46.01,
+          "edgeEnergy": 104
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6143,
+          "meanLum": 118.19,
+          "lumStd": 51.81,
+          "edgeEnergy": 312
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6083,
+          "meanLum": 118.36,
+          "lumStd": 52.65,
+          "edgeEnergy": 434
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "reviewDesk": {
+      "genre": "application",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8287,
+        "scale": 1.0451
+      },
+      "physicalMetaphor": "a marked manuscript page under a magnifying lens, reduced to one readable proofing object",
+      "semanticMark": "proof",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/reviewDesk-16.png",
+        "32": "icons/reviewDesk-32.png",
+        "128": "icons/reviewDesk-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "historically-reviewed",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5234,
+          "meanLum": 168.23,
+          "lumStd": 49.3,
+          "edgeEnergy": 100
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.499,
+          "meanLum": 168.85,
+          "lumStd": 57.61,
+          "edgeEnergy": 388
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4898,
+          "meanLum": 169.13,
+          "lumStd": 58.53,
+          "edgeEnergy": 602
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "searcher": {
+      "genre": "application",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8287,
+        "scale": 1.0451
+      },
+      "physicalMetaphor": "a single magnifying glass overlapping a document page, with the lens and page both readable",
+      "semanticMark": "magnify",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/searcher-16.png",
+        "32": "icons/searcher-32.png",
+        "128": "icons/searcher-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5469,
+          "meanLum": 191.96,
+          "lumStd": 45.5,
+          "edgeEnergy": 93
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5088,
+          "meanLum": 192.29,
+          "lumStd": 50.15,
+          "edgeEnergy": 293
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4983,
+          "meanLum": 192.49,
+          "lumStd": 51.19,
+          "edgeEnergy": 435
+        }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "historically-reviewed",
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "reader": {
+      "genre": "application",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.8906,
+        "scale": 0.9913
+      },
+      "physicalMetaphor": "an open reading book with one restrained highlighted passage block and a slim reading marker, no legible words",
+      "semanticMark": "reader",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/reader-16.png",
+        "32": "icons/reader-32.png",
+        "128": "icons/reader-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.4844,
+          "meanLum": 189.91,
+          "lumStd": 53.34,
+          "edgeEnergy": 76
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.46,
+          "meanLum": 190.02,
+          "lumStd": 57.7,
+          "edgeEnergy": 242
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4529,
+          "meanLum": 190.58,
+          "lumStd": 58.42,
+          "edgeEnergy": 329
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "timeMachine": {
+      "genre": "utility",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 0.9204
+      },
+      "physicalMetaphor": "a compact archive drawer behind a round clock face with one restrained backward-history arrow",
+      "semanticMark": "archive",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/timeMachine-16.png",
+        "32": "icons/timeMachine-32.png",
+        "128": "icons/timeMachine-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6797,
+          "meanLum": 125.25,
+          "lumStd": 53.5,
+          "edgeEnergy": 129
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6631,
+          "meanLum": 125.82,
+          "lumStd": 59.11,
+          "edgeEnergy": 431
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6565,
+          "meanLum": 125.64,
+          "lumStd": 59.98,
+          "edgeEnergy": 647
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "docMap": {
+      "genre": "application",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 0.9369
+      },
+      "physicalMetaphor": "a document page whose heading lines grow into one simple stem with a few branches and nodes, a document structure map rather than a geographic map",
+      "semanticMark": "none",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/docMap-16.png",
+        "32": "icons/docMap-32.png",
+        "128": "icons/docMap-128.png"
+      },
+      "metaphorKey": "branching-document-map",
+      "metaphorMetrics": {
+        "version": 2,
+        "sourceSize": [
+          128,
+          128
+        ],
+        "bounds": [
+          11,
+          6,
+          116,
+          121
+        ],
+        "pageMode": "paper",
+        "pageLeftDensity": 0.5228,
+        "pageRightDensity": 0.4321,
+        "pageAdvantage": 0.0907,
+        "pageAdvantageMin": 0.02,
+        "nodeMode": "opaque",
+        "nodeBandDensities": [
+          0.2944,
+          0.5722,
+          0.9483
+        ],
+        "nodeGapDensities": [
+          0.1111,
+          0.5714
+        ],
+        "centerHubDensity": 1,
+        "radialNodeDensities": [
+          0.9774,
+          0.4226,
+          0.9466,
+          0.8308
+        ],
+        "radialBranchDensities": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "layoutMode": "radial-mind-map"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "historically-reviewed",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6445,
+          "meanLum": 181.61,
+          "lumStd": 52.11,
+          "edgeEnergy": 121
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6084,
+          "meanLum": 182.62,
+          "lumStd": 58.48,
+          "edgeEnergy": 404
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6043,
+          "meanLum": 182.17,
+          "lumStd": 60.04,
+          "edgeEnergy": 634
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "clioStage": {
+      "genre": "application",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.8906,
+        "scale": 0.9913
+      },
+      "physicalMetaphor": "a small presentation stage with side curtains, a blank projection screen, and one focused overhead light",
+      "semanticMark": "stage",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/clioStage-16.png",
+        "32": "icons/clioStage-32.png",
+        "128": "icons/clioStage-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.7188,
+          "meanLum": 109.55,
+          "lumStd": 67.66,
+          "edgeEnergy": 149
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6709,
+          "meanLum": 112.39,
+          "lumStd": 75.83,
+          "edgeEnergy": 477
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6593,
+          "meanLum": 112.47,
+          "lumStd": 76.9,
+          "edgeEnergy": 687
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "clioChart": {
+      "genre": "application",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 0.9204
+      },
+      "physicalMetaphor": "a standing presentation easel carrying one simple bar-and-line chart with no labels or numbers",
+      "semanticMark": "chart",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/clioChart-16.png",
+        "32": "icons/clioChart-32.png",
+        "128": "icons/clioChart-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5391,
+          "meanLum": 163.87,
+          "lumStd": 54.46,
+          "edgeEnergy": 118
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.499,
+          "meanLum": 164.69,
+          "lumStd": 63.25,
+          "edgeEnergy": 372
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4921,
+          "meanLum": 165.18,
+          "lumStd": 65.19,
+          "edgeEnergy": 549
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "liquidCover": {
+      "genre": "application",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.8906,
+        "scale": 1.0654
+      },
+      "physicalMetaphor": "a landscape Bilibili-video cover artboard whose dominant visual is two large lines of glass typography: thick translucent title strokes with refractive edges over an abstract background color plane and one neutral geometric accent shape, plus a slim offset text/shape layer stack at one side; it is a glass-text cover compositor with SDF typography, material presets, multi-aspect editing, and explicit PNG/video export, never a person, face, character, anime silhouette, book, book cover, ordinary photo compositor, single glass sheet, or generic pane",
+      "semanticMark": "cover",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/liquidCover-16.png",
+        "32": "icons/liquidCover-32.png",
+        "128": "icons/liquidCover-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 23,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.625,
+          "meanLum": 88.35,
+          "lumStd": 52.08,
+          "edgeEnergy": 128
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5859,
+          "meanLum": 92.35,
+          "lumStd": 58.12,
+          "edgeEnergy": 475
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5601,
+          "meanLum": 96.57,
+          "lumStd": 57.05,
+          "edgeEnergy": 707
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "cmfStudio": {
+      "genre": "application",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 1.1429
+      },
+      "physicalMetaphor": "a fan of colour, material, and finish swatches with one metal chip, one fabric chip, and restrained colour samples",
+      "semanticMark": "swatches",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/cmfStudio-16.png",
+        "32": "icons/cmfStudio-32.png",
+        "128": "icons/cmfStudio-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6094,
+          "meanLum": 143.38,
+          "lumStd": 44,
+          "edgeEnergy": 105
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5889,
+          "meanLum": 142.2,
+          "lumStd": 50.93,
+          "edgeEnergy": 442
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5782,
+          "meanLum": 142.61,
+          "lumStd": 52.33,
+          "edgeEnergy": 649
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "soundscape": {
+      "genre": "application",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 0.9541
+      },
+      "physicalMetaphor": "one compact loudspeaker emitting two controlled waveform ribbons, clearly an audio environment tool",
+      "semanticMark": "sound",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/soundscape-16.png",
+        "32": "icons/soundscape-32.png",
+        "128": "icons/soundscape-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.4688,
+          "meanLum": 131.17,
+          "lumStd": 50.54,
+          "edgeEnergy": 112
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.4229,
+          "meanLum": 128.11,
+          "lumStd": 58.52,
+          "edgeEnergy": 369
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4155,
+          "meanLum": 128.88,
+          "lumStd": 60.18,
+          "edgeEnergy": 576
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "scrapbook": {
+      "genre": "application",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 0.972
+      },
+      "physicalMetaphor": "a bound album opened or angled to show one mounted photographic print, clearly an album rather than a notes page",
+      "semanticMark": "scraps",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/scrapbook-16.png",
+        "32": "icons/scrapbook-32.png",
+        "128": "icons/scrapbook-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5938,
+          "meanLum": 135.12,
+          "lumStd": 48.52,
+          "edgeEnergy": 137
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5732,
+          "meanLum": 134.66,
+          "lumStd": 58.93,
+          "edgeEnergy": 474
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5612,
+          "meanLum": 134.26,
+          "lumStd": 60.51,
+          "edgeEnergy": 713
+        }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "systemFolder": {
+      "genre": "file",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.8906,
+        "scale": 1.0364
+      },
+      "physicalMetaphor": "a system folder carrying one small inset mechanical wheel badge, unmistakably the operating-system folder",
+      "semanticMark": "gear",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/systemFolder-16.png",
+        "32": "icons/systemFolder-32.png",
+        "128": "icons/systemFolder-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6992,
+          "meanLum": 164.37,
+          "lumStd": 39.33,
+          "edgeEnergy": 75
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6719,
+          "meanLum": 164.06,
+          "lumStd": 43.74,
+          "edgeEnergy": 209
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6604,
+          "meanLum": 164.28,
+          "lumStd": 44.54,
+          "edgeEnergy": 342
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "helpFolder": {
+      "genre": "file",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.8906,
+        "scale": 1.0364
+      },
+      "physicalMetaphor": "a help folder carrying one large clean question-mark badge, with no other text",
+      "semanticMark": "help",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/helpFolder-16.png",
+        "32": "icons/helpFolder-32.png",
+        "128": "icons/helpFolder-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.7422,
+          "meanLum": 147.31,
+          "lumStd": 51.26,
+          "edgeEnergy": 106
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6982,
+          "meanLum": 147.95,
+          "lumStd": 56.5,
+          "edgeEnergy": 285
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6927,
+          "meanLum": 148.52,
+          "lumStd": 57.18,
+          "edgeEnergy": 439
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "importUtility": {
+      "genre": "utility",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 0.9204
+      },
+      "physicalMetaphor": "an inbox tray receiving one document sheet from above through a single downward arrow",
+      "semanticMark": "import",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/importUtility-16.png",
+        "32": "icons/importUtility-32.png",
+        "128": "icons/importUtility-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5273,
+          "meanLum": 153.59,
+          "lumStd": 56.07,
+          "edgeEnergy": 85
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.502,
+          "meanLum": 152.59,
+          "lumStd": 62.37,
+          "edgeEnergy": 282
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4943,
+          "meanLum": 152.95,
+          "lumStd": 62.66,
+          "edgeEnergy": 474
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "controlPanel": {
+      "genre": "utility",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 0.9811
+      },
+      "physicalMetaphor": "the era's settings object, expressed as a compact panel of physical controls rather than a modern gear glyph",
+      "semanticMark": "sliders",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/controlPanel-16.png",
+        "32": "icons/controlPanel-32.png",
+        "128": "icons/controlPanel-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6484,
+          "meanLum": 180.07,
+          "lumStd": 37.91,
+          "edgeEnergy": 105
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6016,
+          "meanLum": 179.57,
+          "lumStd": 46.45,
+          "edgeEnergy": 353
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5924,
+          "meanLum": 179.59,
+          "lumStd": 48.1,
+          "edgeEnergy": 535
+        }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "historically-reviewed",
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "chooser": {
+      "genre": "utility",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 0.972
+      },
+      "physicalMetaphor": "two small desktop computers joined by one cable, with one machine visibly selected by a compact pointer tab",
+      "semanticMark": "chooser",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/chooser-16.png",
+        "32": "icons/chooser-32.png",
+        "128": "icons/chooser-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5352,
+          "meanLum": 148.07,
+          "lumStd": 42.55,
+          "edgeEnergy": 108
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5068,
+          "meanLum": 147.47,
+          "lumStd": 49.03,
+          "edgeEnergy": 403
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4943,
+          "meanLum": 146.97,
+          "lumStd": 50.28,
+          "edgeEnergy": 576
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "systemHelp": {
+      "genre": "application",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.8906,
+        "scale": 0.9913
+      },
+      "physicalMetaphor": "a closed reference book with one large question mark on the cover and a single bookmark, no other text",
+      "semanticMark": "help",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/systemHelp-16.png",
+        "32": "icons/systemHelp-32.png",
+        "128": "icons/systemHelp-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5586,
+          "meanLum": 123.15,
+          "lumStd": 42.86,
+          "edgeEnergy": 81
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5352,
+          "meanLum": 123.81,
+          "lumStd": 51.86,
+          "edgeEnergy": 336
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5272,
+          "meanLum": 123.88,
+          "lumStd": 53.05,
+          "edgeEnergy": 498
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "dictionary": {
+      "genre": "application",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.8906,
+        "scale": 0.9913
+      },
+      "physicalMetaphor": "a thick indexed reference book with stepped edge tabs and one bookmark, no letters or words",
+      "semanticMark": "dictionary",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/dictionary-16.png",
+        "32": "icons/dictionary-32.png",
+        "128": "icons/dictionary-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6523,
+          "meanLum": 131.73,
+          "lumStd": 50.37,
+          "edgeEnergy": 126
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6133,
+          "meanLum": 130.77,
+          "lumStd": 57.85,
+          "edgeEnergy": 410
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6083,
+          "meanLum": 130.36,
+          "lumStd": 59.02,
+          "edgeEnergy": 604
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "teachText": {
+      "genre": "application",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.8639,
+        "scale": 1.0736
+      },
+      "physicalMetaphor": "writing paper with a pen resting across it, clearly an editable writing object",
+      "semanticMark": "writing",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/teachText-16.png",
+        "32": "icons/teachText-32.png",
+        "128": "icons/teachText-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6211,
+          "meanLum": 174.96,
+          "lumStd": 70.89,
+          "edgeEnergy": 131
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5869,
+          "meanLum": 176.61,
+          "lumStd": 77.8,
+          "edgeEnergy": 437
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5839,
+          "meanLum": 176.6,
+          "lumStd": 79.29,
+          "edgeEnergy": 686
+        }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "writingDemo": {
+      "genre": "document",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.8906,
+        "scale": 1.1068
+      },
+      "physicalMetaphor": "a document sheet with a single inset triangular play mark and two neutral writing lines, no text",
+      "semanticMark": "play",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/writingDemo-16.png",
+        "32": "icons/writingDemo-32.png",
+        "128": "icons/writingDemo-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5586,
+          "meanLum": 191.92,
+          "lumStd": 43.17,
+          "edgeEnergy": 87
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5293,
+          "meanLum": 195.45,
+          "lumStd": 48.98,
+          "edgeEnergy": 284
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5221,
+          "meanLum": 195.71,
+          "lumStd": 50.34,
+          "edgeEnergy": 415
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "chatFile": {
+      "genre": "document",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.8906,
+        "scale": 1.1068
+      },
+      "physicalMetaphor": "a document sheet carrying two small overlapping speech balloons, clearly a saved conversation file",
+      "semanticMark": "chat",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/chatFile-16.png",
+        "32": "icons/chatFile-32.png",
+        "128": "icons/chatFile-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5469,
+          "meanLum": 192.02,
+          "lumStd": 36.54,
+          "edgeEnergy": 77
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5342,
+          "meanLum": 190.94,
+          "lumStd": 42.64,
+          "edgeEnergy": 250
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5272,
+          "meanLum": 191.16,
+          "lumStd": 44.65,
+          "edgeEnergy": 412
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "chatImport": {
+      "genre": "utility",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 0.9204
+      },
+      "physicalMetaphor": "an inbox tray receiving one speech balloon through a single downward arrow",
+      "semanticMark": "chat",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/chatImport-16.png",
+        "32": "icons/chatImport-32.png",
+        "128": "icons/chatImport-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5313,
+          "meanLum": 166.22,
+          "lumStd": 48.33,
+          "edgeEnergy": 81
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.499,
+          "meanLum": 166.5,
+          "lumStd": 52.47,
+          "edgeEnergy": 307
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4943,
+          "meanLum": 165.33,
+          "lumStd": 53.78,
+          "edgeEnergy": 448
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "systemStatus": {
+      "genre": "utility",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 0.9455
+      },
+      "physicalMetaphor": "a compact desktop monitor showing one simple activity trace beside three physical status lights, no numbers or text",
+      "semanticMark": "status",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/systemStatus-16.png",
+        "32": "icons/systemStatus-32.png",
+        "128": "icons/systemStatus-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.75,
+          "meanLum": 124.3,
+          "lumStd": 49.55,
+          "edgeEnergy": 154
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.7285,
+          "meanLum": 123.51,
+          "lumStd": 57.75,
+          "edgeEnergy": 517
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.716,
+          "meanLum": 124.17,
+          "lumStd": 59.52,
+          "edgeEnergy": 759
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "contextPanel": {
+      "genre": "utility",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 0.9905
+      },
+      "physicalMetaphor": "a small index-card box with three raised source cards and distinct coloured tabs, clearly curated context rather than a folder",
+      "semanticMark": "context",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/contextPanel-16.png",
+        "32": "icons/contextPanel-32.png",
+        "128": "icons/contextPanel-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5703,
+          "meanLum": 130.06,
+          "lumStd": 47.36,
+          "edgeEnergy": 79
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5244,
+          "meanLum": 127.99,
+          "lumStd": 52.2,
+          "edgeEnergy": 242
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5204,
+          "meanLum": 128.28,
+          "lumStd": 52.49,
+          "edgeEnergy": 356
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "rebuildArticle": {
+      "genre": "utility",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 0.9905
+      },
+      "physicalMetaphor": "a compact tabletop printing press feeding one manuscript sheet through its rollers, clearly reconstructing a document",
+      "semanticMark": "rebuild",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/rebuildArticle-16.png",
+        "32": "icons/rebuildArticle-32.png",
+        "128": "icons/rebuildArticle-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.4961,
+          "meanLum": 119.6,
+          "lumStd": 62.21,
+          "edgeEnergy": 135
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.457,
+          "meanLum": 120.43,
+          "lumStd": 75.24,
+          "edgeEnergy": 437
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4507,
+          "meanLum": 120.28,
+          "lumStd": 77.3,
+          "edgeEnergy": 652
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "bureaucracyMeme": {
+      "genre": "application",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 0.972
+      },
+      "physicalMetaphor": "a red rubber office stamp pressed over a small stack of blank administrative forms, no seals or words",
+      "semanticMark": "forms",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/bureaucracyMeme-16.png",
+        "32": "icons/bureaucracyMeme-32.png",
+        "128": "icons/bureaucracyMeme-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 7,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.4844,
+          "meanLum": 138.51,
+          "lumStd": 77.36,
+          "edgeEnergy": 101
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.46,
+          "meanLum": 139.39,
+          "lumStd": 81.91,
+          "edgeEnergy": 351
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4507,
+          "meanLum": 139.08,
+          "lumStd": 83.3,
+          "edgeEnergy": 501
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "endfieldTerminal": {
+      "genre": "utility",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 0.9541
+      },
+      "physicalMetaphor": "a compact dark terminal monitor with one green prompt block and two short luminous command lines, no legible characters",
+      "semanticMark": "terminal",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/endfieldTerminal-16.png",
+        "32": "icons/endfieldTerminal-32.png",
+        "128": "icons/endfieldTerminal-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.7266,
+          "meanLum": 81.62,
+          "lumStd": 45.76,
+          "edgeEnergy": 115
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6973,
+          "meanLum": 80.93,
+          "lumStd": 52.54,
+          "edgeEnergy": 380
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6893,
+          "meanLum": 80.42,
+          "lumStd": 54.22,
+          "edgeEnergy": 542
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "documents": {
+      "genre": "file",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.8906,
+        "scale": 1.0364
+      },
+      "physicalMetaphor": "a documents folder with three visible paper sheets rising behind its front panel",
+      "semanticMark": "documents",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/documents-16.png",
+        "32": "icons/documents-32.png",
+        "128": "icons/documents-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6094,
+          "meanLum": 177.43,
+          "lumStd": 34.26,
+          "edgeEnergy": 44
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5713,
+          "meanLum": 177.24,
+          "lumStd": 41.04,
+          "edgeEnergy": 183
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5573,
+          "meanLum": 177.16,
+          "lumStd": 41.27,
+          "edgeEnergy": 271
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "alias": {
+      "genre": "document",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.8906,
+        "scale": 1.1068
+      },
+      "physicalMetaphor": "a white document sheet carrying one small curled shortcut arrow at its lower corner, clearly a reference rather than the original",
+      "semanticMark": "alias",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/alias-16.png",
+        "32": "icons/alias-32.png",
+        "128": "icons/alias-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6055,
+          "meanLum": 222.11,
+          "lumStd": 32.52,
+          "edgeEnergy": 50
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5732,
+          "meanLum": 223.73,
+          "lumStd": 35.2,
+          "edgeEnergy": 167
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5624,
+          "meanLum": 224.67,
+          "lumStd": 34.96,
+          "edgeEnergy": 253
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "systemFile": {
+      "genre": "document",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.8906,
+        "scale": 1.1068
+      },
+      "physicalMetaphor": "a white system document sheet with one small inset mechanical wheel badge and no text",
+      "semanticMark": "gear",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/systemFile-16.png",
+        "32": "icons/systemFile-32.png",
+        "128": "icons/systemFile-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5391,
+          "meanLum": 209.73,
+          "lumStd": 46.35,
+          "edgeEnergy": 65
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5166,
+          "meanLum": 210.15,
+          "lumStd": 52.39,
+          "edgeEnergy": 221
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5085,
+          "meanLum": 210.61,
+          "lumStd": 53.42,
+          "edgeEnergy": 316
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "multiFinderApp": {
+      "genre": "application",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 0.9204
+      },
+      "physicalMetaphor": "two overlapping versions of the target era's current Finder identity, one with the light and dark colour fields exchanged, to communicate concurrent Finder environments without looking like a duplicate stamp or two computer chassis",
+      "semanticMark": "finder",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/multiFinderApp-16.png",
+        "32": "icons/multiFinderApp-32.png",
+        "128": "icons/multiFinderApp-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "historically-reviewed",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6172,
+          "meanLum": 172.41,
+          "lumStd": 35.1,
+          "edgeEnergy": 101
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5977,
+          "meanLum": 173.77,
+          "lumStd": 41.14,
+          "edgeEnergy": 304
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5867,
+          "meanLum": 174.62,
+          "lumStd": 42.73,
+          "edgeEnergy": 443
+        }
+      },
+      "metaphorKey": "current-finder-identity-plus-multiplicity",
+      "blindMixStatus": "not-run",
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "daHandler": {
+      "genre": "utility",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8287,
+        "scale": 0.9914
+      },
+      "physicalMetaphor": "a generic desktop application object for the era, distinct from a document, folder, or settings panel",
+      "semanticMark": "deskAccessory",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/daHandler-16.png",
+        "32": "icons/daHandler-32.png",
+        "128": "icons/daHandler-128.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6289,
+          "meanLum": 89.6,
+          "lumStd": 48.84,
+          "edgeEnergy": 82
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6152,
+          "meanLum": 89.12,
+          "lumStd": 53.52,
+          "edgeEnergy": 236
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6202,
+          "meanLum": 88.66,
+          "lumStd": 54.42,
+          "edgeEnergy": 339
+        }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "writingBell": {
+      "genre": "accessory",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 1.0348
+      },
+      "physicalMetaphor": "a compact brass desk bell with one small pen-nib relief on its base, clearly a writing accessory",
+      "semanticMark": "bell",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/writingBell-16.png",
+        "32": "icons/writingBell-32.png",
+        "128": "icons/writingBell-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5977,
+          "meanLum": 125.27,
+          "lumStd": 51.51,
+          "edgeEnergy": 143
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5684,
+          "meanLum": 124.93,
+          "lumStd": 59.55,
+          "edgeEnergy": 494
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5595,
+          "meanLum": 123.96,
+          "lumStd": 60.99,
+          "edgeEnergy": 693
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "trashFull": {
+      "genre": "hardware",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 1.0558
+      },
+      "physicalMetaphor": "a waste basket filled with several crumpled paper sheets rising above the rim, clearly the full state of the empty basket",
+      "semanticMark": "full",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/trashFull-16.png",
+        "32": "icons/trashFull-32.png",
+        "128": "icons/trashFull-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5156,
+          "meanLum": 169.29,
+          "lumStd": 36.55,
+          "edgeEnergy": 84
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.4775,
+          "meanLum": 169.52,
+          "lumStd": 41.54,
+          "edgeEnergy": 298
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4671,
+          "meanLum": 169.51,
+          "lumStd": 42.58,
+          "edgeEnergy": 437
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "control": {
+      "genre": "utility",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 0.9811
+      },
+      "physicalMetaphor": "a compact physical control board with two round knobs, one toggle, and one small indicator light",
+      "semanticMark": "knobs",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/control-16.png",
+        "32": "icons/control-32.png",
+        "128": "icons/control-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5586,
+          "meanLum": 120.9,
+          "lumStd": 43.25,
+          "edgeEnergy": 139
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5234,
+          "meanLum": 121.47,
+          "lumStd": 51.3,
+          "edgeEnergy": 407
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5091,
+          "meanLum": 122.26,
+          "lumStd": 51.98,
+          "edgeEnergy": 599
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "localModel": {
+      "genre": "utility",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8125,
+        "scale": 1.1492
+      },
+      "physicalMetaphor": "one processor chip mounted on a compact circuit board with short visible traces, clearly local compute rather than a cloud service",
+      "semanticMark": "none",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/localModel-16.png",
+        "32": "icons/localModel-32.png",
+        "128": "icons/localModel-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.4102,
+          "meanLum": 115.46,
+          "lumStd": 38.15,
+          "edgeEnergy": 84
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.3887,
+          "meanLum": 115.9,
+          "lumStd": 47.87,
+          "edgeEnergy": 332
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.3804,
+          "meanLum": 116.17,
+          "lumStd": 49.98,
+          "edgeEnergy": 544
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "controlStrip": {
+      "genre": "utility",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.8906,
+        "scale": 1.0044
+      },
+      "physicalMetaphor": "a narrow horizontal strip containing four distinct physical control modules, including a slider, a status light, and two compact toggles",
+      "semanticMark": "none",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/controlStrip-16.png",
+        "32": "icons/controlStrip-32.png",
+        "128": "icons/controlStrip-128.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.3008,
+          "meanLum": 135.88,
+          "lumStd": 39.87,
+          "edgeEnergy": 60
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.2656,
+          "meanLum": 137.36,
+          "lumStd": 48.37,
+          "edgeEnergy": 201
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.2551,
+          "meanLum": 138.87,
+          "lumStd": 49.3,
+          "edgeEnergy": 298
+        }
+      },
+      "sourceNote": "Owner-accepted aqua imagegen redraw, full batch, 2026-09-01."
+    },
+    "clioPaint": {
+      "genre": "application",
+      "semanticIdentity": "Drawing palette and brush",
+      "physicalMetaphor": "Drawing palette and brush",
+      "provenanceClass": "C",
+      "sourceKind": "original-generated-era-illustration",
+      "authoringMethod": "built-in image generation for large tiers and appearances; independently authored compact artwork",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "eraGrammarReview": "original-period-adaptation-reviewed",
+      "reviewStatus": "technically-clean",
+      "runtimeAsset": true,
+      "nativeReplica": false,
+      "referenceValidated": false,
+      "sourceNote": "Original AI System 6 application. Period grammar is adapted; no historical native counterpart is claimed.",
+      "sourceReferences": [
+        "apps/desktop/assets/themes/era-icon-reference.json"
+      ],
+      "sizes": {
+        "16": "icons/clioPaint-16.png",
+        "32": "icons/clioPaint-32.png",
+        "64": "icons/clioPaint-64.png",
+        "128": "icons/clioPaint-128.png"
+      },
+      "runtimeSha256": {
+        "16-default": "7017f1dec7ca84a7e6ce690447ef82295feb6f89b821c948be5664a452c2576a",
+        "32-default": "afaf828b4d45d4ea888e6bfe2e05ad2d2f4157a134d1a902b5f2a3d6415b5de2",
+        "64-default": "abbdfff1bef54ed3b191a3cb67269966c6ae7db3652345d51f4aac2fd437b942",
+        "128-default": "7ef6d1f18a19ea21037cd9073f8026574a146f982fb6e31a1eda2d49fdc86fc8"
+      },
+      "sizePolicy": "16 and 32 px have independent compact compositions with reduced detail; large default tiers use material masters where applicable.",
+      "label": "clioPaint",
+      "metrics": {
+        "16": {
+          "pixels": 110,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 13
+          },
+          "sha256": "7017f1dec7ca84a7e6ce690447ef82295feb6f89b821c948be5664a452c2576a",
+          "ink": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 13,
+            "width": 14,
+            "height": 13
+          },
+          "gridShape": "square"
+        },
+        "32": {
+          "pixels": 411,
+          "bbox": {
+            "minX": 2,
+            "minY": 2,
+            "maxX": 28,
+            "maxY": 27
+          },
+          "sha256": "afaf828b4d45d4ea888e6bfe2e05ad2d2f4157a134d1a902b5f2a3d6415b5de2",
+          "ink": {
+            "minX": 2,
+            "minY": 2,
+            "maxX": 28,
+            "maxY": 27,
+            "width": 27,
+            "height": 26
+          },
+          "gridShape": "square"
+        },
+        "64": {
+          "pixels": 1785,
+          "bbox": {
+            "minX": 6,
+            "minY": 8,
+            "maxX": 57,
+            "maxY": 55
+          },
+          "sha256": "abbdfff1bef54ed3b191a3cb67269966c6ae7db3652345d51f4aac2fd437b942",
+          "ink": {
+            "minX": 6,
+            "minY": 8,
+            "maxX": 57,
+            "maxY": 55,
+            "width": 52,
+            "height": 48
+          },
+          "gridShape": "square"
+        },
+        "128": {
+          "pixels": 7139,
+          "bbox": {
+            "minX": 11,
+            "minY": 16,
+            "maxX": 115,
+            "maxY": 113
+          },
+          "sha256": "7ef6d1f18a19ea21037cd9073f8026574a146f982fb6e31a1eda2d49fdc86fc8",
+          "ink": {
+            "minX": 11,
+            "minY": 16,
+            "maxX": 115,
+            "maxY": 113,
+            "width": 105,
+            "height": 98
+          },
+          "gridShape": "square"
+        }
+      },
+      "grid": {
+        "canvas": 128,
+        "shape": "square",
+        "fitted": 0.8203125,
+        "method": "measured-output-no-resampling"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.4922,
+          "meanLum": 157.37,
+          "lumStd": 49.26,
+          "edgeEnergy": 112
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.457,
+          "meanLum": 156.88,
+          "lumStd": 55.29,
+          "edgeEnergy": 349
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4558,
+          "meanLum": 156.9,
+          "lumStd": 56.03,
+          "edgeEnergy": 515
+        }
+      },
+      "master": "internal/evidence/drafts/added-app-era-icons/masters/aqua/clioPaint.png",
+      "masterSha256": "93eadd1cc7c741a8d3425abc2e320270c243c1efc8a32031dbd4e4a0a93340c1"
+    },
+    "clioProject": {
+      "genre": "application",
+      "semanticIdentity": "Task cards and dependency links",
+      "physicalMetaphor": "Task cards and dependency links",
+      "provenanceClass": "C",
+      "sourceKind": "original-generated-era-illustration",
+      "authoringMethod": "built-in image generation for large tiers and appearances; independently authored compact artwork",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "eraGrammarReview": "original-period-adaptation-reviewed",
+      "reviewStatus": "technically-clean",
+      "runtimeAsset": true,
+      "nativeReplica": false,
+      "referenceValidated": false,
+      "sourceNote": "Original AI System 6 application. Period grammar is adapted; no historical native counterpart is claimed.",
+      "sourceReferences": [
+        "apps/desktop/assets/themes/era-icon-reference.json"
+      ],
+      "sizes": {
+        "16": "icons/clioProject-16.png",
+        "32": "icons/clioProject-32.png",
+        "64": "icons/clioProject-64.png",
+        "128": "icons/clioProject-128.png"
+      },
+      "runtimeSha256": {
+        "16-default": "4daa0fcfd8fca65839552014b1e392ed7181d8e59ad7cf5c8604f9766dc0fc53",
+        "32-default": "8047caa4217f38784d5c9241b02e2079781fdc6505d6ee847624badfad23d8b9",
+        "64-default": "18e67b9cf80053bd1ee5aa4057d514094e3580d4feaab9453da562ece9bad385",
+        "128-default": "1df9e6a21cd99706de499bc22a02ff1e045b488d4d6aac3414464d3744a85640"
+      },
+      "sizePolicy": "16 and 32 px have independent compact compositions with reduced detail; large default tiers use material masters where applicable.",
+      "label": "clioProject",
+      "metrics": {
+        "16": {
+          "pixels": 100,
+          "bbox": {
+            "minX": 0,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14
+          },
+          "sha256": "4daa0fcfd8fca65839552014b1e392ed7181d8e59ad7cf5c8604f9766dc0fc53",
+          "ink": {
+            "minX": 0,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 14,
+            "width": 15,
+            "height": 14
+          },
+          "gridShape": "square"
+        },
+        "32": {
+          "pixels": 378,
+          "bbox": {
+            "minX": 0,
+            "minY": 2,
+            "maxX": 30,
+            "maxY": 29
+          },
+          "sha256": "8047caa4217f38784d5c9241b02e2079781fdc6505d6ee847624badfad23d8b9",
+          "ink": {
+            "minX": 0,
+            "minY": 2,
+            "maxX": 30,
+            "maxY": 29,
+            "width": 31,
+            "height": 28
+          },
+          "gridShape": "square"
+        },
+        "64": {
+          "pixels": 1340,
+          "bbox": {
+            "minX": 6,
+            "minY": 8,
+            "maxX": 58,
+            "maxY": 54
+          },
+          "sha256": "18e67b9cf80053bd1ee5aa4057d514094e3580d4feaab9453da562ece9bad385",
+          "ink": {
+            "minX": 6,
+            "minY": 8,
+            "maxX": 58,
+            "maxY": 54,
+            "width": 53,
+            "height": 47
+          },
+          "gridShape": "square"
+        },
+        "128": {
+          "pixels": 5094,
+          "bbox": {
+            "minX": 11,
+            "minY": 17,
+            "maxX": 115,
+            "maxY": 110
+          },
+          "sha256": "1df9e6a21cd99706de499bc22a02ff1e045b488d4d6aac3414464d3744a85640",
+          "ink": {
+            "minX": 11,
+            "minY": 17,
+            "maxX": 115,
+            "maxY": 110,
+            "width": 105,
+            "height": 94
+          },
+          "gridShape": "square"
+        }
+      },
+      "grid": {
+        "canvas": 128,
+        "shape": "square",
+        "fitted": 0.8203125,
+        "method": "measured-output-no-resampling"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.4102,
+          "meanLum": 181.78,
+          "lumStd": 47.92,
+          "edgeEnergy": 57
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.3486,
+          "meanLum": 184.14,
+          "lumStd": 51,
+          "edgeEnergy": 187
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.3441,
+          "meanLum": 183.73,
+          "lumStd": 53.03,
+          "edgeEnergy": 261
+        }
+      },
+      "master": "internal/evidence/drafts/added-app-era-icons/masters/aqua/clioProject.png",
+      "masterSha256": "2e6067f87246cb52cc57ff9bd673f2f3ae437124dec129eec14d882f428aeebd"
+    },
+    "oneMoreTune": {
+      "genre": "application",
+      "semanticIdentity": "Music knowledge study cards and note",
+      "physicalMetaphor": "Music knowledge study cards and note",
+      "provenanceClass": "C",
+      "sourceKind": "original-generated-era-illustration",
+      "authoringMethod": "built-in image generation for large tiers and appearances; independently authored compact artwork",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "eraGrammarReview": "original-period-adaptation-reviewed",
+      "reviewStatus": "technically-clean",
+      "runtimeAsset": true,
+      "nativeReplica": false,
+      "referenceValidated": false,
+      "sourceNote": "Original AI System 6 application. Period grammar is adapted; no historical native counterpart is claimed.",
+      "sourceReferences": [
+        "apps/desktop/assets/themes/era-icon-reference.json"
+      ],
+      "sizes": {
+        "16": "icons/oneMoreTune-16.png",
+        "32": "icons/oneMoreTune-32.png",
+        "64": "icons/oneMoreTune-64.png",
+        "128": "icons/oneMoreTune-128.png"
+      },
+      "runtimeSha256": {
+        "16-default": "2fbca464f3206c971120db894a6d60e1e345b49f1be36dcc830329538cd50d6d",
+        "32-default": "970ee217f132041d16aa750cd3cfec2d15b1d84c7ac9a5997029e6e11941070c",
+        "64-default": "2b2532a7b746512bd313288d9b9f2a36d4572b11ba7bc769e571d33416b29ee6",
+        "128-default": "01e19bbafbd77ef5707003f749ca5ab49a0ebb937dc79ebaecd46573729ca816"
+      },
+      "sizePolicy": "16 and 32 px have independent compact compositions with reduced detail; large default tiers use material masters where applicable.",
+      "label": "oneMoreTune",
+      "metrics": {
+        "16": {
+          "pixels": 156,
+          "bbox": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 13,
+            "maxY": 14
+          },
+          "sha256": "2fbca464f3206c971120db894a6d60e1e345b49f1be36dcc830329538cd50d6d",
+          "ink": {
+            "minX": 1,
+            "minY": 1,
+            "maxX": 13,
+            "maxY": 14,
+            "width": 13,
+            "height": 14
+          },
+          "gridShape": "square"
+        },
+        "32": {
+          "pixels": 591,
+          "bbox": {
+            "minX": 2,
+            "minY": 3,
+            "maxX": 28,
+            "maxY": 29
+          },
+          "sha256": "970ee217f132041d16aa750cd3cfec2d15b1d84c7ac9a5997029e6e11941070c",
+          "ink": {
+            "minX": 2,
+            "minY": 3,
+            "maxX": 28,
+            "maxY": 29,
+            "width": 27,
+            "height": 27
+          },
+          "gridShape": "square"
+        },
+        "64": {
+          "pixels": 2100,
+          "bbox": {
+            "minX": 6,
+            "minY": 5,
+            "maxX": 57,
+            "maxY": 57
+          },
+          "sha256": "2b2532a7b746512bd313288d9b9f2a36d4572b11ba7bc769e571d33416b29ee6",
+          "ink": {
+            "minX": 6,
+            "minY": 5,
+            "maxX": 57,
+            "maxY": 57,
+            "width": 52,
+            "height": 53
+          },
+          "gridShape": "square"
+        },
+        "128": {
+          "pixels": 8245,
+          "bbox": {
+            "minX": 13,
+            "minY": 12,
+            "maxX": 114,
+            "maxY": 116
+          },
+          "sha256": "01e19bbafbd77ef5707003f749ca5ab49a0ebb937dc79ebaecd46573729ca816",
+          "ink": {
+            "minX": 13,
+            "minY": 12,
+            "maxX": 114,
+            "maxY": 116,
+            "width": 102,
+            "height": 105
+          },
+          "gridShape": "square"
+        }
+      },
+      "grid": {
+        "canvas": 128,
+        "shape": "square",
+        "fitted": 0.8203125,
+        "method": "measured-output-no-resampling"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5625,
+          "meanLum": 189.09,
+          "lumStd": 59.47,
+          "edgeEnergy": 105
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5273,
+          "meanLum": 190,
+          "lumStd": 65,
+          "edgeEnergy": 286
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5204,
+          "meanLum": 190.39,
+          "lumStd": 65.94,
+          "edgeEnergy": 409
+        }
+      },
+      "master": "internal/evidence/drafts/added-app-era-icons/masters/aqua/oneMoreTune.png",
+      "masterSha256": "061af614bfe97e45b677887cbe64a00a370cb4548c6daeb5c1cefab51ef5c3a1"
+    }
+  },
+  "reviewedCore": [
+    "finderApp",
+    "folder",
+    "hardDisk",
+    "trash",
+    "document",
+    "daHandler",
+    "controlPanel",
+    "searcher",
+    "teachText",
+    "assistant",
+    "scrapbook",
+    "projectDisk"
+  ],
+  "coreBuilder": "tooling/build-aqua-core-icons.mjs",
+  "schemaVersion": 2,
+  "generatedOverlayBuilder": "tooling/build-accepted-generated-era-icons.mjs",
+  "runtimeAsset": true,
+  "completeFamilyMeaning": "All 56 runtime ids resolve to technically accepted artwork. Historical review is a separate per-icon state.",
+  "generatedAcceptanceMeaning": "Authoring acceptance confirms source and technical quality; it never implies historical validation.",
+  "generatedAcceptanceLedger": "tooling/icon-generation/accepted-generated-icons.json",
+  "imageGenerationSource": "assets/themes/aqua/icons/imagegen-source",
+  "reviewedGenerated": [
+    "startupDisk",
+    "applications",
+    "fileFloppy",
+    "projectDisc",
+    "reviewDesk",
+    "docMap",
+    "quickDraft",
+    "writingStudio",
+    "manuscript",
+    "reader",
+    "cloudModel",
+    "cloudModelOff",
+    "localModel",
+    "systemStatus",
+    "questionSheet",
+    "outline",
+    "sectionDrafts",
+    "timeMachine",
+    "assistant",
+    "clioStage",
+    "clioChart",
+    "liquidCover",
+    "cmfStudio",
+    "finderApp",
+    "multiFinderApp",
+    "soundscape",
+    "systemFolder",
+    "helpFolder",
+    "importUtility",
+    "chooser",
+    "systemHelp",
+    "dictionary",
+    "writingDemo",
+    "chatFile",
+    "chatImport",
+    "contextPanel",
+    "rebuildArticle",
+    "bureaucracyMeme",
+    "endfieldTerminal",
+    "documents",
+    "alias",
+    "systemFile",
+    "writingBell",
+    "trashFull",
+    "control",
+    "controlStrip",
+    "hardDisk",
+    "folder",
+    "document",
+    "trash",
+    "projectDisk",
+    "searcher",
+    "scrapbook",
+    "controlPanel",
+    "teachText",
+    "daHandler"
+  ],
+  "supplementalBuilder": "tooling/build-added-app-icons.mjs",
+  "supplementalIconIds": [
+    "clioPaint",
+    "clioProject",
+    "oneMoreTune"
+  ]
+}

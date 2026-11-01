@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 32 32" fill="none" stroke="#000000" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" shape-rendering="geometricPrecision">
+  <style>
+
+    .classic-ink{fill:#000000;stroke:#000000;stroke-width:.25}
+    .classic-paper{fill:#ffffff;stroke:none}
+    .sys-icon-detail{display:none}
+  </style>
+  <g transform="translate(0 0)">
+
+    <rect x="4" y="12" width="6" height="13" rx="1.5" />
+    <rect x="11" y="8" width="6" height="17" rx="1.5" />
+    <rect x="18" y="14" width="6" height="11" rx="1.5" />
+    <rect x="25" y="10" width="4" height="15" rx="1.5" />
+    <path d="M4 26h25" />
+    <rect class="classic-ink" x="6" y="15" width="2" height="2" />
+    <rect class="classic-ink" x="6" y="20" width="2" height="2" />
+    <rect class="classic-ink" x="13" y="11" width="2" height="2" />
+    <rect class="classic-ink" x="13" y="16" width="2" height="2" />
+    <rect class="classic-ink" x="13" y="21" width="2" height="2" />
+    <rect class="classic-ink" x="20" y="17" width="2" height="2" />
+    <rect class="classic-ink" x="26" y="13" width="2" height="2" />
+  </g>
+</svg>

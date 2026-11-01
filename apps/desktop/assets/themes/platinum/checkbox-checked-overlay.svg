@@ -1,0 +1,8 @@
+<!-- AI System 6 measured reconstruction; drawn from the native-pixel ledger in assets/themes/platinum/README.md, not extracted artwork. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12" shape-rendering="crispEdges">
+  <path fill="#ddd" d="M10 1h1v1h-1zM1 10h1v1H1z"/>
+  <path fill="#000" d="M10 2h1v1h-1zM9 3h2v1H9zM8 4h2v1H8zM2 5h2v1H2zM7 5h2v1H7zM3 6h2v1H3zM6 6h2v1H6zM4 7h3v1H4zM5 8h1v1H5z"/>
+  <path fill="#555" d="M10 4h1v1h-1z"/>
+  <path fill="#777" d="M9 5h2v1H9zM8 6h1v1H8zM7 7h1v1H7zM6 8h1v1H6zM5 9h1v1H5z"/>
+  <path fill="#aaa" d="M9 6h1v1H9zM3 7h1v1H3zM8 7h1v1H8zM4 8h1v1H4zM7 8h1v1H7zM6 9h1v1H6z"/>
+</svg>

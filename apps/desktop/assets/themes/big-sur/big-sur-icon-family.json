@@ -1,0 +1,2361 @@
+{
+  "schemaVersion": 1,
+  "target": "macOS 11 Big Sur (2020)",
+  "generatedBy": "tooling/build-big-sur-icons.mjs",
+  "completeFamily": true,
+  "sharedGeometryAcrossEras": false,
+  "runtimeAsset": true,
+  "runtimeSize": 32,
+  "runtimeSizesByContext": {
+    "compactMenuList": 16,
+    "ordinary": 32,
+    "desktopLargeRetina": 128
+  },
+  "compatibilityManifest": "big-sur-icon-manifest.json",
+  "runtimeDispatch": "apps/desktop/app/core/system-icons.js",
+  "sourceBoundary": "Native screenshots and Apple artwork are evidence-only; generated masters and optical constructions are original project assets.",
+  "sizePolicy": "16/32 independently authored optical artwork, 64/128 derivatives",
+  "sources": {
+    "appHig": "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+    "documentHig": "https://web.archive.org/web/20201223162058/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/document-icons/",
+    "nativeCapture": "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/",
+    "appleRelease": "https://www.apple.com/newsroom/2020/11/macos-big-sur-is-here/"
+  },
+  "icons": {
+    "startupDisk": {
+      "genre": "hardware",
+      "semanticIdentity": "Startup Disk",
+      "physicalMetaphor": "one upright silver boot volume with shallow top perspective, restrained small dark system circle on its metal face and tiny green lower status lamp; unmistakable storage hardware",
+      "provenanceClass": "B",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Startup storage hardware genre",
+      "identityAnchors": [
+        "drive",
+        "startup"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original upright startup enclosure with drive mark. Product adaptation, not a native Macintosh HD replica.",
+      "sourceReferences": [
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/startupDisk-16.png",
+        "32": "icons/startupDisk-32.png",
+        "64": "icons/startupDisk-64.png",
+        "128": "icons/startupDisk-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "1d10031d6da97b6e0597bde3dd210ed918c5a4b90fb611e565ba6ca42aae7e61",
+      "runtimeSha256": {
+        "16": "1832d620a46cd0a988ba3d302630bbeda23f5502a9947606c9477d5f2d72e05a",
+        "32": "9b98cf42b7a469897b24c8c6804624afb2c814894cf2c51e85f86dfb809897ae",
+        "64": "e5618fda937e3cd59615ac357472c5f423540fe21b9bb67c825d1b372857f771",
+        "128": "65aac1eb12a3d59827351c1236846dbeb77dce3637286e96f0087a1dee1b8328"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "hardDisk": {
+      "genre": "hardware",
+      "semanticIdentity": "Mounted local volume",
+      "physicalMetaphor": "one upright silver external storage volume with a shallow top perspective, pale brushed aluminum face, narrow lower front seam and tiny green status lamp, no brand, no app tile",
+      "provenanceClass": "B",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "macOS external/internal disk hardware genre",
+      "identityAnchors": [
+        "drive",
+        "disk"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original silver drive adaptation; preserves hardware silhouette, not an app plate. Exact native proportions unverified.",
+      "sourceReferences": [
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/hardDisk-16.png",
+        "32": "icons/hardDisk-32.png",
+        "64": "icons/hardDisk-64.png",
+        "128": "icons/hardDisk-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "76f84090cb1030ebccd12b1c66c1bf2eab56ac33be1f82bfa661252f5945cb08",
+      "runtimeSha256": {
+        "16": "611118286f32fb81f61b73005d89a5cb85fcc2a4ce2db17747c51b53389f7562",
+        "32": "97199962077b7aa05ff7b128f89b96fc0f88cc0a3aa17fc5e7a09561b1075162",
+        "64": "a9a6b8eeccdc03384beec7bd3de704b2d213d7ea4bd0dfcd53b46531bb88c207",
+        "128": "b886c84dcc82e60883e73b18d17b51796b820d6dcc41c214cf1335f629b6c03b"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "folder": {
+      "genre": "file",
+      "semanticIdentity": "System folder",
+      "physicalMetaphor": "one native Big Sur cyan-blue folder, broad landscape silhouette, raised upper-left tab, rear sheet darker cyan and front flap brighter blue, faint horizontal fold near bottom, very subtle fibrous surface, no app tile behind",
+      "provenanceClass": "A",
+      "nativePrototype": "Finder Home blue folder in the macOS 11 capture",
+      "nearestPeriodAnalog": "Finder Home blue folder in the macOS 11 capture",
+      "identityAnchors": [
+        "folder",
+        "none"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "historically-reviewed",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Tabbed blue fiber-paper silhouette. Removed generated outer glow; no application tile.",
+      "sourceReferences": [
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/folder-16.png",
+        "32": "icons/folder-32.png",
+        "64": "icons/folder-64.png",
+        "128": "icons/folder-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "620e767abe01a4b79004d135e3bc16ea4bb44b8de8d2eae902734869f4dc3dcd",
+      "runtimeSha256": {
+        "16": "b36b78a9dee1fbf9e50bc70f4f17b49cbaa1738cea7a010f8517d58db66db50f",
+        "32": "df68f68136575f59cb664af12f252c9d3fa6109459e717b5a81dcdf025d29775",
+        "64": "ca3cd0ffdf9bbec004a72d7f5fcc86f8a294d59965f1c08473c5c498e3780ab7",
+        "128": "c1be0552df0a3a70c31aca1e36c68c30268b6f0dafa25f3e96432fc33367f136"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "document": {
+      "genre": "document",
+      "semanticIdentity": "Generic document",
+      "physicalMetaphor": "one upright white document sheet with a folded upper-right corner and a few neutral gray text lines, subtly shaded paper and soft narrow shadow, no app tile",
+      "provenanceClass": "A",
+      "nativePrototype": "2020 Apple document HIG generic document",
+      "nearestPeriodAnalog": "2020 Apple document HIG generic document",
+      "identityAnchors": [
+        "paper",
+        "none"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "historically-reviewed",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "White upright sheet with upper-right fold; lines independently reduced at 16/32.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223162058/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/document-icons/"
+      ],
+      "sizes": {
+        "16": "icons/document-16.png",
+        "32": "icons/document-32.png",
+        "64": "icons/document-64.png",
+        "128": "icons/document-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "830f054d7cc67f5216ffc97a6f4b222fa6bae1ad5e257bc95867fa08dabd0f77",
+      "runtimeSha256": {
+        "16": "df0faad9d94886ae7252c0772bc30ff5117608dff15c5871f9bc965388ac1d7d",
+        "32": "2410d64f25285cdb17031893f9aab7929ac93ae24f3e53d8d4b2c274e3229900",
+        "64": "c254837339a71568fe0b144a7f37102dc8949fb88fc0dbfe2735aeefe646fb59",
+        "128": "18793c3718706eacdf6d75773f85075a91016d868ab03a74428ff89b6ceaffe0"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "applications": {
+      "genre": "file",
+      "semanticIdentity": "Applications folder",
+      "physicalMetaphor": "one Big Sur cyan-blue Applications FOLDER with a restrained embossed group of three small application tiles on the front flap, tab upper-left; it remains a landscape folder not an app launcher icon",
+      "provenanceClass": "B",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "2020 folder genre",
+      "identityAnchors": [
+        "folder",
+        "applications"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/applications-16.png",
+        "32": "icons/applications-32.png",
+        "64": "icons/applications-64.png",
+        "128": "icons/applications-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "da6fcacdce857a12aa200fa15c09316c2ee73b47af10cd2ad3d150554f232b16",
+      "runtimeSha256": {
+        "16": "b1e9615f3d8ce8044f5c941ab36344aeaac4cf89697e85a4c7261307f8c0b428",
+        "32": "0f83b0d72c59350840968f9b728c11fffaca4082d8ca70eb4d06b01f361df1db",
+        "64": "9d607eb67de3de38b3bfe5d989345aecba7f546bb4ce3ef3d8735a07b1449ead",
+        "128": "202f36d4e5d47f3271b6a69228b2d6bb7624fcd8ab8903a91d41d688189099ac"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "trash": {
+      "genre": "hardware",
+      "semanticIdentity": "Waste basket",
+      "physicalMetaphor": "one empty Big Sur translucent white frosted-plastic waste bin, gently tapered cylindrical body, elliptical open top with visible pale inner cavity, soft plastic shading, no wire mesh and no metal lattice, no app tile",
+      "provenanceClass": "B",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Trash silhouette visible in native Dock capture",
+      "identityAnchors": [
+        "trash",
+        "empty"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original pale open bin preserving hardware silhouette. Native mesh and exact material were not reconstructed.",
+      "sourceReferences": [
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/trash-16.png",
+        "32": "icons/trash-32.png",
+        "64": "icons/trash-64.png",
+        "128": "icons/trash-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "f205847e34d16793cae387048cb2c538130915822a177b99b92a34cc9b84343b",
+      "runtimeSha256": {
+        "16": "8223c09c44619823353845659b1a5324bf9c0f6ba7031ed1bfb8822b03154010",
+        "32": "121c91eb521f9b41501629d825f52f2ef0a4c01057eb79fffdcfdc94742c706a",
+        "64": "e84a394d9807e5c398747aa0e4e2b444f6e1d3b873464239e3a3c11731bce55c",
+        "128": "0a67c22e8c4c590e74d3bbce2cad4876a415045cb06121175386e1eb90fec14e"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "finderApp": {
+      "genre": "application",
+      "semanticIdentity": "Finder / system identity",
+      "physicalMetaphor": "the documented Big Sur Finder split face, blue left and pale right, thin continuous smile and short narrow navy eyes",
+      "provenanceClass": "A",
+      "nativePrototype": "Finder in the 2020 native Dock capture",
+      "nearestPeriodAnalog": "Finder in the 2020 native Dock capture",
+      "identityAnchors": [
+        "finder",
+        "finder"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "historically-reviewed",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Blue/ivory face, rounded-square body, reduced expression strokes; original reconstruction, no pixel-equivalence claim.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/finderApp-16.png",
+        "32": "icons/finderApp-32.png",
+        "64": "icons/finderApp-64.png",
+        "128": "icons/finderApp-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "aaa8f4838eccfebcdb6372103f65f24e658b35a02a3c4e3a77d993b91e72537c",
+      "runtimeSha256": {
+        "16": "a16c9a5eae393b2f4121a12baef1b526c866cae646e49ef78adb28562c75e078",
+        "32": "2975fd86c37034dba38af9f3acf6fb3d1c68d07bb8fa0acbd8083f2895101299",
+        "64": "451bd624433f5e4d1ffa461b2b8e24bdb9995454c1bcc38e0104f6c7cfb9cbe9",
+        "128": "a883ecb8daf2bb2bc018669e736fec7a1e0433e47530c382bba7c09cefb1017f"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "fileFloppy": {
+      "genre": "hardware",
+      "semanticIdentity": "File Floppy",
+      "physicalMetaphor": "one recognizable 3.5-inch floppy disk with matte charcoal plastic body, brushed metal sliding shutter and a small ivory paper label, authentic removable storage silhouette, no rounded app tile",
+      "provenanceClass": "B",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Legacy 3.5-inch floppy; no claim of a Big Sur default icon",
+      "identityAnchors": [
+        "floppy",
+        "floppy"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Intentional product adaptation retaining a legacy storage metaphor.",
+      "sourceReferences": [
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/fileFloppy-16.png",
+        "32": "icons/fileFloppy-32.png",
+        "64": "icons/fileFloppy-64.png",
+        "128": "icons/fileFloppy-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "d6d29ac12de2096cd0b17909eebbbaec806e44ccbbb710fcf394a108b8d14f03",
+      "runtimeSha256": {
+        "16": "b3284201ccea662a5ed259a0229c7df842b2f5782f00da9ca4ef59396400a17d",
+        "32": "d2248fd35cef0d43e2ca28a60b026a51ee4d57c2d10f4a33dad2c12dcedbfcd6",
+        "64": "096f2fe3ba04aaf25b73db5b6b4d45ad14b89a7198fcb6f300689f67c4efa19e",
+        "128": "93f33a270bab58d86981b014ebac5c81abf47e56cb133a50c6ec7d8b05442b62"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": true
+    },
+    "assistant": {
+      "genre": "application",
+      "semanticIdentity": "ClioTalk",
+      "physicalMetaphor": "two distinguishable ivory correspondence sheets on a softly lit blue rounded-square ground, one solid foreground user sheet and a separate pale blue provisional reply sheet with a clearly dashed short lower edge and a small reply notch; calm paired dialogue without a robot, brain or sparkle",
+      "provenanceClass": "C",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Original application following 2020 app-icon grammar",
+      "identityAnchors": [
+        "correspondence",
+        "assistant"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/assistant-16.png",
+        "32": "icons/assistant-32.png",
+        "64": "icons/assistant-64.png",
+        "128": "icons/assistant-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "13d10188dccb8ac436b03d28668a29323d5e8e14ac3b795a05d556462ec58df3",
+      "runtimeSha256": {
+        "16": "0bed978d9ba8946f8ffe2ed33e34fa5c6f006447c3f5491580d2d88cf9c4692f",
+        "32": "efae3e0aa3d044cb697062b57b15b5bf069b87c0326045dadad296697b4ec142",
+        "64": "a15956021387a6a6ea981517fe06412d4878b556c50c7c13b82a69e587726fec",
+        "128": "457bdd66757d53e09ed96b2a0ad092a6c9b16d67530b2adbd53d6b05cc39c60b"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "quickDraft": {
+      "genre": "document",
+      "semanticIdentity": "Quick Draft",
+      "physicalMetaphor": "one loose white folded-corner draft sheet with rough gray lines and a short ochre pencil at lower-right, no application background",
+      "provenanceClass": "B",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "2020 document genre",
+      "identityAnchors": [
+        "paper",
+        "pencil"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223162058/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/document-icons/"
+      ],
+      "sizes": {
+        "16": "icons/quickDraft-16.png",
+        "32": "icons/quickDraft-32.png",
+        "64": "icons/quickDraft-64.png",
+        "128": "icons/quickDraft-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "75cf45a863b86d3c236ce7303e093b8c4dca85b048de1b6e36530a639426ea08",
+      "runtimeSha256": {
+        "16": "f7ba8af1344be0c96d9037365c43e5ab5b1cf28621944a2fd7cf509f2adf2152",
+        "32": "c5c8027c7f98b7487d996b5c395350aa6df7f87a8681888875cc0069185ed092",
+        "64": "b317dae462dc5fb5ec39b35f7e5525dd6f8ccfbe62e9aee509da7f480b12a26b",
+        "128": "168170fa7808aeea5cf89a7669ce26e2fe5d6df1381dbe87c9f1c312e92668c1"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "writingStudio": {
+      "genre": "application",
+      "semanticIdentity": "Writing Studio",
+      "physicalMetaphor": "a compact dark metal mechanical typewriter with a clean ivory manuscript emerging, on a warm off-white rounded-square background; keys simplify to a few broad rows",
+      "provenanceClass": "C",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Original application following 2020 app-icon grammar",
+      "identityAnchors": [
+        "typewriter",
+        "writing"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/writingStudio-16.png",
+        "32": "icons/writingStudio-32.png",
+        "64": "icons/writingStudio-64.png",
+        "128": "icons/writingStudio-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "6efecdca4da876e5723b19493ca40de687c33955068430f10db478d348a3f6d1",
+      "runtimeSha256": {
+        "16": "3801963b32765fae9ed8f1321a901326f4e2844d8b670f5a3f47edd8442ba4c4",
+        "32": "013820a3f84632ea513860176ba692e8a04c72e3d0f950eefa2886dbe996c1a5",
+        "64": "8d8c984ccd3f01800b0d5b80ce5768ea91cc1ee58a77292ef3296a5b290b6bd7",
+        "128": "3aaac6d8ef3b392966e10f1b4cc3ab6cfdd6fe72873d50e3e799ddaf1d65b4bd"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "projectDisk": {
+      "genre": "hardware",
+      "semanticIdentity": "Project Hard Disk",
+      "physicalMetaphor": "one upright silver external project storage volume with shallow top perspective, a small blue project label on front and tiny status lamp; storage hardware, no app tile",
+      "provenanceClass": "B",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "External storage hardware genre",
+      "identityAnchors": [
+        "drive",
+        "project"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Project-specific storage enclosure. No exact Big Sur native drive prototype validated.",
+      "sourceReferences": [
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/projectDisk-16.png",
+        "32": "icons/projectDisk-32.png",
+        "64": "icons/projectDisk-64.png",
+        "128": "icons/projectDisk-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "10e16eefb2e921380d26169842de0b4353ae4e755fd2129c959c25e4ea9a21ee",
+      "runtimeSha256": {
+        "16": "8837931e6f0bff1e93e10526575a92f1ff99fc1d0c6bad65fd889fe20967173d",
+        "32": "43fb3f068cab49c8c39ed939622b815ff30d4ea8ca00843f562b2fdc1520f8ee",
+        "64": "170c12b78523ed82f5cd67c079478450bb11968b197acc2fcee90b62a7acd82a",
+        "128": "5567b20176f72b2a41f5ce533b773256059b164f989dbfe646eeebfa9a244ce1"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "projectDisc": {
+      "genre": "hardware",
+      "semanticIdentity": "Project CD",
+      "physicalMetaphor": "one iridescent optical compact disc partially inside a neat ivory protective sleeve with a restrained blue project tab; archival storage, no app tile",
+      "provenanceClass": "B",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Optical disc and sleeve genre",
+      "identityAnchors": [
+        "disc",
+        "project"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Legacy medium retained for product compatibility. No exact Big Sur native prototype validated.",
+      "sourceReferences": [
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/projectDisc-16.png",
+        "32": "icons/projectDisc-32.png",
+        "64": "icons/projectDisc-64.png",
+        "128": "icons/projectDisc-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "281c21198fa3857d5ed96f46259771bbae7f5f175a8d6749c4439acf0161fe68",
+      "runtimeSha256": {
+        "16": "5520d0f012aad402fae69a96fda756c236ba97d404ea2aaf28ad702863249c84",
+        "32": "f3ad1e6127b7445027aa3436580f921d016e0206bd84677adceb9c48572433b9",
+        "64": "ea48257174d47fb115d274f13bda94b644adc0f215f37f9fbc9a7b42864a323f",
+        "128": "7aeb1125065fc1cfd3efa3a6d8f09d9f25a45ba087f1c7cdfb56fe8ec7c8d911"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "cloudModel": {
+      "genre": "utility",
+      "semanticIdentity": "Cloud Model",
+      "physicalMetaphor": "a compact remote server unit paired with one active cloud-shaped status light, clearly a network model service rather than local hardware",
+      "provenanceClass": "C",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Original application following 2020 app-icon grammar",
+      "identityAnchors": [
+        "server",
+        "cloud"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/cloudModel-16.png",
+        "32": "icons/cloudModel-32.png",
+        "64": "icons/cloudModel-64.png",
+        "128": "icons/cloudModel-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "571e421aabf2e9c19d95e0b9614f1697dc6f1c155b8e9c06004286212a9ca413",
+      "runtimeSha256": {
+        "16": "f0e8de23c8c2ca2acfe4a79f731294b54f559d6d87943c0fd59eca4fafcf557d",
+        "32": "30e7e058c8a7d4fe0874419aa1d5a9b7250286d69ca904dcd2031657ad731357",
+        "64": "957dabb2061633cade40a777480552cdd0011f9f7d8e88fdbedaea1a59d057c9",
+        "128": "b7983e681554e28ba6643b5c4e3975b192f99787cf3747830ace883dc9cfc46f"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "cloudModelOff": {
+      "genre": "utility",
+      "semanticIdentity": "Cloud Model Offline",
+      "physicalMetaphor": "the same compact remote server concept with an unlit cloud-shaped status light and one visibly unplugged network cable",
+      "provenanceClass": "C",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Original application following 2020 app-icon grammar",
+      "identityAnchors": [
+        "server",
+        "cloudOff"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/cloudModelOff-16.png",
+        "32": "icons/cloudModelOff-32.png",
+        "64": "icons/cloudModelOff-64.png",
+        "128": "icons/cloudModelOff-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "9bc718509d03794c30a0bf6fc33f74d265e818126a50c74eea1d4c49ef3d3201",
+      "runtimeSha256": {
+        "16": "011b1623156ebc156e5155a179292d757233f0a2c630867484d3b5c36007c0cf",
+        "32": "6111d74847fb70c16ef4ba295761dabc90a4a25205dbad61484f17bf098caf2e",
+        "64": "8a0cafc2666bbca99eaf43f1a220eb3f15e7bc0fd7b99ad3445a87eb26fbba73",
+        "128": "ecfca506d2b3b1b1368e4f7395c015f6ae41d76c834d67cab24a7300a71b948a"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "questionSheet": {
+      "genre": "document",
+      "semanticIdentity": "Question Sheet",
+      "physicalMetaphor": "one white worksheet with a large centred question mark and two short blank response lines, no other text",
+      "provenanceClass": "B",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "2020 document genre",
+      "identityAnchors": [
+        "paper",
+        "question"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223162058/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/document-icons/"
+      ],
+      "sizes": {
+        "16": "icons/questionSheet-16.png",
+        "32": "icons/questionSheet-32.png",
+        "64": "icons/questionSheet-64.png",
+        "128": "icons/questionSheet-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "d05f7d54ec94bce2e6c7b2a725f644e20ee638a1d6e5985e483d0f4f1992c72e",
+      "runtimeSha256": {
+        "16": "cbf052a9da43715bbd1cf17d68fea015678aa3d2e918079d454701920451d123",
+        "32": "8517a74fabf8410fa63e2e93788fe36cbe9d1c889239969909150d2180c3b7dc",
+        "64": "de4642171d87b397fcb1db65bc6b7f37902b71ffb5a42fe6a5a4fa50790860e3",
+        "128": "4dc4bc58c95581856d333c36aa5a7096f662040c86b952d78245cd7910ad4bc9"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "outline": {
+      "genre": "document",
+      "semanticIdentity": "Outline",
+      "physicalMetaphor": "one white folded-corner document sheet carrying three clearly indented heading bars and small hierarchy dots; no application background",
+      "provenanceClass": "B",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "2020 document genre",
+      "identityAnchors": [
+        "cards",
+        "outline"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223162058/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/document-icons/"
+      ],
+      "sizes": {
+        "16": "icons/outline-16.png",
+        "32": "icons/outline-32.png",
+        "64": "icons/outline-64.png",
+        "128": "icons/outline-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "3d8b8977a6ef03f6b2129f6f9f8827f96f471e251b6ad5c235a46b01ba03e368",
+      "runtimeSha256": {
+        "16": "d8fb14c68b02976adf4a26c710e43cb11fb9f0fa9bedb064a30fed2804780256",
+        "32": "f1736c1e5d41054a5c277b9edeac0692c5ec5529a2b179f5412169c45080def2",
+        "64": "a9b06a43d791de9ee411ac2bdbdd942382c7f8d4f25863a7491cdae9b5bdd914",
+        "128": "ae45b501a0c41759b3d065ac51a77fb890f956f4b244959772816abd3c42b201"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "sectionDrafts": {
+      "genre": "document",
+      "semanticIdentity": "Section Drafts",
+      "physicalMetaphor": "three staggered white document sheets with distinct small blue section tabs and gray text blocks; no application background",
+      "provenanceClass": "B",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "2020 document genre",
+      "identityAnchors": [
+        "paperStack",
+        "sections"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223162058/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/document-icons/"
+      ],
+      "sizes": {
+        "16": "icons/sectionDrafts-16.png",
+        "32": "icons/sectionDrafts-32.png",
+        "64": "icons/sectionDrafts-64.png",
+        "128": "icons/sectionDrafts-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "74c2751cbe68cc36e3c37e89fe7357efb41903c9234f4232ef42374b3b70bee8",
+      "runtimeSha256": {
+        "16": "3ece7382770a6fade64cfcda6f058a4c5b496965bf561b7616e0a6c61fca4cf1",
+        "32": "d72db280fc5d597c6fc3921cc35a856755d63dbb9e20a4f48bd2bb17d4ec5c09",
+        "64": "7e2fb21da67278df0d2ec28a337b5554b345310f7724f2c3d62d81e634ff2349",
+        "128": "38a8d9d8e144e4d5c595e28bc1f67ca0663eeb546cae4900a349adadfafba0b0"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "manuscript": {
+      "genre": "document",
+      "semanticIdentity": "Manuscript",
+      "physicalMetaphor": "one substantial ivory manuscript stack with a blue binding strip and subtle chapter lines, final long-form writing object, no application background",
+      "provenanceClass": "B",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "2020 document genre",
+      "identityAnchors": [
+        "manuscript",
+        "manuscript"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223162058/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/document-icons/"
+      ],
+      "sizes": {
+        "16": "icons/manuscript-16.png",
+        "32": "icons/manuscript-32.png",
+        "64": "icons/manuscript-64.png",
+        "128": "icons/manuscript-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "7c52dd14059307b444992ed83bff82f8d2313f1d59521a79a0ab6cab17bf08e3",
+      "runtimeSha256": {
+        "16": "3ece7382770a6fade64cfcda6f058a4c5b496965bf561b7616e0a6c61fca4cf1",
+        "32": "d72db280fc5d597c6fc3921cc35a856755d63dbb9e20a4f48bd2bb17d4ec5c09",
+        "64": "863825092f3e80c83860b8b85981e7c5db6905f656794cf5f1cc0d8d0b76bc9b",
+        "128": "acfe478506176770833bf7fc1ac60258fc5cf3d6a21c820cd45519daf6f40e35"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "reviewDesk": {
+      "genre": "application",
+      "semanticIdentity": "Review Desk",
+      "physicalMetaphor": "a white manuscript sheet on a muted warm-red rounded-square ground, one small glass magnifying lens and one clear red proofreading correction mark; a manuscript proofing application distinct from searching",
+      "provenanceClass": "C",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Original application following 2020 app-icon grammar",
+      "identityAnchors": [
+        "review",
+        "proof"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/reviewDesk-16.png",
+        "32": "icons/reviewDesk-32.png",
+        "64": "icons/reviewDesk-64.png",
+        "128": "icons/reviewDesk-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "5fb0a6a2ad9bab444faddf3637de139da4dd84c08770f55c7fe4e2e8cd774fca",
+      "runtimeSha256": {
+        "16": "b2efddb415998bf5c829600920b6da3c852c824b51e1c4201528937a33d49145",
+        "32": "a92b9d146a03d42704fef0c137798607f2c90cd4d21bf38c8ac57984301df69d",
+        "64": "ffc3f92d9bfd9861aef287afad3e2e1fca5d7eeb69f3ae358d5bd547365e1391",
+        "128": "a8d9914e64b3026fc48fa50ede7120bf2293a8b8b1419b6f0ce222e44d97f0a4"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "searcher": {
+      "genre": "application",
+      "semanticIdentity": "Searcher",
+      "physicalMetaphor": "a single large glass magnifying lens over a small ivory search-result sheet on a saturated blue rounded-square ground, a few clear result lines visible through lens",
+      "provenanceClass": "C",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Original application following 2020 app-icon grammar",
+      "identityAnchors": [
+        "search",
+        "magnify"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/searcher-16.png",
+        "32": "icons/searcher-32.png",
+        "64": "icons/searcher-64.png",
+        "128": "icons/searcher-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "9bce7d59650dd27f8938d58bccb0c6790a72b53141762dabb3e9f029817c7813",
+      "runtimeSha256": {
+        "16": "82078079450901220c3652de89eb0ed3c66b6604f1f8636ccfb031922980fc5e",
+        "32": "97414c299b090f0b1360f9350b59cb7fbbc5f69c27431d883a2b4bb15942f4b3",
+        "64": "0252023b43fbd82bb727bbd68514cd51e9de1c6ccbb36b9fb94b143e584b95ad",
+        "128": "acaaf9fe63bb7983a01ef3bbe9e4a5430418d7037be730d12b37a951ec69b8cd"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "reader": {
+      "genre": "application",
+      "semanticIdentity": "Reader",
+      "physicalMetaphor": "an open reading book with one restrained highlighted passage block and a slim reading marker, no legible words",
+      "provenanceClass": "C",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Original application following 2020 app-icon grammar",
+      "identityAnchors": [
+        "book",
+        "reader"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/reader-16.png",
+        "32": "icons/reader-32.png",
+        "64": "icons/reader-64.png",
+        "128": "icons/reader-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "c0e4e925a906f878198447deb63e1f6b2564de0276e69699fcedad04f8ff5939",
+      "runtimeSha256": {
+        "16": "34c55d8186f098152865da0597ed89176ce86861030ee05d42f548156858750e",
+        "32": "87bbea5c12ab1f56ce4ed25bc32c6a881d9872f6a757cf2138b8dce5e8a001bb",
+        "64": "5a59125002bb002f22a775e9a6cc769a5ae8761bf1ceb50cd63a07730670870b",
+        "128": "411825d21bcdff7e625a74511590851799f10dfd4e9f834455913d381a677333"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "timeMachine": {
+      "genre": "utility",
+      "semanticIdentity": "Time Machine",
+      "physicalMetaphor": "a compact archive drawer behind a round clock face with one restrained backward-history arrow",
+      "provenanceClass": "C",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Original application following 2020 app-icon grammar",
+      "identityAnchors": [
+        "clock",
+        "archive"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/timeMachine-16.png",
+        "32": "icons/timeMachine-32.png",
+        "64": "icons/timeMachine-64.png",
+        "128": "icons/timeMachine-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "dc695972aecc73d557808e2fee4a821864b035a7875579ec3f1b7c9acbc9b9b5",
+      "runtimeSha256": {
+        "16": "6967632ef19a2e2a17ae0193a49fd0c795d9156f0b5866b46527d195a2f2b3fe",
+        "32": "8186aba7debc229b43794a9e5ba55c21bd6fa62731851353dc07ba26777aee09",
+        "64": "aff47824d510c2abed36a5451546bf1454d1c2cf26f891643ef12b3de2c83318",
+        "128": "c478686b3de983a5db4c7eae9d9c5af51610a89b31a418aee24f868e59b52d7e"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "docMap": {
+      "genre": "application",
+      "semanticIdentity": "DocMap",
+      "physicalMetaphor": "one ivory document whose three heading bars connect to a simple branching hierarchy of three nodes, on a muted cyan-blue rounded-square ground; DOCUMENT STRUCTURE, never geographic maps, folded maps, terrain or a location pin",
+      "provenanceClass": "C",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Original application following 2020 app-icon grammar",
+      "identityAnchors": [
+        "map",
+        "none"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/docMap-16.png",
+        "32": "icons/docMap-32.png",
+        "64": "icons/docMap-64.png",
+        "128": "icons/docMap-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "d8743d4dc21d7cc0b631fc102bff4b43c4f7d183ef7493f1d67d49940a5c8fce",
+      "runtimeSha256": {
+        "16": "b061f30aa1d3adb2efcfc52a5df400fe678b96b3e71716f3bff8eb00d8ccdb63",
+        "32": "02b5e44a04a58c20791e3df2d6c88e370a7fe9589674ed55417753e6c6f55c48",
+        "64": "2bee713cf7b1194f277afec9f5b5b09390909dfe071bfed62c8a1612d5751064",
+        "128": "b0e91ea003806aa249d34dd96a937f7fbf018009bbd4a092f3e84d7f79b792ab"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "clioStage": {
+      "genre": "application",
+      "semanticIdentity": "ClioStage",
+      "physicalMetaphor": "a small presentation stage with side curtains, a blank projection screen, and one focused overhead light",
+      "provenanceClass": "C",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Original application following 2020 app-icon grammar",
+      "identityAnchors": [
+        "stage",
+        "stage"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/clioStage-16.png",
+        "32": "icons/clioStage-32.png",
+        "64": "icons/clioStage-64.png",
+        "128": "icons/clioStage-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "fd6cbb8602ec0a63d7d821b584e5cc3b61b911038db745eb7f00ef912d9ffaf4",
+      "runtimeSha256": {
+        "16": "e124822031ae52fb68d10b895c76facc0a9c4ac954865ecbf07d08ae9124e8b5",
+        "32": "a3100cae6b93dc1a10553b7a9b9f10edbade3cff0f7ebc9e2e1368e64cae2157",
+        "64": "312514c4db8a019c767082de1a80ffd71c48d94fe84d3fe1d492cd0db354828a",
+        "128": "3a5009d401ceed9cef087e296fb6f4ec6c2c151ae1af1a24ea0ef7c680665647"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "clioChart": {
+      "genre": "application",
+      "semanticIdentity": "ClioChart",
+      "physicalMetaphor": "a standing presentation easel carrying one simple bar-and-line chart with no labels or numbers",
+      "provenanceClass": "C",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Original application following 2020 app-icon grammar",
+      "identityAnchors": [
+        "easel",
+        "chart"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/clioChart-16.png",
+        "32": "icons/clioChart-32.png",
+        "64": "icons/clioChart-64.png",
+        "128": "icons/clioChart-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "dd992f8298b28ef328bbd054cce75d172b499cd5568b57932274ecc32b931d6f",
+      "runtimeSha256": {
+        "16": "7be11da7fb28de6e6c5ee82db7303c9ecc38e92338c90c429875d94b84c36c03",
+        "32": "f3371e443886a196eebd52a06343ddd5ae45af33790217359ecba7035928bec6",
+        "64": "348d5c50d199c4ed013cf7b67ba2c631109a98e6fdc9f80e6f2b983f7a258552",
+        "128": "8286f0aac8e8a72e0bd415251a5b39a34d7dbf6d824bc0bb6b04ff72e28eba71"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "liquidCover": {
+      "genre": "application",
+      "semanticIdentity": "Cover Glass",
+      "physicalMetaphor": "a landscape Bilibili-video cover artboard whose dominant visual is two large lines of glass typography: thick translucent title strokes with refractive edges over an abstract background color plane and one neutral geometric accent shape, plus a slim offset text/shape layer stack at one side; it is a glass-text cover compositor with SDF typography, material presets, multi-aspect editing, and explicit PNG/video export, never a person, face, character, anime silhouette, book, book cover, ordinary photo compositor, single glass sheet, or generic pane",
+      "provenanceClass": "C",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Original typography/video-cover tool",
+      "identityAnchors": [
+        "cover",
+        "cover"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Aa is the semantic typography sample. Acrylic lettering represents this tool, while its opaque blue plate follows Big Sur app grammar.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/liquidCover-16.png",
+        "32": "icons/liquidCover-32.png",
+        "64": "icons/liquidCover-64.png",
+        "128": "icons/liquidCover-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "eceb1defa408225ad381fd64b9f213a5099ab0616dfdd3c7a43ba85d8d20d4fb",
+      "runtimeSha256": {
+        "16": "a0df18888506dc78403b69051fdd5dbfc62452b5657327c0104223e8a8bc0e01",
+        "32": "5a39c0e87b688c2dc13b4e266c72008017d6cbea0de9158df26598a6d5d53bdf",
+        "64": "e537d098df27d59541457ee61f4416e41bc06cfe0be1ef984f6418cc5ecbb704",
+        "128": "0c3ab211655b16013892a4181154ce9385f70a43aa546664530190b4b9069c6c"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "cmfStudio": {
+      "genre": "application",
+      "semanticIdentity": "CMF Studio",
+      "physicalMetaphor": "a fan of colour, material, and finish swatches with one metal chip, one fabric chip, and restrained colour samples",
+      "provenanceClass": "C",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Original application following 2020 app-icon grammar",
+      "identityAnchors": [
+        "swatches",
+        "swatches"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/cmfStudio-16.png",
+        "32": "icons/cmfStudio-32.png",
+        "64": "icons/cmfStudio-64.png",
+        "128": "icons/cmfStudio-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "9d62125ca68b06a7695c3b8a54a0094823061e133efa1dd62bdee11ac7d41ff4",
+      "runtimeSha256": {
+        "16": "df9ab00abcb50556bfa6cca814cb818366f669844276d3b3e0bdb8d54233ce11",
+        "32": "f647aab779521c14d744fbb2df0f4cceef919673f308db46c741b7cb16236716",
+        "64": "a0a9a672a038bf1588478e073a867c9c69c2c446adf34da9a08c50876d4eb36e",
+        "128": "6d2b88d3591776f6f1fe99d290641f59ab7fd8b50660c41a1abda6b671fc6311"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "soundscape": {
+      "genre": "application",
+      "semanticIdentity": "Soundscape",
+      "physicalMetaphor": "one compact loudspeaker emitting two controlled waveform ribbons, clearly an audio environment tool",
+      "provenanceClass": "C",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Original application following 2020 app-icon grammar",
+      "identityAnchors": [
+        "speaker",
+        "sound"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/soundscape-16.png",
+        "32": "icons/soundscape-32.png",
+        "64": "icons/soundscape-64.png",
+        "128": "icons/soundscape-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "ed9b955d9f8a9710fae0c9774916b131826be797254d21d18656effe65a322b6",
+      "runtimeSha256": {
+        "16": "ae1d55c103730d170b81251da333b7d5b7f39bca49fcd7f0d4db3baa30c2fb7e",
+        "32": "a54472172f8c83972377bebd3ecdc78c5ccd5f2cc0ff8b2c8039fb6172b72419",
+        "64": "0811974cd77b8867c34b0ac50f2aff53401c3b2aacc8d83f67b611c98227eaf0",
+        "128": "1d9946d8c5f987733c5480f9162f119ef836417843a9234be90c894ae5991f82"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "scrapbook": {
+      "genre": "application",
+      "semanticIdentity": "Scrapbook",
+      "physicalMetaphor": "a bound album opened or angled to show one mounted photographic print, clearly an album rather than a notes page",
+      "provenanceClass": "C",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Original application following 2020 app-icon grammar",
+      "identityAnchors": [
+        "album",
+        "scraps"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/scrapbook-16.png",
+        "32": "icons/scrapbook-32.png",
+        "64": "icons/scrapbook-64.png",
+        "128": "icons/scrapbook-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "2c1d8903960226537b3bee7ef9904e45b2d9e640666bbfb92b2c285dce7cfa84",
+      "runtimeSha256": {
+        "16": "ad918576e2cdb1f3c414017e26497a6efe4e5b59c4e2f1ceab3b8e683b503a50",
+        "32": "5694baaed408cfa1b0a64c78564bcc67454d6e50917a6c09430872cff082458a",
+        "64": "a3a7621baff1f825ca73c16be6599f2afd4c47e5b23685b74abccf4ed000c300",
+        "128": "e2d3838f0f31731a23e90d2a622b8506896f85748f4f8b9dcd400321b90ce372"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "systemFolder": {
+      "genre": "file",
+      "semanticIdentity": "System Folder",
+      "physicalMetaphor": "one Big Sur cyan tabbed folder with a small embossed gear on its front",
+      "provenanceClass": "B",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "2020 folder genre",
+      "identityAnchors": [
+        "folder",
+        "gear"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/systemFolder-16.png",
+        "32": "icons/systemFolder-32.png",
+        "64": "icons/systemFolder-64.png",
+        "128": "icons/systemFolder-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "8a92e41700f40fefe276cc9979d034c8e463cd07785e9b7c221066786f7d1350",
+      "runtimeSha256": {
+        "16": "0bdecf66dc54b4c6b91c05fe52268c5ea97d2abd2924e0b4baf0ddef8af7533e",
+        "32": "fe69922f690e5262d55d3e028a59691b9e4c44f39d0b01167c8cdb7d29d81a44",
+        "64": "adbbc7294a1c28dda4e0ede3b7cc26e16e3504ae66a42a736c307193e4fdddc0",
+        "128": "75bc067712c23f12e652b618948296d3579558f0f4cc08cad44e1db6a5848ac4"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "helpFolder": {
+      "genre": "file",
+      "semanticIdentity": "Help Folder",
+      "physicalMetaphor": "one Big Sur cyan tabbed folder with an embossed question mark on its front",
+      "provenanceClass": "B",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "2020 folder genre",
+      "identityAnchors": [
+        "folder",
+        "help"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/helpFolder-16.png",
+        "32": "icons/helpFolder-32.png",
+        "64": "icons/helpFolder-64.png",
+        "128": "icons/helpFolder-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "7731ec44eb2ff567708cc6b12b6817cd97901959308a9f1aabb6ae17f4cc973a",
+      "runtimeSha256": {
+        "16": "75bd2df07b2aebf42045093b7be6726cbdc4046d2d02dcddd1a1d9cd93f0a430",
+        "32": "ac90d39e5b39ffee61a87bb89269bfa0175c4efacf3eae626d496dc5d4436eee",
+        "64": "090783c25ef866bb7972d1849d4b2ab70961166ec918a1eaec303351e47d42a7",
+        "128": "3bf56d16c72ad012d04642986feede18cff092234052805f207f204209124976"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "importUtility": {
+      "genre": "utility",
+      "semanticIdentity": "Import Utility",
+      "physicalMetaphor": "an inbox tray receiving one document sheet from above through a single downward arrow",
+      "provenanceClass": "C",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Original application following 2020 app-icon grammar",
+      "identityAnchors": [
+        "inbox",
+        "import"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/importUtility-16.png",
+        "32": "icons/importUtility-32.png",
+        "64": "icons/importUtility-64.png",
+        "128": "icons/importUtility-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "49d3a70e1f69aff22ba7f8bcc6f5f1705607a8db12e531b2b16956d90f68e423",
+      "runtimeSha256": {
+        "16": "da4c3088425931d1a9848e3c2eb24fa118950e8c9e7e59662345066a1d907dce",
+        "32": "e9a0f5b9bf076720203ca4619e1897926993e681bca3ef3c10b2472d90a214a0",
+        "64": "b1e435bfe649925ba1cf1bfa39ff8e6396e2cea5b0b5c5f3a57d731c2aa35af6",
+        "128": "4399c23da072d6c551c63c3e8bcf39ab18ea1b2973be0109683e17cd6b60bcef"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "controlPanel": {
+      "genre": "utility",
+      "semanticIdentity": "Settings",
+      "physicalMetaphor": "a square pale brushed silver panel containing one large dark graphite concentric mechanical gear with a smaller secondary gear, true system-settings visual genre of Big Sur System Preferences; avoid a generic flat gear glyph",
+      "provenanceClass": "A",
+      "nativePrototype": "System Preferences at right of Apple 2020 app-icon introduction figure",
+      "nearestPeriodAnalog": "System Preferences at right of Apple 2020 app-icon introduction figure",
+      "identityAnchors": [
+        "controlBoard",
+        "sliders"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "historically-reviewed",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Corrected offset gears to a centered concentric fine-toothed assembly with three-spoke hub. Large material artwork and small optical cog are not traced native paths.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/controlPanel-16.png",
+        "32": "icons/controlPanel-32.png",
+        "64": "icons/controlPanel-64.png",
+        "128": "icons/controlPanel-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "d298371a31b4066dc848ae168a7320eb50fd7e2341b23bd8090857988b5622b2",
+      "runtimeSha256": {
+        "16": "9eb2d280ce202503a085d4ccf68838ec835735f662d8c8ae79c29fc530f1bdde",
+        "32": "04be5199d0ce66698b947fc8e091add29a6be5db130e0dacc93de07fe17ee68f",
+        "64": "206a5eb8f46162b66957c8f8dd1cfebe5b8c5a8474c4bb8c69d796c5c3003348",
+        "128": "d75fa41bc586951711ae6def9aa139006bf91f199b65b1d655d9ea99ba599d0a"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "chooser": {
+      "genre": "utility",
+      "semanticIdentity": "Chooser",
+      "physicalMetaphor": "two small desktop computers joined by one cable, with one machine visibly selected by a compact pointer tab",
+      "provenanceClass": "C",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Original application following 2020 app-icon grammar",
+      "identityAnchors": [
+        "network",
+        "chooser"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/chooser-16.png",
+        "32": "icons/chooser-32.png",
+        "64": "icons/chooser-64.png",
+        "128": "icons/chooser-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "ff220745871eb4ff69d8b5eb77e8d5b84eefdeed7660f83b416b3fa76de13943",
+      "runtimeSha256": {
+        "16": "043929497d5ad4dbcc67f93dffffe2387cbfdb2174fecd9545d2fa050e10e6fa",
+        "32": "cbd21835b5ed73512f3c4ea421193621b73ba6faacdcab371b7c4126cb112bc3",
+        "64": "c22983923af6dc8bf12d9b7052b91ff295daae34449c051de377d11ccc4c2e42",
+        "128": "6eaa23b7b217aaf3d1931b528dce9a11be0f7b5dac17fa21c62af65a0b2c197e"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "systemHelp": {
+      "genre": "application",
+      "semanticIdentity": "System Help",
+      "physicalMetaphor": "a closed reference book with one large question mark on the cover and a single bookmark, no other text",
+      "provenanceClass": "C",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Original application following 2020 app-icon grammar",
+      "identityAnchors": [
+        "book",
+        "help"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/systemHelp-16.png",
+        "32": "icons/systemHelp-32.png",
+        "64": "icons/systemHelp-64.png",
+        "128": "icons/systemHelp-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "e036fca5815fe1b8931899c7790827d8877d84ea8183692e2480b47e94f1af1f",
+      "runtimeSha256": {
+        "16": "e01134d14a022cb877637f6348c8c653b74d6a57157aadc0a4469f255f372b3f",
+        "32": "a00e19324c32eec3b62f931e8a4b05de180b9958b4e38b37cea10794cdbc7c51",
+        "64": "38d1f6d084337e56edb006e965f90305927deaeccef43617ce7c20f17fa865a9",
+        "128": "12415c968b1608bb3bda91f710911263e3970195b910d092cdbded6e9aa4f7c3"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "dictionary": {
+      "genre": "application",
+      "semanticIdentity": "Dictionary",
+      "physicalMetaphor": "a thick indexed reference book with stepped edge tabs and one bookmark, no letters or words",
+      "provenanceClass": "C",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Original application following 2020 app-icon grammar",
+      "identityAnchors": [
+        "dictionary",
+        "dictionary"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/dictionary-16.png",
+        "32": "icons/dictionary-32.png",
+        "64": "icons/dictionary-64.png",
+        "128": "icons/dictionary-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "df2fbf80ec85735af53d84c2dbab066616518c1c136e9962c3b11539869f5b87",
+      "runtimeSha256": {
+        "16": "11b0d67501598fb415769e67613843f45b4d49d9fe714c0f2861272a7d410cc2",
+        "32": "40a007e34cb9fbe19d6046b18e557d2cab8fee68f17f612207db00967308918f",
+        "64": "925b47f558860003b4a06688e9bb908e321b278043c1d2f48ba455657868bc7b",
+        "128": "179441fe45c45b36a6a837e074c790db6d8aad57321e974f51362ab68fae28ff"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "teachText": {
+      "genre": "application",
+      "semanticIdentity": "TeachText",
+      "physicalMetaphor": "a white ruled manuscript sheet forming the rounded-square application background, with one precise graphite mechanical pencil descending diagonally from upper-right to lower-left and extending a little past the plate edge; real paper and steel material like Big Sur TextEdit grammar",
+      "provenanceClass": "C",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Original application following 2020 app-icon grammar",
+      "identityAnchors": [
+        "paperPen",
+        "writing"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/teachText-16.png",
+        "32": "icons/teachText-32.png",
+        "64": "icons/teachText-64.png",
+        "128": "icons/teachText-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "91f7bd88a9ad7f5000c80f6d6086d7915f14a489bd3bd3b712b6cf884b4ae305",
+      "runtimeSha256": {
+        "16": "1b3377a5f09a6d4fad22c07f3fd1101b1e0e1eeebfaf266a14207be731334d4b",
+        "32": "e5e9c2fd93f0b54b5969ab100ad3d1635d73409a40aac86f317df4a8b56c4677",
+        "64": "b78f4b86c9937fb90460e1e700414966ae6277aa19be28d82ea5959752e81f01",
+        "128": "1fc75f99e71067b0ab17a56e3dd6d3ce2d0d3a542e31d5dcbf0ef1ee0f577977"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "writingDemo": {
+      "genre": "document",
+      "semanticIdentity": "Writing Demo",
+      "physicalMetaphor": "a document sheet with a single inset triangular play mark and two neutral writing lines, no text",
+      "provenanceClass": "B",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "2020 document genre",
+      "identityAnchors": [
+        "paper",
+        "play"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223162058/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/document-icons/"
+      ],
+      "sizes": {
+        "16": "icons/writingDemo-16.png",
+        "32": "icons/writingDemo-32.png",
+        "64": "icons/writingDemo-64.png",
+        "128": "icons/writingDemo-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "285d617ecfbd3aa34fbc71264e80f4b8c555cc32c4c59f85f5060b279cb3208d",
+      "runtimeSha256": {
+        "16": "7c3dc0a31a392309c44006d2a41ee56f5cfa7d21377fcd99cefc7509bcecf4c6",
+        "32": "89e03bd4aee00a493aa8232838f65aca080995903a18c6a0ec87544727fd09f7",
+        "64": "e7f907ccacc9505de4839350507e2431b623abee68600f1c31233fa197c58131",
+        "128": "43204d13d2ba6ee7bc2fd297ac80bb470c5e67b3f50f27b2c04dc22f733c01a9"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "chatFile": {
+      "genre": "document",
+      "semanticIdentity": "Chat File",
+      "physicalMetaphor": "a document sheet carrying two small overlapping speech balloons, clearly a saved conversation file",
+      "provenanceClass": "B",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "2020 document genre",
+      "identityAnchors": [
+        "paper",
+        "chat"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223162058/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/document-icons/"
+      ],
+      "sizes": {
+        "16": "icons/chatFile-16.png",
+        "32": "icons/chatFile-32.png",
+        "64": "icons/chatFile-64.png",
+        "128": "icons/chatFile-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "ba444e1b6f103e23a06650dd8cf3ac4cdf91c391b6d2b586873b46e46c0b44aa",
+      "runtimeSha256": {
+        "16": "d48f82db2209b5b7054af9bc26e9a9d6eed1d90afd622723faf4bdeb70b30037",
+        "32": "36e1fe8008d5a5347f185f00ab91704c597f9a2b57b0add11b786413ef75cc91",
+        "64": "bf43cc5c093b7c98dfe634f221fe2c02a09c957163baeddb95139aaae848c788",
+        "128": "c8f9a1eba2ca825b8479eded8648b2de746f9fed365d523fbb7986c648716716"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "chatImport": {
+      "genre": "utility",
+      "semanticIdentity": "Chat Import",
+      "physicalMetaphor": "an inbox tray receiving one speech balloon through a single downward arrow",
+      "provenanceClass": "C",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Original application following 2020 app-icon grammar",
+      "identityAnchors": [
+        "inbox",
+        "chat"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/chatImport-16.png",
+        "32": "icons/chatImport-32.png",
+        "64": "icons/chatImport-64.png",
+        "128": "icons/chatImport-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "a2d1d619e0d18ade0bc886db182b160be264ec7dbe21b9353151f726d9c6414c",
+      "runtimeSha256": {
+        "16": "da4c3088425931d1a9848e3c2eb24fa118950e8c9e7e59662345066a1d907dce",
+        "32": "e9a0f5b9bf076720203ca4619e1897926993e681bca3ef3c10b2472d90a214a0",
+        "64": "19e5d180f0940b117fcca7e22c71f1f5574d80a2ed71a12c3347e1e28b78b523",
+        "128": "7e72a1d5be7c4aa95e473f8fd420b39b70a0424295e723e8c5e0b2966325bfb1"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "systemStatus": {
+      "genre": "utility",
+      "semanticIdentity": "System Status",
+      "physicalMetaphor": "a compact desktop monitor showing one simple activity trace beside three physical status lights, no numbers or text",
+      "provenanceClass": "C",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Original application following 2020 app-icon grammar",
+      "identityAnchors": [
+        "monitor",
+        "status"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/systemStatus-16.png",
+        "32": "icons/systemStatus-32.png",
+        "64": "icons/systemStatus-64.png",
+        "128": "icons/systemStatus-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "a39c96335467214b57d74f8e9af8a43713e3f92245b1602969f3928f4034a00d",
+      "runtimeSha256": {
+        "16": "d93826c6cf16717f9ccffea2455bda52e2738e7f07b9c23ab5a883a02bad23b8",
+        "32": "5c818fa88069cad5e336c1923e4383ad5e0d3b7d888f07ffa435cd18e88d8b4f",
+        "64": "1539337f2c0db844a186851f773b75ad002fe97bbb5af4d6e9068c56d0557a0f",
+        "128": "f2a8359d8185cdc7e1a335d69a6849272ec87f4fb1cfcce969b4ee23077e8ec9"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "contextPanel": {
+      "genre": "utility",
+      "semanticIdentity": "Context Panel",
+      "physicalMetaphor": "a small index-card box with three raised source cards and distinct coloured tabs, clearly curated context rather than a folder",
+      "provenanceClass": "C",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Original application following 2020 app-icon grammar",
+      "identityAnchors": [
+        "indexBox",
+        "context"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/contextPanel-16.png",
+        "32": "icons/contextPanel-32.png",
+        "64": "icons/contextPanel-64.png",
+        "128": "icons/contextPanel-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "f893de0a3e2af21457cf77676b30b7e8359dd4dbe8d078f14588a2e071dfad92",
+      "runtimeSha256": {
+        "16": "78b7390c48c11ffc8616352acc052596db477bd75bb7c8781cdb75638cab917e",
+        "32": "60bd886316ff06c8e6341f8ed2866e0e5542889791d3544e6c3a4caedbc7b70e",
+        "64": "14d66a6fa3cf38d2493f0c2737999b053076a654e5aa57061085dec66c73b7ac",
+        "128": "e15704fac15f9418e1d81e6b2f4bf7ef2200ea42c25a3ec15d8582cce30a609f"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "rebuildArticle": {
+      "genre": "utility",
+      "semanticIdentity": "Rebuild Article",
+      "physicalMetaphor": "a compact tabletop printing press feeding one manuscript sheet through its rollers, clearly reconstructing a document",
+      "provenanceClass": "C",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Original application following 2020 app-icon grammar",
+      "identityAnchors": [
+        "press",
+        "rebuild"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/rebuildArticle-16.png",
+        "32": "icons/rebuildArticle-32.png",
+        "64": "icons/rebuildArticle-64.png",
+        "128": "icons/rebuildArticle-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "5004e48c3317a21c65252fec9c9fda2648a676585e735c6edb7fe9b40385d262",
+      "runtimeSha256": {
+        "16": "84e188d7f1269d5dd3ceb029a3e6061eb39bce80b01fa5fb6dc8d82404d34554",
+        "32": "173935a73d2e583c5a95f1e5fef27747d8adcbdb10cab7534628bc06fec88275",
+        "64": "adc883d4cb1746eaeb03e7aa9af39bf0a6a1e1b1e7b7edff661b49b78790648d",
+        "128": "86de174c637a3e0ed52e742a4e017a5f3f6c5ece30f8f6056ec4c8c119a3c766"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "bureaucracyMeme": {
+      "genre": "application",
+      "semanticIdentity": "Bureaucracy Meme",
+      "physicalMetaphor": "a red rubber office stamp pressed over a small stack of blank administrative forms, no seals or words",
+      "provenanceClass": "C",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Original application following 2020 app-icon grammar",
+      "identityAnchors": [
+        "stamp",
+        "forms"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/bureaucracyMeme-16.png",
+        "32": "icons/bureaucracyMeme-32.png",
+        "64": "icons/bureaucracyMeme-64.png",
+        "128": "icons/bureaucracyMeme-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "ee8939a57dfacb01cc8f0d7e252abbe045ad19bead6dc6fc13e19366e539afff",
+      "runtimeSha256": {
+        "16": "2fa42573d7f63ff7578657d93a4dbe6f4445d4760d702dfc88b4ef60e8da03fb",
+        "32": "635fb140dd7c7154bacbc7f72471e095d84c00179525d600d0b92a479fb6d452",
+        "64": "38aafa012b0df27859d31f24fa1809bbb4cd36b1dada5d08525ce1fd6977e302",
+        "128": "fda6b4776f87f9d42f6b7eb31e21971ce62180dc74407de943bc2088cd37094b"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "endfieldTerminal": {
+      "genre": "utility",
+      "semanticIdentity": "Endfield Terminal",
+      "physicalMetaphor": "a compact dark terminal monitor with one green prompt block and two short luminous command lines, no legible characters",
+      "provenanceClass": "C",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Original application following 2020 app-icon grammar",
+      "identityAnchors": [
+        "terminal",
+        "terminal"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/endfieldTerminal-16.png",
+        "32": "icons/endfieldTerminal-32.png",
+        "64": "icons/endfieldTerminal-64.png",
+        "128": "icons/endfieldTerminal-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "b1fddd5818c10ff546f9f6210619b2a9689f29dd602f4f7ee167a6e5c437697f",
+      "runtimeSha256": {
+        "16": "76b0dd28609cf741acf16a437344103019bb92d69116bfb452c3af7da7c6d7c5",
+        "32": "078f909c71d9c4fbdc3040b1d6fb76035119533f9e495bd82ee6963b51959978",
+        "64": "844f6e3d96e57a2fee11d80fcb8a41b2cb2cc405da831cb37b880a5996d5758d",
+        "128": "903d8e2ea6506ab26a9db7f633756c00d89a9b04407d2d15cd834e6e14c84741"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "documents": {
+      "genre": "file",
+      "semanticIdentity": "Documents folder",
+      "physicalMetaphor": "one Big Sur cyan tabbed folder with an embossed folded-page symbol on its front",
+      "provenanceClass": "B",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "2020 folder genre",
+      "identityAnchors": [
+        "folder",
+        "documents"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/documents-16.png",
+        "32": "icons/documents-32.png",
+        "64": "icons/documents-64.png",
+        "128": "icons/documents-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "b276285997b86a5f5d3b6c94319a67b5f8c7cfbd2805187b89369c603d7d0999",
+      "runtimeSha256": {
+        "16": "a0293f07485731d2b67b3bef07f3985f6b8cbe04c9546dae00516ea5a8552932",
+        "32": "8e11a1a858b36ee00923f5ab9ffa46f73d37ec43a928eceb5d1947e367262c13",
+        "64": "69a17413ffaf7794e0f152f31dcbd7994aad3390a449cbb68655d0b562c3a492",
+        "128": "de5f963138b119cc64fe14308da48ef268e664d488c4fb796d71c90d4a65d71b"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "alias": {
+      "genre": "document",
+      "semanticIdentity": "Alias",
+      "physicalMetaphor": "one folded-corner white document with a small curved black alias arrow at lower-left, no application background",
+      "provenanceClass": "B",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "2020 document genre",
+      "identityAnchors": [
+        "paper",
+        "alias"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223162058/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/document-icons/"
+      ],
+      "sizes": {
+        "16": "icons/alias-16.png",
+        "32": "icons/alias-32.png",
+        "64": "icons/alias-64.png",
+        "128": "icons/alias-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "8f4227a0311140022c440e67739789d3a3281a5919f8b440a56bd56e6faee996",
+      "runtimeSha256": {
+        "16": "0fa275f9faa9af350bcc24e1cd5209a44960a2dfc16a3a7ddafa53c387494b4b",
+        "32": "89b7a9cc5f8970bc4815cb8d7afba112645e80c5b643d50ff0ebeb18b781f6d8",
+        "64": "038b08b9be050809641e263cc21e9baabd07c0b6b83bc33961a2b42e526a5ba4",
+        "128": "c86611e167ff60a9502606e0fba20b6363b133b7abf16ab4661acad739481b3d"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "systemFile": {
+      "genre": "document",
+      "semanticIdentity": "System File",
+      "physicalMetaphor": "one folded-corner white document with a small graphite system gear, no application background",
+      "provenanceClass": "B",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "2020 document genre",
+      "identityAnchors": [
+        "paper",
+        "gear"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223162058/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/document-icons/"
+      ],
+      "sizes": {
+        "16": "icons/systemFile-16.png",
+        "32": "icons/systemFile-32.png",
+        "64": "icons/systemFile-64.png",
+        "128": "icons/systemFile-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "f1efa3b641c9a8bb77b10a1ce775978d1e813daf3817644c1828a286fd581d37",
+      "runtimeSha256": {
+        "16": "799081b8efa1c460103dbc51d14e643fc3f39b143b6ddde0ca553f444d5e590e",
+        "32": "50881550a3c9529365e80e8cc972921188950b1b32147786b390b518c7007e27",
+        "64": "239ec10dceb52ddf678bf25d342659646212e7dcb2441ece7988d1456f4b63cc",
+        "128": "eb0a6c8acca9d020b61aabbec456ae3227f6abdf3202e3bac843c0b21c49c7fa"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "multiFinderApp": {
+      "genre": "application",
+      "semanticIdentity": "MultiFinder",
+      "physicalMetaphor": "two overlapping Big Sur Finder face rounded-square panels, one slightly behind and above-right, blue left/pale right face relationship, restrained multiplicity not a collage",
+      "provenanceClass": "C",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Product metaphor using two Finder-like faces",
+      "identityAnchors": [
+        "finderPair",
+        "finder"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Overlapping rounded-square faces identify multiple Finder windows. No native Big Sur MultiFinder exists.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/multiFinderApp-16.png",
+        "32": "icons/multiFinderApp-32.png",
+        "64": "icons/multiFinderApp-64.png",
+        "128": "icons/multiFinderApp-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "32a4858e5bd3d721e4324f7c3aaab6ee03ce7e1412cf0fd57f1bafc00e42c0e7",
+      "runtimeSha256": {
+        "16": "689d277c2f047b988794264f97c2a4e9a154fac93750eb89b95a07a7d26774e4",
+        "32": "c2e9ae5d1f5434a1696f3d7ff1d22ce13fc6a057ccc07ffc27d98fdc7e2f8c79",
+        "64": "b2c8a3fb936ea626b66f663643872c9b875ac4b2889cee4a018458c97399d721",
+        "128": "e949dc63d2085c44fd40e118211f43874ba1b1a3849d045aa5a9a72548b0f20a"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "daHandler": {
+      "genre": "utility",
+      "semanticIdentity": "Generic application",
+      "physicalMetaphor": "a generic desktop application object for the era, distinct from a document, folder, or settings panel",
+      "provenanceClass": "C",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Original application following 2020 app-icon grammar",
+      "identityAnchors": [
+        "briefcase",
+        "deskAccessory"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/daHandler-16.png",
+        "32": "icons/daHandler-32.png",
+        "64": "icons/daHandler-64.png",
+        "128": "icons/daHandler-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "8cd7e4f5772378b5dbd08463b068799c58954c6f4ce649791a58f0798beeb6a1",
+      "runtimeSha256": {
+        "16": "19a9c186ba80f9106b5c996075b01137cead886b95dcb4a4451496bd139d097a",
+        "32": "1824a18eace0cad8158c5004e4deb3bf29ee9e91a1750e43942f02af3c034698",
+        "64": "29f59a9d8a0bc370704ad05044eae8242e3d0ee9c519afc643ee6f1cb36be8a2",
+        "128": "6d090110168b4faea43b5e066dc6c6e1fe6da29ac26f04d2063e6065cce1e7e2"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "writingBell": {
+      "genre": "accessory",
+      "semanticIdentity": "Writing Bell",
+      "physicalMetaphor": "a compact brass desk bell with one small pen-nib relief on its base, clearly a writing accessory",
+      "provenanceClass": "C",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Original application following 2020 app-icon grammar",
+      "identityAnchors": [
+        "bell",
+        "bell"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/writingBell-16.png",
+        "32": "icons/writingBell-32.png",
+        "64": "icons/writingBell-64.png",
+        "128": "icons/writingBell-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "88b646fae31bfdacc3d88a53122cd12da111975531e462a658c6af79bc0af0a2",
+      "runtimeSha256": {
+        "16": "b05f9c334add1ebeea35f4dba461a3ad7354e9ce4874413b2aae4cc7393cf2df",
+        "32": "448fce2de875a67010a9cb04e0f364e016953a3c949f0556b58f187c839559f2",
+        "64": "414912116b8e66bdec8439ffed27ba48b40efc2c48965834278a15831b079692",
+        "128": "28ff1fd078a68cf0a9bbd65c6552e6e9fecc53edc4944a98a52fd0d98ed8188e"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "trashFull": {
+      "genre": "hardware",
+      "semanticIdentity": "Full Waste Basket",
+      "physicalMetaphor": "the same Big Sur frosted white tapered cylindrical waste bin, now holding a few crumpled pale paper sheets visibly above the elliptical rim; no mesh, no app tile",
+      "provenanceClass": "B",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Paired state derived from the empty-bin product icon",
+      "identityAnchors": [
+        "trash",
+        "full"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Same pale bin family with crumpled paper fill. No verified native full-state capture is claimed.",
+      "sourceReferences": [
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/trashFull-16.png",
+        "32": "icons/trashFull-32.png",
+        "64": "icons/trashFull-64.png",
+        "128": "icons/trashFull-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "2f4299dcec3be0e1195aaae62ea2834d8ac919ec8a01216f08a808f9fc00c4e8",
+      "runtimeSha256": {
+        "16": "c5a277273eb6dfcdfbab0298edb596a038c39caf0f5f9367604b5a9aab6eef88",
+        "32": "37c5600b496ce68d37e0da1cb61129a21ae8ff5ee50e1e5e92a67c646823b2eb",
+        "64": "707394af00e5a6b439d7f352c611fbba61763c990c751cd537851328aa756e7e",
+        "128": "d3d8a9bd67f82feded58a897d5611a4efb55008aec11241caa8d349b3b00f65e"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "control": {
+      "genre": "utility",
+      "semanticIdentity": "Control",
+      "physicalMetaphor": "a compact physical control board with two round knobs, one toggle, and one small indicator light",
+      "provenanceClass": "C",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Original application following 2020 app-icon grammar",
+      "identityAnchors": [
+        "controlBoard",
+        "knobs"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/control-16.png",
+        "32": "icons/control-32.png",
+        "64": "icons/control-64.png",
+        "128": "icons/control-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "974ad923f6ef2152bc3d43e3b7443bc1d21d3ab574405a7dc0da11ceb7ad809d",
+      "runtimeSha256": {
+        "16": "d3cc6682fef8fcb78b0dd5b6a59e4b59ba6ceca5013f80a190616fac2d4aafc5",
+        "32": "a0f35a6d23a6b5bff91aade3bf2da76d44240479f6ff9bc8c6c90562dbce919c",
+        "64": "d94733a58df6452ce43ee879b700ba1cb116094d20bb049e0a7cec3678ba5ed0",
+        "128": "b39371f8abfa13b4edba751254e95213eefe59ffc862e650328123c2ffbac71d"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "localModel": {
+      "genre": "utility",
+      "semanticIdentity": "Local Model",
+      "physicalMetaphor": "one processor chip mounted on a compact circuit board with short visible traces, clearly local compute rather than a cloud service",
+      "provenanceClass": "C",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Original application following 2020 app-icon grammar",
+      "identityAnchors": [
+        "chip",
+        "none"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/localModel-16.png",
+        "32": "icons/localModel-32.png",
+        "64": "icons/localModel-64.png",
+        "128": "icons/localModel-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "a4f4136a1aacc0276766bbb3ebedcffa505ca87c238f7ba6e17abc5e445b0320",
+      "runtimeSha256": {
+        "16": "e9616938584c066183b354386b699de7ddd45c0cce3c5453984dcc7db47f3389",
+        "32": "cee813c5672f1aabf4d2af018d46e1f433bd81a58ccf9890d747fda4095e01db",
+        "64": "272e0784063b408b0fd519295b912f8afe728d57b6cf1157ec7f0066a94c9240",
+        "128": "ae470fadd2a643d37b94145b961ea1c36fd44bd66f17eb94c6e547280a5536d7"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "controlStrip": {
+      "genre": "utility",
+      "semanticIdentity": "Control Strip",
+      "physicalMetaphor": "a narrow horizontal strip containing four distinct physical control modules, including a slider, a status light, and two compact toggles",
+      "provenanceClass": "C",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Original application following 2020 app-icon grammar",
+      "identityAnchors": [
+        "strip",
+        "none"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Original semantic adaptation. No exact historical native counterpart is claimed.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/controlStrip-16.png",
+        "32": "icons/controlStrip-32.png",
+        "64": "icons/controlStrip-64.png",
+        "128": "icons/controlStrip-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "5a8ab46815ad6c7ff0044b21ce6bb81aeb426f965cf11a1385c48c3b4ce2b727",
+      "runtimeSha256": {
+        "16": "40c427021b7cafa662212e94a842cd2662cabd2e86e3dd97372906b30fd961c6",
+        "32": "3a585d0ad3df529b4ae6a63409669d81c1397a7252d5d1044422c69248788837",
+        "64": "133d31a227009d8855d7265568e15357b0ba9dbeced6e439ba0ae90cde64f9f9",
+        "128": "432455f2313a2870d8bc8073b857a01f65ebee7005d43a72d56a7921592a1973"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "clioPaint": {
+      "genre": "application",
+      "semanticIdentity": "ClioPaint",
+      "physicalMetaphor": "a warm ivory artist palette with three clearly separated saturated paint wells and one slim dark wooden paintbrush laid diagonally across the lower-right; it means bitmap painting and sketching",
+      "provenanceClass": "C",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Original drawing application",
+      "identityAnchors": [
+        "palette"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Palette and brush; rounded-square ochre plate. Historical native counterpart does not exist.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/clioPaint-16.png",
+        "32": "icons/clioPaint-32.png",
+        "64": "icons/clioPaint-64.png",
+        "128": "icons/clioPaint-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "440f06e097cb3a524f41bd1cbe8a78851b16481ed9019cbe7616183bf843ead0",
+      "runtimeSha256": {
+        "16": "9967d86ffe2e6bb327e333903e34e3a172e2bd5791e261d4f5e291e4fc789ae0",
+        "32": "1643e2bb1b625d30a1ca17739d49ef12fd80be0d9722f1e504f5e2555bafa79e",
+        "64": "15b19002b37e2113d8813b99edb85043b424b2407bc3e0da3f17bd36996ea264",
+        "128": "1b08a13a1fd82c59ada26be1602c6ba817c88691dbd538e770764ea23dbbee66"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "clioProject": {
+      "genre": "application",
+      "semanticIdentity": "ClioProject",
+      "physicalMetaphor": "three small ivory task cards connected by clear right-angle dependency links, two on the left feeding one on the right, one restrained coral completion mark; project task dependencies, NOT a bar chart or calendar",
+      "provenanceClass": "C",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Original dependency planning application",
+      "identityAnchors": [
+        "dependencies"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Two left task cards feed one right task card; preserve direction and completion meaning across eras.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/clioProject-16.png",
+        "32": "icons/clioProject-32.png",
+        "64": "icons/clioProject-64.png",
+        "128": "icons/clioProject-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "111f8d357a044e406df5682aea0e3afdf9e65fba31fad32f3d9a2a40606bc06e",
+      "runtimeSha256": {
+        "16": "bcfbc9782121d2554ed7565b921f401e3bde4782f4f9bf048a0332aeb9edcb47",
+        "32": "18a4a4d9c75c968d7daa6677ee1c308393199466a72137825fae891222eefdcc",
+        "64": "a93de3e2a2b2b00fab04ac5c777a189ff6bc3d6cdbb8556362721ce8d8a08fc4",
+        "128": "0a41ac8b398400c58469421ce9ba658acc7fbb98a5dcf2eff98ab77623687272"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    },
+    "oneMoreTune": {
+      "genre": "application",
+      "semanticIdentity": "One More Tune",
+      "physicalMetaphor": "two offset physical music cards, the front lavender-white card carries one bold dark violet beamed musical note and a narrow colored spine; a personal music listening card collection, not a speaker or sound waveform",
+      "provenanceClass": "C",
+      "nativePrototype": null,
+      "nearestPeriodAnalog": "Original music knowledge study application",
+      "identityAnchors": [
+        "musicCard"
+      ],
+      "exactPixelReplica": false,
+      "eraGrammarReview": "reviewed-original-adaptation",
+      "authoringMethod": "built-in image generation (64/128) and independent optical SVG construction (16/32)",
+      "sourceKind": "original-generated-era-illustration",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "reviewStatus": "technically-clean",
+      "sourceNote": "Paired study cards plus a musical note; this represents a learning deck, not a general playback utility.",
+      "sourceReferences": [
+        "https://web.archive.org/web/20201223123443/https://developer.apple.com/design/human-interface-guidelines/macos/icons-and-images/app-icon",
+        "https://512pixels.net/projects/aqua-screenshot-library/macos-11-0-big-sur/"
+      ],
+      "sizes": {
+        "16": "icons/oneMoreTune-16.png",
+        "32": "icons/oneMoreTune-32.png",
+        "64": "icons/oneMoreTune-64.png",
+        "128": "icons/oneMoreTune-128.png"
+      },
+      "runtimeAsset": true,
+      "sourceSha256": "9efe8905ea3ebd3c907c9cabffc8d245e149891d132e09e1ad2d1218ea3ebac5",
+      "runtimeSha256": {
+        "16": "28ab236341b24b26b9a570015e043988770c90da6ef2a7592ec5e229eb648cc0",
+        "32": "55f608cfef76e2be3428e1d998c4a1b32a29d0e9ee1ab1821274a000790054e5",
+        "64": "7fb46897426b92cd730d9e4ce6a68c3b3001194736ad47a534deae75b99de784",
+        "128": "df50c7dc1e7a78fabe4cd1f6145c21c7d43b13f093873d905f6ec990030bb1a9"
+      },
+      "nativeSizePolicy": "16/32 independently simplified optical artwork; 64/128 uniformly normalized from retained generated master",
+      "intentionalAnachronism": false
+    }
+  }
+}

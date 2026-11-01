@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28">
+  <defs>
+    <linearGradient id="ruler" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#fff0a5"/>
+      <stop offset="1" stop-color="#d6a429"/>
+    </linearGradient>
+    <linearGradient id="pencil" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#ff7661"/>
+      <stop offset="1" stop-color="#9e241f"/>
+    </linearGradient>
+  </defs>
+  <path d="m5 22 15.8-16 2.3 2.3-16 15.8-3.5.9z" fill="url(#pencil)" stroke="#6f2622"/>
+  <path d="m5.2 21.8 2 2-3.6 1z" fill="#363636"/>
+  <path d="M7 5.5 23 21.4 20.4 24 4.5 8z" fill="url(#ruler)" stroke="#82641e"/>
+  <path d="m8.3 8.1 1.8-1.8M11.3 11.1l1.8-1.8M14.3 14.1l1.8-1.8M17.3 17.1l1.8-1.8" stroke="#7f5e19"/>
+  <path d="M6.5 6.3 21.2 21" stroke="#fff" opacity=".52"/>
+  <ellipse cx="14" cy="26" rx="9" ry="1.2" fill="#000" opacity=".15"/>
+</svg>

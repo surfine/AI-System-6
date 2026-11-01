@@ -1,0 +1,2333 @@
+.reader-window {
+  width: 680px;
+  height: 560px;
+}
+
+.reader-details-bar {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 50%) minmax(0, 1fr);
+  justify-content: stretch;
+}
+
+#reader-status {
+  justify-self: start;
+  max-width: 100%;
+}
+
+.reader-status-context {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+#reader-url-display {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reader-status-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+/* Reader and DocMap send their receipts down the shared status channel, so the
+   single #status element homes into this cell. The cell stretches rather than
+   sizing to the commands menu: the strip then takes the width the menu does not
+   need and ellipsizes a long receipt, instead of pushing the menu off the bar.
+   Placed here, not in the centre cell, because that one already names the
+   source (Reader's URL, DocMap's tabs). */
+.reader-status-actions,
+.docmap-status-actions {
+  justify-self: stretch;
+  gap: 8px;
+}
+
+.reader-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+}
+
+.reader-toolbar {
+  display: block;
+}
+
+/* One row: the address and the button that opens it. */
+.reader-url-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+}
+
+.reader-url-row input {
+  width: 100%;
+  min-width: 0;
+}
+
+/* The overflow menu is only worth showing when it holds an available action. */
+.reader-status-actions .reader-command-menu:not(:has(.reader-command-popover .btn:not(:disabled))) {
+  display: none;
+}
+
+/* A loaded document gives the entry row back to the page. It returns only
+   when the writer asks for another source, and goes again on Escape. The pane
+   says which state it is in (reader.js setReaderPaneState); nothing here
+   guesses it from another control's availability. */
+.reader-pane[data-reader-state="loaded"]:not([data-reader-entry="open"]) > .reader-toolbar {
+  display: none;
+}
+
+.reader-workspace {
+  --reader-tabs-size: 190px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  position: relative;
+}
+
+/* The selection bar: the verbs for selected text, beside the selection. It
+   floats over the lower corner of the page in the theme's menu-panel material
+   (1-bit frame and drop shadow in System 6, glass in Liquid Glass) and never
+   takes a row from the text, so selecting does not move what is selected.
+   Motion is state feedback only: it rises 6px into place, and leaves faster
+   than it came. */
+.reader-selection-bar {
+  /* No stacking token needed: it is the last positioned child of the
+     workspace, so it already paints over the page. */
+  position: absolute;
+  right: 24px;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100% - 48px);
+  padding: 5px 5px 5px 10px;
+  border: var(--menu-panel-border);
+  border-radius: var(--menu-panel-radius);
+  background: var(--menu-panel-bg);
+  box-shadow: var(--menu-panel-shadow);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(6px);
+  transition: opacity 120ms ease-out, transform 120ms ease-out, visibility 0s linear 120ms;
+}
+
+.reader-selection-bar.is-open {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition: opacity 160ms ease-out, transform 180ms cubic-bezier(0.23, 1, 0.32, 1), visibility 0s;
+}
+
+.reader-selection-count {
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--ui-font);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--shade-dark);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reader-selection-bar .btn {
+  flex: none;
+  min-height: calc(var(--system-button-min-height) - 2px);
+  padding: 3px 10px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reader-selection-bar,
+  .reader-selection-bar.is-open {
+    transform: none;
+  }
+}
+
+/* Reader tab rail. Wide windows keep the spatially stable vertical list;
+   narrow windows use the shared document stack in an existing toolbar row. */
+.reader-rail {
+  flex: 0 0 var(--reader-tabs-size);
+  gap: 6px;
+}
+
+@container (max-width: 759px) {
+  .reader-workspace {
+    flex-direction: column;
+  }
+
+  .tdi-shell > .tdi-rail,
+  .reader-workspace > .tdi-rail {
+    display: none;
+  }
+
+  .tdi-grabber {
+    display: none;
+  }
+
+  .tdi-stack-host:not(.is-hidden) {
+    display: block;
+  }
+
+  .reader-status-context:has(.tdi-stack-host:not(.is-hidden)) > #reader-url-display {
+    display: none;
+  }
+}
+
+/* A rail with no visible tab strip (0 or 1 tab) collapses entirely, along with
+   its grabber, so the active document fills the window. Covers all three TDI
+   surfaces (reader-rail / teachtext / docmap rails all carry .tdi-rail). */
+.tdi-rail:has(.tdi-tabs.is-hidden) {
+  display: none;
+}
+
+.tdi-rail:has(.tdi-tabs.is-hidden) + .tdi-grabber {
+  display: none;
+}
+
+/* Single grabber for every vertical TDI rail (Reader / TeachText / DocMap).
+   Reader keeps id="reader-split-handle" only as its JS hook. Visible in the
+   side-rail layout; hidden when the window is narrow (the @container rule above). */
+.tdi-grabber {
+  flex: 0 0 4px;
+  position: relative;
+  align-self: stretch;
+  border: 0;
+  background: transparent;
+  cursor: col-resize;
+  touch-action: none;
+  min-height: 28px;
+}
+
+.tdi-grabber::after {
+  content: "";
+  position: absolute;
+  top: var(--tdi-grabber-mark-top);
+  left: var(--tdi-grabber-mark-left);
+  width: var(--tdi-grabber-mark-width);
+  height: var(--tdi-grabber-mark-height);
+  border-radius: var(--tdi-grabber-mark-radius);
+  background: var(--tdi-grabber-mark-bg);
+  box-shadow: var(--tdi-grabber-mark-shadow);
+  opacity: var(--tdi-grabber-mark-opacity);
+  transform: var(--tdi-grabber-mark-transform);
+}
+
+.tdi-grabber:hover::after,
+.tdi-grabber:focus-visible::after,
+body.is-resizing-reader .tdi-grabber::after,
+body.is-resizing-tdi .tdi-grabber::after {
+  background: var(--tdi-grabber-mark-active-bg);
+  box-shadow: var(--tdi-grabber-mark-active-shadow);
+  opacity: var(--tdi-grabber-mark-active-opacity);
+}
+
+.tdi-grabber:focus-visible {
+  outline: var(--system-focus-outline);
+  outline-offset: -1px;
+}
+
+body.is-resizing-reader,
+body.is-resizing-tdi {
+  cursor: col-resize;
+  user-select: none;
+}
+
+.reader-tabs .btn {
+  max-width: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11px;
+}
+
+.tdi-tabs {
+  display: flex;
+  align-items: var(--tdi-tabs-align-items);
+  gap: var(--tdi-tabs-gap);
+  width: 100%;
+  max-width: 100%;
+  min-height: var(--tdi-tabs-min-height);
+  box-sizing: border-box;
+  padding: var(--tdi-tabs-padding);
+  background: var(--tdi-tabs-bg);
+  border-bottom: var(--tdi-tabs-border-bottom);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+
+.tdi-tabs::after {
+  content: var(--tdi-tabs-after-content);
+  flex: var(--tdi-tabs-after-flex);
+  min-width: var(--tdi-tabs-after-min-width);
+}
+
+.tdi-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+/* Shared TDI shell: tabs strip + active document. Stacked (tabs on top) by
+   default; when the enclosing .window is wide enough the tabs become a vertical
+   side rail. Direction is a pure @container query — no JS, no ResizeObserver. */
+.tdi-shell {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.tdi-shell > .window-pane,
+.tdi-shell > form {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+}
+
+.tdi-rail {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
+  padding: var(--tdi-rail-padding);
+  border: var(--tdi-rail-border);
+  border-radius: var(--tdi-rail-radius);
+  background: var(--tdi-rail-bg);
+  box-shadow: var(--tdi-rail-shadow);
+}
+
+/* The Finder sidebar is the tdi-rail source list; an era that lays out a
+   "side" area turns it on. Everywhere else it stays out of the page. It
+   follows .tdi-rail (moved from 10-windows.css) so the hide keeps winning. */
+.is-toolbar-window > .finder-sidebar {
+  display: var(--finder-sidebar-display, none);
+  grid-area: side;
+  gap: 1px;
+  min-height: 0;
+  overflow: auto;
+  padding: 8px;
+  border-right: var(--finder-sidebar-edge, 0);
+}
+
+/* Source-list category chrome is part of the rail's historical painter.
+   Reader keeps one label in the shared DOM; System 6 hides it, while Snow
+   Leopard reveals the familiar compact source-list heading. */
+.tdi-source-rail-label {
+  display: var(--tdi-source-label-display);
+  flex: 0 0 auto;
+  padding: var(--tdi-source-label-padding);
+  border-bottom: var(--tdi-source-label-border-bottom);
+  background: var(--tdi-source-label-bg);
+  color: var(--tdi-source-label-fg);
+  /* Fallback, not a :root default: resolved here it is this era's face;
+     resolved on :root it was always Chicago. */
+  font-family: var(--tdi-source-label-font-family, var(--ui-font));
+  font-size: var(--tdi-source-label-font-size);
+  font-weight: var(--tdi-source-label-font-weight);
+  letter-spacing: var(--tdi-source-label-letter-spacing);
+  line-height: 1;
+  text-transform: var(--tdi-source-label-text-transform);
+}
+
+/* The Finder sidebar's section headings (moved from 10-windows.css) refine
+   the source-list heading above: a visible sidebar always shows them. */
+.finder-sidebar > .tdi-source-rail-label {
+  display: block;
+  margin-top: 8px;
+}
+
+/* Compact TDI document stack. The host sits in each app's existing chrome, so
+   document switching costs no additional vertical row on constrained windows. */
+.tdi-stack-host {
+  display: none;
+  width: fit-content;
+  min-width: 0;
+  max-width: min(280px, 42cqi);
+}
+
+.tdi-stack-host.is-hidden {
+  display: none;
+}
+
+.tdi-document-stack {
+  position: relative;
+  min-width: 0;
+  color: var(--ink);
+}
+
+.tdi-document-stack > summary {
+  list-style: none;
+}
+
+.tdi-document-stack > summary::-webkit-details-marker {
+  display: none;
+}
+
+.tdi-document-stack .tdi-stack-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  gap: 6px;
+  cursor: default;
+}
+
+.tdi-stack-active-copy {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tdi-stack-count {
+  display: inline-grid;
+  min-width: 18px;
+  min-height: 18px;
+  padding-inline: 4px;
+  border-radius: 999px;
+  background: var(--tdi-stack-count-bg);
+  color: var(--tdi-stack-count-fg);
+  font-family: var(--mono-font);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  place-items: center;
+}
+
+.tdi-stack-disclosure {
+  width: 0;
+  height: 0;
+  border-inline: 4px solid transparent;
+  border-top: 5px solid currentColor;
+  transform-origin: 50% 35%;
+  transition: transform 0.12s ease;
+}
+
+.tdi-document-stack[open] .tdi-stack-disclosure {
+  transform: rotate(180deg);
+}
+
+.tdi-stack-popover {
+  position: absolute;
+  z-index: var(--z-local-popover);
+  top: calc(100% + 5px);
+  right: 0;
+  width: min(340px, calc(100cqi - 48px));
+  max-height: min(360px, 60vh);
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 4px;
+  border: var(--tdi-stack-popover-border);
+  border-radius: var(--tdi-stack-popover-radius);
+  background: var(--tdi-stack-popover-bg);
+  box-shadow: var(--tdi-stack-popover-shadow);
+  backdrop-filter: var(--tdi-stack-popover-backdrop-filter);
+  -webkit-backdrop-filter: var(--tdi-stack-popover-backdrop-filter);
+}
+
+.tdi-stack-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-width: 0;
+  border-bottom: var(--tdi-stack-item-border);
+  background: var(--tdi-stack-item-bg);
+  color: var(--tdi-stack-item-fg);
+}
+
+.tdi-stack-item:last-child {
+  border-bottom: 0;
+}
+
+.tdi-stack-item:hover,
+.tdi-stack-item:focus-within {
+  background: var(--tdi-stack-item-hover-bg);
+  color: var(--tdi-stack-item-hover-fg);
+}
+
+.tdi-stack-item.is-active {
+  background: var(--tdi-stack-item-active-bg);
+  color: var(--tdi-stack-item-active-fg);
+}
+
+.tdi-document-stack .tdi-stack-open {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: var(--item-radius);
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.tdi-stack-open > span,
+.tdi-stack-open > small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tdi-stack-open > small {
+  color: inherit;
+  font-family: var(--mono-font);
+  font-size: 10px;
+  opacity: 0.64;
+}
+
+.tdi-document-stack .tdi-stack-close {
+  position: relative;
+  align-self: center;
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  min-height: 28px;
+  margin-inline-end: 3px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+}
+
+.tdi-stack-close::before,
+.tdi-stack-close::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 11px;
+  height: 1.5px;
+  background: currentColor;
+}
+
+.tdi-stack-close::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.tdi-stack-close::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.tdi-stack-close:hover:not(:disabled),
+.tdi-stack-close:focus-visible:not(:disabled) {
+  background: color-mix(in srgb, currentColor 14%, transparent);
+}
+
+.tdi-stack-close:disabled,
+.tdi-stack-close.is-disabled {
+  opacity: 0.34;
+  cursor: default;
+}
+
+.tdi-stack-item.is-dragging {
+  opacity: 0.46;
+}
+
+.tdi-stack-item.is-drop-target {
+  box-shadow: inset 0 2px 0 currentColor;
+}
+
+@container (min-width: 760px) {
+  .tdi-shell {
+    flex-direction: row;
+  }
+
+  /* Reader's workspace is the same figure as .tdi-shell and must turn on the
+     same axis. It does not, because the phone flow's device class
+     (max-width: 860px) also sets flex-direction: column on .reader-workspace,
+     and a window 760-860 wide satisfies BOTH: the container says "side rail",
+     the media query says "stack". Measured 2026-09-05 on an iPad Split View
+     2/3 (795x820) and on plain iPad portrait (820x1180): the rail was painted
+     as a 779x150 band of vertically stacked tabs above the reading column,
+     with the fourth tab clipped mid-row and the 4px grabber stretched into a
+     full-width bar -- while DocMap and TeachText, whose host IS .tdi-shell,
+     correctly showed a 200px side rail at the very same width.
+     The container owns this axis (the rail's own direction, its width and the
+     stack-host swap are all container-driven), so Reader follows it here. The
+     child selector is what outranks the device-class rule in styles/60-responsive.css;
+     nothing about the phone flow below 760 changes. */
+  .reader-pane > .reader-workspace {
+    flex-direction: row;
+  }
+
+  .tdi-shell > .tdi-rail {
+    flex: 0 0 var(--tdi-rail-width);
+  }
+
+  .tdi-rail .tdi-tabs {
+    flex: 1 1 auto;
+    flex-direction: column;
+    align-items: stretch;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-x: auto;
+    overscroll-behavior-y: contain;
+  }
+
+  /* Vertical list: every tab is its natural height regardless of count. The
+     horizontal is-overflowing / is-crowded flex-basis rules must not apply here
+     (they made few-tab rails stretch tall and many-tab rails shrink). */
+  .tdi-rail .tdi-tab-wrap,
+  .tdi-rail .tdi-tabs.is-overflowing .tdi-tab-wrap,
+  .tdi-rail .tdi-tabs.is-crowded .tdi-tab-wrap {
+    flex: 0 0 auto;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+:is(.teachtext-tabs, .docmap-tabs, .reader-tabs).tdi-tabs {
+  align-items: var(--tdi-tabs-align-items);
+}
+
+.tdi-tab {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  height: var(--tdi-tab-height);
+  min-height: var(--tdi-tab-min-height);
+  display: grid;
+  align-content: center;
+  gap: 1px;
+  padding: var(--tdi-tab-padding);
+  border: var(--tdi-tab-border);
+  border-bottom: var(--tdi-tab-border-bottom);
+  border-radius: var(--tdi-tab-radius);
+  background: var(--tdi-tab-bg);
+  color: var(--tdi-tab-fg);
+  text-align: left;
+  box-shadow: var(--tdi-tab-shadow);
+  backdrop-filter: var(--tdi-tab-backdrop-filter);
+  -webkit-backdrop-filter: var(--tdi-tab-backdrop-filter);
+}
+
+/* (Moved from 10-windows.css: it refines the .tdi-tab rule above.)
+   Source-list rows are compact (16px glyphs), unlike document tabs. */
+.finder-sidebar > .tdi-tab.tdi-tab {
+  border: 0;
+  box-shadow: none;
+  height: auto;
+  min-height: var(--finder-sidebar-row-height, 24px);
+  padding: 2px 8px;
+  font-size: var(--finder-sidebar-font-size, 13px);
+}
+
+.tdi-tab:has(.tdi-tab-icon) {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 6px;
+}
+
+.tdi-tab-icon {
+  align-self: center;
+}
+
+.tdi-tab-copy {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.tdi-tab-copy > :is(span, small) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tdi-tab-wrap {
+  position: relative;
+  display: block;
+  flex: 1 1 150px;
+  min-width: 112px;
+  max-width: 180px;
+  height: var(--tdi-tab-wrap-height);
+  min-height: var(--tdi-tab-wrap-min-height);
+  border: var(--tdi-tab-wrap-border);
+  background: var(--tdi-tab-wrap-bg);
+}
+
+.tdi-tabs.is-overflowing .tdi-tab-wrap {
+  flex: 0 1 138px;
+  min-width: 104px;
+  max-width: 154px;
+}
+
+.tdi-tabs.is-crowded .tdi-tab-wrap {
+  flex-basis: 118px;
+  min-width: 96px;
+  max-width: 132px;
+}
+
+.tdi-tab-wrap .tdi-tab {
+  min-width: 0;
+  max-width: none;
+}
+
+.tdi-tab-close {
+  position: absolute;
+  top: var(--tdi-tab-close-top);
+  right: var(--tdi-tab-close-right);
+  display: inline-grid;
+  place-items: center;
+  width: var(--tdi-tab-close-width);
+  min-width: var(--tdi-tab-close-width);
+  max-width: var(--tdi-tab-close-width);
+  height: var(--tdi-tab-close-height);
+  min-height: var(--tdi-tab-close-min-height);
+  border: var(--tdi-tab-close-border);
+  border-radius: var(--tdi-tab-close-radius);
+  background: var(--tdi-tab-close-bg);
+  color: var(--tdi-tab-close-fg);
+  padding: 0;
+  transform: var(--tdi-tab-close-transform);
+  /* No stacking token needed: .tdi-tab (its only sibling in .tdi-tab-wrap)
+     is static, so this absolutely positioned close button already paints
+     above it by default. */
+  font-family: var(--title-font);
+  font-size: var(--tdi-tab-close-font-size);
+  line-height: var(--tdi-tab-close-line-height);
+  box-shadow: var(--tdi-tab-close-shadow);
+  backdrop-filter: var(--tdi-tab-close-backdrop-filter);
+  -webkit-backdrop-filter: var(--tdi-tab-close-backdrop-filter);
+  transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.tdi-tab-close::before,
+.tdi-tab-close::after {
+  content: "";
+  position: absolute;
+  width: 12px;
+  height: 2px;
+  background: currentColor;
+  opacity: var(--tdi-tab-close-mark-opacity);
+}
+
+.tdi-tab-close::before {
+  transform: rotate(45deg);
+}
+
+.tdi-tab-close::after {
+  transform: rotate(-45deg);
+}
+
+.tdi-tab-close:disabled,
+.tdi-tab-close.is-disabled {
+  color: var(--shade-dark);
+  background: var(--panel);
+  box-shadow: inset 1px 1px 0 var(--shade-dark), inset -1px -1px 0 #fff;
+  cursor: default;
+}
+
+.tdi-tab-wrap.is-active .tdi-tab-close {
+  background: var(--tdi-tab-close-active-bg);
+  border-color: var(--tdi-tab-close-active-border-color);
+  color: var(--tdi-tab-close-active-fg);
+  box-shadow: var(--tdi-tab-close-active-shadow);
+}
+
+.tdi-tab-wrap.is-active .tdi-tab-close:disabled,
+.tdi-tab-wrap.is-active .tdi-tab-close.is-disabled {
+  background: var(--panel);
+  border-color: var(--ink);
+  color: var(--shade-dark);
+}
+
+.tdi-tab-close:hover:not(:disabled):not(.is-disabled),
+.tdi-tab-close:focus-visible:not(:disabled):not(.is-disabled),
+.tdi-tab-wrap.is-active .tdi-tab-close:hover:not(:disabled):not(.is-disabled),
+.tdi-tab-wrap.is-active .tdi-tab-close:focus-visible:not(:disabled):not(.is-disabled),
+.tdi-tab-close:active:not(:disabled):not(.is-disabled),
+.tdi-tab-wrap.is-active .tdi-tab-close:active:not(:disabled):not(.is-disabled) {
+  border-color: var(--tdi-tab-close-hover-border-color);
+  background: var(--tdi-tab-close-hover-bg);
+  color: var(--tdi-tab-close-hover-fg);
+  box-shadow: var(--tdi-tab-close-hover-shadow);
+  transform: var(--tdi-tab-close-hover-transform);
+}
+
+.tdi-tab-wrap.is-dragging {
+  opacity: var(--tdi-tab-wrap-dragging-opacity);
+}.tdi-tab-wrap.is-dragging .tdi-tab {
+  border: var(--tdi-tab-dragging-border);
+  border-bottom: var(--tdi-tab-dragging-border-bottom);
+  background: var(--tdi-tab-dragging-bg);
+  color: var(--tdi-tab-dragging-fg);
+  box-shadow: var(--tdi-tab-dragging-shadow);
+  transform: var(--tdi-tab-dragging-transform);
+}.tdi-tab.is-active {
+  border: var(--tdi-tab-active-border);
+  border-bottom: var(--tdi-tab-active-border-bottom);
+  background: var(--tdi-tab-active-bg);
+  color: var(--tdi-tab-active-fg);
+  box-shadow: var(--tdi-tab-active-shadow);
+}
+
+.tdi-tab-wrap.is-active.is-dragging .tdi-tab {
+  border: var(--tdi-tab-active-dragging-border);
+  border-bottom: var(--tdi-tab-active-dragging-border-bottom);
+  background: var(--tdi-tab-active-dragging-bg);
+  color: var(--tdi-tab-active-dragging-fg);
+  box-shadow: var(--tdi-tab-active-dragging-shadow);
+}
+
+.tdi-tab.is-active span {
+  font-weight: var(--system-strong-weight);
+}
+
+.tdi-tab.is-dirty span {
+  font-weight: var(--system-strong-weight);
+}
+
+.tdi-tab span,
+.tdi-tab small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.tdi-tab small {
+  font-family: var(--mono-font);
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--tdi-tab-small-color);
+  opacity: 0.76;
+}
+
+.tdi-tab.is-active small {
+  color: var(--tdi-tab-active-small-color);
+}
+
+/* Tier 2: selected-but-window-unfocused. The tab stays marked as the open
+   document, but the containing window is not the frontmost one -- same
+   convention as the title bar and grow box dimming elsewhere (.window). */
+.window:not(.is-active) .tdi-tab.is-active {
+  border: var(--tdi-tab-active-unfocused-border);
+  border-bottom: var(--tdi-tab-active-unfocused-border-bottom);
+  background: var(--tdi-tab-active-unfocused-bg);
+  color: var(--tdi-tab-active-unfocused-fg);
+  box-shadow: var(--tdi-tab-active-unfocused-shadow);
+}
+
+.window:not(.is-active) .tdi-tab.is-active small {
+  color: var(--tdi-tab-active-unfocused-small-color);
+}
+
+/* Tier 2: hover / pressed feedback on a row that is not the open document.
+   Hover and press use separate token pairs so an era with no hover concept
+   (Platinum) can null the hover pair while keeping real press feedback. */
+.tdi-tab:not(.is-active):hover {
+  background: var(--tdi-tab-hover-bg);
+  color: var(--tdi-tab-hover-fg);
+  box-shadow: var(--tdi-tab-hover-shadow);
+}
+
+.tdi-tab:not(.is-active):active {
+  background: var(--tdi-tab-pressed-bg);
+  color: var(--tdi-tab-pressed-fg);
+  box-shadow: var(--tdi-tab-pressed-shadow);
+}
+
+.tdi-tab:focus-visible {
+  outline: var(--system-focus-outline);
+  outline-offset: -2px;
+}
+
+/* Tier 2: an optional section heading between groups of rows in the vertical
+   rail (TeachText groups Manuscript above Section Drafts). Only present when
+   a consumer passes groupFor/groupLabelFor to renderTdiTabStrip. */
+.tdi-tabs-heading {
+  flex: 0 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--tdi-tabs-heading-padding);
+  border-bottom: var(--tdi-tabs-heading-border-bottom);
+  color: var(--tdi-tabs-heading-fg);
+  font-family: var(--ui-font);
+  font-size: var(--tdi-tabs-heading-font-size);
+  font-weight: var(--system-strong-weight);
+  letter-spacing: var(--tdi-tabs-heading-letter-spacing);
+  text-transform: var(--tdi-tabs-heading-text-transform);
+  line-height: 1.3;
+}
+
+.reader-content {
+  flex: 1;
+  min-width: 0;
+  border: var(--reader-content-border);
+  border-radius: var(--reader-content-radius);
+  background: var(--reader-content-bg);
+  padding: 28px 34px;
+  overflow-y: auto;
+  font-family: var(--text-font);
+  line-height: 1.8;
+  box-shadow: var(--reader-content-shadow);
+  user-select: text;
+  color: var(--ink);
+}
+
+/* The reading measure. The window may be any width the desk allows; the column
+   of prose stops at a width a person can read. Measured 2026-09-05: without
+   this the widest text block was 956px on a 13-inch screen and 2236px on a
+   2560px one -- about 300 characters a line -- while the writing route's own
+   editable column has always been capped. The page keeps its own padding, so
+   the column is centred in whatever the window gives it. */
+.reader-content > * {
+  max-width: var(--reading-measure);
+  margin-inline: auto;
+}
+
+/* Room below the last line, so the selection bar never sits on the end of the
+   text when the page is scrolled all the way down. */
+.reader-content::after {
+  content: "";
+  display: block;
+  height: 48px;
+}
+
+/* The document names itself once: title, then one line of provenance (site,
+   author, date, length), then one rule. The body's own leading "# Title" is
+   dropped when it repeats this one (reader.js readerBodyMarkdown). */
+.reader-document-header {
+  margin-bottom: 1.6em;
+  padding-bottom: 10px;
+  border-bottom: var(--reader-meta-divider);
+}
+
+.reader-document-header h1 {
+  margin: 0 0 6px;
+  font-family: var(--title-font);
+  font-size: 24px;
+  line-height: 1.3;
+  text-align: start;
+  overflow-wrap: anywhere;
+}
+
+.reader-meta {
+  margin: 0;
+  font-family: var(--ui-font);
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--shade-dark);
+  overflow-wrap: anywhere;
+}
+
+.reader-body-content p {
+  margin: 1.2em 0;
+  text-indent: 2em;
+  text-align: justify;
+}
+
+/* Hierarchy by size, weight and space. The thick rule that used to stand to
+   the left of every heading was the side stripe DESIGN.md forbids. */
+.reader-body-content :is(h1, h2, h3) {
+  margin: 1.8em 0 0.6em;
+  font-family: var(--title-font);
+  line-height: 1.35;
+}
+
+.reader-body-content h1 {
+  font-size: 1.3em;
+}
+
+.reader-body-content h2 {
+  font-size: 1.18em;
+}
+
+.reader-body-content h3 {
+  font-size: 1.05em;
+}
+
+/* Someone else's words, marked as quoted: a hairline, not an accent bar. */
+.reader-body-content blockquote {
+  margin: 1.2em 0;
+  padding-inline-start: 1em;
+  border-inline-start: var(--system-control-line) solid var(--shade-dark);
+  color: var(--shade-dark);
+}
+
+.reader-body-content blockquote p {
+  text-indent: 0;
+}
+
+.reader-body-content ul,
+.reader-body-content ol {
+  padding-left: 20px;
+}
+
+/* A figure the clipped page brought with it.
+
+   It arrives as a framed place, the way a Macintosh document has always shown
+   a picture it is holding room for -- not as a dashed box, which reads as an
+   error when nothing has gone wrong. The picture itself is never fetched:
+   pulling the publisher's image into the page would tell them the writer is
+   reading, every time the clip is opened, and the desktop's img-src policy
+   allows only self, data:, and blob: in any case. Balloon Help carries that
+   explanation so the article does not have to. */
+.reader-figure {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  margin: 1.4em 0;
+}
+
+.reader-figure-frame {
+  width: 100%;
+  max-width: 320px;
+  height: 84px;
+  border: var(--system-control-line) solid var(--shade-dark);
+  background: var(--paper);
+}
+
+.reader-figure-caption {
+  max-width: 320px;
+  text-indent: 0;
+  text-align: center;
+  font-family: var(--text-font);
+  font-size: 12px;
+  font-style: italic;
+  line-height: 1.3;
+}
+
+.reader-figure-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.reader-figure-reading {
+  width: 100%;
+  margin: 2px 0 0;
+  text-indent: 0;
+  text-align: left;
+}
+
+.reader-transcript-view {
+  display: grid;
+  gap: var(--reader-transcript-view-gap);
+}
+
+.reader-transcript-heading {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.reader-transcript-paragraphs,
+.reader-transcript-blocks {
+  display: grid;
+  gap: var(--reader-transcript-list-gap);
+}
+
+.reader-transcript-paragraph,
+.reader-transcript-block {
+  border: var(--reader-transcript-card-border);
+  border-radius: var(--reader-transcript-card-radius);
+  padding: 8px 10px;
+  background: var(--reader-transcript-card-bg);
+  box-shadow: var(--reader-transcript-card-shadow);
+}
+
+.reader-transcript-paragraph {
+  cursor: pointer;
+}
+
+.reader-transcript-paragraph header,
+.reader-transcript-block header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: #4b4b4b;
+}
+
+.reader-transcript-block header {
+  color: var(--reader-transcript-block-header-color);
+}
+
+.reader-transcript-paragraph p,
+.reader-transcript-block p {
+  margin: 6px 0 0;
+  white-space: pre-wrap;
+}
+
+.video-docmap-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.video-docmap-chip-row span {
+  border: var(--video-chip-border);
+  border-radius: var(--video-chip-radius);
+  background: var(--video-chip-bg);
+  color: var(--video-chip-fg);
+  padding: 1px 5px;
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.reader-transcript-paragraph button,
+.reader-transcript-block button {
+  border: var(--reader-transcript-button-border);
+  background: var(--reader-transcript-button-bg);
+  border-radius: var(--reader-transcript-button-radius);
+  color: var(--reader-transcript-button-fg);
+  box-shadow: var(--reader-transcript-button-shadow);
+  padding: 1px 6px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.reader-transcript-blocks {
+  border: var(--reader-transcript-blocks-border);
+  border-radius: 7px;
+  padding: 8px;
+}
+
+.reader-transcript-blocks summary {
+  border: var(--reader-transcript-summary-border);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.reader-transcript-block.is-focus {
+  outline: 2px solid #2f79c6;
+  outline-offset: 2px;
+}
+
+.dictation-window,
+.translation-pad-window {
+  width: var(--da-width-wide-pad);
+  max-height: calc(100vh - 56px);
+}
+
+/* This button floats over every window, so it is the one control a reader sees
+   in front of every era, and it used to be the only one still drawn in System 6
+   ink: square corners, an ink hairline and a hard offset shadow, over an Aqua
+   desk. It is a push button; it reads the push button's roles. Classic is
+   unchanged except that it now casts the same shadow as every other Classic
+   button instead of its own.
+
+   The height is the era's push-button height, not a literal. It was 28px here
+   and 30px under Liquid Glass, so the button kept one size while every
+   appearance moved its own controls: landing in a window's toolbar row, it
+   stood 4-11px taller than that row's pop-up menu. When it lands in such a row,
+   dictation.js measures the row and writes --dictation-field-button-height,
+   because every era measures its pop-up from its own evidence -- Aqua's is a
+   21px pixel-art rail -- and no token holds that number. */
+.dictation-field-button {
+  position: fixed;
+  /* The button is a manual popover, so it lands in the top layer with the
+     native <dialog> windows it can be placed for; the UA's own popover box
+     (inset: 0, auto margins, centered) is neutralised the same way balloon
+     help neutralises it. */
+  inset: auto;
+  left: var(--dictation-field-button-x, 0px);
+  top: var(--dictation-field-button-y, 0px);
+  margin: 0;
+  z-index: var(--z-floating-field-control);
+  /* Centred the way every other push button centres its label, so the label
+     stays on the middle of whatever height the row hands down. Liquid Glass
+     leads at 20.3px, which overflowed a 19px row box on its own. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  height: var(--dictation-field-button-height, var(--system-button-min-height));
+  padding: 0 10px;
+  border: var(--system-control-line) solid var(--btn-border-color);
+  border-radius: var(--btn-radius);
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  box-shadow: var(--btn-shadow);
+  font-family: var(--ui-font);
+  font-size: var(--system-control-size);
+  font-weight: bold;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.dictation-field-button:hover,
+.dictation-field-button:focus {
+  background: var(--btn-hover-bg);
+  color: var(--btn-hover-fg);
+}
+
+.dictation-field-button.is-hidden {
+  display: none;
+}
+
+body.is-booting .dictation-field-button,
+body.is-shutting-down .dictation-field-button,
+body.has-system-modal .dictation-field-button,
+body:has(.boot-screen:not([hidden]):not(.is-done)) .dictation-field-button,
+body:has(.shutdown-screen:not(.is-hidden)) .dictation-field-button {
+  display: none;
+}
+
+.dictation-details-bar {
+  align-items: center;
+}
+
+.dictation-details-bar span:last-child {
+  color: var(--shade-dark);
+  margin-left: auto;
+  text-align: right;
+}
+
+/* One field, one answer, one row of verbs. The pad sits beside the work rather
+   than over it, so it stays the size of the question it is holding. A sidecar
+   states its own width; the default-width map serves the fixed accessories. */
+.sideask-pad-window {
+  width: var(--da-width-pad);
+  max-height: calc(100vh - 56px);
+}
+
+/* The Dictation Pad is the two-field pad, so it fills its wide window instead
+   of pinning itself to the narrower single-field --da-width-pad. Leaving that
+   340px width here left a 40px strip of window chrome to the right of the pane
+   in every appearance. */
+.dictation-pane {
+  max-height: calc(100vh - 56px);
+  /* When the window is shorter than the fields' own floor, the pane scrolls.
+     The alternative is what a shrink below that floor does: the field above
+     the action row spills over it (the row is placed after this pane's
+     content, not after the overflow). The translation pad takes the same
+     trade three rules down. */
+  overflow: auto;
+}
+
+/* The live guess, the unconfirmed last sentence, and the three small
+   preferences. Same tokens as the rest of the pad: no new materials, no new
+   type scale, nothing that drifts when the appearance changes. */
+.dictation-interim {
+  margin: 6px 0 0;
+  padding: 4px 8px;
+  border: 1px dashed var(--shade-dark);
+  border-radius: 6px;
+  color: var(--shade-dark);
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.dictation-tail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 12px;
+}
+
+.dictation-tail span {
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+
+.dictation-label-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.dictation-source-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.dictation-source-actions {
+  display: inline-flex;
+}
+
+.dictation-source-actions button.is-selected,
+.dictation-source-actions button[aria-pressed="true"] {
+  font-weight: bold;
+}
+
+.dictation-badge {
+  color: var(--shade-dark);
+  font-size: 10px;
+}
+
+.dictation-target-note {
+  color: var(--shade-dark);
+}
+
+.dictation-preferences {
+  margin-top: 8px;
+  font-size: 12px;
+}
+
+.dictation-preferences > summary {
+  cursor: pointer;
+}
+
+.dictation-preference {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.dictation-preferences select,
+.dictation-preferences textarea {
+  font-family: var(--text-font);
+  font-size: 12px;
+}
+
+.dictation-preferences textarea {
+  width: 100%;
+  resize: vertical;
+}
+
+.dictation-preference-note {
+  margin: 4px 0 0;
+  color: var(--shade-dark);
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+
+.dictation-preference-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.sideask-pad-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.sideask-pad-pane textarea {
+  font-family: var(--text-font);
+  font-size: 13px;
+  resize: none;
+}
+
+/* :not([hidden]) or the author display would outrank the attribute, and the
+   pad would promise "not saved" before it had anything to not save. */
+.sideask-pad-answer:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* The reply is not saved anywhere, and the pad says so before it shows it. */
+.sideask-pad-temporary {
+  font-size: 10px;
+  opacity: 0.75;
+}
+
+/* Also .message-content, whose face and size it takes. */
+.sideask-pad-reply {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.translation-pad-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  overflow: auto;
+}
+
+.dictation-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dictation-bottom-actions,
+.translation-pad-actions {
+  border-top: var(--action-row-divider);
+  padding-top: 8px;
+}
+
+.dictation-transcripts,
+.translation-pad-textareas {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  /* The fields may shrink — each carries its own minimum — but this box may
+     not shrink below them: min-content is labels + those minima + the gaps, so
+     a tall window still spreads the fields out while a short one hands the
+     problem to the pane's scrollbar instead of stacking the last field over
+     the buttons underneath it. */
+  min-height: min-content;
+}
+
+.dictation-transcripts label,
+.translation-pad-textareas label {
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.dictation-transcripts textarea,
+.translation-pad-textareas textarea {
+  font-family: var(--text-font);
+  font-size: 13px;
+  resize: none;
+}
+
+.dictation-window .dictation-pane {
+  height: calc(100% - 58px);
+}
+
+.dictation-window .dictation-transcripts {
+  flex: 1 1 auto;
+}
+
+.dictation-window .dictation-transcripts textarea {
+  flex: 1 1 0;
+  min-height: 84px;
+}
+
+.translation-pad-details-bar {
+  align-items: center;
+}
+
+.translation-pad-details-bar span:last-child {
+  color: var(--shade-dark);
+  margin-left: auto;
+  text-align: right;
+}
+
+.translation-pad-textareas textarea {
+  min-height: 118px;
+}
+
+.question-sheet-window,
+.outline-window,
+.section-drafts-window,
+.review-desk-window {
+  /* Same paper-driven width as TeachText (see --writing-window-default-width).
+     container-type is load-bearing for the TDI tab container queries. */
+  width: var(--writing-window-default-width);
+  height: min(520px, calc(100vh - 84px));
+  container-type: inline-size;
+}
+
+.question-sheet-window {
+  left: 96px;
+  top: 52px;
+}
+
+.outline-window {
+  left: 150px;
+  top: 70px;
+}
+
+.section-drafts-window {
+  left: 204px;
+  top: 88px;
+}
+
+.rebuild-flow-window {
+  width: 540px;
+  height: auto;
+}
+
+.clio-stage-window {
+  width: min(1024px, calc(100vw - 210px), calc((100vh - 76px) * 16 / 10));
+  height: min(640px, calc(100vh - 76px), calc((100vw - 210px) * 10 / 16));
+  min-width: 560px;
+  aspect-ratio: 16 / 10;
+}
+
+.clio-stage-details-bar #clio-stage-status {
+  min-width: 0;
+  margin-left: auto;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clio-stage-details-bar {
+  gap: var(--clio-stage-details-bar-gap);
+}
+
+.clio-stage-window .window-pane.clio-stage-pane {
+  display: grid;
+  grid-template-rows: var(--clio-stage-pane-rows);
+  gap: var(--clio-stage-pane-gap);
+  padding: 8px;
+  background: var(--clio-stage-pane-bg);
+}
+
+.clio-stage-toolbar,
+.clio-stage-controls {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.clio-stage-toolbar {
+  --window-toolbar-align: var(--clio-stage-toolbar-align-items);
+  --window-toolbar-gap: var(--clio-stage-toolbar-gap);
+}
+
+.clio-stage-controls {
+  display: flex;
+  gap: var(--clio-stage-controls-gap);
+}
+
+.clio-stage-pane .clio-stage-nav-button {
+  min-width: var(--clio-stage-nav-min-width);
+  padding-inline: var(--clio-stage-nav-padding-inline);
+  font-size: var(--clio-stage-nav-font-size);
+  line-height: var(--clio-stage-nav-line-height);
+}
+
+.clio-stage-view-switcher {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--clio-stage-view-switcher-gap);
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.clio-stage-pane .clio-stage-view-switcher .view-switch-option {
+  border-color: var(--clio-stage-view-button-border-color);
+  background: var(--clio-stage-view-button-bg);
+  color: var(--clio-stage-view-button-fg);
+  opacity: var(--clio-stage-view-button-opacity);
+}
+
+.clio-stage-pane .clio-stage-view-switcher .view-switch-option[aria-pressed="true"] {
+  border-color: var(--clio-stage-view-default-border-color);
+  background: var(--clio-stage-view-default-bg);
+  color: var(--clio-stage-view-default-fg);
+}
+
+.clio-stage-pane .clio-stage-view-switcher .view-switch-option:disabled,
+.clio-stage-pane .clio-stage-view-switcher .view-switch-option.is-disabled {
+  border-color: var(--clio-stage-view-disabled-border-color);
+  background: var(--clio-stage-view-disabled-bg);
+  color: var(--clio-stage-view-disabled-fg);
+}
+
+.clio-stage-empty-note.empty-next-note {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin: 18px auto;
+  max-width: 46ch;
+  text-align: center;
+  line-height: 1.45;
+}
+
+.clio-stage-empty-note.empty-next-note > .btn {
+  min-height: var(--touch-primary-min-height);
+}
+
+.clio-stage-viewport {
+  min-height: var(--clio-stage-viewport-min-height);
+  border: var(--clio-stage-viewport-border);
+  border-radius: var(--clio-stage-viewport-radius);
+  background: var(--clio-stage-viewport-bg);
+  box-shadow: var(--clio-stage-viewport-shadow);
+  overflow: auto;
+  padding: var(--clio-stage-viewport-padding);
+  color: var(--ink);
+}
+
+.clio-stage-pane .clio-stage-viewport.is-dragging,
+.clio-stage-pane .clio-stage-viewport.is-importing {
+  border-color: var(--clio-stage-viewport-active-border-color);
+  background: var(--clio-stage-viewport-active-bg);
+}
+
+.clio-stage-document-body {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.clio-stage-slide-mode {
+  display: grid;
+  place-items: center;
+  min-height: var(--clio-stage-slide-mode-min-height);
+  background: var(--clio-stage-slide-mode-bg);
+  padding: var(--clio-stage-slide-mode-padding);
+  overflow: hidden;
+  container-type: size;
+}
+
+.clio-stage-source {
+  padding: 0;
+  overflow: auto;
+  background: var(--paper);
+}
+
+.clio-stage-source-code {
+  min-height: 100%;
+  margin: 0;
+  padding: 18px 20px;
+  font-family: var(--mono-font);
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.clio-stage-cue-notes-body p {
+  margin: .2em 0 0;
+}
+
+.clio-stage-cue-mode {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 12px;
+  min-height: var(--clio-stage-cue-mode-min-height);
+  border-color: var(--clio-stage-cue-mode-border-color);
+  background: var(--clio-stage-cue-mode-bg);
+  color: var(--paper);
+}
+
+/* The prompter's current page: the printed page, centred and scaled to fit. */
+.clio-stage-cue-current {
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  overflow: hidden;
+  font-family: var(--title-font);
+  font-size: var(--clio-stage-cue-current-font-size);
+  line-height: 1.28;
+}
+
+.clio-stage-cue-current h1 {
+  font-size: var(--clio-stage-cue-current-h1-font-size);
+  line-height: var(--clio-stage-cue-current-h1-line-height);
+}
+
+.clio-stage-cue-current h2 {
+  font-size: var(--clio-stage-cue-current-h2-font-size);
+}
+
+.clio-stage-cue-current h1,
+.clio-stage-cue-current h2,
+.clio-stage-cue-current h3 {
+  margin-top: 0;
+}
+
+.clio-stage-cue-next {
+  display: grid;
+  gap: 4px;
+  border-top: 1px solid var(--clio-stage-cue-next-border-top-color);
+  padding-top: 10px;
+  color: var(--clio-stage-cue-next-fg);
+  font-family: var(--mono-font);
+  font-size: 12px;
+}
+
+.clio-stage-cue-notes {
+  display: grid;
+  gap: 6px;
+  border-top: 1px solid var(--paper);
+  padding-top: 10px;
+  font-family: var(--mono-font);
+  font-size: 12px;
+}
+
+.clio-stage-cue-notes p {
+  margin: 0;
+  font-family: var(--text-font);
+  font-size: clamp(15px, 1.8vw, 20px);
+  line-height: 1.34;
+  white-space: pre-wrap;
+}
+
+.clio-stage-cue-next strong {
+  font-family: var(--text-font);
+  font-size: 16px;
+}
+
+.clio-stage-page {
+  min-width: 44px;
+  display: inline-grid;
+  place-items: center;
+  text-align: center;
+  font-family: var(--clio-stage-page-font-family);
+  font-size: var(--clio-stage-page-font-size);
+  font-weight: var(--clio-stage-page-font-weight);
+  letter-spacing: var(--clio-stage-page-letter-spacing);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* Slide View is edited on the page. The rail of page thumbnails sits beside the
+   slide, above it when the viewport is narrow; the stage around the frame is its
+   own size container so the slide scales against the room the rail leaves. */
+.clio-stage-slide-mode.has-rail {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.clio-stage-edit-shell {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  gap: 12px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.clio-stage-edit-stage {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  container-type: size;
+}
+
+.clio-stage-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  min-height: 0;
+}
+
+.clio-stage-rail-tools {
+  display: flex;
+  flex: none;
+  gap: 4px;
+}
+
+.clio-stage-rail-button {
+  flex: 1 1 0;
+  min-width: 0;
+  padding-inline: 4px;
+}
+
+.clio-stage-thumbs {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.clio-stage-thumb-item {
+  flex: none;
+}
+
+.clio-stage-thumb {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  padding: 5px 7px;
+  border: 1px solid var(--clio-stage-view-button-border-color);
+  background: var(--clio-stage-view-button-bg);
+  color: var(--clio-stage-view-button-fg);
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+}
+
+.clio-stage-thumb[aria-current="true"] {
+  border-color: var(--ink);
+  background: var(--clio-stage-view-default-bg);
+  color: var(--clio-stage-view-default-fg);
+  box-shadow: inset 4px 0 0 var(--ink);
+}
+
+.clio-stage-thumb[data-surface="dark"] .clio-stage-thumb-title,
+.clio-stage-thumb[data-surface="hero"] .clio-stage-thumb-title {
+  font-weight: 700;
+}
+
+.clio-stage-thumb-number {
+  font-family: var(--mono-font);
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+}
+
+.clio-stage-thumb-title,
+.clio-stage-thumb-layout {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clio-stage-thumb-layout {
+  opacity: 0.7;
+}
+
+.clio-stage-thumb-item.is-drop-before {
+  box-shadow: 0 -3px 0 var(--ink);
+}
+
+.clio-stage-thumb-item.is-drop-after {
+  box-shadow: 0 3px 0 var(--ink);
+}
+
+.clio-stage-layout-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.clio-stage-layout-field[hidden],
+.clio-stage-reset-layout[hidden] {
+  display: none;
+}
+
+/* The page on the stage (features/clio-stage.js) is the printed sheet's own
+   <section>, inside this host's shadow root, scaled as one piece; nothing in
+   this sheet reaches it. The host wears the appearance's frame around it. */
+.clio-stage-page-host {
+  border: var(--clio-stage-slide-frame-border);
+  border-radius: var(--clio-stage-slide-frame-radius);
+  box-shadow: var(--clio-stage-slide-frame-shadow);
+  overflow: hidden;
+}
+
+/* A deck arriving: the newest pages ease in. The keyframe names only where they
+   start, so an engine that never runs it leaves the page fully shown. */
+@keyframes clio-stage-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+.clio-stage-thumb-item.is-arriving,
+.clio-stage-page-host.is-arriving {
+  animation: clio-stage-arrive 240ms ease-out backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clio-stage-thumb-item.is-arriving,
+  .clio-stage-page-host.is-arriving {
+    animation: none;
+  }
+}
+
+@container (max-width: 639px) {
+  .clio-stage-edit-shell {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .clio-stage-rail {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  .clio-stage-rail-tools {
+    flex: none;
+    flex-direction: column;
+    width: 64px;
+  }
+
+  .clio-stage-thumbs {
+    flex-direction: row;
+  }
+
+  .clio-stage-thumb-item {
+    flex: 0 0 112px;
+  }
+
+  .clio-stage-thumb-item.is-drop-before {
+    box-shadow: -3px 0 0 var(--ink);
+  }
+
+  .clio-stage-thumb-item.is-drop-after {
+    box-shadow: 3px 0 0 var(--ink);
+  }
+}
+
+.dictionary-window {
+  top: 102px;
+  right: 150px;
+  width: var(--da-width-wide-pad);
+  min-height: 320px;
+  /* The window grows with the word list; the pane scrolls once it would leave
+     the screen. */
+  max-height: calc(100vh - 56px);
+}
+
+.system-help-window {
+  top: 70px;
+  right: 118px;
+  width: min(680px, calc(100vw - 210px));
+  height: min(560px, calc(100vh - 92px));
+  min-width: 320px;
+  max-width: calc(100vw - 48px);
+  max-height: calc(100vh - 52px);
+}
+
+/* 「还原写作对象」 reads top to bottom in the order its decisions are made:
+   the article, the sections, the checks. The pane scrolls when a long list
+   meets a short screen, so the button row is never cut off. */
+.rebuild-flow-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  padding: 10px 12px 12px;
+  overflow: auto;
+}
+
+.rebuild-flow-pane > * {
+  flex: none;
+}
+
+/* Parts that come and go (the DocMap option, the paste box, the progress
+   row) are toggled with the hidden attribute; their own display must not
+   bring them back. */
+.rebuild-flow-pane [hidden] {
+  display: none;
+}
+
+.rebuild-form {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 6px 10px;
+  align-items: center;
+  font-size: 12px;
+}
+
+.rebuild-label {
+  text-align: right;
+}
+
+.rebuild-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+}
+
+.rebuild-choices label,
+.rebuild-check-option {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.rebuild-choices label:has(input:disabled) {
+  opacity: var(--choice-disabled-opacity);
+}
+
+.rebuild-flow-pane .rebuild-paste {
+  width: 100%;
+  min-height: 160px;
+  resize: vertical;
+  font-family: var(--text-font);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.rebuild-subhead {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.rebuild-subhead p,
+.rebuild-subhead-text {
+  margin: 0;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.rebuild-sections {
+  max-height: 264px;
+  overflow: auto;
+  border: var(--system-border);
+}
+
+/* .finder-list is a flex column: in a height-capped list its rows would
+   shrink to their minimum and two-line rows (phones) would overlap. */
+.rebuild-sections > * {
+  flex: none;
+}
+
+.rebuild-sections .finder-list-header,
+.rebuild-sections .finder-list-row {
+  grid-template-columns: 28px minmax(90px, 1fr) minmax(120px, 1.6fr) 48px;
+  cursor: default;
+}
+
+.rebuild-sections .finder-list-row > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rebuild-sections .finder-list-header > span:last-child,
+.rebuild-sections .finder-list-row > :last-child {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.rebuild-sections .finder-list-row.is-bad > :nth-child(3) {
+  text-decoration: underline wavy;
+  text-underline-offset: 3px;
+}
+
+.rebuild-sections .finder-list-row input {
+  width: 100%;
+  min-width: 0;
+  font: inherit;
+}
+
+.rebuild-empty {
+  padding: 14px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.rebuild-empty p,
+.rebuild-carry,
+.rebuild-run p {
+  margin: 0;
+  font-size: 12px;
+}
+
+.rebuild-run {
+  display: grid;
+  gap: 6px;
+}
+
+.rebuild-check {
+  padding: 6px 8px;
+  border: var(--system-border);
+  background: var(--pane-bg);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.rebuild-check p {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  margin: 0;
+}
+
+.rebuild-check .rebuild-summary {
+  display: block;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px dotted var(--shade);
+  font-weight: bold;
+}
+
+/* .progress-meter is the shared part: one recipe, era dressing entirely
+   through the --progress-* tokens (see 00-foundation.css :root). The rebuild
+   flow's meter is that part -- .rebuild-progress-meter is kept as a second
+   selector only so the existing JS hook and aria wiring need no changes. */
+.progress-meter,
+.rebuild-progress-meter {
+  height: var(--progress-height);
+  padding: var(--progress-padding);
+  border: var(--system-control-line) solid var(--progress-border-color);
+  border-radius: var(--progress-radius);
+  background: var(--progress-bg);
+  box-shadow: var(--progress-shadow);
+  overflow: hidden;
+}
+
+.progress-meter span,
+.rebuild-progress-meter span {
+  display: block;
+  width: var(--progress-fill-width, 0);
+  height: 100%;
+  background: var(--progress-fill-bg);
+  border-radius: var(--progress-fill-radius);
+  box-shadow: var(--progress-fill-shadow);
+  border-right: var(--progress-fill-border-right);
+  transition: width 160ms ease;
+}
+
+.progress-meter.is-working span,
+.rebuild-progress-meter.is-working span {
+  background: var(--progress-fill-active-bg);
+  background-size: var(--progress-fill-active-size);
+  animation: rebuild-progress-working var(--progress-fill-active-duration) linear infinite;
+}
+
+@keyframes rebuild-progress-working {
+  from { background-position: 0 0; }
+  to { background-position: 40px 0; }
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  border: 0;
+  white-space: nowrap;
+}
+
+.dictionary-window .window-pane.dictionary-pane {
+  display: grid;
+  /* The middle track stops at its own content instead of collapsing to zero.
+     When the portrait Desk Accessory rail squeezes this window past what its
+     three rows need, the pane scrolls — the rows used to shrink to nothing and
+     let their boxes paint on top of each other. */
+  /* Look up, result, my words, my entry, recent, one button row. */
+  grid-template-rows: auto minmax(auto, 1fr) auto auto auto auto;
+  overflow-y: auto;
+  gap: var(--dictionary-pane-gap);
+  padding: var(--dictionary-pane-padding);
+  background: var(--dictionary-pane-bg);
+}
+
+.dictionary-form {
+  display: grid;
+  gap: 4px;
+}
+
+.dictionary-window .dictionary-form label {
+  width: var(--dictionary-form-label-width);
+  padding: var(--dictionary-form-label-padding);
+  border-radius: var(--dictionary-form-label-radius);
+  background: var(--dictionary-form-label-bg);
+  color: var(--dictionary-form-label-color);
+  box-shadow: var(--dictionary-form-label-shadow);
+  font-weight: 700;
+}
+
+.dictionary-query-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.dictionary-query-row input {
+  min-width: 0;
+  width: 100%;
+}
+
+.dictionary-result {
+  /* The pane owns the minimum row size and scrolls when the portrait Desk
+     Accessory rail runs out of height. A 170px floor made this box keep
+     painting across the Recent row instead of participating in that scroll. */
+  min-height: 0;
+  max-height: 350px;
+  overflow: auto;
+  border: var(--dictionary-result-border);
+  border-radius: var(--dictionary-result-radius);
+  background: var(--dictionary-result-bg);
+  box-shadow: var(--dictionary-result-shadow);
+  padding: 8px;
+}
+
+.dictionary-card h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.dictionary-card dl {
+  display: grid;
+  grid-template-columns: minmax(82px, auto) minmax(0, 1fr);
+  gap: 5px 8px;
+  margin: 0;
+}
+
+.dictionary-card dt {
+  font-weight: 700;
+}
+
+.dictionary-card dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* The writer's own words. A short list the writer reads down, not a table:
+   the row is a button because picking one loads it, and the count sits beside
+   the label rather than inside the list, so an empty list still says so. */
+.dictionary-words {
+  display: grid;
+  gap: 4px;
+}
+
+.dictionary-words-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.dictionary-word-list {
+  border-radius: var(--surface-radius);
+  max-height: 96px;
+  overflow-y: auto;
+  border: var(--dictionary-result-border);
+  background: var(--dictionary-result-bg);
+}
+
+.dictionary-word-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  width: 100%;
+  padding: 2px 6px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.dictionary-word-row + .dictionary-word-row {
+  border-top: 1px dotted var(--shade-dark);
+}
+
+.dictionary-word-row.is-selected {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.dictionary-word-row span {
+  color: var(--shade-dark);
+  font-size: 11px;
+}
+
+.dictionary-word-row.is-selected span {
+  color: var(--paper);
+}
+
+.dictionary-word-list .hint {
+  margin: 0;
+  padding: 4px 6px;
+}
+
+.dictionary-entry {
+  display: grid;
+  gap: 4px;
+}
+
+.dictionary-entry textarea {
+  resize: none;
+}
+
+.dictionary-recent {
+  min-height: var(--dictionary-recent-min-height);
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  align-items: center;
+  gap: 4px;
+  border-top: var(--dictionary-recent-border-top);
+  padding-top: 6px;
+  color: var(--dictionary-recent-color);
+  font-size: 12px;
+}
+
+.dictionary-recent b {
+  margin-right: 2px;
+}
+
+.dictionary-recent button.btn.mini-btn {
+  flex: 0 0 auto;
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border: var(--dictionary-recent-button-border);
+  border-radius: var(--dictionary-recent-button-radius);
+  background: var(--dictionary-recent-button-bg);
+  color: var(--dictionary-recent-button-fg);
+}
+
+/* A one-line edit from SideAsk, side by side under the slide. */
+.clio-stage-proposal {
+  display: grid;
+  gap: 6px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--rule);
+  background: var(--panel);
+  font-size: 11px;
+}
+
+.clio-stage-proposal p {
+  margin: 0;
+}
+
+.clio-stage-proposal-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.clio-stage-proposal-pair figure {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  min-width: 0;
+  margin: 0;
+}
+
+.clio-stage-proposal-page {
+  max-height: 140px;
+  overflow: auto;
+  padding: 6px 8px;
+  border: 1px solid var(--rule);
+  background: var(--paper);
+  font-size: 11px;
+}
+
+.clio-stage-proposal-refused {
+  font-weight: 700;
+}
+
+.clio-stage-proposal-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}

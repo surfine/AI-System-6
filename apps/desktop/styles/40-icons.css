@@ -1,0 +1,1176 @@
+.memory-card-glyph {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  color: currentColor;
+  /* The memory-card glyphs are stroke line-art, not 1-bit pixel runs; smooth
+     anti-aliasing reads as a modern surface instead of a bitmapped one. */
+  shape-rendering: auto;
+}
+
+.scrapbook-icon::before {
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 5px;
+  top: 4px;
+  bottom: 4px;
+  border: 2px solid var(--ink);
+  background:
+    linear-gradient(var(--ink), var(--ink)) 3px 6px / 10px 1px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 3px 10px / 10px 1px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 3px 14px / 10px 1px no-repeat,
+    var(--paper);
+}
+
+.scrapbook-icon::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 6px;
+  width: 8px;
+  height: 22px;
+  background:
+    repeating-linear-gradient(to bottom, var(--ink) 0, var(--ink) 2px, transparent 2px, transparent 4px);
+  border: 1px solid var(--ink);
+  border-radius: 2px;
+}
+
+.teachtext-icon::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  right: 6px;
+  top: 4px;
+  bottom: 4px;
+  border: 2px solid var(--ink);
+  background:
+    linear-gradient(135deg, var(--paper) 0 48%, var(--ink) 49% 58%, transparent 59%) right top / 9px 9px no-repeat,
+    var(--paper);
+}
+
+.teachtext-icon::after {
+  content: "T";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 9px;
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 900;
+  text-align: center;
+  line-height: 1;
+  font-family: var(--ui-font);
+}
+
+.tools-icon::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  top: 6px;
+  width: 14px;
+  height: 14px;
+  border: 4px solid var(--ink);
+  border-radius: 50%;
+  background: radial-gradient(circle at center, var(--paper) 3px, transparent 3px);
+}
+
+.tools-icon::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 14px;
+  width: 14px;
+  height: 8px;
+  background: var(--ink);
+  transform: rotate(-45deg);
+  border-radius: 1px;
+}
+
+.message-content h2,
+.message-content h3 {
+  margin: 16px 0 8px;
+  font-family: var(--ui-font);
+  border-bottom: 2px solid var(--ink);
+  display: inline-block;
+  padding-bottom: 2px;
+  font-size: 13px;
+  line-height: 1.25;
+}
+.message-content ul,
+.message-content ol {
+  margin: 8px 0 12px 24px;
+  padding: 0;
+  list-style-position: outside;
+}
+
+.message-content ol {
+  list-style-type: decimal;
+}
+
+.message-content ul {
+  list-style-type: disc;
+}
+
+.message-content li {
+  margin: 6px 0;
+  line-height: 1.4;
+}
+
+.message-content ol > li::marker {
+  font-weight: 700;
+  font-family: var(--ui-font);
+}
+
+.message-content ol ol {
+  list-style-type: lower-alpha;
+}
+
+.message-content li ul {
+  margin: 6px 0 6px 18px;
+  list-style-type: circle;
+}
+
+.message-content blockquote {
+  margin: 12px 0;
+  padding: 8px 12px;
+  border: 2px solid var(--ink);
+  background: #f9f9f9;
+  font-style: italic;
+  position: relative;
+}
+
+.message-content blockquote::before {
+  content: "“";
+  position: absolute;
+  left: 4px;
+  top: 0;
+  font-size: 24px;
+  opacity: 0.2;
+}
+
+.message-content code {
+  font-family: var(--mono-font);
+  background: #eee;
+  padding: 1px 4px;
+  border: 1px solid var(--ink);
+  font-size: 12px;
+}
+
+.message-content pre {
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  padding: 12px;
+  overflow-x: auto;
+  margin: 12px 0;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.message-content pre code {
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.finder-item {
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  /* 96, not 80: the label box spends 6px on padding, and at 80 the bold
+     label had 62px for "MultiFinder" (63px in Chicago, 71 in Lucida, 75 in
+     SF), so every era broke it mid-word (2026-10-08 survey). Every era's
+     grid pitch is at least 106px, so the wider cell fits without reflow. */
+  width: 96px;
+  text-align: center;
+  cursor: pointer;
+}
+
+/* Finder items set their own flex/grid display in every appearance, so the
+   browser's low-specificity [hidden] rule cannot hide a conditional object.
+   Keep the semantic attribute authoritative without raising override debt. */
+.finder-grid .finder-item[hidden] {
+  display: none;
+}
+
+.finder-item span:last-of-type,
+.finder-item:focus span:last-of-type,
+.finder-item:hover span:last-of-type,
+.finder-item.is-selected span:last-of-type {
+  background: var(--finder-label-bg);
+  padding: 1px 3px;
+  box-decoration-break: clone;
+  /* A filename with no space (e.g. "DTK_Release_notes.pdf") has no natural
+     break point, and the 80px-wide icon column below only requested this at
+     narrow viewports -- at ordinary desktop width the label instead overflowed
+     unbroken to one side, clipped against its own icon and the next column. */
+  /* P11: the wrap policy is an era hook. Defaults are today's literals, so
+     every appearance renders unchanged; Platinum answers via its token block
+     (native Geneva view labels break between words, never inside one). */
+  /* Break inside a word only when the word alone cannot fit the line (a
+     long filename with no spaces); never split an ordinary word. */
+  overflow-wrap: var(--finder-label-wrap, break-word);
+  word-break: var(--finder-label-word-break, normal);
+  font-weight: var(--finder-label-weight, 600);
+  font-variation-settings: var(--finder-label-font-variation, "wdth" 113);
+}
+
+/* A long folder name wraps to two lines and stops; a long file name is cut in
+   the middle (<i> gives way, <b> is the tail kept) in Finder, lists and Trash. */
+body[data-theme] :is(.desktop-icon span:last-child, .finder-item span:last-of-type:not(:has(> bdi))) {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+body[data-theme] .finder-item span:last-of-type:not(:has(> bdi)) {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+body[data-theme] :is(.finder-item span:last-of-type, .finder-list-name-cell span, .trash-list button span):has(> bdi) {
+  display: flex;
+  max-width: 100%;
+}
+
+:is(.finder-item, .finder-list-name-cell, .trash-list button) bdi {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:is(.finder-item, .finder-list-name-cell, .trash-list button) bdi + bdi {
+  flex: none;
+}
+
+.finder-item small {
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 11px;
+  line-height: 1;
+  padding: 1px 3px;
+  box-decoration-break: clone;
+}
+
+.finder-item.is-selected span:last-of-type {
+  background: var(--desktop-label-selected-bg, var(--selection-bg));
+  color: var(--desktop-label-selected-fg, var(--selection-fg));
+}
+
+/* P13: the selected object darkens its artwork the way the native Finder does.
+   The hook's default is `none`, so every other appearance keeps today's look;
+   Platinum answers with brightness(0.5) and also flips the label to a black
+   tag with white text (native 02-desktop-clean). */
+.finder-item.is-selected .sys-icon,
+.desktop-icon.is-selected .sys-icon {
+  filter: var(--desktop-icon-selected-filter, none);
+}
+
+/* The same state for an era whose icon rule sets its own filter (Platinum):
+   it reads this instead of a literal none. */
+.finder-item.is-selected,
+.desktop-icon.is-selected {
+  --sys-icon-state-filter: var(--desktop-icon-selected-filter, none);
+}
+
+/* Classic keeps smooth artwork and its System 6 selection silhouette separate.
+   Selection reveals the black mask and reverses the same artwork to white; it
+   never swaps to an alternate icon.
+
+   The reversed art is its own layer, not a CSS filter over the black one.
+   WebKit ignores `filter` on an SVG <image>, so the art stayed black on the
+   black mask and every reversed surface — desktop, Finder, the menu bar, the
+   Control Panel chooser, strip modules — read as a solid blob. The painter
+   draws the same art file a third time through an SVG filter
+   (.sys-icon-classic-reverse) and the states below swap which layer paints. */
+.sys-icon-svg.has-classic-mask .sys-icon-classic-paper,
+.sys-icon-svg.has-classic-mask .sys-icon-classic-mask,
+.sys-icon-svg.has-classic-mask .sys-icon-classic-reverse {
+  display: none;
+}
+
+/* On the desk an unselected icon is white inside its silhouette and the
+   pattern shows around it, as the System 6 masks draw it; the cell itself
+   paints nothing. Selection keeps the black mask over this layer. */
+.desktop-icon:not(.is-selected) .sys-icon-svg.has-classic-mask .sys-icon-classic-paper {
+  display: inline;
+}
+
+.desktop-icon .sys-icon:has(> .sys-icon-svg.has-classic-mask) {
+  background: transparent;
+}
+
+/* The Control Panel chooser selects the same way: the current tab shows its
+   icon silhouette with the art reversed on top, and the name — not the cell —
+   carries the highlight box. */
+.finder-item.is-selected .sys-icon-svg.has-classic-mask .sys-icon-classic-mask,
+.desktop-icon.is-selected .sys-icon-svg.has-classic-mask .sys-icon-classic-mask,
+.control-chooser .system-tab.is-active .sys-icon-svg.has-classic-mask .sys-icon-classic-mask {
+  display: block;
+}
+
+/* Every surface that reverses the art. A selected icon also paints the black
+   field behind it (the mask above); a pulled-down menu title and a strip tile
+   leave the mask hidden, because their own chrome already paints that field. */
+.finder-item.is-selected .sys-icon-svg.has-classic-mask .sys-icon-classic-art,
+.desktop-icon.is-selected .sys-icon-svg.has-classic-mask .sys-icon-classic-art,
+.control-chooser .system-tab.is-active .sys-icon-svg.has-classic-mask .sys-icon-classic-art,
+.menu.is-open > button .sys-icon-svg.has-classic-mask .sys-icon-classic-art,
+.menu-bar > .menu > button:focus-visible .sys-icon-svg.has-classic-mask .sys-icon-classic-art,
+.menu-bar > .guest-indicator:focus-visible .sys-icon-svg.has-classic-mask .sys-icon-classic-art {
+  display: none;
+}
+
+.finder-item.is-selected .sys-icon-svg.has-classic-mask .sys-icon-classic-reverse,
+.desktop-icon.is-selected .sys-icon-svg.has-classic-mask .sys-icon-classic-reverse,
+.control-chooser .system-tab.is-active .sys-icon-svg.has-classic-mask .sys-icon-classic-reverse,
+.menu.is-open > button .sys-icon-svg.has-classic-mask .sys-icon-classic-reverse,
+.menu-bar > .menu > button:focus-visible .sys-icon-svg.has-classic-mask .sys-icon-classic-reverse,
+.menu-bar > .guest-indicator:focus-visible .sys-icon-svg.has-classic-mask .sys-icon-classic-reverse {
+  display: inline;
+}
+
+/* The guest indicator is the one icon button in the bar that is not a menu
+   title: it acts on the click (it opens Chooser) rather than pulling a menu
+   down, so it cannot live inside a .menu without the menu handler swallowing
+   its action. It still reverses on hover like its neighbours, which is why it
+   needs the rule spelled out here rather than inherited. */
+@media (hover: hover) {
+  .menu-bar > .menu > button:hover .sys-icon-svg.has-classic-mask .sys-icon-classic-art,
+  .menu-bar > .guest-indicator:hover .sys-icon-svg.has-classic-mask .sys-icon-classic-art {
+    display: none;
+  }
+
+  .menu-bar > .menu > button:hover .sys-icon-svg.has-classic-mask .sys-icon-classic-reverse,
+  .menu-bar > .guest-indicator:hover .sys-icon-svg.has-classic-mask .sys-icon-classic-reverse {
+    display: inline;
+  }
+}
+
+.finder-item.is-archived {
+  color: var(--shade-dark);
+}
+
+.finder-item.is-archived .mini-icon {
+  opacity: 0.55;
+}
+
+/* Finder Labels (user-set status colors; Classic label hues, readable on both
+   paper and Liquid Glass because they ride currentColor through the name and
+   the 1-bit icon stroke). */
+.finder-label-cite { color: #2f5fbf; }
+.finder-label-verify { color: #a37812; }
+.finder-label-counter { color: #b23a2e; }
+.finder-label-judgment { color: #2f7d4f; }
+.finder-label-final { color: #7a4f9e; }
+.finder-label-blocked { color: #6f6f6f; }
+
+.mini-icon {
+  width: 34px;
+  height: 34px;
+  display: block;
+  background: var(--mini-icon-bg);
+  border: var(--mini-icon-border);
+  position: relative;
+}
+
+.drafts-icon::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  width: 18px;
+  height: 22px;
+  border: 2px solid var(--ink);
+  background:
+    linear-gradient(var(--ink), var(--ink)) 4px 7px / 10px 2px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 4px 13px / 12px 2px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 4px 19px / 8px 2px no-repeat,
+    var(--paper);
+  box-shadow: 5px -3px 0 -1px var(--paper), 5px -3px 0 1px var(--ink);
+}
+
+.drafts-icon::after {
+  content: "";
+  position: absolute;
+  right: 4px;
+  bottom: 5px;
+  width: 15px;
+  height: 4px;
+  background: var(--ink);
+  transform: rotate(-35deg);
+}
+
+.app-icon::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  top: 5px;
+  height: 16px;
+  border: 2px solid var(--ink);
+  background:
+    linear-gradient(var(--ink), var(--ink)) 6px 6px / 3px 3px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 13px 6px / 3px 3px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 7px 12px / 9px 2px no-repeat,
+    var(--paper);
+}
+
+.app-icon::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 5px;
+  height: 4px;
+  border: 2px solid var(--ink);
+  border-top: 0;
+}
+
+.folder-icon::before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  top: 11px;
+  height: 17px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+}
+
+.folder-icon::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  width: 14px;
+  height: 6px;
+  border: 2px solid var(--ink);
+  border-bottom: 0;
+  background: var(--paper);
+}
+
+.system-icon::before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  top: 11px;
+  height: 17px;
+  border: 2px solid var(--ink);
+  background:
+    linear-gradient(var(--ink), var(--ink)) 7px 5px / 3px 3px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 17px 5px / 3px 3px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 9px 12px / 10px 2px no-repeat,
+    var(--paper);
+}
+
+.system-icon::after {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  width: 14px;
+  height: 6px;
+  border: 2px solid var(--ink);
+  border-bottom: 0;
+  background: var(--paper);
+}
+
+.project-disk-icon {
+  height: 30px;
+  margin-top: 4px;
+  border-radius: 0 0 3px 3px;
+  background:
+    linear-gradient(var(--ink), var(--ink)) 5px 6px / 24px 2px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 5px 12px / 24px 2px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 23px 21px / 5px 5px no-repeat,
+    var(--paper);
+}
+
+.project-disk-icon::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  right: 7px;
+  top: -6px;
+  height: 7px;
+  border: 2px solid var(--ink);
+  border-bottom: 0;
+  background: var(--paper);
+}
+
+.project-disk-icon::after {
+  content: "P";
+  position: absolute;
+  left: 8px;
+  bottom: 4px;
+  width: 12px;
+  height: 10px;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 9px;
+  text-align: center;
+}
+
+.doc-icon::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  right: 6px;
+  top: 4px;
+  bottom: 4px;
+  border: 2px solid var(--ink);
+  background:
+    linear-gradient(135deg, var(--paper) 0 48%, var(--ink) 49% 58%, transparent 59%) right top / 9px 9px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 4px 10px / 14px 2px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 4px 16px / 14px 2px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 4px 22px / 9px 2px no-repeat,
+    var(--paper);
+}
+
+.doc-icon::after {
+  content: "";
+  position: absolute;
+  right: 6px;
+  top: 4px;
+  width: 8px;
+  height: 8px;
+  border-left: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+  background: var(--paper);
+}
+
+.text-file-icon::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  right: 6px;
+  top: 4px;
+  bottom: 4px;
+  border: 2px solid var(--ink);
+  background:
+    linear-gradient(135deg, var(--paper) 0 48%, var(--ink) 49% 58%, transparent 59%) right top / 9px 9px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 4px 11px / 14px 2px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 4px 16px / 14px 2px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 4px 21px / 9px 2px no-repeat,
+    var(--paper);
+}
+
+.text-file-icon::after {
+  content: "T";
+  position: absolute;
+  left: 10px;
+  top: 6px;
+  color: var(--ink);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.trash-icon {
+  border: 0;
+  background:
+    linear-gradient(var(--ink), var(--ink)) 6px 4px / 22px 3px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 10px 0 / 14px 4px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 5px 10px / 2px 21px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 27px 10px / 2px 21px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 8px 30px / 18px 2px no-repeat,
+    repeating-linear-gradient(90deg, transparent 0 4px, var(--ink) 4px 6px) 10px 14px / 14px 12px no-repeat,
+    var(--paper);
+}
+
+.window-pane.documents-pane {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 0;
+  min-height: 0;
+  flex-basis: 360px;
+  padding: 0;
+}
+
+.window-pane.project-disk-pane {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 0;
+  /* Basis, not a floor: it still sets the window's opening height, but a window
+     dragged shorter than this has to shrink the pane too — otherwise the bottom
+     scroll bar lane and the grow box's own corner get clipped out of the frame. */
+  min-height: 0;
+  flex-basis: 430px;
+  max-height: calc(100vh - 152px);
+  /* No pane padding: the icon area below is the window's content area and has
+     to reach the frame, or the scroll bar lanes and the grow box end up
+     floating over content instead of framing it. */
+  padding: 0;
+  overflow: hidden;
+}
+
+.project-finder-pathbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  /* Same single hairline a System 6 Finder draws under its item count row —
+     it is also the top edge of the content area's frame. */
+  border-bottom: var(--finder-pathbar-border, 1px solid var(--ink));
+  padding: 10px 10px 6px;
+}
+
+.finder-navigation-bar {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: var(--finder-navigation-columns, auto minmax(0, 1fr));
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: var(--finder-navigation-padding, 3px 8px);
+  border-bottom: var(--finder-navigation-border);
+  background: var(--finder-navigation-bg);
+}
+
+/* Mac OS X 10.0-10.2's toolbar: the places as labelled icons beside Back
+   and View, and a caption under each item. Undisplayed unless an era turns
+   them on (Aqua), so every other era's bar keeps its two columns. */
+.finder-toolbar-places {
+  display: var(--finder-toolbar-places-display, none);
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.finder-toolbar-place {
+  appearance: none;
+  -webkit-appearance: none;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.1;
+  cursor: pointer;
+}
+
+.finder-toolbar-place .finder-toolbar-place-icon {
+  width: 24px;
+  height: 24px;
+  background: transparent;
+}
+
+.finder-toolbar-place:focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: 2px;
+}
+
+.finder-toolbar-place-label {
+  max-width: 13ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:is(.finder-navigation-back, .view-controls)[data-toolbar-label]::after {
+  content: attr(data-toolbar-label);
+  display: var(--finder-toolbar-label-display, none);
+  position: absolute;
+  top: calc(100% + 3px);
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.1;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Trackless continuation cue for Finder content. Classic suppresses it because
+   the System 6 frame bar already owns this state; Liquid Glass supplies the
+   material and turns it on without changing the Finder DOM or scroll model. */
+.finder-continuation {
+  display: var(--finder-continuation-display);
+  position: absolute;
+  left: 50%;
+  width: 38px;
+  min-width: 38px;
+  height: 20px;
+  min-height: 20px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: var(--finder-continuation-border);
+  border-radius: var(--finder-continuation-radius);
+  background: var(--finder-continuation-bg);
+  box-shadow: var(--finder-continuation-shadow);
+  color: var(--finder-continuation-fg);
+  font: 700 15px/1 var(--ui-font);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%);
+  transition: opacity 160ms ease-out, transform 160ms ease-out;
+  -webkit-backdrop-filter: var(--finder-continuation-backdrop);
+  backdrop-filter: var(--finder-continuation-backdrop);
+}
+
+.finder-continuation.is-top {
+  top: calc(var(--finder-continuation-top, 0px) + 7px);
+  transform: translate(-50%, -3px);
+}
+
+.finder-continuation.is-bottom {
+  bottom: calc(var(--window-frame-reserve) + 7px);
+  transform: translate(-50%, 3px);
+}
+
+.finder-continuation.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%);
+}
+
+.finder-continuation-arrow {
+  display: block;
+  line-height: 1;
+  /* The ink of ⌃ sits high inside its line box in the UI font; nudge it onto
+     the capsule's optical center so the arrow reads centered. */
+  transform: translateY(2px);
+}
+
+.finder-continuation.is-bottom .finder-continuation-arrow {
+  /* Same glyph as the top arrow, rotated around the capsule center; the nudge
+     mirrors so both arrows share one style and one center. */
+  transform: translateY(-2px) rotate(180deg);
+}
+
+.finder-continuation:focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: 2px;
+}
+
+/* A .btn: the button recipe sets its minimum size, padding and face. */
+.finder-navigation-back {
+  width: 30px;
+}
+
+.finder-breadcrumbs {
+  min-width: 0;
+  display: var(--finder-breadcrumbs-display, flex);
+  align-items: center;
+  gap: 2px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: none;
+}
+
+.finder-breadcrumbs::-webkit-scrollbar {
+  display: none;
+}
+
+.finder-breadcrumb,
+.finder-breadcrumb-current {
+  flex: 0 0 auto;
+  min-width: 0;
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 4px;
+  color: var(--ink);
+  font: inherit;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.finder-breadcrumb {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  border-radius: var(--finder-breadcrumb-radius);
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+  text-decoration: var(--finder-breadcrumb-text-decoration);
+  text-decoration-color: var(--shade-dark);
+  text-underline-offset: 2px;
+}
+
+.finder-breadcrumb:hover,
+.finder-breadcrumb:focus-visible {
+  background: var(--finder-breadcrumb-hover-bg);
+  color: var(--finder-breadcrumb-hover-fg);
+  text-decoration-color: currentColor;
+}
+
+/* The current name is the one that gives way: it shrinks to an ellipsis
+   before the row starts scrolling, so a narrow one-row toolbar shows
+   "System Fol…" rather than a name cut mid-letter at the edge (2026-10-08). */
+.finder-breadcrumb-current {
+  flex: 0 1 auto;
+  /* A flex container never draws text-overflow, so the current name is a
+     block whose line box carries the row's 26px (22 + 2 + 2). */
+  display: block;
+  line-height: 22px;
+  max-width: min(42vw, 34ch);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--finder-breadcrumb-current-color);
+  font-weight: 700;
+}
+
+.finder-breadcrumb-separator {
+  flex: 0 0 auto;
+  color: var(--shade-dark);
+}
+
+.project-finder-pathbar:has(#project-disk-up:not([hidden])) {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.project-finder-pathbar:has(#project-disk-path.visually-hidden):not(:has(#project-disk-up:not([hidden]))) {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+#project-disk-path {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+  font-weight: 700;
+}
+
+.project-finder-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.project-finder-actions .btn {
+  flex: 0 0 auto;
+}
+
+/* Flex, not grid: the folder label is a flexible track, and with fixed
+   columns the remaining children slid left onto it. */
+.documents-toolbar {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  /* The row sits above the framed content area, and its hairline is that
+     area's top edge. */
+  padding: 10px;
+  border-bottom: var(--documents-toolbar-border);
+}
+
+.documents-toolbar > * {
+  flex: 0 0 auto;
+}
+
+.documents-toolbar #new-folder-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.documents-toolbar > * {
+  flex: 0 0 auto;
+}
+
+.documents-toolbar #new-folder-name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.project-disk-toolbar {
+  display: grid;
+  grid-template-columns: auto minmax(160px, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.project-disk-toolbar[hidden] {
+  display: none;
+}
+
+.project-disk-toolbar label {
+  white-space: nowrap;
+}
+
+.project-disk-toolbar #new-project-disk {
+  justify-self: end;
+  width: auto;
+  min-width: 92px;
+  max-width: 132px;
+}
+
+.project-disk-content-grid {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.document-icon-grid {
+  min-height: 280px;
+  align-content: start;
+  border: 2px solid var(--ink);
+  background: var(--paper);
+  padding: 12px;
+  overflow: auto;
+}
+
+.project-disk-grid {
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+  align-content: start;
+  background: var(--file-well-bg);
+  padding: 14px;
+}
+
+.finder-grid.finder-small-icons {
+  grid-template-columns: repeat(auto-fit, minmax(62px, 1fr));
+  gap: 10px 8px;
+}
+
+/* Desktop icons shrink with the Finder View > Small Icons command. The
+   .desktop.is-small-icons prefix out-specifies the liquid-glass desktop icon
+   sizing rule (which loads later), so one selector works in both themes. */
+/* An ejected disk stays on the desk, dimmed.
+
+   Dimmed here is the native thing rather than a modern approximation of it:
+   System 6 greyed a 1-bit icon by dropping every other pixel, so the mask is a
+   real 50% checker at the icon's own pixel pitch, not a lowered opacity. The
+   name keeps its ink — the disk is unreadable, not unnamed. */
+.desktop-icon.is-ejected-disk .sys-icon {
+  -webkit-mask-image: repeating-conic-gradient(#000 0% 25%, transparent 0% 50%);
+  mask-image: repeating-conic-gradient(#000 0% 25%, transparent 0% 50%);
+  -webkit-mask-size: 2px 2px;
+  mask-size: 2px 2px;
+}
+
+.desktop.is-small-icons .desktop-icon {
+  width: 60px;
+  gap: 3px;
+}
+
+.desktop.is-small-icons .desktop-icon .icon,
+.desktop.is-small-icons .desktop-icon .sys-icon {
+  width: 28px;
+  height: 28px;
+}
+
+.desktop.is-small-icons .desktop-icon span:last-child {
+  font-size: 11px;
+  padding: 0 2px;
+}
+
+.finder-small-icons .finder-item {
+  min-height: 62px;
+  font-size: 11px;
+}
+
+.finder-small-icons .finder-item .mini-icon {
+  transform: scale(0.82);
+  transform-origin: center bottom;
+}
+
+.finder-small-icons .finder-item small {
+  display: none;
+}
+
+@container (max-width: 720px) {
+  .project-disk-content-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
+  }
+
+  .project-disk-grid {
+    grid-column: auto;
+    grid-row: auto;
+    min-height: 100%;
+    max-height: none;
+  }
+}
+
+@container (max-width: 620px) {
+  .project-disk-pane {
+    overflow: auto;
+  }
+
+  .project-disk-toolbar {
+    grid-template-columns: 1fr auto;
+  }
+
+  .project-disk-toolbar label {
+    grid-column: 1 / -1;
+  }
+
+  .project-disk-content-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
+  }
+
+  .project-disk-grid {
+    grid-row: auto;
+    max-height: none;
+  }
+
+}
+
+@media (max-width: 860px), (hover: none) and (pointer: coarse) and (max-height: 660px) {
+  /* max-width stays on the low-specificity selector on purpose: the generic
+     mobile work-area rule (.desktop .window.is-mobile-work-area...,
+     60-responsive.css) already wins the `max-width` property here whenever
+     it is narrower (its own --mobile-work-left/right inset), and this window
+     relies on that clamp in the landscape work-area layout. Only `width`
+     needs to win outright, so it gets its own, more specific selector below
+     instead of both properties riding one raised-specificity rule. */
+  body:not(.is-writer-mode) .project-disk-window:not(.is-mobile-fullscreen) {
+    max-width: calc(100vw - 32px);
+  }
+
+  /* Won by raising specificity, not by raising priority: the generic mobile
+     work-area rule above is a six-class selector that loads later, so it
+     always outranks a bare .project-disk-window rule on the `width`
+     property. `.window` and the two `:not()` guards below are true of any
+     visible project-disk-window already (a hidden window has no box to
+     size) — they exist only to lift this selector's own class count past
+     that rule's, so the width this window actually wants wins the cascade
+     honestly instead of jumping it. */
+  body:not(.is-writer-mode) .desktop .window.project-disk-window:not(.is-mobile-fullscreen):not(.is-hidden):not(.is-app-hidden) {
+    width: calc(100vw - 32px);
+  }
+
+  .project-finder-pathbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .project-finder-pathbar:has(#project-disk-up:not([hidden])) {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .project-finder-pathbar:has(#project-disk-path.visually-hidden):not(:has(#project-disk-up:not([hidden]))) {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .project-finder-pathbar .btn:first-child {
+    grid-column: auto;
+    width: max-content;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 620px) {
+  .finder-list-header {
+    display: none;
+  }
+
+  .finder-list-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1px;
+    padding: 6px 8px;
+  }
+
+  .finder-list-row > span {
+    white-space: normal;
+  }
+
+  .finder-list-row > span:not(:first-child) {
+    color: var(--shade-dark);
+    font-size: 11px;
+    line-height: 1.2;
+  }
+
+  .finder-list-row:hover > span:not(:first-child),
+  .finder-list-row.is-selected > span:not(:first-child) {
+    color: var(--paper);
+  }
+
+  .project-disk-grid,
+  .document-icon-grid {
+    padding: 8px;
+  }
+
+  .finder-grid,
+  .document-icon-grid,
+  .project-disk-grid {
+    grid-template-columns: repeat(auto-fit, minmax(68px, 1fr));
+    grid-auto-rows: min-content;
+    gap: 10px 8px;
+  }
+
+  .finder-item span:last-child {
+    overflow-wrap: break-word;
+  }
+}
+
+/* Empty state note. Every surface that can be empty uses this one object; a
+   container that wants it placed differently overrides the --empty-note-*
+   tokens rather than restating the material. */
+.empty-folder-note {
+  grid-column: 1 / -1;
+  font-family: var(--text-font);
+  max-width: var(--empty-note-max-width);
+  margin: var(--empty-note-margin);
+  padding: var(--empty-note-padding);
+  color: var(--empty-note-fg);
+  line-height: 1.45;
+  text-align: center;
+  border: var(--empty-note-border);
+  border-radius: var(--empty-note-radius);
+  background: var(--empty-note-bg);
+  box-shadow: var(--empty-note-shadow);
+}
+
+/* Find File's and the Dictionary's empty notes (moved from 10-windows.css
+   and 20-reader-docmap.css) refine the note above. */
+.find-file-window .find-file-results > .empty-folder-note {
+  max-width: var(--find-file-empty-note-max-width);
+  margin: var(--find-file-empty-note-margin);
+  padding: var(--find-file-empty-note-padding);
+  border: var(--find-file-empty-note-border);
+  border-radius: var(--find-file-empty-note-radius);
+  background: var(--find-file-empty-note-bg);
+  box-shadow: var(--find-file-empty-note-shadow);
+  color: var(--find-file-empty-note-fg);
+}
+
+.dictionary-window .dictionary-result > .empty-folder-note {
+  max-width: var(--dictionary-empty-note-max-width);
+  margin: var(--dictionary-empty-note-margin);
+  border: var(--dictionary-empty-note-border);
+  border-radius: var(--dictionary-empty-note-radius);
+  background: var(--dictionary-empty-note-bg);
+  color: var(--dictionary-empty-note-fg);
+  box-shadow: var(--dictionary-empty-note-shadow);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.finder-empty-object,

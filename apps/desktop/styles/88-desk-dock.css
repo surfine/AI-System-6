@@ -1,0 +1,968 @@
+/* The Mac OS X Dock and the yellow lamp that ships with it.
+
+   A lazy sheet, styles.desk-dock.css, loaded with every era whose Dock has
+   shipped (registry capability "dock"): the appearance sheet of Aqua, Snow
+   Leopard, Yosemite and Liquid Glass, and the first source of the Tiger, Lion
+   and Big Sur bundles, which already had sheets of their own. Nothing here
+   rides the boot bundle.
+
+   The Dock elements exist only while app/core/desk-dock.js draws them, so the
+   Dock's own rules need no theme selector: an era's Dock is a set of
+   --desk-dock-* tokens, answered per era at the end of this sheet. The
+   defaults are Snow Leopard's glass shelf, which Lion inherits.
+
+   Evidence (internal/evidence/drafts/dock-reference/README.zh-CN.md, Dock
+   strips cut from 512 Pixels' era captures, 1x points):
+   - 10.0-10.2 and 10.4: a flat translucent white panel ~74pt tall standing on
+     the screen edge, fine horizontal pinstripes in 10.0-10.1 only (Jaguar
+     10.2 is plain), a black triangle under a running application (Aqua HIG
+     2001 p.64; HIG 2005 fig. 10-1), a two-tone vertical rule between
+     applications and documents.
+   - 10.5-10.7: the glass shelf. Measured on 10.6 (sl-fin1440): the shelf is
+     about 40px deep at 48px icons (51-52 at 64px), sides leaning ~0.7px per
+     row, white back hairline, white front rim over a dark line, the icon's
+     lower third to half over the shelf with a reflection, a blue-white glow
+     6px above the rim, a column of pale dashes as the divider.
+   - 10.10: a flat frosted panel ~79pt tall on the screen edge, rounded top
+     corners, a small dark dot under a running application, a hairline rule.
+   - 11: the same frosted panel floating ~5pt above the edge with all four
+     corners rounded; 26: a clearer glass slab with a larger radius. */
+
+.desk-dock {
+  --desk-dock-icon: 48px;
+  --desk-dock-item-gap: 4px;
+  --desk-dock-shelf-depth: 40px; /* M10: Lion HIG p.160 at 48px icons (51-52 at 64px) */
+  --desk-dock-foot: 24px; /* M11: icon bottom ~16px above the edge; lower 1/3-1/2 over the shelf */
+  --desk-dock-lean: 24px;
+  --desk-dock-gap-below: 0px;
+  --desk-dock-radius: 0;
+  /* M12: neutral glass, brighter toward the front rim (10.6 x975 sRGB). */
+  --desk-dock-shelf-bg: linear-gradient(to bottom, rgb(255 255 255 / 0.37), rgb(255 255 255 / 0.42) 55%, rgb(255 255 255 / 0.47));
+  --desk-dock-shelf-edges:
+    inset 0 -2px 0 rgb(255 255 255 / 0.75),
+    inset 0 -3px 0 rgb(0 0 0 / 0.30); /* M13: no back hairline; front 2px white over 1px dark */
+  --desk-dock-backdrop: none;
+  /* Shelf reflection: fade into the glass, denser near the icon feet (10.6 left-end crop). */
+  --desk-dock-reflection: below 0px linear-gradient(
+    transparent 42%,
+    rgb(255 255 255 / 0.42) 58%,
+    rgb(255 255 255 / 0.18) 78%,
+    transparent 96%
+  );
+  --desk-dock-icon-filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.45));
+  /* M14: blue-white running glow — bright core, cyan halo, soft falloff. */
+  --desk-dock-mark: radial-gradient(
+    70% 55% at 50% 55%,
+    #ffffff 0 22%,
+    rgb(200 236 255 / 0.95) 38%,
+    rgb(120 190 240 / 0.55) 62%,
+    rgb(90 150 210 / 0) 100%
+  );
+  --desk-dock-mark-width: 14px; /* M14: glow ~14 wide, core 9x4 */
+  --desk-dock-mark-height: 10px; /* M14 */
+  --desk-dock-mark-clip: none;
+  --desk-dock-mark-lift: 3px; /* M14: centre ~8px up */
+  --desk-dock-front-band: 3px;
+  --desk-dock-front-bg: linear-gradient(to bottom, rgb(255 255 255 / 0.55), rgb(255 255 255 / 0.15));
+  /* M15: desk-dock.js now draws Snow Leopard's and Lion's separator by
+     projecting the shelf plane (perspectiveDivider); this hand-set column is
+     only the stand-in until that runs. Snow Leopard/Lion's separator is a
+     column of 8 perspective dashes
+     painted only on the shelf -- narrower/shorter at the back, wider/taller
+     toward the front, from 3px below the back edge to ~5px above the front
+     line. Layered gradients on the separator element, positioned within the
+     shelf depth. (10.6 x975-1001 rows 851-892; Lion x1445-1464.) The other
+     eras override this token with their own rule. */
+  --desk-dock-divider:
+    linear-gradient(rgb(250 250 255 / 0.85), rgb(250 250 255 / 0.85)) center 3px / 7px 2px no-repeat,
+    linear-gradient(rgb(250 250 255 / 0.85), rgb(250 250 255 / 0.85)) center 7px / 8px 2px no-repeat,
+    linear-gradient(rgb(250 250 255 / 0.85), rgb(250 250 255 / 0.85)) center 11px / 9px 3px no-repeat,
+    linear-gradient(rgb(250 250 255 / 0.85), rgb(250 250 255 / 0.85)) center 15px / 11px 3px no-repeat,
+    linear-gradient(rgb(250 250 255 / 0.85), rgb(250 250 255 / 0.85)) center 19px / 12px 4px no-repeat,
+    linear-gradient(rgb(250 250 255 / 0.85), rgb(250 250 255 / 0.85)) center 23px / 13px 4px no-repeat,
+    linear-gradient(rgb(250 250 255 / 0.85), rgb(250 250 255 / 0.85)) center 27px / 15px 5px no-repeat,
+    linear-gradient(rgb(250 250 255 / 0.85), rgb(250 250 255 / 0.85)) center 31px / 16px 5px no-repeat;
+  --desk-dock-divider-width: 18px;
+  /* J2 name label, Snow Leopard's (Lion follows): a dark rounded bubble with
+     a pointer, white words (dock-reference: snow-leopard-expose-dock-label). */
+  --desk-dock-label-bg: rgb(0 0 0 / 0.72);
+  --desk-dock-label-radius: 11px;
+  --desk-dock-label-padding: 2px 10px 3px;
+  --desk-dock-label-shadow: none;
+  --desk-dock-label-weight: 700;
+  --desk-dock-label-pointer: 6px;
+  /* J1 miniature chrome tokens (era blocks override; photo tiles use DOM capture). */
+  --desk-dock-mini-radius: 2px;
+  --desk-dock-mini-border: rgb(0 0 0 / 0.35);
+  --desk-dock-mini-bar-bg: linear-gradient(#f2f2f2, #d8d8d8);
+  --desk-dock-mini-lamp-minimize: #febc2e;
+  position: fixed;
+  left: 50%;
+  bottom: var(--desk-dock-gap-below);
+  transform: translateX(-50%);
+  /* Between the Writing Flow on the left edge and the desk icons on the right:
+     the Dock narrows before it ever runs under either. */
+  max-width: calc(100vw - 2 * var(--desk-dock-lean) - 330px);
+  padding: 0 calc(var(--desk-dock-lean) + 10px);
+}
+
+/* The Dock and the ghost flying into it share the Control Strip's layer. */
+.desk-dock,
+.minimize-ghost {
+  z-index: var(--z-control-strip);
+}
+
+/* The painted panel or shelf under the icons. */
+.desk-dock-shelf {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--desk-dock-shelf-depth);
+  clip-path: polygon(var(--desk-dock-lean) 0, calc(100% - var(--desk-dock-lean)) 0, 100% 100%, 0 100%);
+  border-radius: var(--desk-dock-radius);
+  background: var(--desk-dock-shelf-bg);
+  box-shadow: var(--desk-dock-shelf-edges);
+  backdrop-filter: var(--desk-dock-backdrop);
+  -webkit-backdrop-filter: var(--desk-dock-backdrop);
+  overflow: hidden;
+}
+
+/* Glass eras: a thin front-edge sheen on the shelf (Snow Leopard / Lion).
+   Aqua/Tiger/Yosemite clear --desk-dock-front-band so this paints nothing. */
+.desk-dock-shelf::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--desk-dock-front-band, 0px);
+  background: var(--desk-dock-front-bg, transparent);
+  pointer-events: none;
+}
+
+/* Jaguar / Tiger: 1px cut through the plate so the desktop shows (M05).
+   Position written by desk-dock.js after the separator lays out. */
+.desk-dock-shelf.has-cut {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    #000 0,
+    #000 calc(var(--desk-dock-cut-at) - 0.5px),
+    transparent calc(var(--desk-dock-cut-at) - 0.5px),
+    transparent calc(var(--desk-dock-cut-at) + 0.5px),
+    #000 calc(var(--desk-dock-cut-at) + 0.5px),
+    #000 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    #000 0,
+    #000 calc(var(--desk-dock-cut-at) - 0.5px),
+    transparent calc(var(--desk-dock-cut-at) - 0.5px),
+    transparent calc(var(--desk-dock-cut-at) + 0.5px),
+    #000 calc(var(--desk-dock-cut-at) + 0.5px),
+    #000 100%
+  );
+}
+
+.desk-dock-items {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: var(--desk-dock-item-gap, 4px);
+  padding-bottom: calc(var(--desk-dock-shelf-depth) - var(--desk-dock-foot));
+  /* Perspective host for magnification: icons lift in Z toward the pointer. */
+  perspective: 640px;
+  perspective-origin: 50% 100%;
+  transform-style: preserve-3d;
+}
+
+.desk-dock-item {
+  position: relative;
+  flex: 0 1 var(--desk-dock-icon);
+  min-width: 28px;
+  width: var(--desk-dock-icon);
+  height: var(--desk-dock-icon);
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: default;
+  -webkit-box-reflect: var(--desk-dock-reflection);
+  transform-origin: 50% 100%;
+  transform: translateZ(var(--dock-mag-z, 0px)) scale(var(--dock-mag, 1));
+  transition: transform 80ms ease-out;
+  will-change: transform;
+}
+
+.desk-dock.is-magnifying .desk-dock-item {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .desk-dock-item {
+    transform: none;
+    transition: none;
+  }
+}
+
+.desk-dock-item > .sys-icon {
+  width: 100%;
+  height: 100%;
+  filter: var(--desk-dock-icon-filter, none);
+}
+
+/* J2: the application's name above its icon while the pointer or the keyboard
+   is on it. Drawn only in the eras that have evidence for it (desk-dock.js
+   LABEL_ERAS); an era's look is its --desk-dock-label-* tokens. */
+.desk-dock-label {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px + var(--desk-dock-label-pointer));
+  transform: translateX(-50%);
+  padding: var(--desk-dock-label-padding);
+  border-radius: var(--desk-dock-label-radius);
+  background: var(--desk-dock-label-bg);
+  color: #fff;
+  font: var(--desk-dock-label-weight) 13px/17px var(--theme-ui-font, "Lucida Grande", sans-serif);
+  text-shadow: var(--desk-dock-label-shadow);
+  white-space: nowrap;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.desk-dock-label::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: calc(2 * var(--desk-dock-label-pointer));
+  height: var(--desk-dock-label-pointer);
+  transform: translateX(-50%);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  background: var(--desk-dock-label-bg);
+}
+
+.desk-dock-item:is(:hover, :focus-visible):not(.is-window-cards-anchor, .is-dock-menu-owner) > .desk-dock-label {
+  visibility: visible;
+}
+
+/* J1: a minimized window is a small picture of the window -- DOM miniature
+   when available, else title bar + grey rules -- with its application's icon
+   in the lower right corner (~1/3 cell; Jaguar Dock; HT3739 for 10.6). */
+.desk-dock-miniature {
+  position: absolute;
+  inset: 4px 2px 6px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--desk-dock-mini-border);
+  border-radius: var(--desk-dock-mini-radius);
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
+}
+
+.desk-dock-miniature.is-photo {
+  background: #1a1a1c;
+}
+
+.desk-dock-miniature-photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  pointer-events: none;
+}
+
+.desk-dock-miniature-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 8px;
+  overflow: hidden;
+  padding: 0 2px;
+  /* J1: era tokens on .desk-dock schematic fallback (photo tiles ignore these). */
+  background: var(--desk-dock-mini-bar-bg, var(--system-titlebar-active-bg, linear-gradient(#f2f2f2, #c8c8c8)));
+  background-size: cover;
+  border-bottom: 1px solid rgb(0 0 0 / 0.25);
+  color: var(--ink, #222);
+  font: 700 6px/8px var(--theme-ui-font, "Lucida Grande", sans-serif);
+  white-space: nowrap;
+}
+
+.desk-dock-miniature-lamps {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 1px;
+}
+
+.desk-dock-miniature-lamp {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #c8c8c8;
+  box-shadow: inset 0 0 0 0.5px rgb(0 0 0 / 0.35);
+}
+
+.desk-dock-miniature-lamp.is-close { background: #ff5f57; }
+.desk-dock-miniature-lamp.is-minimize { background: var(--desk-dock-mini-lamp-minimize); }
+.desk-dock-miniature-lamp.is-zoom { background: #28c840; }
+
+.desk-dock-miniature-title {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.desk-dock-miniature-page {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+  padding: 3px 3px 3px 8px;
+  /* A thin source-list rail so the miniature reads as a window body, not a
+     blank card (still schematic — not a live screenshot). */
+  background:
+    linear-gradient(rgb(0 0 0 / 0.08), rgb(0 0 0 / 0.08)) 0 0 / 5px 100% no-repeat,
+    #fff;
+}
+
+.desk-dock-miniature-line {
+  height: 1px;
+  background: rgb(0 0 0 / 0.45);
+}
+
+.desk-dock-miniature-badge {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 42%;
+  height: 42%;
+}
+
+.desk-dock-miniature-badge > .sys-icon {
+  width: 100%;
+  height: 100%;
+}
+
+/* The running mark: a glow, a triangle or a dot, by era. */
+.desk-dock-item.is-running::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--desk-dock-mark-lift) - (var(--desk-dock-shelf-depth) - var(--desk-dock-foot)));
+  width: var(--desk-dock-mark-width);
+  height: var(--desk-dock-mark-height);
+  transform: translateX(-50%);
+  clip-path: var(--desk-dock-mark-clip);
+  background: var(--desk-dock-mark);
+  pointer-events: none;
+}
+
+/* The separator sits on the shelf only: its box is the shelf's own depth,
+   dropped to the shelf's bottom edge, so no era's divider can rise above the
+   shelf (M15). */
+.desk-dock-separator {
+  flex: none;
+  align-self: flex-end;
+  width: var(--desk-dock-divider-width);
+  height: var(--desk-dock-shelf-depth);
+  margin: 0 4px calc(-1 * (var(--desk-dock-shelf-depth) - var(--desk-dock-foot)));
+  background: var(--desk-dock-divider);
+  opacity: 0.8;
+}
+
+.desk-dock-menu {
+  position: fixed;
+  overflow: visible;
+}
+.desk-dock-menu.is-scrolling {
+  overflow-y: auto;
+}
+.desk-dock-submenu {
+  left: var(--desk-dock-submenu-left, 0);
+  top: var(--desk-dock-submenu-top, 0);
+}
+
+/* Snow Leopard's and Lion's Dock menus are dark and translucent with white
+   text, unlike their light menu-bar menus (Ars Technica's 10.6 review,
+   about rgb 40/33/41 over a purple desktop; Macworld's 10.7 capture, rgb 64
+   over a light window). Every other era's Dock menu is its ordinary menu. */
+body:is([data-theme="snow-leopard"], [data-theme="lion"]) .desk-dock-menu {
+  --menu-panel-bg: var(--desk-dock-dark-menu-bg, rgb(22 22 24 / 0.84));
+  /* The shared menu surface paints with the paper token in these eras. */
+  --paper: var(--menu-panel-bg);
+  --menu-panel-border: 1px solid rgb(255 255 255 / 0.28);
+  --menu-panel-radius: 5px;
+  --menu-item-bg: transparent;
+  --menu-item-fg: #ffffff;
+  --menu-item-disabled-fg: rgb(255 255 255 / 0.45);
+  --menu-panel-backdrop-filter: blur(12px);
+  color: #ffffff;
+}
+
+/* The Dock menu points at its icon (every capture, 10.2 to 26): a small
+   wedge of the menu's own material under the panel, centred on the icon. */
+.desk-dock-menu.has-dock-pointer::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: var(--desk-dock-menu-pointer-x, 50%);
+  width: 16px;
+  height: 8px;
+  margin-left: -8px;
+  background: inherit;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+.desk-dock-menu .has-submenu::after {
+  content: "\25B8";
+  justify-self: end;
+}
+
+/* A Dock item being dragged to a new place in the row. */
+.desk-dock-item.is-drag-source {
+  opacity: 0.35;
+}
+
+/* The ghost of a window flying into the Dock (window-minimize.js). */
+.minimize-ghost {
+  position: fixed;
+  border: 1px solid rgb(0 0 0 / 0.35);
+  border-radius: 6px;
+  background: rgb(255 255 255 / 0.55);
+  transform-origin: 50% 50%;
+  transition: transform 180ms ease-out, opacity 180ms ease-out;
+  pointer-events: none;
+}
+
+/* Full-viewport WebGL overlay for Genie / Scale / Suck (lazy three.js).
+   Stacking order is set inline next to the renderer create call so this
+   sheet does not spend another z-index budget slot. */
+.minimize-fx-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+}
+
+/* While the Dock is on screen it holds the applications, Applications and
+   Trash; the desk keeps its volumes, as the 10.0 desktop did. The rule lapses
+   the moment the Dock hides, and the cells come back with no script. */
+body.desk-dock-shown[data-desk-dock-owner="desk-dock"] .icon-column :is(.desktop-app-icon, [data-open="applications"], [data-open="trash"]) {
+  display: none;
+}
+
+/* ---- Each era's Dock --------------------------------------------------- */
+
+/* Jaguar (10.2, the Aqua appearance) and Tiger: the flat translucent panel.
+   Jaguar 10.2 is a plain plate (pinstripes are 10.0–10.1 only). Tiger's plate
+   is the same geometry, a hair more opaque. */
+body:is([data-theme="aqua"], [data-theme="tiger"]) .desk-dock {
+  --desk-dock-shelf-depth: 58px; /* M04: plate = tile + 10 (4 above, 6 below) */
+  --desk-dock-foot: 52px; /* M04 */
+  --desk-dock-lean: 0px;
+  --desk-dock-radius: 0; /* M02: square corners on 10.0/10.1/10.2/10.4 1x */
+  /* M01: Jaguar 10.2 plain white plate, no pinstripes; slight vertical sheen
+     so the plate reads translucent over blue wallpaper without stripes. */
+  --desk-dock-shelf-bg: linear-gradient(to bottom, rgb(255 255 255 / 0.44), rgb(255 255 255 / 0.38));
+  --desk-dock-shelf-edges: inset 0 1px 0 rgb(255 255 255 / 0.50), inset 1px 0 0 rgb(255 255 255 / 0.45), inset -1px 0 0 rgb(255 255 255 / 0.45), 0 -1px 0 rgb(0 0 0 / 0.15), -1px 0 0 rgb(0 0 0 / 0.15), 1px 0 0 rgb(0 0 0 / 0.15); /* M03 */
+  --desk-dock-backdrop: none;
+  --desk-dock-reflection: none;
+  --desk-dock-icon-filter: drop-shadow(0 1px 0 rgb(0 0 0 / 0.28));
+  --desk-dock-front-band: 0px;
+  --desk-dock-mark: #000000;
+  --desk-dock-mark-width: 7px;
+  --desk-dock-mark-height: 5px;
+  --desk-dock-mark-clip: polygon(50% 0, 100% 100%, 0 100%);
+  --desk-dock-mark-lift: 1px;
+  /* M05: white rims either side of the 1px shelf cut (cut punched by .has-cut). */
+  --desk-dock-divider: linear-gradient(to right, rgb(255 255 255 / 0.55) 0 1px, transparent 1px 2px, rgb(255 255 255 / 0.55) 2px 3px);
+  --desk-dock-divider-width: 3px;
+  /* J2: Jaguar's name is white bold words outlined in black above the icon,
+     no bubble (dock-reference: aqua-jaguar-512-command-tab-label); Tiger follows. */
+  --desk-dock-label-bg: transparent;
+  --desk-dock-label-radius: 0;
+  --desk-dock-label-padding: 0 2px;
+  --desk-dock-label-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 3px #000;
+  --desk-dock-label-pointer: 0px;
+  --desk-dock-label-weight: 700;
+  --desk-dock-mini-radius: 3px 3px 0 0;
+  --desk-dock-mini-border: rgb(80 110 150 / 0.55);
+  --desk-dock-mini-bar-bg: linear-gradient(#ffffff, #d7e3f4);
+}
+
+body[data-theme="tiger"] .desk-dock {
+  --desk-dock-shelf-bg: linear-gradient(to bottom, rgb(255 255 255 / 0.48), rgb(255 255 255 / 0.42)); /* M06 */
+  /* Tiger triangle is even-width 8px (dock-reference Tiger table). */
+  --desk-dock-mark-width: 8px;
+  --desk-dock-mini-bar-bg: linear-gradient(#f4faf0, #d7e8d0);
+}
+
+/* Yosemite: the frosted flat panel on the edge. */
+body[data-theme="yosemite"] .desk-dock {
+  --desk-dock-shelf-depth: 60px;
+  --desk-dock-foot: 54px;
+  --desk-dock-lean: 0px;
+  --desk-dock-item-gap: 5px;
+  --desk-dock-radius: 5px 5px 0 0;
+  /* M17: denser cooler frost vs dark desk (512 Pixels 10.10); still approximate. */
+  --desk-dock-shelf-bg: rgb(224 226 234 / 0.58);
+  /* M16: 10.10 top edge has no light hairline; soft contact shadow under the plate. */
+  --desk-dock-shelf-edges: 0 1px 0 rgb(0 0 0 / 0.26), 0 3px 12px rgb(0 0 0 / 0.18);
+  --desk-dock-backdrop: blur(28px) saturate(185%);
+  --desk-dock-reflection: none;
+  --desk-dock-icon-filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.28));
+  --desk-dock-front-band: 0px;
+  --desk-dock-mark: #000; /* M18: native 2pt dot at tile 64 */
+  --desk-dock-mark-width: 4px;
+  --desk-dock-mark-height: 4px;
+  --desk-dock-mark-clip: circle(50%);
+  --desk-dock-mark-lift: 2px; /* M18 */
+  --desk-dock-divider: linear-gradient(to bottom, transparent 12.5%, rgb(0 0 0 / 0.32) 12.5% 87.5%, transparent 87.5%); /* M19 */
+  --desk-dock-divider-width: 1px;
+  --desk-dock-mini-radius: 4px;
+  --desk-dock-mini-border: rgb(0 0 0 / 0.18);
+  --desk-dock-mini-bar-bg: rgb(246 246 246 / 0.92);
+}
+
+/* Big Sur and Liquid Glass: a slab floating above the edge. */
+body:is([data-theme="big-sur"], [data-theme="liquid-glass"]) .desk-dock {
+  --desk-dock-shelf-depth: 60px;
+  --desk-dock-foot: 54px;
+  --desk-dock-lean: 0px;
+  --desk-dock-gap-below: 5px; /* native ~5pt float */
+  --desk-dock-item-gap: 6px;
+  --desk-dock-radius: 11px; /* M23: native ~15pt at tile 64, proportional at tile 48 */
+  /* Cool frosted slab: Blue wallpaper shows through with raised saturation (11 Light Blue). */
+  --desk-dock-shelf-bg: rgb(214 224 244 / 0.40);
+  --desk-dock-shelf-edges: inset 0 0 0 1px rgb(255 255 255 / 0.18), 0 0 0 0.5px rgb(0 0 0 / 0.13), 0 10px 28px rgb(0 0 0 / 0.22); /* M22 */
+  --desk-dock-backdrop: blur(28px) saturate(210%);
+  --desk-dock-reflection: none;
+  --desk-dock-icon-filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.32));
+  --desk-dock-front-band: 0px;
+  --desk-dock-mark: rgb(0 0 0 / 0.85); /* M20 */
+  --desk-dock-mark-width: 4px;
+  --desk-dock-mark-height: 4px;
+  --desk-dock-mark-clip: circle(50%);
+  --desk-dock-mark-lift: 2px; /* M20 */
+  --desk-dock-divider: linear-gradient(to bottom, transparent 12.5%, rgb(0 0 0 / 0.37) 12.5% 87.5%, transparent 87.5%); /* M21 */
+  --desk-dock-divider-width: 1px;
+  --desk-dock-mini-radius: 4px;
+  --desk-dock-mini-border: rgb(0 0 0 / 0.18);
+  --desk-dock-mini-bar-bg: color-mix(in srgb, var(--system-titlebar-active-bg, #f6f6f8) 82%, transparent);
+}
+
+body[data-theme="liquid-glass"] .desk-dock {
+  --desk-dock-shelf-depth: 66px; /* M25: plate 1.37x tile, tile centred; proportional from 78pt at tile ~57 */
+  --desk-dock-foot: 57px; /* M25 */
+  --desk-dock-item-gap: 8px;
+  --desk-dock-radius: 18px; /* M24: native ~22pt at tile ~57, proportional at tile 48 */
+  /* M29: Tahoe glass plate ~white 0.14→0.08 (still approximate over live blur). */
+  --desk-dock-shelf-bg: linear-gradient(to bottom, rgb(255 255 255 / 0.14), rgb(226 236 246 / 0.08));
+  --desk-dock-shelf-edges: inset 0 0 0 1px rgb(255 255 255 / 0.46), 0 16px 44px rgb(0 0 0 / 0.18); /* M28 */
+  --desk-dock-backdrop: blur(26px) saturate(240%);
+  --desk-dock-icon-filter: drop-shadow(0 2px 4px rgb(0 0 0 / 0.28));
+  --desk-dock-mark: #000; /* M26: native 4pt at tile ~57 */
+  --desk-dock-mark-lift: 3px; /* M26 */
+  --desk-dock-divider: linear-gradient(to bottom, transparent 12.8%, rgb(0 0 0 / 0.55) 12.8% 87.2%, transparent 87.2%); /* M27 */
+  --desk-dock-mini-lamp-minimize: #fac800;
+}
+
+/* ---- Red, yellow, green together at the left ------------------------------
+
+   The owner's ruling (2026-11-01, replacing "left two, right one"): in the
+   seven Mac OS X eras the three lamps sit together at the left, as those eras
+   drew them. Yellow and green are stacked into column 1 with Close and offset
+   by one and two lamp pitches; the gutters widen together and the title stays
+   centred. Lion's right end carries its separate full-screen button instead
+   (window-fullscreen.js).
+
+   Every lamp is a crop of a real capture of its era, never a drawing:
+   internal/evidence/drafts/lamp-fidelity/SOURCES.md lists each file's capture
+   and the measurements below. The art rides ::before, a canvas a little larger
+   than the disc so the capture's contact shadow and antialiased rim come
+   along; ::after carries the hover glyph. An era answers with tokens only:
+     --tl-pitch    lamp centre to lamp centre
+     --tl-dx/-dy   shift of the whole group from the bar's own centring to the
+                   capture's first-lamp centre (window edge to centre)
+     --tl-art      the crop's canvas; --tl-disc the lamp itself
+     --tl-close / -minimize / -zoom / -inactive / -disabled / -close-edited
+     --tl-glyph-*  the hover glyphs as background layers (all three show
+                   while the pointer is over any of them)
+   Tiger's crops and the gel eras' glyphs are set in their own sheets. */
+body[data-theme="aqua"] .title-bar {
+  /* 10.0 TextEdit and 10.2 Finder, 1x: 13px discs 22px apart, the first
+     centred 15.5px in and 9.5px down from the window's corner. */
+  --dock-lamp-pitch: 22px;
+  --dock-lamp-box: var(--traffic-light-size);
+  --tl-dx: 2px;
+  --tl-dy: -2px;
+  --tl-art: 17px;
+  --tl-disc: 13px;
+  --tl-render: pixelated;
+  --tl-close: url("./assets/themes/aqua/lamp-close.png");
+  --tl-minimize: url("./assets/themes/aqua/lamp-minimize.png");
+  --tl-zoom: url("./assets/themes/aqua/lamp-zoom.png");
+  --tl-close-edited: url("./assets/themes/aqua/lamp-close-edited.png");
+  /* 10.0-10.2 draw a background window's lamps and a disabled lamp as the
+     same empty ring (10.0 Copy window; 10.2 desktop behind Address Book). */
+  --tl-inactive: url("./assets/themes/aqua/lamp-disabled.png");
+  --tl-disabled: url("./assets/themes/aqua/lamp-disabled.png");
+}
+
+/* 10.4 TextEdit and 10.6 TextEdit, 1x: 14px discs 21px apart, the first
+   centred 15px in and 11px down. Tiger and Lion inherit this lineage. */
+body[data-lineage~="snow-leopard"] .title-bar {
+  --dock-lamp-pitch: 21px; /* M09: sl-fin-1440 and 10.6 Finder: 21; M08: Tiger too */
+  --dock-lamp-box: var(--traffic-light-size);
+  --tl-dx: 2px;
+  --tl-dy: -0.5px;
+  --tl-art: 18px;
+  --tl-disc: 14px;
+  --tl-render: pixelated;
+  --tl-close: url("./assets/themes/snow-leopard/lamp-close.png");
+  --tl-minimize: url("./assets/themes/snow-leopard/lamp-minimize.png");
+  --tl-zoom: url("./assets/themes/snow-leopard/lamp-zoom.png");
+  --tl-inactive: url("./assets/themes/snow-leopard/lamp-inactive.png");
+  --tl-disabled: url("./assets/themes/snow-leopard/lamp-disabled.png");
+}
+
+/* 10.7 TextEdit, 2x: 12pt discs 20pt apart, the first centred 14pt in and
+   11pt down (HIG 2011 p.142 agrees on the pitch). */
+body[data-theme="lion"] .title-bar {
+  --dock-lamp-pitch: 20px;
+  --tl-dx: 2px;
+  --tl-dy: -1px;
+  --tl-art: 16px;
+  --tl-disc: 12px;
+  --tl-render: auto;
+  --tl-close: url("./assets/themes/lion/lamp-close.png");
+  --tl-minimize: url("./assets/themes/lion/lamp-minimize.png");
+  --tl-zoom: url("./assets/themes/lion/lamp-zoom.png");
+  --tl-inactive: url("./assets/themes/lion/lamp-inactive.png");
+  --tl-disabled: url("./assets/themes/lion/lamp-disabled.png");
+}
+
+/* 10.10 TextEdit, 2x: the same 12pt / 20pt / 14pt-in, 11pt down. */
+body[data-theme="yosemite"] .title-bar {
+  --dock-lamp-pitch: 20px;
+  --dock-lamp-box: var(--traffic-light-size, 12px);
+  --tl-dx: -1px;
+  --tl-dy: -0.5px;
+  --tl-art: 16px;
+  --tl-disc: 12px;
+  --tl-close: url("./assets/themes/yosemite/lamp-close.png");
+  --tl-minimize: url("./assets/themes/yosemite/lamp-minimize.png");
+  --tl-zoom: url("./assets/themes/yosemite/lamp-zoom.png");
+  --tl-inactive: url("./assets/themes/yosemite/lamp-inactive.png");
+  --tl-disabled: url("./assets/themes/yosemite/lamp-disabled.png");
+  --tl-glyph-close: url("./assets/themes/yosemite/lamp-glyph-close.png") center / 100% 100% no-repeat;
+  --tl-glyph-minimize: url("./assets/themes/yosemite/lamp-glyph-minimize.png") center / 100% 100% no-repeat;
+  --tl-glyph-zoom: url("./assets/themes/yosemite/lamp-glyph-zoom.png") center / 100% 100% no-repeat;
+}
+
+/* macOS 11 TextEdit, 2x: 12pt / 20pt, the first centred 14pt in and 13pt
+   down on its 28pt bar. */
+body[data-theme="big-sur"] .title-bar {
+  --dock-lamp-pitch: 20px;
+  --dock-lamp-box: var(--system-titlebar-control-size);
+  --tl-dx: -1px;
+  --tl-dy: -2.5px;
+  --tl-art: 16px;
+  --tl-disc: 12px;
+  --tl-close: url("./assets/themes/big-sur/lamp-close.png");
+  --tl-minimize: url("./assets/themes/big-sur/lamp-minimize.png");
+  --tl-zoom: url("./assets/themes/big-sur/lamp-zoom.png");
+  --tl-inactive: url("./assets/themes/big-sur/lamp-inactive.png");
+  --tl-disabled: url("./assets/themes/big-sur/lamp-disabled.png");
+  --tl-glyph-close: url("./assets/themes/big-sur/lamp-glyph-close.png") center / 100% 100% no-repeat;
+  --tl-glyph-minimize: url("./assets/themes/big-sur/lamp-glyph-minimize.png") center / 100% 100% no-repeat;
+  --tl-glyph-zoom: url("./assets/themes/big-sur/lamp-glyph-zoom.png") center / 100% 100% no-repeat;
+}
+
+/* macOS 26 TextEdit, 2x: 14pt discs 23pt apart, the first centred 15.5pt in
+   and 16pt down. */
+body[data-theme="liquid-glass"] .title-bar {
+  --dock-lamp-pitch: 23px; /* M30: Tahoe Finder / Settings: 46 device px */
+  --dock-lamp-box: 14px;
+  --tl-dx: -0.5px;
+  --tl-dy: -2px;
+  --tl-art: 18px;
+  --tl-disc: 14px;
+  --tl-close: url("./assets/themes/liquid-glass/lamp-close.png");
+  --tl-minimize: url("./assets/themes/liquid-glass/lamp-minimize.png");
+  --tl-zoom: url("./assets/themes/liquid-glass/lamp-zoom.png");
+  --tl-inactive: url("./assets/themes/liquid-glass/lamp-inactive.png");
+  --tl-disabled: url("./assets/themes/liquid-glass/lamp-disabled.png");
+  --tl-glyph-close: url("./assets/themes/liquid-glass/lamp-glyph-close.png") center / 100% 100% no-repeat;
+  --tl-glyph-minimize: url("./assets/themes/liquid-glass/lamp-glyph-minimize.png") center / 100% 100% no-repeat;
+  --tl-glyph-zoom: url("./assets/themes/liquid-glass/lamp-glyph-zoom.png") center / 100% 100% no-repeat;
+}
+
+/* A one-row toolbar (macOS 11 and later) centres the lamps in its taller bar,
+   as the bar's own centring already does. */
+body[data-finder-layout="one-row"] .is-toolbar-window > .title-bar {
+  --tl-dy: 0px;
+}
+
+body:is([data-theme-family="aqua"], [data-theme-family="liquid-glass"]) .title-bar:has(> .minimize-box) {
+  --titlebar-gutter: max(var(--system-titlebar-control-slot), calc(var(--dock-lamp-pitch) + var(--dock-lamp-box) + var(--titlebar-content-padding-inline, 7px)));
+}
+
+body:is([data-theme-family="aqua"], [data-theme-family="liquid-glass"]) .title-bar > .minimize-box {
+  grid-column: 1;
+  justify-self: start;
+  width: var(--dock-lamp-box);
+  height: var(--dock-lamp-box);
+  margin-inline-start: var(--dock-lamp-pitch);
+}
+
+body:is([data-theme-family="aqua"], [data-theme-family="liquid-glass"]) .title-bar > .resize-box {
+  margin-inline-start: var(--dock-lamp-pitch);
+}
+
+body:is([data-theme-family="aqua"], [data-theme-family="liquid-glass"]) .title-bar:has(> .minimize-box) > .resize-box {
+  margin-inline-start: calc(2 * var(--dock-lamp-pitch));
+}
+
+body:is([data-theme-family="aqua"], [data-theme-family="liquid-glass"]) .title-bar:has(> .resize-box) {
+  --titlebar-zoom-column: 1;
+  --titlebar-zoom-justify: start;
+  --titlebar-slot-zoom: 0px;
+  --titlebar-gutter: max(var(--system-titlebar-control-slot), calc(var(--dock-lamp-pitch) + var(--dock-lamp-box) + var(--titlebar-content-padding-inline, 7px)));
+}
+
+body:is([data-theme-family="aqua"], [data-theme-family="liquid-glass"]) .title-bar:has(> .resize-box):has(> .minimize-box) {
+  --titlebar-gutter: max(var(--system-titlebar-control-slot), calc(2 * var(--dock-lamp-pitch) + var(--dock-lamp-box) + var(--titlebar-content-padding-inline, 7px)));
+}
+
+body[data-theme="liquid-glass"] .title-bar:has(> .resize-box) {
+  grid-template-columns: var(--titlebar-gutter) minmax(0, 1fr) var(--titlebar-gutter);
+}
+
+/* The one rule that paints a lamp. The element is the hit target; the crop is
+   centred on it. */
+body:is([data-theme-family="aqua"], [data-theme-family="liquid-glass"]) .window > .title-bar > :is(.close-box, .minimize-box, .resize-box) {
+  left: var(--tl-dx, 0px);
+  top: var(--tl-dy, 0px);
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  filter: none;
+  opacity: 1;
+  visibility: visible;
+}
+
+body:is([data-theme-family="aqua"], [data-theme-family="liquid-glass"]) .window > .title-bar > :is(.close-box, .minimize-box, .resize-box)::before,
+body:is([data-theme-family="aqua"], [data-theme-family="liquid-glass"]) .window > .title-bar > :is(.close-box, .minimize-box, .resize-box)::after {
+  content: "";
+  position: absolute;
+  inset: auto;
+  left: 50%;
+  top: 50%;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+body:is([data-theme-family="aqua"], [data-theme-family="liquid-glass"]) .window > .title-bar > :is(.close-box, .minimize-box, .resize-box)::before {
+  width: var(--tl-art);
+  height: var(--tl-art);
+  background: var(--tl-face) center / 100% 100% no-repeat;
+  image-rendering: var(--tl-render, auto);
+  opacity: 1;
+}
+
+body:is([data-theme-family="aqua"], [data-theme-family="liquid-glass"]) .window > .title-bar > :is(.close-box, .minimize-box, .resize-box)::after {
+  width: var(--tl-disc);
+  height: var(--tl-disc);
+  background: var(--tl-glyph);
+  opacity: 0;
+}
+
+body:is([data-theme-family="aqua"], [data-theme-family="liquid-glass"]) .window > .title-bar > .close-box {
+  --tl-face: var(--tl-close);
+  --tl-glyph: var(--tl-glyph-close);
+}
+
+body:is([data-theme-family="aqua"], [data-theme-family="liquid-glass"]) .window > .title-bar > .minimize-box {
+  --tl-face: var(--tl-minimize);
+  --tl-glyph: var(--tl-glyph-minimize);
+}
+
+body:is([data-theme-family="aqua"], [data-theme-family="liquid-glass"]) .window > .title-bar > .resize-box {
+  --tl-face: var(--tl-zoom);
+  --tl-glyph: var(--tl-glyph-zoom);
+}
+
+/* Unsaved changes: the dot in Close, where a capture shows one (10.0, 10.4). */
+body:is([data-theme-family="aqua"], [data-theme-family="liquid-glass"]) .window:is(.is-edited, [data-dirty="true"]) > .title-bar > .close-box {
+  --tl-face: var(--tl-close-edited, var(--tl-close));
+}
+
+body:is([data-theme-family="aqua"], [data-theme-family="liquid-glass"]) .window:not(.is-active) > .title-bar > :is(.close-box, .minimize-box, .resize-box) {
+  --tl-face: var(--tl-inactive);
+}
+
+/* The pointer over any lamp lights the whole group, background window
+   included, and shows all three glyphs. */
+body:is([data-theme-family="aqua"], [data-theme-family="liquid-glass"]) .window > .title-bar:has(> :is(.close-box, .minimize-box, .resize-box):is(:hover, :focus-visible)) > .close-box:not(:disabled) {
+  --tl-face: var(--tl-close);
+}
+
+body:is([data-theme-family="aqua"], [data-theme-family="liquid-glass"]) .window > .title-bar:has(> :is(.close-box, .minimize-box, .resize-box):is(:hover, :focus-visible)) > .minimize-box:not(:disabled) {
+  --tl-face: var(--tl-minimize);
+}
+
+body:is([data-theme-family="aqua"], [data-theme-family="liquid-glass"]) .window > .title-bar:has(> :is(.close-box, .minimize-box, .resize-box):is(:hover, :focus-visible)) > .resize-box:not(:disabled) {
+  --tl-face: var(--tl-zoom);
+}
+
+body:is([data-theme-family="aqua"], [data-theme-family="liquid-glass"]) .window > .title-bar:has(> :is(.close-box, .minimize-box, .resize-box):is(:hover, :focus-visible)) > :is(.close-box, .minimize-box, .resize-box):not(:disabled)::after {
+  opacity: 1;
+}
+
+body:is([data-theme-family="aqua"], [data-theme-family="liquid-glass"]) .window > .title-bar > :is(.close-box, .minimize-box, .resize-box):disabled {
+  --tl-face: var(--tl-disabled);
+  cursor: default;
+}
+
+body:is([data-theme-family="aqua"], [data-theme-family="liquid-glass"]) .window > .title-bar > :is(.close-box, .minimize-box, .resize-box):active:not(:disabled)::before {
+  filter: var(--tl-press, brightness(0.78));
+}
+
+
+/* Lion's full-screen button takes the right end. */
+body[data-theme="lion"] .title-bar > .fullscreen-button {
+  grid-row: 1;
+  grid-column: 3;
+  justify-self: end;
+  align-self: center;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+}
+
+/* ---- Full screen (app/core/window-fullscreen.js) --- (app/core/window-fullscreen.js) ---
+
+   The window's frame is written inline by the module; these rules only take
+   the window's own edges off and move the menu bar out of the way until the
+   pointer reaches the top edge, as 10.7 does. */
+.window.is-fullscreen {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* 10.7 hides the whole title bar in full screen and slides it back in with
+   the menu bar when the pointer reaches the top edge. The bar leaves the flow
+   so the content takes the full height, and on reveal it lands just under the
+   menu bar rather than beneath it. It spends no stacking slot: the transformed
+   bar already paints in the positioned layer above the window's flow content,
+   and this sheet's only slot belongs to the Control Strip. */
+.window.is-fullscreen > .title-bar {
+  position: absolute;
+  inset: 0 0 auto 0;
+  transform: translateY(-100%);
+  transition: transform 160ms ease-out;
+}
+
+body.window-fullscreen-active .menu-bar {
+  transform: translateY(-100%);
+  transition: transform 160ms ease-out;
+}
+
+body.window-fullscreen-active.fullscreen-menu-revealed .menu-bar {
+  transform: none;
+}
+
+/* Yosemite and later bring the title bar down with the menu bar (its green
+   lamp is the way out); Lion keeps it hidden (its token is -100%). */
+body.window-fullscreen-active.fullscreen-menu-revealed .window.is-fullscreen > .title-bar {
+  transform: translateY(var(--fullscreen-titlebar-reveal, var(--menu-bar-height)));
+}
+
+/* Lion's blue exit button, only ever added to the bar in Lion. */
+.menu-bar > .fullscreen-exit-button {
+  flex: none;
+  width: 21px;
+  height: 15px;
+  margin: 0 0 0 10px;
+  padding: 0;
+  border: 0;
+  background: var(--fullscreen-exit-bg);
+  cursor: pointer;
+}
+
+/* The top-edge hot zone that summons the bar back. macOS's zone is a menu-bar
+   row; the band is therefore the bar's own height plus a 4px trigger strip
+   under it, so a pointer aimed at where the bar will appear reveals it and a
+   small dip during the 160ms slide does not dismiss it again. The zone owns a
+   rung above every window and the Control Strip (--z-fullscreen-reveal) and
+   below the bar itself, so the summoned bar and its popovers stay clickable;
+   the band under the revealed bar belongs to the menu, as on the Mac. */
+.fullscreen-reveal,
+.fullscreen-dock-reveal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(var(--menu-bar-height) + 4px);
+}
+
+/* One rung for the edges and for the full-screen title bar. Inside the
+   window's own stacking context the rung only lifts the bar above the
+   window's positioned rows (TeachText's details bar), so the lamp that comes
+   down with the menu bar can be clicked. */
+.fullscreen-reveal,
+.fullscreen-dock-reveal,
+.window.is-fullscreen > .title-bar {
+  z-index: var(--z-fullscreen-reveal);
+}
+
+/* The bottom edge brings the Dock back, as the top edge brings the menu bar
+   ("Implementing the Full-Screen Experience": both are auto-hidden). A 4px
+   strip; the Dock, once shown, keeps itself up while the pointer is on it. */
+.fullscreen-dock-reveal {
+  top: auto;
+  bottom: 0;
+  height: 4px;
+}
+
+/* The move between spaces (window-fullscreen-space.js). While the desk slides
+   aside, what neither space covers is the era's space background: Lion's
+   linen (its own sheet sets the token); later eras have no published
+   evidence, so a neutral dark. The desk lets the window paint beyond its own
+   box: while it is carried across, and in full screen, where the desk starts
+   under the hidden menu bar and its clip used to cut the window's top row. */
+body.fullscreen-space-moving {
+  background: var(--fullscreen-space-bg, #1d1d1f);
+}
+
+body:is(.fullscreen-space-moving, .window-fullscreen-active) .desktop {
+  overflow: visible;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.window-fullscreen-active .menu-bar {
+    transition: none;
+  }
+}
+
+/* The full-screen title bar appears in place when motion is reduced. */
+@media (prefers-reduced-motion: reduce) {
+  .window.is-fullscreen > .title-bar,
+  body.window-fullscreen-active .menu-bar {
+    transition: none;
+  }
+}

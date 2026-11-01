@@ -1,0 +1,445 @@
+{
+  "schemaVersion": 1,
+  "id": "platinum-2x-macos90",
+  "theme": "platinum",
+  "target": "Mac OS 9.0 Platinum small controls at 2x device scale",
+  "fixtureRevision": "theme-lab-fidelity-v1",
+  "capture": {
+    "viewport": {
+      "width": 1280,
+      "height": 1040
+    },
+    "screen": {
+      "width": 1280,
+      "height": 1040
+    },
+    "windowSize": {
+      "width": 1080,
+      "height": 600
+    },
+    "deviceScaleFactor": 2,
+    "zoom": 1,
+    "locale": "en-US",
+    "timezoneId": "UTC",
+    "colorScheme": "light",
+    "reducedMotion": "reduce",
+    "forcedColors": "none",
+    "colorSpace": "srgb",
+    "playwrightVersion": "1.63.0",
+    "browserRevision": "1243",
+    "browserVersion": "153.0.8010.12",
+    "contentSha256": "2458543a51bae81b292fde417f3360defd32f0a4b0915c436c77e23b5078b7b5",
+    "historicalFontTarget": "Charcoal 12 pt",
+    "legalFallback": "OFL-licensed Asap variable font",
+    "fontProbeSelectors": [
+      ".theme-lab-controls h3",
+      ".theme-lab-window-specimens > .window.is-active > .title-bar h2",
+      ".theme-lab-form-grid select",
+      ".theme-lab-dialog--platinum-about .btn.default"
+    ],
+    "fontAssertions": [
+      {
+        "selector": ".theme-lab-controls h3",
+        "requiredFamily": "Geneva",
+        "isCustomFont": false
+      },
+      {
+        "selector": ".theme-lab-window-specimens > .window.is-active > .title-bar h2",
+        "requiredFamily": "Asap",
+        "isCustomFont": true
+      },
+      {
+        "selector": ".theme-lab-form-grid select",
+        "requiredFamily": "Asap",
+        "isCustomFont": true
+      },
+      {
+        "selector": ".theme-lab-dialog--platinum-about .btn.default",
+        "requiredFamily": "Asap",
+        "isCustomFont": true
+      }
+    ],
+    "requiredResources": [
+      "/assets/fonts/platinum/Asap-Variable.woff2",
+      "/assets/themes/platinum/checkbox-checked-overlay.svg",
+      "/assets/themes/platinum/calculator-32.svg",
+      "/assets/themes/platinum/chrome/tab-active-left.svg",
+      "/assets/themes/platinum/chrome/tab-active-right.svg",
+      "/assets/themes/platinum/menu/system-profiler.svg",
+      "/assets/themes/platinum/menu/calculator.svg",
+      "/assets/themes/platinum/menu/chooser.svg",
+      "/assets/themes/platinum/menu/control-panels.svg",
+      "/assets/themes/platinum/menu/favorites.svg",
+      "/assets/themes/platinum/menu/key-caps.svg",
+      "/assets/themes/platinum/menu/network-browser.svg",
+      "/assets/themes/platinum/menu/recent-applications.svg",
+      "/assets/themes/platinum/menu/recent-documents.svg",
+      "/assets/themes/platinum/menu/remote-access.svg",
+      "/assets/themes/platinum/menu/scrapbook.svg",
+      "/assets/themes/platinum/menu/sherlock.svg",
+      "/assets/themes/platinum/menu/stickies.svg",
+      "/assets/themes/platinum/open-list/apple-dvd-player.svg",
+      "/assets/themes/platinum/open-list/apple-video-player.svg",
+      "/assets/themes/platinum/open-list/applecd-audio-player.svg",
+      "/assets/themes/platinum/open-list/quicktime.svg",
+      "/assets/themes/platinum/open-list/security.svg",
+      "/assets/vendor/classic-stylesheets/macos9/dropdown.svg"
+    ],
+    "requiredResourcePrefixes": [
+      "/assets/fonts/platinum/",
+      "/assets/themes/platinum/",
+      "/assets/vendor/classic-stylesheets/macos9/"
+    ],
+    "fixtureAssertions": [
+      {
+        "selector": ".theme-lab-open-list-capture",
+        "count": 1,
+        "visible": true
+      },
+      {
+        "selector": ".theme-lab-open-list-items > button",
+        "count": 5
+      },
+      {
+        "selector": ".theme-lab-open-list-items > button:first-child",
+        "count": 1,
+        "attributes": {
+          "aria-selected": "true"
+        }
+      },
+      {
+        "selector": ".theme-lab-open-scrollbar .theme-lab-scrollbar-thumb",
+        "count": 0
+      },
+      {
+        "selector": ".theme-lab-menu-capture",
+        "count": 1,
+        "visible": true
+      },
+      {
+        "selector": ".theme-lab-menu--platinum > button",
+        "count": 14
+      },
+      {
+        "selector": ".theme-lab-platinum-disclosure",
+        "count": 4
+      },
+      {
+        "selector": ".theme-lab-about-capture",
+        "count": 1,
+        "visible": true
+      },
+      {
+        "selector": ".theme-lab-dialog--platinum-about > button",
+        "count": 1,
+        "text": "OK"
+      },
+      {
+        "selector": ".theme-lab-menu-specimen",
+        "count": 1,
+        "visible": false
+      },
+      {
+        "selector": ".theme-lab-dialog-specimen",
+        "count": 1,
+        "visible": false
+      }
+    ]
+  },
+  "output": {
+    "atlasWidth": 1120,
+    "columns": 2
+  },
+  "sources": [
+    {
+      "id": "guidebook.macos90.appearance.appearance-tab",
+      "file": "guidebook-appearance-macos90-1-1.png",
+      "url": "https://guidebookgallery.org/pics/gui/settings/appearance/macos90-1-1.png",
+      "pageUrl": "https://guidebookgallery.org/screenshots/macos90#appearance",
+      "sha256": "abd73b69018e25bc2fa91317a99e037f34cb386a8ef8b24544e2ed958dffd188",
+      "width": 477,
+      "height": 339,
+      "systemVersion": "Mac OS 9.0",
+      "credit": "GUIdebook / Marcin Wichary",
+      "redistribution": "Copyrighted reference; no open license stated. Local research and comparison only."
+    },
+    {
+      "id": "guidebook.macos90.appearance.options-tab",
+      "file": "guidebook-appearance-macos90-1-4.png",
+      "url": "https://guidebookgallery.org/pics/gui/settings/appearance/macos90-1-4.png",
+      "pageUrl": "https://guidebookgallery.org/screenshots/macos90#appearance",
+      "sha256": "2031e79559dd552a0b8481798720fa9c2082807c6bb064450542c8363b1f92ff",
+      "width": 477,
+      "height": 339,
+      "systemVersion": "Mac OS 9.0",
+      "credit": "GUIdebook / Marcin Wichary",
+      "redistribution": "Copyrighted reference; no open license stated. Local research and comparison only."
+    },
+    {
+      "id": "guidebook.macos90.open-file",
+      "file": "guidebook-openfile-macos90.png",
+      "url": "https://guidebookgallery.org/pics/gui/interface/dialogs/openfile/macos90.png",
+      "pageUrl": "https://guidebookgallery.org/screenshots/macos90#openfile",
+      "sha256": "1ba1ccf382723be19be231f8295755cda408b25de7de6aacb5933e70b552c893",
+      "width": 460,
+      "height": 194,
+      "systemVersion": "Mac OS 9.0",
+      "credit": "GUIdebook / Marcin Wichary",
+      "redistribution": "Copyrighted reference; no open license stated. Local research and comparison only."
+    },
+    {
+      "id": "guidebook.macos90.active-inactive",
+      "file": "guidebook-desktop-full-macos90.png",
+      "url": "https://guidebookgallery.org/pics/gui/desktop/full/macos90.png",
+      "pageUrl": "https://guidebookgallery.org/screenshots/macos90#full",
+      "sha256": "6eb91e803620cc11a6280abe6729412f3e7e0c0b63e2d78f39972ec855c08e00",
+      "width": 640,
+      "height": 480,
+      "systemVersion": "Mac OS 9.0",
+      "credit": "GUIdebook / Marcin Wichary",
+      "redistribution": "Copyrighted reference; no open license stated. Local research and comparison only."
+    },
+    {
+      "id": "guidebook.macos90.trashcan",
+      "file": "guidebook-trashcan-macos90.png",
+      "url": "https://guidebookgallery.org/pics/gui/system/features/trashcan/macos90.png",
+      "pageUrl": "https://guidebookgallery.org/screenshots/macos90#trashcan",
+      "sha256": "8ab433dccb40c5e892d7933228242ec5eabcb928b46ce50d4c895e28490a31ea",
+      "width": 413,
+      "height": 125,
+      "systemVersion": "Mac OS 9.0",
+      "credit": "GUIdebook / Marcin Wichary",
+      "redistribution": "Copyrighted reference; no open license stated. Local research and comparison only."
+    }
+  ],
+  "specimens": [
+    {
+      "id": "popup-normal",
+      "label": "Normal pop-up button (2x)",
+      "reference": {
+        "source": "guidebook.macos90.appearance.appearance-tab",
+        "crop": {
+          "x": 127,
+          "y": 75,
+          "width": 180,
+          "height": 20,
+          "scale": 2
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-form-grid > label:nth-child(4) .system-select-button",
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 180,
+          "height": 20
+        },
+        "setup": [
+          {
+            "selector": ".theme-lab-form-grid > label:nth-child(4) .select-wrap",
+            "style": {
+              "width": "180px"
+            }
+          },
+          {
+            "selector": ".theme-lab-form-grid > label:nth-child(4) select",
+            "style": {
+              "width": "180px"
+            }
+          },
+          {
+            "selector": ".theme-lab-form-grid > label:nth-child(4) .system-select-button",
+            "text": "Apple platinum"
+          },
+          {
+            "selector": ".theme-lab-form-grid > label:nth-child(4) option",
+            "text": "Apple platinum",
+            "attributes": {
+              "label": "Apple platinum"
+            }
+          }
+        ]
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 1.4,
+        "materialError": 5.355
+      },
+      "floor": {
+        "status": "met"
+      }
+    },
+    {
+      "id": "checkbox-checked",
+      "label": "Checked checkbox (2x)",
+      "reference": {
+        "source": "guidebook.macos90.appearance.options-tab",
+        "crop": {
+          "x": 51,
+          "y": 74,
+          "width": 12,
+          "height": 12,
+          "scale": 2
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-choice-matrix > label:first-child > input[type=checkbox]",
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 12,
+          "height": 12
+        }
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 1.6,
+        "materialError": 5,
+        "markMismatch": 0.05
+      },
+      "floor": {
+        "status": "met"
+      },
+      "mark": {
+        "note": "Mac OS 9 check inside the 12px box."
+      }
+    },
+    {
+      "id": "checkbox-unchecked",
+      "label": "Unchecked checkbox (2x)",
+      "reference": {
+        "source": "guidebook.macos90.appearance.options-tab",
+        "crop": {
+          "x": 51,
+          "y": 137,
+          "width": 12,
+          "height": 12,
+          "scale": 2
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-choice-matrix > label:nth-child(2) > input[type=checkbox]",
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 12,
+          "height": 12
+        }
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 1,
+        "materialError": 5
+      },
+      "floor": {
+        "status": "met"
+      }
+    },
+    {
+      "id": "open-list-scrollbar",
+      "label": "Open dialog list, selection, and scrollbar (2x)",
+      "reference": {
+        "source": "guidebook.macos90.open-file",
+        "crop": {
+          "x": 124,
+          "y": 35,
+          "width": 218,
+          "height": 128,
+          "scale": 2
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-open-list-capture",
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 218,
+          "height": 128
+        }
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 1.6,
+        "materialError": 5.1
+      },
+      "floor": {
+        "status": "met"
+      }
+    },
+    {
+      "id": "icon-trash-32",
+      "label": "Trash can (32px reconstruction) (2x)",
+      "reference": {
+        "source": "guidebook.macos90.active-inactive",
+        "crop": {
+          "x": 576,
+          "y": 412,
+          "width": 32,
+          "height": 32,
+          "scale": 2
+        }
+      },
+      "current": {
+        "selector": "[data-theme-lab-object=\"trash\"] .theme-lab-object-states > .finder-item:first-child .sys-icon",
+        "setup": [
+          {
+            "selector": "[data-theme-lab-object=\"trash\"] .theme-lab-object-states > .finder-item:first-child .sys-icon",
+            "style": {
+              "width": "32px",
+              "height": "32px",
+              "backgroundColor": "rgb(99, 99, 156)"
+            }
+          }
+        ]
+      },
+      "tolerances": {
+        "geometryMismatch": 0.142,
+        "edgeErrorPx": 4.8,
+        "materialError": 14.91
+      },
+      "floor": {
+        "status": "gap",
+        "note": "Measured 2026-10-16 at 2x: Redrawn Platinum trash: the lid and body edges now meet the shared historical floor; geometryMismatch 0.135; materialError 14.2; the palette is not yet calibrated. Reference is a native 9.0 capture, so the remaining material gap is ours to fix. Since the 2026-10-08 icon completion it meets the full floor.",
+        "failing": [
+          "geometryMismatch",
+          "materialError"
+        ]
+      }
+    },
+    {
+      "id": "icon-trash-16",
+      "label": "Trash can (16px reconstruction) (2x)",
+      "reference": {
+        "source": "guidebook.macos90.trashcan",
+        "crop": {
+          "x": 24,
+          "y": 24,
+          "width": 17,
+          "height": 17,
+          "scale": 2
+        }
+      },
+      "current": {
+        "selector": "[data-theme-lab-object=\"trash\"] .theme-lab-object-states > .finder-item:nth-child(3) .sys-icon",
+        "setup": [
+          {
+            "selector": "[data-theme-lab-object=\"trash\"] .theme-lab-object-states > .finder-item:nth-child(3) .sys-icon",
+            "style": {
+              "width": "16px",
+              "height": "16px"
+            }
+          }
+        ]
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 1,
+        "materialError": 5
+      },
+      "floor": {
+        "status": "met"
+      }
+    }
+  ],
+  "tolerancePolicy": "Supplementary 2x acceptance board (exe study 2026-10-16, owner decision C2): the 1x native references are enlarged nearest-neighbour onto the device grid, so a pixel-snapped renderer is the target and smoothed or dropped rows in small icons, check marks and stepped arrows read as edge and material error. Edge tolerances scale with the device factor; geometry and material keep the 1x board's numbers."
+}

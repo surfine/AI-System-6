@@ -1,0 +1,257 @@
+// AI System 6 official site - entry module. Progressive enhancement only:
+// with JS off the page is a readable document with a desktop screenshot.
+
+import { ERAS, setEra, onEraChange, prefetchEras, refreshIcons, iconSrc } from "./eras.js?v=20261010a";
+import { initBalloons, setBalloons, balloonsEnabled, flashBalloon } from "./balloon.js?v=20261010a";
+import { loadMachine, createMachine, warmAllFrames, machineManifest } from "./machine.js?v=20261010a";
+import { createDissolve } from "./dissolve.js?v=20261010a";
+import { initRouteScene } from "./route.js?v=20261010a";
+import { initImpossible } from "./impossible.js?v=20261010a";
+import { initFloppies } from "./floppies.js?v=20261010a";
+import { initQuickTime } from "./quicktime.js?v=20261016a";
+import { initArgument } from "./argument.js?v=20261010a";
+import { initShareCard } from "./sharecard.js?v=20261010a";
+import { initTour } from "./tour.js?v=20261010a";
+import { initMore } from "./more.js?v=20261010a";
+import { L } from "./copy.js?v=20261010a";
+
+const doc = document;
+doc.documentElement.classList.add("js");
+const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ---------- Boot sequence (once per session) ----------
+   The product's startup screen: happy Mac, progress bar, startup ledger.
+   Every ledger line is true for this page: the assets really are loaded,
+   and no LLM is required. A click or key press skips ahead. */
+const boot = doc.getElementById("boot");
+let booted = false;
+try { booted = sessionStorage.getItem("s6-booted") === "1"; } catch (e) {}
+if (boot && !booted && !reducedMotion) {
+  boot.hidden = false;
+  try { sessionStorage.setItem("s6-booted", "1"); } catch (e) {}
+  const fill = doc.getElementById("boot-fill");
+  const msg = doc.getElementById("boot-msg");
+  const timers = [];
+  const finish = () => {
+    timers.forEach(clearTimeout);
+    boot.classList.add("boot-done");
+    setTimeout(() => boot.remove(), 400);
+    boot.removeEventListener("pointerdown", finish);
+    doc.removeEventListener("keydown", finish);
+  };
+  const step = (ms, fn) => timers.push(setTimeout(fn, ms));
+  fill.style.width = "8%";
+  step(350, () => {
+    doc.getElementById("boot-check-disk").classList.add("is-ready");
+    fill.style.width = "42%";
+  });
+  step(850, () => {
+    doc.getElementById("boot-check-eras").classList.add("is-ready");
+    fill.style.width = "78%";
+  });
+  step(1350, () => {
+    const llm = doc.getElementById("boot-check-llm");
+    llm.classList.add("is-standby");
+    llm.textContent = L("LLM: none required", "LLM：无需连接");
+    fill.style.width = "100%";
+    msg.textContent = L("Welcome to AI System 6.", "欢迎使用 AI System 6。" );
+  });
+  step(2150, finish);
+  boot.addEventListener("pointerdown", finish);
+  doc.addEventListener("keydown", finish);
+} else if (boot) {
+  boot.remove();
+}
+
+/* ---------- Menus ---------- */
+const menus = [...doc.querySelectorAll("details.menu")];
+menus.forEach((menu) => {
+  menu.addEventListener("toggle", () => {
+    if (!menu.open) return;
+    menus.forEach((other) => { if (other !== menu) other.open = false; });
+  });
+});
+doc.addEventListener("pointerdown", (e) => {
+  menus.forEach((menu) => { if (menu.open && !menu.contains(e.target)) menu.open = false; });
+});
+doc.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") menus.forEach((menu) => { menu.open = false; });
+});
+doc.querySelectorAll(".menu-list a").forEach((item) => {
+  item.addEventListener("click", () => menus.forEach((menu) => { menu.open = false; }));
+});
+
+/* ---------- Appearance menu + cycle ---------- */
+const appearanceItems = [...doc.querySelectorAll("[data-appearance]")];
+const cycleItem = doc.getElementById("menu-cycle");
+let cycleTimer = null;
+
+function currentThemeId() {
+  // data-era names the era; data-theme may be a parent's page (eras.js).
+  return doc.documentElement.getAttribute("data-era")
+    || doc.documentElement.getAttribute("data-theme") || "classic";
+}
+function syncChecks() {
+  const active = currentThemeId();
+  appearanceItems.forEach((item) =>
+    item.classList.toggle("is-active", item.getAttribute("data-appearance") === active));
+  if (cycleItem) cycleItem.classList.toggle("is-active", !!cycleTimer);
+}
+function stopCycle() {
+  if (!cycleTimer) return;
+  clearInterval(cycleTimer);
+  cycleTimer = null;
+  try { localStorage.removeItem("s6-site-theme-cycle"); } catch (e) {}
+  syncChecks();
+}
+function startCycle() {
+  if (cycleTimer) return;
+  cycleTimer = setInterval(() => {
+    const idx = ERAS.findIndex((e) => e.id === currentThemeId());
+    setEra(ERAS[(idx + 1) % ERAS.length].id, false);
+  }, 2000);
+  try { localStorage.setItem("s6-site-theme-cycle", "1"); } catch (e) {}
+  syncChecks();
+}
+appearanceItems.forEach((item) => {
+  item.addEventListener("click", (e) => {
+    e.preventDefault();
+    stopCycle();
+    setEra(item.getAttribute("data-appearance"), true);
+  });
+});
+if (cycleItem) {
+  cycleItem.addEventListener("click", (e) => {
+    e.preventDefault();
+    if (cycleTimer) stopCycle(); else startCycle();
+  });
+}
+let wasCycling = false;
+try { wasCycling = localStorage.getItem("s6-site-theme-cycle") === "1"; } catch (e) {}
+if (wasCycling && !reducedMotion) startCycle();
+
+onEraChange(syncChecks);
+syncChecks();
+
+/* ---------- Shut Down… ---------- */
+const shutdown = doc.getElementById("shutdown");
+const shutdownItem = doc.getElementById("menu-shutdown");
+if (shutdown && shutdownItem) {
+  shutdownItem.addEventListener("click", (e) => {
+    e.preventDefault();
+    shutdown.hidden = false;
+    shutdown.querySelector("button").focus();
+  });
+  shutdown.querySelector("button").addEventListener("click", () => {
+    try { sessionStorage.removeItem("s6-booted"); } catch (e) {}
+    location.reload();
+  });
+  doc.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !shutdown.hidden) shutdown.hidden = true;
+  });
+}
+
+/* ---------- Balloon Help ---------- */
+initBalloons();
+const balloonItem = doc.getElementById("menu-balloons");
+if (balloonItem) {
+  balloonItem.addEventListener("click", (e) => {
+    e.preventDefault();
+    setBalloons(!balloonsEnabled());
+    balloonItem.classList.toggle("is-active", balloonsEnabled());
+    if (balloonsEnabled()) flashBalloon(doc.querySelector(".menu-title") || doc.body, L("Balloons on. Point at any object.", "气球帮助已开启。请指向任一对象。"), 2400);
+  });
+}
+
+/* ---------- The machine: real frames from the real app ---------- */
+let machineReady = false;
+try {
+  await loadMachine();
+  machineReady = true;
+} catch (error) {
+  console.error("Official desktop capture unavailable:", error);
+  doc.querySelectorAll(".machine-figure").forEach((figure) => {
+    figure.classList.add("machine-has-error");
+    const message = doc.createElement("p");
+    message.className = "machine-error";
+    message.setAttribute("role", "status");
+    message.append(L("The desktop capture is unavailable. ", "桌面截图暂时无法载入。"));
+    const link = doc.createElement("a");
+    link.href = "https://system6.aaronlau.me";
+    link.textContent = L("Boot the Live System", "启动运行中的系统");
+    message.appendChild(link);
+    figure.appendChild(message);
+  });
+}
+
+const heroDissolve = doc.getElementById("hero-dissolve");
+if (heroDissolve) {
+  createDissolve(heroDissolve);
+  initShareCard(doc.getElementById("snapshot-btn"));
+  const prov = doc.getElementById("hero-provenance");
+  const m = machineManifest();
+  if (prov && m.build) {
+    prov.textContent = L("Real screenshots of the running app, build ", "运行中应用的真实截图，构建 ") + m.build;
+  }
+}
+
+initRouteScene(doc.getElementById("route-stage"));
+if (machineReady) initTour(doc.getElementById("desk"));
+initMore(doc.getElementById("more"));
+
+// The Field Notes cover carries the manuscript icon as each era drew it: the
+// same object, seven times, which is the essay's argument in one line.
+const notesIcons = doc.getElementById("notes-icons");
+if (notesIcons) {
+  ERAS.forEach((era) => {
+    const img = doc.createElement("img");
+    img.src = iconSrc("teachText", era);
+    img.width = 32;
+    img.height = 32;
+    img.alt = "";
+    img.loading = "lazy";
+    img.decoding = "async";
+    if (["classic", "system-7", "platinum", "drawing-board"].includes(era.id)) img.classList.add("is-pixel");
+    notesIcons.appendChild(img);
+  });
+}
+
+const modelMachine = doc.getElementById("model-machine");
+if (modelMachine && machineReady) {
+  createMachine(modelMachine, {
+    region: "menuBar",
+    pad: 0.004,
+    alt: L("The captured menu bar says “Model not connected.” The desk keeps working.", "截图中的菜单栏显示“模型未连接”，桌面仍然可以继续工作。"),
+  });
+}
+
+// Frames for the other five eras load once the visitor is likely to travel.
+if (machineReady) addEventListener("load", () => setTimeout(warmAllFrames, 2200));
+
+initImpossible(
+  doc.getElementById("proof-wall"),
+  doc.getElementById("impossible-body"),
+  doc.getElementById("impossible-status"),
+);
+initFloppies(doc.getElementById("floppy-wall"));
+initArgument(doc.getElementById("claim-list"));
+initQuickTime();
+
+/* ---------- Scene reveal ---------- */
+const scenes = [...doc.querySelectorAll(".scene, .hero-scene")];
+if ("IntersectionObserver" in window && !reducedMotion) {
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((en) => {
+      if (!en.isIntersecting) return;
+      en.target.classList.add("scene-in");
+      io.unobserve(en.target);
+    });
+  }, { threshold: 0.12 });
+  scenes.forEach((s) => io.observe(s));
+} else {
+  scenes.forEach((s) => s.classList.add("scene-in"));
+}
+
+/* ---------- Icon warmup ---------- */
+refreshIcons();
+addEventListener("load", () => setTimeout(prefetchEras, 1800));

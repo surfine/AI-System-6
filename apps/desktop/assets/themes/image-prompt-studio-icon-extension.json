@@ -1,0 +1,177 @@
+{
+  "schema": "ai-system-6-image-prompt-studio-icon-extension-v1",
+  "semanticIdentity": "an image composition paired with an editable prompt strip",
+  "sourceRoot": "tooling/icon-generation/image-prompt-studio-six-era",
+  "eras": {
+    "classic": {
+      "source": "tooling/icon-generation/image-prompt-studio-six-era/classic.svg",
+      "sourceSha256": "5cbe6780fbcc3fad8a9e29e701477873900369fcce7603e73668c859699087c4",
+      "sizes": [
+        32,
+        16
+      ],
+      "assets": {
+        "16": {
+          "file": "icons/imagePromptStudio-16.svg",
+          "sha256": "7595dfad433ae3e6edd785216608fdf2f2e8501502c9b05d0c8a016b70b5c937"
+        },
+        "32": {
+          "file": "icons/imagePromptStudio-32.svg",
+          "sha256": "e7d8c609dce78b20dbb82ed15b20133d7aa17676dfbe6a6c9e5a7fac951daf9a"
+        }
+      }
+    },
+    "platinum": {
+      "source": "tooling/icon-generation/image-prompt-studio-six-era/platinum.png",
+      "sourceSha256": "74b9e3c1a6ab89fbac9bbb06cac68f932cf5ddab0e27608e5da69b4c7489ed49",
+      "sizes": [
+        42,
+        32,
+        16
+      ],
+      "assets": {
+        "16": {
+          "file": "icons/imagePromptStudio-16.png",
+          "sha256": "353f1f8e05e3a1c651b2350619a12941be30a816063087d3cc0cd18c48307f42"
+        },
+        "32": {
+          "file": "icons/imagePromptStudio-32.png",
+          "sha256": "b559e09e0bc34831cbf239b9050bbc2dc9db4bde0441bdb37105032f4ed800f6"
+        },
+        "42": {
+          "file": "icons/imagePromptStudio-42.png",
+          "sha256": "cedd29dfaf282d3045be85abb92e9a1ca49b4f14efaad97f3add8bc1d5426b29"
+        }
+      }
+    },
+    "aqua": {
+      "source": "tooling/icon-generation/image-prompt-studio-six-era/aqua.png",
+      "sourceSha256": "dddf52e300d75c658f62e64d773a072075b49d7a8a20d6a8007cf4e278041647",
+      "sizes": [
+        128,
+        32,
+        16
+      ],
+      "assets": {
+        "16": {
+          "file": "icons/imagePromptStudio-16.png",
+          "sha256": "2d221858dc3e64603e82db15d12b4ee0af8415efd8503e21645b8a5a5a35caed"
+        },
+        "32": {
+          "file": "icons/imagePromptStudio-32.png",
+          "sha256": "dc06397dd4c97b13f2ee70d582752c0ee2395c13db6b09d2eaa60e230acbcc5a"
+        },
+        "128": {
+          "file": "icons/imagePromptStudio-128.png",
+          "sha256": "255b3cd15baf4ba097614c494fe484ee22ecd6089adfe17402f0d492b0611651"
+        }
+      }
+    },
+    "snow-leopard": {
+      "source": "tooling/icon-generation/image-prompt-studio-six-era/snow-leopard.png",
+      "sourceSha256": "643895d688040d8341ee3de5c4c0b17ecb4658b7c2bda5b82ebb6134e3665fcb",
+      "sizes": [
+        128,
+        32,
+        16
+      ],
+      "assets": {
+        "16": {
+          "file": "icons/imagePromptStudio-16.png",
+          "sha256": "83a71aad98be12d6ae9b367d024d8eecc78a59af9add1d020861949193276a6f"
+        },
+        "32": {
+          "file": "icons/imagePromptStudio-32.png",
+          "sha256": "550533c92c8542374d0b328a8ee0d11590e5ead55dd371b49743414be747dbe0"
+        },
+        "128": {
+          "file": "icons/imagePromptStudio-128.png",
+          "sha256": "916fc74803b79f81e4f1c9da9ad14d67f919f4dad3c1fb580463428f6d37ee2e"
+        }
+      }
+    },
+    "yosemite": {
+      "source": "tooling/icon-generation/image-prompt-studio-six-era/yosemite.png",
+      "sourceSha256": "46cb8ec64c5c4649371988c3a428e44ffa7c48af1dd3209e343a6c7f66f6b4c6",
+      "sizes": [
+        128,
+        32,
+        16
+      ],
+      "assets": {
+        "16": {
+          "file": "icons/imagePromptStudio-16.png",
+          "sha256": "4318433db4cb804f29d980a6fe3309b4174309c367cbdeab57c901b7c00cbdc6"
+        },
+        "32": {
+          "file": "icons/imagePromptStudio-32.png",
+          "sha256": "c9096ebb4afeb65d7fab24380b7ccf783ac4cb6906c38738d910cab458751e93"
+        },
+        "128": {
+          "file": "icons/imagePromptStudio-128.png",
+          "sha256": "d2b332d9355217f3d782288fe5abd675dc93e6bb4be2014fb2bea3ca636a3028"
+        }
+      }
+    },
+    "liquid-glass": {
+      "source": "tooling/icon-generation/image-prompt-studio-six-era/liquid-glass.png",
+      "sourceSha256": "f44bdadc0dca161591beadecd79e1463cdcbd9fefca144567b6c2ef49dab02aa",
+      "sizes": [
+        128,
+        64,
+        32,
+        16
+      ],
+      "assets": {
+        "128-default": {
+          "file": "icons/imagePromptStudio-128-default.png",
+          "sha256": "c98918a52ecc0f7518b46d0282a45039d84af6d59d14c60efcd1059d115f24c2"
+        },
+        "128-dark": {
+          "file": "icons/imagePromptStudio-128-dark.png",
+          "sha256": "462f0e959c8e914501e26fa9217651c9c7d2fc2829e7f4a9bbff7697e987cd9e"
+        },
+        "128-clear": {
+          "file": "icons/imagePromptStudio-128-clear.png",
+          "sha256": "332d8498dd929090629fcae4baaf2139b205144d12f03546344aa11e392c9cb1"
+        },
+        "64-default": {
+          "file": "icons/imagePromptStudio-64-default.png",
+          "sha256": "fcfa36f53bb975369971c131e53f5f1d6492b83a8902a838f849b6c0d2ff7191"
+        },
+        "64-dark": {
+          "file": "icons/imagePromptStudio-64-dark.png",
+          "sha256": "9a6b8e1f8d27c649fe8b16368b4e75b3deecdbe228e8a5bc5ec33fd3dfc73807"
+        },
+        "64-clear": {
+          "file": "icons/imagePromptStudio-64-clear.png",
+          "sha256": "29151edf01b62c7cba1e2355e53c16e0a4ebbf5812ab058913066226557e6f5d"
+        },
+        "32-default": {
+          "file": "icons/imagePromptStudio-32-default.png",
+          "sha256": "e6a126d19b2cc833b876c00589fe3c7d03943f8d305d7b8fb2e6aa95f206ffc0"
+        },
+        "32-dark": {
+          "file": "icons/imagePromptStudio-32-dark.png",
+          "sha256": "71ca3684a78dbfadbc81cfe05f4fe29d6e4da204c8a03816dbb4bf98d190e1ed"
+        },
+        "32-clear": {
+          "file": "icons/imagePromptStudio-32-clear.png",
+          "sha256": "fac5976f68d2e9772c82cd4dfa90a9a0b8a010ea0233136eb0e15a1c1cd1393a"
+        },
+        "16-default": {
+          "file": "icons/imagePromptStudio-16-default.png",
+          "sha256": "762ea9fa3e8f763ebc96e2a6d33bbdc215a3e9fad523d0c4c3f2d4fbdb2b069c"
+        },
+        "16-dark": {
+          "file": "icons/imagePromptStudio-16-dark.png",
+          "sha256": "c39e4cd47791a725f9851990480c66551efbe886077002e3aa025e280caa8ff6"
+        },
+        "16-clear": {
+          "file": "icons/imagePromptStudio-16-clear.png",
+          "sha256": "9e3da4fafe23558d1062d87080a2176e1f40de12326e015a0209a6783a581959"
+        }
+      }
+    }
+  }
+}

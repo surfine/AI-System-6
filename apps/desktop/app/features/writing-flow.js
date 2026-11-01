@@ -1,0 +1,3367 @@
+// Feature module: writing-flow.
+
+// Loaded before app.js as a classic script; shares the AI System 6 global scope.
+
+window.AISystem6WritingFlowLoaded = true;
+
+function writingStudioExplanationLens() {
+  const project = getActiveProject();
+  const lens = project?.explanationLens;
+  return window.AISystem6ExplanationLens?.normalizeExplanationLens?.(lens)
+    || window.AISystem6ExplanationLens?.blankExplanationLens?.()
+    || {
+      id: "eli5",
+      enabled: true,
+      audience: "general-public",
+      baselineKnowledge: "secondary-school",
+      medium: "written-article",
+      question: "",
+      stuckPointHint: "",
+      mustKeepTerms: [],
+    };
+}
+
+function writingStudioEli5Block(language = currentLanguage) {
+  const lens = writingStudioExplanationLens();
+  if (lens.enabled !== true) return "";
+  const body = window.AISystem6PromptFilesRuntime?.resolvePromptFile?.("lenses.eli5-explainer", null, language)?.body;
+  if (!body) return "";
+  const zh = String(language || "").toLowerCase().startsWith("zh");
+  const baseline = `${zh ? "观众基础" : "Audience baseline"}：${lens.baselineKnowledge || "secondary-school"}`;
+  const terms = lens.mustKeepTerms?.length
+    ? `${zh ? "必须保留的术语" : "Terms to keep"}：${lens.mustKeepTerms.join(zh ? "、" : ", ")}`
+    : "";
+  return [
+    "ELI5 解释规则（仅帮助理解，不决定交付媒介，不覆盖作者口吻）：",
+    body,
+    baseline,
+    terms,
+  ].filter(Boolean).join("\n\n");
+}
+
+// A request freezes the editorial choice once. Author identity and the ELI5
+// lens do not turn an article into a video; an explicit task/medium does.
+function resolveWritingTaskGenre(project, options = {}) {
+  const supplied = options.editorialContract || options.contract || {};
+  const taskMedium = String(options.genre || supplied.genre || "").trim();
+  const questions = String(options.questions || "");
+  const labelledMedium = questions.match(/^(?:#{1,6}\s*)?(?:体裁|媒介|交付形式|用途|genre|medium|format)\s*[:：]\s*(.+)$/mi)?.[1]?.trim() || "";
+  const explicitSpokenTask = /(?:请|我(?:要|想)|(?:这次|本次)|任务)[^\n。！？]{0,24}(?:写|做|制作|生成|输出|改成|转为|转换)[^\n。！？]{0,18}(?:口播(?:稿|脚本)?|视频(?:稿|脚本|创作)|(?:一期|一支|一条)视频|旁白)/.test(questions);
+  const questionMedium = labelledMedium || (explicitSpokenTask ? "spoken-script" : "");
+  const requested = taskMedium || questionMedium || project?.editorialTask?.genre || project?.genre || project?.editorialPlan?.genre || project?.explanationLens?.medium || "article";
+  const genres = {
+    article: "article", column: "article", "written-article": "article", 专栏: "article", 专栏文章: "article", 文章: "article", 书面文章: "article",
+    "spoken-script": "spoken-script", "spoken-video": "spoken-script", video: "spoken-script", 口播: "spoken-script", 口播稿: "spoken-script", 视频: "spoken-script", 视频稿: "spoken-script",
+    "technical-document": "technical-document", technical: "technical-document", 技术规范: "technical-document", 技术长文: "technical-document",
+    "ui-copy": "ui-copy", other: "other",
+  };
+  return genres[String(requested).toLowerCase()] || "";
+}
+
+function resolveWritingEditorialContract(project, options = {}) {
+  const supplied = options.editorialContract || options.contract || {};
+  const questions = String(options.questions || "");
+  const genre = resolveWritingTaskGenre(project, options);
+  if (!genre) throw new Error("editorial-genre-invalid: choose an explicit supported medium.");
+  const locks = JSON.parse(JSON.stringify(options.locks || supplied.locks || project?.authorLocks || project?.editorialTask?.locks || project?.editorialPlan?.locks || []));
+  const lockEntries = Array.isArray(locks) ? locks : Object.entries(locks).map(([target, value]) => ({ target, value }));
+  for (const lock of lockEntries) {
+    const value = typeof lock === "string" ? lock : lock?.exactText ?? lock?.value;
+    const titleList = ["sections", "sectionTitles"].includes(lock?.target) && Array.isArray(value) && value.every((title) => typeof title === "string");
+    if (typeof value !== "string" && !titleList) throw new Error("author-lock-unbound: resolve the locked target's exact text or section titles before generating.");
+  }
+  const labelled = (names) => questions.match(new RegExp(`^(?:#{1,6}\\s*)?(?:${names})\\s*[:：]\\s*(.+)$`, "mi"))?.[1]?.trim() || "";
+  const voice = options.voiceIntent || supplied.voiceIntent || project?.editorialTask?.voiceIntent || project?.editorialPlan?.voiceIntent || {};
+  // These are independent task choices. A named recipient never changes the
+  // speaker, style or medium, and a style label never invents firsthand history.
+  const voiceIntent = Object.freeze({
+    author: String(options.author || labelled("作者|说话者|author|speaker") || voice.author || ""),
+    recipient: String(options.recipient || labelled("接收者|交给|recipient") || voice.recipient || ""),
+    style: String(options.style || labelled("文体|声音|voice|style") || voice.style || "preserve-source"),
+    operation: String(options.operation || labelled("协作方式|collaboration") || voice.operation || "preserve"),
+  });
+  return Object.freeze({
+    genre,
+    language: String(options.language || supplied.language || currentLanguage || "en"),
+    locks,
+    voiceIntent,
+  });
+}
+
+function writingEditorialContractBlock(contract) {
+  return `EDITORIAL CONTRACT (same for generation and repair):\n${JSON.stringify(contract)}\nAuthor, recipient, voice and medium are independent. A recipient is not the narrator. Preserve the source voice unless a voice change is explicitly requested. Aaron's voice can retain historical depth, technical precision, personal observation and restrained literary expression; Luoluo's voice leads an equal exploration with the audience, using discovery and complementary visuals/narration rather than catchphrase mimicry. Either voice can serve either medium. For handoff or adaptation, retain original attribution, evidence limits and firsthand ownership; prepare only the requested candidate, never silently replace or merge both authors' originals, and leave creative choices to its author. Do not fabricate either person's experiences. Use this task's medium and output language. Preserve explicit author locks; facts contradicted by sources require a separate correction proposal, never an invisible rewrite of a lock. ## headings are draftable sections; ### headings are legal subsections. Choose the number of sections the material needs. Output only the requested candidate; workflow explanations and research diagnostics belong outside its body.`;
+}
+
+function validateWritingEditorialLocks(markdown, contract = {}) {
+  const text = String(markdown || "");
+  const headings = [...text.matchAll(/^##\s+(.+)$/gm)].map((match) => match[1].replace(/\s*\{#[0-9a-f]{6}\}\s*$/i, "").trim());
+  const locks = Array.isArray(contract.locks) ? contract.locks : Object.entries(contract.locks || {}).map(([target, value]) => ({ target, value }));
+  for (const entry of locks) {
+    const lock = typeof entry === "string" ? { target: "text", value: entry } : entry;
+    const value = lock?.exactText ?? lock?.value;
+    if (lock?.valueHash && value === undefined) throw new Error("author-lock-unbound: resolve the locked original text before generating a candidate.");
+    if (lock?.target === "sections" || lock?.target === "sectionTitles") {
+      if (Array.isArray(value) && JSON.stringify(headings) !== JSON.stringify(value)) throw new Error("author-lock-mismatch: locked section titles or order changed.");
+    } else if (typeof value === "string" && value) {
+      const kept = lock.target === "title"
+        ? text.match(/^#\s+(.+)$/m)?.[1]?.trim() === value
+        : lock.target === "opening"
+          ? text.replace(/^#\s+[^\n]*\n+/, "").trimStart().startsWith(value)
+          : text.includes(value);
+      if (!kept) throw new Error(`author-lock-mismatch: ${String(lock.target || "text")} was changed.`);
+    }
+  }
+  return text;
+}
+
+function captureWritingRouteTarget(project = getActiveProject()) {
+  return Object.freeze({
+    projectId: String(project?.id || ""),
+    outline: String(currentOutlineMarkdown(project) || ""),
+    authorConstraints: JSON.stringify({ genre: project?.genre, locks: project?.authorLocks, plan: project?.editorialPlan, task: project?.editorialTask, constraints: project?.authorConstraints, medium: project?.explanationLens?.medium }),
+    questionSheet: String(typeof questionSheetBodyInput !== "undefined" ? questionSheetBodyInput?.value ?? project?.questionSheet ?? "" : project?.questionSheet || ""),
+  });
+}
+
+function writingRouteTargetMatches(target) {
+  const project = getActiveProject();
+  return Boolean(project && target && String(project.id) === target.projectId
+    && JSON.stringify({ genre: project.genre, locks: project.authorLocks, plan: project.editorialPlan, task: project.editorialTask, constraints: project.authorConstraints, medium: project.explanationLens?.medium }) === target.authorConstraints
+    && String(currentOutlineMarkdown(project) || "") === target.outline
+    && String(typeof questionSheetBodyInput !== "undefined" ? questionSheetBodyInput?.value ?? project.questionSheet ?? "" : project.questionSheet || "") === target.questionSheet);
+}
+
+function captureSectionDraftTarget(context) {
+  return Object.freeze({ ...captureWritingRouteTarget(context.project),
+    recordId: String(context.block.id || context.draft.sectionId || ""),
+    draftId: String(context.draft.id || ""),
+    outlineIndex: context.block.sourceOutlineIndex,
+    body: String(context.body || ""),
+  });
+}
+
+function sectionDraftTargetMatches(target) {
+  if (!writingRouteTargetMatches(target)) return false;
+  const current = currentSectionDraftContext();
+  if (!current) return false;
+  const recordId = String(current.block.id || current.draft.sectionId || "");
+  return recordId === target.recordId && String(current.draft.id || "") === target.draftId
+    && current.block.sourceOutlineIndex === target.outlineIndex && String(current.body || "") === target.body
+    && (typeof manuscriptPhase !== "function" || manuscriptPhase() === "drafting");
+}
+
+function sectionDraftContinuityContext(context) {
+  const blocks = getProjectOutlineDraftBlocks(context.project);
+  const index = blocks.findIndex((block) => context.block.id ? block.id === context.block.id : block.sourceOutlineIndex === context.block.sourceOutlineIndex);
+  const compact = (value, limit) => clipContextContent(String(value || ""), limit);
+  const neighbour = (offset) => {
+    const block = blocks[index + offset];
+    if (!block) return "None: this is the document boundary.";
+    return `${block.title}\n${compact(block.sourceMarkdown || block.body, 1000)}`;
+  };
+  return [
+    "DOCUMENT STRUCTURE (orientation, not another introduction):",
+    compact(blocks.map((block) => `${block.id === context.block.id ? "[CURRENT] " : ""}${compact(block.title, 160)}`).join("\n"), 3000),
+    "PREVIOUS SECTION — responsibility and existing text:", neighbour(-1),
+    "NEXT SECTION — responsibility; do not pre-empt its explanation:", neighbour(1),
+    "CURRENT EXISTING TEXT — retain useful author wording and avoid restating it:", compact(context.body, 1400),
+    "Add only this section's contribution. Do not repeat the document opening, established mechanisms or the conclusion to make this section self-contained. Internal planning notes do not belong in the candidate body.",
+  ].join("\n\n");
+}
+
+function getProjectEvidenceClips() {
+  return getProjectScraps().filter((scrap) =>
+    scrap.tags?.includes("reader-clip")
+    || scrap.tags?.includes("document-clip")
+    || ["reader-clip", "document-clip", "search-result"].includes(scrap.source?.type)
+  );
+}
+
+function getFlowProgress(project) {
+  const states = {
+    topic: false,
+    research: false,
+    outline: false,
+    drafting: false,
+    check: false,
+  };
+
+  if (project) {
+    states.topic = (project.questionSheet || "").trim().length > 20 || project.flowState?.topic === true;
+    states.research = getProjectEvidenceClips().length > 0 || project.flowState?.research === true;
+    const outlineSections = getProjectOutlineSections(project);
+    states.outline = getMeaningfulOutlineSections(outlineSections).length > 0 || project.flowState?.outline === true;
+    states.drafting = (project.drafts || []).length > 0 || project.flowState?.drafting === true;
+    // A raw markup-length threshold treated the empty state's own placeholder
+    // (`.empty-folder-note`, "Run Fact Check…") as "has results" the moment its
+    // localized copy grew past 100 characters — true from the very first
+    // render of a brand-new project, before any check ever ran. Read whether
+    // the panel actually holds a non-placeholder child instead: that survives
+    // a copy edit and does not fire on a project nobody has reviewed yet.
+    const claimResultsHaveContent = !!claimResultsEl
+      && [...claimResultsEl.children].some((child) => !child.classList?.contains("empty-folder-note"));
+    states.check = claimResultsHaveContent || project.flowState?.check === true;
+  }
+
+  const complete = flowStepOrder.every((step) => states[step]);
+  const currentKey = flowStepOrder.find((step) => !states[step]) || "check";
+  const currentIndex = flowStepOrder.indexOf(currentKey);
+  return { states, complete, currentKey, currentIndex };
+}
+
+function renderFlowProgress(project, progress = getFlowProgress(project)) {
+  syncTeachTextLabelControl();
+}
+
+function getTeachTextSurface(surface) {
+  const surfaces = {
+    questionSheet: {
+      input: questionSheetBodyInput,
+      preview: questionSheetPreviewEl,
+      statusKey: "question_sheet",
+      toggleAction: "toggle-question-preview",
+    },
+    outline: {
+      input: outlineContentEl,
+      preview: outlinePreviewEl,
+      statusKey: "outline",
+      toggleAction: "toggle-outline-preview",
+    },
+    sectionDrafts: {
+      input: draftBodyInput,
+      preview: draftPreviewEl,
+      statusKey: "section_drafts",
+      toggleAction: "toggle-draft-preview",
+    },
+  };
+  return surfaces[surface] || null;
+}
+
+function syncTeachTextSurfacePreviewToggle(surface) {
+  const config = getTeachTextSurface(surface);
+  if (!config?.preview || !config.toggleAction) return;
+
+  const button = document.querySelector(`[data-action="${config.toggleAction}"]`);
+  if (!button) return;
+  mdeSyncModeToggle(button, !config.preview.classList.contains("is-hidden"));
+}
+
+function refreshTeachTextSurfacePreview(surface) {
+  const config = getTeachTextSurface(surface);
+  if (!config?.input || !config.preview) return;
+
+  const value = config.input.value || "";
+  config.preview.innerHTML = value.trim()
+    ? markdownToSystemHtml(value)
+    : `<p class="empty-folder-note">${escapeHtml(t("teachtext_preview_empty"))}</p>`;
+  syncTeachTextSurfacePreviewToggle(surface);
+}
+
+function refreshAllTeachTextSurfacePreviews() {
+  ["questionSheet", "outline", "sectionDrafts"].forEach(refreshTeachTextSurfacePreview);
+}
+
+function toggleTeachTextSurfacePreview(surface) {
+  const config = getTeachTextSurface(surface);
+  if (!config?.input || !config.preview) return;
+  const container = config.preview.closest(".teachtext-editor-container");
+
+  const showPreview = config.preview.classList.contains("is-hidden");
+  if (showPreview) {
+    refreshTeachTextSurfacePreview(surface);
+    // The preview is shown before the editor is hidden: the anchor measures
+    // boxes, and a hidden element has none.
+    config.preview.classList.remove("is-hidden");
+    container?.classList.add("is-previewing");
+    enterPreviewAtCaret(config.input, config.preview);
+    config.input.classList.add("is-hidden");
+    config.preview.focus?.();
+    syncTeachTextSurfacePreviewToggle(surface);
+  } else {
+    leavePreviewToCaret(config.input, config.preview);
+    config.preview.classList.add("is-hidden");
+    container?.classList.remove("is-previewing");
+    config.input.classList.remove("is-hidden");
+    config.input.focus();
+    syncTeachTextSurfacePreviewToggle(surface);
+  }
+}
+
+function isPlaceholderOutlineSection(section) {
+  const text = String(section || "").replace(/\s+/g, " ").trim();
+  if (!text) return true;
+
+  const localizedDefault = t("new_outline_section");
+  return text === defaultOutlineSection
+    || text === localizedDefault
+    || /^New Section(?: \d+)?$/.test(text)
+    || /^新章节(?: \d+)?$/.test(text);
+}
+
+function getMeaningfulOutlineSections(sections) {
+  return (sections || []).filter((section) => !isPlaceholderOutlineSection(section));
+}
+
+function outlineSectionsFromDom() {
+  if (!outlineContentEl) return [];
+
+  return extractOutlineSections(outlineContentEl.value || "");
+}
+
+function currentOutlineMarkdown(project = getActiveProject()) {
+  if (outlineContentEl && "value" in outlineContentEl) return outlineContentEl.value;
+  return project?.outline || serializeOutlineSections(getProjectOutlineSections(project));
+}
+
+// Which writing surface the user most recently typed into. Route commands fire
+// from menus/buttons, which blur the editor first, so `document.activeElement`
+// is no longer a writing surface at command time. Without this marker
+// `savePipelineData` always falls back to the Outline DOM and silently ignores
+// fresh Manuscript/Section-Draft edits, making commands operate on the previous
+// article. Reset on project switch (see renderPipeline).
+let lastEditedWritingSurface = null;
+
+function noteWritingSurfaceEdit(surface) {
+  lastEditedWritingSurface = surface || null;
+}
+
+// The route manuscript (TeachText) is the same document as the Outline seen as
+// prose. Its workflow state decides its phase, and the phase decides who owns the
+// text: while drafting it is a read-only preview of the Section Drafts; once it is
+// finalized it becomes the editable text under review at the Review Desk. Phase is
+// derived live from the manuscript state (the persisted source of truth) rather
+// than stored separately, so the two can never drift apart.
+// Three route phases, one editable owner each:
+//   drafting   - Section Drafts own project.outline; the manuscript previews it.
+//   manuscript - the manuscript owns it; Section Drafts turn read-only.
+//   review     - the finalized manuscript owns it, paired with the Review Desk.
+// The manuscript phase is the route stop between them, so "To Manuscript" hands
+// over the pen instead of jumping the writer straight into review.
+function manuscriptPhase() {
+  if (typeof teachTextReviewLabel === "function" && teachTextReviewLabel()) return "review";
+  if (manuscriptOwnsProjectDraft()) return "manuscript";
+  return "drafting";
+}
+
+// The manuscript phase is a property of the project, not of the file label: the
+// label still reads draft/AI Assisted here, because nothing has been finalized.
+function manuscriptOwnsProjectDraft(project = getActiveProject()) {
+  if (typeof teachTextPipelineLabel === "function" && !teachTextPipelineLabel()) return false;
+  return project?.manuscriptOwnsDraft === true;
+}
+
+// Whether the manuscript is currently an editable owner of project.outline.
+function manuscriptOwnsDocument() {
+  return manuscriptPhase() !== "drafting";
+}
+
+// Enforce the single-editable-owner rule on the manuscript surface. During the
+// drafting phase the Section Drafts are the sole editable owner and the manuscript
+// is a read-only preview of project.outline; the manuscript becomes editable only
+// once it is finalized for review. readOnly blocks user typing (the source of the
+// divergent second copy) while still allowing programmatic project→manuscript
+// writes, so a read-only drafting manuscript also emits no input events and never
+// writes back. Non-manuscript TeachText documents keep their normal editability.
+// Whether the manuscript is currently a second editable view of project.outline.
+// The lock exists to stop a divergent copy, so it applies only while the
+// manuscript actually projects the route document: a scratch file or a
+// brand-new TeachText document is nobody's projection and must stay writable.
+function manuscriptIsLockedProjection() {
+  const isManuscript = typeof isTeachTextManuscriptRole === "function"
+    ? isTeachTextManuscriptRole()
+    : false;
+  if (!isManuscript) return false;
+  if (typeof shouldSyncProjectOutlineAsManuscript === "function"
+    && !shouldSyncProjectOutlineAsManuscript()) return false;
+  return manuscriptPhase() === "drafting";
+}
+
+// The mirror image: once the manuscript owns project.outline, the Section
+// Drafts become the read-only projection - otherwise the route has two editable
+// views of one document again, and the last save silently wins.
+function sectionDraftsAreLockedProjection() {
+  return manuscriptOwnsDocument();
+}
+
+// Both locks are reasons, not writes. The write lease owns the property and
+// combines every reason, so a lease refresh can no longer unlock the drafting
+// manuscript behind the route's back.
+function writingRouteReadOnlyRule(element) {
+  if (element === teachTextBodyInput) return manuscriptIsLockedProjection();
+  if (element === draftBodyInput) return sectionDraftsAreLockedProjection();
+  return false;
+}
+
+let writingRouteReadOnlyRuleRegistered = false;
+
+function applyManuscriptEditability() {
+  if (!writingRouteReadOnlyRuleRegistered && window.AISystem6WriteLease?.registerReadOnlyRule) {
+    window.AISystem6WriteLease.registerReadOnlyRule(writingRouteReadOnlyRule);
+    writingRouteReadOnlyRuleRegistered = true;
+  }
+  applySectionDraftEditability();
+  if (!teachTextBodyInput) return;
+  const lockDrafting = manuscriptIsLockedProjection();
+  teachTextBodyInput.classList.toggle("manuscript-readonly", lockDrafting);
+  window.AISystem6WriteLease?.syncReadOnlySurface?.();
+  // Surface who owns the text so the read-only manuscript never looks "broken".
+  if (typeof updateTeachTextDeskState === "function") updateTeachTextDeskState();
+}
+
+function applySectionDraftEditability() {
+  if (!draftBodyInput) return;
+  draftBodyInput.classList.toggle("manuscript-readonly", sectionDraftsAreLockedProjection());
+  window.AISystem6WriteLease?.syncReadOnlySurface?.();
+  if (typeof updateDraftSectionLabel === "function") updateDraftSectionLabel(getActiveProject());
+}
+
+// Resolve the source-of-truth surface for a pipeline save. Ownership follows the
+// route phase, not raw focus: a live focus on an editable writing surface wins,
+// and when focus has left the editors — i.e. a command was invoked — we fall back
+// to the last edited surface. The manuscript is only a candidate owner when its
+// phase actually owns the document. Default to the Outline.
+function resolvePipelineSourceSurface(project = getActiveProject()) {
+  // A read-only Section Draft can still hold focus, so the phase decides first.
+  const draftsOwnDocument = manuscriptPhase() === "drafting";
+  if (draftsOwnDocument && document.activeElement === draftBodyInput) return "draft";
+  if (document.activeElement === teachTextBodyInput) {
+    return manuscriptOwnsDocument() ? "manuscript" : "outline";
+  }
+  if (document.activeElement === outlineContentEl) return "outline";
+  if (draftsOwnDocument
+    && lastEditedWritingSurface === "draft"
+    && selectedDraftIndex >= 0
+    && project?.drafts?.[selectedDraftIndex]) {
+    return "draft";
+  }
+  if (lastEditedWritingSurface === "manuscript" && manuscriptOwnsDocument()) return "manuscript";
+  // With no marker left, fall back to the PHASE's own owner, never to the
+  // Outline. renderPipeline clears the marker (project switch, and every
+  // command that repaints the surfaces), so "no marker" is an ordinary state,
+  // not a rare one -- and defaulting to the Outline there told savePipelineData
+  // to rebuild the record from the Outline field while the manuscript held the
+  // text. That is the same mistake in a different place: ownership follows the
+  // phase, and in the manuscript and review phases the Outline field is the
+  // read-only projection.
+  if (manuscriptOwnsDocument()) return "manuscript";
+  return "outline";
+}
+
+function countQuestionSheetQuestions(markdown) {
+  return normalizeMarkdownText(markdown)
+    .split("\n")
+    .map((line) => stripMarkdownInlineSyntax(line.replace(/^\s*(?:[-*+]|\d+[.)])\s+/, "").trim()))
+    .filter((line) => /[?？]\s*$/.test(line))
+    .length;
+}
+
+// What the Question Sheet's own cell says: the count it has always shown, and
+// the one load-bearing thing this sheet has not said yet. One gap at a time --
+// five listed at once is a form with marks on it again, and a score invites
+// filling boxes to raise it.
+function questionSheetCellText(markdown) {
+  const questions = countQuestionSheetQuestions(markdown);
+  const count = !questions && String(markdown || "").trim() ? t("question_sheet_notes") : t("questions_count", questions);
+  const gap = typeof questionSheetFirstGap === "function" ? questionSheetFirstGap(markdown) : "";
+  return gap ? `${count} · ${t(`question_sheet_gap_${gap}`)}` : count;
+}
+
+function linkedManuscriptTitle(project = getActiveProject()) {
+  const projectMarkdown = project?.outline || "";
+  const bodyMarkdown = teachTextBodyInput?.value || "";
+  const fallback = markdownDocumentTitle(projectMarkdown)
+    || markdownDocumentTitle(bodyMarkdown)
+    || teachTextNameInput?.value?.trim()
+    || t("untitled");
+  return typeof getTeachTextDocumentName === "function"
+    ? getTeachTextDocumentName({ fallback })
+    : fallback;
+}
+
+function updateQuestionSheetManuscriptTitle(project = getActiveProject()) {
+  if (!questionManuscriptTitleEl) return;
+  questionManuscriptTitleEl.textContent = linkedManuscriptTitle(project);
+}
+
+function getOutlineSelectionText() {
+  if (!outlineContentEl || !("selectionStart" in outlineContentEl)) return window.getSelection().toString().trim();
+  const { selectionStart, selectionEnd, value } = outlineContentEl;
+  if (selectionStart === selectionEnd) return "";
+  return value.slice(selectionStart, selectionEnd).trim();
+}
+
+function replaceOutlineSelection(nextMarkdown) {
+  const project = getActiveProject();
+  if (!project) return "";
+
+  const nextText = String(nextMarkdown || "").trim();
+  if (!outlineContentEl || !("selectionStart" in outlineContentEl)) {
+    setProjectOutlineMarkdown(project, nextText);
+    return project.outline;
+  }
+
+  const { selectionStart, selectionEnd, value } = outlineContentEl;
+  const hasSelection = selectionStart !== selectionEnd;
+  const updated = hasSelection
+    ? `${value.slice(0, selectionStart)}${nextText}${value.slice(selectionEnd)}`
+    : nextText;
+  setProjectOutlineMarkdown(project, updated);
+  outlineContentEl.value = project.outline;
+  return project.outline;
+}
+
+function nextOutlineSectionName(project) {
+  const base = t("new_outline_section");
+  const existing = new Set(getProjectOutlineSections(project).map((section) => section.toLowerCase()));
+  if (!existing.has(base.toLowerCase())) return base;
+
+  let index = 2;
+  while (existing.has(`${base} ${index}`.toLowerCase())) index += 1;
+  return `${base} ${index}`;
+}
+
+function outlineDraftBlocksFromDom(project = getActiveProject()) {
+  const markdown = outlineContentEl && "value" in outlineContentEl
+    ? outlineContentEl.value
+    : project?.outline || "";
+  return extractOutlineDraftBlocks(markdown);
+}
+
+function selectedOutlineDraftBlock(project = getActiveProject()) {
+  const blocks = outlineDraftBlocksFromDom(project);
+  const rawIndex = Number(draftSectionSelectEl?.value || 0);
+  const index = Math.max(0, Math.min(blocks.length - 1, Number.isFinite(rawIndex) ? rawIndex : 0));
+  return blocks[index] || blocks[0] || null;
+}
+
+// The Section Drafts picker is a .select-wrap the system-select harness drives:
+// the native <select> is hidden behind a button, so greying only the select
+// leaves a button that still looks live and then silently does nothing. Mark
+// both with the shared one-tap reason the shell reads, and keep the native
+// disabled state so the harness button paints grey.
+function markDraftSectionSelect(unavailable) {
+  if (!draftSectionSelectEl) return;
+  const reasonKey = "balloon_draft_needs_section";
+  const mark = (control) => {
+    if (!control) return;
+    control.disabled = unavailable;
+    if (unavailable) control.dataset.balloonHelpDisabled = reasonKey;
+    else delete control.dataset.balloonHelpDisabled;
+  };
+  mark(draftSectionSelectEl);
+  mark(draftSectionSelectEl.closest(".select-wrap")?.querySelector(":scope > .system-select-button"));
+}
+
+function renderDraftSectionSource(outlineSections) {
+  if (!draftSectionSelectEl) return;
+
+  const previous = draftSectionSelectEl.value;
+  draftSectionSelectEl.replaceChildren();
+
+  outlineSections.forEach((section, index) => {
+    const option = document.createElement("option");
+    option.value = String(index);
+    option.textContent = t("draft_section_option", index + 1, outlineSections.length, section || defaultOutlineSection);
+    draftSectionSelectEl.append(option);
+  });
+
+  markDraftSectionSelect(outlineSections.length === 0);
+  draftSectionSelectEl.value = [...draftSectionSelectEl.options].some((option) => option.value === previous)
+    ? previous
+    : "0";
+}
+
+function draftMatchesSection(draft, sectionTitle, sectionIndex = null) {
+  const normalized = String(sectionTitle || "").trim();
+  if (!normalized || !draft) return false;
+
+  const draftSourceTitle = String(draft.sourceOutlineSection || draft.sectionTitle || draft.title || "").trim();
+  const hasMatchingIndex = Number.isFinite(Number(sectionIndex))
+    && Number.isFinite(Number(draft.sourceOutlineIndex))
+    && Number(draft.sourceOutlineIndex) === Number(sectionIndex);
+  if (hasMatchingIndex && draftSourceTitle === normalized) return true;
+  if (Number.isFinite(Number(sectionIndex)) && Number.isFinite(Number(draft.sourceOutlineIndex))) return false;
+
+  return [draft.sourceOutlineSection, draft.sectionTitle, draft.title]
+    .some((value) => String(value || "").trim() === normalized);
+}
+
+function ensureDraftForSection(sectionTitle = selectedOutlineSectionTitle(), options = {}) {
+  const project = getActiveProject();
+  if (!project) return null;
+
+  const title = String(sectionTitle || "").trim() || t("manual_draft_title");
+  if (!project.drafts) project.drafts = [];
+  const sourceOutlineIndex = Number.isFinite(Number(options.sourceOutlineIndex))
+    ? Number(options.sourceOutlineIndex)
+    : null;
+  const sourceMarkdown = String(options.sourceMarkdown || "").trim();
+  const sourceBody = String(options.body || "").trim();
+
+  const existingIndex = project.drafts.findIndex((draft) => draftMatchesSection(draft, title, sourceOutlineIndex));
+  if (existingIndex >= 0) {
+    selectedDraftIndex = existingIndex;
+    const existingDraft = project.drafts[existingIndex];
+    if (sourceOutlineIndex !== null) existingDraft.sourceOutlineIndex = sourceOutlineIndex;
+    if (sourceMarkdown) existingDraft.sourceMarkdown = sourceMarkdown;
+    if (options.seedBody && sourceBody && !String(existingDraft.body || "").trim()) {
+      existingDraft.body = sourceBody;
+      existingDraft.updatedAt = new Date().toISOString();
+    }
+    return existingDraft;
+  }
+
+  const now = new Date().toISOString();
+  const draft = {
+    id: crypto.randomUUID(),
+    title,
+    sectionTitle: title,
+    sourceType: "outline-section",
+    sourceOutlineSection: title,
+    sourceOutlineIndex,
+    sourceMarkdown,
+    usedClips: [],
+    body: options.seedBody ? sourceBody : "",
+    createdAt: now,
+    updatedAt: now,
+    insertedAt: null,
+    insertedFileId: null,
+    insertedFileName: "",
+  };
+  project.drafts.push(draft);
+  selectedDraftIndex = project.drafts.length - 1;
+  project.flowState = { ...(project.flowState || {}), drafting: true };
+  project.updatedAt = now;
+  saveDeskState();
+  return draft;
+}
+
+function ensureDraftForOutlineBlock(block, options = {}) {
+  if (!block) return null;
+  const draft = ensureDraftForSection(block.title, {
+    body: block.body,
+    sourceMarkdown: block.sourceMarkdown,
+    sourceOutlineIndex: block.sourceOutlineIndex,
+    seedBody: options.seedBody === true,
+  });
+  if (draft) {
+    draft.hkrrIntent = block.hkrrIntent || "";
+    draft.hkrrNote = block.hkrrNote || "";
+  }
+  return draft;
+}
+
+function ensureDraftsForOutlineBlocks(blocks, options = {}) {
+  const project = getActiveProject();
+  if (!project) return [];
+
+  return normalizeOutlineDraftBlocks(blocks).map((block, index) => {
+    const draft = ensureDraftForOutlineBlock({
+      ...block,
+      sourceOutlineIndex: Number.isFinite(Number(block.sourceOutlineIndex)) ? Number(block.sourceOutlineIndex) : index,
+    }, options);
+    return draft ? { block, draft, index: project.drafts.indexOf(draft) } : null;
+  }).filter(Boolean);
+}
+
+function isOutlineLinkedDraft(draft) {
+  if (!draft) return false;
+  return draft.sourceType === "outline-section"
+    || Number.isFinite(Number(draft.sourceOutlineIndex))
+    || Boolean(draft.sourceOutlineSection)
+    || Boolean(draft.sourceMarkdown);
+}
+
+// Ids arrive when the text becomes sections. Not on every keystroke, which
+// would fight the caret; not never, which was the bug. A focused Outline is
+// left alone entirely -- stamping `{#a7f3c1}` into a heading the writer is
+// still typing puts characters under their cursor.
+//
+// This focus test asks WHEN to stamp, not WHO owns the text: it only ever
+// declines to add ids, and it never lets one surface's copy over-write
+// another's. Ownership is decided by the phase and by
+// outlineFieldIsRecordSource / selectedDraftFieldIsRecordSource below.
+function stampOutlineSectionIds(project) {
+  if (!project) return false;
+  if (outlineContentEl && "value" in outlineContentEl && document.activeElement === outlineContentEl) return false;
+
+  const source = currentOutlineMarkdown(project);
+  if (typeof source !== "string" || !source.trim()) return false;
+
+  const stamped = ensureMarkdownSectionIds(source);
+  if (!stamped.changed) return false;
+
+  project.outline = stamped.markdown;
+  if (outlineContentEl && "value" in outlineContentEl) {
+    outlineContentEl.value = stamped.markdown;
+    outlineContentEl.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+  return true;
+}
+
+function syncDraftsFromProjectOutline(project = getActiveProject(), { preserveCurrentDraft = false } = {}) {
+  if (!project) return [];
+
+  const previousDrafts = Array.isArray(project.drafts) ? project.drafts : [];
+  const currentDraft = preserveCurrentDraft && selectedDraftIndex >= 0 ? previousDrafts[selectedDraftIndex] : null;
+  const reusableDrafts = previousDrafts.filter(isOutlineLinkedDraft);
+  const manualDrafts = previousDrafts.filter((draft) => !isOutlineLinkedDraft(draft));
+  const now = new Date().toISOString();
+  stampOutlineSectionIds(project);
+  const blocks = normalizeOutlineDraftBlocks(getProjectOutlineDraftBlocks(project));
+  // One section, one record. Without this a draft already claimed by id could
+  // be claimed again by a later block's title, and two sections would share it.
+  const claimed = new Set();
+
+  const linkedDrafts = blocks.map((block, blockIndex) => {
+    const sourceIndex = Number.isFinite(Number(block.sourceOutlineIndex)) ? Number(block.sourceOutlineIndex) : blockIndex;
+    // The id first, because it is the only one of these that is an answer
+    // rather than a guess. Title and position stay as the fallback for
+    // sections written before ids existed.
+    const blockId = String(block.id || "");
+    const free = (draft) => !claimed.has(draft);
+    const reusable = (blockId && reusableDrafts.find((draft) => free(draft) && String(draft.sectionId || "") === blockId))
+      || reusableDrafts.find((draft) => free(draft)
+        && Number(draft.sourceOutlineIndex) === sourceIndex
+        && String(draft.sourceOutlineSection || draft.sectionTitle || draft.title || "").trim() === block.title)
+      || reusableDrafts.find((draft) => free(draft) && Number(draft.sourceOutlineIndex) === sourceIndex)
+      || reusableDrafts.find((draft) => free(draft)
+        && String(draft.sourceOutlineSection || draft.sectionTitle || draft.title || "").trim() === block.title);
+    if (reusable) claimed.add(reusable);
+
+    const draft = reusable || {
+      id: crypto.randomUUID(),
+      usedClips: [],
+      createdAt: now,
+      insertedAt: null,
+      insertedFileId: null,
+      insertedFileName: "",
+    };
+
+    draft.title = block.title;
+    draft.sectionTitle = block.title;
+    draft.sectionId = blockId || draft.sectionId || "";
+    draft.sourceType = "outline-section";
+    draft.sourceOutlineSection = block.title;
+    draft.sourceOutlineIndex = sourceIndex;
+    draft.sourceMarkdown = block.sourceMarkdown;
+    draft.hkrrIntent = block.hkrrIntent || "";
+    draft.hkrrNote = block.hkrrNote || "";
+    if (!(preserveCurrentDraft && draft === currentDraft)) draft.body = block.body;
+    draft.updatedAt = draft.updatedAt || now;
+    return draft;
+  });
+
+  project.drafts = [...linkedDrafts, ...manualDrafts];
+
+  const currentIndex = currentDraft ? project.drafts.indexOf(currentDraft) : -1;
+  if (currentIndex >= 0) {
+    selectedDraftIndex = currentIndex;
+  } else if (linkedDrafts.length) {
+    const preferredIndex = Number(draftSectionSelectEl?.value || 0);
+    selectedDraftIndex = Math.max(0, Math.min(linkedDrafts.length - 1, Number.isFinite(preferredIndex) ? preferredIndex : 0));
+  } else {
+    selectedDraftIndex = project.drafts.length ? 0 : -1;
+  }
+
+  const refs = linkedDrafts.map((draft, index) => ({
+    block: blocks[index],
+    draft,
+    index: project.drafts.indexOf(draft),
+  }));
+  return refs;
+}
+
+// One record, two projections, and no focus test between them.
+//
+// In the drafting phase `project.outline` is the record. The Outline field and
+// the Section Draft field are both views of it, and both write into it on
+// every keystroke (see wireup.js: each input handler calls savePipelineData).
+// A projection must therefore answer "has the record moved away from what THIS
+// surface put into it", and `document.activeElement` answers a different
+// question. It answered it wrongly in both directions, and both were recorded
+// in the running app:
+//
+//   - The caret sits in the Outline while an AI command rewrites a section.
+//     The Outline was refused its refresh for holding focus, so its field kept
+//     the previous revision; the writer's next keystroke there wrote that
+//     revision back and the rewritten section was gone.
+//   - The caret sits in a Section Draft while the record moves (an Outline
+//     edit, an AI rewrite, the manuscript handing the pen back). Same refusal,
+//     same loss in the other direction.
+//
+// So: a projection follows the record wherever the caret is, and it keeps the
+// caret where the writer left it.
+function projectRecordIntoWritingSurface(element, text) {
+  if (!element || !("value" in element) || element.value === text) return false;
+  const focused = document.activeElement === element;
+  const start = focused ? Number(element.selectionStart) : NaN;
+  const end = focused ? Number(element.selectionEnd) : NaN;
+  element.value = text;
+  if (focused && Number.isFinite(start) && typeof element.setSelectionRange === "function") {
+    const limit = String(text || "").length;
+    element.setSelectionRange(Math.min(start, limit), Math.min(Number.isFinite(end) ? end : start, limit));
+  }
+  // The glyphs a writer reads are painted by the markdown highlight overlay,
+  // not by the textarea -- the textarea's own text is transparent (50-apps.css
+  // ".mde-surface > .mde-input"). That overlay repaints on input events, and a
+  // programmatic value write fires none, so without this the record lands in
+  // the field while the page keeps showing the text it replaced. A projection
+  // nobody can see is a projection that did not happen.
+  if (typeof mdeRepaintHighlight === "function") mdeRepaintHighlight(element);
+  return true;
+}
+
+// The Outline field is the ORIGIN of the record whenever its own text, trimmed,
+// is the record: setProjectOutlineMarkdown stores `String(markdown).trim()`, so
+// a field the writer is typing into legitimately differs from the record by the
+// whitespace around it. Refreshing on that difference would delete the newline
+// the writer just pressed at the end of the document, and would refill an
+// outline they just emptied with a placeholder section -- the "## New Section"
+// failure this route already met once. Any OTHER difference means the record
+// moved somewhere else, and the field must follow it.
+function outlineFieldIsRecordSource(project = getActiveProject()) {
+  if (!outlineContentEl || !("value" in outlineContentEl)) return false;
+  return String(outlineContentEl.value || "").trim() === String(project?.outline || "").trim();
+}
+
+function syncOutlineDomFromProject(project = getActiveProject()) {
+  if (!project || !outlineContentEl) return;
+  const nextOutline = project.outline || serializeOutlineSections(getProjectOutlineSections(project));
+  if (!outlineFieldIsRecordSource(project)) projectRecordIntoWritingSurface(outlineContentEl, nextOutline);
+  refreshTeachTextSurfacePreview("outline");
+  // The list is a view of the same string, so it follows it. Without this the
+  // tree keeps showing the sections of whichever project was open before.
+  if (typeof outlineTreeIsOpen === "function" && outlineTreeIsOpen()) renderOutlineTree(project);
+  if (typeof outlineCardsIsOpen === "function" && outlineCardsIsOpen()) renderOutlineCards(project);
+  restoreLinkedManuscriptScroll();
+}
+
+// What syncProjectOutlineToTeachText last wrote into the manuscript field, and
+// for which project. This is the only reliable answer to "are these characters
+// mine or the writer's": the document status is a display value that says
+// "modified" for a manuscript nobody has typed in yet.
+let lastProjectedManuscript = { projectId: null, text: null };
+
+function syncProjectOutlineToTeachText(project = getActiveProject(), options = {}) {
+  if (!project || !teachTextBodyInput) return false;
+  if (typeof activateTeachTextManuscriptTab === "function") {
+    activateTeachTextManuscriptTab({ focus: false });
+  } else {
+    teachTextDocumentRole = "manuscript";
+  }
+
+  const markdown = project.outline || serializeOutlineSections(getProjectOutlineSections(project));
+  const title = markdownDocumentTitle(markdown) || t("untitled");
+  project.manuscriptLinkedToOutline = true;
+  setTeachTextWorkflowState(options.ai === true ? "ai" : "draft");
+  if (teachTextFileLabel !== "ai") teachTextFileLabel = "draft";
+  if (options.ai === true) teachTextFileLabel = "ai";
+  // This line overwrites what the writer can see, so it must never discard
+  // work. A person wrote 98 words, pressed To Review, and watched them become
+  // "## New Section" before the command's own dialog appeared. The guard on
+  // the caller reads document.activeElement — and a route command BLURS the
+  // editor before it runs, which .claude/rules/writing-route-internals.md
+  // already names as the way a focus-based selector silently rewrites the
+  // previous article. The guard belongs here, at the write, where the bytes
+  // about to be lost can be seen.
+  //
+  // The question is whether these characters are this function's own
+  // projection or somebody's writing, and the document status cannot answer
+  // it. `dataset.statusKey` is a DISPLAY value: setTeachTextStatus shows an
+  // intended "saved" as "unsaved" while a desk-record conflict stands
+  // (teachtext-accessories.js), a manuscript tab with no file on disk starts
+  // at "modified" while it holds nothing of the writer's
+  // (teachtext-accessories.js loadTeachTextTabState), and this function sets
+  // "modified" itself on its way out. Reading it made the drafting phase
+  // refuse its own refresh: the manuscript is the read-only projection there,
+  // so the writer typed in Section Drafts and the manuscript silently froze
+  // on stale text -- which "To Manuscript" then writes back over the newer
+  // sections, turning the guard into the next data loss.
+  //
+  // So remember what was last projected and compare. A body that still equals
+  // it is a clean projection and may be refreshed; a body that has moved away
+  // from it holds work no sync may discard; an empty paper is always filled.
+  // The record is keyed by project, so another project's text can never be
+  // mistaken for this one's projection.
+  if (teachTextBodyInput.value !== markdown) {
+    const projected = lastProjectedManuscript.projectId === project.id
+      ? lastProjectedManuscript.text
+      : null;
+    const holdsUnsavedWriting = teachTextBodyInput.value.trim()
+      && teachTextBodyInput.value !== projected;
+    if (holdsUnsavedWriting) {
+      if (typeof setStatus === "function") setStatus(t("manuscript_sync_kept_your_text"));
+      return false;
+    }
+    teachTextBodyInput.value = markdown;
+  }
+  lastProjectedManuscript = { projectId: project.id, text: markdown };
+  applyManuscriptEditability();
+  if (teachTextPreviewEl && !teachTextPreviewEl.classList.contains("is-hidden")) {
+    syncTeachTextPreview({ force: true });
+  }
+  restoreLinkedManuscriptScroll();
+  if (teachTextNameInput) teachTextNameInput.value = title;
+  if (typeof syncTeachTextWindowTitle === "function") syncTeachTextWindowTitle();
+  updateQuestionSheetManuscriptTitle(project);
+  if (typeof updateReviewDeskStatusTitle === "function") updateReviewDeskStatusTitle();
+  if (options.markModified !== false) setTeachTextStatus("modified");
+  updateTeachTextBoundaries();
+  updateTeachTextTranslateButton();
+  updateTeachTextBilingualExportButton();
+  updateTeachTextDeskState();
+  scheduleTeachTextTabSave();
+  if (options.open) {
+    openWindow("teachText");
+    requestAnimationFrame(() => {
+      if (teachTextPipelineLabel()) {
+        showTeachTextPreview({ focus: options.focusPreview === true, preserveScroll: false });
+        restoreLinkedManuscriptScroll();
+      } else {
+        teachTextBodyInput.focus();
+      }
+    });
+  }
+  return true;
+}
+
+function shouldSyncProjectOutlineAsManuscript(project = getActiveProject()) {
+  if (!project) return false;
+  if (typeof isTeachTextManuscriptRole === "function" && !isTeachTextManuscriptRole()) return false;
+  if (!teachTextPipelineLabel()) return false;
+  if (project.manuscriptLinkedToOutline) return true;
+  const sections = getMeaningfulOutlineSections(getProjectOutlineSections(project));
+  if (sections.length > 0) return true;
+  const markdown = String(project.outline || "").trim();
+  return Boolean(markdown && !isPlaceholderOutlineSection(markdown.replace(/^#{1,6}\s+/, "")));
+}
+
+function syncLinkedTeachTextFromProject(project = getActiveProject()) {
+  if (!shouldSyncProjectOutlineAsManuscript(project)) return false;
+  if (document.activeElement === teachTextBodyInput) return false;
+  return syncProjectOutlineToTeachText(project, { markModified: false });
+}
+
+function previewLinkedTeachTextManuscript({ focus = false } = {}) {
+  if (!teachTextPipelineLabel()) return false;
+  if (!shouldSyncProjectOutlineAsManuscript()) return false;
+  showTeachTextPreview({ focus, preserveScroll: false });
+  restoreLinkedManuscriptScroll();
+  return true;
+}
+
+let linkedManuscriptScrollSyncing = false;
+
+function clampScrollRatio(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return 0;
+  return Math.max(0, Math.min(1, number));
+}
+
+function scrollRatioForElement(element) {
+  if (!element) return 0;
+  const maxScroll = Math.max(0, element.scrollHeight - element.clientHeight);
+  if (!maxScroll) return 0;
+  return clampScrollRatio(element.scrollTop / maxScroll);
+}
+
+function setElementScrollRatio(element, ratio) {
+  if (!element) return;
+  const maxScroll = Math.max(0, element.scrollHeight - element.clientHeight);
+  element.scrollTop = Math.round(maxScroll * clampScrollRatio(ratio));
+}
+
+function linkedManuscriptScrollElements() {
+  return [
+    outlineContentEl,
+    outlinePreviewEl,
+    teachTextBodyInput,
+    teachTextPreviewEl,
+  ].filter(Boolean);
+}
+
+function linkedManuscriptScrollEnabled(project = getActiveProject()) {
+  return Boolean(project && teachTextPipelineLabel() && shouldSyncProjectOutlineAsManuscript(project));
+}
+
+function saveLinkedManuscriptScrollRatio(ratio, source) {
+  const project = getActiveProject();
+  if (!project || !linkedManuscriptScrollEnabled(project)) return false;
+  project.manuscriptViewState = {
+    ...(project.manuscriptViewState || {}),
+    scrollRatio: clampScrollRatio(ratio),
+    scrollSource: source,
+    updatedAt: new Date().toISOString(),
+  };
+  project.updatedAt = new Date().toISOString();
+  saveDeskState();
+  return true;
+}
+
+function applyLinkedManuscriptScrollRatio(ratio, { except = null } = {}) {
+  linkedManuscriptScrollSyncing = true;
+  linkedManuscriptScrollElements().forEach((element) => {
+    if (element !== except) setElementScrollRatio(element, ratio);
+  });
+  requestAnimationFrame(() => {
+    linkedManuscriptScrollSyncing = false;
+  });
+}
+
+function syncLinkedManuscriptScrollFrom(element, source = "manuscript") {
+  if (linkedManuscriptScrollSyncing || !element) return;
+  const ratio = scrollRatioForElement(element);
+  if (!saveLinkedManuscriptScrollRatio(ratio, source)) return;
+  applyLinkedManuscriptScrollRatio(ratio, { except: element });
+}
+
+function restoreLinkedManuscriptScroll() {
+  const project = getActiveProject();
+  if (!project || !linkedManuscriptScrollEnabled(project)) return;
+  const ratio = project.manuscriptViewState?.scrollRatio;
+  if (!Number.isFinite(Number(ratio))) return;
+  requestAnimationFrame(() => applyLinkedManuscriptScrollRatio(ratio));
+}
+
+// Whether the selected Section Draft's field is the ORIGIN of the record's
+// copy of that section. updateProjectOutlineFromSelectedDraft assigns
+// `draft.body` straight from this field, so the two agree exactly while this
+// surface is the one writing -- there is no trim gap here, unlike the Outline.
+// A difference can therefore only mean the record moved somewhere else.
+function selectedDraftFieldIsRecordSource(project = getActiveProject()) {
+  const draft = selectedDraftIndex >= 0 ? project?.drafts?.[selectedDraftIndex] : null;
+  if (!draft || !draftBodyInput || !("value" in draftBodyInput)) return false;
+  return String(draftBodyInput.value || "") === String(draft.body || "");
+}
+
+function syncDraftDomFromProject(project = getActiveProject()) {
+  const draft = selectedDraftIndex >= 0 ? project?.drafts?.[selectedDraftIndex] : null;
+  if (!draft || !draftBodyInput) return;
+  // No focus test -- see projectRecordIntoWritingSurface. A caret parked here
+  // used to hold this field one revision behind the record, and its next
+  // keystroke wrote the stale copy back over the record.
+  projectRecordIntoWritingSurface(draftBodyInput, draft.body || "");
+  refreshTeachTextSurfacePreview("sectionDrafts");
+}
+
+function updateProjectOutlineFromSelectedDraft(project = getActiveProject()) {
+  const draft = selectedDraftIndex >= 0 ? project?.drafts?.[selectedDraftIndex] : null;
+  if (!project || !draft) return getProjectOutlineSections(project);
+
+  const sourceOutlineIndex = Number.isFinite(Number(draft.sourceOutlineIndex))
+    ? Number(draft.sourceOutlineIndex)
+    : Number(draftSectionSelectEl?.value || 0);
+  const nextBody = draftBodyInput?.value || "";
+  const metadata = outlineHkrrMetadataMarkdown(draft.hkrrIntent || "", draft.hkrrNote || "");
+  const nextOutline = replaceOutlineDraftBlockBody(project.outline || "", sourceOutlineIndex, [metadata, nextBody].filter(Boolean).join("\n"));
+  const sections = setProjectOutlineMarkdown(project, nextOutline);
+  const blocks = getProjectOutlineDraftBlocks(project);
+  const block = blocks[sourceOutlineIndex];
+  const now = new Date().toISOString();
+  draft.body = nextBody;
+  draft.updatedAt = now;
+  if (block) {
+    draft.title = block.title;
+    draft.sectionTitle = block.title;
+    draft.sectionId = block.id || draft.sectionId || "";
+    draft.sourceOutlineSection = block.title;
+    draft.sourceOutlineIndex = block.sourceOutlineIndex;
+    draft.sourceMarkdown = block.sourceMarkdown;
+    draft.hkrrIntent = block.hkrrIntent || draft.hkrrIntent || "";
+    draft.hkrrNote = block.hkrrNote || draft.hkrrNote || "";
+  }
+  syncDraftsFromProjectOutline(project, { preserveCurrentDraft: true });
+  syncOutlineDomFromProject(project);
+  syncLinkedTeachTextFromProject(project);
+  return sections;
+}
+
+function currentSectionDraftContext({ ensureDraft = false, seedBody = false } = {}) {
+  const project = getActiveProject();
+  if (!project) return null;
+
+  const block = selectedOutlineDraftBlock(project);
+  if (!block) return null;
+
+  const draft = ensureDraft
+    ? ensureDraftForOutlineBlock(block, { seedBody })
+    : (selectedDraftIndex >= 0 ? project.drafts?.[selectedDraftIndex] : null) || ensureDraftForOutlineBlock(block, { seedBody });
+  if (!draft) return null;
+
+  return {
+    project,
+    block,
+    draft,
+    title: block.title || draft.title || draft.sectionTitle || t("manual_draft_title"),
+    outlineMarkdown: block.sourceMarkdown || "",
+    outlineBody: block.body || "",
+    body: draftBodyInput?.value ?? draft.body ?? "",
+  };
+}
+
+async function applySectionDraftMarkdown(markdown, { append = false, ai = false, statusKey = "saved", targetSnapshot = null } = {}) {
+  if (targetSnapshot && !sectionDraftTargetMatches(targetSnapshot)) return false;
+  const context = currentSectionDraftContext({ ensureDraft: true });
+  if (!context || !draftBodyInput) {
+    setStatus(t("section_draft_needs_section"));
+    openWindow("outline");
+    return false;
+  }
+
+  const clean = stripRebuildMarkdownFence(String(markdown || "")).trim();
+  if (!clean) return false;
+
+  const current = String(draftBodyInput.value || context.draft.body || "").trimEnd();
+  const nextBody = append
+    ? [current, clean].filter(Boolean).join("\n\n---\n\n")
+    : clean;
+
+  // The section's editor has to be on screen for its own Undo to take the
+  // acceptance back as one step.
+  if (ai) openWindow("sectionDrafts");
+  AISystem6DeskUndo.replaceText(draftBodyInput, nextBody);
+  context.draft.body = nextBody;
+  context.draft.updatedAt = new Date().toISOString();
+  if (ai) markTeachTextAiAssisted();
+  updateProjectOutlineFromSelectedDraft(context.project);
+  syncLinkedTeachTextFromProject(context.project);
+  updateDraftVoiceStats(nextBody);
+  refreshTeachTextSurfacePreview("sectionDrafts");
+
+  // A model answer that lands here but never reaches the disk is a paid
+  // answer lost, so it is captured as a recoverable revision before the
+  // desk-record save is even attempted. createDocumentRevision writes
+  // through its own keyval key, independent of the desk-record fence below,
+  // so the answer survives whatever that fence decides.
+  if (ai && typeof createDocumentRevision === "function") {
+    await createDocumentRevision({
+      documentId: context.draft.id,
+      body: nextBody,
+      origin: "model",
+      operation: "section-draft",
+    }).catch((error) => {
+      console.warn("Could not record a recovery version of this AI section draft.", error);
+    });
+  }
+
+  const saved = await saveDeskState();
+  updateFlowGuideChecklist({ render: false });
+  renderPipeline();
+  openWindow("sectionDrafts");
+  // Never claim the record was written unless the durable save actually
+  // landed - a status that says "drafted"/"saved" over a refused write is
+  // exactly the lie System Integrity exists to stop telling.
+  setStatus(saved ? t(statusKey) : t("section_draft_ai_unsaved_recovered"));
+  requestAnimationFrame(() => draftBodyInput?.focus());
+  return saved;
+}
+
+async function confirmAndApplySectionDraft(markdown, confirmKey, statusKey, targetSnapshot = null) {
+  const context = currentSectionDraftContext();
+  const target = targetSnapshot || (context ? captureSectionDraftTarget(context) : null);
+  if (!target || !sectionDraftTargetMatches(target)) return false;
+  const clean = stripRebuildMarkdownFence(String(markdown || "")).trim();
+  if (!clean) return false;
+  const result = await showSystemModal(t(confirmKey, clean), "confirm", { confirmKey: "writing_apply_candidate", defaultAction: "cancel", reading: true });
+  if (result !== "yes") {
+    clearStatus();
+    return false;
+  }
+  if (!sectionDraftTargetMatches(target)) return false;
+  return applySectionDraftMarkdown(clean, { ai: true, statusKey, targetSnapshot: target });
+}
+
+function syncTeachTextToLinkedProjectMarkdown() {
+  const project = getActiveProject();
+  if (typeof isTeachTextManuscriptRole === "function" && !isTeachTextManuscriptRole()) return;
+  if (!shouldSyncProjectOutlineAsManuscript(project) || !teachTextBodyInput) return;
+
+  const sections = setProjectOutlineMarkdown(project, teachTextBodyInput.value);
+  const title = linkedManuscriptTitle(project);
+  if (teachTextNameInput) teachTextNameInput.value = title;
+  if (typeof syncTeachTextWindowTitle === "function") syncTeachTextWindowTitle();
+  updateQuestionSheetManuscriptTitle(project);
+  if (typeof updateReviewDeskStatusTitle === "function") updateReviewDeskStatusTitle();
+  syncDraftsFromProjectOutline(project);
+  syncOutlineDomFromProject(project);
+  syncDraftDomFromProject(project);
+  project.flowState = {
+    ...(project.flowState || {}),
+    outline: getMeaningfulOutlineSections(sections).length > 0,
+    drafting: (project.drafts || []).some((draft) => (draft.body || draft.title || "").trim()),
+  };
+  project.updatedAt = new Date().toISOString();
+  saveDeskState();
+  updateFlowGuideChecklist({ render: false });
+}
+
+function markTeachTextAiAssisted() {
+  const project = getActiveProject();
+  setTeachTextWorkflowState("ai");
+  teachTextFileLabel = "ai";
+  if (project) project.manuscriptLinkedToOutline = true;
+  syncTeachTextLabelControl();
+  syncPipelineLabelControls();
+  updateTeachTextDeskState();
+}
+
+function selectEnsuredDraftRef(draftRefs, preferredIndex = 0) {
+  if (!draftRefs.length) return null;
+
+  const index = Math.max(0, Math.min(draftRefs.length - 1, Number(preferredIndex) || 0));
+  const ref = draftRefs[index] || draftRefs[0];
+  if (ref && ref.index >= 0) selectedDraftIndex = ref.index;
+  return ref;
+}
+
+function syncDraftSectionSelection(project, outlineSections) {
+  if (!draftSectionSelectEl) return;
+
+  const draft = selectedDraftIndex >= 0 ? project?.drafts?.[selectedDraftIndex] : null;
+  const sectionTitle = draft?.sourceOutlineSection || draft?.sectionTitle || draft?.title || "";
+  const matchedIndex = outlineSections.findIndex((section, index) => draftMatchesSection(draft, section, index) || section === sectionTitle);
+  if (matchedIndex >= 0) draftSectionSelectEl.value = String(matchedIndex);
+}
+
+function updateDraftSectionLabel(project) {
+  if (!draftSectionLabelEl) return;
+
+  const draft = selectedDraftIndex >= 0 ? project?.drafts?.[selectedDraftIndex] : null;
+  if (!draft) {
+    draftSectionLabelEl.textContent = t("no_draft_selected");
+    return;
+  }
+
+  const sections = getProjectOutlineSections(project);
+  const title = draft.sourceOutlineSection || draft.sectionTitle || draft.title || t("manual_draft_title");
+  const sectionIndex = sections.findIndex((section, index) => draftMatchesSection(draft, section, index) || section === title);
+  // Say who holds the pen, so a read-only Section Drafts window never reads as
+  // a broken one - and never claims to be "Editing" what it cannot edit.
+  const readOnly = manuscriptOwnsDocument();
+  const countKey = readOnly ? "viewing_section_with_count" : "editing_section_with_count";
+  const plainKey = readOnly ? "viewing_section" : "editing_section";
+  const label = sectionIndex >= 0
+    ? t(countKey, title, sectionIndex + 1, sections.length)
+    : t(plainKey, title);
+  draftSectionLabelEl.textContent = readOnly
+    ? `${label} · ${t("section_draft_readonly_manuscript")}`
+    : label;
+}
+
+function ensureTeachTextSurfaceProject() {
+  const activeProject = getActiveProject();
+  if (activeProject) return activeProject;
+
+  const selectedProject = getSelectedProject();
+  if (selectedProject) {
+    // The caller opens its own writing window next; resuming that disk's saved
+    // scene here would close it again a tick later.
+    switchProject(selectedProject.id, { resumeScene: false });
+    return getActiveProject();
+  }
+
+  ensureActiveProject();
+  isProjectMounted = true;
+  return getActiveProject();
+}
+
+// The Question Sheet as a card deck: twelve cards over the same eleven
+// sections plus the unnamed dump card, never a second store. Persisted per
+// project -- a writer working across several projects may find one suits a
+// quick note-heavy project and the other a longer one.
+
+function questionSheetCardsEl() {
+  return document.getElementById("question-sheet-cards");
+}
+
+function questionSheetCardsIsOpen() {
+  return Boolean(questionSheetCardsEl() && !questionSheetCardsEl().classList.contains("is-hidden"));
+}
+
+function applyQuestionSheetView(project = getActiveProject()) {
+  const cards = questionSheetCardsEl();
+  if (!cards || !questionSheetBodyInput) return;
+  const wantCards = project?.questionSheetView === "cards";
+
+  if (wantCards) {
+    if (questionSheetPreviewEl && !questionSheetPreviewEl.classList.contains("is-hidden")) {
+      toggleTeachTextSurfacePreview("questionSheet");
+    }
+    renderQuestionSheetCards(project);
+  }
+  cards.classList.toggle("is-hidden", !wantCards);
+  const shell = questionSheetBodyInput.closest(".mde-surface") || questionSheetBodyInput;
+  shell.classList.toggle("is-hidden", wantCards);
+}
+
+function setQuestionSheetView(mode) {
+  const project = getActiveProject();
+  if (!project) return;
+  const next = mode === "cards" ? "cards" : "page";
+  if (project.questionSheetView === next) return;
+  project.questionSheetView = next;
+  project.updatedAt = new Date().toISOString();
+  applyQuestionSheetView(project);
+  saveDeskState();
+  if (typeof updateMenuState === "function") updateMenuState();
+  setStatus(next === "cards" ? t("question_sheet_view_cards_active") : t("question_sheet_view_page_active"));
+}
+
+function questionSheetCardHeading(card) {
+  return card.key === "unnamed" ? "" : card.label;
+}
+
+function questionSheetCardHint(card) {
+  return card.key === "unnamed" ? t("question_sheet_card_unnamed_hint") : "";
+}
+
+function questionSheetCardMarkup(card) {
+  const heading = escapeHtml(questionSheetCardHeading(card));
+  const hint = escapeHtml(questionSheetCardHint(card));
+  const label = card.key === "unnamed"
+    ? `<span class="qs-card-label qs-card-label-unnamed" aria-hidden="true"></span>`
+    : `<span class="qs-card-label">${heading}</span>`;
+  return `<div class="qs-card${card.key === "unnamed" ? " qs-card-unnamed" : ""}" data-qs-card="${escapeHtml(card.key)}">`
+    + label
+    + `<textarea class="qs-card-body" data-qs-card-body="${escapeHtml(card.key)}"${hint ? ` placeholder="${hint}"` : ""} aria-label="${heading || t("question_sheet_card_unnamed")}">${escapeHtml(card.body)}</textarea>`
+    + `</div>`;
+}
+
+function renderQuestionSheetCards(project = getActiveProject()) {
+  const host = questionSheetCardsEl();
+  if (!host) return;
+  const cards = questionSheetCardsFromMarkdown(project?.questionSheet || "");
+  host.innerHTML = cards.map(questionSheetCardMarkup).join("");
+}
+
+// One card changed: rebuild the whole document from all twelve, write it back
+// through the same textarea savePipelineData already reads, and save. The
+// deck holds no state of its own once the input leaves the field.
+function commitQuestionSheetCardEdit() {
+  const host = questionSheetCardsEl();
+  const project = getActiveProject();
+  if (!host || !project || !questionSheetBodyInput) return;
+
+  const cards = Array.from(host.querySelectorAll("[data-qs-card-body]")).map((el) => ({
+    key: el.dataset.qsCardBody,
+    body: el.value,
+  }));
+  questionSheetBodyInput.value = questionSheetMarkdownFromCards(cards);
+  if (typeof noteWritingSurfaceEdit === "function") noteWritingSurfaceEdit("questionSheet");
+  savePipelineData();
+  refreshTeachTextSurfacePreview("questionSheet");
+}
+
+let questionSheetCardsWired = false;
+function wireQuestionSheetCards() {
+  if (questionSheetCardsWired) return;
+  const host = questionSheetCardsEl();
+  if (!host) return;
+  questionSheetCardsWired = true;
+  host.addEventListener("input", (event) => {
+    if (event.target.closest("[data-qs-card-body]")) commitQuestionSheetCardEdit();
+  });
+}
+
+function openQuestionSheetSurface() {
+  const project = ensureTeachTextSurfaceProject();
+  if (!project) {
+    setStatus(t("no_project_mounted"));
+    openWindow("projects");
+    return;
+  }
+
+  renderPipeline();
+  openWindow("questionSheet");
+  requestAnimationFrame(() => questionSheetBodyInput?.focus());
+}
+
+function openOutlineSurface() {
+  const project = ensureTeachTextSurfaceProject();
+  if (!project) {
+    setStatus(t("no_project_mounted"));
+    openWindow("projects");
+    return;
+  }
+
+  renderPipeline();
+  openWindow("outline");
+  requestAnimationFrame(() => outlineContentEl?.focus());
+}
+
+function openSectionDrafts() {
+  const project = ensureTeachTextSurfaceProject();
+  if (!project) {
+    setStatus(t("no_project_mounted"));
+    openWindow("projects");
+    return;
+  }
+
+  savePipelineData();
+  const preferredIndex = Number(draftSectionSelectEl?.value || 0);
+  const draftRefs = syncDraftsFromProjectOutline(project);
+  selectEnsuredDraftRef(draftRefs, Number.isFinite(preferredIndex) ? preferredIndex : 0);
+  renderPipeline();
+  openWindow("sectionDrafts");
+  requestAnimationFrame(() => draftBodyInput?.focus());
+}
+
+async function advanceQuestionSheetToOutline() {
+  const project = ensureTeachTextSurfaceProject();
+  if (!project) {
+    setStatus(t("no_project_mounted"));
+    openWindow("projects");
+    return;
+  }
+
+  // Show progress before revision/save work so a slow advance is never silent.
+  setStatus(t("writing_phase_advancing"));
+  if (typeof createDocumentRevision === "function") {
+    try {
+      await createDocumentRevision({ origin: "system", operation: "phase-advance" });
+    } catch (error) {
+      // The phase transition overwrites the Question Sheet's meaning as the
+      // editable owner; without the revision it must not move forward.
+      setStatus(currentLanguage === "zh"
+        ? "无法保存阶段推进前的版本历史，未推进到大纲。"
+        : "Could not save the pre-advance version history; the outline was not opened.");
+      return;
+    }
+  }
+  savePipelineData();
+  await window.AISystem6StateStores?.writing.commit((draft) => {
+    const activeId = getActiveProject()?.id;
+    const project = draft.projects.find((item) => item.id === activeId);
+    if (project) project.questionSheet = questionSheetBodyInput?.value || project.questionSheet || "";
+  });
+  renderPipeline();
+  openWindow("outline");
+  const gap = typeof questionSheetFirstGap === "function"
+    ? questionSheetFirstGap(project.questionSheet || "")
+    : "";
+  setStatus(gap
+    ? `${t("question_sheet_autosaved_to_outline")} ${t(`question_sheet_gap_${gap}`)}`
+    : t("question_sheet_autosaved_to_outline"));
+  requestAnimationFrame(() => outlineContentEl?.focus());
+}
+
+async function advanceOutlineToSectionDrafts() {
+  const project = ensureTeachTextSurfaceProject();
+  if (!project) {
+    setStatus(t("no_project_mounted"));
+    openWindow("projects");
+    return;
+  }
+
+  setStatus(t("writing_phase_advancing"));
+  savePipelineData();
+  const outlineSections = getMeaningfulOutlineSections(getProjectOutlineSections(project));
+  if (!outlineSections.length) {
+    setStatus(t("outline_needs_content"));
+    openWindow("outline");
+    requestAnimationFrame(() => outlineContentEl?.focus());
+    return;
+  }
+  const preferredIndex = Number(draftSectionSelectEl?.value || 0);
+  const draftRefs = syncDraftsFromProjectOutline(project);
+  selectEnsuredDraftRef(draftRefs, Number.isFinite(preferredIndex) ? preferredIndex : 0);
+  // Stepping forward into the drafting phase hands the pen back to the sections.
+  project.manuscriptOwnsDraft = false;
+  applyManuscriptEditability();
+  renderPipeline();
+  await openWindow("sectionDrafts");
+  // 起草台 = Section Drafts (editable owner) beside the read-only draft manuscript.
+  // openWindow's placement tail arranges the pair once the manuscript window opens.
+  syncLinkedTeachTextFromProject(project);
+  if (teachTextPipelineLabel()) {
+    await openWindow("teachText");
+  }
+  setStatus(t("outline_autosaved_to_drafts"));
+  if (typeof createDocumentRevision === "function") {
+    // Awaited so a refused write is reported rather than left as an unhandled
+    // promise. The step itself has already happened here, so it is not undone;
+    // the writer is told the way back is missing.
+    try {
+      await createDocumentRevision({ origin: "system", operation: "phase-advance" });
+    } catch (error) {
+      setStatus(t("phase_advance_version_history_failed"));
+    }
+  }
+  requestAnimationFrame(() => draftBodyInput?.focus());
+}
+
+// 起草台 -> 正文: the drafted sections become one manuscript, and the pen moves
+// with them. This is a route stop, not a shortcut into review: nothing is
+// finalized, the file label still reads draft/AI Assisted, and the Review Desk
+// stays shut until the writer asks for it from the manuscript.
+async function advanceDraftsToManuscript() {
+  const project = ensureTeachTextSurfaceProject();
+  if (!project) {
+    setStatus(t("no_project_mounted"));
+    openWindow("projects");
+    return;
+  }
+
+  savePipelineData();
+  const outlineSections = getMeaningfulOutlineSections(getProjectOutlineSections(project));
+  if (!outlineSections.length) {
+    setStatus(t("outline_needs_content"));
+    openWindow("sectionDrafts");
+    requestAnimationFrame(() => draftBodyInput?.focus());
+    return;
+  }
+  const draftBody = String(draftBodyInput?.value || "").trim();
+  if (!draftBody) {
+    setStatus(t("draft_needs_content"));
+    openWindow("sectionDrafts");
+    requestAnimationFrame(() => draftBodyInput?.focus());
+    return;
+  }
+
+  // The writer may arrive here while a scratch tab is still the active
+  // TeachText tab. Activate the manuscript and fill its projection explicitly
+  // before handing over ownership; a role-based background sync can skip it.
+  if (!syncProjectOutlineToTeachText(project)) return;
+  const outlineAtAdvance = project.outline;
+  const bodyAtAdvance = teachTextBodyInput.value;
+  const tabId = typeof getActiveDocumentTab === "function" ? getActiveDocumentTab("teachText")?.id : null;
+  if (typeof createDocumentRevision === "function") {
+    // Awaited, and it can refuse. This is the writer's way back from a phase
+    // that hands the pen to another surface; taking the step without it is the
+    // same silence advanceQuestionSheetToOutline already refuses. Unawaited,
+    // its rejection was an unhandled promise nobody ever saw.
+    try {
+      await createDocumentRevision({ origin: "system", operation: "phase-advance" });
+    } catch (error) {
+      setStatus(t("phase_advance_needs_version_history"));
+      return;
+    }
+  }
+  if (getActiveProject()?.id !== project.id || project.outline !== outlineAtAdvance
+    || teachTextBodyInput.value !== bodyAtAdvance
+    || (tabId && getActiveDocumentTab("teachText")?.id !== tabId)) {
+    setStatus(t("writing_step_changed"));
+    return;
+  }
+  project.manuscriptOwnsDraft = true;
+  project.updatedAt = new Date().toISOString();
+  applyManuscriptEditability();
+  saveDeskState();
+  renderPipeline();
+  if (typeof activateTeachTextManuscriptTab === "function") {
+    activateTeachTextManuscriptTab({ focus: false });
+  }
+  // The manuscript is the destination, so on a phone it owns the screen instead
+  // of staying a hidden preview behind Section Drafts.
+  mobileManuscriptForegroundRequested = true;
+  await openWindow("teachText");
+  hideTeachTextPreviewForManuscriptEditing();
+  setStatus(t("drafts_autosaved_to_manuscript"));
+  requestAnimationFrame(() => teachTextBodyInput?.focus());
+}
+
+// 正文 -> 审校台: hand the finished manuscript into the review phase. Reuses the
+// existing finalize flow (confirm + save + relink) via setTeachTextFileLabel,
+// which pairs the Review Desk beside the finalized manuscript.
+async function advanceManuscriptToReview() {
+  const project = ensureTeachTextSurfaceProject();
+  if (!project) {
+    setStatus(t("no_project_mounted"));
+    openWindow("projects");
+    return;
+  }
+
+  if (typeof teachTextReviewLabel === "function" && teachTextReviewLabel()) {
+    // Already finalized: this is a way back to the desk, not a second finalize.
+    if (typeof openReviewDesk === "function") openReviewDesk("style");
+    setStatus(t("review_desk_reopened"));
+    return;
+  }
+  if (!teachTextBodyInput?.value.trim()) {
+    setStatus(t("review_desk_requires_final"));
+    await openWindow("teachText");
+    requestAnimationFrame(() => teachTextBodyInput?.focus());
+    return;
+  }
+
+  // ASK FIRST. savePipelineData() used to run at the top of this command, four
+  // record writes deep, and the dialog that finalizes the document appeared
+  // afterwards -- so a writer who pressed Cancel had already had their Outline
+  // rebuilt and stamped ("## New Section {#75c36d}") by a command they refused.
+  // A refused command writes NOTHING AT ALL
+  // (.claude/rules/writing-route-internals.md); a confirmation the writer has
+  // not answered yet is a refusal.
+  //
+  // The question belongs to setTeachTextFileLabel's finalize, so it is asked
+  // with that same words and handed forward as already answered rather than
+  // asked twice.
+  setStatus(t("writing_phase_advancing"));
+  const confirmed = await showSystemModal(t("final_label_confirm"), "confirm");
+  if (confirmed !== "yes") {
+    setStatus(t("review_desk_requires_final"));
+    return;
+  }
+
+  savePipelineData();
+  if (typeof createDocumentRevision === "function") {
+    // Awaited: setTeachTextFileLabel below writes its own "save" revision to
+    // the same document moments later (saveTextDocument's own
+    // createDocumentRevision call). Firing this one and moving on let the two
+    // writes to one keyval record race each other -- the route command
+    // racing its own save -- instead of landing in the order the history
+    // means to record: phase-advance, then the label's save.
+    try {
+      await createDocumentRevision({ origin: "system", operation: "phase-advance" });
+    } catch (error) {
+      console.warn("Could not record the phase-advance revision.", error);
+    }
+  }
+  await openWindow("teachText");
+  if (typeof setTeachTextFileLabel === "function") {
+    await setTeachTextFileLabel("final", { persist: true, confirmed: true });
+  }
+}
+
+// The way back out of the manuscript phase. Ownership returns to the sections,
+// so the writer is never stuck looking at a read-only Section Drafts window with
+// no command that explains how to type in it again.
+async function returnDocumentToSectionDrafts() {
+  const project = ensureTeachTextSurfaceProject();
+  if (!project) {
+    setStatus(t("no_project_mounted"));
+    openWindow("projects");
+    return;
+  }
+
+  if (manuscriptPhase() !== "manuscript") {
+    // A finalized manuscript is owned by the review phase; the way back out of
+    // review is the document status control, not this command.
+    setStatus(t("manuscript_final_owns_document"));
+    return;
+  }
+
+  savePipelineData();
+  project.manuscriptOwnsDraft = false;
+  project.updatedAt = new Date().toISOString();
+  syncDraftsFromProjectOutline(project);
+  syncDraftDomFromProject(project);
+  applyManuscriptEditability();
+  saveDeskState();
+  renderPipeline();
+  await openWindow("sectionDrafts");
+  setStatus(t("manuscript_returned_to_drafts"));
+  requestAnimationFrame(() => draftBodyInput?.focus());
+}
+
+// Opening the manuscript to write in it must not leave the drafting preview on
+// screen: the preview is the read-only projection this phase just replaced.
+function hideTeachTextPreviewForManuscriptEditing() {
+  if (!teachTextPreviewEl || teachTextPreviewEl.classList.contains("is-hidden")) return;
+  if (typeof showTeachTextEditor === "function") showTeachTextEditor({ focus: false });
+  else teachTextPreviewEl.classList.add("is-hidden");
+}
+
+async function openWritingFlowWindows() {
+  const project = ensureTeachTextSurfaceProject();
+  if (!project) {
+    setStatus(t("no_project_mounted"));
+    openWindow("projects");
+    return;
+  }
+
+  savePipelineData();
+  if (teachTextPipelineLabel()) {
+    syncLinkedTeachTextFromProject(project);
+  }
+  const canOpen = await prepareFinderModeForApp(getWindowAppId("teachText"));
+  if (!canOpen) return;
+  const flowWindowNames = writingFlowWindowNames();
+  for (const windowName of flowWindowNames) {
+    await openWindow(windowName, {
+      skipFinderMode: true,
+      skipPlacement: true,
+      skipFocus: true,
+    });
+  }
+  const writingFlowWindows = flowWindowNames
+    .map((windowName) => getWindow(windowName))
+    .filter(Boolean);
+  // A phone presents one writing surface at a time through the mobile
+  // full-screen shell. Desktop tiling writes inline left/top/width/height
+  // frames that would override that shell (and leave a shaded window as an
+  // off-screen bar), so the route skips tiling in portrait and lets the
+  // focused surface own the screen.
+  if (typeof isPortraitDocumentFlow === "function" && !isPortraitDocumentFlow()) {
+    tileWindows(writingFlowWindows);
+    requestAnimationFrame(() => tileWindows(writingFlowWindows));
+  }
+  focusWindow(getWindow("questionSheet"));
+  // focusWindow does not re-run the mobile foreground pass; without this the
+  // last window opened by the loop above keeps the phone screen and the
+  // focused Question Sheet stays hidden behind it.
+  if (typeof syncMobileAppForeground === "function") {
+    syncMobileAppForeground();
+  }
+  previewLinkedTeachTextManuscript();
+  setStatus(t("linked_writing_flow_opened"));
+}
+
+function writingFlowWindowNames() {
+  return ["teachText", "questionSheet", "outline", "sectionDrafts"];
+}
+
+function canNavigateSectionDraft(direction) {
+  const count = getProjectOutlineDraftBlocks(getActiveProject()).length;
+  const next = Number(draftSectionSelectEl?.value || 0) + direction;
+  return Number.isInteger(next) && next >= 0 && next < count;
+}
+
+function selectSectionDraft(index) {
+  const project = getActiveProject();
+  const count = project ? getProjectOutlineDraftBlocks(project).length : 0;
+  if (!Number.isInteger(index) || index < 0 || index >= count) return false;
+  // Input is already written to the outline on each keystroke. Saving after
+  // changing this selector would write the old section into the new one.
+  if (draftSectionSelectEl) draftSectionSelectEl.value = String(index);
+  const draftRefs = syncDraftsFromProjectOutline(project);
+  selectEnsuredDraftRef(draftRefs, index);
+  renderPipeline();
+  if (typeof refreshSystemSelectControls === "function") refreshSystemSelectControls();
+  if (typeof updateMenuState === "function") updateMenuState();
+  requestAnimationFrame(() => draftBodyInput?.focus());
+  return true;
+}
+
+function showAdjacentSectionDraft(direction) {
+  if (!canNavigateSectionDraft(direction)) return false;
+  return selectSectionDraft(Number(draftSectionSelectEl?.value || 0) + direction);
+}
+
+function updateOutlineSectionStatus(outlineSections) {
+  const sectionCount = Array.isArray(outlineSections) ? outlineSections.length : 0;
+  const label = t("outline_sections_count", sectionCount);
+  const sheet = getActiveProject()?.questionSheet || "";
+  const gap = typeof questionSheetFirstGap === "function" ? questionSheetFirstGap(sheet) : "";
+  if (outlineStatusEl) outlineStatusEl.textContent = gap ? `${label} · ${t(`question_sheet_gap_${gap}`)}` : label;
+}
+
+function estimateVoiceoverSeconds(text) {
+  const body = String(text || "");
+  // Bilibili narration is faster than classroom reading, but still leaves room for visual beats.
+  const cjkCharsPerMinute = 240;
+  const latinWordsPerMinute = 150;
+  const cjk = body.match(/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu)?.length || 0;
+  const latin = body
+    .replace(/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu, " ")
+    .match(/[\p{L}\p{N}]+/gu)?.length || 0;
+  return Math.ceil((cjk / cjkCharsPerMinute + latin / latinWordsPerMinute) * 60);
+}
+
+function updateDraftVoiceStats(text = draftBodyInput?.value || "") {
+  if (!draftCountEl) return;
+  const words = countTextWords(text || "");
+  const project = getActiveProject();
+  if (resolveWritingTaskGenre(project, { questions: project?.questionSheet || "" }) !== "spoken-script") {
+    draftCountEl.textContent = t("draft_word_stats", words);
+    return;
+  }
+  const seconds = estimateVoiceoverSeconds(text || "");
+  if (!words) {
+    draftCountEl.textContent = t("draft_voice_stats_empty");
+    return;
+  }
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  if (minutes <= 0) {
+    draftCountEl.textContent = t("draft_voice_stats_seconds", words, seconds);
+  } else if (remainingSeconds === 0) {
+    draftCountEl.textContent = t("draft_voice_stats_minutes", words, minutes);
+  } else {
+    draftCountEl.textContent = t("draft_voice_stats_minutes_seconds", words, minutes, remainingSeconds);
+  }
+}
+
+function renderPipeline() {
+  const project = getActiveProject();
+  // Surfaces are about to be repopulated from project state; any stale
+  // last-edited marker from a previous project no longer applies.
+  lastEditedWritingSurface = null;
+  if (!project) {
+    questionSheetBodyInput.value = "";
+    if (questionCountEl) questionCountEl.textContent = t("questions_count", 0);
+    updateQuestionSheetManuscriptTitle(null);
+    renderQuestionSheetPhotos();
+    applyQuestionSheetView(null);
+    if (outlineNotesEl) {
+      outlineNotesEl.classList.add("is-hidden");
+      outlineNotesEl.replaceChildren();
+    }
+    outlineContentEl.value = "";
+    if (typeof outlineCardsIsOpen === "function" && outlineCardsIsOpen()) renderOutlineCards(null);
+    updateOutlineSectionStatus([]);
+    updateDraftVoiceStats("");
+    renderDraftSectionSource([]);
+    draftListEl.replaceChildren();
+    if (draftTitleInput) draftTitleInput.value = "";
+    draftBodyInput.value = "";
+    refreshAllTeachTextSurfacePreviews();
+    readerTabsEl.classList.add("is-hidden");
+    renderFlowProgress(null);
+    renderClaimCheckSections();
+    syncWritingRouteEmptyMarkers(null);
+    return;
+  }
+
+  questionSheetBodyInput.value = project.questionSheet || "";
+  if (questionCountEl) questionCountEl.textContent = questionSheetCellText(project.questionSheet || "");
+  updateQuestionSheetManuscriptTitle(project);
+  renderQuestionSheetPhotos();
+  applyQuestionSheetView(project);
+
+  // currentOutlineMarkdown() (used inside syncDraftsFromProjectOutline via
+  // stampOutlineSectionIds) trusts outlineContentEl.value as the live-editing
+  // surface, which is correct while the writer is actually typing in THIS
+  // project's outline. It has no way to tell "unsaved keystrokes" apart from
+  // "whatever the previous project left behind": the first time renderPipeline
+  // runs after a project switch (New Project, Restore from Backup, opening a
+  // second project), the textarea still holds the OLD project's last-rendered
+  // markdown, and stampOutlineSectionIds writes that stale text back into the
+  // NEW project's own outline field, discarding its real content. Resyncing
+  // the textarea from the project record here, before anything reads it back
+  // out, closes the gap. The test is "is this field the record's own source"
+  // (outlineFieldIsRecordSource), not "is the caret here": a caret parked in
+  // the Outline used to make this resync skip, which is the very case the
+  // paragraph above describes -- the previous project's markdown then reached
+  // the new project's record.
+  if (!outlineFieldIsRecordSource(project)) {
+    projectRecordIntoWritingSurface(outlineContentEl, project.outline || "");
+  }
+  // Keep the selected draft's body only when this field is what produced it.
+  // Asking whether the caret is here answers "keep the stale copy" for a caret
+  // parked in a field the record has already moved past.
+  syncDraftsFromProjectOutline(project, { preserveCurrentDraft: selectedDraftFieldIsRecordSource(project) });
+  syncLinkedTeachTextFromProject(project);
+  applyManuscriptEditability();
+  const outlineSections = getProjectOutlineSections(project);
+  updateOutlineSectionStatus(outlineSections);
+  syncPipelineLabelControls();
+  renderDraftSectionSource(outlineSections);
+  if (outlineNotesEl) {
+    outlineNotesEl.classList.toggle("is-hidden", !project.outlineCritique);
+    outlineNotesEl.innerHTML = project.outlineCritique
+      ? `<b>${escapeHtml(t("outline_critique_note"))}</b><div>${markdownToSystemHtml(project.outlineCritique)}</div>`
+      : "";
+  }
+  // Same rule again after the sections were re-derived. Unconditional here used
+  // to swallow the newline the writer had just typed at the end of the
+  // document, because the record is stored trimmed and this compared raw.
+  if (!outlineFieldIsRecordSource(project)) {
+    projectRecordIntoWritingSurface(outlineContentEl, project.outline || serializeOutlineSections(outlineSections));
+  }
+  // The tree is a view of outlineContentEl's string, same as the cards below -
+  // without this an AI write that lands through renderPipeline (generate-
+  // outline, rewrite, restructure) updates the raw Markdown but leaves the
+  // tree/list view (the DEFAULT view - see storedOutlineView) showing
+  // whatever it last rendered, sometimes the fresh project's own "New
+  // Section" placeholder.
+  if (typeof outlineTreeIsOpen === "function" && outlineTreeIsOpen()) renderOutlineTree(project);
+  if (typeof outlineCardsIsOpen === "function" && outlineCardsIsOpen()) renderOutlineCards(project);
+  restoreLinkedManuscriptScroll();
+
+  // Ensure selectedDraftIndex is in bounds
+  if (!project.drafts) project.drafts = [];
+  if (selectedDraftIndex >= project.drafts.length) {
+    selectedDraftIndex = project.drafts.length > 0 ? 0 : -1;
+  }
+  syncDraftSectionSelection(project, outlineSections);
+
+  // Render drafts list
+  draftListEl.replaceChildren();
+  if (project.drafts.length) {
+    project.drafts.forEach((draft, index) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = `btn ${selectedDraftIndex === index ? "is-selected" : ""}`;
+      const clipCount = Array.isArray(draft.usedClips) ? draft.usedClips.length : 0;
+      const meta = [
+        draft.sectionTitle || draft.title || `Draft ${index + 1}`,
+        draft.hkrrIntent ? `HKRR ${draft.hkrrIntent}` : "",
+        clipCount ? `${clipCount} clip${clipCount === 1 ? "" : "s"}` : t("draft_no_clips"),
+        draft.insertedAt ? t("draft_inserted") : t("draft_not_inserted"),
+      ].filter(Boolean).join(" · ");
+      btn.innerHTML = `<span>${escapeHtml(draft.title || `Draft ${index + 1}`)}</span><small>${escapeHtml(meta)}</small>`;
+      btn.addEventListener("click", () => {
+        selectedDraftIndex = index;
+        if (draftTitleInput) draftTitleInput.value = draft.title || draft.sectionTitle || "";
+        draftBodyInput.value = draft.body;
+        renderPipeline();
+      });
+      draftListEl.append(btn);
+    });
+    if (selectedDraftIndex >= 0) {
+      if (draftTitleInput) draftTitleInput.value = project.drafts[selectedDraftIndex].title || project.drafts[selectedDraftIndex].sectionTitle || "";
+      draftBodyInput.value = project.drafts[selectedDraftIndex].body;
+    }
+  } else {
+    const empty = document.createElement("div");
+    empty.className = "empty-folder-note";
+    empty.textContent = t("no_drafts");
+    draftListEl.append(empty);
+    if (draftTitleInput) draftTitleInput.value = "";
+    draftBodyInput.value = "";
+  }
+  updateDraftVoiceStats(draftBodyInput.value);
+  updateDraftSectionLabel(project);
+  refreshAllTeachTextSurfacePreviews();
+
+  // Reader Queue
+  renderReaderTabs(project);
+
+  const progress = getFlowProgress(project);
+  project.flowState = { ...progress.states };
+  renderFlowProgress(project, progress);
+  renderClaimCheckSections();
+  syncWritingRouteEmptyMarkers(project);
+}
+
+// Goal #2 batch A: surface data-empty the way DocMap/Searcher mark idle —
+// empty is legal; chrome and balloons speak the reason.
+function syncWritingRouteEmptyMarkers(project = getActiveProject()) {
+  const questionWin = typeof getWindow === "function" ? getWindow("questionSheet") : document.querySelector('[data-window="questionSheet"]');
+  const outlineWin = typeof getWindow === "function" ? getWindow("outline") : document.querySelector('[data-window="outline"]');
+  const draftsWin = typeof getWindow === "function" ? getWindow("sectionDrafts") : document.querySelector('[data-window="sectionDrafts"]');
+  const questionEmpty = !String(project?.questionSheet || questionSheetBodyInput?.value || "").trim();
+  const outlineEmpty = getMeaningfulOutlineSections(getProjectOutlineSections(project || {})).length === 0;
+  const draftEmpty = !String(draftBodyInput?.value || "").trim()
+    && !(project?.drafts || []).some((draft) => String(draft?.body || "").trim());
+  // Prefer set/removeAttribute: boot-VM / linkedom may lack toggleAttribute(force).
+  const markEmpty = (win, empty) => {
+    if (!win) return;
+    if (empty) win.setAttribute("data-empty", "");
+    else win.removeAttribute("data-empty");
+  };
+  markEmpty(questionWin, questionEmpty);
+  markEmpty(outlineWin, outlineEmpty);
+  markEmpty(draftsWin, draftEmpty);
+}
+
+function cleanRebuildLine(line) {
+  return (line || "")
+    .replace(/^\s{0,3}#{1,6}\s+/, "")
+    .replace(/^\s*(?:[-*]|\d+[.)]|[一二三四五六七八九十]+[、.])\s*/, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function shortRebuildText(text, max = 80) {
+  const clean = (text || "").replace(/\s+/g, " ").trim();
+  if (clean.length <= max) return clean;
+  return `${clean.slice(0, Math.max(0, max - 1)).trim()}...`;
+}
+
+function inferRebuildTitle(text) {
+  const lines = (text || "").split(/\n+/).map(cleanRebuildLine).filter(Boolean);
+  const title = lines.find((line) => line.length >= 4 && line.length <= 90) || lines[0] || t("untitled_project");
+  return shortRebuildText(title, 72);
+}
+
+function getReaderClipSummaries(limit = 6) {
+  return getProjectScraps()
+    .filter((scrap) => typeof finderLabelContextPolicy !== "function" || finderLabelContextPolicy(scrap).include)
+    .filter((scrap) => scrap.source?.type === "reader-clip" || scrap.tags?.includes("reader-clip"))
+    .slice(0, limit)
+    .map((scrap, index) => ({
+      id: scrap.id,
+      ref: `C${index + 1}`,
+      title: scrap.title || `${t("reader")} ${index + 1}`,
+      url: scrap.source?.url || "",
+      site: scrap.source?.site || "",
+    }));
+}
+
+function getReaderClipOutlineContext(limit = 6000) {
+  const clips = getProjectScraps()
+    .filter((scrap) => typeof finderLabelContextPolicy !== "function" || finderLabelContextPolicy(scrap).include)
+    .filter((scrap) => scrap.source?.type === "reader-clip" || scrap.tags?.includes("reader-clip"))
+    .slice(0, 12);
+  if (!clips.length) return "";
+
+  return takeWithinBudget(
+    clips,
+    limit,
+    (scrap, index) => [
+      `[C${index + 1}] ${scrap.title}`,
+      scrap.source?.site ? `Site: ${scrap.source.site}` : "",
+      scrap.source?.url ? `URL: ${scrap.source.url}` : "",
+      scrap.selectedText || scrap.body,
+      scrap.context?.before || scrap.context?.after
+        ? `Context: ${[scrap.context.before, scrap.context.after].filter(Boolean).join(" ... ")}`
+        : "",
+    ].filter(Boolean).join("\n")
+  ).join("\n\n");
+}
+
+function validateSectionDraftContent(markdown) {
+  const content = stripRebuildMarkdownFence(markdown).trim();
+  if (!content) return "";
+  // A short paragraph, ordinary word or parallel list can be valid prose.
+  // Reject leaked contract headings rather than declaring its quality/medium.
+  if (/^#{1,6}\s*(?:输出规则|提示词说明|Output Rules|Prompt Instructions)\s*$/im.test(content)) {
+    throw new Error(currentLanguage === "zh"
+      ? "章节草稿混入了提示词说明。"
+      : "Section draft contains prompt instructions.");
+  }
+  return content;
+}
+
+function validateSectionDraftAuthorLocks(markdown, contract, existingBody) {
+  const locks = Array.isArray(contract?.locks) ? contract.locks : Object.entries(contract?.locks || {}).map(([target, value]) => ({ target, value }));
+  for (const entry of locks) {
+    const lock = typeof entry === "string" ? { target: "text", value: entry } : entry;
+    if (["title", "sections", "sectionTitles"].includes(lock?.target)) continue;
+    const value = lock?.exactText ?? lock?.value;
+    // Locks in other sections do not need to be repeated in this section.
+    if (typeof value === "string" && value && String(existingBody).includes(value) && !String(markdown).includes(value)) {
+      throw new Error("author-lock-mismatch: a locked expression in this section changed.");
+    }
+  }
+  return markdown;
+}
+
+async function draftOutlineSection(sectionTitle) {
+  const project = getActiveProject();
+  if (!project) return;
+  const context = currentSectionDraftContext({ ensureDraft: true, seedBody: true });
+  if (!context) {
+    setStatus(t("section_draft_needs_section"));
+    openWindow("outline");
+    return;
+  }
+  const targetSnapshot = captureSectionDraftTarget(context);
+  const editorialContract = resolveWritingEditorialContract(project, { questions: project.questionSheet });
+  const invocation = typeof createClioTaskInvocation === "function" ? createClioTaskInvocation({ userText: context.body, taskKind: "draft-section", projectId: project.id }) : null;
+  let servedModel = "";
+  const cleanSectionTitle = String(sectionTitle || context.title || "").trim() || t("manual_draft_title");
+  if (!beginLongTask("draft-section", t("drafting_section", cleanSectionTitle))) return;
+
+  openWindow("sectionDrafts");
+
+  let content = "";
+  // Honest failure receipts must survive the empty-content exit below.
+  // Clearing the status after reportWritingRouteModelFailure made census see
+  // silence + console.error → handler-logs-error for offline / budget refusals.
+  let reportedFailure = false;
+  try {
+    await prepareStreamingMarkdownPreview();
+    const questionSheet = (project.questionSheet || "").trim();
+    const query = [questionSheet, context.outlineMarkdown || context.outlineBody || cleanSectionTitle].filter(Boolean).join("\n\n");
+    const projectContext = await buildBudgetedProjectContext(query, { taskKind: "draft-section", signal: getLongTaskSignal(), invocation });
+    if (!sectionDraftTargetMatches(targetSnapshot)) throw new Error("target-stale: the selected section changed before generation.");
+    const eli5Block = writingStudioEli5Block();
+    const prompt = `${resolveWritingRoutePrompt("writing-route.section-draft", editorialContract.language, { invocation })}
+
+${writingEditorialContractBlock(editorialContract)}
+
+${sectionDraftContinuityContext(context)}
+
+QUESTION SHEET:
+${questionSheet || "No Question Sheet provided."}
+
+PROJECT CONTEXT:
+${projectContext || "No relevant project context selected yet."}
+
+CURRENT SECTION:
+${cleanSectionTitle}
+
+SECTION OUTLINE:
+${context.outlineMarkdown || context.outlineBody || cleanSectionTitle}${eli5Block ? `\n\n${eli5Block}` : ""}`;
+    const response = await fetchModelPayload({
+      model: getLocalModelRequestName(),
+      messages: withMarkdownModelMessages([{ role: "user", content: prompt }]),
+      temperature: 0.55,
+      ai_system6_task_kind: "draft-section",
+      stream: true,
+    }, getLongTaskSignal(), { invocation });
+
+    const streamedContent = await readModelTextStream(response, {
+      signal: getLongTaskSignal(),
+      throttleMs: 120,
+      onModel: (model) => { servedModel = String(model || ""); },
+      onSnapshot: (markdown) => { if (sectionDraftTargetMatches(targetSnapshot)) showStreamingSurfacePreview("sectionDrafts", stripRebuildMarkdownFence(markdown)); },
+    });
+    content = stripRebuildMarkdownFence(streamedContent || "").trim();
+    content = validateSectionDraftContent(content);
+    if (content && sectionDraftTargetMatches(targetSnapshot)) showStreamingSurfacePreview("sectionDrafts", content, { final: true });
+  } catch (error) {
+    if (!isAbortError(error)) {
+      // Expected model/transport refusals are product receipts (status +
+      // notification). Keep diagnostics off console.error so a leftover empty
+      // status cannot be reclassified as handler-logs-error.
+      content = "";
+      reportedFailure = true;
+      await reportWritingRouteModelFailure(error, t("section_drafts"));
+    }
+  } finally {
+    endLongTask("draft-section");
+  }
+
+  if (!content) {
+    if (!reportedFailure) clearStatus();
+    return;
+  }
+
+  const receipt = await window.AISystem6RunReceipts?.recordModelAnswer?.({ projectId: project.id, sourceAppId: "sectionDrafts", intent: "draft-section", model: servedModel, answerText: content, runManifest: invocation?.runManifest || null });
+  try { validateSectionDraftAuthorLocks(content, editorialContract, context.body); }
+  catch (error) {
+    if (receipt?.receiptId) await window.AISystem6RunReceipts?.recordUserAction?.(receipt.receiptId, { action: "reject" });
+    await reportWritingRouteModelFailure(error, t("section_drafts"));
+    return;
+  }
+  const applied = await confirmAndApplySectionDraft(content, "draft_replace_confirm", "section_draft_ai_drafted", targetSnapshot);
+  if (receipt?.receiptId) await window.AISystem6RunReceipts?.recordUserAction?.(receipt.receiptId, { action: applied ? "accept" : "reject" });
+  if (applied) {
+    const contextAfterDraft = currentSectionDraftContext({ ensureDraft: true });
+    if (contextAfterDraft?.draft) {
+      contextAfterDraft.draft.usedClips = getReaderClipSummaries();
+      saveDeskState();
+      renderPipeline();
+    }
+  }
+}
+
+async function eli5RewriteSection() {
+  const context = currentSectionDraftContext({ ensureDraft: true });
+  if (!context) {
+    setStatus(t("section_draft_needs_section"));
+    openWindow("outline");
+    return false;
+  }
+  const targetSnapshot = captureSectionDraftTarget(context);
+  const body = String(draftBodyInput?.value || context.body || "").trim();
+  if (!body) {
+    setStatus(t("draft_needs_content"));
+    openWindow("sectionDrafts");
+    requestAnimationFrame(() => draftBodyInput?.focus());
+    return false;
+  }
+  const eli5Body = window.AISystem6PromptFilesRuntime?.resolvePromptFile?.("lenses.eli5-explainer", null, currentLanguage)?.body;
+  if (!eli5Body) {
+    setStatus(t("quick_draft_eli5_unavailable"));
+    return false;
+  }
+  if (!beginLongTask("eli5-rewrite-section", t("section_draft_eli5_rewriting"))) return false;
+  let content = "";
+  let servedModel = "";
+  try {
+    const lens = writingStudioExplanationLens();
+    const baseline = `${currentLanguage === "zh" ? "观众基础" : "Audience baseline"}：${lens.baselineKnowledge || "secondary-school"}`;
+    const terms = lens.mustKeepTerms?.length
+      ? `${currentLanguage === "zh" ? "必须保留的术语" : "Terms to keep"}：${lens.mustKeepTerms.join(currentLanguage === "zh" ? "、" : ", ")}`
+      : "";
+    const userContent = [
+      currentLanguage === "zh" ? "当前章节草稿：" : "Current section draft:",
+      body,
+      baseline,
+      terms,
+    ].filter(Boolean).join("\n\n");
+    const response = await fetchModelPayload({
+      model: getLocalModelRequestName(),
+      messages: withMarkdownModelMessages([
+        { role: "system", content: eli5Body },
+        { role: "user", content: userContent },
+      ]),
+      temperature: 0.35,
+      max_tokens: 2600,
+      ai_system6_task_kind: "writing.eli5-rewrite",
+      stream: false,
+    }, getLongTaskSignal());
+    if (!response.ok) throw new Error(serviceErrorDetail(response.status, await response.text()));
+    const result = await response.json().catch(() => ({}));
+    servedModel = String(result?.ai_system6_metrics?.model || result?.model || "");
+    content = stripRebuildMarkdownFence(String(result?.choices?.[0]?.message?.content || "").trim());
+  } catch (error) {
+    if (!isAbortError(error)) {
+      console.error("ELI5 rewrite failed", error);
+      await reportWritingRouteModelFailure(error, t("section_drafts"));
+    }
+  } finally {
+    endLongTask("eli5-rewrite-section");
+  }
+  if (!content) {
+    clearStatus();
+    return false;
+  }
+  const receipt = await window.AISystem6RunReceipts?.recordModelAnswer?.({ projectId: context.project.id, sourceAppId: "sectionDrafts", intent: "writing.eli5-rewrite", model: servedModel, answerText: content });
+  const applied = await confirmAndApplySectionDraft(content, "section_draft_eli5_replace_confirm", "section_draft_eli5_applied", targetSnapshot);
+  if (receipt?.receiptId) await window.AISystem6RunReceipts?.recordUserAction?.(receipt.receiptId, { action: applied ? "accept" : "reject" });
+  return applied;
+}
+
+async function eli5ReviewSection() {
+  const context = currentSectionDraftContext({ ensureDraft: true });
+  if (!context) {
+    setStatus(t("section_draft_needs_section"));
+    openWindow("outline");
+    return false;
+  }
+  const body = String(draftBodyInput?.value || context.body || "").trim();
+  if (!body) {
+    setStatus(t("draft_needs_content"));
+    openWindow("sectionDrafts");
+    requestAnimationFrame(() => draftBodyInput?.focus());
+    return false;
+  }
+  const reviewBody = window.AISystem6PromptFilesRuntime?.resolvePromptFile?.("lenses.eli5-review", null, currentLanguage)?.body;
+  if (!reviewBody) {
+    setStatus(t("quick_draft_eli5_unavailable"));
+    return false;
+  }
+  if (!beginLongTask("eli5-review-section", t("section_draft_eli5_reviewing"))) return false;
+  try {
+    const response = await fetchModelPayload({
+      model: getLocalModelRequestName(),
+      messages: [
+        { role: "system", content: reviewBody },
+        { role: "user", content: body },
+      ],
+      temperature: 0.2,
+      max_tokens: 2600,
+      ai_system6_task_kind: "writing.eli5-review",
+      stream: false,
+    }, getLongTaskSignal());
+    if (!response.ok) throw new Error(serviceErrorDetail(response.status, await response.text()));
+    const result = await response.json().catch(() => ({}));
+    const raw = String(result?.choices?.[0]?.message?.content || "").trim();
+    const data = window.AISystem6ModelTaskRuntime.parseJsonText(raw);
+    if (!data || typeof data !== "object") {
+      throw new Error(t("eli5_review_did_not_return_parseable"));
+    }
+    const markdown = window.AISystem6ModelTaskRuntime.eli5ReviewMarkdown(data, currentLanguage);
+    if (typeof arrangeWindowAssistantSplit === "function") {
+      await arrangeWindowAssistantSplit("sectionDrafts");
+    } else if (typeof openWindow === "function") {
+      await openWindow("assistant");
+    }
+    if (typeof addMessage === "function") {
+      addMessage("assistant", markdown);
+    }
+    clearStatus();
+    return true;
+  } catch (error) {
+    if (!isAbortError(error)) {
+      console.error("ELI5 review failed", error);
+      await reportWritingRouteModelFailure(error, t("section_drafts"));
+    }
+    return false;
+  } finally {
+    endLongTask("eli5-review-section");
+  }
+}
+
+function oneSentenceSystemInstruction(kind = "rewrite") {
+  const zh = currentLanguage === "zh";
+  if (kind === "check") {
+    return zh
+      ? "你是 AI System 6 的「一句一件事」检查器。只指出当前章节草稿里哪一句同时做了两件事、指代不清，或让读者跟丢。逐条引用原句，说明读者会在哪里卡住，以及最小改法。不要整段重写，不要打分，不要加新事实。用简洁中文回复。"
+      : "You are AI System 6's one-thing-per-sentence checker. Name only the sentences in this section draft that do two jobs at once, leave a reference unclear, or make a reader lose the thread. Quote each sentence, say where the reader gets stuck, and the smallest fix. Do not rewrite the whole draft, score it, or add facts.";
+  }
+  return zh
+    ? "你是 AI System 6 的「一句一件事」改写器。把当前章节草稿改成一句只做一件事：必要时拆句，理清指代，但不改事实、数字、人名、引文、不确定表述，也不抹平作者自己的语气与判断。只返回改写后的 Markdown 正文，不要说明、不要选项、不要代码围栏。"
+    : "You are AI System 6's one-thing-per-sentence rewriter. Rewrite this section draft so each sentence does one job: split overloaded sentences and clarify references, without changing facts, numbers, names, quotes, or stated uncertainty, and without smoothing away the writer's voice or judgment. Return only the rewritten Markdown body — no commentary, options, or code fences.";
+}
+
+async function oneSentenceRewriteSection() {
+  const context = currentSectionDraftContext({ ensureDraft: true });
+  if (!context) {
+    setStatus(t("section_draft_needs_section"));
+    openWindow("outline");
+    return false;
+  }
+  const targetSnapshot = captureSectionDraftTarget(context);
+  const body = String(draftBodyInput?.value || context.body || "").trim();
+  if (!body) {
+    setStatus(t("draft_needs_content"));
+    openWindow("sectionDrafts");
+    requestAnimationFrame(() => draftBodyInput?.focus());
+    return false;
+  }
+  const promptBody = window.AISystem6PromptFilesRuntime?.resolvePromptFile?.("lenses.one-sentence-rewrite", null, currentLanguage)?.body
+    || oneSentenceSystemInstruction("rewrite");
+  if (!promptBody) {
+    setStatus(t("section_draft_one_sentence_unavailable"));
+    return false;
+  }
+  if (!beginLongTask("one-sentence-rewrite-section", t("section_draft_one_sentence_rewriting"))) return false;
+  let content = "";
+  let servedModel = "";
+  try {
+    const response = await fetchModelPayload({
+      model: getLocalModelRequestName(),
+      messages: withMarkdownModelMessages([
+        { role: "system", content: promptBody },
+        { role: "user", content: `${currentLanguage === "zh" ? "当前章节草稿：" : "Current section draft:"}\n\n${body}` },
+      ]),
+      temperature: 0.3,
+      max_tokens: 2600,
+      ai_system6_task_kind: "writing.one-sentence-rewrite",
+      stream: false,
+    }, getLongTaskSignal());
+    if (!response.ok) throw new Error(serviceErrorDetail(response.status, await response.text()));
+    const result = await response.json().catch(() => ({}));
+    servedModel = String(result?.ai_system6_metrics?.model || result?.model || "");
+    content = stripRebuildMarkdownFence(String(result?.choices?.[0]?.message?.content || "").trim());
+  } catch (error) {
+    if (!isAbortError(error)) {
+      console.error("One-sentence rewrite failed", error);
+      await reportWritingRouteModelFailure(error, t("section_drafts"));
+    }
+  } finally {
+    endLongTask("one-sentence-rewrite-section");
+  }
+  if (!content) {
+    clearStatus();
+    return false;
+  }
+  const receipt = await window.AISystem6RunReceipts?.recordModelAnswer?.({
+    projectId: context.project.id,
+    sourceAppId: "sectionDrafts",
+    intent: "writing.one-sentence-rewrite",
+    model: servedModel,
+    answerText: content,
+  });
+  const applied = await confirmAndApplySectionDraft(
+    content,
+    "section_draft_one_sentence_replace_confirm",
+    "section_draft_one_sentence_applied",
+    targetSnapshot,
+  );
+  if (receipt?.receiptId) await window.AISystem6RunReceipts?.recordUserAction?.(receipt.receiptId, { action: applied ? "accept" : "reject" });
+  return applied;
+}
+
+async function oneSentenceCheckSection() {
+  const context = currentSectionDraftContext({ ensureDraft: true });
+  if (!context) {
+    setStatus(t("section_draft_needs_section"));
+    openWindow("outline");
+    return false;
+  }
+  const body = String(draftBodyInput?.value || context.body || "").trim();
+  if (!body) {
+    setStatus(t("draft_needs_content"));
+    openWindow("sectionDrafts");
+    requestAnimationFrame(() => draftBodyInput?.focus());
+    return false;
+  }
+  const promptBody = window.AISystem6PromptFilesRuntime?.resolvePromptFile?.("lenses.one-sentence-check", null, currentLanguage)?.body
+    || oneSentenceSystemInstruction("check");
+  if (!promptBody) {
+    setStatus(t("section_draft_one_sentence_unavailable"));
+    return false;
+  }
+  if (!beginLongTask("one-sentence-check-section", t("section_draft_one_sentence_checking"))) return false;
+  try {
+    const response = await fetchModelPayload({
+      model: getLocalModelRequestName(),
+      messages: [
+        { role: "system", content: promptBody },
+        { role: "user", content: body },
+      ],
+      temperature: 0.2,
+      max_tokens: 2200,
+      ai_system6_task_kind: "writing.one-sentence-check",
+      stream: false,
+    }, getLongTaskSignal());
+    if (!response.ok) throw new Error(serviceErrorDetail(response.status, await response.text()));
+    const result = await response.json().catch(() => ({}));
+    const content = String(result?.choices?.[0]?.message?.content || "").trim();
+    if (!content) throw new Error(t("section_draft_one_sentence_unavailable"));
+    if (typeof arrangeWindowAssistantSplit === "function") {
+      await arrangeWindowAssistantSplit("sectionDrafts");
+    } else if (typeof openWindow === "function") {
+      await openWindow("assistant");
+    }
+    if (typeof addMessage === "function") addMessage("assistant", content);
+    clearStatus();
+    return true;
+  } catch (error) {
+    if (!isAbortError(error)) {
+      console.error("One-sentence check failed", error);
+      await reportWritingRouteModelFailure(error, t("section_drafts"));
+    }
+    return false;
+  } finally {
+    endLongTask("one-sentence-check-section");
+  }
+}
+
+// Every structural edit takes the same road: stamp ids so each node is
+// addressable, parse to a tree, mutate the tree, serialise, and write through
+// the one funnel the outline string already had. The string is an output now,
+// not a thing to perform surgery on.
+//
+// The tree is derived rather than stored. Markdown round-trips losslessly
+// (tests/features/outline-tree.test.mjs proves it on eleven documents), so
+// there is no second copy to migrate, to go stale, or to disagree with what
+// every other part of the route reads.
+// --- The outline as a list -----------------------------------------------
+//
+// Finder's own grammar for a tree: a row per section, subsections indented
+// under it, a disclosure triangle where there is something to disclose, and
+// reverse video for what is selected. Selection reuses the shared .is-selected
+// state class, so every appearance's own selected twin applies to it -- a
+// bespoke class here would tie on specificity and lose on source order.
+//
+// The rows are a rendering of the tree, and the tree is a reading of the
+// string. Nothing here holds state except which id is selected and which
+// sections are collapsed, both of which are about looking, not about content.
+
+let outlineTreeSelectedId = "";
+const outlineTreeCollapsed = new Set();
+
+// A section's own words plus its subsections', so a collapsed section still
+// says what is under it rather than reading as empty.
+function outlineNodeWordCount(node) {
+  const own = typeof countTextWords === "function" ? countTextWords(node.lead || "") : 0;
+  return (node.children || []).reduce((total, child) => total + outlineNodeWordCount(child), own);
+}
+
+function outlineTreeRowMarkup(node, selectedId, hasChildren, collapsed) {
+  const classes = ["outline-tree-row"];
+  if (node.level === 3) classes.push("is-child");
+  if (node.id && node.id === selectedId) classes.push("is-selected");
+
+  const twisty = hasChildren
+    ? `<span class="outline-tree-twisty" aria-hidden="true">${collapsed ? "▶" : "▼"}</span>`
+    : `<span class="outline-tree-twisty" aria-hidden="true"></span>`;
+  const title = escapeHtml(node.title || t("new_outline_section"));
+  // Finder's Size column, and for the same reason: it says which section is
+  // still a shell. A count, never a target -- the target was dropped because a
+  // deficit meter multiplies pressure, and this is a fact about what is there.
+  const words = outlineNodeWordCount(node);
+  const size = words ? `<span class="outline-tree-size">${escapeHtml(t("outline_tree_words", words))}</span>`
+    : `<span class="outline-tree-size outline-tree-size-empty">${escapeHtml(t("outline_tree_shell"))}</span>`;
+
+  return `<button type="button" class="${classes.join(" ")}" role="treeitem" data-outline-id="${escapeHtml(node.id)}"`
+    + ` aria-level="${node.level - 1}"${hasChildren ? ` aria-expanded="${collapsed ? "false" : "true"}"` : ""}>`
+    + `${twisty}<span class="outline-tree-grip" aria-hidden="true"></span>`
+    + `<span class="outline-tree-title">${title}</span>${size}</button>`;
+}
+
+function renderOutlineTree(project = getActiveProject()) {
+  if (!outlineTreeEl) return;
+
+  const tree = markdownOutlineTree(currentOutlineMarkdown(project) || "");
+  if (!tree.sections.length) {
+    outlineTreeEl.innerHTML = `<p class="empty-folder-note">${escapeHtml(t("outline_tree_empty"))}</p>`;
+    return;
+  }
+
+  const rows = [];
+  tree.sections.forEach((section) => {
+    const children = section.children || [];
+    const collapsed = outlineTreeCollapsed.has(section.id);
+    rows.push(outlineTreeRowMarkup(section, outlineTreeSelectedId, children.length > 0, collapsed));
+    if (collapsed) return;
+    children.forEach((child) => rows.push(outlineTreeRowMarkup(child, outlineTreeSelectedId, false, false)));
+  });
+  outlineTreeEl.innerHTML = rows.join("");
+}
+
+function outlineTreeVisibleIds() {
+  return Array.from(outlineTreeEl?.querySelectorAll("[data-outline-id]") || [])
+    .map((row) => row.dataset.outlineId)
+    .filter(Boolean);
+}
+
+function selectOutlineTreeRow(id) {
+  outlineTreeSelectedId = String(id || "");
+  renderOutlineTree();
+  outlineTreeEl?.querySelector(".outline-tree-row.is-selected")?.scrollIntoView({ block: "nearest" });
+}
+
+function moveOutlineTreeSelection(step) {
+  const ids = outlineTreeVisibleIds();
+  if (!ids.length) return;
+  const at = ids.indexOf(outlineTreeSelectedId);
+  const next = at < 0 ? 0 : Math.max(0, Math.min(ids.length - 1, at + step));
+  selectOutlineTreeRow(ids[next]);
+}
+
+// Restructuring goes through the same road every other structural edit takes.
+// The selection follows the node rather than the position: after a move, the
+// writer is still on the thing they moved.
+function restructureOutlineTree(operation) {
+  const project = getActiveProject();
+  if (!project || !outlineTreeSelectedId) return false;
+
+  const id = outlineTreeSelectedId;
+  const edit = applyOutlineTreeEdit(project, (tree) => operation(tree, id));
+  if (!edit) {
+    setStatus(t("outline_tree_refused"));
+    return false;
+  }
+
+  saveDeskState();
+  renderPipeline();
+  // A node demoted into a collapsed section would otherwise vanish: the writer
+  // moves something and it is simply not there any more. Whatever it landed
+  // inside gets opened, so a move is always visible.
+  const landed = outlineTreeFind(markdownOutlineTree(currentOutlineMarkdown(project) || ""), id);
+  if (landed?.parent?.id) outlineTreeCollapsed.delete(landed.parent.id);
+  selectOutlineTreeRow(id);
+  return true;
+}
+
+// Switching views is not switching documents: the same Markdown is behind
+// both, so the tree can be opened and closed without anything being saved,
+// converted, or lost.
+function outlineEditorShell() {
+  return outlineContentEl?.closest(".mde-surface") || outlineContentEl;
+}
+
+function outlineTreeIsOpen() {
+  return Boolean(outlineTreeEl && !outlineTreeEl.classList.contains("is-hidden"));
+}
+
+// Which view the Outline opens in. The list is the default now: the sections
+// are the thing, and the text is how they are stored. A writer who prefers the
+// text keeps it -- the preference is theirs, not the document's, so it lives
+// beside the focus mode rather than in the project record.
+const OUTLINE_VIEW_STORAGE_KEY = "ai-system6-outline-view";
+
+function storedOutlineView() {
+  let stored = "";
+  try {
+    stored = String(localStorage.getItem(OUTLINE_VIEW_STORAGE_KEY) || "").trim();
+  } catch {}
+  return stored === "text" ? "text" : "tree";
+}
+
+function rememberOutlineView(view) {
+  try {
+    localStorage.setItem(OUTLINE_VIEW_STORAGE_KEY, view);
+  } catch {}
+}
+
+function setOutlineTreeOpen(open, { remember = true, focus = true } = {}) {
+  if (!outlineTreeEl || !outlineContentEl) return;
+
+  const container = outlineTreeEl.closest(".teachtext-editor-container");
+  if (open) {
+    if (outlinePreviewEl && !outlinePreviewEl.classList.contains("is-hidden")) {
+      toggleTeachTextSurfacePreview("outline");
+    }
+    renderOutlineTree();
+    outlineTreeEl.classList.remove("is-hidden");
+    // The shell, not the textarea. The ink is painted on a sibling overlay
+    // inside .mde-surface, so hiding the textarea alone leaves the words on
+    // screen with the tree underneath them.
+    outlineEditorShell().classList.add("is-hidden");
+    container?.classList.add("is-outlining");
+    if (focus) outlineTreeEl.focus();
+  } else {
+    outlineTreeEl.classList.add("is-hidden");
+    outlineEditorShell().classList.remove("is-hidden");
+    container?.classList.remove("is-outlining");
+    if (focus) outlineContentEl.focus();
+  }
+  if (remember) rememberOutlineView(open ? "tree" : "text");
+  if (typeof updateMenuState === "function") updateMenuState();
+}
+
+function toggleOutlineTreeView() {
+  setOutlineTreeOpen(!outlineTreeIsOpen());
+  setStatus(t(outlineTreeIsOpen() ? "outline_tree_opened" : "outline_tree_closed"));
+}
+
+// Enter and a double click take the writer to that section in the text view.
+// The two views are the same document, so "go to it" is a scroll, not a
+// conversion.
+function revealOutlineSectionInText(id) {
+  const markdown = currentOutlineMarkdown() || "";
+  const node = outlineTreeFind(markdownOutlineTree(markdown), id)?.node;
+  if (!node) return;
+
+  setOutlineTreeOpen(false);
+  const heading = markdownOutlineHeading(node);
+  const at = markdown.indexOf(heading);
+  if (at < 0 || !outlineContentEl) return;
+  outlineContentEl.selectionStart = at;
+  outlineContentEl.selectionEnd = at + heading.length;
+  outlineContentEl.dispatchEvent(new Event("select"));
+}
+
+// Every structural move is a menu command as well as a gesture. Dragging is a
+// desktop accelerator; the commands are the path that works with a keyboard,
+// with a screen reader, and on a phone -- which has no Option key to hold, and
+// where a list that scrolls cannot also have rows that drag.
+function outlineTreeCommand(operation) {
+  if (!outlineTreeSelectedId) {
+    setStatus(t("outline_tree_select_first"));
+    return;
+  }
+  restructureOutlineTree(operation);
+}
+
+// A list that scrolls under a finger cannot also have rows that drag it:
+// touch-action is decided when the gesture begins, not when we work out what
+// the finger meant. So the row carries a grip. The grip alone takes the
+// gesture (touch-action: none); the rest of the row keeps panning, so the list
+// still scrolls. A mouse or a pen may drag from anywhere on the row, having no
+// such conflict.
+//
+// The four commands above remain the path for a keyboard and a screen reader,
+// and the one that needs no aim at all.
+let outlineDrag = null;
+
+function outlineTreeRows() {
+  return Array.from(outlineTreeEl?.querySelectorAll("[data-outline-id]") || []);
+}
+
+// Which gap the pointer is in: the number of rows whose middle is above it.
+function outlineTreeDropSlot(clientY) {
+  const rows = outlineTreeRows();
+  for (let index = 0; index < rows.length; index += 1) {
+    const rect = rows[index].getBoundingClientRect();
+    if (clientY < rect.top + (rect.height / 2)) return { rows, slot: index };
+  }
+  return { rows, slot: rows.length };
+}
+
+// A section can only land among sections; a subsection only among the children
+// of some section. The dragged row is still in the list while it is being
+// dragged, so the index counts it -- outlineTreeMoveTo takes that off again.
+function outlineTreeDropTarget(rows, slot, level) {
+  const isChild = (row) => row.classList.contains("is-child");
+
+  if (level === 2) {
+    let index = 0;
+    for (let at = 0; at < slot; at += 1) if (!isChild(rows[at])) index += 1;
+    return { parentId: "", index };
+  }
+
+  let parentId = "";
+  let index = 0;
+  for (let at = 0; at < slot; at += 1) {
+    if (isChild(rows[at])) index += 1;
+    else {
+      parentId = rows[at].dataset.outlineId;
+      index = 0;
+    }
+  }
+  return parentId ? { parentId, index } : null;
+}
+
+function paintOutlineDropLine(clientY) {
+  const { rows, slot } = outlineTreeDropSlot(clientY);
+  rows.forEach((row) => row.classList.remove("is-drop-before", "is-drop-after"));
+  if (!rows.length) return;
+  if (slot >= rows.length) rows[rows.length - 1].classList.add("is-drop-after");
+  else rows[slot].classList.add("is-drop-before");
+}
+
+function endOutlineDrag() {
+  outlineTreeRows().forEach((row) => row.classList.remove("is-drop-before", "is-drop-after"));
+  outlineTreeEl?.classList.remove("is-dragging");
+  outlineDrag = null;
+}
+
+function dropOutlineDrag(id, clientY) {
+  const level = outlineTreeFind(markdownOutlineTree(currentOutlineMarkdown() || ""), id)?.node?.level || 2;
+  const { rows, slot } = outlineTreeDropSlot(clientY);
+  const target = outlineTreeDropTarget(rows, slot, level);
+  if (!target) {
+    setStatus(t("outline_tree_refused"));
+    return;
+  }
+  restructureOutlineTree((tree, nodeId) => outlineTreeMoveTo(tree, nodeId, target.parentId, target.index));
+}
+
+function wireOutlineTreeDrag() {
+  if (!outlineTreeEl) return;
+
+  outlineTreeEl.addEventListener("pointerdown", (event) => {
+    const row = event.target.closest?.("[data-outline-id]");
+    if (!row || event.target.closest(".outline-tree-twisty")) return;
+    // A finger has to start on the grip; anything else it does here is a scroll.
+    if (event.pointerType === "touch" && !event.target.closest(".outline-tree-grip")) return;
+    outlineDrag = { id: row.dataset.outlineId, from: event.clientY, active: false };
+  });
+
+  outlineTreeEl.addEventListener("pointermove", (event) => {
+    if (!outlineDrag) return;
+    if (!outlineDrag.active) {
+      if (Math.abs(event.clientY - outlineDrag.from) < 4) return;
+      outlineDrag.active = true;
+      // Capture on the container: selecting re-renders the rows, and a capture
+      // held by a row would die with the element that held it.
+      outlineTreeEl.setPointerCapture(event.pointerId);
+      outlineTreeEl.classList.add("is-dragging");
+      selectOutlineTreeRow(outlineDrag.id);
+    }
+    paintOutlineDropLine(event.clientY);
+  });
+
+  outlineTreeEl.addEventListener("pointerup", (event) => {
+    const drag = outlineDrag;
+    const y = event.clientY;
+    endOutlineDrag();
+    if (drag?.active) dropOutlineDrag(drag.id, y);
+  });
+
+  outlineTreeEl.addEventListener("pointercancel", endOutlineDrag);
+
+  outlineTreeEl.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && outlineDrag) endOutlineDrag();
+  });
+}
+
+// The outline as a corkboard. A third view of the same document, alongside the
+// text and the list: free placement so a writer can pin sections into a
+// working order before the writing order is settled, and one deliberate
+// gesture -- dragging a card's grip onto another -- that actually reorders
+// the records, through the same funnel every other structural edit takes.
+//
+// Free placement stores ONLY a layout map (id -> x,y) beside the project's
+// other view state. It never edits the document: moving a card around the
+// board is looking, not writing.
+const OUTLINE_CARDS_STORAGE_KEY = "ai-system6-outline-cards-view";
+const OUTLINE_CARD_WIDTH = 200;
+const OUTLINE_CARD_HEIGHT = 108;
+const OUTLINE_CARD_GAP = 16;
+let outlineCardsSelectedId = "";
+let outlineCardDrag = null;
+
+function storedOutlineCardsOpen() {
+  try {
+    return localStorage.getItem(OUTLINE_CARDS_STORAGE_KEY) === "cards";
+  } catch {
+    return false;
+  }
+}
+
+function rememberOutlineCardsOpen(open) {
+  try {
+    localStorage.setItem(OUTLINE_CARDS_STORAGE_KEY, open ? "cards" : "");
+  } catch {}
+}
+
+function outlineCardsIsOpen() {
+  return Boolean(outlineCardsEl() && !outlineCardsEl().classList.contains("is-hidden"));
+}
+
+function outlineCardsEl() {
+  return document.getElementById("outline-cards");
+}
+
+function setOutlineCardsOpen(open, { remember = true, focus = true } = {}) {
+  const cards = outlineCardsEl();
+  if (!cards || !outlineContentEl) return;
+
+  if (open) {
+    // The board and the tree are two readings of the same list; showing both
+    // at once would just be the tree twice.
+    if (typeof outlineTreeIsOpen === "function" && outlineTreeIsOpen()) setOutlineTreeOpen(false, { remember: false, focus: false });
+    if (outlinePreviewEl && !outlinePreviewEl.classList.contains("is-hidden")) toggleTeachTextSurfacePreview("outline");
+    renderOutlineCards();
+    cards.classList.remove("is-hidden");
+    outlineEditorShell().classList.add("is-hidden");
+    if (focus) cards.focus?.();
+  } else {
+    cards.classList.add("is-hidden");
+    outlineEditorShell().classList.remove("is-hidden");
+    if (focus) outlineContentEl.focus();
+  }
+  if (remember) rememberOutlineCardsOpen(open);
+  if (typeof updateMenuState === "function") updateMenuState();
+}
+
+function toggleOutlineCardsView() {
+  setOutlineCardsOpen(!outlineCardsIsOpen());
+  setStatus(t(outlineCardsIsOpen() ? "outline_cards_opened" : "outline_cards_closed"));
+}
+
+// The first non-empty line of a section's own text, stripped of Markdown --
+// enough to recognize the card by without opening it.
+function outlineCardSnippet(node) {
+  const line = String(node?.lead || "").split("\n").map((item) => item.trim()).find(Boolean) || "";
+  return stripMarkdownInlineSyntax(line.replace(/^\s*(?:[-*+]|\d+[.)])\s+/, ""));
+}
+
+// "Holds text": a Section Draft exists for this record and has something
+// written in it. Matched by id, the same way writeSelectedOutlineSection and
+// the review-desk linkage match a draft to its section.
+function outlineCardHoldsPen(node, project) {
+  return (project?.drafts || []).some((draft) => draft.sectionId === node.id && String(draft.body || "").trim());
+}
+
+// Read the layout map and drop entries for ids the tree no longer has. Prunes
+// silently on read; only a caller that actually changed something saves.
+function outlineCardLayout(project, ids) {
+  const stored = project?.outlineCardLayout || {};
+  const live = new Set(ids);
+  const layout = {};
+  let pruned = false;
+  Object.keys(stored).forEach((id) => {
+    if (live.has(id)) layout[id] = stored[id];
+    else pruned = true;
+  });
+  if (project && pruned) project.outlineCardLayout = layout;
+  return { layout, pruned };
+}
+
+function outlineCardDefaultPosition(index) {
+  const columns = 3;
+  const col = index % columns;
+  const row = Math.floor(index / columns);
+  return {
+    x: OUTLINE_CARD_GAP + col * (OUTLINE_CARD_WIDTH + OUTLINE_CARD_GAP),
+    y: OUTLINE_CARD_GAP + row * (OUTLINE_CARD_HEIGHT + OUTLINE_CARD_GAP),
+  };
+}
+
+function outlineCardMarkup(node, index, project, layout) {
+  const at = layout[node.id] || outlineCardDefaultPosition(index);
+  const classes = ["outline-card"];
+  if (node.level === 3) classes.push("is-child");
+  if (node.id === outlineCardsSelectedId) classes.push("is-selected");
+  if (outlineCardHoldsPen(node, project)) classes.push("holds-pen");
+  if (outlineNodeWordCount(node) > 0) classes.push("has-content");
+
+  const title = escapeHtml(node.title || t("new_outline_section"));
+  const snippet = escapeHtml(outlineCardSnippet(node));
+
+  return `<button type="button" class="${classes.join(" ")}" role="listitem" data-outline-card-id="${escapeHtml(node.id)}"`
+    + ` style="left:${at.x}px;top:${at.y}px" aria-pressed="${node.id === outlineCardsSelectedId}">`
+    + `<span class="outline-card-grip" aria-hidden="true"></span>`
+    + `<span class="outline-card-pen" aria-hidden="true"></span>`
+    + `<span class="outline-card-diamond" aria-hidden="true"></span>`
+    + `<span class="outline-card-title">${title}</span>`
+    + (snippet ? `<span class="outline-card-snippet">${snippet}</span>` : "")
+    + `</button>`;
+}
+
+function outlineCardsFlatNodes(tree) {
+  const nodes = [];
+  (tree.sections || []).forEach((section) => {
+    nodes.push(section);
+    (section.children || []).forEach((child) => nodes.push(child));
+  });
+  return nodes;
+}
+
+function renderOutlineCards(project = getActiveProject()) {
+  const cards = outlineCardsEl();
+  if (!cards) return;
+
+  const tree = markdownOutlineTree(currentOutlineMarkdown(project) || "");
+  const nodes = outlineCardsFlatNodes(tree);
+  if (!nodes.length) {
+    cards.innerHTML = `<p class="empty-folder-note">${escapeHtml(t("outline_tree_empty"))}</p>`;
+    return;
+  }
+  if (outlineCardsSelectedId && !nodes.some((node) => node.id === outlineCardsSelectedId)) outlineCardsSelectedId = "";
+
+  const { layout, pruned } = outlineCardLayout(project, nodes.map((node) => node.id));
+  if (pruned) saveDeskState();
+
+  cards.innerHTML = nodes.map((node, index) => outlineCardMarkup(node, index, project, layout)).join("");
+}
+
+function selectOutlineCard(id) {
+  outlineCardsSelectedId = String(id || "");
+  renderOutlineCards();
+}
+
+function openOutlineCard(id) {
+  setOutlineCardsOpen(false, { remember: false });
+  revealOutlineSectionInText(id);
+}
+
+function endOutlineCardDrag() {
+  outlineCardsEl()?.classList.remove("is-dragging");
+  outlineCardDrag = null;
+}
+
+// Deliberate reorder: dropping a card (by its grip) onto another card moves
+// it to just after that card in the record list, through applyOutlineTreeEdit
+// -- never a direct edit of the layout map or the string.
+function reorderOutlineCardOnto(draggedId, targetId) {
+  const project = getActiveProject();
+  if (!project || !draggedId || !targetId || draggedId === targetId) return;
+
+  const tree = markdownOutlineTree(currentOutlineMarkdown(project) || "");
+  const target = outlineTreeFind(tree, targetId);
+  if (!target) return;
+  const parentId = target.parent ? target.parent.id : "";
+  const index = target.siblings.indexOf(target.node) + 1;
+
+  const edit = applyOutlineTreeEdit(project, (liveTree) => outlineTreeMoveTo(liveTree, draggedId, parentId, index));
+  if (!edit) {
+    setStatus(t("outline_tree_refused"));
+    return;
+  }
+  saveDeskState();
+  renderPipeline();
+  renderOutlineCards();
+  outlineCardsSelectedId = draggedId;
+}
+
+function wireOutlineCardDrag() {
+  const cards = outlineCardsEl();
+  if (!cards) return;
+
+  cards.addEventListener("pointerdown", (event) => {
+    const card = event.target.closest?.("[data-outline-card-id]");
+    if (!card) return;
+    const id = card.dataset.outlineCardId;
+    selectOutlineCard(id);
+    const isGrip = Boolean(event.target.closest(".outline-card-grip"));
+    // A finger not on the grip pans the board rather than moving a card.
+    if (event.pointerType === "touch" && !isGrip) return;
+    const rect = card.getBoundingClientRect();
+    const hostRect = cards.getBoundingClientRect();
+    outlineCardDrag = {
+      id,
+      reorder: isGrip,
+      offsetX: event.clientX - rect.left,
+      offsetY: event.clientY - rect.top,
+      hostRect,
+      active: false,
+    };
+  });
+
+  cards.addEventListener("pointermove", (event) => {
+    if (!outlineCardDrag) return;
+    if (!outlineCardDrag.active) {
+      outlineCardDrag.active = true;
+      cards.setPointerCapture(event.pointerId);
+      cards.classList.add("is-dragging");
+    }
+    const card = cards.querySelector(`[data-outline-card-id="${CSS.escape(outlineCardDrag.id)}"]`);
+    if (!card) return;
+    const x = Math.max(0, event.clientX - outlineCardDrag.hostRect.left - outlineCardDrag.offsetX);
+    const y = Math.max(0, event.clientY - outlineCardDrag.hostRect.top - outlineCardDrag.offsetY);
+    card.style.setProperty("--outline-card-x", `${x}px`);
+    card.style.setProperty("--outline-card-y", `${y}px`);
+    if (outlineCardDrag.reorder) {
+      cards.querySelectorAll(".outline-card.is-drop-target").forEach((el) => el.classList.remove("is-drop-target"));
+      const under = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-outline-card-id]");
+      if (under && under !== card) under.classList.add("is-drop-target");
+    }
+  });
+
+  cards.addEventListener("pointerup", (event) => {
+    const drag = outlineCardDrag;
+    cards.querySelectorAll(".outline-card.is-drop-target").forEach((el) => el.classList.remove("is-drop-target"));
+    endOutlineCardDrag();
+    if (!drag?.active) return;
+
+    if (drag.reorder) {
+      const under = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-outline-card-id]");
+      const targetId = under?.dataset.outlineCardId;
+      if (targetId) {
+        reorderOutlineCardOnto(drag.id, targetId);
+        return;
+      }
+    }
+
+    // Free placement: only the layout map changes.
+    const project = getActiveProject();
+    const card = cards.querySelector(`[data-outline-card-id="${CSS.escape(drag.id)}"]`);
+    if (!project || !card) return;
+    project.outlineCardLayout = { ...(project.outlineCardLayout || {}) };
+    project.outlineCardLayout[drag.id] = {
+      x: parseFloat(card.style.getPropertyValue("--outline-card-x")) || 0,
+      y: parseFloat(card.style.getPropertyValue("--outline-card-y")) || 0,
+    };
+    project.updatedAt = new Date().toISOString();
+    saveDeskState();
+  });
+
+  cards.addEventListener("pointercancel", endOutlineCardDrag);
+
+  cards.addEventListener("dblclick", (event) => {
+    const id = event.target.closest?.("[data-outline-card-id]")?.dataset.outlineCardId;
+    if (id) openOutlineCard(id);
+  });
+
+  cards.addEventListener("keydown", (event) => {
+    const card = event.target.closest?.("[data-outline-card-id]");
+    if (!card) return;
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openOutlineCard(card.dataset.outlineCardId);
+    }
+  });
+}
+
+// Pasting into the list. The free-text outline could take a block of Markdown
+// and sort it out later; the list must not be where that stops working.
+//
+// Pasted sections land after whatever is selected, or at the end when nothing
+// is. A subsection cannot be first at the top level, so a pasted subsection
+// arriving with no section to belong to is raised to one rather than dropped.
+async function pasteOutlineMarkdown(text) {
+  const project = getActiveProject();
+  const nodes = markdownOutlineNodesFromPaste(String(text || ""));
+  if (!project || !nodes.length) return 0;
+
+  const edit = applyOutlineTreeEdit(project, (tree) => {
+    const found = outlineTreeSelectedId ? outlineTreeFind(tree, outlineTreeSelectedId) : null;
+    const anchorSection = found?.parent || found?.node || null;
+    let at = anchorSection ? tree.sections.indexOf(anchorSection) + 1 : tree.sections.length;
+
+    nodes.forEach((node) => {
+      if (node.level === 3) {
+        node.level = 2;
+        node.children = node.children || [];
+      }
+      tree.sections.splice(at, 0, node);
+      at += 1;
+    });
+    return nodes.length;
+  });
+
+  if (!edit) return 0;
+  // The paste is already in the outline tree in memory; only claim it landed
+  // once the desk save actually confirms it, matching insertDocMapNodeAsOutline.
+  const saved = await saveDeskState();
+  renderPipeline();
+  renderOutlineTree();
+  setStatus(saved ? t("outline_tree_pasted", nodes.length) : t("outline_tree_pasted_unsaved", nodes.length));
+  return nodes.length;
+}
+
+// From the list to the desk. Section Drafts are one per `##`, so a subsection
+// takes the writer to the section that holds it -- that is where its words are
+// written. Matching by id is the whole point of ids: no title, no position.
+function writeSelectedOutlineSection() {
+  const project = getActiveProject();
+  if (!project || !outlineTreeSelectedId) {
+    setStatus(t("outline_tree_select_first"));
+    return;
+  }
+
+  const found = outlineTreeFind(markdownOutlineTree(currentOutlineMarkdown(project) || ""), outlineTreeSelectedId);
+  const sectionId = found?.parent?.id || found?.node?.id || "";
+  const refs = syncDraftsFromProjectOutline(project);
+  const index = refs.findIndex((ref) => String(ref.draft?.sectionId || "") === sectionId);
+  if (index < 0) {
+    setStatus(t("outline_tree_no_draft"));
+    return;
+  }
+
+  selectEnsuredDraftRef(refs, index);
+  if (draftSectionSelectEl) draftSectionSelectEl.value = String(index);
+  renderPipeline();
+  openWindow("sectionDrafts");
+  requestAnimationFrame(() => draftBodyInput?.focus());
+}
+
+let outlineTreeWired = false;
+function wireOutlineTree() {
+  if (outlineTreeWired || !outlineTreeEl) return;
+  outlineTreeWired = true;
+  wireOutlineTreeDrag();
+  if (storedOutlineView() === "tree") setOutlineTreeOpen(true, { remember: false, focus: false });
+  wireOutlineCardDrag();
+  if (storedOutlineCardsOpen()) setOutlineCardsOpen(true, { remember: false, focus: false });
+
+  outlineTreeEl.addEventListener("click", (event) => {
+    const row = event.target.closest?.("[data-outline-id]");
+    if (!row) return;
+    const id = row.dataset.outlineId;
+    if (event.target.closest(".outline-tree-twisty") && row.hasAttribute("aria-expanded")) {
+      if (outlineTreeCollapsed.has(id)) outlineTreeCollapsed.delete(id);
+      else outlineTreeCollapsed.add(id);
+      renderOutlineTree();
+      return;
+    }
+    selectOutlineTreeRow(id);
+  });
+
+  outlineTreeEl.addEventListener("dblclick", (event) => {
+    const row = event.target.closest?.("[data-outline-id]");
+    if (row) revealOutlineSectionInText(row.dataset.outlineId);
+  });
+
+  outlineTreeEl.addEventListener("paste", (event) => {
+    const text = event.clipboardData?.getData("text/plain") || "";
+    if (!text.trim()) return;
+    event.preventDefault();
+    pasteOutlineMarkdown(text);
+  });
+
+  outlineTreeEl.addEventListener("keydown", (event) => {
+    const structural = event.altKey;
+    switch (event.key) {
+      case "ArrowDown":
+        event.preventDefault();
+        if (structural) restructureOutlineTree((tree, id) => outlineTreeMove(tree, id, 1));
+        else moveOutlineTreeSelection(1);
+        return;
+      case "ArrowUp":
+        event.preventDefault();
+        if (structural) restructureOutlineTree((tree, id) => outlineTreeMove(tree, id, -1));
+        else moveOutlineTreeSelection(-1);
+        return;
+      case "ArrowRight":
+        if (!structural) return;
+        event.preventDefault();
+        restructureOutlineTree(outlineTreeDemote);
+        return;
+      case "ArrowLeft":
+        if (!structural) return;
+        event.preventDefault();
+        restructureOutlineTree(outlineTreePromote);
+        return;
+      case "Enter":
+        event.preventDefault();
+        if (outlineTreeSelectedId) revealOutlineSectionInText(outlineTreeSelectedId);
+        return;
+      default:
+    }
+  });
+}
+
+function applyOutlineTreeEdit(project, mutate) {
+  if (!project || typeof mutate !== "function") return null;
+
+  const stamped = ensureMarkdownSectionIds(currentOutlineMarkdown(project) || "");
+  const tree = markdownOutlineTree(stamped.markdown);
+  const result = mutate(tree);
+  if (result === false || result === null || result === undefined) return result;
+
+  // Stamped on the way out as well as in. Pasted sections can arrive carrying
+  // an id from wherever they were copied from, and two sections answering to
+  // one id is the exact failure ids were added to end. Re-stamping is
+  // idempotent, so every other edit pays nothing for it.
+  const written = ensureMarkdownSectionIds(serializeMarkdownOutlineTree(tree)).markdown;
+  const sections = setProjectOutlineMarkdown(project, written);
+  project.updatedAt = new Date().toISOString();
+  syncOutlineDomFromProject(project);
+  return { result, sections };
+}
+
+async function addOutlineSection() {
+  const project = getActiveProject();
+  if (!project) {
+    setStatus(t("no_project_mounted"));
+    openWindow("projects");
+    return;
+  }
+
+  const nextSection = nextOutlineSectionName(project);
+  const edit = applyOutlineTreeEdit(project, (tree) => outlineTreeInsert(tree, { heading: nextSection }));
+  if (!edit) return;
+  const outlineSections = edit.sections;
+  project.flowState = { ...(project.flowState || {}), outline: getMeaningfulOutlineSections(outlineSections).length > 0 };
+  // The new section is already in the outline tree in memory; only claim it
+  // landed once the desk save actually confirms it, matching
+  // insertDocMapNodeAsOutline.
+  const saved = await saveDeskState();
+  renderPipeline();
+  openWindow("outline");
+  setStatus(saved ? t("outline_section_added") : t("outline_section_added_unsaved"));
+
+  requestAnimationFrame(() => {
+    if (!outlineContentEl) return;
+    outlineContentEl.focus();
+    const start = outlineContentEl.value.lastIndexOf(nextSection);
+    if (start >= 0) outlineContentEl.setSelectionRange(start, start + nextSection.length);
+  });
+}
+
+function selectedOutlineSectionTitle() {
+  const project = getActiveProject();
+  if (!project) return "";
+
+  return selectedOutlineDraftBlock(project)?.title || "";
+}
+
+function draftSelectedOutlineSection() {
+  const sectionBlock = selectedOutlineDraftBlock();
+  const sectionTitle = sectionBlock?.title || "";
+  if (!sectionTitle) {
+    setStatus(t("no_project_mounted"));
+    openWindow("projects");
+    return;
+  }
+  ensureDraftForOutlineBlock(sectionBlock, { seedBody: true });
+  renderPipeline();
+  draftOutlineSection(sectionTitle);
+}
+
+function createManualSectionDraft() {
+  const project = getActiveProject();
+  if (!project) {
+    setStatus(t("no_project_mounted"));
+    openWindow("projects");
+    return;
+  }
+
+  if (!project.drafts) project.drafts = [];
+  const now = new Date().toISOString();
+  const sectionTitle = selectedOutlineSectionTitle();
+  const title = isPlaceholderOutlineSection(sectionTitle) ? t("manual_draft_title") : sectionTitle;
+  project.drafts.push({
+    id: crypto.randomUUID(),
+    title,
+    sectionTitle: title,
+    sourceType: "manual",
+    sourceOutlineSection: sectionTitle || "",
+    usedClips: [],
+    body: "",
+    createdAt: now,
+    updatedAt: now,
+    insertedAt: null,
+    insertedFileId: null,
+    insertedFileName: "",
+  });
+  selectedDraftIndex = project.drafts.length - 1;
+  project.flowState = { ...(project.flowState || {}), drafting: true };
+  project.updatedAt = now;
+  saveDeskState();
+  updateFlowGuideChecklist({ render: false });
+  renderPipeline();
+  openWindow("sectionDrafts");
+  setStatus(t("section_draft_created"));
+  requestAnimationFrame(() => draftTitleInput?.focus());
+}
+
+function savePipelineData() {
+  const project = getActiveProject();
+  if (!project) return;
+  // This save runs on every launch: the working session's writing-flow restore
+  // ends in it. So it has to answer the question the writer's own work asks -
+  // did anything change? A stamp written regardless rewrote the project record
+  // on an idle boot, and the updater's health gate compares whole stores, so
+  // that lone timestamp was enough to roll a healthy update back.
+  const before = JSON.stringify(project);
+
+  project.questionSheet = questionSheetBodyInput.value;
+  if (questionCountEl) questionCountEl.textContent = questionSheetCellText(project.questionSheet || "");
+  updateQuestionSheetManuscriptTitle(project);
+  let outlineSections;
+  const sourceSurface = resolvePipelineSourceSurface(project);
+  if (sourceSurface === "draft" && selectedDraftIndex >= 0 && project.drafts?.[selectedDraftIndex]) {
+    outlineSections = updateProjectOutlineFromSelectedDraft(project);
+  } else if (sourceSurface === "manuscript" && manuscriptOwnsDocument()) {
+    // A route manuscript is just the Outline document seen as prose. If its link
+    // flag drifted (tab switch, saved copy, AI-assist state) the live sync was
+    // gated off and the Outline froze on the previous article; re-link so the
+    // edits the user actually made reach project.outline at command time. This
+    // covers both the drafting and the finalized (review) manuscript.
+    project.manuscriptLinkedToOutline = true;
+    outlineSections = setProjectOutlineMarkdown(project, teachTextBodyInput.value);
+    syncDraftsFromProjectOutline(project);
+    syncOutlineDomFromProject(project);
+  } else {
+    outlineSections = setProjectOutlineMarkdown(project, currentOutlineMarkdown(project));
+    syncDraftsFromProjectOutline(project);
+    syncLinkedTeachTextFromProject(project);
+    syncDraftDomFromProject(project);
+  }
+
+  // Save current draft if editing
+  if (selectedDraftIndex >= 0 && project.drafts?.[selectedDraftIndex]) {
+    const draft = project.drafts[selectedDraftIndex];
+    const title = draftTitleInput?.value.trim() || draft.title || draft.sectionTitle || t("manual_draft_title");
+    draft.title = title;
+    if (!draft.sectionTitle || draft.sourceType === "manual") draft.sectionTitle = title;
+    // Ownership follows the PHASE. The Section Drafts hold the writer's own
+    // characters only while the drafting phase owns the document; in the
+    // manuscript and review phases this field is the read-only projection, and
+    // capturing it back pushes the projection over the record it came from.
+    // The old test asked document.activeElement, which says yes for a caret
+    // parked in exactly that read-only field, and says no for every route
+    // command -- they blur the editor before they run.
+    if (manuscriptPhase() === "drafting" && draftBodyInput) draft.body = draftBodyInput.value;
+  }
+
+  project.flowState = {
+    ...(project.flowState || {}),
+    topic: !!project.questionSheet.trim(),
+    outline: getMeaningfulOutlineSections(outlineSections).length > 0,
+    drafting: (project.drafts || []).some((draft) => (draft.body || draft.title || "").trim()),
+  };
+  // One comparison, and both stamps inside it: the project's own, and the
+  // selected draft's, which is a field of the same record.
+  if (JSON.stringify(project) !== before) {
+    project.updatedAt = new Date().toISOString();
+    const changedDraft = selectedDraftIndex >= 0 ? project.drafts?.[selectedDraftIndex] : null;
+    if (changedDraft) changedDraft.updatedAt = project.updatedAt;
+  }
+  saveDeskState();
+  updateFlowGuideChecklist({ render: false });
+}
+
+function getQuestionSheetTemplate() {
+  return buildQuestionSheetTemplate();
+}
+
+// The explanation lens shapes what the model is told to produce, so the route
+// exposes it the way the route exposes its other switches: one toggle in the
+// Commands menu, beside SideAsk, showing its state through aria-pressed rather
+// than by rewriting its own label. The three canned audience levels do not
+// come with it -- "接收者 / 受众" is already one of the Question Sheet's own
+// sections, and the writer's own sentence about who this is for beats a
+// dropdown of three.
+async function toggleWritingExplanationLens() {
+  const project = getActiveProject();
+  if (!project) {
+    setStatus(t("no_project_mounted"));
+    openWindow("projects");
+    return;
+  }
+
+  const current = project.explanationLens || {};
+  const next = current.enabled === false;
+  project.explanationLens = window.AISystem6ExplanationLens?.normalizeExplanationLens?.({ ...current, enabled: next })
+    || { ...current, enabled: next };
+  project.updatedAt = new Date().toISOString();
+  saveDeskState();
+  if (typeof updateMenuState === "function") updateMenuState();
+  setStatus(t(next ? "quick_draft_eli5_enabled" : "quick_draft_eli5_title"));
+}
+
+function insertQuestionTemplate() {
+  const project = getActiveProject();
+  if (!project) {
+    setStatus(t("no_project_mounted"));
+    openWindow("projects");
+    return;
+  }
+
+  const template = getQuestionSheetTemplate();
+  const existing = questionSheetBodyInput.value.trim();
+  questionSheetBodyInput.value = existing ? `${existing}\n\n---\n\n${template}` : template;
+  project.questionSheet = questionSheetBodyInput.value;
+  project.flowState = { ...(project.flowState || {}), topic: true };
+  project.updatedAt = new Date().toISOString();
+  saveDeskState();
+  renderPipeline();
+  openWindow("questionSheet");
+  questionSheetBodyInput.focus();
+  setStatus(t("question_template_inserted"));
+}
+
+function updateFlowGuideChecklist({ render = true } = {}) {
+  const project = getActiveProject();
+  if (!project) {
+    renderFlowProgress(null);
+    return;
+  }
+
+  const progress = getFlowProgress(project);
+  project.flowState = { ...progress.states };
+  renderFlowProgress(project, progress);
+
+  if (render) renderPipeline();
+}
+
+wireOutlineTree();
+wireQuestionSheetCards();

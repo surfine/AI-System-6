@@ -1,0 +1,1941 @@
+// Feature module: scrapbook.
+
+// Loaded before app.js as a classic script; shares the AI System 6 global scope.
+
+
+
+function getScrapTimestamp(scrap) {
+  const createdAt = scrap?.createdAt ? new Date(scrap.createdAt) : new Date();
+  return Number.isNaN(createdAt.getTime()) ? new Date() : createdAt;
+}
+
+function getScrapTitleSeed(body) {
+  const usefulLine = body
+    .split("\n")
+    .map((line) => line.replace(/^>\s*/, "").trim())
+    .find((line) => line && !/^(Context|Before|After|Source|Saved):/i.test(line));
+
+  return usefulLine || "";
+}
+
+function autoGenerateScrapTitle(body, createdAt = new Date()) {
+  const seed = getScrapTitleSeed(body);
+  let title = seed.slice(0, 30).trim();
+  if (seed.length > 30) title += "...";
+  if (!title) title = t("untitled_scrap");
+
+  const timeStr = getScrapTimestamp({ createdAt }).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return `${title} (${timeStr})`;
+}
+
+function extractScrapTags(body) {
+  const commonWords = new Set(["the", "and", "that", "this", "with", "from", "what", "when", "where", "about", "there", "their", "would", "could", "should", "write", "thing", "people", "context", "before", "after", "source", "saved"]);
+  const commonChinese = new Set(["这个", "那个", "就是", "因为", "所以", "如果", "但是", "以及", "可以", "需要", "没有", "不是", "一个", "一些", "这些", "那些", "用户", "内容", "文本", "上下文", "助手"]);
+  const counts = new Map();
+  const add = (tag) => {
+    const normalized = tag.replace(/^#/, "").trim().toLowerCase();
+    if (!normalized) return;
+    counts.set(normalized, (counts.get(normalized) || 0) + 1);
+  };
+
+  body.match(/#[\p{Letter}\p{Number}_-]+/gu)?.forEach(add);
+  body.match(/\b[a-z][a-z0-9-]{3,}\b/gi)?.forEach((word) => {
+    if (!commonWords.has(word.toLowerCase())) add(word);
+  });
+  body.match(/[\p{Script=Han}]{2,8}/gu)?.forEach((phrase) => {
+    if (!commonChinese.has(phrase)) add(phrase);
+  });
+
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([tag]) => tag);
+}
+
+function refreshScrapMetadata(scrap, { updateTitle = true } = {}) {
+  if (!scrap) return;
+
+  if (updateTitle) {
+    scrap.title = autoGenerateScrapTitle(scrap.body, scrap.createdAt);
+  }
+  const existingTags = Array.isArray(scrap.tags) ? scrap.tags : [];
+  const generatedTags = extractScrapTags(scrap.body);
+  const sourceTags = scrap.source?.type ? [scrap.source.type] : [];
+  scrap.tags = [...new Set([...sourceTags, ...existingTags.filter((tag) => tag === "reader-clip" || tag === "reader-note" || tag === "document-clip" || tag === "search-result" || tag === "web" || tag === "translation" || tag === "video-transcript"), ...generatedTags])].slice(0, 8);
+}
+
+// --- A clip is the passage ------------------------------------------------
+//
+// A clip's body is the words that were clipped. Where they came from lives on
+// the record (source, context, capturedAt) and is drawn by the citation line.
+// Clips used to write that record into the body as a block of Source:/URL:/
+// Context lines the writer then had to edit around. Everything that carries a
+// scrap out of the Scrapbook -- project context, the index, exports, ClioTalk
+// attachments, guests -- reads scrapDocumentText(), which puts the source back
+// beside the passage, so other people's words never travel without their
+// source.
+
+const CLIP_RECORD_LINE = /^(Source|Site|URL|File|Origin|Author|Date|Time|Source kind|Time range|Original SRT blocks|Archive provider|Snapshot|Snapshot time|Target date|Readable text)\s*:/;
+
+// A clip, as opposed to a note the writer wrote: every clip path stamps its
+// source type "...-clip". A hand-written dossier can carry a quoted passage
+// too, and stays a note -- with its own 来源与日期 lines, nothing is added.
+function isClipScrap(scrap) {
+  return /-clip$/.test(String(scrap?.source?.type || ""));
+}
+
+function scrapSourceLines(scrap) {
+  const source = scrap?.source || {};
+  const title = source.title || scrap?.sourceTitle || "";
+  const url = source.url || source.originalUrl || "";
+  const timeRange = scrap?.timeStart && scrap?.timeEnd ? `${scrap.timeStart} --> ${scrap.timeEnd}` : "";
+  return [
+    title ? `Source: ${title}` : "",
+    source.site ? `Site: ${source.site}` : "",
+    url ? `URL: ${url}` : source.fileName ? `File: ${source.fileName}` : "",
+    source.origin ? `Origin: ${source.origin}` : "",
+    source.snapshotUrl ? `Snapshot: ${source.snapshotUrl}${source.snapshotTimestamp ? ` (${source.snapshotTimestamp})` : ""}` : "",
+    source.author ? `Author: ${source.author}` : "",
+    source.date ? `Date: ${source.date}` : "",
+    timeRange ? `Time range: ${timeRange}` : "",
+  ].filter(Boolean);
+}
+
+// S03: marks the selected scrap as an open question (lazy module).
+function markSelectedScrapAsOpenQuestion() {
+  const scrap = scraps.find((item) => item.id === selectedScrapId && isInActiveProject(item));
+  if (!scrap) {
+    setStatus(t("select_text_first"));
+    return;
+  }
+  if (typeof ensureOpenQuestionsModule === "function") ensureOpenQuestionsModule();
+  if (window.AISystem6OpenQuestions?.markScrap?.(scrap, { gapPrompt: t("scrap_open_question_gap_prompt") })) {
+    refreshScrapMetadata(scrap);
+    noteScrapChanged(scrap);
+    setStatus(t("scrap_marked_open_question"));
+    renderScraps();
+  }
+}
+
+function scrapDocumentText(scrap) {
+  const body = String(scrap?.body || "");
+  if (!isClipScrap(scrap) || /\n---\nSource:/.test(body)) return body;
+  const lines = scrapSourceLines(scrap);
+  return lines.length ? `${body.trim()}\n\n---\n${lines.join("\n")}` : body;
+}
+
+// Clips written before the body became the passage. Only a body that is
+// exactly the old template is rewritten: one "Selected passage:" head, the
+// record lines, one line per context section. Anything else -- a note the
+// writer typed into it, an edited record line -- leaves the scrap as it is.
+function migrateMachineClipBody(scrap) {
+  const text = String(scrap?.body || "");
+  const lead = "Selected passage:\n";
+  if (!text.startsWith(lead)) return false;
+  const cut = text.indexOf("\n---\n");
+  if (cut < 0) return false;
+  let passage = text.slice(lead.length, cut).trim();
+  const translated = String(scrap.translatedText || "").trim();
+  if (translated && passage.endsWith(translated)) {
+    const withoutTranslation = passage.slice(0, -translated.length).trimEnd();
+    const labelBreak = withoutTranslation.lastIndexOf("\n\n");
+    if (labelBreak < 0) return false;
+    passage = withoutTranslation.slice(0, labelBreak).trim();
+  }
+  if (!passage) return false;
+  const context = { before: "", after: "" };
+  let section = "";
+  for (const line of text.slice(cut + 5).split("\n")) {
+    if (!line.trim()) continue;
+    if (/^Context( before)?:$/.test(line)) { section = "before"; continue; }
+    if (line === "Context after:") { section = "after"; continue; }
+    if (!section && CLIP_RECORD_LINE.test(line)) continue;
+    if (!section || context[section]) return false;
+    context[section] = /^\[(start|end) of [a-z ]+\]$/.test(line) ? " " : line;
+  }
+  scrap.body = passage;
+  if (!String(scrap.selectedText || "").trim()) scrap.selectedText = passage;
+  if (!scrap.context && !scrap.nearbyContext) {
+    scrap.context = { before: context.before.trim(), after: context.after.trim() };
+  }
+  return true;
+}
+
+function migrateMachineClipBodies(list = scraps) {
+  const changed = (Array.isArray(list) ? list : []).filter((scrap) => migrateMachineClipBody(scrap));
+  if (changed.length && typeof markDeskDirty === "function") {
+    changed.forEach((scrap) => markDeskDirty("scraps", scrap.id));
+  }
+  return changed.length;
+}
+
+/**
+ * A scrap that is already on disk was just written to again.
+ *
+ * Scrapbook edits are in-place updates of an existing record, and a save plan
+ * that trusts the writers instead of scanning every record only carries what
+ * the writers named. Editing a scrap, appending a clip to one, and keeping a
+ * model's reading all go through here so none of them depends on the scan.
+ */
+function noteScrapChanged(scrap) {
+  if (!scrap?.id) return;
+  markDeskDirty("scraps", scrap.id);
+}
+
+function getScrapStack(scrap) {
+  const body = scrap?.body || "";
+  const tags = scrap?.tags || [];
+  if (isClipScrap(scrap) || tags.includes("reader-clip") || tags.includes("search-result") || /\b(URL|Source|Site):/i.test(body)) {
+    return "sources";
+  }
+  if (/Source:\s*(Assistant|ClioTalk)/i.test(body) || body.startsWith("> ")) {
+    return "assistant";
+  }
+  return "ideas";
+}
+
+function scrapStackLabel(stack) {
+  const labels = {
+    sources: t("stack_sources"),
+    assistant: t("stack_assistant"),
+    ideas: t("stack_ideas"),
+  };
+  return labels[stack] || t("stack_all");
+}
+
+function createScrap(title, body, options = {}) {
+  if (!getActiveProject()) {
+    setStatus(t("no_project_mounted"));
+    openWindow("projects");
+    return null;
+  }
+
+  const finalBody = body || "";
+  const createdAt = new Date().toISOString();
+  const scrap = {
+    id: crypto.randomUUID(),
+    projectId: activeProjectId,
+    title: title || autoGenerateScrapTitle(finalBody, createdAt),
+    body: finalBody,
+    tags: extractScrapTags(finalBody),
+    source: options.source || null,
+    selectedText: options.selectedText || "",
+    sourceId: options.sourceId || options.source?.sourceId || "",
+    sourceTitle: options.sourceTitle || options.source?.sourceTitle || options.source?.title || "",
+    sourceKind: options.sourceKind || options.source?.sourceKind || "",
+    timeStart: options.timeStart || options.source?.timeStart || "",
+    timeEnd: options.timeEnd || options.source?.timeEnd || "",
+    originalBlockIds: Array.isArray(options.originalBlockIds)
+      ? options.originalBlockIds
+      : Array.isArray(options.source?.originalBlockIds)
+      ? options.source.originalBlockIds
+      : [],
+    nearbyContext: options.nearbyContext || options.source?.nearbyContext || null,
+    capturedAt: options.capturedAt || options.source?.capturedAt || createdAt,
+    translatedText: options.translatedText || "",
+    translationLanguage: options.translationLanguage || "",
+    translationCreatedAt: options.translationCreatedAt || "",
+    translationSource: options.translationSource || "",
+    translationModel: options.translationModel || "",
+    context: options.context || null,
+    // Ids into the shared image store. A clip may be a picture with no text at
+    // all; see the un-indexed note below for why that is allowed and honest.
+    images: Array.isArray(options.images) ? options.images.slice(0, SCRAP_IMAGE_LIMIT) : [],
+    createdAt,
+  };
+  refreshScrapMetadata(scrap, { updateTitle: !title });
+
+  scraps.unshift(scrap);
+  selectedScrapId = scrap.id;
+  lastClipScrapId = scrap.id;
+  renderScraps();
+  saveDeskState();
+  if (options.reveal !== false) openWindow("scrapbook");
+  return scrap;
+}
+
+function getAssistantSelection() {
+  const selection = window.getSelection();
+  const text = selection?.toString().trim() || "";
+
+  if (!selection || !text || selection.rangeCount === 0) {
+    return null;
+  }
+
+  const range = selection.getRangeAt(0);
+  const container = range.commonAncestorContainer.nodeType === Node.TEXT_NODE
+    ? range.commonAncestorContainer.parentElement
+    : range.commonAncestorContainer;
+  const message = container?.closest?.(".message.assistant");
+
+  if (!message || !messagesEl.contains(message)) {
+    return null;
+  }
+
+  const sourceText = message.textContent.replace(/\s+/g, " ").trim();
+  const normalizedSelection = text.replace(/\s+/g, " ").trim();
+  const selectedIndex = sourceText.indexOf(normalizedSelection);
+  const contextRadius = 140;
+  const before = selectedIndex >= 0
+    ? sourceText.slice(Math.max(0, selectedIndex - contextRadius), selectedIndex).trim()
+    : "";
+  const after = selectedIndex >= 0
+    ? sourceText.slice(selectedIndex + normalizedSelection.length, selectedIndex + normalizedSelection.length + contextRadius).trim()
+    : "";
+
+  return {
+    text,
+    before,
+    after,
+    time: new Date().toLocaleString(),
+  };
+}
+
+function formatClip(selection) {
+  return [
+    `> ${selection.text}`,
+    "",
+    "Context:",
+    selection.before ? `Before: ${selection.before}` : "Before: [start of message]",
+    selection.after ? `After: ${selection.after}` : "After: [end of message]",
+    "",
+    `Source: ClioTalk`,
+    `Saved: ${selection.time}`,
+  ].join("\n");
+}
+
+function clipAssistantSelection() {
+  const selection = getAssistantSelection();
+  if (!selection) {
+    setStatus(t("select_text_first"));
+    return;
+  }
+
+  const targetId = selectedScrapId || lastClipScrapId;
+  const scrap = scraps.find((item) => item.id === targetId && isInActiveProject(item));
+
+  if (!scrap) {
+    createScrap(null, formatClip(selection));
+    return;
+  }
+
+  scrap.body = `${scrap.body.trim()}\n\n---\n\n${formatClip(selection)}`;
+  refreshScrapMetadata(scrap);
+  noteScrapChanged(scrap);
+  selectedScrapId = scrap.id;
+  lastClipScrapId = scrap.id;
+  renderScraps();
+  saveDeskState();
+  openWindow("scrapbook");
+}
+
+function clipTeachTextSelectionToScrapbook() {
+  const start = teachTextBodyInput.selectionStart;
+  const end = teachTextBodyInput.selectionEnd;
+  const selectedText = teachTextBodyInput.value.slice(start, end).trim();
+  if (!selectedText) {
+    setStatus(t("select_text_first"));
+    return;
+  }
+
+  const file = getActiveFile();
+  const fileName = file?.name || teachTextNameInput.value.trim() || t("documents");
+  const source = file?.source || "TeachText";
+  const capturedAt = new Date().toISOString();
+  const fullText = teachTextBodyInput.value;
+  const contextBefore = fullText.slice(Math.max(0, start - 260), start).replace(/\s+/g, " ").trim();
+  const contextAfter = fullText.slice(end, Math.min(fullText.length, end + 260)).replace(/\s+/g, " ").trim();
+  const body = selectedText;
+
+  const scrap = createScrap(`Clip: ${selectedText.slice(0, 30)}...`, body, {
+    source: {
+      type: "document-clip",
+      title: fileName,
+      fileId: file?.id || "",
+      origin: source,
+      capturedAt,
+    },
+    selectedText,
+    context: {
+      before: contextBefore,
+      after: contextAfter,
+    },
+  });
+  if (scrap) {
+    scrap.tags = [...new Set(["document-clip", ...(scrap.tags || [])])];
+    renderScraps();
+    saveDeskState();
+    setStatus(t("document_selection_clipped"));
+  }
+}
+
+function renderAttachedClips() {
+  attachedClipsShelfEl.replaceChildren();
+  attachedClipsShelfEl.setAttribute("aria-label", t("attached_context"));
+  const projectInputIds = window.nextTaskInputFileIds instanceof Set
+    ? [...window.nextTaskInputFileIds]
+    : [];
+  const imageChips = window.AISystem6ClioImages?.chips?.() || [];
+  if (attachedClipIds.size === 0 && projectInputIds.length === 0 && imageChips.length === 0) {
+    attachedClipsShelfEl.classList.add("is-hidden");
+    attachedClipsToolbarEl?.classList.add("is-hidden");
+    if (typeof renderClioTalkRunAssembly === "function") renderClioTalkRunAssembly();
+    return;
+  }
+
+  attachedClipsShelfEl.classList.remove("is-hidden");
+  attachedClipsToolbarEl?.classList.remove("is-hidden");
+  const label = document.createElement("b");
+  label.textContent = t("attached_context");
+  attachedClipsShelfEl.append(label);
+
+  attachedClipIds.forEach(id => {
+    const scrap = scraps.find(s => s.id === id && isInActiveProject(s));
+    if (!scrap) {
+      attachedClipIds.delete(id);
+      return;
+    }
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn mini-btn";
+    btn.setAttribute("aria-label", t("clio_remove_attachment", scrap.title));
+    btn.title = t("clio_remove_attachment", scrap.title);
+    btn.innerHTML = `<span class="mini-icon text-file-icon" aria-hidden="true"></span><span>${escapeHtml(scrap.title)}</span> <small aria-hidden="true">×</small>`;
+    btn.addEventListener("click", () => {
+      attachedClipIds.delete(id);
+      renderAttachedClips();
+      scheduleRenderTasks("contextPanel");
+      if (typeof scheduleWorkingSessionSave === "function") scheduleWorkingSessionSave();
+    });
+    attachedClipsShelfEl.append(btn);
+  });
+
+  projectInputIds.forEach((id) => {
+    const file = getProjectFiles().find((item) => item.id === id);
+    if (!file) {
+      window.nextTaskInputFileIds.delete(id);
+      return;
+    }
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn mini-btn";
+    btn.setAttribute("aria-label", t("clio_remove_attachment", file.name));
+    btn.title = t("clio_remove_attachment", file.name);
+    btn.innerHTML = `<span class="mini-icon text-file-icon" aria-hidden="true"></span><span>${escapeHtml(file.name)}</span> <small aria-hidden="true">×</small>`;
+    btn.addEventListener("click", () => {
+      window.nextTaskInputFileIds.delete(id);
+      renderAttachedClips();
+      scheduleRenderTasks("contextPanel");
+      if (typeof scheduleWorkingSessionSave === "function") scheduleWorkingSessionSave();
+    });
+    attachedClipsShelfEl.append(btn);
+  });
+
+  imageChips.forEach((record) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn mini-btn";
+    btn.dataset.clioImageState = record.state || "pending";
+    btn.dataset.clioImageClientId = record.clientId || "";
+    btn.setAttribute("aria-label", `${record.label} · ${t("clio_remove_attachment", record.name)}`);
+    btn.title = btn.getAttribute("aria-label");
+    btn.innerHTML = `<span class="mini-icon text-file-icon" aria-hidden="true"></span><span>${escapeHtml(record.label)}</span> <small aria-hidden="true">×</small>`;
+    btn.disabled = record.state === "uploading";
+    btn.addEventListener("click", () => record.remove?.());
+    attachedClipsShelfEl.append(btn);
+  });
+
+  if (attachedClipIds.size === 0 && window.nextTaskInputFileIds?.size === 0 && imageChips.length === 0) renderAttachedClips();
+  else if (typeof renderClioTalkRunAssembly === "function") renderClioTalkRunAssembly();
+}
+
+function toggleClipAttachment() {
+  const selectedScraps = getSelectedScraps();
+  if (!selectedScraps.length) return;
+
+  const allAttached = selectedScraps.every((scrap) => attachedClipIds.has(scrap.id));
+  selectedScraps.forEach((scrap) => {
+    if (allAttached) attachedClipIds.delete(scrap.id);
+    else attachedClipIds.add(scrap.id);
+  });
+  // No status: the clip appears in ClioTalk's attached list, and the window is
+  // opened here so the writer watches it land.
+  if (!allAttached) openWindow("assistant");
+  renderAttachedClips();
+  scheduleRenderTasks("contextPanel");
+  if (typeof scheduleWorkingSessionSave === "function") scheduleWorkingSessionSave();
+}
+
+function syncScrapSelection(visibleScraps) {
+  if (!visibleScraps.length) {
+    selectedScrapId = null;
+    selectedScrapIds.clear();
+    return;
+  }
+  const visibleIds = new Set(visibleScraps.map((scrap) => scrap.id));
+  Array.from(selectedScrapIds).forEach((id) => {
+    if (!visibleIds.has(id)) selectedScrapIds.delete(id);
+  });
+  if (selectedScrapId && visibleIds.has(selectedScrapId) && !selectedScrapIds.size) {
+    selectedScrapIds.add(selectedScrapId);
+  }
+  if ((!selectedScrapId || !visibleIds.has(selectedScrapId)) && visibleScraps[0]) {
+    selectedScrapId = visibleScraps[0].id;
+    selectedScrapIds.add(selectedScrapId);
+  }
+}
+
+function getSelectedScraps() {
+  const ids = selectedScrapIds.size ? Array.from(selectedScrapIds) : [selectedScrapId];
+  return ids
+    .map((id) => scraps.find((scrap) => scrap.id === id && isInActiveProject(scrap)))
+    .filter(Boolean);
+}
+
+// Selected clips when there are any, the whole project otherwise (see
+// askScrapbookQuestion) — the scope row says which, and how many.
+function describeScrapbookAskScope() {
+  const selected = getSelectedScraps();
+  const count = selected.length || scraps.filter((scrap) => isInActiveProject(scrap)).length;
+  return {
+    ready: count > 0,
+    object: t("scrapbook"),
+    range: selected.length ? t("ask_scope_scraps", selected.length) : t("ask_scope_all_scraps", count),
+  };
+}
+
+function formatScrapForQuestionSheet(scrap, index) {
+  const sourceLines = scrap.source?.url
+    ? [
+        `Source: ${scrap.source.title || scrap.title}`,
+        scrap.source.site ? `Site: ${scrap.source.site}` : "",
+        `URL: ${scrap.source.url}`,
+      ].filter(Boolean)
+    : [];
+  const selected = scrap.selectedText || scrap.body;
+  const contextLines = scrap.context?.before || scrap.context?.after
+    ? [
+        "",
+        "Nearby context:",
+        scrap.context.before ? `Before: ${scrap.context.before}` : "",
+        scrap.context.after ? `After: ${scrap.context.after}` : "",
+      ].filter(Boolean)
+    : [];
+  return [
+    `## Q${index + 1}. ${scrap.title}`,
+    ...sourceLines,
+    "",
+    scrap.source?.type === "reader-clip" ? "Question / note from source:" : "Scrapbook note:",
+    selected,
+    ...contextLines,
+  ].join("\n").trim();
+}
+
+function formatScrapsForTransfer(selectedScraps) {
+  return selectedScraps
+    .map((scrap, index) => `## S${index + 1}. ${scrap.title}\n${scrapDocumentText(scrap)}`)
+    .join("\n\n");
+}
+
+function formatScrapsForQuestionSheet(selectedScraps) {
+  return selectedScraps.map(formatScrapForQuestionSheet).join("\n\n");
+}
+
+function bilingualMarkdownSection({ title, original, translation, language, createdAt, source, model, depth = 1 }) {
+  const heading = "#".repeat(Math.max(1, depth));
+  const childHeading = "#".repeat(Math.max(2, depth + 1));
+  return [
+    `${heading} ${title || t("untitled")}`,
+    "",
+    `${childHeading} ${t("original_text")}`,
+    "",
+    original || "",
+    "",
+    `${childHeading} ${t("translation_label")}`,
+    "",
+    `_${formatTranslationMeta(language, createdAt, source, model)}_`,
+    "",
+    translation || "",
+  ].join("\n").trim();
+}
+
+function formatScrapBilingualMarkdown(scrap, depth = 2) {
+  if (!scrap) return "";
+  return bilingualMarkdownSection({
+    title: scrap.title,
+    original: scrap.body,
+    translation: scrap.translatedText,
+    language: scrap.translationLanguage,
+    createdAt: scrap.translationCreatedAt,
+    source: scrap.translationSource,
+    model: scrap.translationModel,
+    depth,
+  });
+}
+
+function scrapHasTranslation(scrap) {
+  return !!scrap?.translatedText?.trim();
+}
+
+function selectedScrapDisplayBody(scrap) {
+  if (!scrapHasTranslation(scrap)) {
+    return scrap?.body || "";
+  }
+  if (scrapTranslationViewMode === "translation") {
+    return scrap.translatedText;
+  }
+  if (scrapTranslationViewMode === "bilingual") {
+    return formatScrapBilingualMarkdown(scrap, 1);
+  }
+  return scrap?.body || "";
+}
+
+function renderScrapbookPager(visibleScraps, selectedScrap = null) {
+  if (!scrapbookPageTrackEl || !scrapbookPagePositionEl) return;
+
+  const selectedIndex = selectedScrap
+    ? visibleScraps.findIndex((scrap) => scrap.id === selectedScrap.id)
+    : -1;
+  const current = selectedIndex >= 0 ? selectedIndex + 1 : 0;
+  scrapbookPagePositionEl.textContent = t("scrapbook_page_position", current, visibleScraps.length);
+  const prevBlocked = current <= 1;
+  const nextBlocked = current === 0 || current >= visibleScraps.length;
+  // Prefer shared grey affordance so one tap still explains end-of-stack
+  // (native disabled alone swallows the click on many surfaces).
+  if (typeof markGrayAffordance === "function") {
+    markGrayAffordance(scrapbookPagePreviousButton, prevBlocked, "balloon_scrapbook_page_end");
+    markGrayAffordance(scrapbookPageNextButton, nextBlocked, "balloon_scrapbook_page_end");
+  } else {
+    scrapbookPagePreviousButton.disabled = prevBlocked;
+    scrapbookPageNextButton.disabled = nextBlocked;
+  }
+
+  const fragment = document.createDocumentFragment();
+  visibleScraps.forEach((scrap, index) => {
+    const tick = document.createElement("button");
+    tick.type = "button";
+    tick.className = [
+      "scrapbook-page-tick",
+      scrap.id === selectedScrap?.id ? "is-active" : "",
+      selectedScrapIds.has(scrap.id) ? "is-multi-selected" : "",
+    ].filter(Boolean).join(" ");
+    tick.setAttribute("aria-pressed", selectedScrapIds.has(scrap.id) ? "true" : "false");
+    tick.setAttribute("aria-label", `${t("scrapbook_page_position", index + 1, visibleScraps.length)} — ${scrap.title}`);
+    // Same selection grammar as the list rows: a plain activation turns to
+    // this page, a modifier click toggles the scrap in the multi-selection.
+    tick.addEventListener("click", (event) => {
+      const wasSelected = selectedScrapId === scrap.id;
+      if (event.metaKey || event.ctrlKey || event.shiftKey) {
+        if (selectedScrapIds.has(scrap.id) && selectedScrapIds.size > 1) {
+          selectedScrapIds.delete(scrap.id);
+        } else {
+          selectedScrapIds.add(scrap.id);
+        }
+      } else {
+        selectedScrapIds.clear();
+        selectedScrapIds.add(scrap.id);
+      }
+      selectedScrapId = scrap.id;
+      if (!wasSelected) {
+        showingScrapTranslation = false;
+        scrapTranslationViewMode = "original";
+      }
+      renderScraps();
+    });
+    fragment.append(tick);
+  });
+  scrapbookPageTrackEl.replaceChildren(fragment);
+}
+
+// What the filter field has typed, lower-cased. It narrows the list and the
+// System 6 page rail alike, because both draw from scrapbookPageScraps().
+let scrapFilterQuery = "";
+
+function scrapMatchesFilter(scrap) {
+  if (!scrapFilterQuery) return true;
+  const source = scrap.source || {};
+  return [scrap.title, scrap.body, scrap.selectedText, source.title, source.site, source.author, source.url]
+    .some((value) => String(value || "").toLowerCase().includes(scrapFilterQuery));
+}
+
+// The one answer to "which scraps are showing": the chosen stack, then the
+// filter. The list, the page rail and the in-place row refresh used to each
+// recompute the stack half of this on their own.
+function scrapbookPageScraps() {
+  return getProjectScraps().filter((scrap) =>
+    (selectedScrapStack === "all" || getScrapStack(scrap) === selectedScrapStack) && scrapMatchesFilter(scrap));
+}
+
+function setScrapFilter(value) {
+  const next = String(value || "").trim().toLowerCase();
+  if (next === scrapFilterQuery) return;
+  scrapFilterQuery = next;
+  renderScraps();
+}
+
+/**
+ * Both page arrows stayed enabled on an empty Scrapbook and on the last page,
+ * where moveScrapbookPage() returns without doing anything: the arrow looked
+ * live and turned nothing. The arrow now greys out at the end of the stack,
+ * the way a one-page document's window frame arrows do.
+ *
+ * @param {number} direction
+ * @returns {boolean}
+ */
+function canMoveScrapbookPage(direction) {
+  const visibleScraps = scrapbookPageScraps();
+  if (!visibleScraps.length) return false;
+  const currentIndex = Math.max(0, visibleScraps.findIndex((scrap) => scrap.id === selectedScrapId));
+  const nextIndex = Math.max(0, Math.min(visibleScraps.length - 1, currentIndex + direction));
+  return nextIndex !== currentIndex;
+}
+
+function moveScrapbookPage(direction) {
+  const visibleScraps = scrapbookPageScraps();
+  if (!visibleScraps.length) return;
+
+  const currentIndex = Math.max(0, visibleScraps.findIndex((scrap) => scrap.id === selectedScrapId));
+  const nextIndex = Math.max(0, Math.min(visibleScraps.length - 1, currentIndex + direction));
+  if (nextIndex === currentIndex) return;
+  selectedScrapId = visibleScraps[nextIndex].id;
+  selectedScrapIds.clear();
+  selectedScrapIds.add(selectedScrapId);
+  showingScrapTranslation = false;
+  scrapTranslationViewMode = "original";
+  renderScraps();
+}
+
+function showPreviousScrapbookPage() {
+  moveScrapbookPage(-1);
+}
+
+function showNextScrapbookPage() {
+  moveScrapbookPage(1);
+}
+
+// The line a row previews: the clipped passage when there is one; otherwise
+// the first line of the scrap that says something the row does not already
+// say. Section labels ("来源与日期", "Source:") and the source line itself sat
+// in the preview directly under the same source in the meta line.
+function scrapPreviewLine(scrap, meta) {
+  const quote = String(scrap.selectedText || "").replace(/\s+/g, " ").trim();
+  if (quote) return quote;
+  const known = String(meta || "").replace(/\s+/g, "");
+  const lines = String(scrap.body || "").split("\n")
+    .map((line) => line.replace(/^[>#*\-\s]+/, "").trim())
+    .filter(Boolean);
+  const telling = lines.find((line) => line.length > 12
+    && !/[:：]$/.test(line)
+    && !/^(Source|Site|URL|Author|Date|Time|Selected passage|Context (before|after))\s*:/i.test(line)
+    && !known.includes(line.replace(/\s+/g, "")));
+  return telling || lines[0] || "";
+}
+
+function scrapListItemHtml(scrap) {
+  const stack = getScrapStack(scrap);
+  const isClip = stack === "sources";
+  const icon = isClip ? '<span class="mini-icon text-file-icon"></span>' : '<span class="mini-icon scrapbook-icon"></span>';
+  const contract = sourceContractForScrap(scrap);
+  const meta = contract.timeRange
+    ? `${contract.title} / ${contract.timeRange}`
+    : scrap.source?.site || scrap.source?.title || scrapStackLabel(stack);
+  const date = formatScrapCardDate(scrap.createdAt);
+  const preview = scrapPreviewLine(scrap, meta).slice(0, 96);
+  const translationBadge = scrapHasTranslation(scrap)
+    ? `<b class="scrap-translation-badge" title="${escapeHtml(t("show_translation"))}">${escapeHtml(t("translation_badge"))}</b>`
+    : "";
+  // S03: an open-question scrap wears its named state (lazy label).
+  const questionBadge = String(scrap?.noteKind || "") === "open-question"
+    ? `<b class="scrap-question-badge" data-question-status="${escapeHtml(String(scrap?.status || "open"))}">${escapeHtml(window.AISystem6OpenQuestions?.statusLabel?.(scrap?.status, currentLanguage) || "")}</b>`
+    : "";
+  const citationCount = typeof getCitingDraftsForSource === "function"
+    ? getCitingDraftsForSource(`scrap:${scrap.id}`).length
+    : 0;
+  const citationBadge = citationCount > 0
+    ? `<span class="finder-citation-jump scrap-card-citation-jump" data-citation-jump-key="scrap:${escapeHtml(scrap.id)}" role="button" tabindex="0">${escapeHtml(t("reference_cited_in_n", citationCount))}</span>`
+    : "";
+
+  return `
+    ${icon}
+    <span class="scrap-card-list-title">${escapeHtml(scrap.title)}</span>
+    ${translationBadge}
+    ${questionBadge}
+    ${citationBadge}
+    <small class="scrap-card-list-meta">${escapeHtml([meta, date].filter(Boolean).join(" \u00b7 "))}</small>
+    <small class="scrap-card-list-stats">${escapeHtml(preview || "--")}</small>
+  `;
+}
+
+function formatScrapCardDate(value) {
+  const date = value ? new Date(value) : null;
+  if (!date || Number.isNaN(date.getTime())) return "";
+  return date.toLocaleString([], {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+// Two marks under the title: which stack the scrap is in, and whether it
+// carries a translation. The keyword tags extractScrapTags guesses from word
+// frequency stay searchable (the filter reads them through the body) but are
+// not dressed up here as the writer's own categories, and the source has its
+// own line now.
+function renderScrapTags(scrap) {
+  scrapTagsEl.replaceChildren();
+  const stack = document.createElement("span");
+  stack.className = "tag";
+  stack.textContent = scrapStackLabel(getScrapStack(scrap));
+  scrapTagsEl.append(stack);
+
+  if (scrapHasTranslation(scrap)) {
+    const translation = document.createElement("span");
+    translation.className = "tag translation-tag";
+    translation.textContent = t("translation_badge");
+    translation.title = formatTranslationMeta(scrap.translationLanguage, scrap.translationCreatedAt, scrap.translationSource, scrap.translationModel);
+    scrapTagsEl.append(translation);
+  }
+}
+
+function updateScrapTranslationControls(scrap) {
+  const hasTranslation = scrapHasTranslation(scrap);
+
+  if (!hasTranslation) {
+    showingScrapTranslation = false;
+    scrapTranslationViewMode = "original";
+  }
+
+  if (toggleScrapTranslationButton) {
+    toggleScrapTranslationButton.hidden = !hasTranslation;
+    const labels = {
+      original: t("show_translation"),
+      translation: t("show_bilingual"),
+      bilingual: t("show_original"),
+    };
+    toggleScrapTranslationButton.textContent = labels[scrapTranslationViewMode] || t("show_translation");
+  }
+
+  const readOnlyView = hasTranslation && scrapTranslationViewMode !== "original";
+  scrapBodyInput.readOnly = readOnlyView;
+  scrapBodyInput.classList.toggle("is-translation-view", readOnlyView);
+  scrapBodyInput.classList.toggle("is-bilingual-view", hasTranslation && scrapTranslationViewMode === "bilingual");
+}
+
+function getReaderSelectionContext(selection, selectedText, radius = 220) {
+  if (!selection?.rangeCount || !selectedText) {
+    return { before: "", selected: selectedText, after: "", text: selectedText };
+  }
+
+  const range = selection.getRangeAt(0);
+  const container = range.commonAncestorContainer.parentElement?.closest(".reader-body-content")
+    || readerContentEl.querySelector(".reader-body-content")
+    || range.commonAncestorContainer.parentElement;
+  const fullText = (container?.innerText || currentReaderPage?.text || "").replace(/\s+/g, " ").trim();
+  const selected = selectedText.replace(/\s+/g, " ").trim();
+  const index = fullText.indexOf(selected);
+
+  if (index < 0) {
+    return { before: "", selected: selectedText, after: "", text: selectedText };
+  }
+
+  const before = fullText.slice(Math.max(0, index - radius), index).trim();
+  const after = fullText.slice(index + selected.length, index + selected.length + radius).trim();
+  return {
+    before,
+    selected: selectedText,
+    after,
+    text: [before, selectedText, after].filter(Boolean).join(" "),
+    // Where the passage can be found again: the quote, 32 characters either
+    // side, and the offset, all in the page's whitespace-collapsed text (the
+    // shape and the search are app/core/text-quote.js). Clips made before this
+    // have none and keep working from their quote alone.
+    anchor: {
+      quote: selected,
+      prefix: fullText.slice(Math.max(0, index - 32), index),
+      suffix: fullText.slice(index + selected.length, index + selected.length + 32),
+      offset: index,
+      space: container ? "reader-body" : "page-text",
+    },
+  };
+}
+
+function renderScraps() {
+  const visibleScraps = scrapbookPageScraps();
+  syncScrapSelection(visibleScraps);
+  scrapCountEl.textContent = t("scraps_count", visibleScraps.length);
+  const selectedCount = getSelectedScraps().length;
+  // Two or more selected: the editor gives way to what acts on all of them.
+  const scrapForm = document.getElementById("scrap-form");
+  if (scrapForm) scrapForm.dataset.scrapMode = selectedScrapIds.size > 1 ? "multi" : "single";
+  if (scrapSelectionCountEl) {
+    scrapSelectionCountEl.textContent = selectedCount ? t("selected_scraps_count", selectedCount) : t("no_scraps_selected");
+  }
+  // These buttons own their real availability (the menu reads it back through
+  // activeOwnedControlEnabled instead of the mirrored is-disabled class).
+  // Grey affordances keep a one-tap why (ADHD) — empty scrap vs no bilingual.
+  const emptyScrapReason = "balloon_scrapbook_empty";
+  if (insertScrapButton) {
+    insertScrapButton.disabled = !selectedCount;
+    insertScrapButton.dataset.balloonHelpDisabled = emptyScrapReason;
+  }
+  if (deleteScrapButton) {
+    deleteScrapButton.disabled = !selectedCount;
+    deleteScrapButton.dataset.balloonHelpDisabled = emptyScrapReason;
+  }
+  syncScrapMultiActionControls();
+  if (scrapStackSelect) scrapStackSelect.value = selectedScrapStack;
+  const signature = [
+    activeProjectId,
+    selectedScrapStack,
+    scrapFilterQuery,
+    selectedScrapId,
+    [...selectedScrapIds].sort().join(","),
+    scrapTranslationViewMode,
+    showingScrapTranslation,
+    currentLanguage,
+    collectionVersion(visibleScraps),
+    visibleScraps.map((scrap) => `${scrap.id}:${(scrap.tags || []).join(",")}:${String(scrap.body || "").length}`).join("|"),
+  ].join("::");
+  if (shouldSkipRender("scraps", signature)) return;
+  const fragment = document.createDocumentFragment();
+  scrapListEl.replaceChildren();
+
+  if (!visibleScraps.length) {
+    selectedScrapId = null;
+    selectedScrapIds.clear();
+    const empty = document.createElement("button");
+    empty.type = "button";
+    empty.className = "scrap-empty-card";
+    const emptyMessage = scrapFilterQuery
+      ? t("scrap_filter_empty", scrapFilterQuery)
+      : selectedScrapStack === "sources"
+        ? t("no_scraps_sources")
+        : selectedScrapStack === "ideas"
+          ? t("no_scraps_ideas")
+          : selectedScrapStack === "assistant"
+            ? t("no_scraps_clio")
+            : t("no_scraps");
+    empty.innerHTML = `<span class="mini-icon scrapbook-desk-icon"></span><b>${escapeHtml(t("scrapbook"))}</b><small>${escapeHtml(emptyMessage)}</small>`;
+    // Goal #2/#6: empty Scrapbook is a next-step into Reader (clip path), not
+    // a disabled decoration. Filter/stack empties still open Reader — the
+    // honest empty copy stays on the card.
+    empty.setAttribute("aria-label", t("reader"));
+    empty.addEventListener("click", () => handleAction("open-reader"));
+    fragment.append(empty);
+    scrapListEl.append(fragment);
+    scrapTitleDisplay.textContent = t("untitled_scrap");
+    scrapTagsEl.replaceChildren();
+    showingScrapTranslation = false;
+    scrapTranslationViewMode = "original";
+    updateScrapTranslationControls(null);
+    renderScrapSourceInfo(null);
+    renderScrapPictures(null);
+    if (openScrapSourceButton) openScrapSourceButton.disabled = true;
+    scrapBodyInput.value = "";
+    renderScrapbookPager(visibleScraps);
+    updateDocMapEntryButtons();
+    return;
+  }
+
+  visibleScraps.forEach((scrap) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.draggable = true;
+    button.dataset.dragType = "scrap";
+    button.dataset.id = scrap.id;
+    button.dataset.projectId = scrap.projectId;
+    button.className = [
+      scrap.id === selectedScrapId ? "is-selected" : "",
+      selectedScrapIds.has(scrap.id) ? "is-multi-selected" : "",
+    ].filter(Boolean).join(" ");
+
+    button.innerHTML = scrapListItemHtml(scrap);
+    if (typeof attachCitationJumpHandler === "function") attachCitationJumpHandler(button);
+    button.classList.add(`is-source-${getScrapSourceKind(scrap)}`);
+    button.addEventListener("click", (event) => {
+      const wasSelected = selectedScrapId === scrap.id;
+      if (event.metaKey || event.ctrlKey || event.shiftKey) {
+        if (selectedScrapIds.has(scrap.id) && selectedScrapIds.size > 1) {
+          selectedScrapIds.delete(scrap.id);
+        } else {
+          selectedScrapIds.add(scrap.id);
+        }
+      } else {
+        selectedScrapIds.clear();
+        selectedScrapIds.add(scrap.id);
+      }
+      selectedScrapId = scrap.id;
+      if (!wasSelected) {
+        showingScrapTranslation = false;
+        scrapTranslationViewMode = "original";
+      }
+      renderScraps();
+    });
+    fragment.append(button);
+  });
+  scrapListEl.append(fragment);
+
+  const selected = visibleScraps.find((scrap) => scrap.id === selectedScrapId) || visibleScraps[0];
+  if (selected) {
+    selectedScrapId = selected.id;
+    scrapTitleDisplay.textContent = selected.title;
+    updateScrapTranslationControls(selected);
+    scrapBodyInput.value = selectedScrapDisplayBody(selected);
+    renderScrapTags(selected);
+    renderScrapSourceInfo(selected);
+    renderScrapPictures(selected);
+    if (openScrapSourceButton) {
+      openScrapSourceButton.disabled = !canOpenScrapSource(selected);
+    }
+  }
+  renderScrapbookPager(visibleScraps, selected);
+  updateDocMapEntryButtons();
+}
+
+function canOpenScrapSource(scrap) {
+  const contract = sourceContractForScrap(scrap);
+  return (contract.kind === "readerClip" && !!contract.url)
+    || (contract.kind === "readerClip" && contract.readerKind === "fileDisk" && !!contract.fileName)
+    || (contract.kind === "documentClip" && !!contract.fileId);
+}
+
+// Where the scrap came from, as a citation: the source's own title on one
+// line, then site, author, date, time range and the citation key. It used to
+// be a single ellipsized line drawn like a text field the writer could not
+// type into.
+function renderScrapSourceInfo(scrap) {
+  if (!scrapSourceInfoEl) return;
+  scrapSourceInfoEl.replaceChildren();
+  scrapSourceInfoEl.removeAttribute("title");
+  const line = (className, text) => {
+    const element = document.createElement("span");
+    element.className = className;
+    element.textContent = text;
+    scrapSourceInfoEl.append(element);
+  };
+  if (!scrap) {
+    line("scrap-citation-meta", t("source_no_origin"));
+    return;
+  }
+
+  const contract = sourceContractForScrap(scrap);
+  const source = scrap.source || {};
+  const citation = sourceCitationForContextItem({
+    kind: "scrap",
+    id: scrap.id,
+    projectId: scrap.projectId,
+    tags: scrap.tags || [],
+    sourceType: source.type || "",
+  });
+  const title = source.title || contract.title || "";
+  const details = [source.site || contract.origin, source.author, source.date, contract.timeRange, source.page ? t("reader_page_cite", source.page) : "", citation]
+    .map((value) => String(value || "").trim())
+    .filter((value, index, all) => value && value !== title && all.indexOf(value) === index);
+  if (!title && !details.length) {
+    line("scrap-citation-meta", contract.target || t("source_saved_in_project"));
+    return;
+  }
+  if (title) line("scrap-citation-title", title);
+  if (details.length) line("scrap-citation-meta", details.join(" \u00b7 "));
+  if (source.url) scrapSourceInfoEl.title = source.url;
+}
+
+function updateSelectedScrapMetadata() {
+  const scrap = scraps.find((item) => item.id === selectedScrapId && isInActiveProject(item));
+  if (!scrap) return;
+  if (scrapTranslationViewMode !== "original" && scrapHasTranslation(scrap)) return;
+
+  scrap.body = scrapBodyInput.value;
+  refreshScrapMetadata(scrap);
+  noteScrapChanged(scrap);
+
+  scrapTitleDisplay.textContent = scrap.title;
+  updateScrapTranslationControls(scrap);
+  renderScrapTags(scrap);
+  renderScrapSourceInfo(scrap);
+
+  const visibleScraps = scrapbookPageScraps();
+  const buttons = scrapListEl.querySelectorAll("button");
+  const index = visibleScraps.indexOf(scrap);
+  if (buttons[index]) {
+    buttons[index].innerHTML = scrapListItemHtml(scrap);
+    if (typeof attachCitationJumpHandler === "function") attachCitationJumpHandler(buttons[index]);
+  }
+
+  saveDeskState();
+}
+
+function toggleScrapTranslationView() {
+  const scrap = scraps.find((item) => item.id === selectedScrapId && isInActiveProject(item));
+  if (!scrapHasTranslation(scrap)) return;
+
+  const nextMode = {
+    original: "translation",
+    translation: "bilingual",
+    bilingual: "original",
+  };
+  scrapTranslationViewMode = nextMode[scrapTranslationViewMode] || "original";
+  showingScrapTranslation = scrapTranslationViewMode !== "original";
+  updateScrapTranslationControls(scrap);
+  scrapBodyInput.value = selectedScrapDisplayBody(scrap);
+}
+
+function moveScrapToTrash(scrapId) {
+  const index = scraps.findIndex((s) => s.id === scrapId && isInActiveProject(s));
+  if (index === -1) return;
+  const [scrap] = scraps.splice(index, 1);
+  purgeContextForTrashedItems([{ type: "scrap", id: scrap.id, item: scrap }]);
+  trashItems.unshift({
+    projectId: activeProjectId,
+    title: scrap.title,
+    body: scrap.body,
+    originalPath: [projectDisplayName(getActiveProject()), t("scrapbook_label")].filter(Boolean).join(" / "),
+    originalType: 'scrap',
+    originalData: scrap
+  });
+  AISystem6DeskUndo.trashed(trashItems.slice(0, 1));
+  selectedScrapId = getProjectScraps()[0]?.id || null;
+  saveDeskState();
+  renderScraps();
+  renderTrash();
+}
+
+function moveFileToTrashById(fileId) {
+  const index = chatFiles.findIndex((f) => f.id === fileId && isInActiveProject(f));
+  if (index === -1) return;
+  const [file] = chatFiles.splice(index, 1);
+  removeMountedFilesByName([file.name], file.projectId);
+  purgeContextForTrashedItems([{ type: "file", id: file.id, item: file }]);
+  trashItems.unshift({
+    projectId: activeProjectId,
+    title: file.format ? file.name : `${file.name}.${file.type === "text" ? "text" : "chat"}`,
+    body: file.type === "text" ? file.body : formatChatFile(file),
+    originalPath: getProjectFolderPathLabel(file.folderId || null),
+    originalType: 'file',
+    originalData: file
+  });
+  AISystem6DeskUndo.trashed(trashItems.slice(0, 1));
+  selectedChatFileId = null;
+  saveDeskState();
+  renderDocuments();
+  renderProjectDisks();
+  renderTrash();
+  playSystemSound("trash");
+}
+
+function renderContextPanel() {
+  const listEl = document.querySelector("#context-panel-list");
+  const countEl = document.querySelector("#context-panel-count");
+  const budgetEl = document.querySelector("#context-panel-budget");
+  if (!listEl || !countEl) return;
+
+  const loadout = window.lastContextLoadout || null;
+  const usedContextItems = lastRetrievedContextItems.filter((contextItem) => contextItem.included !== false && !contextItem.excluded);
+  const droppedContextItems = lastRetrievedContextItems.length - usedContextItems.length;
+  countEl.textContent = t("context_items_count", usedContextItems.length);
+  if (budgetEl) {
+    const budgetText = loadout?.promptTokens
+      ? (currentLanguage === "zh"
+        ? `估算装入 ${loadout.promptTokens}/${loadout.contextTokens || "—"} tokens`
+        : `Estimated load ${loadout.promptTokens}/${loadout.contextTokens || "—"} tokens`)
+      : lastContextBudget
+      ? (lastContextBudget.promptTokens
+        ? t("context_budget_token_summary", lastContextBudget.promptTokens, lastContextBudget.contextTokens, lastContextBudget.availableOutputTokens, lastContextBudget.budgetSource, droppedContextItems)
+        : t("context_budget_summary", lastContextBudget.usedChars, lastContextBudget.budgetChars, droppedContextItems))
+      : t("context_budget_empty");
+    const gistText = contextGistBudgetText(lastContextBudget?.gist, lastContextBudget?.gistFallbackReason);
+    budgetEl.textContent = gistText ? `${budgetText} · ${gistText}` : budgetText;
+  }
+  const signature = [
+    activeProjectId,
+    currentLanguage,
+    JSON.stringify(lastContextBudget || {}),
+    collectionVersion(lastRetrievedContextItems),
+    collectionVersion(projectReferences.filter((reference) => reference.projectId === activeProjectId)),
+    collectionVersion(getProjectFiles()),
+    collectionVersion(getProjectScraps()),
+    [...excludedContextKeys].sort().join(","),
+  ].join("::");
+  if (shouldSkipRender("contextPanel", signature)) return;
+  listEl.replaceChildren();
+
+  // C08: the folded run details (lazy; no-ops unless there is something to fold).
+  window.AISystem6ChatRunDetails?.renderInto?.(listEl, loadout?.compaction || null, window.lastClioTalkUsage || null, currentLanguage);
+
+  if (loadout?.entries?.length) {
+    const title = document.createElement("div");
+    title.className = "context-section-title";
+    title.textContent = t("actual_request_loadout_estimate");
+    listEl.append(title);
+    loadout.entries.forEach((entry) => {
+      const item = document.createElement("div");
+      item.className = "context-item";
+      const labels = {
+        system: currentLanguage === "zh" ? "系统提示词与安全边界" : "System prompt and safety boundary",
+        "current-conversation": currentLanguage === "zh" ? "当前对话" : "Current conversation",
+        conversation: currentLanguage === "zh" ? "当前对话" : "Current conversation",
+        "compressed-memory": currentLanguage === "zh" ? "压缩连续性记忆" : "Compressed continuity memory",
+        "project-memory": currentLanguage === "zh" ? "项目记忆" : "Project Memory",
+        retrospective: currentLanguage === "zh" ? "本次附加复盘" : "Attached retrospective",
+        "retrieved-context": currentLanguage === "zh" ? "来源与项目文件" : "Sources and project files",
+      };
+      item.innerHTML = `<div class="context-header"><strong>${escapeHtml(labels[entry.kind] || entry.kind)}</strong><span>${entry.estimatedTokens} ${t("estimated_tokens")}</span></div>`;
+      const body = document.createElement("div");
+      body.className = "context-body";
+      body.textContent = entry.content.slice(0, 900);
+      item.append(body);
+      if (entry.kind === "project-memory") {
+        const disable = document.createElement("button");
+        disable.className = "btn";
+        disable.textContent = t("disable_project_memory");
+        disable.onclick = () => {
+          const ids = [...entry.content.matchAll(/\[memory:([^\]]+)\]/g)].map((match) => match[1]);
+          getProjectFiles().filter((file) => ids.includes(file.id)).forEach((file) => { file.memoryStatus = "disabled"; file.updatedAt = new Date().toISOString(); });
+          saveDeskState();
+          renderContextPanel();
+        };
+        item.append(disable);
+      }
+      listEl.append(item);
+    });
+    loadout.skipped?.forEach((entry) => {
+      const item = document.createElement("div");
+      item.className = "context-item is-dropped";
+      item.textContent = `${entry.label} — ${t("not_loaded")}${entry.reason}`;
+      listEl.append(item);
+    });
+  }
+  if (window.lastTaskSkillReceipt?.length) {
+    const receipt = document.createElement("div");
+    receipt.className = "context-item";
+    receipt.textContent = `${t("skill_adoption_order")}${window.lastTaskSkillReceipt.map((item) => `${item.id} v${item.version}`).join(" → ")}`;
+    listEl.append(receipt);
+  }
+
+  const sourceRegistry = buildProjectSourceRegistry().filter((source) => sourceTextForRegistryItem(source).trim());
+  const contextWin = typeof getWindow === "function"
+    ? getWindow("contextPanel")
+    : document.querySelector('[data-window="contextPanel"]');
+  const contextEmpty = !lastRetrievedContextItems.length && !loadout?.entries?.length && !sourceRegistry.length;
+  if (contextEmpty) contextWin?.setAttribute("data-empty", "");
+  else contextWin?.removeAttribute("data-empty");
+
+  if (contextEmpty) {
+    // Goal #2/#6 empty-next: materials live on File Floppy, not a demo load
+    // or a ClioTalk hunt. One real next step.
+    const empty = document.createElement("div");
+    empty.className = "empty-folder-note empty-next-note context-panel-empty-note";
+    empty.dataset.emptyNext = "1";
+    const text = document.createElement("p");
+    text.textContent = t("no_recent_context");
+    const openFloppy = document.createElement("button");
+    openFloppy.type = "button";
+    openFloppy.className = "btn default";
+    openFloppy.dataset.action = "open-text-disk";
+    openFloppy.dataset.i18n = "file_floppy";
+    openFloppy.textContent = t("file_floppy");
+    empty.append(text, openFloppy);
+    listEl.append(empty);
+  } else if (lastRetrievedContextItems.length) {
+    const retrievedTitle = document.createElement("div");
+    retrievedTitle.className = "context-section-title";
+    retrievedTitle.textContent = t("context_boundary_records");
+    listEl.append(retrievedTitle);
+
+    lastRetrievedContextItems.forEach((contextItem) => {
+      const item = document.createElement("div");
+      item.className = `context-item${contextItem.included === false || contextItem.excluded ? " is-dropped" : ""}`;
+
+      const header = document.createElement("div");
+      header.className = "context-header";
+      const badge = contextItem.excluded ? t("context_excluded") : contextItem.included === false ? t("context_dropped") : t("context_used");
+      const gistRole = contextGistRoleLabel(contextItem.gistRole);
+      const badgeText = gistRole && contextItem.included !== false && !contextItem.excluded ? `${badge} · ${gistRole}` : badge;
+      const sourceLabel = contextSourceLabel(contextItem);
+      header.innerHTML = `<strong title="${escapeHtml(sourceLabel)}">${escapeHtml(sourceLabel)}</strong><span>${escapeHtml(badgeText)}</span>`;
+
+      const body = document.createElement("div");
+      body.className = "context-body";
+      body.textContent = contextItem.content;
+
+      const footer = document.createElement("div");
+      footer.className = "button-row";
+
+      const sourceKey = getContextSourceKey(contextItem);
+      if (sourceKey) {
+        const openBtn = document.createElement("button");
+        openBtn.className = "btn";
+        openBtn.textContent = t("open_source");
+        openBtn.onclick = () => openCitationContextItem(contextItem);
+        footer.append(openBtn);
+
+        const toggleBtn = document.createElement("button");
+        toggleBtn.className = "btn";
+        toggleBtn.textContent = excludedContextKeys.has(sourceKey) ? t("enable_source") : t("disable_source");
+        toggleBtn.onclick = () => {
+          if (excludedContextKeys.has(sourceKey)) {
+            excludedContextKeys.delete(sourceKey);
+          } else {
+            excludedContextKeys.add(sourceKey);
+          }
+          lastRetrievedContextItems = lastRetrievedContextItems.map((item) => ({
+            ...item,
+            excluded: excludedContextKeys.has(getContextSourceKey(item)),
+          }));
+          scheduleSettingsSave();
+          renderContextPanel();
+        };
+        footer.append(toggleBtn);
+      }
+
+      if (contextItem.kind === 'scrap' || contextItem.kind === 'file') {
+        const forgetBtn = document.createElement("button");
+        forgetBtn.className = "btn";
+        forgetBtn.textContent = t("forget");
+        forgetBtn.onclick = () => {
+          // Forgetting moves the item to the Trash, where it stays recoverable
+          // until the trash is emptied, so there is nothing to ask about.
+          if (contextItem.kind === 'scrap') moveScrapToTrash(contextItem.id);
+          else moveFileToTrashById(contextItem.id);
+          lastRetrievedContextItems = lastRetrievedContextItems.filter((item) => item.id !== contextItem.id);
+          setStatus(t("items_moved_trash", 1));
+          renderContextPanel();
+        };
+        footer.append(forgetBtn);
+      }
+
+      item.append(header, body, footer);
+      listEl.append(item);
+    });
+  }
+
+  if (sourceRegistry.length) {
+    const sourceTitle = document.createElement("div");
+    sourceTitle.className = "context-section-title";
+    sourceTitle.textContent = t("source_registry");
+    listEl.append(sourceTitle);
+
+    sourceRegistry.forEach((source) => {
+      const item = document.createElement("div");
+      item.className = `context-item source-registry-item${excludedContextKeys.has(source.key) ? " is-dropped" : ""}`;
+
+      const header = document.createElement("div");
+      header.className = "context-header";
+      const sourceLabel = sourceLabelFromRegistryItem(source);
+      header.innerHTML = `<strong title="${escapeHtml(sourceLabel)}">${escapeHtml(sourceLabel)}</strong><span>${escapeHtml(excludedContextKeys.has(source.key) ? t("context_excluded") : t("context_available"))}</span>`;
+
+      const body = document.createElement("div");
+      body.className = "context-body";
+      body.textContent = clipContextContent(sourceTextForRegistryItem(source), 360);
+
+      const footer = document.createElement("div");
+      footer.className = "button-row";
+
+      const openBtn = document.createElement("button");
+      openBtn.className = "btn";
+      openBtn.textContent = t("open_source");
+      openBtn.onclick = () => openRegistrySource(source);
+      footer.append(openBtn);
+
+      const toggleBtn = document.createElement("button");
+      toggleBtn.className = "btn";
+      toggleBtn.textContent = excludedContextKeys.has(source.key) ? t("enable_source") : t("disable_source");
+      toggleBtn.onclick = () => {
+        if (excludedContextKeys.has(source.key)) excludedContextKeys.delete(source.key);
+        else excludedContextKeys.add(source.key);
+        lastRetrievedContextItems = lastRetrievedContextItems.map((contextItem) => ({
+          ...contextItem,
+          excluded: excludedContextKeys.has(getContextSourceKey(contextItem)),
+        }));
+        scheduleSettingsSave();
+        renderContextPanel();
+      };
+      footer.append(toggleBtn);
+
+      item.append(header, body, footer);
+      listEl.append(item);
+    });
+  }
+}
+
+function contextGistRoleLabel(role) {
+  if (role === "raw") return t("context_gist_raw");
+  if (role === "revealed") return t("context_gist_revealed");
+  if (role === "coarse") return t("context_gist_coarse");
+  return "";
+}
+
+function contextGistBudgetText(gist, fallbackReason = "") {
+  if (!gist) return "";
+  const summary = t("context_gist_summary", gist.coarseCards || 0, gist.revealedCards || 0, gist.rawExcerpts || 0, gist.compressionRatio || 1);
+  if (gist.usedFallback) return `${summary} · ${t("context_gist_fallback", fallbackReason || gist.budgetSource || "")}`;
+  return summary;
+}
+
+let selectedTrashItem = null;
+
+function getSelectedTrashItem() {
+  if (!selectedTrashItem || !trashItems.includes(selectedTrashItem) || !isInActiveProject(selectedTrashItem)) {
+    selectedTrashItem = null;
+  }
+  return selectedTrashItem;
+}
+
+function finishTrashPutAway(item, restored) {
+  const itemIndex = trashItems.indexOf(item);
+  if (itemIndex !== -1) trashItems.splice(itemIndex, 1);
+  selectedTrashItem = null;
+
+  renderScraps();
+  renderDocuments();
+  renderProjectDisks();
+  renderProjectCd();
+  renderTrash();
+  saveDeskState();
+  updateMenuState();
+  if (restored) setStatus(t("trash_restored", item.title));
+}
+
+function putAwayTrashItem(item) {
+  if (!item) return false;
+  const restored = restoreTrashItem(item);
+  if (!restored) {
+    messagesEl.replaceChildren();
+    addMessage("assistant", item.body);
+    openWindow("assistant");
+  }
+  finishTrashPutAway(item, restored);
+  return restored;
+}
+
+function putAwaySelectedTrashItem() {
+  const item = getSelectedTrashItem();
+  if (!item) return;
+  putAwayTrashItem(item);
+}
+
+function syncTrashActionControls() {
+  const go = document.querySelector("#trash-more-go");
+  const select = document.querySelector("#trash-more");
+  if (!go) return;
+  const empty = getProjectTrashItems().length === 0;
+  go.disabled = empty;
+  go.dataset.balloonHelpDisabled = "balloon_trash_empty_first";
+  go.classList.toggle("danger", !empty && select?.value === "empty");
+  go.classList.toggle("default", empty || select?.value !== "empty");
+}
+
+function runTrashMoreAction() {
+  const select = document.querySelector("#trash-more");
+  if (getProjectTrashItems().length === 0) {
+    setStatus(t("balloon_trash_empty_first"));
+    return;
+  }
+  if (select?.value === "empty") {
+    emptyActiveProjectTrash();
+    return;
+  }
+  const selected = getSelectedTrashItem();
+  const item = selected || getProjectTrashItems()[0];
+  if (!item) {
+    setStatus(t("balloon_trash_empty_first"));
+    return;
+  }
+  putAwayTrashItem(item);
+}
+
+function renderTrash() {
+  const visibleTrash = getProjectTrashItems();
+  if (!visibleTrash.includes(selectedTrashItem)) selectedTrashItem = null;
+  trashCountEl.textContent = t("trash_count", visibleTrash.length);
+  trashListEl.replaceChildren();
+
+  const isFull = visibleTrash.length > 0;
+  document.querySelectorAll("[data-trash-status-icon]").forEach((trashIcon) => {
+    trashIcon.classList.toggle("is-full", isFull);
+    trashIcon.dataset.systemIcon = isFull ? "trashFull" : "trash";
+    trashIcon.innerHTML = systemIconSvg(trashIcon.dataset.systemIcon);
+  });
+  syncTrashActionControls();
+
+  if (!visibleTrash.length) {
+    // Goal #2/#6: empty Trash is a resting state — still offer Project Hard
+    // Disk so "put something away" has a tappable next step in-pane.
+    const empty = document.createElement("div");
+    empty.className = "empty-folder-note trash-empty-state empty-next-note";
+    const text = document.createElement("p");
+    text.textContent = t("trash_empty");
+    const openDisk = document.createElement("button");
+    openDisk.type = "button";
+    openDisk.className = "btn default";
+    openDisk.dataset.action = "open-project-disks";
+    openDisk.textContent = t("open_project_disks");
+    empty.append(text, openDisk);
+    trashListEl.append(empty);
+    return;
+  }
+
+  visibleTrash.forEach((item, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.classList.toggle("is-selected", item === selectedTrashItem);
+    const k = `trash_type_${item.originalType}`;
+    const typeLabel = t(t(k) === k ? "trash_type_note" : k);
+    const path = getTrashOriginalPath(item);
+    button.title = item.title;
+    button.innerHTML = `
+      <span>${index + 1}.</span>
+      <span>${nameCell(item)}</span>
+      <small>${escapeHtml(typeLabel)}${path ? ` · ${escapeHtml(path)}` : ""}</small>
+    `;
+    button.addEventListener("click", async () => {
+      selectedTrashItem = item;
+      renderTrash();
+      updateMenuState();
+    });
+    button.addEventListener("dblclick", () => {
+      // Putting something back from the Trash never loses anything, so the
+      // double-click is the answer.
+      putAwayTrashItem(item);
+    });
+    trashListEl.append(button);
+  });
+}
+
+function ensureFolder(name, parentId = selectedFolderId === "all" ? null : selectedFolderId) {
+  ensureActiveProject();
+  const trimmed = (name || t("default_folder")).trim() || t("default_folder");
+  const canonicalName = isDefaultFolderName(trimmed) ? "General" : trimmed;
+  const selectedFolder = getSelectedFolder();
+  if (selectedFolder && displayFolderName(selectedFolder.name).toLowerCase() === trimmed.toLowerCase()) {
+    return selectedFolder;
+  }
+  const normalizedParentId = parentId && getProjectFolders().some((folder) => folder.id === parentId) ? parentId : null;
+  let folder = getProjectFolders().find((item) => {
+    if (item.parentId !== normalizedParentId) return false;
+    if (isDefaultFolderName(canonicalName) && isDefaultFolderName(item.name)) return true;
+    return item.parentId === normalizedParentId && item.name.toLowerCase() === canonicalName.toLowerCase();
+  });
+
+  if (!folder) {
+    folder = {
+      id: crypto.randomUUID(),
+      projectId: activeProjectId,
+      name: canonicalName,
+      parentId: normalizedParentId,
+      createdAt: new Date().toISOString(),
+    };
+    chatFolders.push(folder);
+  }
+
+  return folder;
+}
+
+function getSelectedScrapText() {
+  const selected = getSelectedScraps();
+  if (selected.length > 1) return formatScrapsForTransfer(selected);
+  const existing = selected[0] || scraps.find((scrap) => scrap.id === selectedScrapId && isInActiveProject(scrap));
+  const title = existing?.title || scrapTitleDisplay.textContent.trim();
+  const body = existing?.body || scrapBodyInput.value;
+
+  if (!body.trim()) return "";
+
+  return title ? `# ${title}\n\n${body}` : body;
+}
+
+function insertScrapIntoPrompt() {
+  const text = getSelectedScrapText();
+  if (!text) return;
+
+  promptInput.value = promptInput.value.trim()
+    ? `${promptInput.value.trim()}\n\n${text}`
+    : text;
+  promptInput.dispatchEvent(new Event("input", { bubbles: true }));
+  openWindow("assistant");
+  promptInput.focus();
+  // Insert is durable only when the destination paints the new text; ClioTalk
+  // and any open scrap stack must both show the change without a second click.
+  if (typeof renderScraps === "function") renderScraps();
+}
+
+// The chooser names the verb, so the grey reason has to follow it: "Bilingual
+// .md" is unavailable for a different cause than an empty selection, and the
+// receipt it used to carry on its own retired button reads here instead.
+function syncScrapMultiActionControls() {
+  const go = document.querySelector("#scrap-multi-go");
+  const select = document.querySelector("#scrap-multi-more");
+  if (!go) return;
+  const selectedCount = getSelectedScraps().length;
+  const wantsBilingual = select?.value === "scrapbook-export-bilingual";
+  const cannotExportBilingual = wantsBilingual && !getSelectedScraps().some(scrapHasTranslation);
+  go.disabled = !selectedCount || cannotExportBilingual;
+  go.dataset.balloonHelpDisabled = cannotExportBilingual
+    ? "balloon_scrapbook_needs_translation"
+    : "balloon_scrapbook_empty";
+}
+
+function runScrapMultiAction() {
+  const select = document.querySelector("#scrap-multi-more");
+  const action = select?.value || "scrapbook-send-question";
+  if (!getSelectedScraps().length) {
+    setStatus(t("balloon_scrapbook_empty"));
+    return;
+  }
+  if (typeof handleAction === "function") handleAction(action);
+  else window.AISystem6Runtime?.dispatchCommand?.(action);
+}
+
+async function askScrapbookQuestion(event) {
+  event?.preventDefault();
+  const question = (scrapbookQuestionInput?.value || "").trim();
+  if (!question) return;
+  const selected = getSelectedScraps();
+  const sourceScraps = selected.length ? selected : scraps.filter((scrap) => isInActiveProject(scrap));
+  if (!sourceScraps.length) return;
+  const sourceText = formatScrapsForTransfer(sourceScraps);
+  const zh = currentLanguage === "zh";
+  const prompt = [
+    resolveWritingRoutePrompt("other-apps.scrapbook-source-question", zh ? "zh" : "en"),
+    typeof sideAskAnswerStyleInstruction === "function" ? sideAskAnswerStyleInstruction() : (zh ? "回答要短、自然，不要写审稿报告。" : "Be brief and natural; do not write a review report."),
+    typeof ragGroundingInstruction === "function" ? ragGroundingInstruction(zh ? "Scrapbook 摘录" : "The Scrapbook clips") : (zh ? "摘录是主要依据，不是回答边界；请区分原文、推断和需要核对的部分。" : "The clips are primary grounding, not the answer boundary; distinguish source text, inference, and points to check."),
+    "",
+    `${zh ? "用户问题" : "Question"}:\n${question}`,
+    "",
+    `${zh ? (selected.length ? "选中的 Scrapbook 摘录" : "当前项目全部 Scrapbook 摘录") : (selected.length ? "Selected Scrapbook clips" : "All current project Scrapbook clips")}:`,
+    clipContextContent(sourceText, selected.length ? 7000 : 12000),
+  ].join("\n");
+
+  const paired = typeof arrangeScrapbookAssistantSplit === "function"
+    ? await arrangeScrapbookAssistantSplit()
+    : (await openWindow("assistant"), true);
+  if (!paired) return;
+  if (scrapbookQuestionInput) scrapbookQuestionInput.value = "";
+  markAskBarSent("scrapbook");
+  setStatus(t("scrapbook_question_sent"));
+  await submitUserText(prompt, {
+    displayText: `${t("scrapbook")}: ${question}`,
+    skipContext: true,
+    taskKind: "scrapbook",
+  });
+}
+
+function sendSelectedScrapsToQuestionSheet() {
+  const selected = getSelectedScraps();
+  if (!selected.length) return;
+  const text = formatScrapsForQuestionSheet(selected);
+  const existing = questionSheetBodyInput.value.trim();
+  questionSheetBodyInput.value = existing ? `${existing}\n\n${text}` : text;
+  savePipelineData();
+  openWindow("questionSheet");
+  questionSheetBodyInput.focus();
+  setStatus(t("scraps_sent_to_question", selected.length));
+}
+
+async function openSelectedScrapSourceInReader() {
+  const selected = getSelectedScraps()[0];
+  if (!selected) {
+    setStatus(t("no_source_to_open"));
+    return;
+  }
+  if (
+    selected.source?.readerKind === "archiveSnapshot"
+    && selected.source?.originalUrl
+  ) {
+    await ensureTimeMachineModule();
+    await window.AISystem6TimeMachine?.openSnapshot?.(selected.source);
+    return;
+  }
+  const contract = sourceContractForScrap(selected);
+  if (contract.kind === "readerClip" && contract.url) {
+    readerUrlInput.value = contract.url;
+    openWindow("reader");
+    fetchReaderPage(contract.url);
+    return;
+  }
+  if (contract.kind === "readerClip" && contract.readerKind === "fileDisk" && contract.fileName) {
+    if (contract.sourceKind === "video_transcript" && contract.originalBlockIds?.length && typeof revealReaderVideoTranscriptRange === "function") {
+      revealReaderVideoTranscriptRange(contract.fileName, contract.originalBlockIds);
+      return;
+    }
+    const tab = createReaderFileDocumentTab(contract.fileName);
+    readerPendingJump = selected.source;
+    openWindow("reader");
+    openReaderDocumentTab(tab.id);
+    return;
+  }
+  if (contract.kind === "documentClip" && contract.fileId) {
+    openTextFile(contract.fileId);
+    return;
+  }
+  setStatus(t("no_source_to_open"));
+}
+
+async function outlineSelectedScraps() {
+  const selected = getSelectedScraps();
+  if (!selected.length) return;
+  const project = getActiveProject();
+  if (!project) return;
+  const sourceText = formatScrapsForTransfer(selected);
+  setStatus(t("making_outline"));
+  try {
+    const prompt = `${resolveWritingRoutePrompt("source-apps.scrapbook-outline", "en")}
+
+SCRAPBOOK NOTES:
+${sourceText}
+`;
+    const response = await fetchModelPayload({
+      model: getLocalModelRequestName(),
+      messages: withMarkdownModelMessages([{ role: "user", content: prompt }]),
+      temperature: 0.45,
+    }, getLongTaskSignal());
+    const data = await readChatJson(response);
+    const content = data?.choices?.[0]?.message?.content;
+    if (content) {
+      setProjectOutlineMarkdown(project, content.trim());
+      project.updatedAt = new Date().toISOString();
+      updateFlowGuideChecklist({ render: false });
+      renderPipeline();
+      saveDeskState();
+      openWindow("outline");
+    }
+    clearStatus();
+  } catch (error) {
+    setStatus(t("project_reference_error", friendlyErrorDetail(error)));
+  }
+}
+
+function deleteSelectedScrap() {
+  const selected = getSelectedScraps();
+  if (!selected.length) return;
+  const trashedScraps = [];
+
+  selected.forEach((selectedScrap) => {
+    const index = scraps.findIndex((scrap) => scrap.id === selectedScrap.id && isInActiveProject(scrap));
+    if (index === -1) return;
+    const [scrap] = scraps.splice(index, 1);
+    attachedClipIds.delete(scrap.id);
+    trashedScraps.push(scrap);
+    // Out of the Scrapbook and into the Trash: the record this save has to
+    // remove has to be named as gone, not left to a scan to notice.
+    markDeskDeleted("scraps", scrap.id);
+    trashItems.unshift({
+      projectId: activeProjectId,
+      title: `${scrap.title}.scrap`,
+      body: scrap.body,
+      originalPath: [projectDisplayName(getActiveProject()), t("scrapbook_label")].filter(Boolean).join(" / "),
+      originalType: "scrap",
+      originalData: scrap,
+    });
+  });
+  AISystem6DeskUndo.trashed(trashItems.slice(0, trashedScraps.length));
+  purgeContextForTrashedItems(trashedScraps.map((scrap) => ({ type: "scrap", id: scrap.id, item: scrap })));
+  renderAttachedClips();
+  selectedScrapIds.clear();
+  selectedScrapId = getProjectScraps()[0]?.id || null;
+  renderScraps();
+  if (!selectedScrapId) {
+    scrapTitleDisplay.textContent = t("untitled_scrap");
+    scrapBodyInput.value = "";
+  }
+  renderTrash();
+  saveDeskState();
+  if (selected.length) playSystemSound("trash");
+}
+
+let smounted=!1;function mountScrapbookRuntime(){if(smounted)return!0;smounted=!0;scrapbookAskForm?.addEventListener("submit",askScrapbookQuestion);registerAskBarSource("scrapbook",describeScrapbookAskScope);toggleScrapTranslationButton?.addEventListener("click",toggleScrapTranslationView);document.querySelector("#scrap-multi-go")?.addEventListener("click",runScrapMultiAction);document.querySelector("#scrap-multi-more")?.addEventListener("change",syncScrapMultiActionControls);const filter=document.getElementById("scrap-filter");filter?.addEventListener("input",()=>setScrapFilter(filter.value));filter?.addEventListener("keydown",event=>{if(event.key==="Escape"&&filter.value){event.preventDefault();filter.value="";setScrapFilter("")}});return!0}
+function swin(){return document.querySelector(".window.is-active")?.dataset.window==="scrapbook"}function sctrl(s){const c=document.querySelector(s);return!!c&&!c.disabled&&!c.hidden}
+const sav={"open-scrapbook":()=>!0,"scrapbook-open-source":()=>sctrl("#open-scrap-source"),"scrapbook-page-previous":()=>canMoveScrapbookPage(-1),"scrapbook-page-next":()=>canMoveScrapbookPage(1),"scrapbook-keep-reading":()=>!!scrapReadingProposal,"scrapbook-discard-reading":()=>!!scrapReadingProposal,"scrapbook-toggle-translation":()=>sctrl("#toggle-scrap-translation"),"scrapbook-insert":()=>sctrl("#insert-scrap"),"scrapbook-attach":()=>getSelectedScraps().length>0,"scrapbook-send-question":()=>getSelectedScraps().length>0,"scrapbook-outline":()=>getSelectedScraps().length>0,"scrapbook-export-bilingual":()=>getSelectedScraps().some(scrapHasTranslation),"scrapbook-delete":()=>sctrl("#delete-scrap"),"focus-scrapbook-question":()=>getSelectedScraps().length>0};
+
+/**
+ * Whether a Scrapbook command can run, and what it is waiting for.
+ *
+ * The same answer the menu draws from, with the reason a disabled row can
+ * show: which window has to be in front, or which part of the Scrapbook has to
+ * have something in it first. Side-effect free, so drawing a menu never loads
+ * or starts anything, and the command asks the same question where it runs.
+ */
+function scrapbookCommandAvailability(action) {
+  const name = String(action || "");
+  if (name === "open-scrapbook") return { available: true, reason: "" };
+  if (!swin()) return { available: false, reason: "scrapbook_needs_window" };
+  if (sav[name] && sav[name]() === true) return { available: true, reason: "" };
+  if (name === "scrapbook-keep-reading" || name === "scrapbook-discard-reading") {
+    return { available: false, reason: "scrapbook_no_reading" };
+  }
+  if (name === "focus-scrapbook-question") return { available: false, reason: "scrapbook_no_selection" };
+  if (name === "scrapbook-page-previous" || name === "scrapbook-page-next") {
+    return { available: false, reason: "scrapbook_no_page" };
+  }
+  if (sav[name]) return { available: false, reason: "scrapbook_nothing_selected" };
+  return { available: true, reason: "" };
+}
+const slist=[["open-scrapbook",()=>openWindow("scrapbook")],["scrapbook-open-source",openSelectedScrapSourceInReader],["scrapbook-page-previous",showPreviousScrapbookPage],["scrapbook-page-next",showNextScrapbookPage],["scrapbook-keep-reading",()=>keepScrapReadingProposal()],["scrapbook-discard-reading",()=>discardScrapReadingProposal()],["scrapbook-toggle-translation",toggleScrapTranslationView],["scrapbook-insert",insertScrapIntoPrompt],["scrapbook-attach",toggleClipAttachment],["scrapbook-send-question",sendSelectedScrapsToQuestionSheet],["scrapbook-outline",outlineSelectedScraps],["scrapbook-export-bilingual",downloadSelectedScrapsBilingualMarkdown],["scrapbook-delete",deleteSelectedScrap],["focus-scrapbook-question",()=>scrapbookQuestionInput?.focus()]];
+window.AISystem6Runtime?.registerApplication({id:"scrapbook",windowName:"scrapbook",mount:mountScrapbookRuntime,restore:()=>mountScrapbookRuntime(),commands:Object.fromEntries(slist.map(([a,h])=>[a,{handler:h,isAvailable:()=>scrapbookCommandAvailability(a).available,unavailableReason:()=>scrapbookCommandAvailability(a).reason}]))});
+
+// --- Clipped pictures -------------------------------------------------------
+//
+// Scrapbook is curated material the writer chose, not a notepad, so a picture
+// arrives the same way a quotation does: the writer clips it.
+//
+// A clip with a picture and no text is allowed to exist, because "clip now,
+// describe later" is how people actually work. But an empty body means the
+// clip is invisible to Searcher and to every project-context build, and the
+// window says so plainly instead of quietly filling the body with generated
+// text. Reading a picture produces a proposal; the writer keeps it or drops it.
+
+const SCRAP_IMAGE_LIMIT = 4;
+let scrapReadingProposal = null;
+
+/**
+ * @param {any} scrap
+ * @returns {any[]}
+ */
+function scrapPictures(scrap) {
+  return (Array.isArray(scrap?.images) ? scrap.images : [])
+    .map((id) => imageAttachmentById(id))
+    .filter(Boolean);
+}
+
+/**
+ * A clip the writer can see but Searcher cannot.
+ * @param {any} scrap
+ * @returns {boolean}
+ */
+function scrapIsPictureOnly(scrap) {
+  return scrapPictures(scrap).length > 0 && !String(scrap?.body || "").trim();
+}
+
+async function clipPictureToScrapbook(files) {
+  const project = getActiveProject();
+  if (!project) {
+    setStatus(t("no_project_mounted"));
+    openWindow("projects");
+    return;
+  }
+  const incoming = imageFilesFromList(files);
+  if (!incoming.length) return;
+
+  const built = await buildImageAttachments(incoming.slice(0, SCRAP_IMAGE_LIMIT), {
+    projectId: project.id,
+    surface: "scrapbook",
+    limit: SCRAP_IMAGE_LIMIT,
+  });
+  if (!built.length) return;
+  saveImageAttachments(built);
+  createScrap(built[0].name || "", "", {
+    images: built.map((attachment) => attachment.id),
+    sourceKind: "picture",
+  });
+  setStatus(t("scrap_picture_clipped", built.length));
+}
+
+function clipPictureToScrapbookFromPicker() {
+  if (typeof openTransientFilePicker !== "function") return;
+  openTransientFilePicker({
+    accept: IMAGE_ATTACHMENT_ACCEPT,
+    multiple: true,
+    onSelect: (files) => clipPictureToScrapbook(files),
+  });
+}
+
+function renderScrapPictures(scrap) {
+  const strip = document.getElementById("scrap-pictures");
+  const note = document.getElementById("scrap-unindexed-note");
+  const readButton = document.getElementById("read-scrap-picture");
+  const pictures = scrapPictures(scrap);
+
+  if (strip) {
+    strip.classList.toggle("is-hidden", !pictures.length);
+    strip.replaceChildren();
+    pictures.forEach((picture) => {
+      const thumb = document.createElement("img");
+      thumb.className = "scrap-picture-thumb";
+      thumb.src = imageAttachmentVisionDataUrl(picture);
+      thumb.alt = picture.alt || picture.name || "";
+      strip.append(thumb);
+    });
+  }
+  if (note) note.classList.toggle("is-hidden", !scrapIsPictureOnly(scrap));
+  if (readButton) readButton.disabled = !pictures.length;
+  renderScrapReadingProposal();
+}
+
+function renderScrapReadingProposal() {
+  const panel = document.getElementById("scrap-reading-proposal");
+  const output = document.getElementById("scrap-reading-proposal-text");
+  if (!panel || !output) return;
+  const active = scrapReadingProposal && scrapReadingProposal.scrapId === selectedScrapId
+    ? scrapReadingProposal
+    : null;
+  panel.classList.toggle("is-hidden", !active);
+  output.textContent = active ? active.text : "";
+  // One content primary: Keep Reading while a proposal is up; otherwise Insert.
+  // Ask stays in the ask-bar and must not become a second chrome default (R17).
+  const keep = panel.querySelector('[data-action="scrapbook-keep-reading"]');
+  const insert = document.getElementById("insert-scrap");
+  const ask = document.getElementById("scrapbook-ask-button");
+  keep?.classList.toggle("default", !!active);
+  insert?.classList.toggle("default", !active);
+  ask?.classList.toggle("default", false);
+}
+
+async function readSelectedScrapPicture() {
+  const scrap = getProjectScraps().find((item) => item.id === selectedScrapId);
+  const picture = scrapPictures(scrap)[0];
+  if (!picture) return;
+
+  setStatus(t("scrap_reading_picture", picture.name || ""));
+  try {
+    const result = await analyzeImageAttachment(picture, {
+      mode: "writing-context",
+      modelName: typeof getLocalModelRequestName === "function" ? getLocalModelRequestName() : "",
+      signal: typeof getLongTaskSignal === "function" ? getLongTaskSignal() : null,
+    });
+    if (!result.text) throw new Error(t("image_vision_empty"));
+    // Held in memory only. Nothing reaches the clip until the writer keeps it.
+    scrapReadingProposal = {
+      scrapId: scrap.id,
+      text: result.text,
+      model: result.model,
+      picture,
+      mode: result.mode,
+    };
+    renderScrapReadingProposal();
+    setStatus(t("scrap_reading_ready"));
+  } catch (error) {
+    if (typeof isAbortError === "function" && isAbortError(error)) return;
+    setStatus(t("image_vision_failed", friendlyErrorDetail(error)));
+  }
+}
+
+function keepScrapReadingProposal() {
+  if (!scrapReadingProposal) return;
+  const scrap = getProjectScraps().find((item) => item.id === scrapReadingProposal.scrapId);
+  if (!scrap) return;
+  const existing = String(scrap.body || "").trim();
+  // Keep the provenance with the text. Months later the writer must still be
+  // able to tell a model's reading of a picture from their own words.
+  const evidence = imageAttachmentEvidenceMarkdown(scrapReadingProposal.picture, {
+    mode: scrapReadingProposal.mode,
+    model: scrapReadingProposal.model,
+  });
+  const kept = evidence
+    ? `${evidence}\n\n${scrapReadingProposal.text}`
+    : scrapReadingProposal.text;
+  scrap.body = existing ? `${existing}\n\n${kept}` : kept;
+  refreshScrapMetadata(scrap, { updateTitle: !scrap.title });
+  noteScrapChanged(scrap);
+  scrapReadingProposal = null;
+  renderScraps();
+  saveDeskState();
+  setStatus(t("scrap_reading_kept"));
+}
+
+function discardScrapReadingProposal() {
+  if (!scrapReadingProposal) return;
+  scrapReadingProposal = null;
+  renderScrapReadingProposal();
+  setStatus(t("scrap_reading_discarded"));
+}

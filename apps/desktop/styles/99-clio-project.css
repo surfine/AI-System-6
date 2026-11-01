@@ -1,0 +1,483 @@
+/* ClioProject 项目表 — the plan for one project, and the all-disks calendar.
+
+   Lazy: this sheet rides ensureClioProjectModule() with the model and the
+   window (tooling/style-manifest.mjs), so a desk that never opens the plan
+   never downloads it. Every selector is scoped to .clio-project-*.
+
+   The vocabulary is MacProject II's, in 1-bit: a route stop is a milestone
+   (rounded box), a section or a task the writer hung is a task (square box),
+   and bold — heavier border, heavier line, heavier type — is the only
+   emphasis, spent on the chain blocking the handoff. Colour comes from the
+   theme tokens, so every appearance dresses the same objects. The card sizes
+   below are the same numbers as CLIO_PROJECT_SIZES in the window module; the
+   arrows are drawn to them. */
+
+.clio-project-window {
+  top: 64px;
+  left: 120px;
+  width: min(760px, calc(100vw - 40px));
+}
+
+.clio-project-pane {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  /* Six sections fanned out of Section Drafts, the common case, fit without
+     scrolling: 6 x 44px cards, their gaps, and the margin. */
+  min-height: 360px;
+  overflow: hidden;
+  container-type: inline-size;
+}
+
+.clio-project-plan {
+  display: grid;
+  flex: 1;
+  grid-template-columns: minmax(0, 1fr) 200px;
+  min-height: 0;
+}
+
+.clio-project-plan[hidden],
+.clio-project-calendar[hidden],
+.clio-project-sheet[hidden] {
+  display: none;
+}
+
+.clio-project-canvas-scroll {
+  min-width: 0;
+  overflow: auto;
+  border-right: var(--system-border);
+}
+
+.clio-project-canvas {
+  position: relative;
+  width: var(--clio-project-canvas-w, 100%);
+  height: var(--clio-project-canvas-h, 100%);
+}
+
+.clio-project-edges {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: visible;
+}
+
+.clio-project-edges path {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1;
+}
+
+.clio-project-edges path.is-blocking {
+  stroke-width: 3;
+}
+
+.clio-project-edges path.is-hung {
+  stroke-dasharray: 1 2;
+}
+
+/* ---- Cards ---------------------------------------------------------------- */
+
+.clio-project-node {
+  position: absolute;
+  top: var(--clio-project-y, 0);
+  left: var(--clio-project-x, 0);
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-content: center;
+  column-gap: 5px;
+  width: var(--clio-project-w, 116px);
+  height: 44px;
+  padding: 3px 6px 3px 5px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  cursor: default;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.clio-project-node.is-milestone {
+  border-radius: 10px;
+}
+
+.clio-project-node.is-own {
+  height: 30px;
+}
+
+.clio-project-node.is-blocking {
+  padding: 2px 5px 2px 4px;
+  border-width: 2px;
+}
+
+.clio-project-node.is-blocking .clio-project-node-title {
+  font-weight: bold;
+}
+
+/* An unstamped section: drawn so the project looks like what it is, but its
+   tick waits for the Outline's stamp, and the dotted edge says so. */
+.clio-project-node.is-pending {
+  border-style: dotted;
+}
+
+.clio-project-node input[type="checkbox"] {
+  margin: 0;
+  align-self: center;
+}
+
+.clio-project-node:focus-visible {
+  outline: 1px dotted var(--ink);
+  outline-offset: 2px;
+}
+
+/* Selection handles: four black squares at the corners, the way a drawing
+   application marks the object it will act on. */
+.clio-project-node.is-selected::after {
+  position: absolute;
+  inset: -4px;
+  content: "";
+  pointer-events: none;
+  background:
+    linear-gradient(var(--ink), var(--ink)) left top / 5px 5px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) right top / 5px 5px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) left bottom / 5px 5px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) right bottom / 5px 5px no-repeat;
+}
+
+.clio-project-node.is-dragging {
+  z-index: var(--z-local-overlay);
+}
+
+.clio-project-node-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clio-project-node-meta {
+  grid-column: 2;
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.84em;
+  white-space: nowrap;
+}
+
+.clio-project-node-meta > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.clio-project-node-date {
+  flex: none;
+  margin-left: auto;
+  font-weight: bold;
+}
+
+/* The done pile: finished work stacked behind the project, left of where it
+   actually is. Offset paper-and-ink edges are the 1-bit stack. */
+.clio-project-pile {
+  grid-template-columns: minmax(0, 1fr);
+  box-shadow:
+    3px 3px 0 var(--paper),
+    4px 4px 0 var(--ink),
+    6px 6px 0 var(--paper),
+    7px 7px 0 var(--ink);
+}
+
+.clio-project-pile .clio-project-node-title {
+  font-weight: bold;
+}
+
+.clio-project-pile .clio-project-node-meta {
+  grid-column: 1;
+}
+
+/* ---- Get Info ------------------------------------------------------------- */
+
+.clio-project-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: auto;
+}
+
+.clio-project-info-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+  border-bottom: var(--system-border);
+}
+
+.clio-project-info-kind,
+.clio-project-info-hint,
+.clio-project-field > span {
+  font-size: 0.84em;
+}
+
+.clio-project-info-title {
+  font-weight: bold;
+  overflow-wrap: anywhere;
+}
+
+.clio-project-info-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  padding: 6px 8px;
+}
+
+.clio-project-facts,
+.clio-project-done-list,
+.clio-project-sheet-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.clio-project-facts li {
+  position: relative;
+  padding-left: 10px;
+  overflow-wrap: anywhere;
+}
+
+.clio-project-facts li::before {
+  position: absolute;
+  top: 0.55em;
+  left: 0;
+  width: 4px;
+  height: 4px;
+  content: "";
+  background: var(--ink);
+}
+
+.clio-project-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.clio-project-field input,
+.clio-project-field textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  resize: none;
+}
+
+.clio-project-done-list li label,
+.clio-project-sheet-list label {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.clio-project-info-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 6px 8px;
+  border-top: var(--system-border);
+}
+
+.clio-project-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+  min-width: 0;
+}
+
+.clio-project-status .is-blocking {
+  font-weight: bold;
+}
+
+/* ---- The first-open question ---------------------------------------------- */
+
+.clio-project-sheet {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-local-overlay);
+  display: grid;
+  align-items: start;
+  justify-items: center;
+  padding: 20px 12px;
+  overflow: auto;
+}
+
+.clio-project-sheet-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(380px, 100%);
+  padding: 12px 14px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink);
+}
+
+.clio-project-sheet-panel h2 {
+  margin: 0;
+  font-size: 1em;
+}
+
+.clio-project-sheet-panel p {
+  margin: 0;
+}
+
+.clio-project-sheet-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.clio-project-sheet-list span {
+  font-size: 0.84em;
+  overflow-wrap: anywhere;
+}
+
+.clio-project-sheet-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+/* ---- All Disks: the month calendar ---------------------------------------- */
+
+.clio-project-calendar {
+  flex: 1;
+  padding: 8px 10px 10px;
+  overflow: auto;
+}
+
+.clio-project-calendar-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin-bottom: 6px;
+}
+
+.clio-project-calendar-note {
+  margin-left: auto;
+  font-size: 0.84em;
+}
+
+.clio-project-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border-top: var(--system-border);
+  border-left: var(--system-border);
+}
+
+.clio-project-calendar-dow,
+.clio-project-calendar-day {
+  border-right: var(--system-border);
+  border-bottom: var(--system-border);
+}
+
+.clio-project-calendar-dow {
+  padding: 1px 0;
+  font-weight: bold;
+  text-align: center;
+}
+
+.clio-project-calendar-day {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  min-height: 52px;
+  padding: 2px 3px;
+  font-size: 0.84em;
+}
+
+.clio-project-calendar-day.is-outside {
+  background: repeating-linear-gradient(45deg, var(--paper) 0 2px, var(--shade) 2px 3px);
+}
+
+.clio-project-calendar-number {
+  align-self: flex-start;
+  padding: 0 2px;
+}
+
+.clio-project-calendar-day.is-today .clio-project-calendar-number {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.clio-project-calendar-event {
+  overflow: hidden;
+  padding: 0 3px;
+  border: 1px solid var(--ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clio-project-calendar-event.is-handoff {
+  border-width: 2px;
+  font-weight: bold;
+}
+
+.clio-project-calendar-event.is-burn {
+  border-style: dotted;
+}
+
+/* A day the word count changed: the 50% pattern square, small enough to sit
+   beside the day number without claiming more than it knows. */
+.clio-project-calendar-wrote {
+  display: inline-block;
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--ink);
+  background: repeating-linear-gradient(45deg, var(--ink) 0 1px, var(--paper) 1px 2px);
+}
+
+.clio-project-calendar-day .clio-project-calendar-wrote {
+  position: absolute;
+  margin: 3px 0 0 18px;
+}
+
+.clio-project-calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  margin-top: 6px;
+  font-size: 0.84em;
+}
+
+.clio-project-calendar-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* A narrow window — a phone, or a desk window pulled small — stacks Get Info
+   under the diagram instead of squeezing both. Same objects, same order. */
+@container (max-width: 560px) {
+  .clio-project-plan {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(180px, 1fr) auto;
+  }
+
+  .clio-project-canvas-scroll {
+    border-right: 0;
+    border-bottom: var(--system-border);
+  }
+
+  .clio-project-calendar-event {
+    font-size: 0.9em;
+  }
+}

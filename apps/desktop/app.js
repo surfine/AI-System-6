@@ -1,0 +1,3270 @@
+const {
+  contextBudgetConfig,
+  defaultWindowViewModes,
+  docToolConfig,
+  flowConfig,
+  getAppBuildInfo,
+  longTaskControlSelectors,
+  memoryCardPairs,
+  projectConfig,
+  storageConfig,
+  windowManagementConfig,
+} = window.AISystem6Config || {};
+
+if (!getAppBuildInfo) {
+  throw new Error("app/core/config.js must load before app.js");
+}
+
+const {
+  maxCuratedContextItems,
+  maxReferenceChunks,
+  maxContextChars,
+  maxContextItemChars,
+  maxAttachedContextChars,
+  maxPipelineReferenceChunks,
+  maxPipelineContextChars,
+  contextCharsPerToken,
+  reservedOutputTokens,
+  reservedSafetyTokens,
+  ragBudgetShare,
+} = contextBudgetConfig;
+const {
+  docMapMinSelectionChars,
+  docMapMinDocumentChars,
+  clioChartMinSourceChars,
+  clioStageMinSourceChars,
+  dictionaryMaxSelectionChars,
+  rebuildMinSourceChars,
+  defaultOutlineSection,
+} = docToolConfig;
+const {
+  storageVersion,
+  indexedDbName,
+  indexedDbVersion,
+  referenceStoreName,
+  keyvalStoreName,
+  projectsStoreName,
+  scrapsStoreName,
+  trashStoreName,
+  chatFoldersStoreName,
+  chatFilesStoreName,
+  citiesStoreName,
+  bonsaiCitiesStoreName,
+  imageAttachmentsStoreName,
+  transitPlansStoreName,
+} = storageConfig;
+const {
+  defaultProjectName,
+  displayNameRewrites,
+  appAuthoredDefaultProjectNames,
+} = projectConfig;
+
+// The name a fresh disk is born with follows the interface language; the frozen
+// config value is the pre-translation fallback.
+function getDefaultProjectName() {
+  const localized = typeof t === "function" ? String(t("default_project_name") || "").trim() : "";
+  // Before the language table lands, t() answers with the key itself. That key
+  // used to be stored as the first project's name and then shown on the menu
+  // bar and the desk disk for good (seen 2026-10-08 on a slow Liquid Glass and
+  // NeXTSTEP boot). The frozen fallback is an app-authored name, so
+  // projectDisplayName still shows it in the writer's language.
+  return localized && localized !== "default_project_name" ? localized : defaultProjectName;
+}
+const {
+  stepOrder: flowStepOrder,
+} = flowConfig;
+const {
+  tileableWindowNames: tileableWindowNameValues,
+  resizableWindowNames: resizableWindowNameValues,
+  assistantSidecarWindowNames: assistantSidecarWindowNameValues,
+} = windowManagementConfig;
+// Windows declared whole in the admission table add themselves by flag.
+const tileableWindowNames = new Set([...tileableWindowNameValues, ...window.AISystem6Admissions.framedWindows("tile")]);
+const resizableWindowNames = new Set([...resizableWindowNameValues, ...window.AISystem6Admissions.framedWindows("grow")]);
+const assistantSidecarWindowNames = new Set(assistantSidecarWindowNameValues);
+
+const {
+  form,
+  bootScreenEl,
+  bootMessageEl,
+  bootProgressFillEl,
+  bootStartupDiskEl,
+  bootProjectDiskEl,
+  bootLocalModelEl,
+  promptInput,
+  composeToolsToggleButton,
+  composeToolsMenuEl,
+  messagesEl,
+  clioScrollLatestButton,
+  composerKeyHintEl,
+  statusEl,
+  assistantMeterButton,
+  localProviderEl,
+  endpointInput,
+  localApiTokenInput,
+  connectLocalModelButton,
+  localConnectionStatusEl,
+  localAuthStatusEl,
+  localCorsStatusEl,
+  localBrowserPermissionStatusEl,
+  modelInput,
+  setupLocalModelButton,
+  findModelsButton,
+  modelPickerStatusEl,
+  modelStatePanelEl,
+  modelStateNextEl,
+  searchProviderInput,
+  importerModeInput,
+  ocrEngineInput,
+  importerStatusEl,
+  contextLengthInput,
+  contextRamStatusEl,
+  loadModelButton,
+  loadModelStatusEl,
+  rememberInput,
+  clearButton,
+  clipSelectionButton,
+  retryButton,
+  composerSubmitButton,
+  clockEl,
+  filesInput,
+  filesSelectionEl,
+  indexFilesButton,
+  ragStatusEl,
+  mountedTextDiskEl,
+  textDiskCountEl,
+  textDiskGridEl,
+  currentProjectLabelEl,
+  desktopProjectCdEl,
+  projectSwitcherButton,
+  projectSwitcherLabelEl,
+  projectSwitcherPopoverEl,
+  startupSettingsModal,
+  startupModeInputs,
+  startupOpenOptionInputs,
+  startupSelectedItemsLabelEl,
+  spineFileFloppyButtonEl,
+  spineBurnProjectCdButtonEl,
+  writingToolsPanelEl,
+  writingToolsShadeToggleEl,
+  assistantProjectStatusEl,
+  activeProjectLabelEl,
+  selectedProjectLabelEl,
+  documentsProjectLabelEl,
+  scrapbookProjectLabelEl,
+  trashProjectLabelEl,
+  projectDiskCountEl,
+  projectDiskGridEl,
+  projectDiskNameInput,
+  newProjectDiskButton,
+  projectDiskUpButton,
+  projectDiskPathEl,
+  embeddingModelInput,
+  scrapTitleDisplay,
+  scrapTagsEl,
+  scrapStackSelect,
+  scrapBodyInput,
+  scrapSourceInfoEl,
+  toggleScrapTranslationButton,
+  insertScrapButton,
+  deleteScrapButton,
+  openScrapSourceButton,
+  scrapSelectionCountEl,
+  sendScrapsToQuestionButton,
+  outlineScrapsButton,
+  scrapbookDocMapButton,
+  scrapbookAskForm,
+  scrapbookQuestionInput,
+  downloadScrapsBilingualButton,
+  scrapListEl,
+  scrapCountEl,
+  scrapbookPagePreviousButton,
+  scrapbookPageNextButton,
+  scrapbookPageTrackEl,
+  scrapbookPagePositionEl,
+  trashListEl,
+  trashCountEl,
+  restoreTrashButton,
+  emptyTrashButton,
+  projectCdCountEl,
+  projectCdGridEl,
+  downloadProjectCdButton,
+  printProjectCdPdfButton,
+  clearProjectCdButton,
+  pageSetupInputs,
+  importFilesButton,
+  importFilesSelectionEl,
+  importStatusEl,
+  importPreviewEl,
+  importDocumentsButton,
+  projectBackupFileButton,
+  projectBackupSelectionEl,
+  projectBackupPreviewEl,
+  importProjectBackupButton,
+  modalScrim,
+  documentsCountEl,
+  documentsFolderLabelEl,
+  documentIconGridEl,
+  documentsUpButton,
+  chatFileTitleEl,
+  chatFileMetaEl,
+  chatFileBodyEl,
+  newFolderNameInput,
+  newFolderButton,
+  saveChatTitleEl,
+  saveChatForm,
+  chatFileNameInput,
+  chatFolderNameInput,
+  saveChatHintEl,
+  folderSuggestionsEl,
+  teachTextForm,
+  teachTextTitleEl,
+  teachTextStatusEl,
+  teachTextTabsEl,
+  teachTextNameInput,
+  teachTextFolderInput,
+  teachTextLabelSelect,
+  teachTextBodyInput,
+  teachTextBoundaryEl,
+  teachTextSeeAsChartButton,
+  teachTextModeStateEl,
+  teachTextSourceCountEl,
+  teachTextSelectionStateEl,
+  teachTextExportStateEl,
+  teachTextPreviewEl,
+  teachTextImageInput,
+  teachTextAttachmentsCountEl,
+  teachTextAttachmentDocumentEl,
+  teachTextAttachmentsListEl,
+  teachTextTogglePreviewButton,
+  teachTextTranslateButton,
+  teachTextDocMapButton,
+  teachTextClipSelectionButton,
+  teachTextSaveCopyButton,
+  teachTextDownloadMarkdownButton,
+  teachTextDownloadBilingualButton,
+  styleSheetCountEl,
+  styleSheetResultsEl,
+  reviewStatusTitleEl,
+  reviewDeskBodyInput,
+  reviewDeskPreviewEl,
+  reviewDeskEmptyNoteEl,
+  reviewDeskSplitterEl,
+  reviewSectionSelectEl,
+  reviewSectionMetaEl,
+  reviewSectionPreviousButton,
+  reviewSectionNextButton,
+  styleSectionSelectEl,
+  styleSectionMetaEl,
+  styleSectionPreviousButton,
+  styleSectionNextButton,
+  findPathForm,
+  findPathQueryInput,
+  findPathLimitInput,
+  findPathResultsEl,
+  findPathProviderEl,
+  findPathCountEl,
+  synthesizeFindPathButton,
+  findPathSummaryEl,
+  findFileForm,
+  findFileQueryInput,
+  findFileResultsEl,
+  findFileCountEl,
+  findFileScopeEl,
+  copyFindPathButton,
+  insertFindPathButton,
+  notePadTextInput,
+  notePadPrevButton,
+  notePadNextButton,
+  notePadPageLabelEl,
+  clipboardTextInput,
+  clipboardMetaEl,
+  clipboardInsertButton,
+  clipboardClearButton,
+  clipboardTranslateButton,
+  clipboardTranslationPanel,
+  clipboardTranslationTextInput,
+  clipboardTranslationTeachTextButton,
+  clipboardTranslationScrapbookButton,
+  clipboardTranslationAssistantButton,
+  clipboardDocMapButton,
+  calculatorDisplay,
+  calculatorKeys,
+  writingBellTimeEl,
+  writingBellModeEl,
+  writingBellPresetsEl,
+  writingBellStartButton,
+  writingBellPauseButton,
+  writingBellResetButton,
+  writingBellStatusEl,
+  memoryCardsBoardEl,
+  memoryCardsMovesEl,
+  memoryCardsTimeEl,
+  memoryCardsStatusEl,
+  puzzleBoardEl,
+  puzzleMovesEl,
+  puzzleStatusEl,
+  characterMapEl,
+  readerTitleEl,
+  readerUrlInput,
+  readerWorkspaceEl,
+  readerTabsEl,
+  readerSplitHandleEl,
+  readerFetchButton,
+  readerClipButton,
+  readerClipTranslateButton,
+  readerDocMapButton,
+  readerOpenClioStageButton,
+  readerSendManuscriptButton,
+  readerFindSourcesButton,
+  readerAskForm,
+  readerQuestionInput,
+  readerContentEl,
+  readerStatusEl,
+  readerUrlDisplayEl,
+  dictationRecordButton,
+  dictationStopButton,
+  dictationShapeButton,
+  dictationCleanButton,
+  dictationClearButton,
+  dictationSendButton,
+  dictationRawInput,
+  dictationCleanedInput,
+  dictationStatusEl,
+  dictationIntentTargetEl,
+  translationPadSourceInput,
+  translationPadResultInput,
+  translationPadStatusEl,
+  translationPadTargetEl,
+  translationPadClearButton,
+  translationPadTranslateButton,
+  translationPadSendButton,
+  questionSheetBodyInput,
+  questionSheetPreviewEl,
+  questionCountEl,
+  questionManuscriptTitleEl,
+  outlineNotesEl,
+  outlineContentEl,
+  outlineTreeEl,
+  outlinePreviewEl,
+  outlineStatusEl,
+  outlinePipelineLabelSelect,
+  draftListEl,
+  draftSectionSelectEl,
+  draftCountEl,
+  draftPipelineLabelSelect,
+  draftSectionLabelEl,
+  draftTitleInput,
+  draftBodyInput,
+  draftPreviewEl,
+  claimSectionSelectEl,
+  claimSectionMetaEl,
+  claimSectionPreviousButton,
+  claimSectionNextButton,
+  claimResultsEl,
+  docMapCountEl,
+  docMapTabsEl,
+  docMapTreeEl,
+  docMapFitViewButton,
+  docMapFocusRootButton,
+  docMapZoomOutButton,
+  docMapZoomInButton,
+  docMapCommandMenu,
+  docMapCommandSummary,
+  docMapSendQuestionButton,
+  docMapAskHkrrButton,
+  docMapInsertOutlineButton,
+  docMapSaveButton,
+  docMapPrintPdfButton,
+  docMapAskForm,
+  docMapQuestionInput,
+  docMapDropZoneEl,
+  clioStageViewportEl,
+  clioStageImportFilesButton,
+  clioStageAskForm,
+  clioStageQuestionInput,
+  dictionaryTermEl,
+  dictionarySourceEl,
+  dictionaryForm,
+  dictionaryQueryInput,
+  dictionaryResultEl,
+  dictionaryRecentEl,
+  systemHelpQueryInput,
+  systemHelpGroupSelect,
+  systemHelpListEl,
+  systemHelpDetailEl,
+  systemHelpCountEl,
+  systemHelpScopeEl,
+  modernFontsInput,
+  appearanceThemeInput,
+  liquidTintLevelInput,
+  liquidTintLevelOutput,
+  soundEffectsInput,
+  menuClockInput,
+  showUnmountedDisksInput,
+  classicLineIconsInput,
+  controlStripInput,
+  controlStripShowInput,
+  controlStripHotkeyInput,
+  controlStripHotkeyRecordButton,
+  controlStripHotkeyClearButton,
+  controlStripFontSelect,
+  controlStripFontSizeSelect,
+  controlStripModuleList,
+  controlStripMoveUpButton,
+  controlStripMoveDownButton,
+  controlStripEnableButton,
+  controlStripDisableButton,
+  controlStripResetButton,
+  docMapLayoutToggleButton,
+  docMapLayoutButtons,
+  performanceMeterInput,
+  showResetSystemMenuInput,
+  infoProjectNameEl,
+  infoProjectCreatedEl,
+  infoProjectModifiedEl,
+  infoFileCountEl,
+  infoScrapCountEl,
+  infoRefCountEl,
+  infoWordCountEl,
+  exportProjectDiskButton,
+  shareProjectDiskButton,
+  systemModal,
+  systemModalMessage,
+  systemModalCancel,
+  systemModalNo,
+  systemModalYes,
+  meterSpeedEl,
+  meterTokensEl,
+  meterElapsedEl,
+  meterStopEl,
+  statusClockTimeEl,
+  statusClockDateEl,
+  statusModelEl,
+  statusModelStateEl,
+  statusCurrentTaskEl,
+  statusVersionEl,
+  statusProjectEl,
+  statusTextDiskEl,
+  statusContextEl,
+  statusModeEl,
+  notificationCenterButton,
+  notificationCenterCountEl,
+  notificationCenterSummaryEl,
+  notificationCenterListEl,
+  attachedClipsShelfEl,
+  attachedClipsToolbarEl,
+  attachScrapButton,
+  fileInfoNameEl,
+  fileInfoKindEl,
+  fileInfoSizeEl,
+  fileInfoLocationEl,
+  fileInfoFolderEl,
+  fileInfoSourceEl,
+  fileInfoDescriptionLabelEl,
+  fileInfoDescriptionEl,
+  fileInfoContextEl,
+  fileInfoCreatedEl,
+  fileInfoModifiedEl,
+  fileInfoCommentsEl,
+  fileInfoStationeryEl,
+  infoFinderObjectsBlockEl,
+  fileInfoIconEl,
+  fileInfoDownloadMarkdownButton,
+  printDirectorySourceEl,
+  printDirectoryMetaEl,
+  printDirectoryPreviewEl,
+  printDirectoryDownloadButton,
+} = getElements();
+
+document.body.dataset.appReady = "booting";
+window.AISystem6Theme?.syncBody();
+const bootThemeId = window.AISystem6Theme?.getCommittedTheme?.()
+  || (typeof getCurrentTheme === "function" ? getCurrentTheme() : "classic");
+document.addEventListener("ai-system6-appearanceerror", ({ detail }) => {
+  const message = t("lazy_load_failed", window.AISystem6Theme.getTheme(detail.themeId).label, detail.error.message);
+  if (typeof pushSystemNotification === "function") pushSystemNotification(message, { state: "failed" });
+  setStatus(message);
+});
+window.AISystem6Theme?.registerPreparation((theme) => {
+  const modules = [];
+  if (theme.id === "nextstep" && (!window.AISystem6NextstepShellLoaded || !window.AISystem6NextstepDock || !window.AISystem6NextstepMenus || !window.AISystem6FinderColumns)) {
+    modules.push(
+      ensureLazySystemModule("app/core/nextstep-shell.js", "AISystem6NextstepShellLoaded"),
+      ensureLazySystemModule("app/core/nextstep-dock.js", "AISystem6NextstepDock"),
+      ensureLazySystemModule("app/core/nextstep-menus.js", "AISystem6NextstepMenus"),
+      ensureLazySystemModule("app/features/finder-columns.js", "AISystem6FinderColumns"),
+    );
+  }
+  // The miniaturize state machine travels with the appearances that can draw
+  // its control -- NeXTSTEP's own miniaturize button, and the yellow lamp of
+  // an era whose Dock ships with it (none yet: owner decision 2026-09-25). An
+  // era whose windows never had the button does not load it, and the boot
+  // bundle only carries the guards window-manager.js keeps instead.
+  if (!window.AISystem6WindowMinimizeLoaded
+    && (theme.id === "nextstep" || window.AISystem6Theme.hasCapability("minimize-lamp", theme.id))) {
+    modules.push(ensureLazySystemModule("app/core/window-minimize.js", "AISystem6WindowMinimizeLoaded"));
+  }
+  // A Mac OS X era's Dock renders after the miniaturize module it reads its
+  // put-away windows from, so it chains rather than racing it.
+  // Lion's title-bar arrows are real full screen (owner, 2026-09-25).
+  if (!window.AISystem6WindowFullscreenLoaded && window.AISystem6Theme.hasCapability("full-screen", theme.id)) {
+    modules.push(ensureLazySystemModule("app/core/window-fullscreen.js", "AISystem6WindowFullscreenLoaded"));
+  }
+  if (!window.AISystem6DeskDockLoaded && window.AISystem6Theme.hasCapability("dock", theme.id)) {
+    modules.push(Promise.all(modules.slice()).then(() => ensureLazySystemModule("app/core/desk-dock.js", "AISystem6DeskDockLoaded")));
+  }
+  return modules.length ? Promise.all(modules) : null;
+});
+
+// Development surfaces are explicit only: an explicit capabilities flag, or
+// loopback hosts. An UNRESOLVED deployment profile is never treated as
+// development, so public hosted deployments cannot unlock research previews
+// before /api/capabilities resolves.
+function isDevelopmentSurface() {
+  if (window.AISystem6Capabilities?.development === true) return true;
+  const hostname = String(window.location.hostname || "").toLowerCase();
+  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]";
+}
+
+const bootSearch = String(window.location?.search || "");
+const bootDebugMatch = bootSearch.match(/[?&]debugTheme=([a-z0-9-]+)/i);
+const bootDebugId = bootDebugMatch ? bootDebugMatch[1].toLowerCase() : "";
+const bootDebugTheme = bootDebugId ? window.AISystem6Theme?.getTheme?.(bootDebugId) : null;
+// Research appearances preview only through ?debugTheme= on a development
+// surface (explicit development capability or loopback). Public hosted
+// deployments — including before capabilities resolve — ignore the parameter
+// and always land on the saved release Appearance.
+const developmentPreviewAllowed = isDevelopmentSurface();
+// The Appearance choices are the registry's release list, built here rather
+// than written into index.html, so a new appearance is one declaration.
+appearanceThemeInput?.append(...window.AISystem6Theme.getReleaseReadyThemes().map(({ id, label, labelKey, polishPending }) => {
+  const option = document.createElement("option");
+  option.value = id;
+  option.textContent = label;
+  option.dataset.i18n = labelKey;
+  if (polishPending) {
+    option.dataset.polishPending = "true";
+    option.dataset.i18nTitle = "appearance_polish_pending";
+    if (typeof t === "function") option.title = t("appearance_polish_pending");
+  }
+  return option;
+}));
+if (bootDebugTheme && developmentPreviewAllowed) {
+  // Dev-only session preview, never persisted: the Appearance selector keeps
+  // reflecting the release base, and a reload without the parameter restores
+  // the saved theme. A release-ready era named here applies as a session
+  // preview too -- its acceptance instruments (?debugTheme=nextstep) broke the
+  // moment the era shipped (releaseReady:true, 2026-09-23) and the parameter
+  // silently stopped selecting it.
+  if (appearanceThemeInput) appearanceThemeInput.value = bootDebugTheme.releaseReady === false
+    ? window.AISystem6Theme.normalizeReleaseThemeId(bootDebugTheme.id)
+    : bootThemeId;
+  window.AISystem6Theme.previewExperimentalTheme(bootDebugTheme.id);
+} else {
+  if (appearanceThemeInput) appearanceThemeInput.value = bootThemeId;
+  applyTheme(bootThemeId, { persist: false, saveDesk: false, announce: false, syncUi: false });
+}
+let appVersionInfo = { ...getAppBuildInfo() };
+if (rememberInput) rememberInput.checked = true;
+
+const conversation = [];
+let activeChatFileId = null;
+let compressedConversationMemory = {
+  text: "",
+  sourceMessages: 0,
+  updatedAt: "",
+}
+const systemNotifications = [];
+let unreadSystemNotifications = 0;
+const activeLongTaskDetails = new Map();
+
+// File Info elements
+
+let fileInfoItem = null;
+
+// View Modes state
+const windowViewModes = { ...defaultWindowViewModes };
+let writingToolsViewMode = "icon";
+let systemFinderPath = "";
+let applicationsFinderPath = "";
+const finderContainerWindowNames = ["finder", "helpFolder", "applications", "disk", "projectDisks"];
+const viewWindowNames = [...finderContainerWindowNames, "projects", "documents", "imageManager"];
+const printableDirectoryWindowNames = new Set([
+  ...finderContainerWindowNames,
+  "projects",
+  "documents",
+  "textDisk",
+  "projectCd",
+  "trash",
+]);
+
+function staticFinderBuildDate() {
+  const match = String(appVersionInfo.build || "").match(/^(\d{4})(\d{2})(\d{2})/);
+  return match ? `${match[1]}-${match[2]}-${match[3]}T00:00:00.000Z` : "";
+}
+
+const applicationDescriptionKeys = Object.freeze({
+  "open-writing-studio": "app_desc_writing_studio",
+  "open-quick-draft": "app_desc_draft_desk",
+  "open-assistant": "app_desc_cliotalk",
+  "open-reader": "app_desc_reader",
+  "open-find-path": "app_desc_searcher",
+  "open-teachtext": "app_desc_teachtext",
+  "open-scrapbook": "app_desc_scrapbook",
+  "open-docmap": "app_desc_docmap",
+  "open-clio-stage": "app_desc_clio_stage",
+  "open-clio-chart": "app_desc_clio_chart",
+  "open-liquid-cover": "app_desc_cover_glass",
+  "open-cmf-studio": "app_desc_cmf_studio",
+  "open-image-prompt-studio": "app_desc_image_prompt_studio",
+  "open-soundscape": "app_desc_soundscape",
+  "open-endfield-terminal": "app_desc_endfield",
+  "open-bureaucracy-meme": "app_desc_bureaucracy",
+  "open-one-more-tune": "app_desc_one_more_tune",
+  "open-time-machine": "app_desc_time_machine",
+  "open-rebuild-flow": "app_desc_rebuild",
+  "play-writing-demo": "app_desc_live_demo",
+  "play-teaser-demo": "app_desc_teaser_demo",
+  "open-micropolis": "app_desc_micropolis",
+  "open-openttd": "app_desc_openttd",
+  "open-doom": "app_desc_doom",
+  "open-bonsai-city": "app_desc_bonsai_city",
+  ...window.AISystem6Admissions?.appDescriptionKeys?.(),
+});
+
+function withStaticFinderMetadata(items, location) {
+  const buildDate = staticFinderBuildDate();
+  return items.map((item) => {
+    const descriptionKey = item.descriptionKey || applicationDescriptionKeys[item.action] || "";
+    return {
+      virtual: true,
+      canDuplicate: false,
+      canTrash: false,
+      canOpen: item.canOpen !== false,
+      sizeLabel: item.sizeLabel || t("built_in"),
+      createdAt: item.createdAt || buildDate,
+      updatedAt: item.updatedAt || buildDate,
+      version: item.version || appVersionInfo.version,
+      location,
+      descriptionKey,
+      description: descriptionKey ? t(descriptionKey) : "",
+      ...item,
+    };
+  });
+}
+
+function getSystemFolderItems() {
+  return withStaticFinderMetadata([
+    { name: t("ai_prompts_folder"), iconId: "folder", icon: "folder-icon", action: "open-system-folder-path:ai-prompts", kind: t("folder_kind") },
+    { name: "System", iconId: "systemFile", icon: "doc-icon", action: "open-system-file-system", kind: t("system_component"), canOpen: false },
+    { name: "Finder", iconId: "finderApp", icon: "app-icon", action: "open-system-file-finder", kind: t("application"), canOpen: false },
+    { name: "MultiFinder", iconId: "multiFinderApp", icon: "app-icon", action: "open-system-file-multifinder", kind: t("application"), canOpen: false },
+    { name: "DA Handler", iconId: "daHandler", icon: "doc-icon", action: "open-system-file-da-handler", kind: t("system_component"), canOpen: false },
+    { name: t("chooser"), iconId: "chooser", icon: "panel-icon", action: "open-chooser", kind: t("system_component") },
+    { name: t("control_panel"), iconId: "controlPanel", icon: "panel-icon", action: "open-control", kind: t("system_component") },
+    { name: t("system_status"), iconId: "systemStatus", icon: "panel-icon", action: "open-system-status", kind: t("system_component") },
+    { name: t("theme_lab"), iconId: "controlPanel", icon: "panel-icon", action: "open-theme-lab", kind: t("system_component") },
+    { name: t("context_panel"), iconId: "contextPanel", icon: "panel-icon", action: "open-context-panel", kind: t("system_component") },
+  ], t("system_folder"));
+}
+
+// The System Folder is a real directory tree, not a flat list behind a hidden
+// mode flag. Every subfolder declares its own parent and folder name so the
+// shared Finder path bar, the Back control, and Get Info all read the same
+// current directory the user actually walked into.
+const systemFolderPathDefinitions = new Map([
+  ["ai-prompts", {
+    // The only System Folder directory with a localized name; the folders below
+    // it are English product names in both languages.
+    labelKey: "ai_prompts_folder",
+    parentPath: "",
+    folders: [
+      { path: "writing-tools", name: "Writing Tools" },
+      { path: "writing-route", name: "Writing Route" },
+      { path: "source-apps", name: "Source Apps" },
+      { path: "other-apps", name: "Other Apps" },
+      { path: "cliotalk", name: "ClioTalk" },
+      { path: "boundaries", name: "System Boundaries" },
+    ],
+  }],
+  ["writing-tools", { label: "Writing Tools", parentPath: "ai-prompts", promptCategory: "Writing Tools" }],
+  ["writing-route", { label: "Writing Route", parentPath: "ai-prompts", promptCategory: "Writing Route" }],
+  ["source-apps", { label: "Source Apps", parentPath: "ai-prompts", promptCategory: "Source Apps" }],
+  ["other-apps", { label: "Other Apps", parentPath: "ai-prompts", promptCategory: "Other Apps" }],
+  ["cliotalk", { label: "ClioTalk", parentPath: "ai-prompts", promptCategory: "ClioTalk" }],
+  ["boundaries", { label: "System Boundaries", parentPath: "ai-prompts", promptCategory: "System Boundaries" }],
+]);
+
+// Applications window hierarchy. The root keeps only the seven apps of the
+// writing route (ClioTalk, TeachText, Reader, Scrapbook, DocMap, Searcher, Quick
+// Draft); the rest live in two folders, Create and After Hours (the old Extras
+// and Games folders, one place for what a writer opens when work is done).
+// "extras" and "games" stay accepted as paths and land in After Hours. Everything
+// below is one source of truth: the rendered items, the folder labels, the
+// path bar, and the action handlers all read this map.
+const applicationsFolderPathDefinitions = new Map([
+  ["", { labelKey: "applications" }],
+  ["create", { labelKey: "applications_create", parentPath: "" }],
+  ["afterHours", { labelKey: "applications_after_hours", parentPath: "" }],
+]);
+const applicationsFolderPathAliases = { extras: "afterHours", games: "afterHours" };
+
+function applicationsFolderPathLabel(path = applicationsFinderPath) {
+  const definition = applicationsFolderPathDefinitions.get(path);
+  return definition ? (definition.labelKey ? t(definition.labelKey) : definition.label || t("applications")) : t("applications");
+}
+
+function applicationsFolderLocationPath(path = applicationsFinderPath) {
+  const trail = [];
+  const seen = new Set();
+  let current = path;
+  while (current && applicationsFolderPathDefinitions.has(current) && !seen.has(current)) {
+    seen.add(current);
+    trail.unshift(applicationsFolderPathLabel(current));
+    current = applicationsFolderPathDefinitions.get(current).parentPath;
+  }
+  return [t("applications"), ...trail].join("/");
+}
+
+function getApplicationsFolderPathDefinition(path = applicationsFinderPath) {
+  return applicationsFolderPathDefinitions.get(path) || null;
+}
+
+function applicationsFolderPathTrail(path = applicationsFinderPath) {
+  const trail = [];
+  const seen = new Set();
+  let current = path;
+  while (current && applicationsFolderPathDefinitions.has(current) && !seen.has(current)) {
+    seen.add(current);
+    trail.unshift({ path: current, label: applicationsFolderPathLabel(current) });
+    current = applicationsFolderPathDefinitions.get(current).parentPath;
+  }
+  return trail;
+}
+
+function applicationsFolderCurrentLabel(path = applicationsFinderPath) {
+  return applicationsFolderPathLabel(path) || t("applications");
+}
+
+function navigateApplicationsFolderPath(path = "") {
+  path = applicationsFolderPathAliases[path] || path;
+  applicationsFinderPath = applicationsFolderPathDefinitions.has(path) ? path : "";
+  selectedStaticFinderAction = "";
+  renderStaticFinderWindow("applications");
+  if (typeof renderFinderNavigationBar === "function") renderFinderNavigationBar("applications");
+}
+
+function getSystemFolderPathDefinition(path = systemFinderPath) {
+  return systemFolderPathDefinitions.get(path) || null;
+}
+
+function systemFolderPathLabel(path) {
+  const definition = systemFolderPathDefinitions.get(path);
+  if (!definition) return "";
+  return definition.labelKey ? t(definition.labelKey) : definition.label;
+}
+
+function systemFolderPathTrail(path = systemFinderPath) {
+  const trail = [];
+  const seen = new Set();
+  let current = path;
+  while (current && systemFolderPathDefinitions.has(current) && !seen.has(current)) {
+    seen.add(current);
+    trail.unshift({ path: current, label: systemFolderPathLabel(current) });
+    current = systemFolderPathDefinitions.get(current).parentPath;
+  }
+  return trail;
+}
+
+function systemFolderCurrentLabel(path = systemFinderPath) {
+  return systemFolderPathLabel(path) || t("system_folder");
+}
+
+function systemFolderLocationPath(path = systemFinderPath) {
+  return ["System Folder", ...systemFolderPathTrail(path).map((entry) => entry.label)].join("/");
+}
+
+// One entry point for every System Folder directory change, so the contents,
+// the window title, and the shared path bar can never disagree about where the
+// user is.
+function navigateSystemFolderPath(path = "") {
+  systemFinderPath = systemFolderPathDefinitions.has(path) ? path : "";
+  selectedStaticFinderAction = "";
+  renderStaticFinderWindow("finder");
+  if (typeof renderFinderNavigationBar === "function") renderFinderNavigationBar("finder");
+}
+
+function getSystemPromptFinderItems() {
+  const definition = getSystemFolderPathDefinition();
+  if (!definition) return getSystemFolderItems();
+  const location = systemFolderLocationPath();
+
+  if (definition.folders) {
+    return withStaticFinderMetadata(definition.folders.map((folder) => ({
+      name: folder.name,
+      iconId: "folder",
+      icon: "folder-icon",
+      action: `open-system-folder-path:${folder.path}`,
+      kind: t("folder_kind"),
+    })), location);
+  }
+
+  return withStaticFinderMetadata(
+    (window.AISystem6PromptFiles || [])
+      .filter((prompt) => prompt.category === definition.promptCategory)
+      .map((prompt) => ({
+        name: window.AISystem6PromptFilesRuntime?.promptDisplayName?.(prompt, currentLanguage) || prompt.name,
+        iconId: "document",
+        icon: "doc-icon",
+        action: `open-system-prompt-file:${prompt.id}`,
+        kind: prompt.editable === "project"
+          ? t("system_component")
+          : (currentLanguage === "zh" ? "系统只读" : "System read-only"),
+      })),
+    location
+  );
+}
+
+// The 说明 folder's documents: one label key, one opener command, one glyph.
+// They are data because they are the same row four times — and because the
+// folder is re-rendered from this list, so the demonstration-disk page appears
+// by being here rather than by a second copy in index.html's first markup.
+const helpFolderDocuments = [
+  ["read_me", "open-read-me", "document"],
+  ["flow_readme", "open-flow-readme", "document"],
+  ["memory_readme", "open-memory-readme", "document"],
+  ["shared_readme", "open-demo-disks-readme", "projectDisk"],
+];
+
+function getHelpFolderItems() {
+  return withStaticFinderMetadata([
+    ...helpFolderDocuments.map(([labelKey, action, iconId]) => ({ name: t(labelKey), iconId, icon: "doc-icon", action, kind: t("system_component") })),
+    { name: t("concepts_docmap"), iconId: "docMap", icon: "doc-icon", action: "open-system-concepts-docmap", kind: t("system_component") },
+    { name: t("concepts_clio_stage"), iconId: "clioStage", icon: "doc-icon", action: "open-system-concepts-clio-stage", kind: t("system_component") },
+  ], t("help_folder"));
+}
+
+function getApplicationsItems() {
+  const location = applicationsFolderLocationPath();
+  if (applicationsFinderPath === "create") {
+    return withStaticFinderMetadata([
+      ...window.AISystem6Admissions?.applicationItems?.("create"),
+    ], location);
+  }
+  if (applicationsFinderPath === "afterHours") {
+    return withStaticFinderMetadata([
+      ...window.AISystem6Admissions?.applicationItems?.("extras"),
+      { name: t("rebuild_article"), iconId: "rebuildArticle", icon: "tools-icon", action: "open-rebuild-flow", type: "application", kind: t("application"), workspaceCapability: workspaceCapabilityStudio },
+      { name: t("guide_play_demo"), iconId: "writingDemo", icon: "teachtext-icon", action: "play-writing-demo", type: "application", kind: t("application"), workspaceCapability: workspaceCapabilityStudio },
+      { name: t("guide_play_teaser_demo"), iconId: "writingDemo", icon: "teachtext-icon", action: "play-teaser-demo", type: "application", kind: t("application") },
+      ...window.AISystem6Admissions?.applicationItems?.("games"),
+      // The two small games that used to sit in the Apple menu.
+      { name: t("puzzle"), icon: "tools-icon", action: "open-puzzle", type: "application", kind: t("application") },
+      { name: t("memory_cards"), icon: "tools-icon", action: "open-memory-cards", type: "application", kind: t("application") },
+    ], location);
+  }
+  // Root: the seven writing-route apps. Alias, Clipping,
+  // Stationery Pad, Finder Label and Droplet stay file/menu/drop behaviors and
+  // are not listed as top-level applications.
+  return withStaticFinderMetadata([
+    ...window.AISystem6Admissions?.applicationItems?.("root"),
+    { name: t("writing_studio"), iconId: "writingStudio", icon: "writing-studio-icon", action: "open-writing-studio", type: "application", kind: t("application"), workspaceProfiles: [workspaceProfileDesktop] },
+    { name: t("assistant_label"), iconId: "assistant", icon: "app-icon", action: "open-assistant", type: "application", kind: t("application") },
+    { name: t("reader_label"), iconId: "reader", icon: "reader-desk-icon", action: "open-reader", type: "application", kind: t("application") },
+    { name: t("teachtext_label"), iconId: "teachText", icon: "teachtext-icon", action: "open-teachtext", type: "application", kind: t("application") },
+    { name: t("scrapbook_label"), iconId: "scrapbook", icon: "folder-icon", action: "open-scrapbook", type: "application", kind: t("application") },
+    { name: t("docmap_label"), iconId: "docMap", icon: "folder-icon", action: "open-docmap", type: "application", kind: t("application") },
+    { name: t("applications_create"), iconId: "folder", icon: "folder-icon", action: "open-applications-folder-path:create", type: "folder", kind: t("folder_kind") },
+    { name: t("applications_after_hours"), iconId: "folder", icon: "folder-icon", action: "open-applications-folder-path:afterHours", type: "folder", kind: t("folder_kind") },
+  ], location);
+}
+
+function getStartupDiskItems() {
+  const fileFloppyMounted = typeof getMountedTextDiskChunks === "function"
+    && getMountedTextDiskChunks().length > 0;
+  return withStaticFinderMetadata([
+    { name: t("system_folder"), iconId: "systemFolder", icon: "system-icon", action: "open-finder", kind: t("folder_kind") },
+    { name: t("help_folder"), iconId: "helpFolder", icon: "folder-icon", action: "open-help-folder", kind: t("folder_kind") },
+    { name: t("applications"), iconId: "applications", icon: "applications-icon", action: "open-applications", kind: t("folder_kind") },
+    { name: t("project_disk"), iconId: "projectDisk", icon: "project-disk-icon", action: "open-project-disks", type: "volume", kind: t("project_disk"), virtual: false },
+    // The disks that ship with the application, in the place a person looks
+    // first. They are not a volume — nothing is mounted until one is opened and
+    // becomes an ordinary project — so the row carries no type, only the
+    // project-disk family's art and the same command the File menu row uses.
+    { name: t("demo_disks_title"), iconId: "projectDisk", icon: "project-disk-icon", action: "open-demo-disks" },
+    { name: t("project_cd"), iconId: "projectDisc", icon: "hard-disk-icon", action: "open-project-cd", type: "volume", kind: t("project_cd"), virtual: false, workspaceCapability: workspaceCapabilityStudio },
+    {
+      name: t("mounted_text_disk"),
+      iconId: "fileFloppy",
+      icon: "text-disk-icon",
+      action: "open-text-disk",
+      type: "volume",
+      kind: t("mounted_text_disk"),
+      virtual: !fileFloppyMounted,
+      workspaceCapability: workspaceCapabilityStudio,
+    },
+    { name: t("trash"), iconId: "trash", icon: "trash-icon", action: "open-trash", kind: t("folder_kind") },
+  ], t("startup_disk"));
+}
+
+function getStaticFinderItems(winName) {
+  if (winName === "helpFolder") return filterWorkspaceItems(getHelpFolderItems());
+  if (winName === "applications") return filterWorkspaceItems(getApplicationsItems());
+  if (winName === "disk") return filterWorkspaceItems(getStartupDiskItems());
+  if (winName === "projectDisks") return filterWorkspaceItems(window.AISystem6DemonstrationDiskItems?.() || []);
+  return filterWorkspaceItems(getSystemPromptFinderItems());
+}
+
+function renderFinderItemIcon(item, mode) {
+  // The view mode chooses the tier, and the tier is what Platinum sizes its
+  // inline artwork by. `mini` for every non-application item was a legacy hint
+  // that made icon view paint the compact 16 px asset, so the era read as
+  // "small icons" in both modes; small-icon view and the list rows are the
+  // compact tier, and icon view is the Finder tier.
+  const compact = isFinderListMode(mode) || normalizeFinderViewMode(mode) === "small-icon";
+  return renderSystemIcon(item.iconId || item.icon, {
+    size: compact ? "mini" : (item.iconBase === "icon" ? "desktop" : "finder"),
+    displaySize: compact ? 22 : 44,
+  });
+}
+
+function controlStripModuleDragAttributes(item) {
+  return item.moduleId
+    ? ` draggable="true" data-drag-type="control-strip-module" data-module-id="${escapeHtml(item.moduleId)}"`
+    : "";
+}
+
+function dropletDropAttributes(item) {
+  return item.dropletAction
+    ? ` data-drop-target="droplet" data-droplet-action="${escapeHtml(item.dropletAction)}" data-balloon-help="balloon_droplet"`
+    : "";
+}
+
+function splitApplicationsSections(items = []) {
+  const apps = [];
+  const droplets = [];
+  items.forEach((item) => (item.dropletAction ? droplets : apps).push(item));
+  return droplets.length ? { apps, droplets } : null;
+}
+
+function getSelectedStaticFinderItem(winName = selectedStaticFinderWindowName) {
+  if (!winName || winName !== selectedStaticFinderWindowName || !selectedStaticFinderAction) return null;
+  return getStaticFinderItems(winName).find((item) => item.action === selectedStaticFinderAction) || null;
+}
+
+function isStartupApplicationItem(item) {
+  return item?.type === "application";
+}
+
+function getApplicationItemByAction(action) {
+  if (!action) return null;
+  return getApplicationsItems().find((item) => item.action === action && isStartupApplicationItem(item)) || null;
+}
+
+function getSelectedDesktopApplicationItem() {
+  const action = selectedDesktopIconEl?.dataset.action;
+  return getApplicationItemByAction(action);
+}
+
+function setStartupSelectedApplication(item) {
+  if (!isStartupApplicationItem(item)) return;
+  startupSelectedApplicationAction = item.action;
+  startupSelectedApplicationName = item.name;
+  syncStartupSelectedItemsLabel();
+}
+
+function selectDesktopIcon(icon) {
+  if (!icon) return;
+  if (selectedDesktopIconEl && selectedDesktopIconEl !== icon) {
+    selectedDesktopIconEl.classList.remove("is-selected");
+  }
+  selectedDesktopIconEl = icon;
+  selectedDesktopIconEl.classList.add("is-selected");
+  selectedDesktopIconEl.focus({ preventScroll: true });
+}
+
+function openDesktopIcon(icon) {
+  if (!icon || icon.disabled || icon.classList.contains("is-disabled")) return;
+  selectDesktopIcon(icon);
+  if (icon.dataset.open) {
+    openWindow(icon.dataset.open);
+    return;
+  }
+  if (icon.dataset.action) {
+    handleAction(icon.dataset.action);
+  }
+}
+
+function finderMarqueeContext(event) {
+  // A finger drag means scroll, not select: the marquee calls preventDefault on
+  // pointerdown, which on a phone freezes the pane you were trying to scroll.
+  // Mouse and pen keep the rubber band.
+  if (event.pointerType === "touch") return null;
+  if (event.button || event.target.closest("button,input,textarea,select,label,a,summary,.title-bar,.menu-bar,.resize-handle,.grow-box")) return null;
+  const pane = event.target.closest(".window-pane");
+  if (pane?.querySelector(".finder-item")) return {
+    win: pane.closest(".window")?.dataset.window || "",
+    items: [...pane.querySelectorAll(".finder-item")].filter((item) => item.offsetParent),
+  };
+  if (event.target.closest(".window")) return null;
+  return event.target.closest(".desktop")
+    ? { win: "desktop", items: [...document.querySelectorAll(".icon-column .desktop-icon:not(.is-hidden)")].filter((item) => item.offsetParent) }
+    : null;
+}
+
+function commitFinderMarqueeSelection(context, hits) {
+  context.items.forEach((item) => item.classList.remove("is-selected"));
+  const primary = hits[0] || null;
+  if (context.win === "desktop") {
+    hits.forEach((item) => item.classList.add("is-selected"));
+    selectedDesktopIconEl = primary;
+    updateMenuState();
+    return;
+  }
+  if (!primary) {
+    selectedStaticFinderWindowName = selectedStaticFinderAction = "";
+    if (context.win === "projectDisk" || context.win === "documents") {
+      selectedProjectRootItemId = selectedChatFileId = selectedDocumentFolderId = null;
+      selectedDocumentItemKeys.clear();
+      selectedDocumentAnchorKey = "";
+    }
+    if (context.win === "projectCd") {
+      selectedProjectCdItemId = null;
+      selectedProjectCdItemIds.clear();
+    }
+    if (context.win === "textDisk") {
+      selectedMountedFile = null;
+      selectedMountedFileNames.clear();
+    }
+    updateMenuState();
+    return;
+  }
+  const data = primary.dataset;
+  if (context.win === "projectCd" && data.projectCdItemId) {
+    selectedProjectCdItemIds.clear();
+    hits.forEach((item) => {
+      if (item.dataset.projectCdItemId) selectedProjectCdItemIds.add(item.dataset.projectCdItemId);
+    });
+    selectedProjectCdItemId = data.projectCdItemId;
+  } else if ((context.win === "projectDisk" || context.win === "documents") && data.documentItemId) {
+    selectedProjectRootItemId = null;
+    selectedDocumentItemKeys.clear();
+    hits.forEach((item) => {
+      if (item.dataset.documentItemType && item.dataset.documentItemId) {
+        selectedDocumentItemKeys.add(documentSelectionKey(item.dataset.documentItemType, item.dataset.documentItemId));
+      }
+    });
+    selectedDocumentAnchorKey = data.documentItemType && data.documentItemId
+      ? documentSelectionKey(data.documentItemType, data.documentItemId)
+      : "";
+    if (data.documentItemType === "folder") {
+      selectedDocumentFolderId = data.documentItemId;
+      selectedChatFileId = null;
+    } else {
+      selectedChatFileId = data.documentItemId;
+      selectedDocumentFolderId = null;
+    }
+  } else if (context.win === "textDisk" && data.mountedFile) {
+    selectedMountedFileNames.clear();
+    hits.forEach((item) => {
+      if (item.dataset.mountedFile) selectedMountedFileNames.add(item.dataset.mountedFile);
+    });
+    selectedMountedFile = data.mountedFile;
+  } else if (data.projectRootId) {
+    selectedProjectRootItemId = data.projectRootId;
+    selectedChatFileId = selectedDocumentFolderId = null;
+  } else if (data.documentItemId) {
+    selectedProjectRootItemId = null;
+    if (data.documentItemType === "folder") {
+      selectedDocumentFolderId = data.documentItemId;
+      selectedChatFileId = null;
+    } else {
+      selectedChatFileId = data.documentItemId;
+      selectedDocumentFolderId = null;
+    }
+  } else if (data.mountedFile) {
+    selectedMountedFile = data.mountedFile;
+  } else {
+    selectedStaticFinderWindowName = context.win;
+    selectedStaticFinderAction = data.staticFinderAction || data.action || "";
+  }
+  hits.forEach((item) => item.classList.add("is-selected"));
+  updateMenuState();
+}
+
+function startFinderMarquee(event) {
+  const context = finderMarqueeContext(event);
+  if (!context?.items.length) return;
+  event.preventDefault();
+  const box = document.createElement("div");
+  box.className = "finder-marquee";
+  box.hidden = true;
+  document.body.append(box);
+  const startX = event.clientX;
+  const startY = event.clientY;
+  let hits = [];
+  const move = (moveEvent) => {
+    const x = moveEvent.clientX;
+    const y = moveEvent.clientY;
+    const left = Math.min(startX, x);
+    const top = Math.min(startY, y);
+    const right = Math.max(startX, x);
+    const bottom = Math.max(startY, y);
+    box.hidden = Math.abs(x - startX) + Math.abs(y - startY) <= 4;
+    Object.assign(box.style, { left: `${left}px`, top: `${top}px`, width: `${right - left}px`, height: `${bottom - top}px` });
+    hits = box.hidden ? [] : context.items.filter((item) => {
+      const rect = item.getBoundingClientRect();
+      return left <= rect.right && right >= rect.left && top <= rect.bottom && bottom >= rect.top;
+    });
+    context.items.forEach((item) => item.classList.toggle("is-selected", hits.includes(item)));
+  };
+  const up = () => {
+    window.removeEventListener("pointermove", move);
+    window.removeEventListener("pointerup", up);
+    box.remove();
+    commitFinderMarqueeSelection(context, hits);
+  };
+  window.addEventListener("pointermove", move);
+  window.addEventListener("pointerup", up, { once: true });
+}
+
+function selectStaticFinderItem(winName, action) {
+  const item = getStaticFinderItems(winName).find((entry) => entry.action === action);
+  if (!item) return;
+  const alreadySelected = selectedStaticFinderWindowName === winName && selectedStaticFinderAction === action;
+  selectedStaticFinderWindowName = winName;
+  selectedStaticFinderAction = action;
+  if (isStartupApplicationItem(item)) {
+    setStartupSelectedApplication(item);
+    saveDeskState();
+  }
+  if (!alreadySelected) renderStaticFinderWindow(winName);
+  updateMenuState();
+}
+
+function syncStartupSelectedItemsLabel() {
+  if (!startupSelectedItemsLabelEl) return;
+  const item = getStartupSelectedApplicationItem();
+  startupSelectedItemsLabelEl.textContent = item?.name || startupSelectedApplicationName || t("startup_selected_items");
+}
+
+function getStartupSelectedApplicationItem() {
+  return [...getApplicationsItems(), ...getStartupDiskItems()]
+    .find((item) => item.type === "application" && item.action === startupSelectedApplicationAction) || null;
+}
+
+function renderStaticFinderWindow(winName) {
+  const win = getWindow(winName);
+  if (!win) return;
+
+  const grid = win.querySelector(".window-pane");
+  const mode = normalizeFinderViewMode(windowViewModes[winName]);
+  windowViewModes[winName] = mode;
+  const items = sortFinderItemsForView(getStaticFinderItems(winName), mode);
+  const selected = getSelectedStaticFinderItem(winName);
+  const count = win.querySelector(".details-bar > span:first-child");
+  if (count) count.textContent = t("items_count", items.length);
+  if (winName === "finder") {
+    // Browsing into a folder renames the window it reuses, the way a System 6
+    // Finder window does; the root name comes back from the translation table.
+    const title = win.querySelector(":scope > .title-bar h2");
+    if (title) title.textContent = systemFolderCurrentLabel();
+  }
+  if (winName === "applications") {
+    const title = win.querySelector(":scope > .title-bar h2");
+    if (title) title.textContent = applicationsFolderCurrentLabel();
+  }
+
+  updateFinderViewButtons(win, mode);
+
+  setFinderViewClasses(grid, mode);
+  const sectioned = winName === "applications" ? splitApplicationsSections(items) : null;
+  const apps = sectioned ? sectioned.apps : items;
+  const droplets = sectioned ? sectioned.droplets : [];
+  const dropletSectionLabel = sectioned
+    ? `<div class="finder-section-label">${escapeHtml(t("droplets_section"))}</div>`
+    : "";
+  const dropletListLabel = sectioned
+    ? `<div class="finder-list-group">${escapeHtml(t("droplets_section"))}</div>`
+    : "";
+  if (isFinderListMode(mode)) {
+    const renderListRow = (item) => `
+      <button class="finder-list-row${selected?.action === item.action ? " is-selected" : ""}" data-static-finder-window="${escapeHtml(winName)}" data-static-finder-action="${escapeHtml(item.action)}"${controlStripModuleDragAttributes(item)}${dropletDropAttributes(item)}>
+        <span class="finder-list-name-cell">${renderFinderItemIcon(item, mode)}<span class="finder-item-label">${escapeHtml(item.name)}</span></span>
+        ${(item.listCells || [item.kind, item.sizeLabel || "--", item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : "--"]).map((cell) => `<span>${escapeHtml(cell)}</span>`).join("")}
+      </button>
+    `;
+    // A folder whose rows all share a kind and a size may name its own columns
+    // (the demonstration disks do); every other folder keeps the Finder's.
+    const heads = window.AISystem6FinderListHeads?.[winName]?.() || [t("kind"), t("size"), t("modified")];
+    grid.innerHTML = `
+      <div class="finder-list-header">
+        ${[t("file_name"), ...heads].map((head) => `<span>${escapeHtml(head)}</span>`).join("")}
+      </div>
+      ${apps.map(renderListRow).join("")}
+      ${dropletListLabel}
+      ${droplets.map(renderListRow).join("")}
+    `;
+    syncWritingDemoFinderToggles();
+    guardFinderRows(grid);
+    return;
+  }
+
+  const renderIconItem = (item) => `
+    <button class="finder-item${selected?.action === item.action ? " is-selected" : ""}" data-static-finder-window="${escapeHtml(winName)}" data-static-finder-action="${escapeHtml(item.action)}"${controlStripModuleDragAttributes(item)}${dropletDropAttributes(item)}>
+      ${renderFinderItemIcon(item, mode)}
+      <span class="finder-item-label">${escapeHtml(item.name)}</span>
+    </button>
+  `;
+  grid.innerHTML = [
+    ...apps.map(renderIconItem),
+    dropletSectionLabel,
+    ...droplets.map(renderIconItem),
+  ].filter(Boolean).join("");
+  syncWritingDemoFinderToggles();
+  guardFinderRows(grid);
+}
+
+// A row that silently loses its icon is a bug the person sees and we do not:
+// the Finder rebuilds these rows from data on every open, view change and
+// language flip, and a state toggle that writes the wrong element takes the
+// artwork with it. The two Play/Stop rows in Applications → Extras did exactly
+// that, and the browser suite that used to sweep this could not see it either —
+// it had no spec for those rows. The render itself can, in microseconds, and it
+// names the row rather than leaving a screenshot to be interpreted.
+function guardFinderRows(grid) {
+  if (!grid) return;
+  grid.querySelectorAll(".finder-item, .finder-list-row").forEach((row) => {
+    const icons = row.querySelectorAll(".sys-icon").length;
+    const name = (row.querySelector(".finder-item-label")?.textContent || "").trim();
+    if (icons === 1 && name) return;
+    console.warn(
+      `AI System 6: Finder row "${row.dataset.staticFinderAction || "(no action)"}" `
+      + `rendered with ${icons} icon(s) and ${name ? "a name" : "no name"}.`
+    );
+  });
+}
+
+// Rows in the Applications folder are rebuilt from data, so a demo that is
+// still running has to paint its Stop state — and its pause glyph — onto the
+// fresh markup. The demo module is lazy, so this stays a guarded no-op until
+// someone actually plays it.
+function syncWritingDemoFinderToggles() {
+  if (typeof window.AISystem6WritingDemo?.syncToggleState === "function") {
+    window.AISystem6WritingDemo.syncToggleState();
+  }
+}
+
+function toggleViewMode(winName, mode) {
+  windowViewModes[winName] = normalizeFinderViewMode(mode);
+
+  const win = getWindow(winName === "projects" ? "projects" : winName);
+  updateFinderViewButtons(win, windowViewModes[winName]);
+
+  if (winName === "documents") renderDocuments();
+  else if (winName === "projects") renderProjectDisks();
+  else if (winName === "imageManager") renderTeachTextImageAttachments();
+  else if (finderContainerWindowNames.includes(winName)) renderStaticFinderWindow(winName);
+  saveFinderWindowState(winName);
+  updateMenuState();
+}
+
+function writingToolsAreViewTarget() {
+  const active = document.querySelector(".window.is-active:not(.is-hidden)");
+  if (viewWindowNames.includes(active?.dataset.window)) return false;
+  const panel = document.querySelector(".writing-spine-panel");
+  return !!panel && !panel.classList.contains("is-hidden");
+}
+
+function applyWritingToolsViewMode() {
+  const panel = document.querySelector(".writing-spine-panel");
+  if (!panel) return;
+  panel.classList.toggle("is-small-icons", writingToolsViewMode === "small-icon");
+  panel.classList.toggle("is-icon-view", writingToolsViewMode !== "small-icon");
+}
+
+function applyDesktopViewMode(mode) {
+  const desktop = document.querySelector(".desktop");
+  if (!desktop) return;
+  const small = normalizeFinderViewMode(mode) === "small-icon";
+  desktop.classList.toggle("is-small-icons", small);
+  desktop.classList.toggle("is-icon-view", !small);
+}
+
+function setActiveViewMode(mode) {
+  const active = document.querySelector(".window.is-active:not(.is-hidden)");
+  let targetName = viewWindowNames.includes(active?.dataset.window) ? active.dataset.window : null;
+
+  if (!targetName && writingToolsAreViewTarget()) {
+    const normalized = normalizeFinderViewMode(mode);
+    if (!["small-icon", "icon"].includes(normalized)) {
+      setStatus(t("fixed_order_view"));
+      updateMenuState();
+      return;
+    }
+    writingToolsViewMode = normalized;
+    applyWritingToolsViewMode();
+    scheduleWorkingSessionSave();
+    updateMenuState();
+    setStatus(t("view_mode_active", t(getFinderViewModeLabelKey(normalized))));
+    return;
+  }
+
+  if (!targetName) {
+    const visible = viewWindowNames
+      .map((name) => getWindow(name))
+      .find((win) => win && !win.classList.contains("is-hidden"));
+    targetName = visible?.dataset.window || "finder";
+  }
+
+  if (getWindow(targetName)?.classList.contains("is-hidden")) {
+    openWindow(targetName);
+  }
+
+  if (finderContainerWindowNames.includes(targetName)) {
+    finderContainerWindowNames.forEach((name) => toggleViewMode(name, mode));
+    // On the desktop profile the icons on the desk ARE the Finder surface;
+    // the View menu must resize them too, not only the finder windows.
+    if (targetName === "finder") {
+      applyDesktopViewMode(mode);
+    }
+    setStatus(t("view_mode_active", t(getFinderViewModeLabelKey(mode))));
+    return;
+  }
+
+  toggleViewMode(targetName, mode);
+  setStatus(t("view_mode_active", t(getFinderViewModeLabelKey(mode))));
+}
+
+function renderFinder() {
+  applyDesktopViewMode(normalizeFinderViewMode(windowViewModes.finder));
+  renderStaticFinderWindow("finder");
+}
+const attachedClipIds = new Set();
+const ragChunks = [];
+const mountedTextDisk = {
+  files: [],
+  fileBodies: {},
+  fileDiagnostics: {},
+  fileSources: {},
+  chunks: 0,
+  projectId: null,
+}
+let fileDiskImportController = null;
+const projects = [];
+const projectReferences = [];
+const scraps = [];
+const imageAttachments = [];
+let lastRetrievedContextItems = [];
+let lastContextBudget = null;
+const excludedContextKeys = new Set();
+const trashItems = [];
+const chatFolders = [];
+const chatFiles = [];
+const temporaryVideoDocMaps = new Map();
+const findPathResults = [];
+const findFileResults = [];
+const projectCdItems = [];
+const importCandidates = [];
+let selectedImportFiles = [];
+let previewedProjectBackup = null;
+let selectedProjectBackupFile = null;
+const importableFileAccept = ".txt,.text,.srt,.rtf,.md,.mdx,.markdown,.mdown,.mkd,.mkdn,.csv,.tsv,.json,.js,.ts,.htm,.html,.xhtml,.webarchive,.mht,.mhtml,.css,.xml,.log,.pdf,.docx,.doc,.pages,.numbers,.key,.epub,.pptx,.xlsx,.odt,.ods,.odp,.ipynb,.zip,.gz,.eml,.mbox,.svg,.bmp,.jpg,.jpeg,.png,.webp,.heic,.heif,.gif,.tif,.tiff,.aac,.aif,.aiff,.amr,.caf,.flac,.m4a,.mp3,.oga,.ogg,.opus,.wav,.webm,audio/*";
+let lastAssistantText = "";
+let lastSourceAnswer = "";
+let selectedScrapId = null;
+const selectedScrapIds = new Set();
+let selectedFolderId = "all";
+let selectedChatFileId = null;
+let selectedDocumentFolderId = null;
+const selectedDocumentItemKeys = new Set();
+let selectedDocumentAnchorKey = "";
+let selectedMountedFile = null;
+const selectedMountedFileNames = new Set();
+let selectedFindPathIndex = null;
+let selectedFindFileIndex = null;
+let selectedProjectCdItemId = null;
+const selectedProjectCdItemIds = new Set();
+let activeProjectId = null;
+let selectedProjectId = null;
+let selectedProjectRootItemId = null;
+let startupProjectId = null;
+// Whether the writer chose that Startup Project Hard Disk or the desk adopted
+// it for itself. The switch above the Finder marks either one the same way, but
+// only a chosen pin outranks the project the writer was last working in.
+let startupProjectPinned = false;
+// Unified spec W06 (product decision, spec §1.1): a NEW desk runs as
+// MultiFinder. A user's explicitly saved environment (working-session
+// runtimeEnvironment, including a chosen "finder") always wins over this
+// default — the restore path reads it before anything consults these
+// initial values.
+// A fresh desk starts System 6 the way it shipped: one Finder. Only System 6
+// offers the choice; System 7 onward is always MultiFinder (multi-finder.js).
+let startupEnvironment = "finder";
+let startupOpenMode = "cliotalk";
+let startupSelectedApplicationAction = "open-assistant";
+let startupSelectedApplicationName = "";
+let startupOpenedWindowNames = [];
+let runtimeEnvironment = "multifinder";
+let sideAskEnabled = false;
+let sideAskAnchorAppId = "teachText";
+let sideAskAnchorOwnerAppId = "teachText";
+let selectedDesktopIconEl = null;
+let selectedStaticFinderWindowName = "";
+let selectedStaticFinderAction = "";
+let selectedProjectReferenceId = null;
+let isPreparingProjectDisk = false;
+let isProjectMounted = true;
+let activeTextFileId = null;
+let teachTextFileLabel = "";
+let teachTextWorkflowState = "";
+let teachTextDocumentRole = "manuscript";
+let saveDialogMode = "chat";
+let pendingTeachTextSaveOptions = null;
+let lastClipScrapId = null;
+let showingScrapTranslation = false;
+let scrapTranslationViewMode = "original";
+let selectedScrapStack = "all";
+let topZ = 10;
+let cascadeOffset = 0;
+let waitTimer = null;
+// The app follows the host system language: a Chinese system defaults to
+// Simplified Chinese, any other system defaults to English (international
+// first-run). Saved settings override this later; the Apple menu can switch.
+var currentLanguage = String(navigator.language || "").toLowerCase().startsWith("zh") ? "zh" : "en";
+let writerMode = false;
+let activeAbortController = null;
+let lastUserText = "";
+let claimCitationContextItems = [];
+let currentReaderPage = null;
+let currentReaderClipCount = 0;
+// `guideSeen` remains a one-release read-only migration source. New builds
+// persist only the Clio-first completion flag below.
+let guideSeen = false;
+let clioOnboardingCompleted = false;
+// About's "Show this window at startup": show is null until the writer (or a
+// finished door) decides; shows counts startup appearances before that.
+let aboutStartup = { show: null, shows: 0 };
+let clioProviderPreference = "auto";
+let multiFinderSwitcherHintSeen = false;
+let calculatorExpression = "0";
+let writingBellMode = "work";
+let writingBellDurations = { work: 25 * 60, break: 5 * 60 };
+let writingBellRemaining = writingBellDurations.work;
+let writingBellRunning = false;
+let writingBellEndsAt = 0;
+let writingBellTimer = null;
+let puzzleTiles = [];
+let puzzleMoves = 0;
+let pageSetupSettings = { paper: "a4", orientation: "portrait", density: "manuscript" };
+let saveDeskStatePromise = Promise.resolve();
+let settingsSaveTimer = null;
+let teachTextTabSaveTimer = null;
+let lastModelMetrics = null;
+let activeChatModelIdentifier = "";
+let lastMigrationNote = "";
+let modelCatalog = [];
+let embeddingModelCatalog = [];
+let contextMaxByModel = {};
+let contextLengthByModel = {};
+let contextLengthUserOverrides = {};
+let localLmStudioConnectionEnabled = false;
+let localModelState = {
+  server: false,
+  models: false,
+  selected: false,
+  loaded: false,
+  ready: false,
+  running: false,
+  task: "",
+  next: "model_next_start_lm",
+}
+
+let cloudConfig = null;
+let cloudRuntimeApiKey = "";
+let publicSharedCloudAvailable = false;
+// True for exactly one boot: the boot that finds a key an older build wrote
+// into browser storage. The caller consumes it once to decide whether the
+// owner's "never silently discard a working key" rule needs a notice this
+// time, then it resets — later boots read a clean, keyless record and have
+// nothing left to report.
+let cloudLegacyKeyMigrated = false;
+let tinyShellLegacyKeyPending = "";
+const CLOUD_STORAGE_KEY = "ai-system6-cloud-config";
+const CLOUD_SESSION_KEY = "ai-system6-cloud-api-key";
+
+function isPublicCloudCredentialMode() {
+  return document.documentElement.dataset.deploymentProfile === "public";
+}
+
+// Claude / Codex subscription CLIs sign in on their own, on this Mac only
+// (docs/SUBSCRIPTION-CLI.md); they need no key and never appear publicly.
+function isSubscriptionCloudProvider(provider = cloudConfig?.provider) {
+  return provider === "claude-subscription" || provider === "codex-subscription";
+}
+
+// Anthropic's key goes into this Mac's Keychain from a terminal
+// (`node tooling/anthropic-key.mjs`); the server finds it there, so the page never
+// holds the key or an id for it, and the provider never appears publicly.
+function isKeychainCloudProvider(provider = cloudConfig?.provider) {
+  return provider === "anthropic";
+}
+
+function cloudCredentialReady(config = cloudConfig) {
+  if (isSubscriptionCloudProvider(config?.provider) || isKeychainCloudProvider(config?.provider)) return !isPublicCloudCredentialMode();
+  return !!(config?.credentialMode === "shared-remote" || config?.credentialId || cloudRuntimeApiKey || (
+    isPublicCloudCredentialMode()
+    && publicSharedCloudAvailable
+    && config?.provider
+  ));
+}
+
+function cloudCredentialMode(config = cloudConfig) {
+  if (isSubscriptionCloudProvider(config?.provider)) return "subscription";
+  if (isKeychainCloudProvider(config?.provider)) return "keychain";
+  if (config?.credentialMode === "shared-remote") return "shared-remote";
+  if (isPublicCloudCredentialMode()) {
+    if (cloudRuntimeApiKey) return "byok";
+    if (publicSharedCloudAvailable && config?.provider) return "shared";
+  }
+  return config?.credentialId ? "stored" : "none";
+}
+
+function setPublicSharedCloudAvailable(value = false) {
+  publicSharedCloudAvailable = value === true;
+  if (!publicSharedCloudAvailable && cloudConfig?.credentialMode === "shared") {
+    cloudConfig.active = false;
+  }
+  if (typeof window.syncCloudCredentialUi === "function") window.syncCloudCredentialUi();
+  if (typeof applyCloudActiveState === "function") applyCloudActiveState();
+}
+
+window.addEventListener?.("ai-system6:capabilities", (event) => {
+  const capabilities = /** @type {CustomEvent} */ (event).detail;
+  setPublicSharedCloudAvailable(capabilities?.features?.cloud_shared === true);
+});
+
+function setCloudRuntimeApiKey(value = "") {
+  cloudRuntimeApiKey = String(value || "").trim();
+}
+
+function cloudCredentialTransportFields(style = "model") {
+  if (cloudConfig?.credentialId && !isPublicCloudCredentialMode()) {
+    return style === "status"
+      ? { credential_id: cloudConfig.credentialId }
+      : { _cloud_credential_id: cloudConfig.credentialId };
+  }
+  if (!cloudRuntimeApiKey) return {};
+  return style === "status"
+    ? { api_key: cloudRuntimeApiKey }
+    : { _cloud_api_key: cloudRuntimeApiKey };
+}
+
+function loadCloudConfig() {
+  let persistedConfig = null;
+  let legacyApiKey = "";
+
+  try {
+    const raw = localStorage.getItem(CLOUD_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        persistedConfig = { ...parsed };
+        legacyApiKey = typeof persistedConfig.apiKey === "string"
+          ? persistedConfig.apiKey.trim()
+          : "";
+        if (window.tiny?.api && legacyApiKey) tinyShellLegacyKeyPending = legacyApiKey;
+        delete persistedConfig.apiKey;
+      }
+    }
+  } catch {
+    persistedConfig = null;
+  }
+
+  let sessionApiKey = "";
+  try {
+    sessionApiKey = (sessionStorage.getItem(CLOUD_SESSION_KEY) || "").trim();
+    if (!window.tiny?.api) sessionStorage.removeItem(CLOUD_SESSION_KEY);
+    else if (sessionApiKey) tinyShellLegacyKeyPending = sessionApiKey;
+  } catch {
+    sessionApiKey = "";
+  }
+
+  setCloudRuntimeApiKey(sessionApiKey || legacyApiKey);
+  cloudLegacyKeyMigrated = !!(sessionApiKey || legacyApiKey);
+  if (!persistedConfig && cloudRuntimeApiKey) persistedConfig = {};
+  if (
+    persistedConfig
+    && persistedConfig.active
+    && !cloudCredentialReady(persistedConfig)
+    && persistedConfig.credentialMode !== "shared"
+  ) {
+    persistedConfig.active = false;
+  }
+
+  // Native migration requires user confirmation and a verified Keychain write.
+  if (window.tiny?.api && tinyShellLegacyKeyPending) {
+    cloudConfig = persistedConfig;
+    return cloudConfig;
+  }
+
+  // Remove credentials written by older builds. Only a local-service
+  // credential ID and non-secret provider preferences remain in browser state.
+  try {
+    if (persistedConfig && Object.keys(persistedConfig).length) {
+      const safeConfig = { ...persistedConfig };
+      delete safeConfig.apiKey;
+      localStorage.setItem(CLOUD_STORAGE_KEY, JSON.stringify(safeConfig));
+    } else {
+      localStorage.removeItem(CLOUD_STORAGE_KEY);
+    }
+  } catch {
+    try { localStorage.removeItem(CLOUD_STORAGE_KEY); } catch {}
+  }
+
+  cloudConfig = persistedConfig;
+  return cloudConfig;
+}
+
+// The Control Panel calls this once, right after loadCloudConfig(), to learn
+// whether this boot just migrated a key out of browser storage. Reading it
+// clears it, so a later call in the same tab reports nothing to migrate.
+function consumeCloudLegacyKeyMigration() {
+  const migrated = cloudLegacyKeyMigrated;
+  cloudLegacyKeyMigrated = false;
+  return migrated;
+}
+
+function saveCloudConfig() {
+  // Keep original persisted key/config until native migration succeeds.
+  if (window.tiny?.api && tinyShellLegacyKeyPending) return;
+  try {
+    if (cloudConfig) {
+      const persistedConfig = { ...cloudConfig };
+      delete persistedConfig.apiKey;
+      if (Object.keys(persistedConfig).length) {
+        localStorage.setItem(CLOUD_STORAGE_KEY, JSON.stringify(persistedConfig));
+      } else {
+        localStorage.removeItem(CLOUD_STORAGE_KEY);
+      }
+    } else {
+      localStorage.removeItem(CLOUD_STORAGE_KEY);
+    }
+  } catch {
+    // Runtime cloud use can continue even when browser persistence is blocked.
+  }
+
+  try { sessionStorage.removeItem(CLOUD_SESSION_KEY); } catch {}
+}
+
+function getLocalModelRequestName() {
+  if (typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.active && cloudConfig.model) {
+    return cloudConfig.model;
+  }
+
+  return activeChatModelIdentifier || modelInput.value.trim() || "local-model";
+}
+
+function getLocalModelDisplayName() {
+  if (typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.active && cloudConfig.model) {
+    return cloudConfig.model;
+  }
+
+  return window.AISystem6BuiltInLocal?.label || modelInput.value.trim() || t("local_lm_studio");
+}
+
+let dictationIntentDestination = "assistant";
+let dictationInputTarget = null;
+let lastEditableRange = null;
+let teachTextPreviewState = {
+  scrollTop: 0,
+  selectionStart: 0,
+  selectionEnd: 0,
+}
+let teachTextLastExportKind = "";
+let teachTextLastExportAt = "";
+let teachTextLastExportSnapshot = "";
+let reviewDeskDirty = false;
+let reviewDeskScrollSyncing = false;
+const activeLongTasks = new Set();
+// A slip holds the words and where the writer was: { text, from }.
+let notePadPages = [{ text: "", from: null }];
+let notePadPageIndex = 0;
+let notePadDestination = "teachtext";
+// Cross-project next actions for the To Do 待办 accessory:
+// { id, text, done, doneAt, createdAt, projectId, projectName }.
+let todoDaItems = [];
+let clipboardText = "";
+let clipboardSource = "";
+let clipboardUpdatedAt = "";
+let clipboardTranslationText = "";
+let clipboardTranslationSourceText = "";
+let clipboardTranslationLanguage = "";
+let clipboardTranslationCreatedAt = "";
+let clipboardTranslationModel = "";
+// The Translation Pad's own transient state lives in the pad
+// (app/features/translation-pad.js), beside the behaviour that owns it, so the
+// component can run under another host — the development preview — without the
+// desk's globals. The pad is a lazy classic script and every reader runs after
+// it loads, which is the same arrangement dictation already uses.
+let currentDocMap = null;
+let selectedDocMapNodeId = null;
+let currentDictionaryResult = null;
+let dictionaryRecentResults = [];
+let selectedSystemHelpEntryId = null;
+let selectedSystemHelpGroup = "all";
+let lastTextTarget = null;
+let styleSheetFindings = [];
+const translationCache = new Map();
+let styleSheetSourceOffset = 0;
+function projectDisplayName(projectOrName) {
+  const value = typeof projectOrName === "string" ? projectOrName : projectOrName?.name;
+  const stored = String(value || "");
+  // The first project is named by the app, in whatever language happened to be
+  // on screen when the desk first opened. Read it through the current language
+  // instead of showing a name the writer never typed. Anything they did type
+  // falls straight through.
+  if (appAuthoredDefaultProjectNames.includes(stored)) return t("default_project_name");
+  return displayNameRewrites.reduce((name, rule) => name.replace(rule.pattern, rule.replacement), stored);
+}
+
+var translations = window.AISystem6Data?.translations || {};
+let systemDictionaryEntries = window.AISystem6DictionaryData?.systemDictionaryEntries || [];
+let systemDictionaryLoadPromise = null;
+
+function syncSystemDictionaryData() {
+  systemDictionaryEntries = window.AISystem6DictionaryData?.systemDictionaryEntries || systemDictionaryEntries || [];
+  return systemDictionaryEntries;
+}
+
+async function ensureSystemDictionaryData() {
+  if (window.AISystem6DictionaryData?.systemDictionaryEntries) return syncSystemDictionaryData();
+  systemDictionaryLoadPromise ||= loadClassicScriptOnce("app/data/system-dictionary.js")
+    .then(syncSystemDictionaryData)
+    .catch((error) => {
+      systemDictionaryLoadPromise = null;
+      throw error;
+    });
+  return systemDictionaryLoadPromise;
+}
+
+let productHelpRuntimeLoadPromise = null;
+
+async function ensureProductHelpRuntime() {
+  if (window.AISystem6ProductContext && window.AISystem6ProductHelpRuntime) return true;
+  productHelpRuntimeLoadPromise ||= loadClassicScriptOnce("app/core/product-context.js")
+    .then(() => loadClassicScriptOnce("app/core/product-help-runtime.js"))
+    .catch((error) => {
+      productHelpRuntimeLoadPromise = null;
+      throw error;
+    });
+  return productHelpRuntimeLoadPromise;
+}
+
+let clioProviderResolverLoadPromise = null;
+
+async function ensureClioProviderResolver() {
+  if (window.AISystem6ClioProvider) return true;
+  clioProviderResolverLoadPromise ||= loadClassicScriptOnce("app/core/clio-provider-resolver.js")
+    .catch((error) => {
+      clioProviderResolverLoadPromise = null;
+      throw error;
+    });
+  return clioProviderResolverLoadPromise;
+}
+
+let modelUserErrorsLoadPromise = null;
+
+async function ensureModelUserErrors() {
+  if (window.AISystem6ModelUserErrors) return true;
+  modelUserErrorsLoadPromise ||= loadClassicScriptOnce("app/core/model-user-errors.js")
+    .catch((error) => {
+      modelUserErrorsLoadPromise = null;
+      throw error;
+    });
+  return modelUserErrorsLoadPromise;
+}
+
+let projectBackupAssemblerLoadPromise = null;
+
+// Exporting or restoring a disk needs two lazy pieces: the backup schema
+// (validate / attach integrity / verify / remap) and the assembler that walks
+// the durable collections. Neither is needed to read, write or save, so both
+// travel with the export itself instead of costing every boot their bytes.
+async function ensureProjectBackupAssembler() {
+  if (typeof ensureProjectDiskBackupModule === "function") await ensureProjectDiskBackupModule();
+  if (window.AISystem6ProjectBackupAssembler) return true;
+  projectBackupAssemblerLoadPromise ||= loadClassicScriptOnce("app/core/project-backup-assembler.js")
+    .catch((error) => {
+      projectBackupAssemblerLoadPromise = null;
+      throw error;
+    });
+  return projectBackupAssemblerLoadPromise;
+}
+
+let recoveryStorageLoadPromise = null;
+
+async function ensureRecoveryStorage() {
+  if (window.AISystem6RecoveryStorage) return true;
+  recoveryStorageLoadPromise ||= ensureProjectBackupAssembler()
+    .then(() => loadClassicScriptOnce("app/core/recovery-storage.js"))
+    .catch((error) => {
+      recoveryStorageLoadPromise = null;
+      throw error;
+    });
+  return recoveryStorageLoadPromise;
+}
+
+let applicationShellLoadPromise = null;
+
+async function ensureApplicationShell() {
+  if (window.AISystem6ApplicationShell) return true;
+  applicationShellLoadPromise ||= loadClassicScriptOnce("app/core/application-shell.js")
+    .catch((error) => {
+      applicationShellLoadPromise = null;
+      throw error;
+    });
+  return applicationShellLoadPromise;
+}
+
+function t(key, ...args) {
+  const tables = translations || window.AISystem6Data?.translations || {};
+  const table = tables[currentLanguage || "en"] || tables.zh || tables.en || {};
+  const value = table[key] ?? tables.en?.[key] ?? key;
+  return typeof value === "function" ? value(...args) : value;
+}
+
+// ---- When the writer's language is actually on the page --------------------
+//
+// Both translation tables are lazy, so at the moment this bundle evaluates,
+// tables[currentLanguage] is an empty object and t() answers with the key it
+// was handed. Everything the boot sequence paints is safe: boot fetches the
+// table, then calls applyLanguage(). A surface that speaks on its own clock is
+// not -- a lazy module that arrives on `load`, a service-worker event -- and a
+// dialog reading "shell_update_ready" at the writer is the shape that takes.
+//
+// This is the one signal such a caller waits on. It answers after the language
+// has been CHOSEN as well as loaded, because a saved setting can move it after
+// the boot default: resolving on the table alone would trade a raw key for an
+// English sentence in front of a Chinese desk.
+let languageIsReady = false;
+let announceLanguageReady = () => {};
+const languageReadyPromise = new Promise((resolve) => { announceLanguageReady = resolve; });
+
+function whenLanguageReady() {
+  return languageIsReady ? Promise.resolve() : languageReadyPromise;
+}
+
+function updateFilePickerSelectionLabel(files, labelEl) {
+  if (!labelEl) return;
+  const selectedFiles = Array.from(files || []);
+  const emptyKey = labelEl.dataset.filePickerEmpty || "no_files_selected";
+  labelEl.textContent = selectedFiles.length === 0
+    ? t(emptyKey)
+    : selectedFiles.length === 1
+      ? t("selected_file", selectedFiles[0].name)
+      : t("selected_files_count", selectedFiles.length);
+  labelEl.title = selectedFiles.map((file) => file.name).join("\n");
+}
+
+function updateFilePickerLabel(input, labelEl) {
+  if (!input || !labelEl) return;
+  updateFilePickerSelectionLabel(input.files, labelEl);
+}
+
+function updateFilePickerLabels() {
+  updateFilePickerLabel(filesInput, filesSelectionEl);
+  updateFilePickerSelectionLabel(selectedImportFiles, importFilesSelectionEl);
+  updateFilePickerSelectionLabel(selectedProjectBackupFile ? [selectedProjectBackupFile] : [], projectBackupSelectionEl);
+}
+
+function openTransientFilePicker({ accept = "", multiple = false, onSelect } = {}) {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.hidden = true;
+  if (accept) input.accept = accept;
+  input.multiple = !!multiple;
+  input.addEventListener("change", () => {
+    const files = Array.from(input.files || []);
+    input.remove();
+    if (files.length) onSelect?.(files);
+  }, { once: true });
+  input.addEventListener("cancel", () => input.remove(), { once: true });
+  document.body.append(input);
+  input.click();
+  // The OS file dialog that click() just opened is a native surface with no
+  // DOM trace of its own -- a command that reaches this point and stops here
+  // (the writer cancels, or picks nothing) otherwise left no sign it ever
+  // ran. One shared receipt covers every caller of this picker.
+  setStatus(t("file_picker_opened"), { notify: false });
+}
+
+function syncDocMapDropZoneLabel(message = t("docmap_drop_files")) {
+  if (docMapDropZoneEl) docMapDropZoneEl.dataset.dropLabel = message;
+}
+
+function applyModernFonts(options = {}) {
+  const useModern = modernFontsInput.checked;
+  window.AISystem6Theme?.syncFontStrategy(useModern);
+  if (options.persist !== false) saveDeskState();
+}
+
+function getCurrentTheme() {
+  return window.AISystem6Theme?.getCurrentTheme?.() || "classic";
+}
+
+// The Appearance the writer chose, which is not always the one on screen: Theme
+// Lab, an `?appearance=` deep link and One More Tune's era visits all preview a
+// release theme with `persist:false`, and a preview is this session's screen
+// only. The desk record stores this one, so the next launch opens the
+// Appearance its owner picked.
+function getCommittedTheme() {
+  return window.AISystem6Theme?.getCommittedTheme?.() || getCurrentTheme();
+}
+
+function themeHasCapability(capability) {
+  return window.AISystem6Theme?.hasCapability?.(capability) === true;
+}
+
+// Aqua-onward eras animate WindowShade and the Clio panel briefly; Classic
+// family stays instant, and so does a reader who asked for less motion.
+function fluidMotion() {
+  return themeHasCapability("fluid-motion") && !window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+}
+
+function syncThemeLabEvidence(theme) {
+  window.AISystem6ThemeLab?.sync?.(theme);
+}
+
+function applyTheme(themeId, options = {}) {
+  const experimental = options.experimental === true;
+  const persist = options.persist !== false;
+  const commit = !experimental
+    && (options.commit === true || (options.commit !== false && persist));
+  const theme = window.AISystem6Theme?.applyTheme(themeId, {
+    persist,
+    announce: options.announce !== false,
+    modernFontPreference: modernFontsInput?.checked === true,
+    experimental,
+    commit,
+    saveDesk: options.saveDesk !== false,
+    source: options.source || "application",
+  });
+  if (theme?.then) return theme.then((ready) => syncAppliedTheme(ready, options));
+  return syncAppliedTheme(theme, options);
+}
+
+function syncAppliedTheme(theme, options = {}) {
+  window.AISystem6NextstepShell?.sync();
+  window.AISystem6NextstepMenus?.sync();
+  window.AISystem6FinderColumns?.sync();
+  const resolvedTheme = theme?.id || "classic";
+  syncThemeLabEvidence(theme);
+  if (appearanceThemeInput && appearanceThemeInput.value !== resolvedTheme) {
+    appearanceThemeInput.value = resolvedTheme;
+    appearanceThemeInput.dispatchEvent(new Event("system-select-sync"));
+  }
+  const fontStrategy = theme?.fontStrategy || "preference";
+  if (modernFontsInput) modernFontsInput.disabled = fontStrategy === "theme" || fontStrategy === "modern";
+  const liquidOverlayEnabled = theme?.overlay === "liquid-glass";
+  if (liquidOverlayEnabled) {
+    ensureLazySystemModule("app/core/liquid-glass-overlay.js", "AISystem6LiquidGlassOverlayLoaded")
+      .then(() => window.AISystem6LiquidGlassOverlay?.setEnabled(true))
+      .catch((error) => console.warn("Liquid Glass overlay unavailable.", error));
+  } else {
+    window.AISystem6LiquidGlassOverlay?.setEnabled(false);
+  }
+  if (typeof syncLiquidTintVisibility === "function") syncLiquidTintVisibility();
+  if (typeof syncAppearanceColorModeControl === "function") syncAppearanceColorModeControl();
+  // Finder icon geometry changes between eras (80 px in Classic, 118 px in
+  // Liquid Glass). Refit every currently visible auto-sized Finder window
+  // after the new CSS wins, otherwise a live appearance switch can clip the
+  // icon labels until the next reload.
+  window.requestAnimationFrame(() => {
+    document.querySelectorAll(".window.is-finder-content-fit:not(.is-hidden)").forEach((win) => {
+      if (typeof fitFinderWindowToContents === "function") fitFinderWindowToContents(win);
+    });
+  });
+  // Eras disagree about who owns the menu bar, so an appearance change is also
+  // a menu-bar change: the right end becomes an indicator or a menu, and the
+  // application verbs move between the Apple menu and the bold application
+  // menu. A Theme Lab preview passes syncUi:false to stay cheap, but skipping
+  // the rebuild there would show the previous era's menu bar in the one place
+  // built for comparing eras. The boot call also passes syncUi:false and runs
+  // before there is any bar to rebuild, so the condition is readiness rather
+  // than the caller's chrome preference.
+  if (typeof renderMultiFinderMenu === "function" && document.body.dataset.appReady === "ready") {
+    renderMultiFinderMenu();
+  }
+  if (options.syncUi !== false) {
+    if (typeof updateMenuState === "function") updateMenuState();
+    if (typeof refreshStrip === "function") refreshStrip("appearance");
+  }
+  return resolvedTheme;
+}
+
+function applyMenuClock(options = {}) {
+  renderSystemClock();
+  if (options.persist !== false) saveDeskState();
+}
+
+// The Finder's own setting: the desk redraws its disks and saves the choice.
+function applyShowUnmountedDisks(options = {}) {
+  if (typeof renderProjectDiskDesktopIcons === "function") renderProjectDiskDesktopIcons();
+  if (typeof setStatus === "function") {
+    setStatus(t(showUnmountedDisksInput?.checked
+      ? "unmounted_disks_shown"
+      : "unmounted_disks_hidden"));
+  }
+  if (options.persist !== false) saveDeskState();
+}
+
+// The declarative half of applyLanguage(), scoped to one subtree.
+//
+// A window that its module builds arrives after boot, so it misses the boot
+// sweep and opens with the English text baked into its template. It cannot
+// call applyLanguage() to catch up: that function also re-renders Note Pad,
+// TeachText, the ask bars, the alarm clock and the cloud panel, and running
+// all of it as a side effect of opening an unrelated window moved 9-23% of
+// the pixels in four Appearance cells.
+//
+// The loops below are deliberately a copy rather than an extraction: inside
+// applyLanguage() they are interleaved with the Key Caps grid call (now the
+// lazy module's renderShortcutGrid), which emits i18n attributes of its own, so
+// the sweeps there cannot be reordered into one call without leaving that
+// output untranslated.
+function translateWithin(root) {
+  if (!root || typeof root.querySelectorAll !== "function") return;
+  root.querySelectorAll("[data-i18n]").forEach((el) => {
+    const value = t(el.dataset.i18n);
+    if (el.dataset.shortcut && typeof writeShortcutRowLabel === "function") writeShortcutRowLabel(el, value);
+    else if (value.includes("<")) el.innerHTML = value;
+    // A busy control's label must stay wrapped, or it prints under the
+    // busy overlay.
+    else if (el.dataset.loading === "true") setControlIdleLabel(el, value);
+    else el.textContent = value;
+  });
+  root.querySelectorAll("[data-i18n-count]").forEach((el) => {
+    el.textContent = t(el.dataset.i18nCount, Number(el.dataset.i18nCountValue || 0));
+  });
+  root.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+    el.placeholder = t(el.dataset.i18nPlaceholder);
+  });
+  root.querySelectorAll("[data-i18n-aria-label]").forEach((el) => {
+    el.setAttribute("aria-label", t(el.dataset.i18nAriaLabel));
+  });
+  root.querySelectorAll("[data-i18n-title]").forEach((el) => {
+    el.title = t(el.dataset.i18nTitle);
+  });
+  root.querySelectorAll("[data-i18n-drop-label]").forEach((el) => {
+    el.dataset.dropLabel = t(el.dataset.i18nDropLabel);
+  });
+  root.querySelectorAll("[data-status-key]").forEach((el) => {
+    el.textContent = t(el.dataset.statusKey);
+  });
+}
+window.AISystem6TranslateWithin = translateWithin;
+
+function applyLanguage() {
+  document.documentElement.lang = currentLanguage === "zh" ? "zh-Hans" : "en";
+  // The desk is now speaking the language the writer will read. A failed table
+  // fetch still arrives here (boot swallows that error deliberately), so a late
+  // surface degrades to key fallbacks rather than waiting forever for a table
+  // that is never coming.
+  if (!languageIsReady) {
+    languageIsReady = true;
+    announceLanguageReady();
+  }
+  if (typeof syncKeyboardShortcutLabels === "function") syncKeyboardShortcutLabels();
+  window.refreshFinderContinuationIndicators?.();
+
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    const value = t(el.dataset.i18n);
+    const shortcut = el.dataset.shortcut;
+
+    if (shortcut && typeof writeShortcutRowLabel === "function") {
+      writeShortcutRowLabel(el, value);
+    } else if (value.includes("<")) {
+      el.innerHTML = value;
+    } else if (el.dataset.loading === "true") {
+      // A busy control's label must stay wrapped, or it prints under the
+      // busy overlay.
+      setControlIdleLabel(el, value);
+    } else {
+      el.textContent = value;
+    }
+  });
+  // Key Caps' shortcut grid belongs to the Key Caps surface (the lazy
+  // app/features/command-sheet.js). A language switch while that window is
+  // open re-renders it; if the module never loaded, the grid is not on screen
+  // to relabel.
+  window.AISystem6CommandSheet?.renderShortcutGrid?.();
+  document.querySelectorAll("[data-i18n-count]").forEach((el) => {
+    const count = Number(el.dataset.i18nCountValue || 0);
+    el.textContent = t(el.dataset.i18nCount, count);
+  });
+
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+    el.placeholder = t(el.dataset.i18nPlaceholder);
+  });
+  syncPromptPlaceholder();
+
+  document.querySelectorAll("[data-i18n-aria-label]").forEach((el) => {
+    el.setAttribute("aria-label", t(el.dataset.i18nAriaLabel));
+  });
+
+  document.querySelectorAll("[data-i18n-title]").forEach((el) => {
+    el.title = t(el.dataset.i18nTitle);
+  });
+
+  document.querySelectorAll("[data-i18n-drop-label]").forEach((el) => {
+    el.dataset.dropLabel = t(el.dataset.i18nDropLabel);
+  });
+
+  if (typeof syncBalloonHelpLanguage === "function") syncBalloonHelpLanguage();
+  document.querySelectorAll("[data-status-key]").forEach((el) => {
+    el.textContent = t(el.dataset.statusKey);
+  });
+
+  setDictationDestination(dictationIntentDestination);
+  // The ask-bar scope rows are rendered from live state, not data-i18n.
+  refreshAskBars();
+  syncCurrentNotePadPage();
+  renderNotePadPage();
+  updateTeachTextBoundaries();
+  updateTeachTextTranslateButton();
+  updateTeachTextBilingualExportButton();
+  updateTeachTextDeskState();
+  syncTeachTextLabelControl();
+  syncTeachTextNameDisplay();
+  syncWritingToolsShadeToggle();
+  renderRebuildFlow();
+  // System Help owns a sizeable lazy module. If it has already been opened,
+  // refresh it for the new language; otherwise its first open renders it.
+  window.renderSystemHelp?.();
+  updateReaderTranslationClipButton();
+  updateScrapTranslationControls(scraps.find((item) => item.id === selectedScrapId && isInActiveProject(item)));
+  refreshMessageTranslationButtons();
+  renderLocalModelState();
+  if (typeof refreshCloudUsageDisplay === "function") refreshCloudUsageDisplay();
+  if (typeof window.syncCloudCredentialUi === "function") window.syncCloudCredentialUi();
+  renderWritingBell();
+  // typeof: alarm-clock.js is lazy, and a language refresh can run long before
+  // it loads -- a bare call threw right through applyLanguage and killed
+  // whatever asked for it (a module-built window building its own chrome, for
+  // one). The neighbours below already guard for exactly this reason.
+  if (typeof renderAlarmClock === "function") renderAlarmClock();
+  // 文字亮室 paints its subject from a record, not from data-i18n, so a language
+  // switch left the old word on screen. typeof: draft-desk.js is lazy.
+  if (typeof renderLightroomSubject === "function") renderLightroomSubject();
+  if (typeof refreshBureaucracyMemeLanguage === "function") refreshBureaucracyMemeLanguage();
+  window.AISystem6Doom?.refreshLanguage?.();
+  window.AISystem6ThemeLab?.refreshLanguage?.();
+  refreshWritingBellStatusLanguage();
+  renderPuzzle();
+  syncStartupSelectedItemsLabel();
+  updateSearchProviderLabels();
+  if (!getWindow("notificationCenter")?.classList.contains("is-hidden")) renderNotificationCenter();
+  updateNotificationIndicator();
+  updateMenuStatus();
+  renderAboutMacintosh();
+  updateMenuState();
+
+  document.querySelectorAll("[data-mode-label]").forEach((el) => {
+    const value = writerMode ? t("desk_mode") : t("writer_mode");
+    if (typeof writeShortcutRowLabel !== "function" || !writeShortcutRowLabel(el, value)) {
+      el.textContent = value;
+    }
+  });
+
+  [teachTextFolderInput, chatFolderNameInput].forEach((input) => {
+    if (input.value === "General" || input.value === "通用") {
+      input.value = t("default_folder");
+    }
+  });
+
+  updateProjectLabels();
+  renderProjectCd();
+  // Re-render after the [data-i18n] sweep: it resets the Finder window title to
+  // the root folder name, which is wrong while the user is inside a subfolder.
+  finderContainerWindowNames.forEach((name) => renderStaticFinderWindow(name));
+  if (typeof renderAllFinderNavigationBars === "function") renderAllFinderNavigationBars();
+  updateFilePickerLabels();
+  updateReviewDeskStats?.();
+  // Review Desk lens chrome is painted from the active lens, not only static
+  // data-i18n keys — refresh after the sweep so title/hint/empty follow language.
+  if (typeof syncReviewDeskLensCopy === "function") syncReviewDeskLensCopy();
+  // Quick Draft owns live receipts, layer descriptions, and generated object
+  // labels that do not participate in the static [data-i18n] sweep.
+  window.AISystem6QuickDraft?.render?.();
+  // Micropolis paints its palette, HUD, and ticker from live state.
+  window.AISystem6Micropolis?.render?.();
+  if (typeof refreshSystemSelectControls === "function") refreshSystemSelectControls();
+  renderClioTalkRunAssembly();
+}
+
+function syncPromptPlaceholder() {
+  if (!promptInput) return;
+  // Agent mode (代理) speaks to the engine host, not to ClioTalk's own model.
+  if (window.AISystem6ClioTalkAgent?.isActive()) {
+    promptInput.placeholder = t(window.AISystem6ClioTalkAgent.placeholderKey());
+    return;
+  }
+  // Boot may have restored 代理 while the agent module is still lazy.
+  if (clioTalkAgentModeActive()) {
+    promptInput.placeholder = t("agent_prompt_placeholder");
+    return;
+  }
+  if (typeof clioTalkModelReady === "function" && !clioTalkModelReady()) {
+    promptInput.placeholder = t("clio_model_required_placeholder");
+    return;
+  }
+  if (typeof sideAskEnabled !== "undefined" && sideAskEnabled && typeof isMultiFinderMode === "function" && !isMultiFinderMode()) {
+    promptInput.placeholder = t(
+      sideAskAnchorAppId === "quickDraft"
+        ? "quick_draft_cliotalk_placeholder"
+        : "sideask_prompt_placeholder"
+    );
+    return;
+  }
+  const isCloudActive = typeof cloudConfig !== "undefined" && cloudConfig && cloudConfig.active && cloudConfig.provider
+    && typeof cloudCredentialReady === "function" && cloudCredentialReady();
+  promptInput.placeholder = isCloudActive ? t("prompt_placeholder_cloud") : t("prompt_placeholder");
+}
+
+let selectedDraftIndex = 0;
+
+let speechRecognition = null;
+let systemSelectControlSequence = 0;
+const systemSelectTypeaheadState = new WeakMap();
+let sharedControlBehaviorsInstalled = false;
+
+window.markdownToSystemHtml = markdownToSystemHtml;
+window.parseMarkdownDocument = parseMarkdownDocument;
+
+const TRANSLATION_CHUNK_THRESHOLD = 5200;
+const TRANSLATION_CHUNK_MAX_LENGTH = 3600;
+
+function closeSystemSelectMenus(except = null, options = {}) {
+  document.querySelectorAll(".select-wrap.is-system-select-open").forEach((wrap) => {
+    if (wrap === except) return;
+    wrap.classList.remove("is-system-select-open");
+    const button = wrap.querySelector(":scope > .system-select-button");
+    button?.setAttribute("aria-expanded", "false");
+    if (options.focusButton && options.wrap === wrap) button?.focus();
+  });
+}
+
+function systemSelectOptionText(select) {
+  return select?.selectedOptions?.[0]?.textContent?.trim()
+    || select?.options?.[select.selectedIndex]?.textContent?.trim()
+    || "";
+}
+
+function systemSelectAccessibleName(select) {
+  const labelledBy = (select?.getAttribute("aria-labelledby") || "")
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((id) => document.getElementById(id)?.textContent?.trim())
+    .filter(Boolean)
+    .join(" ");
+  return select?.getAttribute("aria-label")
+    || labelledBy
+    || select?.closest("label")?.querySelector(":scope > span:not([aria-hidden='true'])")?.textContent?.trim()
+    || select?.closest(".control-section")?.querySelector(":scope > h3")?.textContent?.trim()
+    || select?.name
+    || systemSelectOptionText(select);
+}
+
+function refreshSystemSelectControl(select) {
+  const wrap = select?.closest(".select-wrap");
+  const button = wrap?.querySelector(":scope > .system-select-button");
+  const menu = wrap?.querySelector(":scope > .system-select-menu");
+  if (!select || !wrap || !button || !menu) return;
+  const hidden = select.hidden || select.closest("[hidden]");
+  // The label goes in its own element rather than as bare text: the button is a
+  // flex container, and text-overflow cannot truncate an anonymous flex item —
+  // long model ids ran out under the dropdown arrow instead of ellipsing.
+  let label = button.querySelector(":scope > .system-select-label");
+  if (!label) {
+    label = document.createElement("span");
+    label.className = "system-select-label";
+    button.replaceChildren(label);
+  }
+  label.textContent = systemSelectOptionText(select);
+  button.disabled = select.disabled;
+  button.setAttribute("aria-expanded", String(wrap.classList.contains("is-system-select-open")));
+  const accessibleName = systemSelectAccessibleName(select);
+  if (accessibleName) {
+    button.setAttribute("aria-label", accessibleName);
+    menu.setAttribute("aria-label", accessibleName);
+  }
+  button.title = select.title || select.getAttribute("aria-label") || "";
+  // Balloon Help explains the control a person can point at, and that is now
+  // the button: the native select is transparent and has pointer-events:none,
+  // so its own data-balloon-help can never be reached by the pointer. Copying
+  // the keys keeps the explanation attached to the visible control — and keeps
+  // the balloon's own panel lookup able to see the listbox this button owns.
+  for (const key of ["balloonHelp", "balloonHelpDisabled"]) {
+    if (select.dataset[key]) button.dataset[key] = select.dataset[key];
+    else delete button.dataset[key];
+  }
+  button.classList.toggle("is-hidden", !!hidden);
+  menu.classList.toggle("is-hidden", !!hidden);
+  if (hidden || select.disabled) wrap.classList.remove("is-system-select-open");
+}
+
+function renderSystemSelectMenu(select) {
+  const wrap = select?.closest(".select-wrap");
+  const menu = wrap?.querySelector(":scope > .system-select-menu");
+  if (!select || !menu) return;
+  menu.replaceChildren();
+  [...select.options].forEach((option, optionIndex) => {
+    if (option.hidden || option.disabled) return;
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "system-select-option";
+    item.textContent = option.textContent;
+    item.setAttribute("aria-label", option.textContent.trim());
+    item.disabled = option.disabled;
+    item.dataset.optionIndex = String(optionIndex);
+    item.id = `${menu.id}-option-${optionIndex}`;
+    item.setAttribute("role", "option");
+    const selected = option.value === select.value;
+    item.classList.toggle("is-selected", selected);
+    item.setAttribute("aria-selected", String(selected));
+    item.tabIndex = selected ? 0 : -1;
+    item.addEventListener("click", () => {
+      select.value = option.value;
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+      closeSystemSelectMenus();
+      refreshSystemSelectControl(select);
+      wrap?.querySelector(":scope > .system-select-button")?.focus();
+    });
+    menu.append(item);
+  });
+}
+
+function systemSelectEnabledOptions(menu) {
+  return [...menu.querySelectorAll(".system-select-option:not(:disabled)")];
+}
+
+function focusSystemSelectOption(menu, index) {
+  const options = systemSelectEnabledOptions(menu);
+  if (!options.length) return;
+  const next = options[(index + options.length) % options.length];
+  options.forEach((item) => { item.tabIndex = item === next ? 0 : -1; });
+  next.focus();
+}
+
+function openSystemSelect(select, direction = 0) {
+  const wrap = select?.closest(".select-wrap");
+  const button = wrap?.querySelector(":scope > .system-select-button");
+  const menu = wrap?.querySelector(":scope > .system-select-menu");
+  if (!select || !wrap || !button || !menu || select.disabled || select.hidden) return;
+  renderSystemSelectMenu(select);
+  closeSystemSelectMenus(wrap);
+  wrap.classList.add("is-system-select-open");
+  button.setAttribute("aria-expanded", "true");
+  const options = systemSelectEnabledOptions(menu);
+  const selectedIndex = Math.max(0, options.findIndex((item) => item.classList.contains("is-selected")));
+  const targetIndex = direction < 0 ? options.length - 1 : direction > 0 ? 0 : selectedIndex;
+  queueMicrotask(() => focusSystemSelectOption(menu, targetIndex));
+}
+
+function handleSystemSelectTypeahead(menu, key) {
+  if (key.length !== 1 || /\s/.test(key)) return false;
+  const previous = systemSelectTypeaheadState.get(menu);
+  const now = performance.now();
+  const query = `${previous && now - previous.time < 650 ? previous.query : ""}${key}`.toLocaleLowerCase();
+  systemSelectTypeaheadState.set(menu, { query, time: now });
+  const options = systemSelectEnabledOptions(menu);
+  const activeIndex = Math.max(-1, options.indexOf(document.activeElement));
+  const ordered = [...options.slice(activeIndex + 1), ...options.slice(0, activeIndex + 1)];
+  const match = ordered.find((item) => item.textContent.trim().toLocaleLowerCase().startsWith(query));
+  if (!match) return true;
+  options.forEach((item) => { item.tabIndex = item === match ? 0 : -1; });
+  match.focus();
+  return true;
+}
+
+function initSystemSelectControls() {
+  document.querySelectorAll(".select-wrap > select").forEach((select) => {
+    const wrap = select.closest(".select-wrap");
+    if (!wrap || wrap.classList.contains("has-system-select")) return;
+    wrap.classList.add("has-system-select");
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "system-select-button";
+    button.setAttribute("aria-haspopup", "listbox");
+    button.setAttribute("aria-expanded", "false");
+
+    const menu = document.createElement("div");
+    menu.className = "system-select-menu";
+    menu.setAttribute("role", "listbox");
+    const controlId = select.id || `system-select-${++systemSelectControlSequence}`;
+    menu.id = `${controlId}-listbox`;
+    button.setAttribute("aria-controls", menu.id);
+    const accessibleName = systemSelectAccessibleName(select);
+    if (accessibleName) {
+      button.setAttribute("aria-label", accessibleName);
+      menu.setAttribute("aria-label", accessibleName);
+    }
+    select.tabIndex = -1;
+    select.setAttribute("aria-hidden", "true");
+
+    select.insertAdjacentElement("afterend", button);
+    button.insertAdjacentElement("afterend", menu);
+
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (select.disabled || select.hidden) return;
+      const willOpen = !wrap.classList.contains("is-system-select-open");
+      if (willOpen) openSystemSelect(select);
+      else {
+        closeSystemSelectMenus();
+        button.focus();
+      }
+    });
+    button.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        openSystemSelect(select, event.key === "ArrowUp" ? -1 : 1);
+      } else if (event.key === "Home" || event.key === "End") {
+        event.preventDefault();
+        openSystemSelect(select, event.key === "End" ? -1 : 1);
+      }
+    });
+    menu.addEventListener("keydown", (event) => {
+      const options = systemSelectEnabledOptions(menu);
+      const current = Math.max(0, options.indexOf(document.activeElement));
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        focusSystemSelectOption(menu, current + 1);
+      } else if (event.key === "ArrowUp") {
+        event.preventDefault();
+        focusSystemSelectOption(menu, current - 1);
+      } else if (event.key === "Home") {
+        event.preventDefault();
+        focusSystemSelectOption(menu, 0);
+      } else if (event.key === "End") {
+        event.preventDefault();
+        focusSystemSelectOption(menu, options.length - 1);
+      } else if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        document.activeElement?.click();
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        closeSystemSelectMenus(null, { focusButton: true, wrap });
+      } else if (event.key === "Tab") {
+        closeSystemSelectMenus();
+      } else if (handleSystemSelectTypeahead(menu, event.key)) {
+        event.preventDefault();
+      }
+    });
+    select.addEventListener("change", () => refreshSystemSelectControl(select));
+    // The button carries the only label a user can read, and the native select
+    // it mirrors is hidden. A programmatic value write fires no "change", so
+    // the harness used to keep printing the previous option while the control
+    // already held the new one — the same drift that left the writing paper
+    // blank.
+    watchControlWrites(select, HTMLSelectElement.prototype, "value", refreshSystemSelectControl);
+    refreshSystemSelectControl(select);
+  });
+}
+
+function refreshSystemSelectControls() {
+  document.querySelectorAll(".select-wrap.has-system-select > select").forEach(refreshSystemSelectControl);
+}
+
+/* A busy control keeps its idle label inside the box so the button never
+   changes width mid-run, but that label must stop painting. Ink colour cannot
+   do it: the disabled and per-theme button rules load after the busy rule and
+   re-ink the text, so both labels printed on top of each other. Bare text nodes
+   get their own wrapper element instead — one wrapper per text node, so the
+   flex item count and spacing stay identical — and the busy rule hides every
+   element child with visibility, which no colour rule can undo. */
+const CONTROL_IDLE_LABEL_CLASS = "control-idle-label";
+
+function wrapControlIdleLabel(control) {
+  [...control.childNodes].forEach((node) => {
+    if (node.nodeType !== Node.TEXT_NODE || !node.nodeValue.trim()) return;
+    const wrapper = document.createElement("span");
+    wrapper.className = CONTROL_IDLE_LABEL_CLASS;
+    control.insertBefore(wrapper, node);
+    wrapper.appendChild(node);
+  });
+}
+
+function unwrapControlIdleLabel(control) {
+  control.querySelectorAll(`:scope > .${CONTROL_IDLE_LABEL_CLASS}`).forEach((wrapper) => {
+    wrapper.replaceWith(...wrapper.childNodes);
+  });
+  control.normalize();
+}
+
+function setControlLoading(control, loading, loadingLabel = "") {
+  if (!control) return;
+  if (loading) {
+    if (control.dataset.loading !== "true") wrapControlIdleLabel(control);
+    control.dataset.wasDisabled = String(control.disabled);
+    control.dataset.loading = "true";
+    control.dataset.loadingLabel = loadingLabel || "…";
+    control.setAttribute("aria-busy", "true");
+    control.disabled = true;
+    return;
+  }
+  const wasDisabled = control.dataset.wasDisabled === "true";
+  unwrapControlIdleLabel(control);
+  delete control.dataset.loading;
+  delete control.dataset.loadingLabel;
+  delete control.dataset.wasDisabled;
+  control.removeAttribute("aria-busy");
+  control.disabled = wasDisabled;
+}
+
+/* Render passes run while a control is busy. One that writes textContent
+   replaces the wrapped idle label with a bare text node the busy rule cannot
+   hide, so both labels print (the 2026-08-14 defect through a new door); one
+   that writes .disabled re-arms a button mid-run and breaks the restore.
+   Relabel and re-enable through these instead — they park the change where
+   setControlLoading() will honour it. */
+function setControlIdleLabel(control, text) {
+  if (!control) return;
+  if (control.dataset.loading === "true") {
+    const wrapper = document.createElement("span");
+    wrapper.className = CONTROL_IDLE_LABEL_CLASS;
+    wrapper.textContent = text;
+    control.replaceChildren(wrapper);
+    return;
+  }
+  control.textContent = text;
+}
+
+function setControlIdleDisabled(control, disabled) {
+  if (!control) return;
+  if (control.dataset.loading === "true") {
+    control.dataset.wasDisabled = String(disabled === true);
+    return;
+  }
+  control.disabled = disabled === true;
+}
+
+function syncRovingTabStops(tablist) {
+  const tabs = [...tablist.querySelectorAll(':scope > [role="tab"]:not(:disabled):not([hidden])')];
+  if (!tabs.length) return;
+  const selected = tabs.find((tab) => tab.getAttribute("aria-selected") === "true") || tabs[0];
+  tabs.forEach((tab) => { tab.tabIndex = tab === selected ? 0 : -1; });
+}
+
+function initSharedControlBehaviors() {
+  document.querySelectorAll('[role="tablist"]').forEach(syncRovingTabStops);
+  if (sharedControlBehaviorsInstalled) return;
+  sharedControlBehaviorsInstalled = true;
+  document.addEventListener("click", (event) => {
+    const tab = event.target.closest('[role="tab"]');
+    const tablist = tab?.closest('[role="tablist"]');
+    if (tablist) queueMicrotask(() => syncRovingTabStops(tablist));
+  });
+  document.addEventListener("keydown", (event) => {
+    const tab = event.target.closest('[role="tab"]');
+    const tablist = tab?.closest('[role="tablist"]');
+    if (!tablist) return;
+    const tabs = [...tablist.querySelectorAll(':scope > [role="tab"]:not(:disabled):not([hidden])')];
+    const current = tabs.indexOf(tab);
+    if (current < 0) return;
+    let next = current;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") next = (current + 1) % tabs.length;
+    else if (event.key === "ArrowLeft" || event.key === "ArrowUp") next = (current - 1 + tabs.length) % tabs.length;
+    else if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = tabs.length - 1;
+    else return;
+    event.preventDefault();
+    tabs[next].focus();
+    tabs[next].click();
+  });
+}
+
+function toggleMenuSubItem(item) {
+  const isOpen = item.classList.contains("is-open");
+  item.parentElement?.querySelectorAll(".menu-item-with-sub.is-open").forEach((sibling) => {
+    if (sibling !== item) sibling.classList.remove("is-open");
+  });
+  item.classList.toggle("is-open", !isOpen);
+}
+
+function positionOpenMenu(menu) {
+  const popover = menu.querySelector(":scope > .menu-popover");
+  if (!popover) return;
+  const margin = 4;
+  const menuRect = menu.getBoundingClientRect();
+  const popoverWidth = popover.getBoundingClientRect().width || popover.scrollWidth || 180;
+  const maxLeft = Math.max(margin, window.innerWidth - popoverWidth - margin);
+  const left = Math.min(Math.max(menuRect.left, margin), maxLeft);
+  menu.style.setProperty("--menu-popover-left", `${Math.round(left)}px`);
+  wireMenuScrollCue(popover);
+  syncMenuScrollCue(popover);
+  // A balloon that is already showing must step aside for the menu that just
+  // appeared under it, and the open panel is the only chance to measure it.
+  if (typeof refreshBalloonHelpPlacement === "function") refreshBalloonHelpPlacement();
+}
+
+// A menu taller than the screen shows an arrow at the end that still has
+// commands, and resting the pointer on the arrow scrolls, the way a Mac menu
+// does. The Apple menu ran past the bottom in System 7 and Liquid Glass with
+// nothing to say there was more (2026-10-08 survey).
+function syncMenuScrollCue(popover) {
+  const more = popover.scrollHeight - popover.clientHeight > 1;
+  popover.toggleAttribute("data-scroll-up", more && popover.scrollTop > 1);
+  popover.toggleAttribute("data-scroll-down", more && popover.scrollTop + popover.clientHeight < popover.scrollHeight - 1);
+}
+
+let menuScrollCueTimer = 0;
+function wireMenuScrollCue(popover) {
+  if (popover.dataset.scrollCueWired) return;
+  popover.dataset.scrollCueWired = "true";
+  const stop = () => { clearInterval(menuScrollCueTimer); menuScrollCueTimer = 0; };
+  popover.addEventListener("scroll", () => syncMenuScrollCue(popover), { passive: true });
+  popover.addEventListener("pointerleave", stop);
+  popover.addEventListener("pointermove", (event) => {
+    const rect = popover.getBoundingClientRect();
+    const step = popover.hasAttribute("data-scroll-down") && event.clientY > rect.bottom - 18 ? 6
+      : popover.hasAttribute("data-scroll-up") && event.clientY < rect.top + 18 ? -6 : 0;
+    stop();
+    if (!step) return;
+    menuScrollCueTimer = setInterval(() => {
+      popover.scrollTop += step;
+      syncMenuScrollCue(popover);
+      if (!popover.hasAttribute(step > 0 ? "data-scroll-down" : "data-scroll-up")) stop();
+    }, 16);
+  });
+}
+
+// What actually clips a pulled-down command menu is not always the screen. The
+// window pane and the desktop each hide their overflow, so a menu anchored to a
+// button near a window's right edge is cut by the window while still sitting
+// inside the viewport. Collect every clipping ancestor and keep the narrowest
+// box: that is the region the menu has to land in.
+function popoverClipBounds(element) {
+  const bounds = {
+    left: 0,
+    top: 0,
+    right: window.innerWidth,
+    bottom: window.innerHeight,
+  };
+  for (let node = element.parentElement; node && node !== document.documentElement; node = node.parentElement) {
+    const style = window.getComputedStyle(node);
+    if (style.overflowX === "visible" && style.overflowY === "visible") continue;
+    const rect = node.getBoundingClientRect();
+    if (!rect.width || !rect.height) continue;
+    bounds.left = Math.max(bounds.left, rect.left);
+    bounds.top = Math.max(bounds.top, rect.top);
+    bounds.right = Math.min(bounds.right, rect.right);
+    bounds.bottom = Math.min(bounds.bottom, rect.bottom);
+  }
+  return bounds;
+}
+
+function commandPopoverFor(details) {
+  // The document stack's switcher is a <details> in the same status bar and
+  // anchors its own popover the same way, so it takes the same nudging: with
+  // the stack host near the window's edge, a 340px menu anchored to it hangs
+  // over the edge and the window's overflow cuts the left half of every row.
+  return details?.querySelector(
+    ":scope > .teachtext-command-popover, :scope > .teachtext-command-subpopover, :scope > .tdi-stack-popover"
+  ) || null;
+}
+
+// The CSS anchors a command popover to its summary; this only nudges the
+// anchored box back inside the clip region, so the pointer never has to chase a
+// menu whose commands are off the edge. A shift, not a re-anchor: the popover
+// keeps pointing at the button that opened it.
+function positionCommandPopover(details) {
+  const popover = commandPopoverFor(details);
+  if (!popover) return;
+  popover.style.removeProperty("translate");
+  const rect = popover.getBoundingClientRect();
+  if (!rect.width || !rect.height) return;
+  const margin = 4;
+  const bounds = popoverClipBounds(details);
+  let shiftX = 0;
+  let shiftY = 0;
+  if (rect.right > bounds.right - margin) shiftX = bounds.right - margin - rect.right;
+  if (rect.left + shiftX < bounds.left + margin) shiftX = bounds.left + margin - rect.left;
+  if (rect.bottom > bounds.bottom - margin) shiftY = bounds.bottom - margin - rect.bottom;
+  if (rect.top + shiftY < bounds.top + margin) shiftY = bounds.top + margin - rect.top;
+  if (shiftX || shiftY) popover.style.translate = `${Math.round(shiftX)}px ${Math.round(shiftY)}px`;
+}
+
+function clearCommandPopoverPlacement(details) {
+  commandPopoverFor(details)?.style.removeProperty("translate");
+}
+
+async function importFilesToMountedTextDisk(files, options = {}) {
+  const controller = options.controller;
+  const statusEl = options.statusEl || ragStatusEl;
+  const source = options.source || "fileFloppy";
+  const importProjectId = activeProjectId;
+  const embeddingBatchTimeoutMs = 25000;
+
+  function setImportStatus(message) {
+    if (statusEl) statusEl.textContent = message;
+  }
+
+  function assertImportProjectActive() {
+    throwIfAborted(controller?.signal);
+    if (!isProjectMounted || activeProjectId !== importProjectId) {
+      throw fileDiskAbortError();
+    }
+  }
+
+  function uniqueMountedFileName(name, usedNames) {
+    const raw = String(name || t("untitled")).trim() || t("untitled");
+    if (!usedNames.has(raw.toLowerCase())) {
+      usedNames.add(raw.toLowerCase());
+      return raw;
+    }
+
+    const match = raw.match(/^(.*?)(\.[^.]+)?$/);
+    const stem = (match?.[1] || raw).trim() || t("untitled");
+    const ext = match?.[2] || "";
+    let index = 2;
+    let candidate = `${stem} ${index}${ext}`;
+    while (usedNames.has(candidate.toLowerCase())) {
+      index += 1;
+      candidate = `${stem} ${index}${ext}`;
+    }
+    usedNames.add(candidate.toLowerCase());
+    return candidate;
+  }
+
+  const chunks = [];
+  const mountedFileNames = [];
+  const mountedFileTexts = [];
+  const nextFileBodies = {};
+  const nextFileDiagnostics = {};
+  const nextFileSources = {};
+  const failures = [];
+  if (mountedTextDisk.projectId && mountedTextDisk.projectId !== importProjectId) {
+    ejectTextDisk({ silent: true });
+  }
+  const usedMountedNames = new Set(mountedTextDisk.files.map((name) => name.toLowerCase()));
+
+  // N15b (旧版 .doc/.xls/.ppt 明确说明): the whole batch gate lives in the lazy
+  // import module (features/legacy-formats.js, riding the ODF import loader) —
+  // ONE alert names every old-format file with what to do instead, the entries
+  // land in `failures`, and the flagged files leave this very array.
+  await ensureOdf().then(m=>m.gate(files,failures));
+
+  for (let fileIndex = 0; fileIndex < files.length; fileIndex += 1) {
+    const file = files[fileIndex];
+    assertImportProjectActive();
+    setImportStatus(t("file_disk_reading_file", fileIndex + 1, files.length, file.name));
+
+    try {
+      // OpenDocument → editable Office copy (2026-10-24 「ODF 导入成副本」):
+      // the converter appends the copy to this import batch, so it mounts
+      // through this same loop (text projection, then native registration)
+      // while the .odt/… original below stays an ordinary imported file; what
+      // the converter could not carry is listed for the writer, never dropped.
+      if (/\.od[tps]$/i.test(file.name)) await (await ensureOdf()).copy(file, files, failures);
+      const extracted = await extractFileText(file, { signal: controller?.signal });
+      const text = extracted?.text || "";
+      assertImportProjectActive();
+      const mountedName = uniqueMountedFileName(file.name, usedMountedNames);
+      if (/\.pdf$/i.test(file.name || "")) readerPdfSources.set(`${importProjectId}::${mountedName}`, file);
+      // N9: a Pages/Numbers/Keynote original stays in-session for its
+      // original-page PDF and the Office copy; only the File, never stored.
+      if (/\.(pages|numbers|key)$/i.test(file.name || "")) readerIworkSources.set(`${importProjectId}::${mountedName}`, file);
+      const fileChunks = chunkText(text, mountedName);
+      if (!fileChunks.length) {
+        failures.push({ name: file.name, message: t("file_disk_warn_no_chunks") });
+        continue;
+      }
+
+      mountedFileNames.push(mountedName);
+      mountedFileTexts.push({ name: mountedName, text });
+      nextFileBodies[mountedName] = text;
+      nextFileDiagnostics[mountedName] = buildMountedFileDiagnostic(
+        { name: mountedName, size: file.size },
+        text,
+        fileChunks
+      );
+      if (extracted?.videoTranscript?.sourceType === "video_transcript") {
+        nextFileSources[mountedName] = {
+          id: `${importProjectId || "project"}::${mountedName}`,
+          type: "video_transcript",
+          sourceName: mountedName,
+          blocks: Array.isArray(extracted.videoTranscript.blocks) ? extracted.videoTranscript.blocks : [],
+          paragraphs: Array.isArray(extracted.videoTranscript.paragraphs) ? extracted.videoTranscript.paragraphs : [],
+        };
+      }
+      chunks.push(...fileChunks);
+
+      // ClioWorks v4 (V4-01 host): an OOXML package keeps its original bytes
+      // beside the text projection. The projection above stays the reading
+      // aid; the bytes below are what "edit the file" opens and what a
+      // preserving save reads back. Never an extracted-text overwrite.
+      // The store itself is lazy: make sure it is loaded BEFORE deciding the
+      // file is a native package, otherwise the first import of a session
+      // would silently skip byte registration.
+      if (/\.(xlsx|docx|pptx)$/i.test(file.name || "") && !window.AISystem6NativeBinaries && typeof ensureNativeBinariesModule === "function") {
+        try {
+          await ensureNativeBinariesModule();
+        } catch (nativeError) {
+          failures.push({ name: file.name, message: t("clioworks_native_register_failed", nativeError?.message || String(nativeError)) });
+        }
+      }
+      if (window.AISystem6NativeBinaries && /\.(xlsx|docx|pptx)$/i.test(file.name || "")) {
+        try {
+          const bytes = new Uint8Array(await file.arrayBuffer());
+          if (!mountedTextDisk.nativeFiles) mountedTextDisk.nativeFiles = {};
+          const record = window.AISystem6NativeBinaries.register({
+            mountedName,
+            fileName: file.name,
+            format: window.AISystem6NativeBinaries.formatForName(file.name),
+            bytes,
+            projectId: importProjectId,
+          });
+          mountedTextDisk.nativeFiles[mountedName] = record;
+        } catch (nativeError) {
+          // A package whose bytes cannot be read stays a plain text mount —
+          // the failure is recorded, never a silent fallback to text editing.
+          failures.push({ name: file.name, message: t("clioworks_native_register_failed", nativeError?.message || String(nativeError)) });
+        }
+      }
+    } catch (error) {
+      if (isAbortError(error)) throw error;
+      failures.push({ name: file.name, message: error.message || String(error) });
+    }
+  }
+
+  setImportStatus(t("file_disk_extraction_done", mountedFileNames.length, chunks.length, failures.length));
+  if (statusEl && failures.length) statusEl.title = formatFileDiskFailureTitle(failures);
+
+  if (!chunks.length) {
+    setImportStatus(t("file_disk_mount_failed_all", failures.length || files.length));
+    if (failures.length) {
+      const summary = formatFileDiskFailureSummary(failures);
+      if (summary) setImportStatus(`${statusEl?.textContent || ""} ${summary.replace(/\n/g, " ")}`.trim());
+    }
+    return { source, mountedFileNames, mountedFileTexts, embeddedChunks: [], failures, embeddingFailed: true };
+  }
+
+  setImportStatus(t("embedding_chunks", chunks.length));
+  const batchSize = 16;
+  const embeddedChunks = [];
+  const isCloud = typeof cloudConfig !== "undefined" && cloudConfig?.active
+    && typeof cloudCredentialReady === "function" && cloudCredentialReady();
+  const selectedEmbeddingModel = embeddingModelInput?.value?.trim() || "";
+  const hasEmbeddingModel = isCloud || !!selectedEmbeddingModel;
+  let embeddingFailed = !hasEmbeddingModel;
+  if (!isCloud && selectedEmbeddingModel) {
+    setImportStatus(t("embedding_model_loading", selectedEmbeddingModel));
+    try {
+      if (!localLmStudioConnectionEnabled) throw new Error(t("local_connection_waiting"));
+      await window.AISystem6LocalLMStudio.loadModel(selectedEmbeddingModel, {
+        signal: controller?.signal,
+      });
+    } catch (error) {
+      if (isAbortError(error)) throw error;
+      embeddingFailed = true;
+      setImportStatus(t("keyword_indexed_chunks", chunks.length, mountedFileNames.length));
+    }
+  }
+
+  for (let index = 0; index < chunks.length; index += batchSize) {
+    assertImportProjectActive();
+    const batch = chunks.slice(index, index + batchSize);
+    try {
+      let embeddings = [];
+      // Once the embedder has failed — it would not load, or a batch timed
+      // out — the rest of the file is keyword-indexed at once. Asking again
+      // per batch cost 25 s each: a long txt sat "frozen" for minutes.
+      if (hasEmbeddingModel && !embeddingFailed) {
+        const embeddingController = new AbortController();
+        let embeddingTimedOut = false;
+        const timeoutId = setTimeout(() => {
+          embeddingTimedOut = true;
+          embeddingController.abort();
+        }, embeddingBatchTimeoutMs);
+        const cancelEmbedding = () => embeddingController.abort();
+        if (controller?.signal) {
+          if (controller.signal.aborted) cancelEmbedding();
+          else controller.signal.addEventListener("abort", cancelEmbedding, { once: true });
+        }
+        try {
+          embeddings = await embedTexts(batch.map((chunk) => chunkRagEmbeddingText(chunk)), embeddingController.signal);
+        } catch (error) {
+          if (controller?.signal?.aborted) throw error;
+          if (!embeddingTimedOut && !isAbortError(error)) throw error;
+          throw new Error("Embedding request timed out.");
+        } finally {
+          clearTimeout(timeoutId);
+          controller?.signal?.removeEventListener?.("abort", cancelEmbedding);
+        }
+      }
+      assertImportProjectActive();
+      batch.forEach((chunk, batchIndex) => {
+        embeddedChunks.push({
+          ...chunk,
+          projectId: importProjectId,
+          embedding: embeddings[batchIndex] || null,
+        });
+      });
+    } catch (error) {
+      if (isAbortError(error) && controller?.signal?.aborted) throw error;
+      embeddingFailed = true;
+      batch.forEach((chunk) => {
+        embeddedChunks.push({
+          ...chunk,
+          projectId: importProjectId,
+          embedding: null,
+        });
+      });
+    }
+
+    setImportStatus(t("embedding_progress", Math.min(index + batchSize, chunks.length), chunks.length));
+  }
+
+  assertImportProjectActive();
+  removeMountedFileChunks(mountedFileNames, importProjectId);
+  mountedTextDisk.projectId = importProjectId;
+  Object.assign(mountedTextDisk.fileBodies, nextFileBodies);
+  Object.assign(mountedTextDisk.fileDiagnostics, nextFileDiagnostics);
+  Object.assign(mountedTextDisk.fileSources, nextFileSources);
+  ragChunks.push(...embeddedChunks);
+  const existingNames = new Set(mountedTextDisk.files);
+  mountedFileNames.forEach((name) => {
+    existingNames.add(name);
+  });
+  mountedTextDisk.files = [...existingNames];
+  mountedTextDisk.chunks = getMountedTextDiskChunks().length;
+  selectedMountedFile = selectedMountedFile || mountedFileNames[0] || null;
+  renderMountedTextDisk();
+  saveDeskState();
+
+  return { source, mountedFileNames, mountedFileTexts, embeddedChunks, failures, embeddingFailed };
+}
+
+async function insertFilesIntoFileFloppy(files, { source = "fileFloppy", openAfter = "textDisk" } = {}) {
+  if (fileDiskImportController) {
+    fileDiskImportController.abort();
+    ragStatusEl.textContent = t("file_disk_canceling");
+    return null;
+  }
+
+  if (!getActiveProject()) {
+    ragStatusEl.textContent = t("no_project_mounted");
+    openWindow("projects");
+    return null;
+  }
+
+  const selectedFiles = Array.from(files || []).filter(Boolean);
+  if (!selectedFiles.length) {
+    ragStatusEl.textContent = t("choose_files");
+    return null;
+  }
+
+  const controller = new AbortController();
+  fileDiskImportController = controller;
+  indexFilesButton.disabled = false;
+  indexFilesButton.textContent = t("cancel");
+  ragStatusEl.textContent = t("reading_files");
+  ragStatusEl.title = "";
+
+  try {
+    const { mountedFileNames, embeddedChunks, failures, embeddingFailed } = await importFilesToMountedTextDisk(selectedFiles, {
+      controller,
+      statusEl: ragStatusEl,
+      source,
+    });
+    filesInput.value = "";
+    updateFilePickerLabels();
+    const baseStatus = embeddingFailed
+      ? t("keyword_indexed_chunks", embeddedChunks.length, mountedFileNames.length)
+      : t("indexed_chunks", embeddedChunks.length, mountedFileNames.length);
+    ragStatusEl.textContent = failures.length
+      ? `${baseStatus} ${t("file_disk_failed_count", failures.length)} ${formatFileDiskFailureSummary(failures).replace(/\n/g, " ")}`
+      : baseStatus;
+    if (failures.length) ragStatusEl.title = formatFileDiskFailureTitle(failures);
+    if (openAfter) openWindow(openAfter);
+    return { mountedFileNames, embeddedChunks, failures, embeddingFailed };
+  } catch (error) {
+    const message = isAbortError(error) ? t("file_disk_canceled") : (error.message || t("file_disk_mount_failed_all", selectedFiles.length));
+    ragStatusEl.textContent = message;
+    setStatus(message);
+    return null;
+  } finally {
+    fileDiskImportController = null;
+    indexFilesButton.disabled = false;
+    renderMountedTextDisk();
+  }
+}
+
+function insertFileFloppyFromWindow() {
+  openTransientFilePicker({
+    accept: importableFileAccept,
+    multiple: true,
+    onSelect(files) {
+      insertFilesIntoFileFloppy(files, { source: "fileFloppy", openAfter: "textDisk" });
+    },
+  });
+}
+
+async function importDocMapDroppedFiles(files) {
+  const droppedFiles = Array.from(files || []).filter(Boolean);
+  if (!droppedFiles.length) return;
+
+  if (!getActiveProject()) {
+    setStatus(t("no_project_mounted"));
+    openWindow("projects");
+    return;
+  }
+
+  const controller = new AbortController();
+  docMapDropZoneEl?.classList.add("is-importing");
+  syncDocMapDropZoneLabel(t("docmap_drop_importing"));
+  pushSystemNotification(t("docmap_drop_importing"), {
+    state: "running",
+    windowName: "docMap",
+    actionLabel: t("open"),
+  });
+
+  try {
+    const result = await importFilesToMountedTextDisk(droppedFiles, {
+      controller,
+      statusEl: ragStatusEl,
+      source: "docMapDrop",
+    });
+    const { mountedFileNames, embeddedChunks, failures, embeddingFailed } = result;
+    const baseStatus = embeddingFailed
+      ? t("keyword_indexed_chunks", embeddedChunks.length, mountedFileNames.length)
+      : t("indexed_chunks", embeddedChunks.length, mountedFileNames.length);
+    const failureSummary = failures.length ? formatFileDiskFailureSummary(failures).replace(/\n/g, " ") : "";
+    const statusMessage = failures.length
+      ? `${baseStatus} ${t("file_disk_failed_count", failures.length)} ${failureSummary}`.trim()
+      : baseStatus;
+    ragStatusEl.textContent = statusMessage;
+    if (failures.length) ragStatusEl.title = formatFileDiskFailureTitle(failures);
+
+    if (!mountedFileNames.length) {
+      pushSystemNotification(ragStatusEl.textContent || t("file_disk_mount_failed_all", failures.length || droppedFiles.length), {
+        state: "failed",
+        windowName: "textDisk",
+        actionLabel: t("open"),
+      });
+      return;
+    }
+
+    const docMapMessage = t("docmap_drop_inserted_floppy", mountedFileNames.length, embeddedChunks.length);
+    setStatus(docMapMessage);
+    pushSystemNotification(
+      failures.length ? `${docMapMessage} ${t("file_disk_failed_count", failures.length)} ${failureSummary}`.trim() : docMapMessage,
+      { state: failures.length ? "failed" : "running", windowName: "docMap", actionLabel: t("open") }
+    );
+    openWindow("docMap");
+    await makeDocMapFromMountedFileDrop(mountedFileNames);
+  } catch (error) {
+    const message = isAbortError(error) ? t("file_disk_canceled") : error.message;
+    ragStatusEl.textContent = message;
+    setStatus(message);
+    pushSystemNotification(message, { state: "failed", windowName: "docMap", actionLabel: t("open") });
+  } finally {
+    docMapDropZoneEl?.classList.remove("is-importing", "is-dragging");
+    syncDocMapDropZoneLabel();
+    renderMountedTextDisk();
+  }
+}
+
+function mountedFileNamesFromDrop(event) {
+  const rawData = event?.dataTransfer?.getData("application/json") || event?.dataTransfer?.getData("text/plain");
+  if (!rawData) return [];
+  try {
+    const data = JSON.parse(rawData);
+    if (data?.type !== "mounted-file") return [];
+    const names = Array.isArray(data.ids) && data.ids.length ? data.ids : [data.id];
+    return names
+      .map((name) => String(name || "").trim())
+      .filter((name) => name && mountedTextDisk.files.includes(name));
+  } catch {
+    return [];
+  }
+}
+
+function dropHasFilesOrMountedFiles(event) {
+  const types = Array.from(event?.dataTransfer?.types || []);
+  return types.includes("Files") || types.includes("application/json") || types.includes("text/plain");
+}
+
+function dropEffectForFilesOrMountedFiles(event) {
+  const types = Array.from(event?.dataTransfer?.types || []);
+  return types.includes("application/json") || types.includes("text/plain") ? "move" : "copy";
+}
+
+async function makeDocMapFromMountedFileDrop(fileNames = []) {
+  const names = Array.from(new Set(fileNames)).filter((name) => mountedTextDisk.files.includes(name));
+  if (!names.length) return false;
+  selectedMountedFileNames.clear();
+  names.forEach((name) => selectedMountedFileNames.add(name));
+  selectedMountedFile = names[0] || null;
+  renderMountedTextDisk();
+  openWindow("docMap");
+  const videoDocMapSource = names.length === 1 ? docMapSourceFromVideoTranscript(names[0]) : null;
+  await makeDocMapFromCurrentSource(videoDocMapSource || docMapSourceFromFileFloppy());
+  return true;
+}
+
+async function importClioStageDroppedFiles(files) {
+  const droppedFiles = Array.from(files || []).filter(Boolean);
+  if (!droppedFiles.length) return;
+
+  if (!getActiveProject()) {
+    setStatus(t("no_project_mounted"));
+    openWindow("projects");
+    return;
+  }
+
+  const controller = new AbortController();
+  clioStageViewportEl?.classList.add("is-importing");
+  setStatus(t("clio_stage_drop_importing"));
+  pushSystemNotification(t("clio_stage_drop_importing"), {
+    state: "running",
+    windowName: "clioStage",
+    actionLabel: t("open"),
+  });
+
+  try {
+    const result = await importFilesToMountedTextDisk(droppedFiles, {
+      controller,
+      statusEl: ragStatusEl,
+      source: "clioStageDrop",
+    });
+    const { mountedFileNames, mountedFileTexts, embeddedChunks, failures, embeddingFailed } = result;
+    const baseStatus = embeddingFailed
+      ? t("keyword_indexed_chunks", embeddedChunks.length, mountedFileNames.length)
+      : t("indexed_chunks", embeddedChunks.length, mountedFileNames.length);
+    const failureSummary = failures.length ? formatFileDiskFailureSummary(failures).replace(/\n/g, " ") : "";
+    ragStatusEl.textContent = failures.length
+      ? `${baseStatus} ${t("file_disk_failed_count", failures.length)} ${failureSummary}`.trim()
+      : baseStatus;
+    if (failures.length) ragStatusEl.title = formatFileDiskFailureTitle(failures);
+
+    if (!mountedFileTexts.length) {
+      const message = ragStatusEl.textContent || t("file_disk_mount_failed_all", failures.length || droppedFiles.length);
+      setStatus(message);
+      pushSystemNotification(message, { state: "failed", windowName: "textDisk", actionLabel: t("open") });
+      return;
+    }
+
+    const slidesMessage = t("clio_stage_drop_inserted_floppy", mountedFileNames.length, embeddedChunks.length);
+    setStatus(slidesMessage);
+    pushSystemNotification(
+      failures.length ? `${slidesMessage} ${t("file_disk_failed_count", failures.length)} ${failureSummary}`.trim() : slidesMessage,
+      { state: failures.length ? "failed" : "done", windowName: "clioStage", actionLabel: t("open") }
+    );
+    openWindow("clioStage");
+    await ensureSlidesExportModule();
+    await generateMarpMarkdownAndOpenClioStage({
+      title: mountedFileNames.length === 1 ? mountedFileNames[0] : t("mounted_text_disk"),
+      markdown: joinDocMapSourceBlocks(mountedFileTexts),
+      folder: preferredFolderName(),
+    });
+  } catch (error) {
+    const message = isAbortError(error) ? t("file_disk_canceled") : error.message;
+    ragStatusEl.textContent = message;
+    setStatus(message);
+    pushSystemNotification(message, { state: "failed", windowName: "clioStage", actionLabel: t("open") });
+  } finally {
+    clioStageViewportEl?.classList.remove("is-importing", "is-dragging");
+    renderMountedTextDisk();
+  }
+}
+
+// Assistant Activity derives model availability from the real runtime
+// signals (cloud config / local LM Studio indicator) so its offline/idle
+// states never invent a model.
+window.AISystem6AssistantActivity?.setModelReadySource?.(() => {
+  const cloudReady = typeof cloudConfig !== "undefined"
+    && cloudConfig?.active
+    && cloudConfig?.provider
+    && typeof cloudCredentialReady === "function"
+    && cloudCredentialReady();
+  const localReady = typeof isLocalModelIndicatorReady === "function"
+    && isLocalModelIndicatorReady();
+  return cloudReady === true || localReady === true;
+});
+
+function applyBootLaunchIntent() {
+  const i = window.AISystem6LaunchIntent?.parse?.(bootSearch) || {};
+  const linked = i.appearance && window.AISystem6Theme.getTheme(i.appearance);
+  if (linked && linked.id !== getCurrentTheme()) {
+    // A link to an appearance still in research previews it only where
+    // ?debugTheme= would; anywhere else the saved appearance stays on screen.
+    if (linked.releaseReady) applyTheme(linked.id, { persist: false, announce: false });
+    else if (developmentPreviewAllowed) window.AISystem6Theme.previewExperimentalTheme(linked.id);
+  }
+  if (i.tour === "writing" && typeof enterWriterMode === "function") {
+    enterWriterMode();
+  }
+  if (i.open?.command && typeof handleAction === "function") {
+    setTimeout(() => handleAction(i.open.command), 0);
+  }
+  if (i.launch?.command) {
+    setTimeout(() => runStandaloneLaunchIntent(i.launch), 0);
+  }
+  if (i.data) loadClassicScriptOnce("app/dev/data-switch.js");
+}
+
+// Standalone launch links (1.0.52): open an external ?launch= route after the
+// boot sequence. A route that belongs to the Writing view goes there; the rest
+// name a desk app, so a session left in the Writing view moves to the desk for
+// it. That move is the system's own call, not a question: the link is the
+// visitor's click, nothing is closed, and the switch is transient, so the
+// profile the writer chose still opens their manuscript next time. The window
+// mode is applied afterwards.
+async function runStandaloneLaunchIntent(intent) {
+  if (!intent?.command || typeof handleAction !== "function") return;
+  const inWritingView = typeof workspaceProfile !== "undefined" && workspaceProfile === "writing";
+  if (intent.profile === "writing") {
+    if (!inWritingView && typeof activateWorkspaceProfile === "function") {
+      await activateWorkspaceProfile("writing", { openDefault: false, persist: false });
+    }
+  } else if (inWritingView && typeof activateWorkspaceProfile === "function") {
+    await activateWorkspaceProfile("desktop", { openDefault: false, persist: false, transient: true });
+    if (typeof setStatus === "function") setStatus(t("launch_switched_to_desktop"));
+  }
+  await handleAction(intent.command);
+  if (!intent.fullscreen || typeof maximizeWindow !== "function") return;
+  // The command is lazily loaded: handleAction resolves once the module is
+  // ready, but the window it opens can land one tick later. Poll briefly for
+  // the launch route's own window so a modal that kept focus never lets us
+  // zoom the wrong surface.
+  const targetName = intent.window || "";
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    const win = typeof getWindow === "function"
+      ? getWindow(targetName)
+      : document.querySelector(`[data-window="${targetName}"]`);
+    if (win && !win.classList.contains("is-hidden")) {
+      maximizeWindow(win);
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+}
+
+function ensureLaunchIntentModule() {
+  return window.AISystem6LaunchIntent
+    ? Promise.resolve(true)
+    : ensureLazySystemModule("app/core/launch-intent.js", "AISystem6LaunchIntentLoaded");
+}
+
+wireAppEvents();
+Promise.resolve(boot()).then(() => {
+  if (document.body.dataset.appReady === "ready" && /[?&](?:open|launch|appearance|tour|data)=/i.test(bootSearch)) {
+    ensureLaunchIntentModule().catch(() => {}).then(applyBootLaunchIntent);
+  }
+});

@@ -1,0 +1,45 @@
+{
+  "asset": "Bonsai City Canvas 2D isometric atlas family",
+  "files": [
+    {
+      "file": "assets/bonsai/atlas-north.png",
+      "sha256": "28b08782f3e9904f8fc3c815ab42c067e2592e8f78c2f09cff710e042242135b"
+    },
+    {
+      "file": "assets/bonsai/atlas-east.png",
+      "sha256": "cf69f7e52de88eb8221f1b0efa2121a28cc3a913ddfb60a63431f68afa3de369"
+    },
+    {
+      "file": "assets/bonsai/atlas-south.png",
+      "sha256": "043744207047732dadb4adf5a0b8ab1d47bd853c375e4e79897147d7472fdb34"
+    },
+    {
+      "file": "assets/bonsai/atlas-west.png",
+      "sha256": "34393f7c7b278e6926b7a7393924c2893fe10255167c225a484551dc500d5268"
+    }
+  ],
+  "metadata": "assets/bonsai/atlas-metadata.json",
+  "sourceFile": "assets/bonsai/atlas-source.json",
+  "materialManifest": "assets/bonsai/textures.json",
+  "sourceArtwork": {
+    "file": "assets/bonsai/source-art/city-materials-v1.png",
+    "prompt": "assets/bonsai/source-art/city-materials-v1.prompt.txt",
+    "tool": "image_gen.imagegen",
+    "model": "unknown (not exposed by tool)",
+    "requestedModel": "GPT Image 2.5",
+    "sha256": "bfdc023937446080c6b98aec39a34462073ba13a8abb1ceb1905e8e3bd1027f0"
+  },
+  "author": "AI System 6 (original, agent-authored)",
+  "date": "2026-09-11T00:00:00.000Z",
+  "tool": "tooling/build-bonsai-atlas.mjs, then tooling/bonsai-miniature/bake-atlas.mjs (authored voxel models, deterministic CPU isometric rasterizer)",
+  "license": "MIT",
+  "source": "original",
+  "notes": [
+    "Original city art from shared runtime building, roof, facility and tree geometry, rendered orthographically with saved generated materials; directional transport markings remain deterministic geometry.",
+    "No pixels copied, traced, sampled, measured from, or converted from any external game or artwork; the reference authorized by the 2026-08-24 amendment was not consulted for this build.",
+    "Building identity selects massing, roof and wall colour independently of position, light and camera; twenty-four authored variants per stage stay stable across backends.",
+    "The generator has no network path and no wall clock, and reads checked-in recipes, runtime geometry and saved texture/mask PNGs; a rebuild is byte-identical.",
+    "All four rotations share frame ids and dimensions; camera rotation changes visible faces without changing asset identity.",
+    "872 frames (growable buildings and their build states) are original voxel models authored in tooling/bonsai-miniature and rasterized on the CPU with exact 2:1 isometric arithmetic; no external art was consulted, traced or sampled."
+  ]
+}

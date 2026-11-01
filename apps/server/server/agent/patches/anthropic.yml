@@ -1,0 +1,11 @@
+# pi-ai's built-in `anthropic` route speaks anthropic-messages. The key comes
+# from the Keychain (credential-vault) as AIS6_AGENT_ANTHROPIC_KEY.
+- id: llm-pi-ai
+  config:
+    providers:
+      anthropic:
+        apiKeyEnv: AIS6_AGENT_ANTHROPIC_KEY
+- id: acp
+  config:
+    provider: anthropic
+    model: claude-sonnet-5-5

@@ -1,0 +1,27 @@
+{
+ "note": "R2 large-office perf baseline; regenerate with node tooling/clioworks-r2-perf.mjs --write-baseline. Compare mode fails only above 2× these medians.",
+ "machine": {
+  "cpu": "Apple M5",
+  "node": "v24.14.1"
+ },
+ "files": {
+  "sheet-10k.xlsx": {
+   "bytes": 654793,
+   "open": 629,
+   "edit": 440.9,
+   "save": 1056.8
+  },
+  "doc-200p.docx": {
+   "bytes": 10273,
+   "open": 668.7,
+   "edit": 29.4,
+   "save": 503.9
+  },
+  "deck-80.pptx": {
+   "bytes": 105548,
+   "open": 1081.4,
+   "edit": 15.1,
+   "save": 834.8
+  }
+ }
+}

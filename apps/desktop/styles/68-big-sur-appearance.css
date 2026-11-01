@@ -1,0 +1,719 @@
+/* Big Sur (macOS 11, 2020). Independent web adaptation of the system
+   surfaces described in WWDC20 session 10104. Measurements here are product
+   CSS pixels, not a claim of native pixel fidelity. The 2020 icon family is
+   its own -- 59 objects, four tiers, `assets/themes/big-sur` -- and this file
+   is the material half of that era: the registry records `overlay: none`, so
+   no Liquid Glass painter or refraction runs behind it. */
+html[data-theme="big-sur"],
+body[data-theme="big-sur"] {
+  /* No hover outline on choices in this era (no native evidence of one). */
+  --control-choice-hover-shadow: none;
+  /* Period tokens Platinum made shared (2026-09-25), answered with the values
+     this era already drew, so nothing here changes on screen. */
+  --tab-last-border-right: 0;
+  color-scheme: light;
+  /* Clio shell palette (styles/99-cliotalk-shell.css, glass skin): this era's
+     own surfaces, so Dark follows through the tokens the dark block resets. */
+  --cl-era-ink: var(--ink);
+  --cl-era-ink-2: var(--shade-dark);
+  --cl-era-ink-3: var(--shade-dark);
+  --cl-era-line: var(--rule);
+  --cl-era-line-strong: var(--rule);
+  --cl-era-window: var(--surface-primary);
+  --cl-era-sidebar: var(--sidebar-bg);
+  /* Opaque: the output panel and cards sit over the thread. */
+  --cl-era-raised: color-mix(in srgb, var(--ink) 4%, var(--surface-primary));
+  --cl-era-hover: var(--view-btn-hover-bg);
+  --cl-era-selected: var(--sidebar-selection-bg);
+  --cl-era-accent: var(--selection-bg);
+  --cl-era-off: var(--shade);
+  --cl-era-check-line: var(--shade-dark);
+  --cl-era-r-sm: 6px;
+  --cl-era-r-md: 8px;
+  --cl-era-r-lg: 10px;
+  --surface-rule: var(--rule);
+  --surface-fill: var(--selection-bg);
+  /* Alarm Clock: the base sheet's square, black-shadowed frame and black active
+     mode drew here unchanged. Big Sur's own surfaces, so Dark follows. */
+  --alarm-clock-frame-border: 1px solid var(--rule);
+  --alarm-clock-frame-radius: 10px;
+  --alarm-clock-frame-shadow: var(--window-shadow);
+  --alarm-clock-title-bg: var(--toolbar-bg);
+  --alarm-clock-surface-bg: var(--surface-primary);
+  --alarm-clock-readout-bg: var(--surface-primary);
+  --alarm-clock-divider: 1px solid var(--rule);
+  --alarm-clock-active-bg: var(--selection-bg);
+  --alarm-clock-active-fg: #ffffff;
+  --alarm-clock-close-size: 12px;
+  --alarm-clock-close-border: 0;
+  --alarm-clock-close-radius: 50%;
+  --alarm-clock-close-bg: #ff5f57;
+  --alarm-clock-lever-radius: 6px;
+  --alarm-clock-lever-bg: var(--btn-bg);
+  --alarm-clock-lever-hover-bg: var(--btn-hover-bg);
+  --alarm-clock-lever-fg: var(--ink);
+  --alarm-clock-selection-bg: var(--selection-bg);
+  --alarm-clock-selection-fg: #ffffff;
+  --alarm-clock-mode-divider: 0;
+  --alarm-clock-mode-radius: 6px;
+  --alarm-clock-mode-bg: var(--control-section-bg);
+  --alarm-clock-mode-hover-bg: var(--view-btn-hover-bg);
+  --alarm-clock-mode-active-shadow: none;
+  --alarm-clock-section-gap: 2px;
+  --theme-ui-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Segoe UI", sans-serif;
+  --theme-title-font: var(--theme-ui-font);
+  /* macOS 11 has one system face for chrome and for body copy. Without this the
+     desk's shared body font (Geneva, the Classic paper face) reached every
+     paragraph inside a Big Sur window while its labels and buttons used SF —
+     measured 2026-09-23: the Control Panel's own explanatory copy came out
+     Geneva beside `-apple-system` labels. The writing surfaces keep their own
+     document face (the editors set it themselves), and `--text-font` is what
+     the reader/preview rules ask for, so this is the UI reading of the era's
+     type, not a change to the writer's paper. */
+  --text-font: var(--theme-ui-font);
+  --system-readable-min: 13px;
+  --system-title-size: 13px;
+  --system-control-size: 13px;
+  --system-text-size: 13px;
+  --system-caption-size: 11px;
+  --system-menu-height: 25px;
+  /* Chrome sizes, pinned 2026-09-23 to the native captures this era is
+     compared against (512 Pixels macOS 11 library, the entries
+     `docs/01_Big_Sur_参照与落地.md` names: TextEdit, Finder: Home, System
+     Preferences: General). Those files are 2x, so each image pixel below is
+     half a measured CSS pixel:
+       TextEdit         bar 29px down to its bottom hairline (28 + 1); the
+                        first lamp centre 14px from the window's left edge and
+                        13px below its top; lamps 12px across, 20px apart
+       Finder: Home     the same 12px lamps on the same 20px pitch, sitting
+                        lower because a 52px toolbar window centres them in
+                        the toolbar; its tab row then measures 28px
+       System Prefs     toolbar 52px down to its hairline, search inside it
+     This block used to be 38px with 28px slots and 10px side padding, which
+     put the group's centres at 23px/20px and left a 16px visual gap against
+     the reference's 8px. Still a product value, not a measurement: the 20px
+     hit target (a mouse may miss by 4px either side of the 12px lamp), and
+     the 44px touch target the responsive layer forces for fingers. */
+  --system-titlebar-height: 29px;
+  --system-titlebar-title-height: 22px;
+  --system-titlebar-font-size: 13px;
+  --system-titlebar-control-slot: 20px;
+  --system-titlebar-control-size: 20px;
+  --system-titlebar-control-margin-x: 0;
+  --system-titlebar-margin-y: 0;
+  --system-titlebar-padding-y: 0;
+  --system-titlebar-padding-x: 4px;
+  --system-titlebar-inactive-control-visibility: visible;
+  --system-titlebar-inactive-control-opacity: 1;
+  --system-titlebar-inactive-control-filter: grayscale(1);
+  --system-titlebar-inactive-title-color: var(--shade-dark);
+  --system-titlebar-active-bg: var(--toolbar-bg);
+  --system-titlebar-inactive-bg: var(--panel);
+  --system-titlebar-background-origin: border-box;
+  --system-titlebar-background-clip: border-box;
+  --system-control-min-height: 24px;
+  --system-button-min-height: 24px;
+  --system-button-padding-y: 3px;
+  --system-button-padding-x: 12px;
+  --control-footer-bg: var(--panel);
+  --control-status-muted-fg: var(--shade-dark);
+  --control-settings-columns: minmax(0, 1fr);
+  --control-settings-rows: none;
+  --control-chooser-area: auto;
+  --control-chooser-direction: row;
+  --control-chooser-gap: 4px;
+  --control-chooser-padding: 6px;
+  --control-chooser-border-bottom: var(--system-border);
+  --control-chooser-border-right: 0;
+  --control-chooser-item-flex: 1 1 0;
+  --control-chooser-item-radius: 6px;
+  --control-chooser-item-padding: 4px;
+  --control-chooser-active-bg: var(--sidebar-selection-bg);
+  --control-chooser-active-label-bg: transparent;
+  /* A preference window's selected pane tints its label with the accent,
+     over the rounded grey highlight (Mail Preferences, macOS 11 capture). */
+  --control-chooser-active-label-fg: var(--selection-bg);
+  /* Group boxes: a rounded well a step darker than the window, its heading
+     inside at the top, not cut into the border (System Preferences: Sound). */
+  --control-section-bg: rgba(0, 0, 0, 0.035);
+  --control-section-title-margin: 0;
+  --control-section-title-padding: 0;
+  --control-section-title-bg: transparent;
+  /* Get Info sits on the window's own material, with plain-weight labels and
+     hairline section rules (Finder: Get Info, macOS 11 capture). */
+  --info-pane-bg: var(--window-bg);
+  --info-label-weight: 400;
+  --info-divider-border: 1px solid var(--rule);
+  --control-chooser-hover-bg: var(--panel);
+  --control-chooser-icon-size: 24px;
+  --settings-scrollbar-width: 10px;
+  --settings-scrollbar-track-bg: transparent;
+  --settings-scrollbar-track-edge: 0;
+  --settings-scrollbar-thumb-bg: var(--scrollbar-thumb);
+  --settings-scrollbar-thumb-border: 3px solid transparent;
+  --settings-scrollbar-thumb-radius: 5px;
+  --settings-scrollbar-thumb-shadow: none;
+  --view-switch-border: 0;
+  --view-switch-radius: 5px;
+  --view-switch-bg: var(--panel);
+  --view-switch-shadow: none;
+  --view-switch-thumb-radius: 4px;
+  --view-switch-thumb-bg: var(--surface-primary);
+  --view-switch-thumb-shadow: var(--control-shadow);
+  --view-switch-fg: var(--shade-dark);
+  --view-switch-active-fg: var(--ink);
+  --finder-navigation-border: var(--system-border);
+  --finder-navigation-bg: var(--toolbar-bg);
+  --ink: #242424;
+  /* Wallpaper tinting (macOS 11's "Allow wallpaper tinting in windows", on by
+     default): window chrome takes a warm cast from the Big Sur headland. Read
+     from 512 Pixels' Finder: Home capture (internal/evidence/drafts/big-sur/
+     reference/finder.png): toolbar #fbf5f5, selected tab #f7f1f1, unselected
+     tabs #ebe5e5, sidebar #e5e0e0. Yosemite's chrome is a cool neutral grey;
+     this warmth is the first thing that tells the two apart. */
+  --paper: #f7f1f1;
+  --panel: #ebe5e5;
+  --quiet-panel: #fafafa;
+  --shade: #c7c7c7;
+  --shade-dark: #656565;
+  --md-marker-ink: var(--shade-dark);
+  --rule: rgba(0, 0, 0, 0.15);
+  --separator: var(--rule);
+  --surface-primary: #ffffff;
+  --surface-secondary: var(--paper);
+  --surface-inset: var(--surface-primary);
+  --pane-bg: var(--surface-primary);
+  --window-bg: var(--paper);
+  --window-border: 1px solid rgba(0, 0, 0, 0.23);
+  --window-radius: 10px;
+  --window-shadow: 0 18px 42px rgba(0, 0, 0, 0.27), 0 0 0 0.5px rgba(255, 255, 255, 0.6);
+  --active-window-shadow: var(--window-shadow);
+  --inactive-window-shadow: 0 6px 18px rgba(0, 0, 0, 0.13);
+  --window-backdrop-filter: none;
+  --surface-backdrop-filter: none;
+  --titlebar-toolbar-backdrop-filter: none;
+  --toolbar-bg: #fbf5f5;
+  --toolbar-bg-inactive: var(--panel);
+  --toolbar-border: 1px solid var(--rule);
+  --toolbar-highlight: none;
+  --titlebar-border: 0;
+  --titlebar-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  --titlebar-title-bg: transparent;
+  --titlebar-title-fg: var(--ink);
+  --sidebar-bg: rgba(229, 222, 222, 0.86);
+  --finder-one-row-side-seam: 0;
+  /* Vibrancy fidelity: translucent fill + measurable blur, distinct from
+     Yosemite's blur(7px) solid-leaning sidebar and from Liquid's stronger
+     chrome blur (polishTodo vibrancy-sidebar-fidelity). */
+  --sidebar-backdrop-filter: blur(12px) saturate(140%);
+  /* Painter glass contract: Big Sur = 12 (≠ Yosemite 0 ≠ Liquid 18). */
+  --painter-blur: blur(12px);
+  --painter-blur-px: 12;
+  --selection-bg: #0069d9;
+  --selection-edge: #0069d9;
+  --selection-fg: #ffffff;
+  --sidebar-selection-bg: rgba(0, 0, 0, 0.1);
+  --sidebar-selection-fg: var(--ink);
+  --details-bar-border: var(--rule);
+  --system-border: 1px solid var(--rule);
+  --system-primary-divider: var(--system-border);
+  --system-secondary-divider: var(--system-border);
+  --system-shadow: 0 2px 8px rgba(0, 0, 0, 0.13);
+  --system-object-shadow: var(--system-shadow);
+  --system-inset: inset 0 1px 2px rgba(0, 0, 0, 0.07);
+  /* Disabled ink a step lighter than the shade: at #656565 a disabled pop-up
+     read like a live one beside the #242424 ink. #8a8a8a holds 3.4:1 on white,
+     above the 3:1 disabled floor the other eras keep. */
+  --system-disabled-fg: #8a8a8a;
+  --control-radius: 5px;
+  --control-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  --control-active-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
+  --control-focus-outline: 3px solid #80b5ed;
+  --system-focus-outline: var(--control-focus-outline);
+  --control-focus-offset: 2px;
+  --control-disabled-bg: var(--panel);
+  --control-disabled-field-bg: var(--paper);
+  --control-disabled-opacity: 0.65;
+  --btn-border-color: var(--rule);
+  --btn-radius: 5px;
+  --btn-bg: var(--surface-primary);
+  --btn-fg: var(--ink);
+  --btn-shadow: var(--control-shadow);
+  --btn-hover-bg: var(--quiet-panel);
+  --btn-hover-fg: var(--ink);
+  --btn-hover-shadow: var(--control-shadow);
+  --btn-active-bg: var(--panel);
+  --btn-active-fg: var(--ink);
+  --btn-active-shadow: var(--control-active-shadow);
+  --btn-default-bg: linear-gradient(#1685f6, #0067da);
+  --btn-default-fg: #ffffff;
+  --btn-default-text-shadow: none;
+  --btn-default-shadow: 0 1px 2px rgba(0, 0, 0, 0.16);
+  --btn-default-hover-bg: #0874e2;
+  --btn-default-hover-fg: #ffffff;
+  --btn-default-active-bg: #0058ba;
+  --btn-default-active-fg: #ffffff;
+  --field-bg: var(--surface-primary);
+  --field-focus-bg: var(--field-bg);
+  --field-border: 1px solid var(--rule);
+  --field-radius: 5px;
+  --field-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+  --field-control-padding: 4px 8px;
+  --field-focus-border: 1px solid #2686e8;
+  --field-focus-ring: 0 0 0 3px rgba(38, 134, 232, 0.4);
+  --select-radius: 5px;
+  --select-wrapper-arrow-display: block;
+  --system-select-control-min-height: 24px;
+  --system-select-control-padding: 3px 26px 3px 8px;
+  --system-select-control-border: var(--field-border);
+  --system-select-control-radius: 5px;
+  --system-select-control-bg: var(--btn-bg);
+  --system-select-control-shadow: var(--control-shadow);
+  --system-select-control-font-weight: 400;
+  --system-select-option-radius: 4px;
+  --system-select-option-bg: transparent;
+  --system-select-option-fg: var(--ink);
+  --system-select-option-active-bg: var(--selection-bg);
+  --system-select-option-active-fg: var(--selection-fg);
+  --choice-bg: var(--surface-primary);
+  --choice-border: 1px solid var(--shade);
+  --choice-radius: 3px;
+  --choice-shadow: var(--field-shadow);
+  --choice-checked-bg: var(--selection-bg);
+  --choice-checkmark-image: url("./assets/themes/yosemite/checkbox-check-white.svg");
+  --choice-checked-border-color: transparent;
+  --choice-checked-shadow: none;
+  --radio-bg: var(--choice-bg);
+  --radio-border: var(--choice-border);
+  --radio-shadow: var(--choice-shadow);
+  --radio-image: none;
+  --radio-focus-image: none;
+  --radio-checked-image: radial-gradient(circle, #fff 0 2px, transparent 2.5px), linear-gradient(var(--selection-bg), var(--selection-bg));
+  --radio-checked-focus-image: var(--radio-checked-image);
+  --system-check-size: 15px;
+  --system-radio-size: 15px;
+  /* 11: warmer, more open frost than Yosemite's cool dense bar (P2). */
+  --menu-bar-bg: rgba(250, 244, 238, 0.64);
+  /* The opaque colour under that fill, for the strip a home-screen web app
+     runs under the status area. See 60-responsive.css's installed-surface
+     block for why the strip has to be flat there. */
+  --menu-bar-base: #faf4ee;
+  --menu-bar-backdrop-filter: blur(26px) saturate(205%);
+  --menu-bar-border-color: transparent;
+  --menu-bar-border: 0;
+  --menu-bar-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
+  /* A Big Sur menu is a sheet of frosted glass the wallpaper shows through
+     (the Notes menu in 512 Pixels' 11 Light capture runs pink to white over
+     the headland), with a 6pt corner and a highlight inset from its edges in
+     a left-to-right blue (#3c81e4 to #5595f5, measured). Yosemite's is an
+     opaque white card with a flat blue bar. */
+  --menu-panel-bg: rgba(244, 238, 238, 0.72);
+  --menu-panel-border: 1px solid rgba(0, 0, 0, 0.12);
+  --menu-panel-radius: 6px;
+  --menu-panel-padding: 5px;
+  --menu-panel-shadow: 0 10px 26px rgba(0, 0, 0, 0.24);
+  --menu-panel-backdrop-filter: blur(30px) saturate(180%);
+  --menu-button-active-bg: rgba(0, 0, 0, 0.13);
+  --menu-button-active-fg: var(--ink);
+  --menu-item-active-bg: linear-gradient(to right, #3c81e4, #5595f5);
+  --menu-item-active-fg: var(--selection-fg);
+  --menu-item-line-height: 18px;
+  /* Standalone dialogs are translucent in macOS 11 ("translucent boxes that
+     pop up in the middle", Ars Technica's review; the Empty Trash capture shows
+     the wallpaper through it), the menus' own material; their secondary
+     buttons are a quiet translucent fill with no bezel. */
+  --modal-bg: var(--menu-panel-bg);
+  --modal-backdrop-filter: var(--menu-panel-backdrop-filter);
+  --modal-radius: 12px;
+  --alert-button-bg: rgba(0, 0, 0, 0.1);
+  --alert-button-border-color: transparent;
+  --alert-button-shadow: none;
+  --desktop: #183465;
+  /* Big Sur "Big Sur" abstract: warm headland left, peach right, cyan mid-bay
+     over deep blue (512 Pixels 11 light; structure only, no Apple raster). */
+  --desktop-surface:
+    radial-gradient(ellipse 55% 40% at 88% 8%, #ffd7b0 0%, #fa9376 32%, transparent 58%),
+    radial-gradient(ellipse 48% 36% at 8% -2%, #ff6b8a 0%, #ed5372 22%, #b94673 40%, transparent 68%),
+    radial-gradient(ellipse 36% 28% at 62% 62%, rgb(255 200 140 / 0.28), transparent 72%),
+    radial-gradient(ellipse 40% 30% at 52% 48%, rgb(80 160 210 / 0.42), transparent 70%),
+    radial-gradient(ellipse 70% 45% at 40% 85%, rgb(12 40 90 / 0.55), transparent 65%),
+    linear-gradient(145deg, #4a2e72 12%, #345b9e 42%, #1a88c4 52%, #123a70 78%, #0c2850 100%);
+  --desktop-label-bg: transparent;
+  --desktop-label-fg: #fff;
+  --desktop-label-text-shadow: 0 1px 3px #000;
+  --desktop-label-radius: 4px;
+  --desktop-label-selected-bg: var(--selection-bg);
+  --desktop-label-selected-fg: #fff;
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: #999;
+  --scrollbar-width: 10px;
+  --window-frame-lane: 10px;
+  --window-frame-track-bg: transparent;
+  --window-frame-track-border: 0;
+  --window-frame-thumb-bg: var(--scrollbar-thumb);
+  --window-frame-thumb-bg-horizontal: var(--scrollbar-thumb);
+  --window-frame-thumb-border: 3px solid transparent;
+  --window-frame-thumb-radius: 6px;
+  --window-frame-arrow-bg: transparent;
+  --window-frame-arrow-ink: transparent;
+  /* macOS 11 scrolls with overlay bars: nothing is drawn until the view moves,
+     and no lane is reserved beside the content. The System 6 frame lanes left
+     a 10px strip of window colour down the right of every document and along
+     its foot (measured 2026-09-23 against 512 Pixels' TextEdit, which runs
+     white to its edges). Same model the Liquid Glass family already uses. */
+  --window-frame-bar-display: none;
+  --window-frame-reserve: 0px;
+  --window-frame-scrollbar-width: thin;
+  /* Content sits on white and runs to the window edge; TextEdit draws no inset
+     frame around its page and no status box under it. The desk strip stays
+     (it is the only place that says why a document cannot be typed into), set
+     as secondary system text on a hairline instead of a boxed monospace
+     instrument. */
+  --teachtext-editor-bg: var(--surface-primary);
+  --teachtext-editor-border: 0;
+  --teachtext-editor-shadow: none;
+  --teachtext-strip-border: 0;
+  --teachtext-strip-bg: transparent;
+  --teachtext-strip-shadow: inset 0 1px 0 var(--rule);
+  --teachtext-strip-font: var(--theme-ui-font);
+  --teachtext-strip-fg: var(--shade-dark);
+  --teachtext-strip-divider: 1px solid var(--rule);
+  /* Finder draws one hairline under its toolbar, not a black rule; path
+     components are plain labels, and an empty folder is just empty. */
+  --finder-pathbar-border: var(--system-border);
+  --finder-breadcrumb-text-decoration: none;
+  --scrap-empty-card-border: 0;
+  --scrap-empty-card-bg: transparent;
+  --file-well-bg: var(--surface-primary);
+  --empty-object-hatch-base: var(--file-well-bg);
+  --empty-object-hatch-alt: var(--file-well-bg);
+  /* Finder's view buttons are borderless glyphs; the chosen one sits on a
+     rounded grey key (Finder: Home, 2020). */
+  --view-controls-border: 0;
+  --view-controls-bg: transparent;
+  --view-controls-radius: 6px;
+  --view-btn-radius: 5px;
+  --view-btn-glyph: var(--shade-dark);
+  --view-btn-hover-bg: rgba(0, 0, 0, 0.06);
+  --view-btn-active-bg: rgba(0, 0, 0, 0.1);
+  --view-btn-active-glyph: var(--ink);
+  /* Title and the strip under it are one unified toolbar surface in macOS 11,
+     split by a single hairline at the bottom, not two tones. */
+  --details-bar-bg: var(--toolbar-bg);
+  --tdi-source-label-fg: var(--shade-dark);
+  /* The rest of the System 6 instruments, read in macOS 11's own voice:
+     readouts in the system face, a hairline under a record's title, a quiet
+     info box, icon names with no paper behind them, a plain chip border. */
+  --readout-font: var(--theme-ui-font);
+  /* The chart bench in macOS 11's grammar: hairline cards with a radius, a
+     blue focus ring on the chosen row instead of a 2px ink frame on grey,
+     roomier cells. Same set of tokens Liquid Glass answers, without glass. */
+  --clio-chart-accent: var(--selection-bg);
+  --clio-chart-solid-fill: var(--ink);
+  --clio-chart-panel: var(--sidebar-selection-bg);
+  --clio-chart-reference: rgba(0, 0, 0, 0.06);
+  --clio-chart-card-border: 1px solid var(--rule);
+  --clio-chart-card-radius: 8px;
+  --clio-chart-radius: 6px;
+  --clio-chart-cell-radius: 5px;
+  --clio-chart-selected-outline: 2px solid var(--selection-bg);
+  --clio-chart-selected-outline-offset: -2px;
+  --clio-chart-mark-border: 0;
+  --clio-chart-type-size: 12px;
+  --clio-chart-cell-height: 26px;
+  --clio-chart-cell-padding: 4px 10px;
+  --clio-chart-grid-collapse: separate;
+  --clio-chart-grid-spacing: 0 4px;
+  --clio-chart-matrix-cell-border: 0;
+  --clio-chart-matrix-size: 11px;
+  --clio-chart-matrix-cell-padding: 5px 10px;
+  --finder-label-bg: transparent;
+  /* Finder names icons in the regular face; bold is what split "MultiFinder"
+     and "Memory Inspector" mid-word in an 82px column. */
+  --finder-label-weight: 400;
+  --scrap-title-rule: var(--system-border);
+  --control-footer-border: var(--system-border);
+  --clio-file-chip-border: var(--system-border);
+  --clio-file-chip-disabled-border: var(--system-border);
+  --clio-entry-divider: var(--system-border);
+  --clio-composer-tool-border: var(--btn-border-color);
+  --tab-radius: 0;
+  --tab-overlap: 0;
+  --tab-bg: var(--panel);
+  --tab-hover-bg: var(--quiet-panel);
+  --tab-active-bg: var(--surface-primary);
+  --progress-height: 6px;
+  --progress-radius: 3px;
+  --progress-border-color: transparent;
+  --progress-bg: var(--panel);
+  --progress-fill-radius: 3px;
+  --progress-fill-bg: var(--selection-bg);
+  --progress-fill-shadow: none;
+  --balloon-help-bg: var(--menu-panel-bg);
+  --balloon-help-border: var(--system-border);
+  --balloon-help-radius: 5px;
+  /* Shared control roles; content retains its owning application's layout. */
+  --alarm-clock-close-size: 12px;
+  --app-toolbar-bg: var(--toolbar-bg);
+  --app-toolbar-border-bottom: var(--toolbar-border);
+  --choice-checked-bg-image: var(--choice-checkmark-image);
+  --control-strip-gauge: var(--selection-bg);
+  --control-strip-radius: 7px;
+  --control-strip-radius-mirrored: var(--control-strip-radius);
+  --control-strip-bg: var(--menu-panel-bg);
+  --control-strip-border: var(--system-border);
+  --control-strip-shadow: var(--system-shadow);
+  --control-strip-backdrop: var(--menu-panel-backdrop-filter);
+  --find-path-header-bg: var(--paper);
+  --find-path-header-border-bottom: var(--system-border);
+  --find-path-header-display: grid;
+  --find-path-header-padding: 4px 10px;
+  --find-path-query-bg: var(--field-bg);
+  --find-path-query-min-height: 26px;
+  --find-path-query-padding: 4px 8px;
+  --find-path-query-radius: var(--field-radius);
+  --find-path-relevance-display: block;
+  --find-path-result-align: baseline;
+  --find-path-result-column-gap: 10px;
+  --find-path-result-display: grid;
+  --find-path-result-padding: 6px 10px;
+  --menu-item-disabled-bg: transparent;
+  --menu-item-disabled-fg: var(--shade-dark);
+  --menu-item-disabled-opacity: 0.6;
+  --menu-item-min-height: 24px;
+  --menu-item-padding: 3px 20px 3px 24px;
+  --menu-separator-border-bottom: 1px solid var(--rule);
+  --menu-separator-margin: 4px 8px;
+  --progress-padding: 0px;
+  --scrap-list-bg: var(--sidebar-bg);
+  --scrap-list-border: var(--system-border);
+  --scrap-list-radius: 6px;
+  --scrap-list-shadow: none;
+  --scrap-list-item-bg: transparent;
+  --scrap-list-item-divider: 0;
+  --scrap-list-item-radius: 5px;
+  --scrap-list-item-selected-radius: 5px;
+  --scrap-list-item-selected-bg: var(--sidebar-selection-bg);
+  --scrap-list-item-selected-fg: var(--ink);
+  --scrap-list-item-selected-shadow: none;
+  --search-field-background: var(--field-bg);
+  --search-field-min-height: 26px;
+  --search-field-padding: 4px 8px;
+  --search-field-radius: 6px;
+  --select-control-bg-color: var(--btn-bg);
+  --select-control-bg-image: none;
+  --select-control-bg-position: right 8px center;
+  --select-control-bg-size: 8px 12px;
+  --select-control-border: var(--field-border);
+  --select-control-font-weight: 400;
+  --select-control-min-height: 24px;
+  --select-control-padding: 3px 26px 3px 8px;
+  --select-control-radius: 5px;
+  --select-control-shadow: var(--control-shadow);
+  --sidebar-bg-inactive: var(--panel);
+  --system-button-mini-font-size: 11px;
+  --system-button-mini-height: 18px;
+  --system-button-mini-padding-x: 7px;
+  --system-button-small-font-size: 12px;
+  --system-button-small-height: 22px;
+  --system-button-small-padding-x: 9px;
+  /* The pop-up's arrows follow the window (512 Pixels' macOS 11 captures):
+     in the key window a blue 16pt well with white chevrons, inset 2pt (Mail
+     Preferences, System Preferences: General); in a background window bare
+     dark chevrons (System Preferences behind Notes, reference/light.png);
+     disabled, bare grey chevrons (Desktop & Screen Saver's dimmed pop-up). */
+  --system-select-arrow-bg: url("./assets/themes/big-sur/popup-well.svg");
+  --system-select-arrow-inactive-bg: url("./assets/themes/big-sur/popup-chevrons-light.svg");
+  --system-select-arrow-disabled-bg: url("./assets/themes/big-sur/popup-chevrons-disabled.svg");
+  --system-select-arrow-height: 16px;
+  --system-select-arrow-right: 3px;
+  --system-select-arrow-top: 50%;
+  --system-select-arrow-transform: translateY(-50%);
+  --system-select-arrow-width: 16px;
+  --system-select-arrow-side: 0 solid transparent;
+  --system-select-arrow-wedge: 0 solid transparent;
+  --tab-active-fg: var(--ink);
+  --tab-active-height: 24px;
+  --tab-active-min-height: 24px;
+  --tab-active-shadow: var(--control-shadow);
+  --tab-border: 0;
+  --tab-height: 24px;
+  --tab-min-height: 24px;
+  --tab-padding: 3px 12px;
+  --tab-panel-bg: var(--paper);
+  --tab-panel-border: var(--system-border);
+  --tab-panel-margin-top: 8px;
+  --tab-panel-min-height: 0;
+  --tab-panel-padding: 12px;
+  --tab-panel-shadow: none;
+  --tab-shadow: none;
+  --tab-strip-border-bottom: 0;
+  /* Tabs in a window are one short continuous strip centred over the box,
+     the selected label a brighter white, not the accent (System Preferences:
+     Sound and Desktop & Screen Saver captures; Ars Technica's review). */
+  --tab-strip-justify: center;
+  --tab-flex: 0 0 auto;
+  --tab-strip-gap: 0;
+  --tab-first-radius: 5px 0 0 5px;
+  --tab-last-radius: 0 5px 5px 0;
+  --tab-strip-padding: 2px;
+  --tdi-rail-padding: 6px;
+  --tdi-rail-bg: var(--sidebar-bg);
+  --tdi-rail-border: var(--system-border);
+  --tdi-rail-shadow: none;
+  --tdi-tabs-bg: transparent;
+  --tdi-tabs-border-bottom: 0;
+  --tdi-tab-bg: transparent;
+  --tdi-tab-border: 0;
+  --tdi-tab-border-bottom: 0;
+  --tdi-tab-shadow: none;
+  --tdi-tab-radius: 5px;
+  --tdi-tab-active-bg: var(--sidebar-selection-bg);
+  --tdi-tab-active-fg: var(--ink);
+  --tdi-tab-active-border: 0;
+  --tdi-tab-active-border-bottom: 0;
+  --tdi-tab-active-shadow: none;
+  --tdi-tab-active-unfocused-bg: var(--panel);
+  --tdi-tab-active-unfocused-fg: var(--ink);
+  --tdi-tab-active-unfocused-shadow: none;
+  --tdi-tab-close-active-bg: var(--panel);
+  --tdi-tab-close-active-fg: var(--ink);
+  --tdi-tab-close-active-shadow: none;
+  --titlebar-border-inactive: 0;
+  --titlebar-content-padding-inline: 10px;
+  --titlebar-title-text-shadow: none;
+  --traffic-light-size: 12px;
+}
+
+html[data-theme="big-sur"][data-color-mode="dark"],
+body[data-theme="big-sur"][data-color-mode="dark"] {
+  color-scheme: dark;
+  --cl-era-warn-bg: rgba(255, 189, 46, 0.14);
+  --cl-era-warn-line: #9c7424;
+  --ink: #f0f0f0;
+  --paper: #292929;
+  --panel: #333232;
+  --quiet-panel: #414141;
+  --shade: #686868;
+  --shade-dark: #b6b6b6;
+  --rule: rgba(255, 255, 255, 0.18);
+  --view-btn-hover-bg: rgba(255, 255, 255, 0.08);
+  --view-btn-active-bg: rgba(255, 255, 255, 0.16);
+  --clio-chart-reference: rgba(255, 255, 255, 0.08);
+  --surface-primary: #202020;
+  --toolbar-bg: #383635;
+  --sidebar-bg: rgba(46, 43, 43, 0.96);
+  --sidebar-selection-bg: rgba(255, 255, 255, 0.17);
+  --window-border: 1px solid #111;
+  --window-shadow: 0 18px 42px rgba(0, 0, 0, 0.55), 0 0 0 0.5px rgba(255, 255, 255, 0.18);
+  --titlebar-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  --btn-bg: #626060;
+  --btn-hover-bg: #727070;
+  --btn-active-bg: #494747;
+  --field-bg: #1e1e1e;
+  --selection-bg: #0065cf;
+  --selection-edge: #0065cf;
+  --menu-bar-bg: rgba(31, 27, 35, 0.72);
+  --menu-bar-base: #1f1b23;
+  --menu-bar-backdrop-filter: blur(26px) saturate(170%);
+  --menu-panel-bg: rgba(48, 45, 47, 0.78);
+  --system-select-arrow-inactive-bg: url("./assets/themes/big-sur/popup-chevrons-dark.svg");
+  --alert-button-bg: rgba(255, 255, 255, 0.14);
+  --control-section-bg: rgba(255, 255, 255, 0.04);
+  /* The Dark capture's accent (System Preferences: General, the blue swatch
+     #2f7cf6); the light selection blue disappears on the dark highlight. */
+  --control-chooser-active-label-fg: #2f7cf6;
+  --menu-panel-border: 1px solid rgba(255, 255, 255, 0.2);
+  --menu-button-active-bg: rgba(255, 255, 255, 0.16);
+  --desktop-surface: radial-gradient(ellipse at 90% 0%, #7d3c62 0%, transparent 60%), radial-gradient(ellipse at 0% 0%, #742c48 0%, transparent 62%), linear-gradient(145deg, #211e3c 25%, #153a68 50%, #0e5278 51%, #081e3b 90%);
+}
+
+/* Red, yellow and green together at the left (owner, 2026-11-01), as macOS 11
+   groups them. The 12px lamps sit inside separate 20px targets; the yellow
+   and green lamps are offset by 88-desk-dock.css. The 29px bar, 20px pitch and
+   first lamp centre 14px in are the macOS 11 calibration above. */
+body[data-theme="big-sur"] .window > .title-bar {
+  grid-template-columns: var(--titlebar-gutter) minmax(0, 1fr) var(--titlebar-gutter);
+  --titlebar-close-column: 1;
+  --titlebar-zoom-column: 1;
+  --titlebar-zoom-justify: start;
+  --titlebar-title-shadow: none;
+}
+body[data-theme="big-sur"] .title-bar > :is(.close-box, .resize-box):focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: 1px;
+}
+
+/* The sidebar runs the full height of the window, under the lamps (Finder:
+   Home and Notes captures); the toolbar starts at its edge. The bar spans the
+   whole first row (60-responsive.css), so it paints the sidebar's material
+   over the grid's sidebar column, min(180px, 30%). Desktop arrangement only,
+   matching the grid's own device query; the doubled class out-ranks the
+   family's active and background title-bar rules. The second layer carries
+   the toolbar's hairline under Zoom's corner, where the view strip stops
+   short, so the rule runs to the window's edge as in the capture. */
+@media (min-width: 861px) and (not ((hover: none) and (pointer: coarse) and (max-height: 660px))) {
+  body[data-theme="big-sur"][data-finder-layout="one-row"] .window.is-toolbar-window > .title-bar.title-bar {
+    background-image: linear-gradient(to right, var(--sidebar-bg) min(180px, 30%), transparent 0), linear-gradient(var(--rule), var(--rule));
+    background-position: 0 0, right bottom;
+    background-size: auto, 40px 1px;
+    background-repeat: no-repeat;
+  }
+}
+
+/* Finder's back button is a borderless toolbar glyph in macOS 11 (Finder: Home
+   capture: plain chevrons beside the folder title, no bezel); it shows its
+   shape only under the pointer or while pressed. */
+body[data-theme="big-sur"] .finder-navigation-back:not(:hover):not(:active) {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+body[data-theme="big-sur"] :is(.menu-popover, .system-select-menu) :is(button, .system-select-option) {
+  border-radius: 4px;
+}
+body[data-theme="big-sur"] :is(select, .system-select-button):not(:disabled) {
+  color: var(--ink);
+}
+body[data-theme="big-sur"] :is(select:not([multiple]), .system-select-button) {
+  background: var(--btn-bg);
+  border: var(--field-border);
+  border-radius: var(--select-radius);
+  box-shadow: var(--control-shadow);
+}
+@media (prefers-reduced-transparency: reduce) {
+  html[data-theme="big-sur"], body[data-theme="big-sur"] {
+    --sidebar-bg: var(--panel);
+    --sidebar-backdrop-filter: none;
+    --menu-bar-bg: var(--paper);
+    --menu-bar-base: var(--paper);
+    --menu-panel-bg: var(--paper);
+    --menu-panel-backdrop-filter: none;
+  }
+}
+@media (prefers-contrast: more) {
+  html[data-theme="big-sur"], body[data-theme="big-sur"] {
+    --rule: var(--shade-dark);
+    --window-border: 1px solid var(--ink);
+    --control-focus-outline: 3px solid var(--selection-bg);
+  }
+}
+
+/* Independent Big Sur artwork: exactly one visible semantic icon layer
+   (polishTodo independent-icons-sweep — 59-object family in
+   assets/themes/big-sur, no Yosemite borrow). Dock / yellow-lamp prefs are
+   owned by window-minimize.js (lamp absent when off; Dock root absent when
+   off) — polishTodo dock-minimize-pref-polish. */
+body[data-theme="big-sur"] .sys-icon { background: transparent; }
+body[data-theme="big-sur"] .sys-icon-svg > g { display: none; }
+body[data-theme="big-sur"] .sys-icon-svg > .sys-icon-big-sur { display: inline; }
+
+body[data-theme="big-sur"] :is(.system-modal, .startup-settings-modal, .finder-operation-modal) {
+  border: var(--window-border);
+  border-radius: var(--modal-radius);
+  background: var(--modal-bg);
+  box-shadow: var(--window-shadow);
+  color: var(--ink);
+  backdrop-filter: var(--modal-backdrop-filter);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+}

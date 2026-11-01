@@ -1,0 +1,34 @@
+AI System 6 DOOM playable browser engine
+
+Engine: Chocolate Doom 3.1.1
+Upstream: https://github.com/chocolate-doom/chocolate-doom
+Exact source commit: 410d96855b5df5410ff591a90efeafa889119224
+Engine license: GNU General Public License version 2; see the exact upstream
+notices and ENGINE-COPYING.txt for terms and version-option details.
+
+The corresponding unmodified upstream source is shipped beside this file as
+chocolate-doom-3.1.1-source.tar.gz. The complete AI System 6 native changes are
+shipped as chocolate-doom-3.1.1-ai-system6.patch. Apply that patch and build
+with Emscripten 3.1.57 by following tooling/games/doom/build.md in the AI
+System 6 source tree.
+
+The following readable files are AI System 6 engine-side browser adapters and
+are provided under GPL-2.0-only, as marked in each file:
+
+  shell.js
+  wad-picker.js
+  touch-controls.js
+  touch-controls.css
+
+They implement the versioned postMessage shell, explicit local WAD selection,
+iframe-owned IDBFS persistence, normalized touch/controller input, and the
+native browser lifecycle ABI. They are source code, not generated bundles.
+
+This build enables SDL2_mixer with only its core WAV support and uses Chocolate
+Doom's built-in OPL music emulation. It includes no FluidSynth or SoundFont,
+optional SDL2_mixer codecs, SDL2_net, pthreads, Wasm workers, shared memory, or
+SharedArrayBuffer requirement.
+
+No DOOM, DOOM II, TNT, Plutonia, Freedoom, or other WAD is included or
+downloaded. A user-selected local IWAD remains in iframe-owned browser storage;
+it is not uploaded or added to AI System 6 project backups.

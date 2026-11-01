@@ -1,0 +1,539 @@
+/* Isolated native-theme fixture for the ClioWorks v3 kit (V3-A).
+ * Internal design lab: boots the real desk with ?fixture=clioworks-v3, then mounts the
+ * candidate toolbar/editor inside an existing window chrome using ONLY native-layout.css.
+ * Never loads the kit's workspace.css or demo CSS. Not part of any route or launch list. */
+(function () {
+  'use strict';
+  if (!new URLSearchParams(location.search).has('fixture')) return;
+  const kind = new URLSearchParams(location.search).get('fixture');
+  if (kind !== 'clioworks-v3') return;
+
+  const FIXTURE_CSS = "styles.clioworks-native.css";
+  const MODULES = [
+    'app/vendor/clioworks-v3/core.js',
+    'app/vendor/clioworks-v3/dom.js',
+    'app/vendor/clioworks-v3/components.js',
+    'app/vendor/clioworks-v3/theme-bridge.js',
+    'app/vendor/clioworks-v3/host-mount.js',
+  ];
+
+  function loadStyle(href) {
+    return new Promise((resolve, reject) => {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = href;
+      link.onload = () => resolve(link);
+      link.onerror = () => reject(new Error('fixture: failed to load ' + href));
+      document.head.append(link);
+    });
+  }
+
+  function loadScript(src) {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = src;
+      script.onload = () => resolve(script);
+      script.onerror = () => reject(new Error('fixture: failed to load ' + src));
+      document.head.append(script);
+    });
+  }
+
+  function waitForBoot() {
+    return new Promise((resolve) => {
+      if (document.readyState === 'complete') resolve();
+      else window.addEventListener('load', () => resolve(), { once: true });
+    });
+  }
+
+  function log(line) {
+    const pre = document.getElementById('cw3-log');
+    if (pre) pre.textContent += line + '\n';
+  }
+
+  // Plaintext fixture adapter: it owns a contenteditable and reports honest state.
+  // It is NOT the real editor; V3-B replaces it with the actual adapter.
+  function createFixtureAdapter(hostWindow) {
+    const doc = hostWindow.document;
+    const state = {
+      kind: 'write', documentId: 'fixture-doc-1', sessionId: 'fixture-session-1',
+      generation: 1, editRevision: 0, selectionEpoch: 0,
+      readonly: false, composing: false, saving: false, closed: false,
+      canUndo: false, canRedo: false,
+      supported: ['file.save', 'edit.undo', 'edit.find', 'comment.open', 'format.open', 'view.outline'],
+    };
+    let editor = null, listeners = new Set();
+    const notify = () => listeners.forEach((fn) => { try { fn(); } catch (e) { console.error(e); } });
+    return {
+      getContext() { return { ...state }; },
+      async execute(command) {
+        if (command === 'file.save') { state.saving = false; return { status: 'ok' }; }
+        if (command === 'edit.undo') return state.canUndo ? { status: 'ok' } : { status: 'blocked', code: 'NOTHING_TO_UNDO' };
+        return { status: 'blocked', code: 'NOT_WIRED', message: '夹具编辑器尚未接入此操作。' };
+      },
+      subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
+      mountEditor(target) {
+        editor = doc.createElement('div');
+        editor.className = 'cw3-fixture-editor';
+        editor.contentEditable = 'plaintext-only';
+        editor.setAttribute('aria-label', '夹具文稿正文');
+        editor.dataset.editKey = 'body';
+        editor.textContent = 'ClioWorks v3 隔離夾具文稿。\n這是一段用來對照主題與系統控制元件的中文文字。\n第二段：工具列按鈕應沿用主倉 .btn 的材料與狀態。';
+        editor.style.cssText = 'position:absolute;inset:12px;overflow:auto;padding:12px;outline:none;font:inherit;color:inherit;';
+        const wrap = doc.createElement('div');
+        wrap.style.cssText = 'position:absolute;inset:0;background:var(--paper,transparent);color:var(--ink,inherit);';
+        wrap.append(editor);
+        target.append(wrap);
+        editor.addEventListener('input', () => {
+          state.editRevision += 1; state.canUndo = state.editRevision > 0; notify();
+        });
+        editor.addEventListener('compositionstart', () => { state.composing = true; notify(); });
+        editor.addEventListener('compositionend', () => { state.composing = false; notify(); });
+        editor.addEventListener('keyup', () => { state.selectionEpoch += 1; });
+        editor.addEventListener('mouseup', () => { state.selectionEpoch += 1; });
+        return { dispose() { editor?.remove(); editor = null; listeners.clear(); } };
+      },
+      readSelection() { return editor ? hostWindow.ClioWorksDOM.bookmark(editor) : null; },
+      restoreSelection(mark) { if (editor) hostWindow.ClioWorksDOM.restoreBookmark(editor.parentElement || editor, mark); },
+    };
+  }
+
+  // Host menu port against the real registry menu model. The fixture window is not a
+  // registered app, so the system menubar stays untouched; we only read the model.
+  function createFixtureMenuPort(hostWindow) {
+    return {
+      bind({ getContext }) {
+        const registry = hostWindow.AISystem6Theme;
+        if (registry?.getMenuBarModel) {
+          log('fixture: menuBarModel=' + String(registry.getMenuBarModel()));
+        }
+        return () => {};
+      },
+    };
+  }
+
+  async function main() {
+    await waitForBoot();
+    await loadStyle(FIXTURE_CSS);
+    for (const src of MODULES) await loadScript(src);
+    const registry = window.AISystem6Theme;
+    if (!registry) { log('fixture: AISystem6Theme missing'); return; }
+    const theme = await registry.whenReady();
+    log('fixture: theme ready id=' + theme.id + ' family=' + theme.family);
+
+    // Mount inside a desktop window whose lifecycle the fixture controls. Boot-time
+    // windows (e.g. assistant) can be hidden again after load, so after the real boot
+    // settles, open the projects window the way a user would and host there.
+    for (let i = 0; i < 150 && document.body.dataset.appReady !== 'ready'; i += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    if (typeof openWindow !== 'function') { log('fixture: openWindow missing'); return; }
+
+    const adapterKind = new URLSearchParams(location.search).get('adapter') || 'plaintext';
+    if (adapterKind === 'stage') {
+      // V3-E-3 (DeckCraft): real ClioStage engine adapter in the real window.
+      await loadScript('app/vendor/clioworks-v3/more-menu.js');
+      await loadScript('app/vendor/clioworks-v3/stage-adapter.js');
+      openWindow('clioStage');
+      let stageWin = null;
+      for (let i = 0; i < 80 && !stageWin; i += 1) {
+        stageWin = document.querySelector('[data-window="clioStage"]:not(.is-hidden):not(.is-app-hidden)');
+        if (!stageWin) { await new Promise((resolve) => setTimeout(resolve, 100)); }
+      }
+      const engineReady = await new Promise((resolve) => {
+        const started = Date.now();
+        (function check() {
+          if (window.AISystem6ClioStageLoaded && document.getElementById('clio-stage-viewport')) return resolve(true);
+          if (Date.now() - started > 12000) return resolve(false);
+          setTimeout(check, 100);
+        })();
+      });
+      if (!stageWin || !engineReady) { log('fixture: clioStage window/engine never ready'); return; }
+      const pane = document.querySelector('.clio-stage-pane');
+      if (!pane) { log('fixture: clio-stage-pane missing'); return; }
+      pane.style.position = 'relative';
+      const mountPoint = document.createElement('div');
+      mountPoint.id = 'cw3-mount';
+      mountPoint.style.cssText = 'position:absolute;inset:0;';
+      pane.append(mountPoint);
+      let integration;
+      try {
+        integration = window.ClioWorksStage.create(window);
+      } catch (error) {
+        log('fixture: stage adapter error ' + (error && error.message));
+        return;
+      }
+      window.__CW3_INTEGRATION__ = integration;
+      let mounted;
+      try {
+        mounted = window.ClioWorksHost.mountNative({
+          element: mountPoint,
+          adapter: integration.adapter,
+          menuPort: integration.menuPort,
+          hostWindow: window,
+          onError: (error) => log('fixture: mount error ' + (error && error.message)),
+          onTheme: (info) => { window.__CW3_THEME__ = info; },
+        });
+      } catch (error) {
+        log('fixture: mountNative failed ' + (error && error.message));
+        integration.dispose();
+        return;
+      }
+      await mounted.ready;
+      log('fixture: stage adapter mounted engineRegistrationSeen=' + integration.engineRegistrationSeen());
+      log('fixture: DONE');
+      window.__CW3_MOUNTED__ = {
+        mounted,
+        info: window.__CW3_THEME__,
+        adapter: integration.adapter,
+        dispose() {
+          try { mounted.dispose(); } finally {
+            try { integration.dispose(); } finally { mountPoint.remove(); }
+          }
+        },
+      };
+      return;
+    }
+    if (adapterKind === 'workbook') {
+      // S11-M0: workbook surface (Express <-> full) over the REAL Ledger adapter, inside
+      // the existing clioChart window. Fixture-only; the files come from the lab-served
+      // fixture-files/ copies of tests/fixtures/clioworks-s11/ and nothing is written.
+      await loadScript('app/vendor/clioworks-v3/ledger-adapter.js');
+      await loadScript('app/vendor/clioworks-v3/workbook-adapter.js');
+      const fileName = (new URLSearchParams(location.search).get('file') || 'budget-s11').replace(/\.xlsx$/, '');
+      if (!/^[a-z0-9-]+$/.test(fileName)) { log('fixture: bad file name'); return; }
+      const response = await fetch('app/vendor/clioworks-v3/fixture-files/' + fileName + '.xlsx');
+      if (!response.ok) { log('fixture: workbook file not found ' + fileName); return; }
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      openWindow('clioChart');
+      let chartWin = null;
+      for (let i = 0; i < 80 && !chartWin; i += 1) {
+        chartWin = document.querySelector('[data-window="clioChart"]:not(.is-hidden):not(.is-app-hidden)');
+        if (!chartWin) { await new Promise((resolve) => setTimeout(resolve, 100)); }
+      }
+      const pane = document.querySelector('.clio-chart-pane');
+      if (!chartWin || !pane) { log('fixture: clioChart window never ready'); return; }
+      pane.style.position = 'relative';
+      const mountPoint = document.createElement('div');
+      mountPoint.id = 'cw3-mount';
+      mountPoint.style.cssText = 'position:absolute;inset:0;';
+      pane.append(mountPoint);
+      const savedFiles = [];
+      let integration;
+      try {
+        integration = await window.ClioWorksWorkbook.create(window, {
+          bytes, name: fileName + '.xlsx',
+          // No real file is written: the sink only records what a save would have produced.
+          sink: async (out, info) => { savedFiles.push(info); },
+        });
+      } catch (error) {
+        log('fixture: workbook adapter error ' + (error && error.message));
+        return;
+      }
+      window.__CW3_INTEGRATION__ = integration;
+      window.__CW3_WB__ = { session: integration.session, saved: savedFiles };
+      integration.hideEngineChrome();
+      let mounted;
+      try {
+        mounted = window.ClioWorksHost.mountNative({
+          element: mountPoint,
+          adapter: integration.adapter,
+          menuPort: integration.menuPort,
+          hostWindow: window,
+          toolbarItems: [],
+          catalog: integration.catalog,
+          resolveCommand: integration.resolveCommand,
+          onError: (error) => log('fixture: mount error ' + (error && error.message)),
+          onTheme: (info) => { window.__CW3_THEME__ = info; },
+        });
+        // Express has no toolbar: the status bar and the 命令… menu are the whole command surface.
+        mounted.surface.querySelector('.cw-toolbar')?.remove();
+      } catch (error) {
+        log('fixture: mountNative failed ' + (error && error.message));
+        integration.restoreEngineChrome();
+        integration.dispose();
+        return;
+      }
+      await mounted.ready;
+      log('fixture: workbook adapter mounted file=' + fileName);
+      log('fixture: DONE');
+      window.__CW3_MOUNTED__ = {
+        mounted,
+        info: window.__CW3_THEME__,
+        adapter: integration.adapter,
+        dispose() {
+          try { mounted.dispose(); } finally {
+            try { integration.dispose(); } finally { integration.restoreEngineChrome(); mountPoint.remove(); }
+          }
+        },
+      };
+      return;
+    }
+    if (adapterKind === 'chart') {
+      // V3-E-1 (GridCraft): real ClioChart engine adapter in the real window.
+      await loadScript('app/vendor/clioworks-v3/more-menu.js');
+      await loadScript('app/vendor/clioworks-v3/chart-adapter.js');
+      await loadScript('app/vendor/clioworks-v3/ui-model.js');
+      await loadScript('app/vendor/clioworks-v3/context-strip.js');
+      // CW51-04: the frame session and its native chart port — the copy
+      // editor's engine. Without these, 编辑副本 has no target.
+      await loadScript('app/vendor/clioworks-v3/frame-session.js');
+      await loadScript('app/vendor/clioworks-v3/chart-frame-port.js');
+      openWindow('clioChart');
+      let chartWin = null;
+      for (let i = 0; i < 80 && !chartWin; i += 1) {
+        chartWin = document.querySelector('[data-window="clioChart"]:not(.is-hidden):not(.is-app-hidden)');
+        if (!chartWin) { await new Promise((resolve) => setTimeout(resolve, 100)); }
+      }
+      const engineReady = await new Promise((resolve) => {
+        const started = Date.now();
+        (function check() {
+          if (window.AISystem6ClioChartLoaded && document.getElementById('clio-chart-split')) return resolve(true);
+          if (Date.now() - started > 12000) return resolve(false);
+          setTimeout(check, 100);
+        })();
+      });
+      if (!chartWin || !engineReady) { log('fixture: clioChart window/engine never ready'); return; }
+      const pane = document.querySelector('.clio-chart-pane');
+      if (!pane) { log('fixture: clio-chart-pane missing'); return; }
+      pane.style.position = 'relative';
+      const mountPoint = document.createElement('div');
+      mountPoint.id = 'cw3-mount';
+      mountPoint.style.cssText = 'position:absolute;inset:0;';
+      pane.append(mountPoint);
+      let integration;
+      try {
+        integration = window.ClioWorksChart.create(window);
+      } catch (error) {
+        log('fixture: chart adapter error ' + (error && error.message));
+        return;
+      }
+      window.__CW3_INTEGRATION__ = integration;
+      let mounted;
+      try {
+        mounted = window.ClioWorksHost.mountNative({
+          element: mountPoint,
+          adapter: integration.adapter,
+          menuPort: integration.menuPort,
+          hostWindow: window,
+          // CW51-07: the v5.1 catalog and its matrix are the command truth
+          // for this mount — the core catalog lacks the copy-edit commands.
+          catalog: window.ClioWorksUIModel.CATALOG,
+          resolveCommand: window.ClioWorksUIModel.commandState,
+          onError: (error) => log('fixture: mount error ' + (error && error.message)),
+          onTheme: (info) => { window.__CW3_THEME__ = info; },
+        });
+        // CW51-03: attach the context strip over the mounted editor.
+        if (!window.ClioWorksContextStrip?.attachContextStrip) {
+          log('fixture: context strip module missing — chart branch loaded without ui-model.js/context-strip.js');
+        } else {
+          window.__CW3_STRIP__ = window.ClioWorksContextStrip.attachContextStrip({
+            mounted, adapter: integration.adapter,
+            onError: (error) => log('fixture: strip error ' + (error && error.message)),
+          });
+          }
+          // CW51-04 smoke hook: the frame snapshot, read by the acceptance lane.
+          window.__CW3_FRAME__ = () => integration.adapter.getContext().frameState;
+      } catch (error) {
+        log('fixture: mountNative failed ' + (error && error.message));
+        integration.dispose();
+        return;
+      }
+      await mounted.ready;
+      log('fixture: chart adapter mounted engineRegistrationSeen=' + integration.engineRegistrationSeen());
+      log('fixture: DONE');
+      window.__CW3_MOUNTED__ = {
+        mounted,
+        info: window.__CW3_THEME__,
+        adapter: integration.adapter,
+        dispose() {
+          try { mounted.dispose(); } finally {
+            try { integration.dispose(); } finally { mountPoint.remove(); }
+          }
+        },
+      };
+      return;
+    }
+    if (adapterKind === 'docx') {
+      // S11-M3 (front): the Quire adapter's write surface under the UPSTREAM contentEditable
+      // layer (editor.js + layout.js), inside the existing teachText window. It is NOT the real
+      // editor: a lab to see the vendored editing layer on the frozen quire-s11.docx. The
+      // ClioWrite window arrives with M3 middle; nothing is written, the Save button only
+      // records what a save would have produced. ?mode=full shows the toolbar; the default
+      // (express) leaves the keyboard and the status line.
+      await loadScript('app/vendor/clioworks-v3/quire-adapter.js');
+      const response = await fetch('app/vendor/clioworks-v3/fixture-files/quire-s11.docx');
+      if (!response.ok) { log('fixture: docx file not found'); return; }
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      const quire = await window.ClioWorksQuireAdapter.open(bytes, { name: 'quire-s11.docx' });
+      const L = await window.ClioWorksQuireAdapter.loadEditor();
+      openWindow('teachText');
+      let ttWin = null;
+      for (let i = 0; i < 50 && !ttWin; i += 1) {
+        ttWin = document.querySelector('[data-window="teachText"]:not(.is-hidden):not(.is-app-hidden)');
+        if (!ttWin) await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+      const pane = document.getElementById('teachtext-form');
+      if (!ttWin || !pane) { log('fixture: teachText window never ready'); return; }
+      const full = new URLSearchParams(location.search).get('mode') === 'full';
+      pane.style.position = 'relative';
+      const lab = document.createElement('div');
+      lab.id = 'cw3-mount';
+      lab.style.cssText = 'position:absolute;inset:0;display:flex;flex-direction:column;background:var(--toolbar-bg,#fff);';
+      const bar = document.createElement('div');
+      bar.style.cssText = 'display:' + (full ? 'flex' : 'none') + ';gap:4px;padding:4px;border-bottom:1px solid var(--toolbar-border,#000);';
+      const scroller = document.createElement('div');
+      scroller.style.cssText = 'flex:1;overflow:auto;';
+      const status = document.createElement('div');
+      status.style.cssText = 'padding:2px 6px;border-top:1px solid var(--toolbar-border,#000);font:11px var(--title-font,sans-serif);';
+      lab.append(bar, scroller, status);
+      pane.append(lab);
+      const style = document.createElement('style');
+      style.textContent = '#cw3-mount .pages{outline:none}#cw3-mount .page{background:#fff;color:#000;margin:8px auto;box-shadow:0 0 0 1px #888}';
+      lab.append(style);
+      const saved = [];
+      const refresh = () => {
+        status.textContent = (quire.isDirty() ? '已改动' : '未改动') + ' · 第 ' + quire.getEditRevision() + ' 版 · 表格与图片只读'
+          + (quire.canUndo() ? ' · 可撤销：' + quire.undoLabel() : '');
+      };
+      // The editor layer asks for its commands through L.ui.exec; route the ones this lab has.
+      const selected = () => (L.ed.sel ? String(L.ed.sel.f.p.id) : null);
+      const commands = {
+        undo: () => quire.undo(), redo: () => quire.redo(),
+        bold: () => L.ed.toggleRun('b'), italic: () => L.ed.toggleRun('i'), underline: () => L.ed.toggleRun('u', 'single'),
+        heading1: () => { const id = selected(); if (id) quire.setHeading(id, 1); },
+        bullet: () => { const id = selected(); if (id) quire.setList(id, 'bullet'); },
+        save: async () => { const rev = quire.getEditRevision(); const out = await quire.save(); saved.push({ mode: out.mode, bytes: out.bytes.byteLength, revision: rev }); quire.markSaved(rev); refresh(); },
+      };
+      L.ui = { exec: (name) => { if (commands[name]) commands[name](); }, toast: (text) => log('fixture: ' + text), dialogOpen() {}, menuOpen() {} };
+      L.app = L.app || {};
+      for (const [name, label] of [['undo', '撤销'], ['redo', '重做'], ['bold', '粗体'], ['italic', '斜体'], ['underline', '下划线'], ['heading1', '标题 1'], ['bullet', '项目符号'], ['save', '存']]) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = label;
+        button.addEventListener('mousedown', (event) => event.preventDefault());
+        button.addEventListener('click', () => commands[name]());
+        bar.append(button);
+      }
+      const lockObjects = () => scroller.querySelectorAll('table, img').forEach((node) => node.setAttribute('contenteditable', 'false'));
+      L.D.doc = quire.document();
+      L.layout.mount(scroller);
+      L.layout.render();
+      L.ed.init();
+      lockObjects();
+      L.bus.on('doc-changed', () => { quire.syncExternal(); lockObjects(); refresh(); });
+      refresh();
+      log('fixture: docx adapter mounted paragraphs=' + quire.paragraphs().length);
+      log('fixture: DONE');
+      window.__CW3_DOCX__ = { adapter: quire, L, saved, commands };
+      window.__CW3_MOUNTED__ = { adapter: quire, dispose() { lab.remove(); } };
+      return;
+    }
+    if (adapterKind === 'teachtext') {
+      // V3-B: real TeachText adapter inside the real teachText window.
+      await loadScript('app/vendor/clioworks-v3/more-menu.js');
+      await loadScript('app/vendor/clioworks-v3/teachtext-adapter.js');
+      // edit-history.js is a lazy runtime module; ensure the shared undo kernel
+      // is present before the adapter builds on it. Same for the real Word DOCX
+      // pipeline (V3-E-2).
+      if (!window.AISystem6EditHistory) await loadScript('app/core/edit-history.js');
+      if (!window.AISystem6WordExport && typeof ensureWordExportModule === 'function') {
+        try { await ensureWordExportModule(); } catch (e) { log('fixture: word-export load failed'); }
+      }
+      openWindow('teachText');
+      let ttWin = null;
+      for (let i = 0; i < 50 && !ttWin; i += 1) {
+        ttWin = document.querySelector('[data-window="teachText"]:not(.is-hidden):not(.is-app-hidden)');
+        if (!ttWin) await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+      if (!ttWin) { log('fixture: teachText window never became visible'); return; }
+      const pane = document.getElementById('teachtext-form');
+      if (!pane) { log('fixture: teachtext-form missing'); return; }
+      pane.style.position = 'relative';
+      const mountPoint = document.createElement('div');
+      mountPoint.id = 'cw3-mount';
+      mountPoint.style.cssText = 'position:absolute;inset:0;';
+      pane.append(mountPoint);
+      let integration;
+      try {
+        integration = window.ClioWorksTeachText.create(window);
+      } catch (error) {
+        log('fixture: teachtext adapter error ' + (error && error.message));
+        return;
+      }
+      window.__CW3_INTEGRATION__ = integration;
+      let mounted;
+      try {
+        mounted = window.ClioWorksHost.mountNative({
+          element: mountPoint,
+          adapter: integration.adapter,
+          menuPort: integration.menuPort,
+          hostWindow: window,
+          onError: (error) => log('fixture: mount error ' + (error && error.message)),
+          onTheme: (info) => { window.__CW3_THEME__ = info; },
+        });
+      } catch (error) {
+        log('fixture: mountNative failed ' + (error && error.message));
+        integration.dispose();
+        return;
+      }
+      await mounted.ready;
+      log('fixture: teachtext adapter mounted');
+      log('fixture: DONE');
+      window.__CW3_MOUNTED__ = {
+        mounted,
+        info: window.__CW3_THEME__,
+        adapter: integration.adapter,
+        dispose() {
+          try { mounted.dispose(); } finally {
+            try { integration.dispose(); } finally { mountPoint.remove(); }
+          }
+        },
+      };
+      return;
+    }
+
+    // Plaintext fixture (V3-A) into the projects window.
+    openWindow('projects');
+    let win = null;
+    for (let i = 0; i < 50 && !win; i += 1) {
+      win = document.querySelector('[data-window="projects"]:not(.is-hidden):not(.is-app-hidden):not(.is-minimized)');
+      if (!win) await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    if (!win) { log('fixture: projects window never became visible'); return; }
+    log('fixture: host window=' + (win.dataset.window || '(unnamed)'));
+    win.style.inlineSize = 'min(720px, 92vw)';
+    win.style.blockSize = 'min(520px, 80vh)';
+    const body = win.querySelector('.window-body') || win.querySelector('.window-content') || win;
+    const mountPoint = document.createElement('div');
+    // display:block (NOT flex): .cw-native uses container-type:inline-size, whose
+    // containment zeroes content-based sizing — the mount must stretch like a block
+    // child so the container gets the window's definite width.
+    mountPoint.id = 'cw3-mount';
+    mountPoint.style.cssText = 'position:absolute;inset:0;';
+    body.style.position = 'relative';
+    body.append(mountPoint);
+
+    const adapter = createFixtureAdapter(window);
+    const menuPort = createFixtureMenuPort(window);
+    const mounted = window.ClioWorksHost.mountNative({
+      element: mountPoint,
+      adapter,
+      menuPort,
+      hostWindow: window,
+      onError: (e) => log('fixture: mount error ' + (e && e.message)),
+      onTheme: (info) => {
+        log('fixture: theme change id=' + info.themeId + ' missing=' + JSON.stringify(info.missing));
+        window.__CW3_THEME__ = info;
+      },
+    });
+    await mounted.ready;
+    const info = window.__CW3_THEME__;
+    log('fixture: mounted ready=' + (document.querySelector('[data-cw-mounted]') !== null));
+    log('fixture: tokens=' + JSON.stringify(info ? info.tokens : null));
+    log('fixture: DONE');
+    window.__CW3_MOUNTED__ = { mounted, info, adapter };
+  }
+
+  window.__CW3_FIXTURE__ = { main };
+  main().catch((e) => log('fixture: FATAL ' + (e && e.stack || e)));
+})();

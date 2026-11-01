@@ -1,0 +1,216 @@
+// Canonical AI System 6 HTTP entry point. Boots on PORT (default 4173) and
+// delegates API dispatch to server/router.js.
+//
+// Dispatch order:
+//   1. Exact API route match.
+//   2. Prefix route match.
+//   3. GET / HEAD fall through to the apps/desktop static root.
+//   4. Everything else returns a structured 404.
+
+"use strict";
+
+const http = require("node:http");
+const crypto = require("node:crypto");
+const { sendJson } = require("./server/lib/http.js");
+const {
+  resolveRoute,
+  listMigratedRoutes,
+} = require("./server/router.js");
+const { appName, appVersion, appBuild } = require("./server/lib/build-info.js");
+const { handleStatic } = require("./server/static.js");
+const { deploymentProfile } = require("./server/runtime-profile.js");
+const {
+  handleBrowseHost,
+  handleBrowseUpgrade,
+  isBrowseHostRequest,
+} = require("./server/browse/relay-node.js");
+const { runWithPublicGuard } = require("./server/security/public-session.js");
+const {
+  applySecurityHeaders,
+  configuredLocalRequestPolicy,
+  handleBrowserBridgePreflight,
+  runWithLocalRequestGuard,
+} = require("./server/security/local-request.js");
+
+const { shellOwned, handleShellSession, watchShellParent } = require("./server/shell-session.js");
+
+const port = Number(process.env.PORT || 4173);
+const localRequestPolicy = configuredLocalRequestPolicy(port);
+const host = localRequestPolicy.host;
+
+const server = http.createServer(async (req, res) => {
+  const requestId = crypto.randomUUID();
+  res.setHeader("X-Request-ID", requestId);
+  // The browse origin is a different site served by this process. It shares
+  // no route, header or file with the desk, so it is split off first.
+  if (isBrowseHostRequest(req)) {
+    try {
+      await handleBrowseHost(req, res);
+    } catch (error) {
+      console.error(JSON.stringify({ level: "error", request_id: requestId, browse: true, error: String(error?.message || error) }));
+      if (!res.headersSent) res.writeHead(500).end();
+      else res.destroy();
+    }
+    return;
+  }
+  applySecurityHeaders(res);
+  if (handleShellSession(req, res)) return;
+  if (
+    deploymentProfile === "public"
+    && String(req.url || "").split("?")[0].startsWith("/api/")
+  ) {
+    res.setHeader("Cache-Control", "no-store");
+  }
+  try {
+    if (
+      deploymentProfile !== "public"
+      && handleBrowserBridgePreflight(req, res, localRequestPolicy)
+    ) return;
+    const handler = resolveRoute(req);
+    if (handler) {
+      if (deploymentProfile === "public") {
+        await runWithPublicGuard(req, res, () => handler(req, res));
+      } else {
+        await runWithLocalRequestGuard(
+          req,
+          res,
+          localRequestPolicy,
+          () => handler(req, res)
+        );
+      }
+      return;
+    }
+
+    if (req.method === "GET" || req.method === "HEAD") {
+      await handleStatic(req, res);
+      return;
+    }
+
+    sendJson(res, 404, { error: "Not found", request_id: requestId });
+  } catch (error) {
+    const message =
+      error && typeof error === "object" && "message" in error
+        ? String(/** @type {any} */ (error).message)
+        : String(error);
+    const status =
+      error && typeof error === "object" && "statusCode" in error
+        ? Number(/** @type {any} */ (error).statusCode) || 500
+        : 500;
+    console.error(JSON.stringify({
+      level: "error",
+      request_id: requestId,
+      method: req.method || "GET",
+      path: String(req.url || "/").split("?")[0],
+      status,
+      error: message,
+    }));
+    sendJson(res, status, {
+      error: status < 500 ? message : "Unhandled server error",
+      ...(status < 500 && /** @type {any} */ (error)?.code
+        ? { code: String(/** @type {any} */ (error).code) }
+        : {}),
+      request_id: requestId,
+    });
+  }
+});
+
+// WebSockets exist only on the browse origin, for the pages Time Machine
+// shows; the desk itself opens none.
+server.on("upgrade", (req, socket, head) => {
+  if (isBrowseHostRequest(req)) {
+    handleBrowseUpgrade(req, socket, head);
+    return;
+  }
+  socket.end("HTTP/1.1 404 Not Found\r\nConnection: close\r\nContent-Length: 0\r\n\r\n");
+});
+
+server.headersTimeout = 10000;
+// DeepSeek Files API permits a ten-minute streaming upload. Other routes own
+// tighter application timeouts and body limits; headers remain capped at ten
+// seconds, while the public file route has its own concurrency fence.
+server.requestTimeout = 610000;
+server.keepAliveTimeout = 5000;
+server.maxRequestsPerSocket = 100;
+
+server.listen(port, host, () => {
+  console.log(`AI System 6 server running at http://${host}:${port}`);
+  console.log(`${appName} ${appVersion} build ${appBuild}`);
+  console.log(`Deployment profile: ${deploymentProfile}`);
+  console.log(`LAN access: ${localRequestPolicy.allowLan ? "enabled with token" : "disabled"}`);
+  // Which upstream the engines' egress filter uses (HTTPS_PROXY, else the
+  // macOS system proxy), read once here and logged once.
+  if (!require("./server/runtime-profile.js").isPublicDeployment) require("./server/agent/egress-proxy.js").upstreamChoice(process.env);
+  // D7: with no Mac shell to hand the per-boot agent token to the page, the
+  // launcher prints a desk link that carries it in the URL fragment. A
+  // fragment is never sent to any server, and no HTTP route serves the token,
+  // so a process that can only make requests to this port cannot get it (the
+  // sandboxed engine reaches this port through a loopback proxy otherwise:
+  // attack round 5). The desk reads and strips it (cliotalk-agent.js).
+  if (!require("./server/shell-session.js").shellOwned && !require("./server/runtime-profile.js").isPublicDeployment) {
+    console.log(`Agent desk link (the per-boot token is in the fragment): http://${host}:${port}/#ais6-agent-token=${require("./server/agent/agent-token.js").agentToken}`);
+  }
+  // Schedules (agent/schedule-runner.js): mark what passed while the server
+  // was off as missed (never run), then keep the clock. Local desk only.
+  if (process.platform === "darwin" && !require("./server/runtime-profile.js").isPublicDeployment) {
+    try { require("./server/agent/schedule-runner.js").start(); } catch (error) { console.error("Schedules did not start:", error); }
+  }
+  // Cloud agent runs leave nothing behind a restart: the janitor removes
+  // leftover containers and workspaces now and once a minute after.
+  if (require("./server/agent-cloud/config.js").agentCloudEnabled()) {
+    require("./server/agent-cloud/runs.js").startJanitor();
+  }
+  const registeredRoutes = listMigratedRoutes();
+  // The full METHOD PATH list is a debugging aid. Startup prints the count.
+  if (process.env.AI_SYSTEM6_LOG_ROUTES === "1") {
+    console.log(`Routes: ${registeredRoutes.join(", ") || "(none)"}`);
+  } else {
+    console.log(`Routes: ${registeredRoutes.length}`);
+  }
+});
+
+// A second app instance (or a leftover server) can already own the port. If a
+// healthy desk answers there, this process is redundant: say so and leave
+// quietly instead of dying with an unhandled-error stack in the shell's log.
+server.on("error", (error) => {
+  if (/** @type {any} */ (error).code !== "EADDRINUSE") {
+    console.error(`Server error: ${error.message}`);
+    process.exit(1);
+  }
+  if (shellOwned) {
+    console.error(`Shell listener port ${port} is already owned; refusing reuse.`);
+    process.exit(1);
+  }
+  const probe = http.get({ host, port, path: "/", timeout: 3000 }, (res) => {
+    const healthy = res.statusCode === 200;
+    res.resume();
+    res.on("end", () => {
+      if (healthy) {
+        console.log(`Another AI System 6 server already listens on ${host}:${port}; reusing it.`);
+        process.exit(0);
+      }
+      console.error(`Port ${port} is held by something that did not serve the desk; exiting.`);
+      process.exit(1);
+    });
+  });
+  probe.on("error", () => {
+    console.error(`Port ${port} is in use and did not answer a probe; exiting.`);
+    process.exit(1);
+  });
+});
+
+let shuttingDown = false;
+function shutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.log(`Received ${signal}; draining HTTP connections.`);
+  server.close(() => process.exit(0));
+  setTimeout(() => {
+    console.error("Graceful shutdown timed out.");
+    process.exit(1);
+  }, 20000).unref();
+}
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
+
+watchShellParent(() => shutdown("shell parent lost"));

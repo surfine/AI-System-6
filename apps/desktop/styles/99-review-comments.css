@@ -1,0 +1,497 @@
+/* Review Desk: comment threads and version compare.
+
+   Lazy: this file is a second source of the edit-kernel sheet
+   (tooling/style-manifest.mjs), brought in by the Review Desk comments loader
+   (app/core/config.js). Every selector is scoped to .review-comments-panel,
+   .review-thread* or .review-compare*, and colour and rules come from the
+   tokens the Review Desk already uses, so each appearance dresses it. */
+
+.review-comments-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  padding: 10px 12px;
+  overflow: auto;
+  background: var(--review-surface-bg);
+}
+
+.review-comments-panel.is-hidden {
+  display: none;
+}
+
+.review-comments-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.review-comments-tabs {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.review-comments-tab.is-active {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.review-comments-as {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.review-comments-as input {
+  width: 12em;
+  min-width: 0;
+}
+
+.review-comments-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.review-comments-body.is-hidden {
+  display: none;
+}
+
+.review-comments-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.review-comments-tools input[type="search"] {
+  flex: 1 1 10em;
+  min-width: 0;
+}
+
+.review-comments-counts {
+  margin: 0;
+  color: var(--shade-dark);
+  font-size: 0.92em;
+}
+
+.review-comment-composer {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border: var(--system-border);
+}
+
+.review-comment-composer textarea,
+.review-thread-replybox textarea {
+  width: 100%;
+  min-width: 0;
+  resize: vertical;
+}
+
+.review-comment-composer-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.review-comment-quote,
+.review-thread-quote {
+  margin: 0;
+  padding: 2px 0 2px 8px;
+  border-left: 3px solid var(--ink);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.review-comment-quote.is-empty {
+  border-left-style: dotted;
+  color: var(--shade-dark);
+}
+
+.review-thread-list,
+.review-thread-replies {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.review-thread {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border: var(--system-border);
+}
+
+.review-thread.is-current {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+
+.review-thread.is-lost .review-thread-quote {
+  border-left-style: dashed;
+  color: var(--shade-dark);
+}
+
+.review-thread[data-state="accepted"],
+.review-thread[data-state="rejected"],
+.review-thread[data-state="completed"] {
+  background: color-mix(in srgb, var(--ink) 4%, transparent);
+}
+
+.review-thread-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0;
+}
+
+.review-thread-meta time,
+.review-thread-label {
+  color: var(--shade-dark);
+  font-size: 0.9em;
+}
+
+.review-thread-state {
+  padding: 0 5px;
+  border: 1px solid var(--ink);
+  font-size: 0.85em;
+}
+
+.review-thread-state.is-accepted,
+.review-thread-state.is-completed {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.review-thread-state.is-rejected {
+  text-decoration: line-through;
+}
+
+.review-thread-lostmark {
+  padding: 0 5px;
+  border: 1px dashed var(--ink);
+  font-size: 0.85em;
+}
+
+.review-thread-lostnote {
+  margin: 0;
+  color: var(--shade-dark);
+  font-size: 0.9em;
+}
+
+.review-thread-text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.review-thread-replies {
+  padding-left: 12px;
+  border-left: 1px dotted var(--shade);
+}
+
+.review-thread-actions,
+.review-thread-replybox {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.review-thread-replybox textarea {
+  flex: 1 1 14em;
+}
+
+.review-thread-tick.is-on {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* ---- compare two versions ---------------------------------------------- */
+
+.review-compare {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.review-compare-pick,
+.review-compare-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.review-compare-pick label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.review-compare-pick .select-wrap {
+  min-width: 13em;
+  max-width: 100%;
+}
+
+.review-compare-summary {
+  margin: 0;
+  color: var(--shade-dark);
+}
+
+.review-compare-position {
+  min-width: 5em;
+  text-align: center;
+}
+
+.review-compare-view {
+  max-height: 16em;
+  padding: 8px;
+  border: var(--system-border);
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+}
+
+.review-diff-same {
+  color: color-mix(in srgb, var(--ink) 70%, transparent);
+}
+
+.review-diff-del {
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.review-diff-ins {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  background: color-mix(in srgb, var(--ink) 10%, transparent);
+}
+
+.review-diff-hunk.is-current {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+
+/* ---- 回稿: per-paragraph candidates, messages, three-way compare (N8) ----
+   Black and white only, through the tokens this sheet already uses: the
+   design's .del/.ins pair is the .review-diff-del/.review-diff-ins this panel
+   draws elsewhere; no colour arrives with the reviewer's markup. */
+
+.roundtrip-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.roundtrip-summary .roundtrip-note {
+  border: 0;
+  padding: 0;
+}
+
+.roundtrip-columns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-width: 0;
+  align-items: flex-start;
+}
+
+.roundtrip-candidates {
+  flex: 1.25 1 16em;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  list-style: none;
+}
+
+.roundtrip-messages {
+  flex: 1 1 14em;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.roundtrip-messages-title {
+  font-size: 0.95em;
+}
+
+.roundtrip-cand,
+.roundtrip-message,
+.roundtrip-unplaced {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border: var(--system-border);
+}
+
+.roundtrip-cand.is-accepted {
+  background: color-mix(in srgb, var(--ink) 4%, transparent);
+}
+
+.roundtrip-cand.is-lost .roundtrip-cand-text {
+  color: var(--shade-dark);
+}
+
+.roundtrip-cand-head,
+.roundtrip-message-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.roundtrip-cand-status,
+.roundtrip-message-anchor {
+  color: var(--shade-dark);
+  font-size: 0.9em;
+}
+
+.roundtrip-cand-text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+}
+
+.roundtrip-cand-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.roundtrip-tone {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 3px 6px;
+  border: 1px dashed var(--ink);
+  font-size: 0.9em;
+}
+
+.roundtrip-decision {
+  margin: 0;
+  font-size: 0.9em;
+}
+
+.roundtrip-decision.is-accepted {
+  font-weight: bold;
+}
+
+.roundtrip-decision.is-rejected {
+  color: var(--shade-dark);
+  text-decoration: line-through;
+}
+
+.roundtrip-decision.is-lost {
+  color: var(--shade-dark);
+}
+
+.roundtrip-editbox {
+  display: grid;
+  gap: 6px;
+}
+
+.roundtrip-editbox textarea {
+  width: 100%;
+  min-width: 0;
+  resize: vertical;
+}
+
+.roundtrip-message.is-done .review-thread-quote {
+  color: var(--shade-dark);
+}
+
+.roundtrip-message-reply {
+  margin: 0;
+}
+
+.roundtrip-message-note {
+  margin: 0;
+  color: var(--shade-dark);
+  font-size: 0.85em;
+}
+
+.roundtrip-message-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.roundtrip-unplaced .roundtrip-message-list {
+  padding-left: 10px;
+  border-left: 1px dotted var(--shade);
+}
+
+.roundtrip-note {
+  margin: 0;
+  padding-top: 6px;
+  border-top: 1px solid var(--shade);
+  color: var(--shade-dark);
+  font-size: 0.85em;
+}
+
+/* The three-way compare: 送审版 · 现在 · 对方改回, one row per changed
+   paragraph, read-only. */
+
+.roundtrip-compare-table {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px 8px;
+}
+
+.roundtrip-compare-head {
+  text-align: center;
+}
+
+.roundtrip-compare-cell {
+  padding: 6px 8px;
+  border: var(--system-border);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.92em;
+}
+
+.roundtrip-compare-cell.is-gone {
+  color: var(--shade-dark);
+}
+
+.roundtrip-compare-cell.is-accepted {
+  background: color-mix(in srgb, var(--ink) 4%, transparent);
+}
+
+.roundtrip-compare-cell.is-returned {
+  background: color-mix(in srgb, var(--ink) 4%, transparent);
+}
+
+@media (max-width: 640px) {
+  .roundtrip-compare-table {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

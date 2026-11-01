@@ -1,0 +1,1238 @@
+// Endfield (终末地) story-archive subsystem.
+//
+// Provides keyword search and RAG-style Q&A over a local corpus of
+// Warfarin mission transcripts, operator profiles, tutorials, lore
+// entries, and central documents. Used by GET|POST /api/endfield/search
+// and POST /api/endfield/ask.
+//
+// Behavior parity with the corresponding block in root server.js.
+// Five JSON data files are loaded lazily on first request and cached
+// per process; missing files (anything but missions.json) degrade
+// gracefully to empty caches.
+
+"use strict";
+
+const fs = require("node:fs/promises");
+const path = require("node:path");
+
+const { desktopRoot } = require("./lib/build-info.js");
+const { postJsonWithFallback } = require("./lib/fetch.js");
+const { getLocalUrls } = require("./lib/local-urls.js");
+const { positiveInteger } = require("./lib/numbers.js");
+const {
+  DEEPSEEK_CLOUD_MODELS,
+  DEEPSEEK_BASE_URL_DEFAULT,
+  isDeepSeekCloudModelId,
+  normalizeCloudModelId,
+  resolveCloudTarget,
+} = require("./cloud.js");
+const { preparePublicCloudCall } = require("./lib/cloud-route.js");
+const { isPublicDeployment } = require("./runtime-profile.js");
+const {
+  enforceMarkdownOnlyChatPayload,
+  tuneLmStudioChatPayload,
+} = require("./chat.js");
+const {
+  knownModelMaxContext,
+} = require("./lib/lmstudio-models.js");
+const {
+  getLoadedLmStudioModelInfo,
+  postLocalChatWithModelAutoload,
+} = require("./lmstudio.js");
+const { resolveCloudCredential } = require("./credential-vault.js");
+
+// =============================================================================
+// Data loaders (lazy, cached per-process)
+// =============================================================================
+
+/** @type {any} */
+let endfieldStoryCache = null;
+/** @type {any} */
+let endfieldOperatorCache = null;
+/** @type {any} */
+let endfieldTutorialCache = null;
+/** @type {any} */
+let endfieldLoreCache = null;
+/** @type {any} */
+let endfieldDocumentCache = null;
+
+// ---------------------------------------------------------------------------
+// Version stamp derivation
+//
+// A line's version is not a property of the terminal. It is whatever explicit
+// per-record metadata the corpus carries (a transcript line first, then the
+// mission or entry record), falling back to the dataset's gameVersion, and
+// finally to an honest "unknown" instead of the blanket v1.5 the loaders used
+// to stamp. That keeps a future or mixed record -- e.g. a 丹青渡-era line beside
+// v1.5 evidence -- from being relabeled as whatever the dataset claims.
+// ---------------------------------------------------------------------------
+
+/**
+ * @param {any} value
+ * @returns {string}
+ */
+function endfieldVersionString(value) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+/**
+ * The first non-empty explicit version wins; with none, "" / "unknown" is the
+ * honest answer. Candidates are ordered most specific first.
+ *
+ * @param {Array<{ version?: any, basis?: string }>} candidates
+ * @returns {{ version: string, versionBasis: string }}
+ */
+function resolveEndfieldVersionStamp(candidates) {
+  for (const candidate of candidates || []) {
+    const version = endfieldVersionString(candidate && candidate.version);
+    if (version) {
+      return { version, versionBasis: (candidate && candidate.basis) || "record" };
+    }
+  }
+  return { version: "", versionBasis: "unknown" };
+}
+
+/**
+ * Build the mission lines, resolving each line's version from its most
+ * specific explicit metadata, then the mission dataset's gameVersion. Mission
+ * lines keep the "mission" basis so missionIndex / chapterKey stay paired with
+ * it for the progress gate.
+ *
+ * @param {any} data
+ * @returns {any[]}
+ */
+function buildEndfieldMissionLines(data) {
+  const lines = [];
+  for (const [missionIndex, mission] of (data.missions || []).entries()) {
+    const official = /skland/i.test(String(mission.source || mission.url || ""));
+    for (const [lineIndex, line] of (mission.transcript || []).entries()) {
+      const stamp = resolveEndfieldVersionStamp([
+        { version: line.version || line.gameVersion, basis: "mission" },
+        { version: mission.version || mission.gameVersion, basis: "mission" },
+        { version: data.gameVersion, basis: "mission" },
+      ]);
+      lines.push({
+        missionId: mission.id,
+        missionTitle: mission.title,
+        section: mission.section || "",
+        chapter: mission.chapter || "",
+        searchAliases: mission.searchAliases || [],
+        process: mission.process || "",
+        missionUrl: mission.url,
+        speaker: line.speaker || "Unknown",
+        initial: line.initial || "",
+        text: line.text || "",
+        lineIndex,
+        kind: official ? (line.speaker ? "通讯" : "日志") : "对话",
+        version: stamp.version,
+        versionBasis: stamp.versionBasis,
+        missionIndex,
+        chapterKey: endfieldChapterKey(mission),
+      });
+    }
+  }
+  return lines;
+}
+
+/**
+ * Load the Warfarin mission transcript corpus. Throws if
+ * missions.json is missing — every other dataset has a graceful
+ * fallback, but the mission file is the primary corpus.
+ *
+ * @returns {Promise<any>}
+ */
+async function loadEndfieldStoryData() {
+  if (endfieldStoryCache) return endfieldStoryCache;
+  const filePath = path.join(desktopRoot, "data", "warfarin-missions-lines", "missions.json");
+  const raw = await fs.readFile(filePath, "utf8");
+  const data = JSON.parse(raw);
+  endfieldStoryCache = {
+    source: data.source,
+    scrapedAt: data.scrapedAt,
+    gameVersion: data.gameVersion,
+    lastUpdated: data.lastUpdated,
+    missions: data.missions || [],
+    lines: buildEndfieldMissionLines(data),
+  };
+  return endfieldStoryCache;
+}
+
+/**
+ * Where a mission sits in the story, for the progress gate. 'v1_5' sorts
+ * after each successive chapter; 'other' / unknown never fold.
+ * @param {any} mission
+ * @returns {string}
+ */
+function endfieldChapterKey(mission) {
+  if (/skland/i.test(String(mission?.source || mission?.url || ""))) return "v1_5";
+  if (mission?.section !== "Main Missions") return "other";
+  if (/Prologue/.test(mission?.chapter || "")) return "prologue";
+  if (/Chapter I\b/.test(mission?.chapter || "")) return "chapter1";
+  if (/Chapter II\b/.test(mission?.chapter || "")) return "chapter2";
+  return "other";
+}
+
+/**
+ * Add the source-type / version stamp a line carries to the client.
+ * A non-mission line resolves its record's own explicit version first, then
+ * falls back to the dataset's gameVersion. With neither, the version stays
+ * honestly empty instead of a blanket v1.5. missionIndex / chapterKey stay null
+ * for non-mission lines, so the progress gate only sees mission lines.
+ * @param {Array<any>} lines
+ * @param {string} kind
+ * @param {string} [datasetVersion]
+ */
+function decorateEndfieldLines(lines, kind, datasetVersion = "") {
+  for (const line of lines) {
+    line.kind = kind;
+    const stamp = resolveEndfieldVersionStamp([
+      { version: line.version, basis: "record" },
+      { version: datasetVersion, basis: "dataset" },
+    ]);
+    line.version = stamp.version;
+    line.versionBasis = stamp.versionBasis;
+    line.missionIndex = null;
+    line.chapterKey = null;
+  }
+  return lines;
+}
+
+/**
+ * @returns {Promise<any>}
+ */
+async function loadEndfieldOperatorData() {
+  if (endfieldOperatorCache) return endfieldOperatorCache;
+  const filePath = path.join(desktopRoot, "data", "warfarin-operators", "operators.json");
+  try {
+    const raw = await fs.readFile(filePath, "utf8");
+    const data = JSON.parse(raw);
+    const lines = [];
+    for (const operator of data.operators || []) {
+      const base = {
+        missionId: `operator:${operator.id}`,
+        missionTitle: operator.name,
+        chapter: operator.overview?.englishName || "",
+        missionUrl: operator.url,
+      };
+      let lineIndex = 0;
+      /**
+       * @param {string} section
+       * @param {string} process
+       * @param {string} speaker
+       * @param {string} text
+       */
+      const pushLine = (section, process, speaker, text) => {
+        if (!text) return;
+        lines.push({
+          ...base,
+          section,
+          process,
+          speaker,
+          initial: operator.name?.slice(0, 1) || "",
+          text,
+          version: endfieldVersionString(operator.version || operator.gameVersion),
+          lineIndex,
+        });
+        lineIndex += 1;
+      };
+
+      pushLine("干员总览", "简介", operator.name, operator.overview?.summary || operator.description || "");
+      pushLine("干员总览", "特点", operator.name, operator.overview?.trait || "");
+      for (const entry of operator.intel || []) {
+        pushLine("干员情报", entry.title, entry.title, entry.text);
+      }
+      for (const entry of operator.files || []) {
+        pushLine("干员档案", entry.title, entry.title, entry.text);
+      }
+      for (const entry of operator.voiceLines || []) {
+        pushLine("干员语音", entry.label, operator.name, entry.text);
+      }
+    }
+    for (const line of lines) {
+      line.kind = line.section === "干员语音" ? "语音" : "档案";
+      const stamp = resolveEndfieldVersionStamp([
+        { version: line.version, basis: "record" },
+        { version: data.gameVersion, basis: "dataset" },
+      ]);
+      line.version = stamp.version;
+      line.versionBasis = stamp.versionBasis;
+      line.missionIndex = null;
+      line.chapterKey = null;
+    }
+    endfieldOperatorCache = {
+      source: data.source,
+      scrapedAt: data.scrapedAt,
+      gameVersion: data.gameVersion || "",
+      lastUpdated: data.lastUpdated || "",
+      operators: data.operators || [],
+      lines,
+    };
+  } catch {
+    endfieldOperatorCache = {
+      source: "",
+      scrapedAt: "",
+      gameVersion: "",
+      lastUpdated: "",
+      operators: [],
+      lines: [],
+    };
+  }
+  return endfieldOperatorCache;
+}
+
+/**
+ * @returns {Promise<any>}
+ */
+async function loadEndfieldTutorialData() {
+  if (endfieldTutorialCache) return endfieldTutorialCache;
+  const filePath = path.join(desktopRoot, "data", "warfarin-tutorials", "tutorials.json");
+  try {
+    const raw = await fs.readFile(filePath, "utf8");
+    const data = JSON.parse(raw);
+    const lines = [];
+    for (const tutorial of data.tutorials || []) {
+      for (const [index, section] of (tutorial.sections || []).entries()) {
+        if (!section.text) continue;
+        lines.push({
+          missionId: `tutorial:${tutorial.id}`,
+          missionTitle: tutorial.title,
+          section: "教学记录",
+          chapter: tutorial.type || "教学",
+          process: section.title || "概要",
+          missionUrl: tutorial.url,
+          speaker: section.title || tutorial.title,
+          initial: "教",
+          text: section.text,
+          version: endfieldVersionString(tutorial.version || tutorial.gameVersion),
+          lineIndex: index,
+        });
+      }
+    }
+    decorateEndfieldLines(lines, "教学", data.gameVersion);
+    endfieldTutorialCache = {
+      source: data.source,
+      scrapedAt: data.scrapedAt,
+      gameVersion: data.gameVersion || "",
+      lastUpdated: data.lastUpdated || "",
+      tutorials: data.tutorials || [],
+      lines,
+    };
+  } catch {
+    endfieldTutorialCache = {
+      source: "",
+      scrapedAt: "",
+      gameVersion: "",
+      lastUpdated: "",
+      tutorials: [],
+      lines: [],
+    };
+  }
+  return endfieldTutorialCache;
+}
+
+/**
+ * @returns {Promise<any>}
+ */
+async function loadEndfieldLoreData() {
+  if (endfieldLoreCache) return endfieldLoreCache;
+  const filePath = path.join(desktopRoot, "data", "warfarin-lore", "lore.json");
+  try {
+    const raw = await fs.readFile(filePath, "utf8");
+    const data = JSON.parse(raw);
+    const lines = [];
+    for (const entry of data.lore || []) {
+      for (const [index, section] of (entry.sections || []).entries()) {
+        if (!section.text) continue;
+        lines.push({
+          missionId: `lore:${entry.id}`,
+          missionTitle: entry.title,
+          section: "见闻辑录",
+          chapter: entry.type || "世界观",
+          process: section.title || "正文",
+          missionUrl: entry.url,
+          speaker: entry.type || "见闻辑录",
+          initial: "档",
+          text: section.text,
+          version: endfieldVersionString(entry.version || entry.gameVersion),
+          lineIndex: index,
+        });
+      }
+    }
+    decorateEndfieldLines(lines, "见闻辑录", data.gameVersion);
+    endfieldLoreCache = {
+      source: data.source,
+      scrapedAt: data.scrapedAt,
+      gameVersion: data.gameVersion || "",
+      lastUpdated: data.lastUpdated || "",
+      typeCounts: data.typeCounts || {},
+      lore: data.lore || [],
+      lines,
+    };
+  } catch {
+    endfieldLoreCache = {
+      source: "",
+      scrapedAt: "",
+      gameVersion: "",
+      lastUpdated: "",
+      typeCounts: {},
+      lore: [],
+      lines: [],
+    };
+  }
+  return endfieldLoreCache;
+}
+
+/**
+ * @returns {Promise<any>}
+ */
+async function loadEndfieldDocumentData() {
+  if (endfieldDocumentCache) return endfieldDocumentCache;
+  const filePath = path.join(desktopRoot, "data", "warfarin-documents", "documents.json");
+  try {
+    const raw = await fs.readFile(filePath, "utf8");
+    const data = JSON.parse(raw);
+    const lines = [];
+    for (const entry of data.documents || []) {
+      for (const [index, section] of (entry.sections || []).entries()) {
+        if (!section.text) continue;
+        lines.push({
+          missionId: `document:${entry.id}`,
+          missionTitle: entry.title,
+          section: "中枢档案",
+          chapter: entry.type || "中枢档案",
+          process: section.title || "正文",
+          missionUrl: entry.url,
+          speaker: entry.type || "中枢档案",
+          initial: "档",
+          text: section.text,
+          version: endfieldVersionString(entry.version || entry.gameVersion),
+          lineIndex: index,
+        });
+      }
+    }
+    decorateEndfieldLines(lines, "中枢档案", data.gameVersion);
+    endfieldDocumentCache = {
+      source: data.source,
+      scrapedAt: data.scrapedAt,
+      gameVersion: data.gameVersion || "",
+      lastUpdated: data.lastUpdated || "",
+      typeCounts: data.typeCounts || {},
+      documents: data.documents || [],
+      lines,
+    };
+  } catch {
+    endfieldDocumentCache = {
+      source: "",
+      scrapedAt: "",
+      gameVersion: "",
+      lastUpdated: "",
+      typeCounts: {},
+      documents: [],
+      lines: [],
+    };
+  }
+  return endfieldDocumentCache;
+}
+
+// =============================================================================
+// Search helpers
+// =============================================================================
+
+/**
+ * The CJK code-point regex is built from a string literal so the
+ * \u escapes survive Write-tool round-trips. Same range as root.
+ */
+const CJK_CHAR_PATTERN = new RegExp("[\\u4e00-\\u9fff]");
+
+/**
+ * NUL-byte separator for dedup keys. Mirrors root server.js's
+ * `String.fromCharCode(0)` literal. Built via String.fromCharCode so the source
+ * form has no embedded NUL byte (which many editors silently strip
+ * or warn on).
+ */
+const DEDUP_KEY_SEPARATOR = String.fromCharCode(0);
+
+/**
+ * @param {any[]} lines
+ * @returns {any[]}
+ */
+function dedupeEndfieldLines(lines) {
+  const seen = new Set();
+  return lines.filter((line) => {
+    const key = [
+      line.section === "见闻辑录" || line.section === "中枢档案" ? line.chapter : line.section,
+      line.missionTitle,
+      line.process,
+      line.text,
+    ].join(DEDUP_KEY_SEPARATOR);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+/**
+ * @param {any[]} items
+ * @returns {any[]}
+ */
+function dedupeEndfieldMatches(items) {
+  const seen = new Set();
+  return items.filter((item) => {
+    const key = [
+      item.section === "见闻辑录" || item.section === "中枢档案" ? item.chapter : item.section,
+      item.title,
+      item.summary,
+    ].join(DEDUP_KEY_SEPARATOR);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+/**
+ * @param {string} query
+ * @returns {string[]}
+ */
+function endfieldSearchTokens(query) {
+  const baseTokens = String(query || "")
+    .toLowerCase()
+    .replace(/[，。！？、；：“”‘’（）【】《》,.!?;:"'()[\]<>]/g, " ")
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter(Boolean);
+  const grams = [];
+  for (const token of baseTokens) {
+    if (!CJK_CHAR_PATTERN.test(token) || token.length <= 2) continue;
+    for (let size = 2; size <= Math.min(4, token.length); size += 1) {
+      for (let i = 0; i <= token.length - size; i += 1) {
+        grams.push(token.slice(i, i + size));
+      }
+    }
+  }
+  return [...new Set([...baseTokens, ...grams])];
+}
+
+/**
+ * @param {unknown} value
+ * @returns {string}
+ */
+function normalizeEndfieldSearchText(value) {
+  return String(value || "").toLowerCase().trim();
+}
+
+/**
+ * @param {any} operator
+ * @returns {string[]}
+ */
+function endfieldOperatorSearchKeys(operator) {
+  return [
+    operator.id,
+    operator.name,
+    operator.overview?.name,
+    operator.overview?.englishName,
+    operator.url?.split("/").filter(Boolean).pop(),
+  ].map(normalizeEndfieldSearchText).filter(Boolean);
+}
+
+/**
+ * @param {string} query
+ * @param {any[]} [operators]
+ * @returns {Array<{ id: any, name: any, keys: string[] }>}
+ */
+function detectMentionedEndfieldOperators(query, operators = []) {
+  const normalizedQuery = normalizeEndfieldSearchText(query);
+  if (!normalizedQuery) return [];
+  return (operators || [])
+    .map((operator) => ({
+      id: operator.id,
+      name: operator.name,
+      keys: endfieldOperatorSearchKeys(operator),
+    }))
+    .filter((operator) => operator.keys.some((key) => key && normalizedQuery.includes(key)));
+}
+
+const ENDFIELD_QUESTION_STOPWORDS = [
+  "怎么样了", "什么时候", "什么关系", "是什么", "是谁", "区别在哪", "区别",
+  "在哪里", "在哪", "到底", "究竟", "后来", "最后", "为什么", "要怎么",
+  "怎么", "还是", "就是", "吗", "呢", "啊",
+];
+
+function endfieldStrippedQuery(query) {
+  let stripped = String(query || "");
+  for (const word of ENDFIELD_QUESTION_STOPWORDS) {
+    stripped = stripped.split(word).join(" ");
+  }
+  return stripped.trim();
+}
+
+/**
+ * Classify the question so the client can weight source types and the server
+ * can answer structure questions honestly.
+ * @param {string} query
+ * @returns {"unlock"|"who"|"when"|"general"}
+ */
+function endfieldQuestionType(query) {
+  if (/解锁|前置|后续|接下来|做不了|怎么(做|接|开|触发)/.test(String(query))) return "unlock";
+  if (/是谁|什么关系|区别|就是.+吗|是不是/.test(String(query))) return "who";
+  if (/什么时候|何时|在哪(里)?说|哪一?[章话集]/.test(String(query))) return "when";
+  return "general";
+}
+
+/**
+ * Entity-first boost: any of an operator's name or a hub archive / lore /
+ * mission title (length ≥ 2) present in the query counts as a mention.
+ * @param {string} query
+ * @param {{ operators?: any[], documents?: any[], lore?: any[], missions?: any[] }} [collections]
+ * @returns {string[]}
+ */
+function detectMentionedEndfieldEntities(query, collections = {}) {
+  const normalizedQuery = normalizeEndfieldSearchText(query);
+  if (!normalizedQuery) return [];
+  const names = [];
+  for (const operator of collections.operators || []) {
+    if (operator.name && operator.name.length >= 2) names.push(operator.name);
+  }
+  for (const doc of collections.documents || []) {
+    if (doc.title && doc.title.length >= 2) names.push(doc.title);
+  }
+  for (const entry of collections.lore || []) {
+    if (entry.title && entry.title.length >= 2) names.push(entry.title);
+  }
+  for (const mission of collections.missions || []) {
+    if (mission.title && mission.title.length >= 2) names.push(mission.title);
+  }
+  return [...new Set(names)].filter((name) => {
+    const normalizedName = normalizeEndfieldSearchText(name);
+    if (normalizedQuery.includes(normalizedName)) return true;
+    // A two-character prefix is enough for names like 萨米维格 queried as 萨米.
+    if (normalizedName.length >= 2 && normalizedQuery.includes(normalizedName.slice(0, 2))) return true;
+    return false;
+  });
+}
+
+/**
+ * @param {any} item
+ * @param {any[]} [mentionedOperators]
+ * @returns {number}
+ */
+function endfieldOperatorEntityScore(item, mentionedOperators = []) {
+  if (!mentionedOperators.length) return 0;
+  const itemId = normalizeEndfieldSearchText(item.id || "");
+  const itemTitle = normalizeEndfieldSearchText(item.title || "");
+  const itemText = normalizeEndfieldSearchText(item.text || "");
+  const isOperatorCard = ["干员资料", "干员总览", "干员情报", "干员档案", "干员语音"].includes(item.section);
+  let score = 0;
+  let matched = false;
+
+  for (const operator of mentionedOperators) {
+    const sameOperator = itemId === normalizeEndfieldSearchText(operator.id) || itemTitle === normalizeEndfieldSearchText(operator.name);
+    const mentionsOperator = operator.keys.some((key) => key && itemText.includes(key));
+    if (sameOperator) {
+      score += 520;
+      matched = true;
+    } else if (mentionsOperator) {
+      score += 140;
+      matched = true;
+    }
+  }
+
+  if (mentionedOperators.length === 1 && isOperatorCard && !matched) score -= 420;
+  return score;
+}
+
+/**
+ * @param {any} line
+ * @param {string} query
+ * @param {string[]} tokens
+ * @param {any[]} [mentionedOperators]
+ * @returns {number}
+ */
+function scoreEndfieldLine(line, query, tokens, mentionedOperators = [], mentionedEntities = [], questionType = "general") {
+  const haystacks = {
+    text: line.text.toLowerCase(),
+    speaker: line.speaker.toLowerCase(),
+    title: line.missionTitle.toLowerCase(),
+    chapter: [line.chapter, ...(line.searchAliases || [])].join(" ").toLowerCase(),
+    section: line.section.toLowerCase(),
+  };
+  const normalizedQuery = query.toLowerCase().trim();
+  let score = 0;
+
+  if (normalizedQuery && haystacks.text.includes(normalizedQuery)) score += 80;
+  if (normalizedQuery && haystacks.speaker.includes(normalizedQuery)) score += 55;
+  if (normalizedQuery && haystacks.title.includes(normalizedQuery)) score += 35;
+  if (normalizedQuery && haystacks.chapter.includes(normalizedQuery)) score += 20;
+
+  for (const token of tokens) {
+    if (haystacks.text.includes(token)) score += token.length > 1 ? 18 : 5;
+    if (haystacks.speaker.includes(token)) score += 28;
+    if (haystacks.title.includes(token)) score += 12;
+    if (haystacks.chapter.includes(token) || haystacks.section.includes(token)) score += 8;
+  }
+
+  if (/主线|main/i.test(query) && line.section === "Main Missions") score += 16;
+  if (/干员|operator/i.test(query) && (line.section === "Operator Missions" || line.section === "干员资料")) score += 16;
+  if (/档案|file/i.test(query) && line.section === "干员档案") score += 70;
+  if (/语音|voice|台词/i.test(query) && line.section === "干员语音") score += 70;
+  if (/情报|intel/i.test(query) && line.section === "干员情报") score += 70;
+  if (/教学|教程|记录|tutorial/i.test(query) && line.section === "教学记录") score += 70;
+  if (/中枢|档案|见闻|世界观|lore|document/i.test(query) && line.section === "见闻辑录") score += 70;
+  if (/中枢|档案|世界观|document/i.test(query) && line.section === "中枢档案") score += 90;
+  if (/中枢|document/i.test(query) && line.chapter === "中枢档案") score += 40;
+  const titleText = (line.missionTitle || "").toLowerCase();
+  if (mentionedEntities.some((entity) => titleText.includes(normalizeEndfieldSearchText(entity)))) {
+    score += 40;
+  }
+  score += endfieldOperatorEntityScore({
+    id: line.missionId?.replace(/^operator:/, ""),
+    title: line.missionTitle,
+    text: [line.speaker, line.text, line.chapter, line.process].join(" "),
+    section: line.section,
+  }, mentionedOperators);
+  const questionMultiplier = endfieldLineQuestionWeight(line, questionType);
+  if (questionMultiplier !== 1) score = Math.round(score * questionMultiplier);
+  return score;
+}
+
+function endfieldLineQuestionWeight(line, questionType) {
+  const section = line.section || "";
+  const kind = line.kind || "";
+  if (questionType === "who") {
+    if (["档案", "中枢档案", "见闻辑录"].includes(kind) || ["干员档案", "中枢档案", "见闻辑录"].includes(section)) return 1.6;
+  } else if (questionType === "when") {
+    if (kind === "档案" || section === "干员档案") return 1.5;
+    if (kind === "对话") return 1.3;
+    if (kind === "语音") return 1.2;
+  }
+  return 1;
+}
+
+/**
+ * @param {any} item
+ * @param {string} query
+ * @param {string[]} tokens
+ * @param {any[]} [mentionedOperators]
+ * @returns {number}
+ */
+function scoreEndfieldMatch(item, query, tokens, mentionedOperators = []) {
+  const haystack = [item.title, item.summary, item.section, item.chapter, item.process, ...(item.searchAliases || [])]
+    .join(" ")
+    .toLowerCase();
+  let score = haystack.includes(query.toLowerCase()) ? 60 : 0;
+  for (const token of tokens) {
+    if (!haystack.includes(token)) continue;
+    score += token.length > 1 ? 12 : 3;
+    if (String(item.title || "").toLowerCase().includes(token)) score += 18;
+    if (String(item.chapter || "").toLowerCase().includes(token)) score += 10;
+  }
+  if (/中枢|档案|见闻|世界观|lore|document/i.test(query) && item.section === "见闻辑录") score += 60;
+  if (/中枢|档案|世界观|document/i.test(query) && item.section === "中枢档案") score += 90;
+  if (/中枢|document/i.test(query) && item.chapter === "中枢档案") score += 35;
+  score += endfieldOperatorEntityScore({
+    id: String(item.id || "").replace(/^operator:/, ""),
+    title: item.title,
+    text: [item.summary, item.chapter, item.process].join(" "),
+    section: item.section,
+  }, mentionedOperators);
+  return score;
+}
+
+/**
+ * @param {any[]} lines
+ * @param {any} line
+ * @param {number} [radius]
+ * @returns {Array<{ speaker: string, text: string, lineIndex: number }>}
+ */
+function nearbyEndfieldLines(lines, line, radius = 1) {
+  return lines
+    .filter((candidate) =>
+      candidate.missionId === line.missionId &&
+      Math.abs(candidate.lineIndex - line.lineIndex) <= radius &&
+      candidate.lineIndex !== line.lineIndex
+    )
+    .sort((a, b) => a.lineIndex - b.lineIndex)
+    .map((candidate) => ({
+      speaker: candidate.speaker,
+      text: candidate.text,
+      lineIndex: candidate.lineIndex,
+    }));
+}
+
+/**
+ * Top-level search: rank both line-level matches and mission/operator/
+ * tutorial/lore/document-card matches; return both. Mirrors
+ * `findEndfieldStoryMatches` from root server.js.
+ *
+ * @param {string} query
+ * @param {number} [limit]
+ * @returns {Promise<{ meta: any, results: any[], missionMatches: any[] }>}
+ */
+/**
+ * Per-dataset provenance, so a partial refresh is visible instead of hidden
+ * behind one file's version stamp.
+ *
+ * @param {Record<string, any>} sets
+ * @returns {Array<{ id: string, scrapedAt: string, gameVersion: string }>}
+ */
+function endfieldDatasetStamps(sets) {
+  return Object.entries(sets).map(([id, set]) => ({
+    id,
+    scrapedAt: set?.scrapedAt || "",
+    gameVersion: set?.gameVersion || "",
+  }));
+}
+
+/**
+ * The oldest scrape time among the datasets that have one. With none, it
+ * answers "" rather than inventing a date.
+ *
+ * @param {Array<string>} stamps
+ * @returns {string}
+ */
+function endfieldOldestScrape(stamps) {
+  const usable = stamps.filter((stamp) => typeof stamp === "string" && stamp);
+  if (!usable.length) return "";
+  return usable.reduce((oldest, stamp) => (stamp < oldest ? stamp : oldest));
+}
+
+// The corpus line kind -> status-bar bucket key. Mirror of the client's
+// ENDFIELD_KIND_LABEL_KEYS so the header's stamps agree with the source cards.
+const ENDFIELD_KIND_LABEL = {
+  "对话": "dialogue",
+  "日志": "log",
+  "通讯": "comms",
+  "档案": "files",
+  "语音": "voice",
+  "教学": "tutorial",
+  "见闻辑录": "lore",
+  "中枢档案": "hub",
+};
+
+/**
+ * Aggregate the version each line claims, grouped by the label bucket the
+ * terminal shows in its status bar. A bucket that mixes versions answers with
+ * its oldest (the only one the archive can honestly stand behind), so a
+ * refresh that updated only the official layer cannot claim a uniform corpus.
+ *
+ * @param {...Array<{kind: string, version?: string}>} lineLists
+ * @returns {Record<string, string>}
+ */
+function endfieldKindVersions(...lineLists) {
+  const sets = {};
+  for (const lines of lineLists) {
+    for (const line of lines || []) {
+      const key = ENDFIELD_KIND_LABEL[line.kind];
+      const version = line.version;
+      if (!key || !version) continue;
+      (sets[key] || (sets[key] = new Set())).add(version);
+    }
+  }
+  const result = {};
+  for (const key of Object.keys(sets)) {
+    const versions = [...sets[key]].sort();
+    result[key] = versions[0];
+  }
+  return result;
+}
+
+async function findEndfieldStoryMatches(query, limit = 12, options = {}) {
+  const data = await loadEndfieldStoryData();
+  const operatorData = await loadEndfieldOperatorData();
+  const tutorialData = await loadEndfieldTutorialData();
+  const loreData = await loadEndfieldLoreData();
+  const documentData = await loadEndfieldDocumentData();
+  const questionType = endfieldQuestionType(query);
+  const strippedQuery = endfieldStrippedQuery(query) || query;
+  const archiveLines = dedupeEndfieldLines([
+    ...data.lines,
+    ...operatorData.lines,
+    ...tutorialData.lines,
+    ...documentData.lines,
+    ...loreData.lines,
+  ]);
+  const tokens = endfieldSearchTokens(strippedQuery);
+  const mentionedOperators = detectMentionedEndfieldOperators(query, operatorData.operators);
+  const mentionedEntities = detectMentionedEndfieldEntities(query, {
+    operators: operatorData.operators,
+    documents: documentData.documents,
+    lore: loreData.lore,
+    missions: data.missions,
+  });
+  const sortedScored = archiveLines
+    .map((line) => ({ line, score: scoreEndfieldLine(line, query, tokens, mentionedOperators, mentionedEntities, questionType) }))
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score || a.line.missionId.localeCompare(b.line.missionId) || a.line.lineIndex - b.line.lineIndex);
+  const chapterOrder = { prologue: 1, chapter1: 2, chapter2: 3, v1_5: 4 };
+  const progress = String(options?.progress || "all");
+  let visible = sortedScored;
+  let foldedCount = 0;
+  if (progress !== "all" && ["when", "general"].includes(questionType)) {
+    const threshold = chapterOrder[progress] || 5;
+    visible = sortedScored.filter((item) => {
+      const key = item.line.chapterKey;
+      if (!key || chapterOrder[key] === undefined) return true;
+      return chapterOrder[key] <= threshold;
+    });
+    foldedCount = sortedScored.length - visible.length;
+  }
+  const scored = visible.slice(0, limit)
+    .map(({ line, score }) => ({
+      score,
+      missionId: line.missionId,
+      missionTitle: line.missionTitle,
+      section: line.section,
+      chapter: line.chapter,
+      process: line.process,
+      missionUrl: line.missionUrl,
+      speaker: line.speaker,
+      initial: line.initial,
+      text: line.text,
+      lineIndex: line.lineIndex,
+      kind: line.kind,
+      version: line.version,
+      versionBasis: line.versionBasis,
+      missionIndex: line.missionIndex,
+      chapterKey: line.chapterKey,
+      context: nearbyEndfieldLines(archiveLines, line),
+    }));
+
+  const missionMatches = dedupeEndfieldMatches([
+    ...data.missions.map((mission) => ({
+      id: mission.id,
+      title: mission.title,
+      summary: mission.description || mission.summary || "",
+      searchAliases: mission.searchAliases || [],
+      section: mission.section,
+      chapter: mission.chapter,
+      process: mission.process,
+      url: mission.url,
+    })),
+    ...operatorData.operators.map((operator) => ({
+      id: `operator:${operator.id}`,
+      title: operator.name,
+      summary: operator.overview?.summary || operator.description || "",
+      section: "干员资料",
+      chapter: operator.overview?.englishName || "",
+      process: [operator.overview?.element, operator.overview?.class].filter(Boolean).join(" / "),
+      url: operator.url,
+    })),
+    ...tutorialData.tutorials.map((tutorial) => ({
+      id: `tutorial:${tutorial.id}`,
+      title: tutorial.title,
+      summary: tutorial.text || "",
+      section: "教学记录",
+      chapter: tutorial.type || "教学",
+      process: `${tutorial.sections?.length || 0} sections`,
+      url: tutorial.url,
+    })),
+    ...documentData.documents.map((entry) => ({
+      id: `document:${entry.id}`,
+      title: entry.title,
+      summary: entry.text || "",
+      section: "中枢档案",
+      chapter: entry.type || "中枢档案",
+      process: `${entry.sections?.length || 0} sections`,
+      url: entry.url,
+    })),
+    ...loreData.lore.map((entry) => ({
+      id: `lore:${entry.id}`,
+      title: entry.title,
+      summary: entry.text || "",
+      section: "见闻辑录",
+      chapter: entry.type || "世界观",
+      process: `${entry.sections?.length || 0} sections`,
+      url: entry.url,
+    })),
+  ])
+    .map((item) => ({ ...item, score: scoreEndfieldMatch(item, query, tokens, mentionedOperators) }))
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score || String(a.id).localeCompare(String(b.id)))
+    .slice(0, 8)
+    .map(({ score: _score, ...item }) => item);
+
+  const meta = {
+    source: data.source,
+    scrapedAt: data.scrapedAt,
+    gameVersion: data.gameVersion,
+    lastUpdated: data.lastUpdated,
+    // The terminal announced the version from this file alone, while the
+    // other four datasets carry only a scrape time. A refresh that updated
+    // the missions and failed on the lore would claim the new version with
+    // most of its evidence still from the old story -- exactly the
+    // unsupported claim this product exists to refuse. The oldest scrape
+    // across all five is what the archive can honestly stand behind.
+    datasets: endfieldDatasetStamps({
+      missions: data,
+      operators: operatorData,
+      tutorials: tutorialData,
+      lore: loreData,
+      documents: documentData,
+    }),
+    kindVersions: endfieldKindVersions(
+      data.lines, operatorData.lines, tutorialData.lines,
+      loreData.lines, documentData.lines,
+    ),
+    oldestScrapedAt: endfieldOldestScrape([
+      data.scrapedAt, operatorData.scrapedAt, tutorialData.scrapedAt,
+      loreData.scrapedAt, documentData.scrapedAt,
+    ]),
+    missionCount: data.missions.length,
+    transcriptLineCount: archiveLines.length,
+    operatorCount: operatorData.operators.length,
+    operatorLineCount: operatorData.lines.length,
+    tutorialCount: tutorialData.tutorials.length,
+    tutorialLineCount: tutorialData.lines.length,
+    loreCount: loreData.lore.length,
+    loreLineCount: loreData.lines.length,
+    loreTypeCounts: loreData.typeCounts,
+    documentCount: documentData.documents.length,
+    documentLineCount: documentData.lines.length,
+    documentTypeCounts: documentData.typeCounts,
+    questionType,
+    foldedCount,
+    ...(questionType === "unlock" ? { reason: "structure_not_indexed" } : {}),
+  };
+  return {
+    meta,
+    results: questionType === "unlock" ? [] : scored,
+    missionMatches: questionType === "unlock" ? [] : missionMatches,
+  };
+}
+
+/**
+ * Build the metadata payload for the empty-query branch of
+ * /api/endfield/search. Mirrors the inline block in root.
+ *
+ * @returns {Promise<any>}
+ */
+async function buildEndfieldEmptyMeta() {
+  const data = await loadEndfieldStoryData();
+  const operatorData = await loadEndfieldOperatorData();
+  const tutorialData = await loadEndfieldTutorialData();
+  const loreData = await loadEndfieldLoreData();
+  const documentData = await loadEndfieldDocumentData();
+  return {
+    source: data.source,
+    scrapedAt: data.scrapedAt,
+    gameVersion: data.gameVersion,
+    lastUpdated: data.lastUpdated,
+    // The terminal reads its header from THIS branch (it opens with an empty
+    // query), so the stamps must be here too, or the mixed-scrape warning
+    // the query branch carries never reaches the header.
+    datasets: endfieldDatasetStamps({
+      missions: data,
+      operators: operatorData,
+      tutorials: tutorialData,
+      lore: loreData,
+      documents: documentData,
+    }),
+    kindVersions: endfieldKindVersions(
+      data.lines, operatorData.lines, tutorialData.lines,
+      loreData.lines, documentData.lines,
+    ),
+    oldestScrapedAt: endfieldOldestScrape([
+      data.scrapedAt, operatorData.scrapedAt, tutorialData.scrapedAt,
+      loreData.scrapedAt, documentData.scrapedAt,
+    ]),
+    missionCount: data.missions.length,
+    transcriptLineCount: dedupeEndfieldLines([
+      ...data.lines,
+      ...operatorData.lines,
+      ...tutorialData.lines,
+      ...documentData.lines,
+      ...loreData.lines,
+    ]).length,
+    operatorCount: operatorData.operators.length,
+    operatorLineCount: operatorData.lines.length,
+    tutorialCount: tutorialData.tutorials.length,
+    tutorialLineCount: tutorialData.lines.length,
+    loreCount: loreData.lore.length,
+    loreLineCount: loreData.lines.length,
+    loreTypeCounts: loreData.typeCounts,
+    documentCount: documentData.documents.length,
+    documentLineCount: documentData.lines.length,
+    documentTypeCounts: documentData.typeCounts,
+  };
+}
+
+// =============================================================================
+// Evidence helpers for the RAG ask path
+// =============================================================================
+
+/**
+ * @param {any[]} results
+ * @returns {string}
+ */
+function endfieldEvidenceBlock(results) {
+  return results.map((result, index) => {
+    const route = [result.section, result.chapter, result.process, result.missionTitle].filter(Boolean).join(" / ");
+    const before = result.context?.filter((item) => item.lineIndex < result.lineIndex).map((item) => `${item.speaker}: ${item.text}`).join("\n");
+    const after = result.context?.filter((item) => item.lineIndex > result.lineIndex).map((item) => `${item.speaker}: ${item.text}`).join("\n");
+    return [
+      `【${index + 1}】${route}`,
+      `任务ID: ${result.missionId}`,
+      before ? `前文:\n${before}` : "",
+      `命中台词:\n${result.speaker}: ${result.text}`,
+      after ? `后文:\n${after}` : "",
+    ].filter(Boolean).join("\n");
+  }).join("\n\n---\n\n");
+}
+
+/**
+ * @param {any} [body]
+ * @param {string} [model]
+ * @returns {number}
+ */
+function endfieldContextLength(body = {}, model = "") {
+  if (body._cloud_active) {
+    const cloudModel = Array.isArray(DEEPSEEK_CLOUD_MODELS)
+      ? DEEPSEEK_CLOUD_MODELS.find((item) => item.id === body._cloud_model || item.id === body.model)
+      : null;
+    return positiveInteger(cloudModel?.context_length || body.context_length || knownModelMaxContext(model) || 8192);
+  }
+  return positiveInteger(
+    body.context_length ||
+    getLoadedLmStudioModelInfo()?.context_length ||
+    knownModelMaxContext(model) ||
+    8192
+  );
+}
+
+/**
+ * @param {any} [body]
+ * @param {string} [model]
+ * @param {number} [outputTokens]
+ * @returns {{ contextLength: number, evidenceChars: number, resultLimit: number }}
+ */
+function endfieldEvidenceBudget(body = {}, model = "", outputTokens = 1200) {
+  const contextLength = endfieldContextLength(body, model);
+  const promptReserve = 1600;
+  const availablePromptTokens = Math.max(2400, contextLength - outputTokens - promptReserve);
+  const evidenceChars = Math.max(3200, Math.min(18000, Math.floor(availablePromptTokens * 0.85)));
+  const resultLimit = contextLength >= 65536 ? 18 : contextLength >= 32768 ? 14 : contextLength >= 16384 ? 10 : 8;
+  return { contextLength, evidenceChars, resultLimit };
+}
+
+/**
+ * Route the assembled RAG payload to either the cloud model (if the
+ * request opted into it) or the local LM Studio chat path with
+ * autoload-on-failure.
+ *
+ * Cloud and local branches both apply enforceMarkdownOnlyChatPayload
+ * to the assembled payload; the local branch additionally applies
+ * tuneLmStudioChatPayload (Qwen 3.5 tuning).
+ *
+ * The DeepSeek v4 sampling-strip block is the same as in cloud-chat
+ * and bureaucracy. Not DRY-d here; that's a separate refactor.
+ *
+ * @param {any} payload
+ * @param {any} body
+ * @param {AbortSignal | null | undefined} signal
+ * @returns {Promise<{
+ *   response: any, source: string, model: string,
+ *   autoLoaded?: boolean, autoLoadedModel?: string, autoSelectedModel?: string,
+ *   reservation?: { inputTokens: number, outputTokens: number, reservedTokens: number, remainingSessionRequests: number, addUsage: (usage: any) => boolean, markUpstreamStarted: () => void, settle: (options?: any) => any } | null,
+ * }>}
+ */
+async function postEndfieldChatPayload(payload, body, signal, req) {
+  if (isPublicDeployment && body._cloud_active) {
+    const cloud = await preparePublicCloudCall({
+      credentialId: body._cloud_credential_id,
+      suppliedApiKey: body._cloud_api_key,
+      requestedBaseUrl: body._cloud_base_url,
+      model: normalizeCloudModelId(body._cloud_model || payload.model || "deepseek-flash"),
+      payload,
+      req,
+    });
+    const cloudPayload = enforceMarkdownOnlyChatPayload({ ...cloud.payload, model: cloud.model });
+    if (isDeepSeekCloudModelId(cloud.model)) {
+      cloudPayload.thinking = { type: "disabled" };
+      delete cloudPayload.temperature;
+      delete cloudPayload.top_p;
+      delete cloudPayload.presence_penalty;
+      delete cloudPayload.frequency_penalty;
+      delete cloudPayload.logprobs;
+      delete cloudPayload.top_logprobs;
+    }
+    const { response } = await postJsonWithFallback(
+      `${cloud.baseUrl}/v1/chat/completions`,
+      cloudPayload,
+      signal,
+      cloud.authHeaders,
+      {
+        pinnedAddress: cloud.pinnedAddress,
+        pinnedFamily: cloud.pinnedFamily,
+        onRequest: () => cloud.reservation?.markUpstreamStarted(),
+      }
+    );
+    return { response, source: "cloud", model: cloud.model, reservation: cloud.reservation };
+  }
+
+  const cloudTarget = body._cloud_active
+    ? await resolveCloudTarget(body._cloud_base_url || DEEPSEEK_BASE_URL_DEFAULT)
+    : null;
+  const cloudApiKey = cloudTarget
+    ? await resolveCloudCredential({
+        credentialId: body._cloud_credential_id,
+        provider: "deepseek",
+        targetBaseUrl: cloudTarget.baseUrl,
+        suppliedApiKey: body._cloud_api_key,
+        allowSupplied: false,
+      })
+    : "";
+  if (body._cloud_active && cloudApiKey) {
+    const model = normalizeCloudModelId(body._cloud_model || payload.model || "deepseek-flash");
+    const baseUrl = cloudTarget.baseUrl;
+    const cloudPayload = enforceMarkdownOnlyChatPayload({ ...payload, model });
+    if (isDeepSeekCloudModelId(model)) {
+      // Matches cloud-chat.js: leaving thinking enabled on a long,
+      // strict-citation RAG prompt lets the model spend the whole
+      // max_tokens budget on hidden reasoning and return an empty answer.
+      cloudPayload.thinking = { type: "disabled" };
+      delete cloudPayload.temperature;
+      delete cloudPayload.top_p;
+      delete cloudPayload.presence_penalty;
+      delete cloudPayload.frequency_penalty;
+      delete cloudPayload.logprobs;
+      delete cloudPayload.top_logprobs;
+    }
+    const { response } = await postJsonWithFallback(`${baseUrl}/v1/chat/completions`, cloudPayload, signal, {
+      Authorization: `Bearer ${cloudApiKey}`,
+    }, {
+      pinnedAddress: cloudTarget.address,
+      pinnedFamily: cloudTarget.family,
+    });
+    return { response, source: "cloud", model };
+  }
+
+  const provider = body._local_provider || "lm-studio";
+  const endpoint = body._local_endpoint || "";
+  const model = String(body.model || getLoadedLmStudioModelInfo()?.model || "local-model").trim();
+  const localPayload = tuneLmStudioChatPayload(enforceMarkdownOnlyChatPayload({ ...payload, model }));
+  const { chatUrl } = getLocalUrls(provider, endpoint);
+  const { response, autoLoaded, autoLoadedModel, autoSelectedModel } = await postLocalChatWithModelAutoload({
+    chatUrl,
+    payload: localPayload,
+    provider,
+    model,
+    signal,
+  });
+  return { response, source: provider || "local", model, autoLoaded, autoLoadedModel, autoSelectedModel };
+}
+
+module.exports = {
+  resolveEndfieldVersionStamp,
+  buildEndfieldMissionLines,
+  decorateEndfieldLines,
+  loadEndfieldStoryData,
+  loadEndfieldOperatorData,
+  loadEndfieldTutorialData,
+  loadEndfieldLoreData,
+  loadEndfieldDocumentData,
+  dedupeEndfieldLines,
+  findEndfieldStoryMatches,
+  buildEndfieldEmptyMeta,
+  endfieldEvidenceBlock,
+  endfieldEvidenceBudget,
+  postEndfieldChatPayload,
+};

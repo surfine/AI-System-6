@@ -1,0 +1,241 @@
+// POST /api/search/answer
+//
+// Searcher's "DeepSeek" provider: one server-side Responses API call with the
+// web_search tool returns a cited answer plus the underlying search results.
+// The browser supplies a BYOK key when one is present; otherwise the shared
+// allowance meters the request through the same daily budget as the other
+// cloud routes. The Responses API exists only on the official DeepSeek
+// endpoint, so this route pins that base URL regardless of deployment.
+
+"use strict";
+
+const { send, readJsonBody, requestSignal, withTimeoutSignal } = require("../lib/http.js");
+const { DEEPSEEK_PUBLIC_BASE_URL } = require("../cloud.js");
+const { resolveCloudCredential } = require("../credential-vault.js");
+const { preparePublicCloudCall } = require("../lib/cloud-route.js");
+const { isPublicDeployment } = require("../runtime-profile.js");
+const {
+  sharedCloudBudgetConfig,
+} = require("../shared-cloud-budget.js");
+const {
+  callWebSearchAnswer,
+  callWebSearchAnswerStream,
+  WEB_SEARCH_MAX_OUTPUT_TOKENS,
+  WEB_SEARCH_MODES,
+  WEB_SEARCH_QUERY_MAX_LENGTH,
+} = require("../web-search.js");
+
+/**
+ * @param {import("node:http").IncomingMessage} req
+ * @param {import("node:http").ServerResponse} res
+ */
+async function handleSearchAnswer(req, res) {
+  const requestAbortSignal = requestSignal(req, res);
+  const timeoutHandle = withTimeoutSignal(requestAbortSignal, 120000);
+  const signal = timeoutHandle.signal;
+  const startedAt = Date.now();
+  /** @type {any} */
+  let sharedReservation = null;
+  try {
+    const body = await readJsonBody(req, { limitBytes: 128 * 1024 });
+    const query = String(body.q || "").trim();
+    if (!query) {
+      send(res, 400, JSON.stringify({
+        error: "Missing query",
+        code: "missing_query",
+      }), { "Content-Type": "application/json" });
+      return;
+    }
+    if (query.length > WEB_SEARCH_QUERY_MAX_LENGTH) {
+      send(res, 400, JSON.stringify({
+        error: "Query too long",
+        code: "query_too_long",
+      }), { "Content-Type": "application/json" });
+      return;
+    }
+    const mode = String(body.mode || "answer").toLowerCase();
+    if (!WEB_SEARCH_MODES.has(mode)) {
+      send(res, 400, JSON.stringify({
+        error: "Unsupported search mode",
+        code: "invalid_mode",
+      }), { "Content-Type": "application/json" });
+      return;
+    }
+    const stream = body.stream === true;
+    const searchCalls = Array.isArray(body.search_calls)
+      ? body.search_calls.filter((call) => call && typeof call === "object" && call.type === "web_search_call")
+      : [];
+
+    const requestedMax = Number(body.max_output_tokens);
+    const maxOutputTokens = Number.isFinite(requestedMax)
+      ? Math.min(WEB_SEARCH_MAX_OUTPUT_TOKENS, Math.max(200, Math.floor(requestedMax)))
+      : WEB_SEARCH_MAX_OUTPUT_TOKENS;
+    let apiKey = "";
+    let userId = "";
+    let effectiveMaxOutputTokens = maxOutputTokens;
+
+    if (isPublicDeployment) {
+      // Representative payload so the shared allowance can meter the whole
+      // call before we know how many search-result tokens arrive.
+      const payload = {
+        model: "deepseek-flash",
+        max_tokens: maxOutputTokens,
+        input: query,
+      };
+      const cloud = await preparePublicCloudCall({
+        credentialId: body._cloud_credential_id,
+        suppliedApiKey: body._cloud_api_key,
+        model: "deepseek-flash",
+        payload,
+        req,
+      });
+      apiKey = cloud.apiKey;
+      userId = String(cloud.payload.user_id || "");
+      sharedReservation = cloud.reservation;
+      effectiveMaxOutputTokens = Math.min(
+        maxOutputTokens,
+        Number(cloud.payload.max_tokens) || maxOutputTokens,
+        sharedCloudBudgetConfig().maxOutputTokens
+      );
+    } else {
+      apiKey = String(await resolveCloudCredential({
+        credentialId: body._cloud_credential_id,
+        provider: "deepseek",
+        targetBaseUrl: DEEPSEEK_PUBLIC_BASE_URL,
+        suppliedApiKey: body._cloud_api_key,
+        allowSupplied: false,
+      })).trim();
+    }
+
+    if (!apiKey) {
+      const shared = isPublicDeployment && !String(body._cloud_api_key || "").trim();
+      send(res, shared ? 503 : 400, JSON.stringify({
+        error: shared
+          ? "The site has no shared cloud key configured"
+          : "Missing API key",
+        code: shared ? "shared_cloud_budget_unavailable" : "missing_byok_key",
+      }), { "Content-Type": "application/json" });
+      return;
+    }
+
+    const envelope = (result) => ({
+      provider: "deepseek",
+      mode,
+      answer: result.answer,
+      verdict: result.verdict || null,
+      citations: result.citations,
+      results: result.results,
+      searchCalls: result.searchCalls,
+      usage: result.usage,
+      ai_system6_metrics: {
+        elapsed_ms: Date.now() - startedAt,
+        model: "deepseek-flash",
+        usage: result.usage,
+      },
+    });
+
+    const writeSse = (payload) => {
+      if (res.destroyed || res.writableEnded) return;
+      res.write(`data: ${JSON.stringify(payload)}\n\n`);
+    };
+
+    if (stream) {
+      res.writeHead(200, {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+        "X-Accel-Buffering": "no",
+      });
+      let streamError = null;
+      try {
+        const finalResult = await callWebSearchAnswerStream({
+          apiKey,
+          query,
+          signal,
+          mode,
+          maxOutputTokens: effectiveMaxOutputTokens,
+          userId,
+          searchCalls,
+          onRequest: () => sharedReservation?.markUpstreamStarted(),
+          onStatus: (status) => writeSse({ ai_system6_status: status }),
+          onDelta: (content) => writeSse({ choices: [{ delta: { content } }] }),
+          onDone: (result) => writeSse({ ai_system6_result: envelope(result) }),
+        });
+        // An abort here means either the client left or this route's own
+        // 120-second timeout fired. Only the first is a reason to say nothing.
+        if (signal.aborted && !timeoutHandle.timedOut()) return;
+        if (finalResult?.usage) sharedReservation?.addUsage(finalResult.usage);
+      } catch (error) {
+        if (signal.aborted && !timeoutHandle.timedOut()) return;
+        streamError = timeoutHandle.timedOut()
+          ? { message: "The web search timed out.", code: "web_search_timeout" }
+          : /** @type {any} */ (error);
+      }
+      if (streamError) {
+        writeSse({
+          ai_system6_error: {
+            error: String(streamError.message || ""),
+            ...(streamError.code ? { code: streamError.code } : {}),
+            ...(streamError.warning ? { warning: streamError.warning } : {}),
+            detail: String(streamError.message || ""),
+          },
+        });
+      }
+      writeSse({ type: "done" });
+      res.end();
+      return;
+    }
+
+    const result = await callWebSearchAnswer({
+      apiKey,
+      query,
+      signal,
+      mode,
+      maxOutputTokens: effectiveMaxOutputTokens,
+      userId,
+      searchCalls,
+      onRequest: () => sharedReservation?.markUpstreamStarted(),
+    });
+    if (signal.aborted && !timeoutHandle.timedOut()) return;
+    sharedReservation?.addUsage(result.usage);
+
+    send(res, 200, JSON.stringify(envelope(result)), { "Content-Type": "application/json" });
+  } catch (error) {
+    if (signal.aborted && !timeoutHandle.timedOut()) return;
+    if (timeoutHandle.timedOut()) {
+      send(res, 504, JSON.stringify({
+        error: "The web search timed out.",
+        code: "web_search_timeout",
+        detail: /** @type {any} */ (error)?.message
+          ? String(/** @type {any} */ (error).message)
+          : "timeout",
+      }), { "Content-Type": "application/json" });
+      return;
+    }
+    const declaredStatus = Number(/** @type {any} */ (error)?.statusCode);
+    const status = Number.isInteger(declaredStatus) && declaredStatus >= 400 ? declaredStatus : 502;
+    const message = String(/** @type {Error} */ (error).message);
+    const headers = { "Content-Type": "application/json" };
+    if (/** @type {any} */ (error)?.retryAfter > 0) {
+      headers["Retry-After"] = String(/** @type {any} */ (error).retryAfter);
+    }
+    // Only an error that names its own status was written for the user. An
+    // unexpected internal error gets a sentence the user can act on; its raw
+    // text stays in `detail` for a bug report. Before this split, an internal
+    // fault put a symbol name such as "Cannot read properties of null" into
+    // the field the interface shows.
+    send(res, status, JSON.stringify({
+      error: Number.isInteger(declaredStatus)
+        ? message
+        : "Web search answer failed. Check the network connection and the cloud model settings in Control Panel, then try again.",
+      ...(/** @type {any} */ (error)?.code ? { code: /** @type {any} */ (error).code } : {}),
+      ...(/** @type {any} */ (error)?.warning ? { warning: /** @type {any} */ (error).warning } : {}),
+      detail: String(/** @type {Error} */ (error).message),
+    }), headers);
+  } finally {
+    sharedReservation?.settle();
+    timeoutHandle.cleanup();
+  }
+}
+
+module.exports = { handleSearchAnswer };

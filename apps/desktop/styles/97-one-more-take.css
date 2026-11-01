@@ -1,0 +1,247 @@
+/* One More Take / 再来一条. Lazy: loaded with app/features/one-more-take.js.
+   One screen, no scrolling: the shot keeps 16:9 and takes the height the
+   fixed panel leaves; the panel swaps between calling a take and its ruling.
+   The drawings are a props department's elevations on paper, the same in
+   every appearance; only the window chrome follows the theme. */
+
+.one-more-take-window {
+  --take-paper: #fbfaf7;
+  --take-ink: #1f1e1c;
+  --take-grey: #8f8d88;
+  --take-rec: #c8261b;
+  --take-ok: #23864a;
+  --take-panel: 188px;
+  width: 760px;
+  height: 600px;
+}
+
+.one-more-take-pane {
+  display: flex;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  container-type: size;
+}
+
+.one-more-take-stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px;
+}
+
+.one-more-take-frame {
+  position: relative;
+  flex: none;
+  --take-aspect: 1.7778;
+  width: min(100cqw - 20px, (100cqh - 30px - var(--take-panel)) * var(--take-aspect));
+  aspect-ratio: var(--take-aspect);
+  margin-inline: auto;
+}
+
+.one-more-take-frame[data-kind="pair"] {
+  aspect-ratio: auto;
+  width: 100%;
+  height: calc(100cqh - 30px - var(--take-panel));
+}
+
+.one-more-take-stage [hidden] { display: none; }
+
+.one-more-take-scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.one-more-take-frame.is-frozen .one-more-take-scene { filter: grayscale(.35); }
+
+/* elevation drawing: silhouettes 1.6px, construction 0.8px, glass and hairlines grey */
+.one-more-take-art * { stroke: var(--take-ink); stroke-width: .8px; vector-effect: non-scaling-stroke; stroke-linecap: round; stroke-linejoin: round; }
+.one-more-take-art .sil { stroke-width: 1.6px; }
+.one-more-take-art .ground { stroke-width: 2px; }
+.one-more-take-art .hair { stroke: var(--take-grey); stroke-width: .6px; fill: none; }
+.one-more-take-art .fine { stroke: none; fill: #b9b7b1; }
+.one-more-take-art .solid { stroke: none; fill: var(--take-ink); }
+.one-more-take-art.is-monochrome .tint { fill: var(--take-paper); }
+.one-more-take-art .hit { stroke: none; fill: transparent; }
+.one-more-take-prop { cursor: pointer; outline: none; }
+.one-more-take-prop:focus-visible .hit { stroke: var(--focus-ring, #2f6fdb); stroke-width: 1.5px; stroke-dasharray: 4 4; }
+.one-more-take-prop[aria-disabled="true"] { cursor: default; }
+.one-more-take-edge { fill: none; stroke: var(--take-ink); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.one-more-take-scalebar path { fill: none; stroke: var(--take-ink); stroke-width: 1; }
+.one-more-take-scalebar text { fill: var(--take-ink); font-size: 11px; }
+/* the red pencil draws its circle in one stroke */
+.one-more-take-ring { fill: none; stroke: var(--take-rec); stroke-width: 2.5; stroke-dasharray: 1; stroke-dashoffset: 1; opacity: 0; transition: stroke-dashoffset 220ms cubic-bezier(.23, 1, .32, 1), opacity 80ms ease-out; }
+.one-more-take-ring.is-on { stroke-dashoffset: 0; opacity: 1; }
+.one-more-take-ring.is-wrong { stroke: var(--take-grey); stroke-dasharray: .02 .015; stroke-dashoffset: 0; opacity: 1; }
+.one-more-take-tag rect { fill: var(--take-paper); stroke: var(--take-grey); }
+.one-more-take-tag text { fill: var(--take-ink); font-size: 14px; }
+
+/* touch: no grey flash, no 300 ms wait, no text selection on controls */
+.one-more-take-window { -webkit-tap-highlight-color: transparent; }
+.one-more-take-prop,
+.one-more-take-left,
+.one-more-take-right,
+.one-more-take-window .btn { touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.one-more-take-left,
+.one-more-take-right,
+.one-more-take-cover .btn { transition: transform 120ms ease-out, border-color 120ms ease-out; }
+.one-more-take-left:active,
+.one-more-take-right:active,
+.one-more-take-cover .btn:active { transform: scale(.97); }
+
+/* a new take and a ruling arrive, they do not appear */
+.one-more-take-entering { animation: one-more-take-in 200ms cubic-bezier(.23, 1, .32, 1) both; }
+.one-more-take-badge.one-more-take-entering { animation: one-more-take-pop 180ms cubic-bezier(.23, 1, .32, 1) both; }
+@keyframes one-more-take-in { from { opacity: 0; transform: translateY(4px); } }
+@keyframes one-more-take-pop { from { transform: scale(1.4); } }
+
+/* the pair board */
+.one-more-take-board {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 10px;
+  background: var(--take-paper);
+  color: var(--take-ink);
+  border: 1px solid var(--take-ink);
+  overflow: hidden;
+}
+
+.one-more-take-col { display: flex; flex-direction: column; justify-content: center; gap: 8px; min-height: 0; }
+
+.one-more-take-left,
+.one-more-take-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  flex: 1 1 0;
+  max-height: 120px;
+  padding: 4px 8px;
+  border: 1px solid var(--take-grey);
+  border-radius: 6px;
+  background: var(--take-paper);
+  color: var(--take-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.one-more-take-left.is-selected { border-color: var(--take-rec); box-shadow: inset 0 0 0 1px var(--take-rec); }
+.one-more-take-left.is-locked,
+.one-more-take-right.is-locked { border-color: var(--take-ok); cursor: default; }
+.one-more-take-right.is-paired { border-color: var(--take-ink); }
+.one-more-take-badge { flex: none; min-width: 1.4em; font-weight: 600; font-variant-numeric: tabular-nums; }
+.one-more-take-thumb { height: 100%; max-height: 96px; width: auto; flex: 1; min-width: 0; }
+.one-more-take-swatch { flex: 1; align-self: stretch; border-radius: 4px; border: 1px solid var(--take-grey); }
+.one-more-take-quote { font-weight: 600; }
+
+/* the panel: same height in both states, so the shot never jumps */
+.one-more-take-panel {
+  flex: none;
+  height: var(--take-panel);
+  width: 100%;
+  min-width: 0;
+}
+
+.one-more-take-roll,
+.one-more-take-ruling { height: 100%; display: flex; flex-direction: column; gap: 6px; }
+.one-more-take-roll .one-more-take-actions { margin-top: auto; }
+.one-more-take-sceneline,
+.one-more-take-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.one-more-take-sceneline b { font-size: 15px; min-width: 0; }
+.one-more-take-meta { flex: none; font-size: 12px; opacity: .7; font-variant-numeric: tabular-nums; }
+.one-more-take-note,
+.one-more-take-hint { margin: 0; font-size: 12px; line-height: 1.5; opacity: .75; }
+.one-more-take-hint.is-warn { color: var(--take-rec); opacity: 1; }
+.one-more-take-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.one-more-take-actions .btn { min-height: 40px; transition: transform 160ms ease-out; }
+.one-more-take-actions .btn:active:not(:disabled) { transform: scale(.97); }
+.one-more-take-cut:not(:disabled) { background: var(--take-rec); color: #fff; border-color: var(--take-rec); }
+.one-more-take-verdict { margin: 0; font-size: 15px; font-weight: 600; display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
+.one-more-take-kind { font-size: 12px; font-weight: 500; color: var(--take-rec); }
+.one-more-take-kind.is-clean { color: var(--take-ok); }
+.one-more-take-streak { font-size: 12px; color: var(--take-rec); font-variant-numeric: tabular-nums; }
+.one-more-take-caption { margin: 0; font-size: 12.5px; line-height: 1.5; }
+.one-more-take-ruler-slot { flex: 1; min-height: 0; }
+.one-more-take-ruler { display: block; width: 100%; max-height: 100%; }
+.one-more-take-ruler .tick { stroke: var(--take-grey); stroke-width: .5; }
+.one-more-take-ruler .axis { stroke: currentColor; stroke-width: 1; }
+.one-more-take-ruler .year { fill: currentColor; opacity: .65; font-size: 11px; font-variant-numeric: tabular-nums; }
+.one-more-take-ruler .name { fill: currentColor; font-size: 11px; font-variant-numeric: tabular-nums; }
+.one-more-take-ruler .name.bad { fill: var(--take-rec); font-weight: 600; }
+.one-more-take-ruler .bar { fill: var(--take-grey); transform-box: fill-box; transform-origin: left center; animation: one-more-take-grow 240ms cubic-bezier(.23, 1, .32, 1) both; animation-delay: calc(var(--i) * 50ms); }
+.one-more-take-ruler .bar.bad { fill: var(--take-rec); }
+.one-more-take-ruler .dim { stroke: var(--take-rec); stroke-width: 1; stroke-dasharray: 2 3; }
+.one-more-take-ruler .scene { stroke: currentColor; stroke-width: 1.2; stroke-dasharray: 4 3; }
+.one-more-take-ruler .scene.clean { stroke: var(--take-ok); stroke-dasharray: none; }
+.one-more-take-ruler .scene-label { fill: currentColor; font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.one-more-take-ruler .scene-label.clean { fill: var(--take-ok); }
+@keyframes one-more-take-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* cover and end of day */
+.one-more-take-cover {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: 640px;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;
+  gap: 8px;
+  /* one screen on any phone we target; a very short one scrolls inside, never the page */
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.one-more-take-cover h2 { margin: 0; font-size: 20px; }
+.one-more-take-kicker { margin: 0; font-size: 12px; opacity: .7; }
+.one-more-take-dare { margin: 0; font-size: 14px; }
+.one-more-take-rules { margin: 4px 0 0; font-size: 12px; opacity: .75; }
+.one-more-take-cover-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.one-more-take-score { margin: 0; font-size: 13px; }
+.one-more-take-score b { font-size: 22px; font-variant-numeric: tabular-nums; margin-right: 4px; }
+.one-more-take-credits { margin: 0; font-size: 12px; opacity: .75; }
+.one-more-take-strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(110px, 18%), 1fr)); gap: 6px; }
+.one-more-take-strip figure { margin: 0; display: grid; gap: 2px; }
+.one-more-take-strip svg { display: block; width: 100%; height: auto; border: 1px solid var(--take-ink); background: var(--take-paper); }
+.one-more-take-strip-pair { aspect-ratio: 16 / 9; display: grid; place-items: center; padding: 4px; font-size: 10px; line-height: 1.3; text-align: center; border: 1px solid var(--take-ink); background: var(--take-paper); color: var(--take-ink); overflow: hidden; }
+.one-more-take-strip figcaption { display: flex; justify-content: space-between; font-size: 11px; font-variant-numeric: tabular-nums; }
+.one-more-take-strip .is-one { color: var(--take-ok); }
+.one-more-take-strip .is-saved { color: var(--take-rec); }
+
+/* a phone held sideways: shot left, panel right */
+@container (max-height: 460px) and (min-aspect-ratio: 3 / 2) {
+  .one-more-take-stage { flex-direction: row; align-items: center; }
+  .one-more-take-frame { width: min(100cqw - 320px, (100cqh - 20px) * var(--take-aspect)); }
+  .one-more-take-frame[data-kind="pair"] { width: calc(100cqw - 320px); height: calc(100cqh - 20px); }
+  .one-more-take-panel { width: 290px; height: 100%; }
+  .one-more-take-sceneline,
+  .one-more-take-head { flex-direction: column; align-items: flex-start; gap: 2px; }
+}
+
+/* reduced motion keeps the fades that explain, drops the movement */
+@media (prefers-reduced-motion: reduce) {
+  .one-more-take-ruler .bar { animation: none; }
+  .one-more-take-ring { transition: opacity 120ms ease-out; stroke-dasharray: none; }
+  .one-more-take-entering,
+  .one-more-take-badge.one-more-take-entering { animation: one-more-take-fade 160ms ease-out both; }
+  .one-more-take-actions .btn,
+  .one-more-take-left,
+  .one-more-take-right,
+  .one-more-take-cover .btn { transition: none; }
+  .one-more-take-actions .btn:active,
+  .one-more-take-left:active,
+  .one-more-take-right:active,
+  .one-more-take-cover .btn:active { transform: none; }
+}
+@keyframes one-more-take-fade { from { opacity: 0; } }
+.one-more-take-first { display: grid; gap: 6px; }
+.one-more-take-chips { display: flex; flex-wrap: wrap; gap: 6px; }

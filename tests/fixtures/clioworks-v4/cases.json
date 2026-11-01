@@ -1,0 +1,23 @@
+[
+  {
+    "original": "creator-script.docx",
+    "candidate": "creator-script-edited.docx",
+    "contract": "creator-script.contract.json",
+    "kind": "docx",
+    "opaquePart": "customXml/clw-preservation.xml"
+  },
+  {
+    "original": "creator-data.xlsx",
+    "candidate": "creator-data-edited.xlsx",
+    "contract": "creator-data.contract.json",
+    "kind": "xlsx",
+    "opaquePart": "customXml/clw-preservation.xml"
+  },
+  {
+    "original": "creator-slides.pptx",
+    "candidate": "creator-slides-edited.pptx",
+    "contract": "creator-slides.contract.json",
+    "kind": "pptx",
+    "opaquePart": "customXml/clw-preservation.xml"
+  }
+]

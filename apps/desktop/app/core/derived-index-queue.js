@@ -1,0 +1,456 @@
+// Browser adapter for post-commit derived indexing.
+// It observes durable project state only after a successful source transaction.
+
+const derivedIndexStorageKey = "derived-index:v1";
+let derivedIndexState = window.AISystem6DerivedIndexRuntime.createDerivedIndexState();
+let derivedIndexSourceSnapshots = new Map();
+let derivedIndexTimer = null;
+let derivedIndexRunning = false;
+let derivedIndexNeedsSync = false;
+let derivedIndexNotificationId = "";
+let derivedIndexSilent = false;
+// A run speaks only once it has produced something: a committed source with
+// no indexable text used to announce "ready: 0 chunks", and only on a machine
+// slow enough for the first project's commit to land after the boot restore.
+let derivedIndexRunSources = 0;
+let derivedIndexRunAnnounced = false;
+
+function derivedIndexAddSource(target, source) {
+  const content = String(source?.content || "").trim();
+  const projectId = String(source?.projectId || "");
+  const sourceId = String(source?.sourceId || "");
+  if (!content || !projectId || !sourceId) return;
+  const normalized = {
+    projectId,
+    sourceId,
+    sourceKind: String(source.sourceKind || "source"),
+    sourceVersion: String(source.sourceVersion || ""),
+    title: String(source.title || ""),
+    content,
+  };
+  target.set(window.AISystem6DerivedIndexRuntime.sourceKey(normalized), normalized);
+}
+
+function collectDerivedIndexSources() {
+  const sources = new Map();
+  (Array.isArray(projects) ? projects : []).forEach((project) => {
+    const projectId = String(project?.id || "");
+    if (!projectId) return;
+    derivedIndexAddSource(sources, {
+      projectId,
+      sourceId: "question-sheet",
+      sourceKind: "question-sheet",
+      sourceVersion: project.updatedAt,
+      title: "Question Sheet",
+      content: project.questionSheet,
+    });
+    derivedIndexAddSource(sources, {
+      projectId,
+      sourceId: "outline",
+      sourceKind: "outline",
+      sourceVersion: project.updatedAt,
+      title: "Outline",
+      content: project.outline,
+    });
+    (Array.isArray(project.drafts) ? project.drafts : []).forEach((draft, index) => {
+      derivedIndexAddSource(sources, {
+        projectId,
+        sourceId: String(draft?.id || `draft-${index + 1}`),
+        sourceKind: "draft",
+        sourceVersion: draft?.updatedAt || project.updatedAt,
+        title: draft?.title || draft?.sectionTitle || `Draft ${index + 1}`,
+        content: draft?.body,
+      });
+    });
+    (Array.isArray(project.documentTabs) ? project.documentTabs : []).forEach((tab) => {
+      if (tab?.app === "teachText") {
+        derivedIndexAddSource(sources, {
+          projectId,
+          sourceId: String(tab.id || ""),
+          sourceKind: tab.role === "manuscript" ? "manuscript" : "teachtext",
+          sourceVersion: tab.updatedAt,
+          title: tab.title,
+          content: tab.state?.body,
+        });
+      }
+      if (tab?.app === "docMap") {
+        derivedIndexAddSource(sources, {
+          projectId,
+          sourceId: String(tab.id || ""),
+          sourceKind: "saved-docmap",
+          sourceVersion: tab.updatedAt,
+          title: tab.title,
+          content: JSON.stringify(tab.state?.map || tab.state || {}),
+        });
+      }
+    });
+  });
+  (Array.isArray(chatFiles) ? chatFiles : [])
+    .filter((file) => file?.type === "text" && !file?.artifactKind)
+    .forEach((file) => derivedIndexAddSource(sources, {
+      projectId: file.projectId,
+      sourceId: file.id,
+      sourceKind: "project-file",
+      sourceVersion: file.updatedAt || file.createdAt,
+      title: file.name,
+      content: file.body,
+    }));
+  // A picture the writer had read becomes searchable material.
+  //
+  // The album already stores that reading on the picture record, and until now
+  // nothing ever read the field back: visionNotes was written in one place and
+  // consumed in none. So a photographed whiteboard sat in the project as an
+  // untitled thumbnail, and the one description of it that existed could not be
+  // found. A picture with no reading is still not indexed -- there is nothing
+  // to match on, and Scrapbook already says so in as many words.
+  (Array.isArray(imageAttachments) ? imageAttachments : [])
+    .filter((picture) => String(picture?.visionNotes || "").trim())
+    .forEach((picture) => derivedIndexAddSource(sources, {
+      projectId: picture.projectId,
+      sourceId: picture.id,
+      sourceKind: "picture",
+      sourceVersion: picture.visionUpdatedAt || picture.createdAt,
+      title: picture.name || picture.alt,
+      content: picture.visionNotes,
+    }));
+  (Array.isArray(scraps) ? scraps : []).forEach((scrap) => derivedIndexAddSource(sources, {
+    projectId: scrap.projectId,
+    sourceId: scrap.id,
+    sourceKind: "scrap",
+    sourceVersion: scrap.updatedAt || scrap.createdAt,
+    title: scrap.title,
+    content: (typeof scrapDocumentText === "function" ? scrapDocumentText(scrap) : scrap.body),
+  }));
+  (Array.isArray(projectReferences) ? projectReferences : [])
+    .filter((reference) => reference?.enabled !== false)
+    .forEach((reference) => derivedIndexAddSource(sources, {
+      projectId: reference.projectId,
+      sourceId: reference.id,
+      sourceKind: "project-reference",
+      sourceVersion: reference.updatedAt || reference.createdAt,
+      title: reference.name,
+      content: (reference.chunks || []).map((chunk) => chunk?.content || chunk?.text || "").join("\n\n"),
+    }));
+  return sources;
+}
+
+async function readDerivedIndexState() {
+  let db;
+  try {
+    db = await openAppDb();
+    const tx = db.transaction(keyvalStoreName, "readonly");
+    const value = await idbRequest(tx.objectStore(keyvalStoreName).get(derivedIndexStorageKey));
+    await window.AISystem6StorageTransactions.transactionDone(tx);
+    return window.AISystem6DerivedIndexRuntime.createDerivedIndexState(value);
+  } finally {
+    db?.close();
+  }
+}
+
+async function writeDerivedIndexState() {
+  let db;
+  try {
+    db = await openAppDb();
+    await window.AISystem6StorageTransactions.runTransaction(
+      db,
+      keyvalStoreName,
+      "readwrite",
+      (tx) => idbRequest(tx.objectStore(keyvalStoreName).put(derivedIndexState, derivedIndexStorageKey))
+    );
+  } finally {
+    db?.close();
+  }
+}
+
+function removePublishedDerivedChunks(sourceKeys = []) {
+  const keys = new Set(sourceKeys);
+  if (!keys.size || !Array.isArray(ragChunks)) return;
+  for (let index = ragChunks.length - 1; index >= 0; index -= 1) {
+    if (ragChunks[index]?.fromDerivedIndex && keys.has(ragChunks[index].derivedSourceKey)) {
+      ragChunks.splice(index, 1);
+    }
+  }
+}
+
+function publishDerivedSourceChunks(key) {
+  removePublishedDerivedChunks([key]);
+  const source = derivedIndexState.sources[key];
+  const chunks = source?.products?.chunks;
+  if (!source || chunks?.status !== "ready" || chunks.stale || !Array.isArray(chunks.data)) return;
+  const embeddingProduct = source.products?.embeddings;
+  // Vectors only compare inside the route that produced them: a 384-dimension
+  // e5 vector scores zero against a 1024-dimension bge-m3 query, which reads as
+  // "nothing matched" instead of "this index is from another model". So the
+  // route is part of the product's identity, and a product from another route
+  // is not published — the project is re-derived instead.
+  const productRoute = String(embeddingProduct?.routeKey || "");
+  const routeMatches = typeof embeddingRouteKey === "function"
+    ? productRoute === embeddingRouteKey()
+    : true;
+  const embeddings = embeddingProduct?.status === "ready"
+    && !embeddingProduct.stale
+    && routeMatches
+    && embeddingProduct.sourceHash === source.sourceHash
+    && Array.isArray(embeddingProduct.data)
+    ? new Map(embeddingProduct.data.map((item) => [item.chunkHash, item.embedding]))
+    : new Map();
+  if (embeddingProduct && !routeMatches) scheduleDerivedIndexRouteRebuild(source.projectId);
+  const nextChunks = chunks.data.map((chunk, index) => ({
+    ...chunk,
+    id: `derived:${key}:${index + 1}`,
+    projectId: source.projectId,
+    sourceId: source.sourceId,
+    sourceKind: source.sourceKind,
+    sourceHash: source.sourceHash,
+    sourceVersion: source.sourceVersion,
+    source: source.title || source.sourceId,
+    content: String(chunk.content || ""),
+    embedding: embeddings.get(chunk.chunkHash),
+    fromDerivedIndex: true,
+    derivedSourceKey: key,
+  }));
+  ragChunks.push(...nextChunks);
+}
+
+function publishAllDerivedChunks() {
+  const publishedKeys = Object.keys(derivedIndexState.sources);
+  removePublishedDerivedChunks(publishedKeys);
+  publishedKeys.forEach(publishDerivedSourceChunks);
+  if (typeof ragRankCache !== "undefined" && typeof ragRankCache.clear === "function") ragRankCache.clear();
+}
+
+/**
+ * A project whose stored vectors came from another embedding route is rebuilt
+ * once, in the background: the on-disk index is re-derived with the route in
+ * force now. The set keeps a rebuild from being scheduled again by every chunk
+ * of the same project that publishes while it waits.
+ */
+const derivedIndexRouteRebuilds = new Set();
+
+function scheduleDerivedIndexRouteRebuild(projectId) {
+  const target = String(projectId || "");
+  if (!target || derivedIndexRouteRebuilds.has(target)) return false;
+  derivedIndexRouteRebuilds.add(target);
+  setTimeout(() => {
+    derivedIndexRouteRebuilds.delete(target);
+    const queue = window.AISystem6DerivedIndexQueue;
+    if (typeof queue?.rebuildProject !== "function") return;
+    console.warn(`Derived index: embeddings were built by another route; re-deriving project ${target}.`);
+    Promise.resolve(queue.rebuildProject(target, { silent: true })).catch(() => {});
+  }, 1500);
+  return true;
+}
+
+async function deriveEmbeddingProduct(source, key) {
+  const chunkProduct = derivedIndexState.sources[key]?.products?.chunks;
+  const chunks = chunkProduct?.status === "ready" && !chunkProduct.stale
+    ? chunkProduct.data
+    : window.AISystem6RetrievalRuntime.chunkText(source.content, {
+        projectId: source.projectId,
+        sourceId: source.sourceId,
+        sourceKind: source.sourceKind,
+        title: source.title,
+      });
+  if (!chunks.length) return [];
+  const embeddings = [];
+  for (let start = 0; start < chunks.length; start += 32) {
+    const batch = chunks.slice(start, start + 32);
+    const vectors = await embedTexts(batch.map((chunk) => chunk.content));
+    batch.forEach((chunk, index) => {
+      embeddings.push({ chunkHash: chunk.chunkHash, embedding: vectors[index] });
+    });
+  }
+  return embeddings;
+}
+
+async function executeDerivedIndexJob(job) {
+  const source = derivedIndexSourceSnapshots.get(job.sourceKey);
+  if (!source) throw new Error("The committed source is no longer available.");
+  if (window.AISystem6DerivedIndexRuntime.sourceHash(source) !== job.sourceHash) {
+    throw new Error("The committed source changed before derivation completed.");
+  }
+  if (job.kind === "embeddings") return deriveEmbeddingProduct(source, job.sourceKey);
+  return window.AISystem6DerivedIndexRuntime.buildDerivedProduct(job.kind, source, {
+    chunkText(text, sourceDescriptor) {
+      return window.AISystem6RetrievalRuntime.chunkText(text, sourceDescriptor);
+    },
+  });
+}
+
+// Takes a translation key + args rather than a pre-rendered string: derived
+// indexing runs on a background timer that can fire before the writer's
+// language preference has settled, or sit in the Notification Center across a
+// later language switch. A message rendered once at push time stayed frozen
+// in whatever language was current at that instant; pushSystemNotification
+// re-renders from messageKey/messageArgs at DRAW time instead, so this only
+// needs to hand over the key.
+function updateDerivedIndexNotification(messageKey, messageArgs, state) {
+  if (derivedIndexSilent || typeof pushSystemNotification !== "function") return;
+  derivedIndexNotificationId = pushSystemNotification(t(messageKey, ...messageArgs), {
+    messageKey,
+    messageArgs,
+    replaceId: derivedIndexNotificationId,
+    state,
+  });
+  window.AISystem6ControlStrip?.refreshStrip?.();
+}
+
+async function processDerivedIndexQueue() {
+  // Seamless first-use warm-up: if the app has no cloud/local embedding and
+  // will fall back to the in-browser model, start its download now so the
+  // first user search does not stall waiting for the model.
+  if (typeof preloadBrowserEmbeddingFallback === "function") {
+    preloadBrowserEmbeddingFallback();
+  }
+  let failedEmbeddings = 0;
+  let completedChunks = 0;
+  let interrupted = false;
+  while (true) {
+    const claimed = window.AISystem6DerivedIndexRuntime.claimNextDerivedJob(derivedIndexState);
+    derivedIndexState = claimed.state;
+    const job = claimed.job;
+    if (!job) break;
+    await writeDerivedIndexState();
+    try {
+      const product = await executeDerivedIndexJob(job);
+      derivedIndexState = window.AISystem6DerivedIndexRuntime.completeDerivedJob(
+        derivedIndexState,
+        job,
+        product
+      );
+      // Stamp the route that produced these vectors, so the next publish can
+      // tell whether they belong to the model in force now.
+      if (job.kind === "embeddings" && typeof embeddingRouteKey === "function") {
+        const productRecord = derivedIndexState.sources[job.sourceKey]?.products?.embeddings;
+        if (productRecord) productRecord.routeKey = embeddingRouteKey();
+      }
+      if (job.kind === "chunks") completedChunks += Array.isArray(product) ? product.length : 0;
+      if (completedChunks && !derivedIndexRunAnnounced) {
+        derivedIndexRunAnnounced = true;
+        updateDerivedIndexNotification("derived_index_running", [derivedIndexRunSources], "running");
+      }
+      if (job.kind === "chunks" || job.kind === "embeddings") publishDerivedSourceChunks(job.sourceKey);
+    } catch (error) {
+      if (job.kind === "embeddings") failedEmbeddings += 1;
+      derivedIndexState = window.AISystem6DerivedIndexRuntime.failDerivedJob(
+        derivedIndexState,
+        job,
+        error
+      );
+      console.warn(`Derived ${job.kind} indexing failed without rolling back source state.`, error);
+    }
+    await writeDerivedIndexState();
+    if (derivedIndexNeedsSync) {
+      interrupted = true;
+      break;
+    }
+  }
+  return { failedEmbeddings, completedChunks, interrupted };
+}
+
+async function synchronizeAndProcessDerivedIndex() {
+  if (derivedIndexRunning) {
+    derivedIndexNeedsSync = true;
+    return;
+  }
+  derivedIndexRunning = true;
+  try {
+    let notificationSources = 0;
+    let notificationChunks = 0;
+    let notificationEmbeddingFailures = 0;
+    derivedIndexRunSources = 0;
+    derivedIndexRunAnnounced = false;
+    do {
+      derivedIndexNeedsSync = false;
+      derivedIndexSourceSnapshots = collectDerivedIndexSources();
+      const synchronized = window.AISystem6DerivedIndexRuntime.synchronizeDerivedSources(
+        derivedIndexState,
+        [...derivedIndexSourceSnapshots.values()]
+      );
+      derivedIndexState = synchronized.state;
+      removePublishedDerivedChunks([...synchronized.changedSourceKeys, ...synchronized.removedSourceKeys]);
+      if (synchronized.changedSourceKeys.length || synchronized.removedSourceKeys.length) {
+        await writeDerivedIndexState();
+      }
+      if (synchronized.changedSourceKeys.length) {
+        notificationSources += synchronized.changedSourceKeys.length;
+        derivedIndexRunSources = notificationSources;
+      }
+      const outcome = await processDerivedIndexQueue();
+      notificationChunks += outcome.completedChunks;
+      notificationEmbeddingFailures += outcome.failedEmbeddings;
+    } while (derivedIndexNeedsSync);
+    if (notificationSources && (derivedIndexRunAnnounced || notificationEmbeddingFailures)) {
+      const messageKey = notificationEmbeddingFailures ? "derived_index_keyword_ready" : "derived_index_ready";
+      // The keyword index really is ready, and the message says the
+      // embeddings will retry. Calling that "Failed" borrows the vocabulary
+      // of real failures for the ordinary state of having no model connected
+      // yet -- every cold open earned an alarm, which teaches a daily writer
+      // to stop reading the notifications that matter.
+      updateDerivedIndexNotification(
+        messageKey,
+        [notificationChunks, notificationSources],
+        "done"
+      );
+    }
+  } finally {
+    derivedIndexRunning = false;
+  }
+}
+
+function scheduleDerivedIndexSync(delay = 120, silent = false) {
+  derivedIndexNeedsSync = true;
+  if (silent) derivedIndexSilent = true;
+  clearTimeout(derivedIndexTimer);
+  derivedIndexTimer = setTimeout(() => {
+    synchronizeAndProcessDerivedIndex().catch((error) => {
+      console.warn("Derived index queue failed without affecting committed source state.", error);
+    }).finally(() => {
+      derivedIndexSilent = false;
+    });
+  }, delay);
+}
+
+async function restoreDerivedIndexQueue() {
+  derivedIndexState = await readDerivedIndexState();
+  derivedIndexSourceSnapshots = collectDerivedIndexSources();
+  const synchronized = window.AISystem6DerivedIndexRuntime.synchronizeDerivedSources(
+    derivedIndexState,
+    [...derivedIndexSourceSnapshots.values()]
+  );
+  derivedIndexState = synchronized.state;
+  removePublishedDerivedChunks([...synchronized.changedSourceKeys, ...synchronized.removedSourceKeys]);
+  publishAllDerivedChunks();
+  if (synchronized.changedSourceKeys.length || synchronized.removedSourceKeys.length) {
+    await writeDerivedIndexState();
+  }
+  scheduleDerivedIndexSync(500);
+  return true;
+}
+
+async function rebuildDerivedIndexProject(projectId, options = {}) {
+  const target = String(projectId || "");
+  if (!target) return false;
+  const keys = Object.entries(derivedIndexState.sources)
+    .filter(([, source]) => source.projectId === target)
+    .map(([key]) => key);
+  keys.forEach((key) => delete derivedIndexState.sources[key]);
+  derivedIndexState.jobs = derivedIndexState.jobs.filter((job) => !keys.includes(job.sourceKey));
+  removePublishedDerivedChunks(keys);
+  await writeDerivedIndexState();
+  scheduleDerivedIndexSync(0, options.silent === true);
+  return true;
+}
+
+window.AISystem6DerivedIndexQueue = Object.freeze({
+  afterProjectCommit(options = {}) {
+    scheduleDerivedIndexSync(120, options.silent === true);
+    return true;
+  },
+  restore: restoreDerivedIndexQueue,
+  rebuildProject: rebuildDerivedIndexProject,
+  getState: () => window.AISystem6DerivedIndexRuntime.createDerivedIndexState(derivedIndexState),
+  getProjectChunks(projectId) {
+    return ragChunks.filter((chunk) => chunk.fromDerivedIndex && chunk.projectId === String(projectId || ""));
+  },
+});

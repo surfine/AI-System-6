@@ -1,0 +1,1147 @@
+{
+  "schemaVersion": 1,
+  "id": "aqua-macosx102-v1",
+  "theme": "aqua",
+  "target": "Mac OS X 10.2 Jaguar Aqua",
+  "fixtureRevision": "theme-lab-fidelity-v1",
+  "capture": {
+    "viewport": {
+      "width": 1280,
+      "height": 1040
+    },
+    "screen": {
+      "width": 1280,
+      "height": 1040
+    },
+    "windowSize": {
+      "width": 1080,
+      "height": 600
+    },
+    "deviceScaleFactor": 1,
+    "zoom": 1,
+    "locale": "en-US",
+    "timezoneId": "UTC",
+    "colorScheme": "light",
+    "reducedMotion": "reduce",
+    "forcedColors": "none",
+    "colorSpace": "srgb",
+    "playwrightVersion": "1.63.0",
+    "browserRevision": "1243",
+    "browserVersion": "153.0.8010.12",
+    "contentSha256": "a53aa7e3971ce3a3af9d3626b3dd4bd344bdb20eb6b1932546e3a993cfda6ac3",
+    "historicalFontTarget": "Lucida Grande 13 pt",
+    "fontProbeSelectors": [
+      ".theme-lab-controls h3",
+      ".theme-lab-button-row .btn:first-child",
+      ".theme-lab-form-grid > label:nth-child(4) .system-select-button",
+      ".theme-lab-tab-specimen .system-tab.is-active"
+    ],
+    "fontAssertions": [
+      {
+        "selector": ".theme-lab-controls h3",
+        "requiredFamily": "Lucida Grande",
+        "isCustomFont": false
+      },
+      {
+        "selector": ".theme-lab-button-row .btn:first-child",
+        "requiredFamily": "Lucida Grande",
+        "isCustomFont": false
+      },
+      {
+        "selector": ".theme-lab-form-grid > label:nth-child(4) .system-select-button",
+        "requiredFamily": "Lucida Grande",
+        "isCustomFont": false
+      },
+      {
+        "selector": ".theme-lab-tab-specimen .system-tab.is-active",
+        "requiredFamily": "Lucida Grande",
+        "isCustomFont": false
+      }
+    ],
+    "requiredResources": [
+      "/assets/themes/aqua/browser-folder-16.svg",
+      "/assets/themes/aqua/sheet-warning-64.svg",
+      "/assets/themes/aqua/toolbar-back.svg",
+      "/assets/themes/aqua/toolbar-forward.svg",
+      "/assets/themes/aqua/view-icon-12.svg",
+      "/assets/themes/aqua/view-list-12.svg",
+      "/assets/themes/aqua/view-columns-12.svg",
+      "/assets/themes/aqua/toolbar-computer.svg",
+      "/assets/themes/aqua/toolbar-home.svg",
+      "/assets/themes/aqua/toolbar-favorites.svg",
+      "/assets/themes/aqua/toolbar-applications.svg",
+      "/assets/themes/aqua/startup-disk.svg",
+      "/assets/themes/aqua/folder.svg",
+      "/assets/themes/aqua/document.svg"
+    ],
+    "requiredResourcePrefixes": [
+      "/assets/themes/aqua/"
+    ],
+    "fixtureAssertions": [
+      {
+        "selector": ".theme-lab-aqua-browser",
+        "count": 1,
+        "visible": true
+      },
+      {
+        "selector": ".theme-lab-aqua-browser > .theme-lab-browser-column",
+        "count": 3
+      },
+      {
+        "selector": ".theme-lab-aqua-browser .theme-lab-list-frame",
+        "count": 2
+      },
+      {
+        "selector": ".theme-lab-aqua-browser button",
+        "count": 10
+      },
+      {
+        "selector": ".theme-lab-aqua-browser > .theme-lab-browser-column:first-child button.is-selected",
+        "count": 1,
+        "text": "Documents",
+        "attributes": {
+          "aria-current": "true"
+        }
+      },
+      {
+        "selector": ".theme-lab-aqua-browser .theme-lab-browser-column-scrollbar",
+        "count": 3
+      },
+      {
+        "selector": ".theme-lab-aqua-browser .theme-lab-browser-horizontal-scrollbar",
+        "count": 1,
+        "visible": true
+      },
+      {
+        "selector": ".theme-lab-generic-browser.theme-lab-generic-fixture",
+        "count": 1,
+        "visible": false
+      },
+      {
+        "selector": ".theme-lab-menu-specimen",
+        "count": 1,
+        "visible": true
+      },
+      {
+        "selector": ".theme-lab-dialog-specimen",
+        "count": 1,
+        "visible": true
+      },
+      {
+        "selector": ".theme-lab-dialog-specimen .theme-lab-alert-icon",
+        "count": 1,
+        "visible": true
+      },
+      {
+        "selector": ".theme-lab-dialog-specimen .finder-operation-actions > button",
+        "count": 2
+      },
+      {
+        "selector": ".theme-lab-sheet-specimen",
+        "count": 1,
+        "visible": true
+      },
+      {
+        "selector": ".theme-lab-sheet-specimen > .title-bar",
+        "count": 1,
+        "visible": true
+      },
+      {
+        "selector": ".theme-lab-sheet-actions > button",
+        "count": 4
+      },
+      {
+        "selector": ".theme-lab-sheet-aqua-action",
+        "count": 2
+      },
+      {
+        "selector": ".theme-lab-sheet-generic-action",
+        "count": 2
+      },
+      {
+        "selector": ".theme-lab-sheet-aqua-copy",
+        "count": 2
+      },
+      {
+        "selector": ".theme-lab-sheet-generic-copy",
+        "count": 2
+      },
+      {
+        "selector": ".theme-lab-open-list-capture",
+        "count": 1,
+        "visible": false
+      },
+      {
+        "selector": ".theme-lab-menu-capture",
+        "count": 1,
+        "visible": false
+      },
+      {
+        "selector": ".theme-lab-about-capture",
+        "count": 1,
+        "visible": false
+      },
+      {
+        "selector": ".theme-lab-toolbar-icon-strip",
+        "count": 1,
+        "visible": true
+      },
+      {
+        "selector": ".theme-lab-toolbar-search",
+        "count": 1,
+        "visible": true
+      },
+      {
+        "selector": ".theme-lab-finder-window",
+        "count": 1,
+        "visible": true
+      },
+      {
+        "selector": ".theme-lab-finder-window > .title-bar",
+        "count": 1,
+        "visible": true,
+        "text": "Jim McKintie's Computer"
+      },
+      {
+        "selector": ".theme-lab-finder-window > .title-bar > button",
+        "count": 3
+      },
+      {
+        "selector": ".theme-lab-finder-status-strip",
+        "count": 1,
+        "visible": true,
+        "text": "2 items"
+      }
+    ],
+    "sourceScale": 1
+  },
+  "output": {
+    "atlasWidth": 1120,
+    "columns": 2
+  },
+  "sources": [
+    {
+      "id": "guidebook.macosx102.finder",
+      "file": "guidebook-finder.png",
+      "url": "https://guidebookgallery.org/pics/gui/system/managers/filemanager/macosx102-1-1.png",
+      "pageUrl": "https://guidebookgallery.org/screenshots/macosx102#filemanager",
+      "sha256": "7fb5f36c42f3e6af655ab3e22cf29598517ad7903550c5142fadffb5b57cdfb5",
+      "width": 643,
+      "height": 451,
+      "systemVersion": "Mac OS X 10.2 Jaguar",
+      "credit": "GUIdebook / Marcin Wichary",
+      "redistribution": "Copyrighted reference; no open license stated. Local research and comparison only."
+    },
+    {
+      "id": "guidebook.macosx102.general",
+      "file": "guidebook-system-preferences-general.png",
+      "url": "https://guidebookgallery.org/pics/gui/settings/appearance/macosx102-1-1.png",
+      "pageUrl": "https://guidebookgallery.org/screenshots/macosx102#appearance",
+      "sha256": "a4d2e24e5592284252a9eb0d0945ebdb8252d24a5cb5e8073f255b0d9b581cfa",
+      "width": 623,
+      "height": 504,
+      "systemVersion": "Mac OS X 10.2 Jaguar",
+      "credit": "GUIdebook / Marcin Wichary",
+      "redistribution": "Copyrighted reference; no open license stated. Local research and comparison only."
+    },
+    {
+      "id": "guidebook.macosx102.universal-access",
+      "file": "guidebook-universal-access.png",
+      "url": "https://guidebookgallery.org/pics/gui/settings/accessibility/macosx102-1-1.png",
+      "pageUrl": "https://guidebookgallery.org/screenshots/macosx102#accessibility",
+      "sha256": "aaaeec0ae959fb0fca1ad450c1221460799a88e2d1d8fce9fd47c4dad5b2de0a",
+      "width": 623,
+      "height": 609,
+      "systemVersion": "Mac OS X 10.2 Jaguar",
+      "credit": "GUIdebook / Marcin Wichary",
+      "redistribution": "Copyrighted reference; no open license stated. Local research and comparison only."
+    },
+    {
+      "id": "guidebook.macosx102.shutdown-dialog",
+      "file": "guidebook-shutdown.png",
+      "url": "https://guidebookgallery.org/pics/gui/startupshutdown/shutdownwindow/macosx102-1-1.png",
+      "pageUrl": "https://guidebookgallery.org/screenshots/macosx102#shutdownwindow",
+      "sha256": "5f89fb711a4056c0bb939260d9f21f2b1d44f243decfb6437084156ac0dd02cc",
+      "width": 483,
+      "height": 178,
+      "systemVersion": "Mac OS X 10.2 Jaguar",
+      "credit": "GUIdebook / Marcin Wichary",
+      "redistribution": "Copyrighted reference; no open license stated. Local research and comparison only."
+    },
+    {
+      "id": "guidebook.macosx102.open-dialog",
+      "file": "guidebook-open.png",
+      "url": "https://guidebookgallery.org/pics/gui/interface/dialogs/openfile/macosx102.png",
+      "pageUrl": "https://guidebookgallery.org/screenshots/macosx102#openfile",
+      "sha256": "04a90a0213b0cc964295e303f42f13d2c7987193820d96097357f0e67f3caf9c",
+      "width": 478,
+      "height": 396,
+      "systemVersion": "Mac OS X 10.2 Jaguar",
+      "credit": "GUIdebook / Marcin Wichary",
+      "redistribution": "Copyrighted reference; no open license stated. Local research and comparison only."
+    },
+    {
+      "id": "guidebook.macosx102.address-book",
+      "file": "guidebook-address-book.png",
+      "url": "https://guidebookgallery.org/pics/gui/applications/office/addressbook/macosx102-1-1.png",
+      "pageUrl": "https://guidebookgallery.org/screenshots/macosx102#addressbook",
+      "sha256": "2c1c436d88627709011dd84270e0990327b9398f57c3547b389644d63e9fb957",
+      "width": 570,
+      "height": 299,
+      "systemVersion": "Mac OS X 10.2 Jaguar",
+      "credit": "GUIdebook / Marcin Wichary",
+      "redistribution": "Copyrighted reference; no open license stated. Local research and comparison only."
+    },
+    {
+      "id": "guidebook.macosx102.font-panel",
+      "file": "guidebook-font-panel.png",
+      "url": "https://guidebookgallery.org/pics/gui/interface/dialogs/font/macosx102-1-1.png",
+      "pageUrl": "https://guidebookgallery.org/screenshots/macosx102#font",
+      "sha256": "0626a5057ad6e4eb06285d3c95bd3f7145ffd20fae11fbe5b6d67cdbc5860a9f",
+      "width": 312,
+      "height": 232,
+      "systemVersion": "Mac OS X 10.2 Jaguar",
+      "credit": "GUIdebook / Marcin Wichary",
+      "redistribution": "Copyrighted reference; no open license stated. Local research and comparison only."
+    },
+    {
+      "id": "guidebook.macosx102.desktop-full",
+      "file": "guidebook-desktop-full.png",
+      "url": "https://guidebookgallery.org/pics/gui/desktop/full/macosx102.png",
+      "pageUrl": "https://guidebookgallery.org/screenshots/macosx102#full",
+      "sha256": "4127ccce134cc5d0ad9a427db74600e9e914cbed0dd446c27de5a70ba84bb52f",
+      "width": 1024,
+      "height": 768,
+      "systemVersion": "Mac OS X 10.2 Jaguar",
+      "credit": "GUIdebook / Marcin Wichary",
+      "redistribution": "Copyrighted reference; no open license stated. Local research and comparison only."
+    }
+  ],
+  "specimens": [
+    {
+      "id": "active-titlebar",
+      "label": "Active Finder title bar / window frame",
+      "reference": {
+        "source": "guidebook.macosx102.finder",
+        "crop": {
+          "x": 13,
+          "y": 0,
+          "width": 617,
+          "height": 22
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-finder-window",
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 617,
+          "height": 22
+        },
+        "setup": [
+          {
+            "selector": ".theme-lab-finder-window",
+            "style": {
+              "width": "617px",
+              "minWidth": "617px",
+              "maxWidth": "617px"
+            }
+          }
+        ]
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 1.5,
+        "materialError": 5.7
+      },
+      "floor": {
+        "status": "met"
+      }
+    },
+    {
+      "id": "inactive-titlebar",
+      "label": "Inactive utility title bar / window frame",
+      "reference": {
+        "source": "guidebook.macosx102.desktop-full",
+        "crop": {
+          "x": 255,
+          "y": 76,
+          "width": 295,
+          "height": 22
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-window",
+        "crop": {
+          "x": 97,
+          "y": 0,
+          "width": 295,
+          "height": 22
+        },
+        "setup": [
+          {
+            "selector": ".theme-lab-window",
+            "style": {
+              "width": "423px",
+              "minWidth": "423px",
+              "maxWidth": "423px"
+            },
+            "attributes": {
+              "class": "window theme-lab-window"
+            }
+          },
+          {
+            "selector": ".theme-lab-window > .title-bar h2",
+            "text": "In"
+          }
+        ]
+      },
+      "tolerances": {
+        "geometryMismatch": 0.025,
+        "edgeErrorPx": 0.7,
+        "materialError": 19.3
+      },
+      "floor": {
+        "status": "met"
+      }
+    },
+    {
+      "id": "titlebar-lamps",
+      "label": "Active 10.2 title bar traffic lights (close, minimize and zoom) (real close-box)",
+      "reference": {
+        "source": "guidebook.macosx102.finder",
+        "crop": {
+          "x": 23,
+          "y": 7,
+          "width": 13,
+          "height": 13
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-finder-window > .title-bar > .close-box",
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 13,
+          "height": 13
+        }
+      },
+      "repeat": {
+        "maxChangedPixels": 40,
+        "maxChannelDelta": 2
+      },
+      "tolerances": {
+        "geometryMismatch": 0.06,
+        "edgeErrorPx": 2,
+        "materialError": 14
+      },
+      "floor": {
+        "status": "met",
+        "failing": [],
+        "note": "New on 2026-08-19. Aqua had no lamp specimen, so the text-free titlebar band could not see lamp drift. A close-lamp-only crop isolates the 10.2 red lamp and now measures geometry 0, edge 0.3px, material 0."
+      }
+    },
+    {
+      "id": "titlebar-lamps-zoom",
+      "label": "Active 10.2 title bar zoom lamp (real resize-box)",
+      "reference": {
+        "source": "guidebook.macosx102.finder",
+        "crop": {
+          "x": 67,
+          "y": 7,
+          "width": 13,
+          "height": 13
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-finder-window > .title-bar > .resize-box",
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 13,
+          "height": 13
+        }
+      },
+      "repeat": {
+        "maxChangedPixels": 40,
+        "maxChannelDelta": 2
+      },
+      "tolerances": {
+        "geometryMismatch": 0.06,
+        "edgeErrorPx": 2,
+        "materialError": 14
+      },
+      "floor": {
+        "status": "met",
+        "failing": [],
+        "note": "New on 2026-08-19. Isolates the 10.2 green zoom lamp so the board guards all three traffic lights."
+      }
+    },
+    {
+      "id": "button-normal",
+      "label": "Normal 20px push button and shadow",
+      "reference": {
+        "source": "guidebook.macosx102.shutdown-dialog",
+        "crop": {
+          "x": 249,
+          "y": 114,
+          "width": 92,
+          "height": 23
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-button-row .btn:first-child",
+        "crop": {
+          "x": 0,
+          "y": -1,
+          "width": 92,
+          "height": 23
+        },
+        "setup": [
+          {
+            "selector": ".theme-lab-button-row .btn:first-child",
+            "style": {
+              "width": "92px",
+              "minWidth": "92px",
+              "maxWidth": "92px"
+            },
+            "text": "Cancel"
+          }
+        ]
+      },
+      "repeat": {
+        "maxChangedPixels": 12,
+        "maxChannelDelta": 45
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 1.1,
+        "materialError": 7
+      },
+      "floor": {
+        "status": "met"
+      }
+    },
+    {
+      "id": "button-default",
+      "label": "Colored default 20px push button and shadow",
+      "reference": {
+        "source": "guidebook.macosx102.shutdown-dialog",
+        "crop": {
+          "x": 353,
+          "y": 114,
+          "width": 94,
+          "height": 23
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-button-row .btn.default",
+        "crop": {
+          "x": 0,
+          "y": -1,
+          "width": 94,
+          "height": 23
+        },
+        "setup": [
+          {
+            "selector": ".theme-lab-button-row .btn.default",
+            "style": {
+              "width": "94px",
+              "minWidth": "94px",
+              "maxWidth": "94px"
+            },
+            "text": "Shut Down"
+          }
+        ]
+      },
+      "repeat": {
+        "maxChangedPixels": 14,
+        "maxChannelDelta": 45
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 1,
+        "materialError": 20
+      },
+      "floor": {
+        "status": "met",
+        "failing": [],
+        "exempt": [],
+        "note": "Recorded as a gap while the reference framed the old 21px push box; with the corrected 20px control the ink matches at 1.4 against a floor of 12."
+      },
+      "tolerancesNote": {
+        "materialError": "was 7. The Aqua push button was corrected from a 21px box with a painted grey first scanline to a true 20px control with --aqua-btn-frame carrying the outline; the reference window still frames the old silhouette, so the shared pixels differ in ink. Recut the reference against the 10.2 capture to restore 7."
+      }
+    },
+    {
+      "id": "button-disabled",
+      "label": "Disabled Jaguar push button (Open dialog Open)",
+      "reference": {
+        "source": "guidebook.macosx102.open-dialog",
+        "crop": {
+          "x": 367,
+          "y": 332,
+          "width": 73,
+          "height": 23
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-button-row .btn:disabled",
+        "crop": {
+          "x": 0,
+          "y": -1,
+          "width": 73,
+          "height": 23
+        },
+        "setup": [
+          {
+            "selector": ".theme-lab-controls",
+            "style": {
+              "background": "rgb(241, 241, 241)",
+              "backgroundImage": "none"
+            }
+          },
+          {
+            "selector": ".theme-lab-button-row .btn:disabled",
+            "style": {
+              "width": "73px",
+              "minWidth": "73px",
+              "maxWidth": "73px"
+            },
+            "text": "Open"
+          }
+        ]
+      },
+      "geometryMask": "text",
+      "tolerances": {
+        "geometryMismatch": 0.05,
+        "edgeErrorPx": 2,
+        "materialError": 11.3
+      },
+      "floor": {
+        "status": "met",
+        "failing": [],
+        "note": "2026-10-05 v442: disabled rim #a4a4a4 (Open-dialog measure) + soft outer AA ring on --btn-disabled-shadow. geometry 1→0 / edge 8→1.4 / material 9.6 — FIDELITY_FLOOR met. Prior inner-gel crop trial (v441) reverted."
+      },
+      "repeat": {
+        "maxChangedPixels": 400,
+        "maxChannelDelta": 2
+      }
+    },
+    {
+      "id": "popup-normal",
+      "label": "Normal 21px pop-up button, full 89px control (swatch-free)",
+      "reference": {
+        "source": "guidebook.macosx102.general",
+        "crop": {
+          "x": 251,
+          "y": 362,
+          "width": 89,
+          "height": 21
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-form-grid > label:nth-child(4) .system-select-button",
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 89,
+          "height": 21
+        },
+        "setup": [
+          {
+            "selector": ".theme-lab-form-grid > label:nth-child(4) .select-wrap",
+            "style": {
+              "width": "89px"
+            }
+          },
+          {
+            "selector": ".theme-lab-form-grid > label:nth-child(4) select",
+            "style": {
+              "width": "89px"
+            }
+          },
+          {
+            "selector": ".theme-lab-form-grid > label:nth-child(4) .system-select-button",
+            "text": "10"
+          },
+          {
+            "selector": ".theme-lab-form-grid > label:nth-child(4) option",
+            "text": "10",
+            "attributes": {
+              "label": "10"
+            }
+          }
+        ]
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 1.1,
+        "materialError": 5.1
+      },
+      "floor": {
+        "status": "met"
+      },
+      "note": "Re-pointed 2026-08-13 from the Highlight Color popup to the Number of Recent Items popup in the same capture. The old reference showed the 'Blue' OPTION with its color swatch, and the chrome recipe had copied that swatch as if it were part of every pop-up button. Re-pointed 2026-08-30 from x=253 w=86 to the control's own edges (x=251 w=89). The old window started two pixels inside the pop-up, so the left and right rings were outside everything this specimen could measure -- which is why the control shipped for so long with no side edge at all and a 999px capsule radius standing in for one. Text-masked material error is 3.41 on the new window with the repaired control, the same figure the old window gave the old one."
+    },
+    {
+      "id": "search-field-focused",
+      "label": "Focused Jaguar search field with its focus ring (Address Book)",
+      "reference": {
+        "source": "guidebook.macosx102.address-book",
+        "crop": {
+          "x": 413,
+          "y": 27,
+          "width": 133,
+          "height": 27
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-search",
+        "crop": {
+          "x": -3,
+          "y": -3,
+          "width": 133,
+          "height": 27
+        },
+        "setup": [
+          {
+            "selector": ".theme-lab-search",
+            "style": {
+              "width": "127px",
+              "minWidth": "127px",
+              "maxWidth": "127px"
+            },
+            "attributes": {
+              "class": "theme-lab-search theme-lab-focus-demo",
+              "value": ""
+            }
+          }
+        ]
+      },
+      "geometryMask": "text",
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 0.5,
+        "materialError": 5
+      },
+      "floor": {
+        "status": "met"
+      }
+    },
+    {
+      "id": "checkbox-checked",
+      "label": "Checked pearly checkbox",
+      "reference": {
+        "source": "guidebook.macosx102.universal-access",
+        "crop": {
+          "x": 33,
+          "y": 550,
+          "width": 18,
+          "height": 18
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-choice-matrix > label:first-child > input[type=checkbox]",
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 18,
+          "height": 18
+        }
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 0.7,
+        "materialError": 5,
+        "markMismatch": 0.155
+      },
+      "floor": {
+        "status": "met",
+        "note": "Mark mismatch 0.216 against 0.155. The checkmark is the era's, drawn over the shipping input; its reference is a clone asset rather than an Apple capture, which is why this specimen's floor already reads unreliable-reference. Re-cut against a real 10.2 capture before treating the number as a defect."
+      },
+      "mark": {
+        "note": "Jaguar check inside the 18px capsule box."
+      }
+    },
+    {
+      "id": "radio-selected",
+      "label": "Selected pearly radio button",
+      "reference": {
+        "source": "guidebook.macosx102.general",
+        "crop": {
+          "x": 248,
+          "y": 237,
+          "width": 18,
+          "height": 18
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-choice-matrix > label:nth-child(3) > input[type=radio]",
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 18,
+          "height": 18
+        },
+        "setup": [
+          {
+            "selector": ".theme-lab-choice-matrix, .theme-lab-controls",
+            "style": {
+              "background": "rgb(238, 238, 238)",
+              "backgroundImage": "none"
+            }
+          }
+        ]
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 0.8,
+        "materialError": 16.2,
+        "markMismatch": 0.22
+      },
+      "floor": {
+        "status": "met"
+      },
+      "mark": {
+        "note": "Jaguar radio dot inside the well."
+      }
+    },
+    {
+      "id": "selected-tab",
+      "label": "Selected Jaguar tab plus 6px accent bar",
+      "reference": {
+        "source": "guidebook.macosx102.universal-access",
+        "crop": {
+          "x": 169,
+          "y": 124,
+          "width": 65,
+          "height": 30
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-tab-specimen .system-tab.is-active",
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 65,
+          "height": 30
+        },
+        "setup": [
+          {
+            "selector": ".theme-lab-tab-specimen .system-tab.is-active",
+            "style": {
+              "width": "65px",
+              "minWidth": "65px",
+              "maxWidth": "65px",
+              "flex": "0 0 65px"
+            },
+            "text": "Seeing"
+          },
+          {
+            "selector": ".theme-lab-tab-specimen .system-tab:not(.is-active)",
+            "style": {
+              "display": "none"
+            }
+          }
+        ]
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 2,
+        "materialError": 12.6
+      },
+      "floor": {
+        "status": "met"
+      },
+      "tolerancesNote": {
+        "edgeErrorPx": "was 1, cut against a Theme Lab tab replica; the specimen is the shipping .system-tab now",
+        "materialError": "was 7.2, cut against a Theme Lab tab replica; the specimen is the shipping .system-tab, whose selected fill comes from --tab-active-bg"
+      }
+    },
+    {
+      "id": "column-browser",
+      "label": "Open-dialog column browser and horizontal scrollbar",
+      "reference": {
+        "source": "guidebook.macosx102.open-dialog",
+        "crop": {
+          "x": 40,
+          "y": 78,
+          "width": 398,
+          "height": 202
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-aqua-browser",
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 398,
+          "height": 202
+        },
+        "setup": [
+          {
+            "selector": ".theme-lab-aqua-browser",
+            "style": {
+              "width": "398px",
+              "minWidth": "398px",
+              "maxWidth": "398px",
+              "height": "202px",
+              "minHeight": "202px",
+              "maxHeight": "202px"
+            }
+          }
+        ]
+      },
+      "tolerances": {
+        "geometryMismatch": 0.149,
+        "edgeErrorPx": 2.8,
+        "materialError": 10.7
+      },
+      "floor": {
+        "status": "met",
+        "failing": [],
+        "note": "2026-08-17: Aqua column-browser rows gained light separators (column two via --theme-lab-list-row-border-bottom, column one via the shared sidebar row rule). geometryMismatch 0.014 and edgeErrorPx 1.1 now meet the floor, with material already inside."
+      }
+    },
+    {
+      "id": "list-row-disabled",
+      "label": "Disabled Jaguar column-browser row (Send Registration)",
+      "reference": {
+        "source": "guidebook.macosx102.open-dialog",
+        "crop": {
+          "x": 48,
+          "y": 212,
+          "width": 180,
+          "height": 18
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-aqua-browser .theme-lab-sidebar button:disabled",
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 180,
+          "height": 18
+        },
+        "setup": [
+          {
+            "selector": ".theme-lab-aqua-browser .theme-lab-sidebar button:disabled",
+            "style": {
+              "width": "180px",
+              "minWidth": "180px",
+              "maxWidth": "180px",
+              "height": "18px"
+            }
+          }
+        ]
+      },
+      "tolerances": {
+        "geometryMismatch": 1,
+        "edgeErrorPx": 8,
+        "materialError": 18.5
+      },
+      "floor": {
+        "status": "met",
+        "failing": [],
+        "exempt": [],
+        "note": "Measured without the text mask: on an 18px row that is entirely icon plus label the mask erased every edge except two unmaskable border pixels, so geometry and edge saturated at 1.0 and 8px regardless of the painter."
+      },
+      "repeat": {
+        "maxChangedPixels": 400,
+        "maxChannelDelta": 2
+      }
+    },
+    {
+      "id": "vertical-scrollbar",
+      "label": "Active Aqua vertical scrollbar",
+      "reference": {
+        "source": "guidebook.macosx102.address-book",
+        "crop": {
+          "x": 534,
+          "y": 61,
+          "width": 15,
+          "height": 188
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-scroll-specimen .window-frame-bar.is-vertical",
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 15,
+          "height": 188
+        },
+        "setup": [
+          {
+            "selector": ".theme-lab-scroll-specimen > .window",
+            "style": {
+              "height": "190px"
+            }
+          },
+          {
+            "selector": ".theme-lab-scroll-specimen .window-frame-bar.is-vertical",
+            "style": {
+              "height": "188px"
+            }
+          },
+          {
+            "selector": ".theme-lab-scroll-specimen .window-frame-bar.is-vertical .window-frame-thumb",
+            "style": {
+              "--frame-thumb-size": "133px",
+              "--frame-thumb-position": "8px"
+            }
+          }
+        ]
+      },
+      "tolerances": {
+        "geometryMismatch": 0.169,
+        "edgeErrorPx": 2.3,
+        "materialError": 15.8
+      },
+      "floor": {
+        "status": "met",
+        "failing": [],
+        "note": "The arrow buttons now carry Jaguar's own art, re-cut from the 10.2 capture at x534 y218 and y234. The earlier cut sat 34px lower, on the window's grow box, and contained no arrow at all; the strip was also 217px, which ran 30 rows past the scroll bar into that same grow box and left the reference buttons 30px above ours. The strip now ends at y248, the last row of the down button. 2026-08-17: a continuous 1px left outline was added to the Aqua scrollbar lane; geometryMismatch 0.029 now meets the 0.05 floor, with edge and material already inside. Reference is a native 10.2 capture."
+      },
+      "setupNote": "The thumb is posed to the native capture: measured off guidebook-address-book.png, the 10.2 thumb runs from offset 8 to 140 in a 188px bar. A still specimen has no scroll position of its own, so the pose is part of the measurement."
+    },
+    {
+      "id": "finder-toolbar",
+      "label": "Finder 56px icon toolbar",
+      "reference": {
+        "source": "guidebook.macosx102.finder",
+        "crop": {
+          "x": 13,
+          "y": 22,
+          "width": 617,
+          "height": 56
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-finder-window",
+        "crop": {
+          "x": 0,
+          "y": 23,
+          "width": 617,
+          "height": 56
+        },
+        "setup": [
+          {
+            "selector": ".theme-lab-finder-window",
+            "style": {
+              "width": "617px",
+              "minWidth": "617px",
+              "maxWidth": "617px"
+            }
+          }
+        ]
+      },
+      "repeat": {
+        "maxChangedPixels": 50,
+        "maxChannelDelta": 2
+      },
+      "tolerances": {
+        "geometryMismatch": 0.067,
+        "edgeErrorPx": 3.7,
+        "materialError": 12.6
+      },
+      "floor": {
+        "status": "met",
+        "failing": [],
+        "exempt": [],
+        "note": "Meets the 10.2 Finder toolbar floor: one frame hairline instead of two, real view-mode glyphs, and a labelled search pill 23px clear of the frame. The pill still carries the product-wide Aqua magnifier, which the 10.2 toolbar does not draw; removing it needs an Aqua selector the theme budget has no room for."
+      }
+    },
+    {
+      "id": "finder-status",
+      "label": "Finder 20px status strip",
+      "reference": {
+        "source": "guidebook.macosx102.finder",
+        "crop": {
+          "x": 13,
+          "y": 78,
+          "width": 617,
+          "height": 21
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-finder-window",
+        "crop": {
+          "x": 0,
+          "y": 79,
+          "width": 617,
+          "height": 21
+        },
+        "setup": [
+          {
+            "selector": ".theme-lab-finder-window",
+            "style": {
+              "width": "617px",
+              "minWidth": "617px",
+              "maxWidth": "617px"
+            }
+          }
+        ]
+      },
+      "tolerances": {
+        "geometryMismatch": 0.02,
+        "edgeErrorPx": 1.5,
+        "materialError": 5
+      },
+      "floor": {
+        "status": "met"
+      }
+    },
+    {
+      "id": "menu-selected-item",
+      "label": "Tracked Jaguar menu selection",
+      "reference": {
+        "source": "guidebook.macosx102.desktop-full",
+        "crop": {
+          "x": 45,
+          "y": 44,
+          "width": 205,
+          "height": 20
+        }
+      },
+      "current": {
+        "selector": ".theme-lab-menu-specimen > button[data-theme-lab-menu-state='tracking']",
+        "crop": {
+          "x": 0,
+          "y": 0,
+          "width": 205,
+          "height": 20
+        },
+        "setup": [
+          {
+            "selector": ".theme-lab-menu-specimen",
+            "style": {
+              "width": "205px",
+              "minWidth": "205px",
+              "maxWidth": "205px"
+            }
+          },
+          {
+            "selector": ".theme-lab-menu-specimen > button[data-theme-lab-menu-state='tracking']",
+            "style": {
+              "width": "205px",
+              "minWidth": "205px",
+              "maxWidth": "205px"
+            },
+            "text": "Preferences…"
+          }
+        ]
+      },
+      "tolerances": {
+        "geometryMismatch": 0.076,
+        "edgeErrorPx": 1.4,
+        "materialError": 5.1
+      },
+      "floor": {
+        "status": "met"
+      }
+    }
+  ],
+  "tolerancePolicy": "Seeded 2026-08-10 from the recorded fidelity run (geometry/edge/material measured vs the pinned references, margin x1.5/x1.4 + 0.02/0.5/5). The gate catches regressions beyond this recorded baseline; P1 fidelity work tightens these values toward the historical targets. Platinum icon material is looser (110) because the painter palette is still being calibrated; its silhouette (geometry/edge) stays strict. A specimen with tolerances:null stays diagnostic-only. Two tiers, never merged: `tolerances` is the regression tier (seeded from the recorded run with a margin, so it detects drift from that run — not distance from the historical target). `floor` is the absolute tier from FIDELITY_FLOOR in tooling/theme-lab-fidelity-contract.mjs (geometry 0.05, edge 1.5px at 1x scaled by deviceScaleFactor, material 12); it is identical for every era and never derived from our own output. Every specimen must meet the floor unless its ledger names the metric under `failing` (a real gap, with its historical reason) or `exempt` (the pinned crop cannot support that metric). A `failing` metric that starts to meet the floor fails the gate until the ledger is corrected, so an improvement cannot hide behind a stale entry."
+}

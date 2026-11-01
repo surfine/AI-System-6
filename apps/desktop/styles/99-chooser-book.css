@@ -1,0 +1,342 @@
+/* Chooser's driver rail and MCP corner (app/features/chooser-book.js).
+   The rail is the Control Panel's own .control-chooser, so each era's
+   --control-chooser-* and --control-settings-* tokens dress it here too;
+   this sheet only lays the two panes out and draws the corner. */
+
+.chooser-panel.has-chooser-book {
+  width: min(480px, calc(100vw - 48px));
+}
+
+.chooser-book {
+  display: grid;
+  grid-template-columns: var(--control-settings-columns, minmax(0, 1fr));
+  grid-template-rows: var(--control-settings-rows, auto);
+  gap: 10px;
+  min-width: 0;
+}
+
+.chooser-book > .chooser-drivers {
+  grid-area: var(--control-chooser-area, auto);
+}
+
+.chooser-pages {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.chooser-pages > .chooser-section[hidden] {
+  display: none;
+}
+
+/* AppleTalk's corner: one line saying what the choice means on the left,
+   the name and its two radios on the right, in the window's own UI face. */
+.chooser-mcp {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  padding-top: 8px;
+  border-top: var(--system-border);
+  font-family: var(--ui-font);
+}
+
+.chooser-mcp-note {
+  order: -1;
+  flex: 1 1 180px;
+  margin: 0;
+}
+
+.chooser-mcp-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-inline-start: auto;
+  white-space: nowrap;
+}
+
+.chooser-mcp-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.chooser-mcp-choice input {
+  margin: 0;
+}
+
+/* Yosemite and Big Sur inherit Liquid Glass's pale radio ring (#d0d7e6 /
+   #c7c7c7), which vanishes on their near-white window: an unchecked MCP radio
+   read as a bare dot. The hairline the era draws other boundaries with. */
+:root[data-theme-family="liquid-glass"]:not([data-lineage="liquid-glass"]) .chooser-mcp-choice input:not(:checked) {
+  border-color: var(--surface-rule);
+}
+
+/* Liquid Glass dresses Control Panel's four sections as a segmented
+   capsule; six drivers cannot share one without truncating every name, so
+   Chooser wears the sidebar this appearance's own Settings uses: one row per
+   driver, icon then name. A narrow window still takes the row below. */
+:root[data-theme-family="liquid-glass"] .chooser-panel.has-chooser-book {
+  width: min(560px, calc(100vw - 48px));
+}
+
+@container (min-width: 431px) {
+  :root[data-theme-family="liquid-glass"] .chooser-book {
+    grid-template-columns: 148px minmax(0, 1fr);
+    grid-template-rows: auto;
+  }
+
+  :root[data-theme-family="liquid-glass"] .chooser-book > .chooser-drivers {
+    grid-area: auto;
+    align-self: start;
+    flex-direction: column;
+    gap: 2px;
+    width: auto;
+    padding: 4px;
+    border-radius: 12px;
+  }
+
+  :root[data-theme-family="liquid-glass"] .chooser-drivers > .system-tab {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  :root[data-theme-family="liquid-glass"] .chooser-drivers .control-chooser-label {
+    overflow: visible;
+    white-space: normal;
+    text-align: start;
+  }
+}
+
+/* A narrow window keeps the rail across the top, as Control Panel does. */
+@container (max-width: 430px) {
+  .chooser-book {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto;
+  }
+
+  .chooser-book > .chooser-drivers {
+    grid-area: auto;
+    flex-direction: row;
+    overflow-x: auto;
+    border-right: 0;
+    border-bottom: var(--system-control-line, 1px) solid var(--ink);
+  }
+}
+
+/* Tool permissions: one guest, its tools in three disclosure groups (the
+   Finder's own triangle), a closed-set menu per tool. A tool the writer moved
+   off its default is set in bold so a changed setting can be found again. */
+.chooser-tools,
+.chooser-calls {
+  display: grid;
+  gap: 6px;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: var(--system-border);
+}
+
+/* Liquid Glass seats a Chooser select in column 2 of the Search Engine row
+   (icon, then menu). These two sections are single-column grids, so there the
+   same rule left a phantom first column and squeezed the labels beside the
+   menu; the longer chain outweighs it with no override flag. */
+.chooser-panel .chooser-pages .chooser-tools .select-wrap,
+.chooser-panel .chooser-pages .chooser-calls .select-wrap {
+  grid-column: auto;
+}
+
+.chooser-tools h4 {
+  margin: 0;
+  font-family: var(--ui-font);
+}
+
+.chooser-tools .hint {
+  margin: 0;
+}
+
+/* Projects one guest may see: a classic group box with two radios, and the
+   project checklist only while "only these" is chosen. */
+.chooser-mount {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 4px 8px 6px;
+  border: var(--system-border);
+}
+
+.chooser-mount[hidden],
+.chooser-mount-list[hidden] {
+  display: none;
+}
+
+.chooser-mount legend {
+  padding: 0 4px;
+  font-family: var(--ui-font);
+}
+
+.chooser-mount-choice,
+.chooser-mount-project {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chooser-mount-list {
+  display: grid;
+  gap: 2px;
+  margin: 2px 0 0;
+  padding: 0 0 0 20px;
+  list-style: none;
+}
+
+.chooser-tool-groups {
+  display: grid;
+  gap: 2px;
+}
+
+.chooser-tool-group > summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+  font-family: var(--ui-font);
+  cursor: default;
+}
+
+/* The same ▸ / ▾ the Control Panel's Advanced disclosure draws. */
+.chooser-tool-group > summary {
+  list-style: none;
+}
+
+.chooser-tool-group > summary::-webkit-details-marker {
+  display: none;
+}
+
+.chooser-tool-group > summary::before {
+  content: "\25B8";
+}
+
+.chooser-tool-group[open] > summary::before {
+  content: "\25BE";
+}
+
+.chooser-tool-count {
+  margin-inline-start: auto;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+}
+
+.chooser-tool-list {
+  display: grid;
+  margin: 2px 0 6px;
+  padding: 0;
+  list-style: none;
+  border: var(--system-border);
+  background: var(--paper);
+}
+
+.chooser-tool {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 132px;
+  gap: 8px;
+  align-items: center;
+  padding: 2px 6px;
+  border-bottom: 1px dotted var(--surface-rule, var(--ink));
+}
+
+.chooser-tool:last-child {
+  border-bottom: 0;
+}
+
+.chooser-tool-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chooser-tool.is-changed .chooser-tool-name {
+  font-weight: bold;
+}
+
+/* Recent calls: time, what was called (tool, guest, arguments), result.
+   One-bit friendly: a refusal or failure is set in bold, never in colour. */
+.chooser-calls h4 {
+  margin: 0;
+  font-family: var(--ui-font);
+}
+
+.chooser-calls .hint {
+  margin: 0;
+}
+
+.chooser-calls-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chooser-calls-bar .select-wrap {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.chooser-call-list {
+  display: grid;
+  max-height: 220px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  border: var(--system-border);
+  background: var(--paper);
+}
+
+.chooser-call {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: baseline;
+  padding: 3px 6px;
+  border-bottom: 1px dotted var(--surface-rule, var(--ink));
+}
+
+.chooser-call:last-child {
+  border-bottom: 0;
+}
+
+.chooser-call-time,
+.chooser-call-guest,
+.chooser-call-args {
+  font-variant-numeric: tabular-nums;
+}
+
+.chooser-call-what {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 6px;
+  min-width: 0;
+}
+
+.chooser-call-args {
+  overflow: hidden;
+  max-width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.75;
+}
+
+.chooser-call.is-refused .chooser-call-result,
+.chooser-call.is-failed .chooser-call-result {
+  font-weight: bold;
+}
+
+/* Yosemite's hairline and fill for utility surfaces; in this sheet, not the era
+   file, which rides the boot floppy. Other eras take the ink fallback. */
+body[data-lineage~="yosemite"] {
+  --surface-rule: rgba(0, 0, 0, 0.18);
+  --surface-fill: var(--selection-bg);
+}

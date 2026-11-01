@@ -1,0 +1,25 @@
+Macintosh Skeletal Filled / Macintosh Skeletal Variable
+
+The fonts in this repository are derived from "Macintosh Skeletal"
+(MacintoshSkeletal.otf), a font distributed by Apple Inc. with macOS 27 and
+iOS 27, and from the output of Apple's hello-screen renderer.
+
+Macintosh Skeletal, its letterforms, its stroke data, and the design of the
+"hello" handwriting are the property of Apple Inc. Copyright (c) Apple Inc.
+All rights reserved. "Apple", "Macintosh", "Mac", "iPhone", "macOS" and "iOS"
+are trademarks of Apple Inc.
+
+This project is an independent, unofficial work. It is not affiliated with,
+sponsored by, or endorsed by Apple Inc.
+
+No license to Apple's intellectual property is granted by this repository.
+The files are shared as-is, for personal, non-commercial, educational use
+only. Do not sell them, redistribute them as part of a commercial product,
+or use them in a way that suggests a connection with Apple.
+
+If you are a rights holder and want anything here changed or removed, please
+open an issue and it will be taken down.
+
+THE FILES ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED. IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+OTHER LIABILITY ARISING FROM THE USE OF THESE FILES.

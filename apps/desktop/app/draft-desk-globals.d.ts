@@ -1,0 +1,231 @@
+/** Narrow ambient contract for the classic-script Draft Desk lazy chain. */
+declare const currentLanguage: string;
+declare const cloudConfig: any;
+declare const modelInput: HTMLInputElement | null;
+declare const endpointInput: HTMLInputElement | null;
+declare const mountedTextDisk: any;
+
+declare function getWindow(name: string): any;
+// core/chat-messages.js: a model is connected and ready (Quick Draft's
+// storyboard row greys out until one is; the call site guards with typeof).
+declare function modelReadyForRequests(): boolean;
+// Declared by feature modules that load after core/. The concatenated bundle
+// has them at runtime; every call site here still guards with `typeof`,
+// because a lazy module may not have loaded yet.
+declare function isTeachTextManuscriptRole(role?: any): boolean;
+declare function setProjectOutlineMarkdown(project: any, markdown: string): void;
+declare function openWindow(name: string, options?: any): Promise<any>;
+declare function maximizeWindow(win: any): void;
+declare function formatReviewVoiceStats(text: string): string;
+declare function initSystemSelectControls(): void;
+declare function refreshSystemSelectControls(): void;
+declare function syncRovingTabStops(group: any): void;
+declare function setControlLoading(control: any, loading: boolean, label?: string): void;
+declare function setControlIdleDisabled(control: any, disabled: boolean): void;
+declare function setControlIdleLabel(control: any, text: string): void;
+declare function runEditCommand(command: string): Promise<void>;
+declare function captureTextControlWorkingSession(target: any): any;
+declare function restoreTextControlWorkingSession(target: any, state: any, options?: any): void;
+declare function updateQuickDraftFocusChrome(): void;
+declare function cloudCredentialReady(): boolean;
+declare function cloudCredentialTransportFields(): any;
+declare function sendLocalModelTask(options: any): Promise<any>;
+declare function fetchModelPayload(payload: any, signal?: AbortSignal): Promise<Response>;
+declare function withMarkdownModelMessages(messages: any): any;
+declare function serviceErrorDetail(status: any, body?: any): string;
+// The lens loads on demand, so the flow awaits this before the builder below.
+// Whether a local model is actually reachable, as opposed to merely named.
+declare function isLocalModelIndicatorReady(): boolean;
+declare function ensureMingmingLensModule(): Promise<void>;
+declare function buildMingmingRewritePrompt(options: any): string;
+declare function arrangeWindowAssistantSplit(name: string): Promise<boolean>;
+declare function isMultiFinderMode(): boolean;
+declare function addMessage(role: string, body: string): void;
+declare function markdownToSystemHtml(markdown: string): string;
+// Preview anchoring lives in app/core/markdown.js; Quick Draft's reading view
+// calls it the same way the writing route's surfaces do.
+declare function enterPreviewAtCaret(input: any, preview: any): boolean;
+declare function leavePreviewToCaret(input: any, preview: any): boolean;
+declare function escapeHtml(text: string): string;
+declare const translations: Record<string, Record<string, any>>;
+declare function titleFromBody(body?: string): string;
+// Receipt bodies are hashed by documents-chat.js's classic-script helper;
+// the Quick Draft chain calls it with a guard, so the typecheck needs the
+// ambient name (documents-chat.js is outside this config's include list).
+declare function contentHash(body?: string): string;
+// 文字亮室's durable half is lazy, so the darkroom loads it before reading for
+// it. Declared here for the same reason as the image helpers below: the loader
+// is eager in config.js, which this typecheck's include list does not cover.
+declare function ensureDarkroomModule(): Promise<void>;
+// Photographed material lives in app/core/image-attachments.js, one layer that
+// every surface which can take a picture shares, so the Quick Draft chain
+// reaches it the way it reaches the other classic-script globals.
+declare function imageFilesFromList(files: any): File[];
+declare function saveImageAttachments(records: any[]): void;
+// The desk's "I changed this record" entry points. Declared here because every
+// feature that edits a record it did not create calls them.
+declare function markDeskDirty(kind?: string, recordId?: string): void;
+declare function markDeskDeleted(kind: string, recordId: string): void;
+// The identity rule and the base cache the save plan keeps. Read-only for
+// everything except the plan itself; declared for the tooling that inspects a
+// save (the plan comparison in persistence-scan-shadow.js).
+declare function deskRecordIdentity(kind: string, item: any, index: number): string;
+declare const storageRecordFingerprintCache: Map<string, Map<string, { id: any; fingerprint: string }>>;
+declare const deskRecordFingerprint: (item: any) => string;
+declare const persistDeskState: (...args: any[]) => Promise<any>;
+declare const deskCollectionPlan: (...args: any[]) => any;
+declare const trustedKeys: string[];
+declare function imageAttachmentById(id: any): any;
+declare function imageAttachmentVisionDataUrl(attachment: any): string;
+declare function buildImageAttachments(files: any, options?: any): Promise<any[]>;
+declare function attachImagesToModelMessages(messages: any, attachments: any, options?: any): any;
+declare function attachMarkdownEditor(target: any): void;
+declare function attachMarkdownHighlight(target: any): void;
+declare function showSystemModal(message: string, kind?: string, options?: any): Promise<string>;
+declare function showInputDialog(options?: { title?: string; message?: string; defaultValue?: string; placeholder?: string; multiline?: boolean }): Promise<string | null>;
+declare function insertFilesIntoFileFloppy(files: File[], options?: { source?: string; openAfter?: string }): Promise<{ mountedFileNames: string[] } | null>;
+declare function closeWindow(name: string, force?: boolean): Promise<boolean>;
+declare function openTransientFilePicker(options: any): void;
+declare function extractFileText(file: File, options?: any): Promise<any>;
+declare function ensureFolder(name: string, parentId?: string | null): any;
+declare function nextAvailableProjectFileName(title: string, projectId?: string): string;
+declare function setFinderEnvironment(mode: string, options?: any): Promise<boolean>;
+declare function ensureRunningApp(appId: string, windowName: string): void;
+declare function registerWorkingSessionAdapter(adapter: any): void;
+declare function createDefaultProjectForDraftDesk(): Promise<any>;
+declare function openWritingStudio(): Promise<any>;
+// Which route stop the writer is at. The handoff asks so it can tell 文字亮室
+// who handed a document over; window-manager.js owns the answer.
+declare function currentWritingRouteStop(): string;
+declare function toggleQuickDraftSideAsk(): Promise<any>;
+// Length measures for the canvas frame. countTextWords and estimateVoiceoverSeconds
+// live in lazy chains that may not be loaded, so the call sites guard on typeof
+// and fall back to estimateBilibiliVoiceoverSeconds, which is eager.
+// Preview/caret helpers from app/core/markdown.js. The Writing Studio lane
+// started calling them from this chain; the declaration was missing, so checkJs
+// was already reporting them before this branch. Declared, not repaired.
+declare function enterPreviewAtCaret(input: any, preview: any): void;
+declare function leavePreviewToCaret(input: any, preview: any): void;
+declare function countTextWords(text: string): number;
+declare function estimateVoiceoverSeconds(text: string): number;
+declare function estimateBilibiliVoiceoverSeconds(text: string): number;
+// The grey-with-a-reason helper from app/core/balloon-help.js. The darkroom
+// footer keys are the one place that greys a control itself, so the chain calls
+// it here; the site guards on typeof for the same lazy-loading reason as every
+// other declaration above, and checkJs was reporting the name before this
+// branch. Declared, not repaired.
+declare function markGrayAffordance(control: any, unavailable: boolean, reasonKey?: string): void;
+
+// Declared by modules outside this config's include list: the writing route's
+// phase (writing-flow.js, lazy), the edit kernel's registration (window-manager.js),
+// the menu context window, TeachText's save and the tabs bookkeeping. Every
+// call site guards with typeof for the lazy-loading reason above.
+declare function ensureWritingFlowModule(): Promise<void>;
+// N15a: auto-archive and link following live in writing-safety.js (lazy), and
+// config.js carries its loader; the restore bridge calls it with the same
+// typeof guard the other cross-module loaders get.
+declare function ensureWritingSafetyModule(): Promise<void>;
+declare function manuscriptPhase(): string;
+declare function shouldSyncProjectOutlineAsManuscript(project?: any): boolean;
+declare function registerEditHistory(windowName: string, history: any): void;
+declare function resolveMenuContextWindow(): HTMLElement | null;
+declare function saveTextDocument(options?: any): Promise<boolean>;
+declare function markProjectTabsDirty(project: any): void;
+declare function resolveWritingRoutePrompt(id: string, language?: string, options?: any): string;
+declare function readChatCompletionStream(response: Response, onToken?: ((snapshot: string) => void) | null, signal?: AbortSignal): Promise<{ content: string }>;
+
+interface Window {
+  AISystem6DarkroomDevelop?: any;
+  AISystem6LightroomDevelop?: any;
+  AISystem6EditHistory?: any;
+  AISystem6Proactive?: any;
+  AISystem6WordDiff?: any;
+  AISystem6ApplicationShell?: any;
+  AISystem6DarkroomRecord?: any;
+  AISystem6DarkroomStore?: any;
+  AISystem6ProtectedRanges?: any;
+  AISystem6WriteLease?: any;
+  AISystem6PasteMarkdown?: any;
+  AISystem6DraftDeskPresetsLoaded?: boolean;
+  AISystem6DraftDeskPresets?: any;
+  AISystem6LocalLMStudio?: any;
+  AISystem6TeachText?: any;
+  AISystem6ReviewDesk?: any;
+  AISystem6QuickDraftLoaded?: boolean;
+  AISystem6QuickDraft?: any;
+  AISystem6QuickDraftRuntime?: any;
+  AISystem6QuickDraftIntake?: any;
+  AISystem6QuickDraftEditor?: any;
+  AISystem6QuickDraftComposition?: any;
+  AISystem6QuickDraftAI?: any;
+  AISystem6QuickDraftListen?: any;
+  AISystem6WalkTranscript: {
+    parseWalkEnvelope(text?: string): { meta: string; body: string };
+    findSpokenMarks(body?: string): Array<{ index: number; word: string; quote: string }>;
+    walkMaterialText(options: { body: string; marks?: Array<{ quote: string }>; labels: { marksHeading: string; transcriptHeading: string } }): string;
+    walkFileName(options: { meta?: string; now?: Date; prefix: string }): string;
+  };
+  AISystem6QuickDraftHandoff?: any;
+  AISystem6ModelUserErrors?: any;
+  AISystem6WebPlatform?: any;
+  AISystem6Capabilities?: any;
+  AISystem6Runtime?: any;
+  // Set by app/core/project-disk-backup.js, which travels with an export or a
+  // restore rather than with every boot: config.js waits for this flag before
+  // handing the call to the module.
+  AISystem6ProjectDiskBackupLoaded?: boolean;
+  // The save-plan shadow comparison, loaded by the check that uses it.
+  AISystem6ScanShadow?: {
+    noteChanged?: (kind: string, recordId: string, deleted?: boolean) => void;
+    takeReported?: () => Map<string, { puts: Set<string>; deletes: Set<string>; all: boolean }>;
+    enable?: () => (() => void);
+    report?: () => {
+      enabled: boolean;
+      comparisons: number;
+      totalMissed: number;
+      mismatches: Array<{ key: string; missedPuts: string[]; missedDeletes: string[]; fields: string[] }>;
+    };
+    compare?: (...args: any[]) => void;
+  };
+  // Top-level function declarations are properties of the global object, which
+  // is how the plan comparison attaches itself without the desk shipping
+  // instrument code.
+  markDeskDirty?: (kind?: string, recordId?: string) => void;
+  markDeskDeleted?: (kind: string, recordId: string) => void;
+  deskCollectionPlan?: (definition: any) => any;
+  deskCollectionDefinitions?: (...args: any[]) => any[];
+  persistDeskState?: (...args: any[]) => Promise<any>;
+  __scanShadowDebug?: any[];
+  AISystem6ExplanationLens?: {
+    blankExplanationLens?: (options?: any) => any;
+    normalizeExplanationLens?: (lens?: any) => any;
+  };
+  // The translation tables, by language. Read to tell a title the product
+  // wrote from one the writer chose — see isDerivedQuickDraftTitle.
+  AISystem6Data?: { translations?: Record<string, Record<string, any>> };
+  AISystem6TranslationsEn?: Record<string, any>;
+  AISystem6TranslationsZh?: Record<string, any>;
+  // Boot installs this in app.js so lazily-built chrome can re-run the
+  // language sweep over a subtree after the first paint.
+  AISystem6TranslateWithin?: (root?: ParentNode | Element | null) => void;
+  AISystem6PromptFilesRuntime?: {
+    resolvePromptFile?: (id: string, args?: any, language?: string) => { body?: string } | undefined;
+  };
+}
+
+// The quick-draft ELI5 UI toggles `hidden` on elements returned by
+// querySelector, which is typed as Element (the DOM lib only declares the
+// property on HTMLElement).
+interface Element {
+  hidden: boolean;
+}
+
+// Hold-to-speak uses the Web Speech API where the browser has it; neither
+// constructor is in TypeScript's DOM lib, and WebKit ships only the prefix.
+interface Window {
+  SpeechRecognition?: any;
+  webkitSpeechRecognition?: any;
+  // N15a: writing-safety.js (lazy) installs this; document-revisions.js's
+  // restore bridge calls it guarded with optional chaining.
+  AISystem6WritingSafety?: any;
+}

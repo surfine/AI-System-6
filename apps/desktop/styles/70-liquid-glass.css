@@ -1,0 +1,4480 @@
+/* Family decisions for Yosemite, Big Sur and Liquid Glass (2026-10-08): the
+   Mac OS X caution art in alerts instead of System 6's bitmap (Liquid Glass
+   draws it inside its own glass tile), and body copy's Chinese in Heiti. */
+body[data-theme-family="liquid-glass"] {
+  --alert-icon-image: url("./assets/themes/aqua/sheet-warning-64.svg");
+  --alert-icon-size: 48px;
+  --alert-icon-gutter: 64px;
+  --theme-cjk-font: "Heiti SC", "STHeiti";
+}
+
+body[data-theme="liquid-glass"] {
+  /* Period tokens Platinum made shared (2026-09-25, second batch), answered
+     with the values this era already drew. */
+  --window-frame-arrow-up-order: 0;
+  --window-frame-arrow-down-order: 0;
+  --window-frame-arrow-down-border-top: var(--window-frame-track-border);
+  --window-frame-arrow-up-art-size: 1px 1px, 3px 1px, 5px 1px, 7px 1px;
+  --window-frame-arrow-up-art-position: left 7px top 5px, left 6px top 6px, left 5px top 7px, left 4px top 8px;
+  --window-frame-arrow-down-art-size: 7px 1px, 5px 1px, 3px 1px, 1px 1px;
+  --window-frame-arrow-down-art-position: left 4px top 5px, left 5px top 6px, left 6px top 7px, left 7px top 8px;
+  --choice-checkmark-size: 12px 12px;
+  /* HIG shape ladder: compact desktop controls, rounded surfaces, and capsules.
+     Nested surfaces subtract their inset from the parent, with a positive floor. */
+  --r-xs: 4px;
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 24px;
+  --r-pill: 999px;
+  --r-circle: 50%;
+  --control-shape-radius: var(--r-sm);
+  --surface-radius: var(--r-lg);
+  --item-radius: var(--r-sm);
+  --inset-radius: var(--r-md);
+  --micro-radius: var(--r-xs);
+  --tab-inner-radius: var(--r-md);
+  --tab-panel-radius: var(--r-lg);
+  /* The tint level is NOT declared here. The slider writes it on the
+     root element, and a value declared on the body would shadow that
+     inherited value, so the chrome below never moved with the control.
+     Every reader carries the 0.5 default in its var() fallback. */
+  --liquid-fill-tint: rgba(255, 255, 255, calc(0.18 + 0.24 * var(--liquid-tint-level, 0.5)));
+  --liquid-toolbar-tint: rgba(255, 255, 255, calc(0.12 + 0.2 * var(--liquid-tint-level, 0.5)));
+  --liquid-sidebar-tint: rgba(232, 240, 246, calc(0.31 + 0.3 * var(--liquid-tint-level, 0.5)));
+  --liquid-menu-alpha: calc(0.76 + 0.24 * var(--liquid-tint-level, 0.5));
+  --liquid-edge-contrast: rgba(16, 17, 20, calc(0.1 + 0.08 * var(--liquid-tint-level, 0.5)));
+  --liquid-refraction: calc(0.72 + 0.28 * var(--liquid-tint-level, 0.5));
+  --liquid-interaction-tint: rgba(255, 255, 255, calc(0.18 + 0.2 * var(--liquid-tint-level, 0.5)));
+  --liquid-inactive-chrome: rgba(255, 255, 255, calc(0.16 + 0.2 * var(--liquid-tint-level, 0.5)));
+  --liquid-content-surface: rgba(255, 255, 255, calc(0.08 + 0.08 * var(--liquid-tint-level, 0.5)));
+  --liquid-motion-scale: calc(0.8 + 0.4 * var(--liquid-tint-level, 0.5));
+  /* 苹方, the Simplified system face since El Capitan. Liquid Glass is the
+     only era whose Chinese type is the current one; without this the 2026
+     appearance inherits the foundation stack and sets Chinese in 宋体,
+     thirty-eight years out of period. */
+  --theme-ui-font: "PingFang SC", "Helvetica Neue", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --theme-title-font: var(--theme-ui-font);
+  --system-select-control-font-weight: 400;
+  --window-bg: var(--glass-surface);
+  --window-radius: var(--r-xl);
+  /* The resize grabber belongs to the corner it sits in: it keeps this gap
+     from the window's edge, and its arc takes whatever radius is left, so the
+     two curves are concentric instead of crossing. */
+  --grow-box-arc-inset: 4px;
+  --grow-box-arc-radius: calc(var(--window-radius) - var(--grow-box-arc-inset));
+  --container-radius: var(--r-xl);
+  --window-shadow: var(--system-shadow);
+  /* The whole appearance read flat because of this one number. 4px is a
+     frosting, not a refraction: at that radius the desktop behind a window
+     stays legible as itself, so the pane looked like tinted paper rather
+     than like glass with something behind it. Golden Gate blurs far past
+     the point where the backdrop is still readable, and lifts its chroma
+     back up so the glass stays coloured by what it covers. */
+  --window-backdrop-filter: blur(18px) saturate(185%) brightness(1.06);
+  /* Painter glass contract: Liquid = 18 (≠ Big Sur 12 ≠ Yosemite 0). */
+  --painter-blur: blur(18px);
+  --painter-blur-px: 18;
+  /* The title bar and status strip frost again over the window. A window
+     whose content repaints every frame (Bonsai City's map) turns both
+     filters off and takes the solid surface: a blurred backdrop over a
+     moving map is recomposited on every frame. */
+  --window-chrome-backdrop-filter: blur(12px) saturate(150%);
+  --glass-solid-surface:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(246, 251, 253, 0.86)),
+    rgb(246, 251, 253);
+  --surface-primary: var(--liquid-fill-tint);
+  --surface-secondary: rgba(230, 237, 242, 0.34);
+  --surface-inset: rgba(255, 255, 255, 0.18);
+  --toolbar-bg: var(--liquid-toolbar-tint);
+  --toolbar-border: 1px solid rgba(255, 255, 255, 0.46);
+  --sidebar-bg: var(--liquid-sidebar-tint);
+  --tdi-rail-bg: var(--liquid-sidebar-tint);
+  --tdi-rail-border: 0;
+  --tdi-rail-radius: var(--r-sm);
+  --tdi-rail-shadow: none;
+  --theme-lab-sidebar-icon-size: 16px;
+  --theme-lab-sidebar-icon-bg: transparent;
+  --theme-lab-sidebar-system-svg-opacity: 0;
+  --theme-lab-sidebar-startup-disk-image: url("./assets/themes/liquid-glass/startupDisk-16.svg");
+  --theme-lab-sidebar-applications-image: url("./assets/themes/liquid-glass/applications-16.svg");
+  --theme-lab-sidebar-document-image: url("./assets/themes/liquid-glass/document-16.svg");
+  --theme-lab-sidebar-trash-image: url("./assets/themes/liquid-glass/trash-16.svg");
+  --selection-bg: #0071e3;
+  --selection-fg: #ffffff;
+  --sidebar-selection-bg: rgba(0, 113, 227, 0.78);
+  --separator: rgba(16, 17, 20, 0.12);
+  --titlebar-title-bg: transparent;
+  --titlebar-title-fg: rgba(16, 17, 20, 0.82);
+  --menu-panel-bg: var(--liquid-menu-panel);
+  --menu-panel-border: 1px solid var(--glass-border);
+  --menu-panel-radius: var(--r-md);
+  --menu-panel-backdrop-filter: blur(34px) saturate(160%) brightness(1.04);
+  --surface-backdrop-filter: var(--menu-panel-backdrop-filter);
+  /* The glass row is min-height-driven; the text line stays the shared
+     16px menu cadence so the period token is answered, not inherited. */
+  --menu-item-line-height: 16px;
+  --field-border: 1px solid rgba(255, 255, 255, 0.62);
+  --field-radius: var(--r-md);
+  --select-radius: var(--r-md);
+  /* One white line and a 6% drop is a printed edge, not a thickness. The
+     field now carries what the slider's well carries: a lit top lip, a dark
+     bottom lip under it, the paired side hairlines the window chrome draws,
+     and a drop deep enough to say the control sits above the panel. */
+  --field-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.94),
+    inset 0 -1px 0 rgba(16, 17, 20, 0.1),
+    inset 1.25px 0 0 -0.75px rgba(230, 230, 230, 0.8),
+    inset -1.25px 0 0 -0.75px rgba(229, 229, 229, 0.8),
+    0 1px 2px rgba(18, 28, 38, 0.1),
+    0 8px 20px rgba(18, 28, 38, 0.1);
+  --field-focus-border: 1px solid var(--glass-field-focus-rim);
+  --field-focus-ring: 0 0 0 3px var(--glass-field-focus-ring);
+  --choice-bg: rgba(255, 255, 255, 0.28);
+  --choice-border: 1px solid rgba(16, 17, 20, 0.32);
+  --choice-radius: var(--r-xs);
+  /* The same thickness on the checkbox and the radio, so the row of them
+     under the slider reads as the same material and not as a different set
+     of parts that happens to share a panel. */
+  --choice-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.94),
+    inset 0 -1px 0 rgba(16, 17, 20, 0.12),
+    0 1px 2px rgba(18, 28, 38, 0.14),
+    0 6px 14px rgba(18, 28, 38, 0.12);
+  --scrollbar-track: var(--liquid-content-surface);
+  --scrollbar-thumb: rgba(16, 17, 20, 0.32);
+  --scrollbar-button: transparent;
+  --resize-affordance-clearance: 10px;
+  --writing-editor-focus-bg: transparent;
+  --pane-bg: var(--liquid-pane-bg-color, var(--liquid-content-surface));
+  --messages-bg: var(--liquid-pane-bg-color, var(--liquid-content-surface));
+  --details-bar-bg: var(--liquid-pane-bg-color, var(--liquid-content-surface));
+  --details-bar-border: rgba(16, 17, 20, 0.1);
+  --context-panel-budget-border-top: 1px solid rgba(16, 17, 20, 0.1);
+  --clio-file-chip-disabled-border: 1px solid rgba(16, 17, 20, 0.14);
+  --empty-object-hatch-alt: rgba(255, 255, 255, 0.16);
+  --soundscape-count-badge-border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+  --teachtext-popover-hr-border: 1px solid rgba(16, 17, 20, 0.12);
+  --teachtext-subpopover-border-left: 1px solid rgba(16, 17, 20, 0.12);
+  --system-primary-divider: 1px solid rgba(16, 17, 20, 0.1);
+  --system-secondary-divider: 1px solid rgba(16, 17, 20, 0.1);
+  --large-icon-border: 1px solid rgba(255, 255, 255, 0.5);
+  --image-manager-item-border: 1px solid rgba(255, 255, 255, 0.42);
+  --image-manager-item-bg: rgba(255, 255, 255, 0.18);
+  --image-manager-thumb-border: 1px solid rgba(255, 255, 255, 0.42);
+  --review-desk-pane-bg: rgba(255, 255, 255, 0.2);
+  --review-desk-results-border: 1px solid rgba(16, 17, 20, 0.16);
+  --review-desk-results-radius: var(--r-lg);
+  --review-desk-results-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.46), rgba(255, 255, 255, 0.2)),
+    rgba(255, 255, 255, 0.2);
+  --review-desk-results-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.74),
+    0 12px 32px rgba(18, 28, 38, 0.08);
+  --review-surface-bg: transparent;
+  --review-desk-splitter-hover-bg:
+    linear-gradient(90deg, transparent, rgba(16, 17, 20, 0.28), transparent) center / 88% 2px no-repeat,
+    rgba(255, 255, 255, 0.34);
+  --review-locked-pane-bg: rgba(255, 255, 255, 0.14);
+  --review-splitter-border: 1px solid rgba(16, 17, 20, 0.16);
+  --review-empty-note-border: 1px solid rgba(16, 17, 20, 0.16);
+  --review-th-border: 1px solid rgba(16, 17, 20, 0.16);
+  --review-th-bg: rgba(255, 255, 255, 0.42);
+  --review-td-border: 1px solid rgba(16, 17, 20, 0.12);
+  --review-td-alt-border: 1px solid rgba(16, 17, 20, 0.16);
+  --style-note-border: 1px solid rgba(16, 17, 20, 0.16);
+  --style-note-type-border: 1px solid rgba(16, 17, 20, 0.22);
+  --outline-notes-border: 1px solid rgba(16, 17, 20, 0.16);
+  --draft-list-border: 1px solid rgba(16, 17, 20, 0.16);
+  --claim-results-border: 1px solid rgba(16, 17, 20, 0.16);
+  --composer-file-active-bg: rgba(16, 17, 20, 0.86);
+  --composer-file-active-fg: #ffffff;
+  --composer-file-active-border: rgba(16, 17, 20, 0.72);
+  --compose-menu-hover-bg: rgba(16, 17, 20, 0.86);
+  --compose-menu-hover-fg: #ffffff;
+  --compose-tool-copy-b: rgba(16, 17, 20, 0.96);
+  --compose-tool-copy-small: rgba(16, 17, 20, 0.56);
+  /* The bar carries the sheen but no frost: it is the one surface that refuses
+     both the CSS blur and the system glass material (see the menu-bar rules far
+     below, and the owner's iPhone report they record). A surface is either
+     translucent AND frosted or it is opaque -- this base used to be 0.2 white,
+     which needed a blur that no rule ever gave it, so once the fill reached the
+     screen the desk's dot pattern read straight through the menu labels. The
+     0.9 base is the same figure --glass-reading-surface settled on for the same
+     reason. */
+  /* Tahoe: denser glass stack + stronger blur than Big Sur warm frost (P2). */
+  --menu-bar-bg:
+    radial-gradient(120% 170% at 8% 0%, rgba(255, 255, 255, 0.52), transparent 44%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.14)),
+    rgba(255, 255, 255, 0.68);
+  /* Frost so the pale desk grid reads through (Tahoe); opaque base for the
+     installed-surface strip in 60-responsive.css. */
+  --menu-bar-backdrop-filter: blur(32px) saturate(215%);
+  --menu-bar-base: #ffffff;
+  --menu-bar-shadow:
+    inset 1.25px 0 0 -0.75px rgba(230, 230, 230, 0.78),
+    inset -1.25px 0 0 -0.75px rgba(229, 229, 229, 0.78),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88),
+    inset 0 -1px 0 rgba(16, 17, 20, 0.1),
+    0 14px 36px rgba(18, 28, 38, 0.11);
+  --menu-button-height: 24px;
+  --menu-button-radius: var(--r-pill);
+  --menu-button-transition: background 0.18s ease, box-shadow 0.18s ease, color 0.18s ease;
+  --btn-default-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.04)),
+    linear-gradient(180deg, #0a84ff, #0071e3);
+  --btn-default-fg: #ffffff;
+  --btn-default-text-shadow: 0 1px 0 rgba(0, 0, 0, 0.18);
+  --btn-default-shadow: var(--btn-shadow);
+  --btn-default-active-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.02)),
+    linear-gradient(180deg, #0071e3, #005ecb);
+  --btn-default-active-fg: #ffffff;
+  --control-status-border: 1px solid rgba(16, 17, 20, 0.1);
+  --control-label-fg: rgba(16, 17, 20, 0.9);
+  --control-summary-fg: rgba(16, 17, 20, 0.92);
+  --outline-item-border: 1px solid rgba(16, 17, 20, 0.08);
+  --outline-item-span-bg: transparent;
+  --outline-item-span-border: 0;
+  --outline-item-span-radius: var(--r-sm);
+  --outline-focus-border: transparent;
+  --outline-focus-outline: 0;
+  --outline-focus-outline-offset: 0;
+  --outline-focus-bg: rgba(255, 255, 255, 0.34);
+  --outline-focus-shadow: inset 0 0 0 1px rgba(0, 122, 255, 0.28);
+  --section-label-fg: rgba(16, 17, 20, 0.92);
+  --section-label-radius: var(--r-pill);
+  --section-label-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78), 0 8px 24px rgba(18, 28, 38, 0.08);
+  --draft-label-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.28)),
+    rgba(255, 255, 255, 0.28);
+  --draft-label-border: 1px solid rgba(16, 17, 20, 0.16);
+  --meta-label-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.28)),
+    rgba(255, 255, 255, 0.28);
+  --meta-label-border: 1px solid rgba(16, 17, 20, 0.16);
+  --control-section-bg: var(--liquid-pane-bg-color, var(--liquid-content-surface));
+  --source-info-panel-border: 0;
+  --teachtext-editor-bg: transparent;
+  --teachtext-editor-border: 1px solid transparent;
+  --teachtext-editor-radius: var(--r-lg);
+  --teachtext-editor-shadow: none;
+  --scrap-list-bg: rgba(255, 255, 255, 0.18);
+  --scrap-list-border: 1px solid rgba(255, 255, 255, 0.44);
+  --scrap-list-radius: var(--r-lg);
+  --scrap-list-item-radius: var(--r-sm);
+  --dictionary-form-label-radius: var(--r-sm);
+  --scrap-list-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68);
+  --scrap-empty-card-border: 1px solid rgba(255, 255, 255, 0.42);
+  --scrap-empty-card-bg: rgba(255, 255, 255, 0.18);
+  --scrap-list-mini-icon-border: 1px solid rgba(255, 255, 255, 0.5);
+  --scrap-translation-badge-border: 1px solid color-mix(in srgb, currentColor 30%, transparent);
+  /* Preserve the established Liquid Scrapbook split browser while Classic
+     and Platinum opt into the native single-item page projection. */
+  --scrapbook-list-display: block;
+  --scrapbook-pager-display: none;
+  --scrapbook-pane-columns: minmax(160px, 0.72fr) minmax(0, 1fr);
+  --scrapbook-pane-rows: minmax(0, 1fr) auto auto;
+  --scrapbook-pane-gap: 20px;
+  --scrapbook-mobile-pane-columns: 1fr;
+  --scrapbook-mobile-pane-rows: minmax(132px, 156px) minmax(0, 1fr) auto;
+  --import-preview-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.26)),
+    rgba(255, 255, 255, 0.24);
+  --import-preview-border: 1px solid rgba(16, 17, 20, 0.16);
+  --import-preview-radius: var(--r-lg);
+  --import-preview-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    0 10px 30px rgba(18, 28, 38, 0.08);
+  --backup-preview-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.26)),
+    rgba(255, 255, 255, 0.24);
+  --backup-preview-border: 1px solid rgba(16, 17, 20, 0.16);
+  --backup-preview-radius: var(--r-lg);
+  --backup-preview-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    0 10px 30px rgba(18, 28, 38, 0.08);
+  --field-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.16)),
+    rgba(255, 255, 255, 0.16);
+  --field-focus-bg: var(--paper);
+  /* The strip is floating chrome that holds menus, so it takes the menu
+     panel's material rather than a flat wash of --paper. */
+  --control-strip-thickness: var(--menu-bar-height);
+  --control-strip-bg: var(--liquid-menu-panel);
+  --control-strip-border: 1px solid var(--glass-border);
+  --control-strip-divider: 1px solid var(--glass-edge);
+  --control-strip-hover-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.32)),
+    rgba(255, 255, 255, 0.24);
+  --control-strip-hover-fg: rgba(16, 17, 20, 0.96);
+  --control-strip-hover-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.88),
+    inset 0 0 0 1px rgba(16, 17, 20, 0.08);
+  --control-strip-active-bg: var(--liquid-menu-active);
+  --control-strip-active-fg: #ffffff;
+  --control-strip-active-shadow: var(--liquid-menu-active-shadow);
+  --control-strip-radius: var(--r-md);
+  --control-strip-shadow: var(--liquid-menu-panel-shadow);
+  --control-strip-backdrop: blur(34px) saturate(160%) brightness(1.04);
+  /* Glass-era refinements: the open module floats as a tinted pill, and the
+     handle grip is a grabber bar instead of Classic's tick texture. */
+  --control-strip-tile-radius: var(--r-pill);
+  --control-strip-tile-margin: 3px 1px;
+  --control-strip-tile-height: calc(var(--control-strip-thickness) - 6px);
+  --control-strip-grip-inset: 8px 0;
+  --control-strip-grip: linear-gradient(rgba(16, 17, 20, 0.28), rgba(16, 17, 20, 0.28)) 50% 50% / 4px 100% no-repeat;
+  --control-strip-grip-radius: var(--r-xs);
+  --control-strip-gauge-bg: rgba(255, 255, 255, 0.8);
+  /* Control Panel section chooser — a glass segmented capsule: the active
+     section is a porcelain pill on a shaded track. Same tablist DOM. */
+  --control-settings-columns: minmax(0, 1fr);
+  --control-settings-rows: none;
+  --control-chooser-area: auto;
+  --control-chooser-bg: rgba(16, 17, 20, 0.07);
+  --control-chooser-radius: var(--r-pill);
+  --control-chooser-padding: 3px;
+  --control-chooser-width: max-content;
+  /* The capsule hugs its contents, so it sits centred in the pane rather than
+     against the leading edge like a full-width tab row. */
+  --control-chooser-justify-self: center;
+  --control-chooser-direction: row;
+  --control-chooser-gap: 2px;
+  --control-chooser-border-bottom: 0;
+  --control-chooser-border-right: 0;
+  --control-chooser-item-direction: row;
+  --control-chooser-item-flex: 0 1 auto;
+  --control-chooser-item-gap: 4px;
+  --control-chooser-item-padding: 3px 8px;
+  --control-chooser-item-offset: 0px;
+  --control-chooser-item-border: 0;
+  --control-chooser-item-radius: var(--r-pill);
+  --control-chooser-item-bg: transparent;
+  --control-chooser-item-fg: rgba(16, 17, 20, 0.66);
+  --control-chooser-hover-bg: rgba(255, 255, 255, 0.5);
+  --control-chooser-hover-fg: rgba(16, 17, 20, 0.9);
+  --control-chooser-active-bg: rgba(255, 255, 255, 0.92);
+  --control-chooser-active-fg: rgba(16, 17, 20, 0.96);
+  --control-chooser-label-padding: 0;
+  --control-chooser-active-label-bg: transparent;
+  --control-chooser-active-label-fg: currentColor;
+  --control-chooser-active-weight: 600;
+  --control-chooser-active-shadow: 0 2px 6px rgba(30, 34, 60, 0.18), inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+  --control-chooser-icon-display: block;
+  --control-chooser-icon-size: 14px;
+  --control-chooser-label-size: 11px;
+  /* The capsule's own height: 14px icon + 4px gap + the 13.2px name, in a
+     3px 8px segment, on the 3px-padded track. */
+  --control-chooser-min-height: 34px;
+  --memory-transfer-note-bg: rgba(255, 255, 255, 0.26);
+  --memory-transfer-note-line: rgba(16, 17, 20, 0.28);
+  --memory-transfer-note-border: rgba(255, 255, 255, 0.48);
+  --info-divider-border: 1px solid rgba(16, 17, 20, 0.14);
+  /* The frame lane is a System 6 idea; glass keeps the same structure but its
+     own material, so no checkerboard and no hard hairlines. */
+  --window-frame-lane: 12px;
+  --window-frame-bar-display: none;
+  --window-frame-reserve: 0px;
+  --window-frame-scrollbar-width: thin;
+  /* Glass has no pixel invert to imitate; the marquee is just a soft ink line. */
+  --drag-outline-ink: rgba(16, 17, 20, 0.5);
+  --drag-outline-blend: normal;
+  --window-frame-track-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.1));
+  --window-frame-track-border: 0;
+  --window-frame-thumb-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.56), rgba(16, 17, 20, 0.24)),
+    rgba(16, 17, 20, 0.22);
+  /* The glass sheen already runs top-to-bottom — the horizontal capsule
+     wants exactly that, so the horizontal lane shares it unchanged. */
+  --window-frame-thumb-bg-horizontal: var(--window-frame-thumb-bg);
+  --window-frame-thumb-border: 2px solid rgba(255, 255, 255, 0.28);
+  --window-frame-thumb-radius: var(--r-pill);
+  --ink: #101114;
+  --paper: rgba(255, 255, 255, 0.5);
+  /* Glass --paper is half-transparent, so the pair for an element that paints
+     its own --ink field is opaque white, not --paper. Feeds --selected-fg. */
+  --selected-fg: #ffffff;
+  --shade: rgba(255, 255, 255, 0.46);
+  /* 2.71:1 over this era's panel, where the token carries 13px text as well as
+     chrome. 0.62 measures 5.02:1. */
+  --shade-dark: rgba(16, 17, 20, 0.62);
+  --desktop: #dce2e6;
+  --alarm-clock-title-bg: rgba(255, 255, 255, 0.18);
+  --alarm-clock-surface-bg:
+    linear-gradient(135deg, rgba(232, 238, 242, 0.12), rgba(235, 241, 247, 0.16)),
+    rgba(255, 255, 255, 0.14);
+  --alarm-clock-readout-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.46), rgba(255, 255, 255, 0.16)),
+    rgba(255, 255, 255, 0.2);
+  --alarm-clock-divider: 1px solid rgba(16, 17, 20, 0.12);
+  --alarm-clock-active-bg:
+    linear-gradient(180deg, rgba(16, 17, 20, 0.84), rgba(16, 17, 20, 0.68)),
+    rgba(16, 17, 20, 0.76);
+  --alarm-clock-active-fg: #ffffff;
+  --alarm-clock-frame-border: 1px solid rgba(16, 17, 20, 0.2);
+  --alarm-clock-frame-radius: var(--r-sm);
+  --alarm-clock-frame-shadow:
+    0 14px 34px rgba(30, 43, 62, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  --alarm-clock-close-border: 1px solid rgba(16, 17, 20, 0.48);
+  --alarm-clock-close-radius: var(--r-xs);
+  --alarm-clock-close-bg: rgba(255, 255, 255, 0.34);
+  --alarm-clock-close-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58);
+  --alarm-clock-lever-bg: transparent;
+  --alarm-clock-lever-hover-bg: rgba(255, 255, 255, 0.22);
+  --alarm-clock-lever-border: 0;
+  --alarm-clock-lever-radius: var(--r-xs);
+  --alarm-clock-lever-fg: rgba(16, 17, 20, 0.78);
+  --alarm-clock-lever-shadow: none;
+  --alarm-clock-lever-focus-outline: 1px solid rgba(16, 17, 20, 0.42);
+  --alarm-clock-lever-focus-shadow: none;
+  --alarm-clock-selection-bg: rgba(0, 122, 255, 0.82);
+  --alarm-clock-selection-fg: #ffffff;
+  --alarm-clock-mode-divider: 0;
+  --alarm-clock-mode-radius: var(--r-sm);
+  --alarm-clock-mode-bg: transparent;
+  --alarm-clock-mode-hover-bg: rgba(255, 255, 255, 0.22);
+  --alarm-clock-mode-active-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  --alarm-clock-section-gap: 2px;
+  --clio-assistant-message-bg: transparent;
+  /* Kept vs temporary, said in glass. A dotted 1px rule is weak and dirty on
+     this material, so the distinction moves from border style to elevation:
+     a temporary reply has not landed (no fill, broken hairline, no shadow and
+     you can see through it); a kept one has (opaque reading surface, rim
+     light, a real shadow). Same semantics as Classic's paper edge. */
+  --clio-said-rule: 3px solid rgba(16, 17, 20, 0.42);
+  --clio-slip-radius: var(--r-md);
+  --clio-slip-surface: transparent;
+  --clio-slip-border: 1px dashed rgba(16, 17, 20, 0.16);
+  --clio-slip-shadow: none;
+  --clio-slip-kept-surface: var(--glass-reading-surface);
+  --clio-slip-kept-border: 1px solid rgba(255, 255, 255, 0.8);
+  --clio-slip-kept-shadow:
+    0 8px 15px rgba(17, 17, 17, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --clio-slip-mark-border: 1px dashed rgba(16, 17, 20, 0.34);
+  --clio-slip-mark-kept: rgba(16, 17, 20, 0.7);
+  --clio-basis-chip-radius: var(--r-sm);
+  --clio-basis-chip-border: 1px solid rgba(16, 17, 20, 0.06);
+  --clio-basis-chip-bg: rgba(255, 255, 255, 0.6);
+  --clio-entry-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.28));
+  --clio-entry-divider: 1px solid rgba(16, 17, 20, 0.08);
+  --clio-entry-field-border: 1px solid rgba(255, 255, 255, 0.76);
+  --clio-entry-field-radius: var(--r-md);
+  --clio-entry-field-bg: rgba(255, 255, 255, 0.55);
+  --clio-entry-field-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --clio-welcome-bg: transparent;
+  --clio-welcome-shadow: none;
+  --clio-muted-copy: rgba(16, 17, 20, 0.58);
+  --clio-copy-font: var(--preview-font);
+  --clio-title-font: var(--preview-font);
+  --clio-control-font: var(--preview-font);
+  --clio-grounding-rule: rgba(16, 17, 20, 0.16);
+  --clio-composer-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(247, 251, 255, 0.46)),
+    rgba(246, 250, 255, 0.52);
+  --clio-composer-border: 1px solid rgba(255, 255, 255, 0.76);
+  --clio-composer-radius: var(--r-md);
+  --clio-composer-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.88),
+    0 12px 34px rgba(30, 43, 62, 0.12);
+  --clio-composer-focus-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 2px rgba(16, 17, 20, 0.12),
+    0 14px 38px rgba(30, 43, 62, 0.14);
+  --clio-composer-control-radius: var(--r-circle);
+  --clio-composer-tool-border: transparent;
+  --clio-action-surface: rgba(247, 250, 255, 0.94);
+  --clio-action-border: 1px solid rgba(255, 255, 255, 0.74);
+  --clio-action-radius: var(--r-md);
+  --clio-action-item-radius: var(--r-sm);
+  --clio-action-shadow:
+    0 14px 36px rgba(30, 43, 62, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.86);
+  --clio-context-control-radius: var(--r-md);
+  --clio-file-chip-bg: rgba(255, 255, 255, 0.2);
+  --clio-file-chip-border: 1px solid rgba(16, 17, 20, 0.06);
+  --clio-file-chip-radius: var(--r-sm);
+  --system-border: 1px solid rgba(255, 255, 255, 0.72);
+  --window-border: var(--system-border);
+  --menu-bar-border-color: rgba(16, 17, 20, 0.1);
+  --menu-bar-border: 1px solid var(--menu-bar-border-color);
+  --system-icon-stroke-width: 1.8;
+  /* Liquid owns its line contract in both font modes: a hairline rule under
+     the rounded 1.8px icon stroke, and solid symbols that are never dilated. */
+  --system-control-line: 1px;
+  --system-icon-pixel-run-expansion: 0;
+  --menu-system-icon-pixel-run-expansion: 0;
+  --happy-mac-border-width: 2px;
+  --happy-mac-face-border-width: 2px;
+  --happy-mac-border-color: rgba(16, 17, 20, 0.88);
+  --happy-mac-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.82),
+    8px 8px 0 rgba(16, 17, 20, 0.22),
+    0 20px 52px rgba(18, 28, 38, 0.18);
+  --happy-mac-face-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  --happy-mac-backdrop: blur(8px) saturate(140%);
+  --system-shadow: 0 8px 15px rgba(0, 0, 0, 0.04), 0 24px 58px rgba(18, 28, 38, 0.08);
+  --system-inset: inset 1px 1px 0 rgba(255, 255, 255, 0.78);
+  --liquid-action-ink: rgba(16, 17, 20, 0.94);
+  /* One press response for every interactive glass control, so reduced motion
+     can drop the movement in one place and keep the colour change. */
+  --liquid-press-transform: translateY(calc(1px * var(--liquid-motion-scale)));
+  --tdi-tab-close-size: 30px;
+  --tdi-tab-close-gutter: 8px;
+  --tdi-tab-close-mark-opacity: 0;
+  --tdi-tabs-align-items: center;
+  --tdi-tabs-gap: 10px;
+  --tdi-tabs-min-height: 66px;
+  --tdi-tabs-padding: 12px 18px 14px;
+  --tdi-tabs-bg: rgba(255, 255, 255, 0.22);
+  --tdi-tabs-border-bottom: 1px solid rgba(16, 17, 20, 0.12);
+  --tdi-tabs-after-content: "";
+  --tdi-tabs-after-flex: 1 1 auto;
+  --tdi-tabs-after-min-width: 10px;
+  --tdi-stack-popover-border: 1px solid rgba(255, 255, 255, 0.62);
+  --tdi-stack-popover-radius: var(--r-md);
+  --tdi-stack-popover-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(244, 249, 252, 0.78)),
+    rgba(246, 251, 253, 0.82);
+  --tdi-stack-popover-shadow: 0 16px 38px rgba(18, 28, 38, 0.14), 0 2px 8px rgba(18, 28, 38, 0.08);
+  --tdi-stack-popover-backdrop-filter: blur(18px) saturate(140%);
+  --tdi-stack-item-border: 1px solid rgba(16, 17, 20, 0.1);
+  --tdi-stack-item-bg: transparent;
+  --tdi-stack-item-fg: rgba(16, 17, 20, 0.92);
+  --tdi-stack-item-active-bg: var(--liquid-menu-active);
+  --tdi-stack-item-active-fg: #ffffff;
+  --tdi-stack-item-hover-bg: rgba(255, 255, 255, 0.48);
+  --tdi-stack-item-hover-fg: rgba(16, 17, 20, 0.96);
+  --tdi-stack-count-bg: rgba(16, 17, 20, 0.12);
+  --tdi-stack-count-fg: rgba(16, 17, 20, 0.78);
+  --tdi-grabber-mark-top: 50%;
+  --tdi-grabber-mark-left: 50%;
+  --tdi-grabber-mark-width: 3px;
+  --tdi-grabber-mark-height: 22px;
+  --tdi-grabber-mark-radius: var(--r-pill);
+  --tdi-grabber-mark-bg: rgba(16, 17, 20, 0.16);
+  --tdi-grabber-mark-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.42),
+    0 1px 2px rgba(18, 28, 38, 0.08);
+  --tdi-grabber-mark-opacity: 1;
+  --tdi-grabber-mark-transform: translate(-50%, -50%);
+  --tdi-grabber-mark-active-bg: rgba(16, 17, 20, 0.32);
+  --tdi-grabber-mark-active-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    0 2px 5px rgba(18, 28, 38, 0.12);
+  --tdi-grabber-mark-active-opacity: var(--tdi-grabber-mark-opacity);
+  --tdi-tab-wrap-height: 48px;
+  --tdi-tab-wrap-min-height: 48px;
+  --tdi-tab-wrap-bg: transparent;
+  --tdi-tab-wrap-border: 0;
+  --tdi-tab-height: 48px;
+  --tdi-tab-min-height: 48px;
+  --tdi-tab-padding: 7px 48px 7px 16px;
+  --tdi-tab-border: 1px solid rgba(255, 255, 255, 0.58);
+  --tdi-tab-border-bottom: var(--tdi-tab-border);
+  --tdi-tab-radius: var(--r-lg);
+  --tdi-tab-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.22)),
+    rgba(255, 255, 255, 0.26);
+  --tdi-tab-fg: #101114;
+  --tdi-tab-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  --tdi-tab-backdrop-filter: blur(9px) saturate(145%);
+  --tdi-tab-active-border: 1px solid rgba(16, 17, 20, 0.74);
+  --tdi-tab-active-border-bottom: var(--tdi-tab-active-border);
+  --tdi-tab-active-bg: rgba(16, 17, 20, 0.86);
+  --tdi-tab-active-fg: #ffffff;
+  --tdi-tab-active-shadow: var(--tdi-tab-shadow);
+  --tdi-tab-small-color: rgba(16, 17, 20, 0.58);
+  --tdi-tab-active-small-color: rgba(255, 255, 255, 0.72);
+  /* Tier 2 selection states. Unfocused fades the dark glass pill toward the
+     translucent rail tint behind it instead of full ink -- a window losing
+     focus should look like it is receding into the glass, not just greying
+     out. Hover/pressed reuse --help-row-hover-*'s light-tint-on-glass recipe,
+     one and two steps darker. */
+  --tdi-tabs-heading-padding: 8px 10px 4px;
+  --tdi-tabs-heading-fg: rgba(16, 17, 20, 0.55);
+  --tdi-tabs-heading-font-size: 11px;
+  --tdi-tabs-heading-letter-spacing: 0.02em;
+  --tdi-tabs-heading-text-transform: uppercase;
+  --tdi-tabs-heading-border-bottom: 0;
+  --tdi-tab-active-unfocused-border: 1px solid rgba(16, 17, 20, 0.32);
+  --tdi-tab-active-unfocused-border-bottom: var(--tdi-tab-active-unfocused-border);
+  --tdi-tab-active-unfocused-bg: rgba(120, 120, 128, 0.24);
+  --tdi-tab-active-unfocused-fg: rgba(16, 17, 20, 0.72);
+  --tdi-tab-active-unfocused-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  --tdi-tab-active-unfocused-small-color: rgba(16, 17, 20, 0.5);
+  --tdi-tab-hover-bg: var(--help-row-hover-bg);
+  --tdi-tab-hover-fg: var(--help-row-hover-fg);
+  --tdi-tab-hover-shadow: none;
+  --tdi-tab-pressed-bg: rgba(16, 17, 20, 0.16);
+  --tdi-tab-pressed-fg: rgba(16, 17, 20, 0.94);
+  --tdi-tab-pressed-shadow: none;
+  --tdi-tab-dragging-border: 1px solid rgba(0, 122, 255, 0.48);
+  --tdi-tab-dragging-border-bottom: var(--tdi-tab-dragging-border);
+  --tdi-tab-dragging-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.18)),
+    rgba(0, 122, 255, 0.1);
+  --tdi-tab-dragging-fg: rgba(16, 17, 20, 0.86);
+  --tdi-tab-dragging-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.66),
+    0 0 0 3px rgba(0, 122, 255, 0.1);
+  --tdi-tab-dragging-transform: translateY(1px);
+  --tdi-tab-active-dragging-border: 1px solid rgba(0, 122, 255, 0.56);
+  --tdi-tab-active-dragging-border-bottom: var(--tdi-tab-active-dragging-border);
+  --tdi-tab-active-dragging-bg:
+    linear-gradient(180deg, rgba(16, 17, 20, 0.8), rgba(16, 17, 20, 0.62)),
+    rgba(16, 17, 20, 0.72);
+  --tdi-tab-active-dragging-fg: #ffffff;
+  --tdi-tab-active-dragging-shadow: var(--tdi-tab-dragging-shadow);
+  --tdi-tab-close-top: 50%;
+  --tdi-tab-close-right: 8px;
+  --tdi-tab-close-width: 30px;
+  --tdi-tab-close-height: 30px;
+  --tdi-tab-close-min-height: 30px;
+  --tdi-tab-close-border: 1px solid rgba(255, 255, 255, 0.48);
+  --tdi-tab-close-radius: var(--r-circle);
+  --tdi-tab-close-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.18)),
+    rgba(255, 255, 255, 0.22);
+  --tdi-tab-close-fg: rgba(16, 17, 20, 0.78);
+  --tdi-tab-close-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 4px 12px rgba(18, 28, 38, 0.16);
+  --tdi-tab-close-font-size: 18px;
+  --tdi-tab-close-line-height: 1;
+  --tdi-tab-close-transform: translateY(-50%);
+  --tdi-tab-close-backdrop-filter: blur(10px) saturate(150%);
+  --tdi-tab-close-active-border-color: rgba(255, 255, 255, 0.48);
+  --tdi-tab-close-hover-border-color: rgba(255, 255, 255, 0.48);
+  --tdi-tab-close-hover-bg: rgba(16, 17, 20, 0.08);
+  --tdi-tab-close-hover-fg: rgba(16, 17, 20, 0.92);
+  --tdi-tab-close-hover-shadow: var(--tdi-tab-close-shadow);
+  --tdi-tab-close-hover-transform: translateY(-50%);
+  --control-radius: var(--r-md);
+  /* Same track and segment geometry as Classic; only the material changes.
+     The thumb keeps its square block shape and never becomes a round knob.
+     The travelled region is a lighter trough, not an accent bar: Classic fills
+     it with nothing at all because this is a scroll bar reporting position, and
+     a saturated fill would make the same object mean "percent complete" in one
+     theme only. */
+  /* Classic's trough is a 2px dither. Glass keeps the same read - a hatched
+     channel the box travels along - at a material weight instead of 1-bit. */
+  --system-track-bg:
+    repeating-linear-gradient(90deg, rgba(16, 17, 20, 0.13) 0 1px, transparent 1px 3px),
+    rgba(16, 17, 20, 0.07);
+  --system-track-border: 0;
+  --system-track-radius: var(--r-xs);
+  --system-track-shadow: inset 0 1px 2px rgba(16, 17, 20, 0.14);
+  --system-track-fill: transparent;
+  --system-track-thumb-bg: rgba(255, 255, 255, 0.94);
+  --system-track-thumb-border: 1px solid rgba(16, 17, 20, 0.22);
+  --system-track-thumb-radius: var(--r-xs);
+  --system-track-thumb-shadow: 0 1px 2px rgba(18, 28, 38, 0.18);
+  --system-segment-bg: rgba(16, 17, 20, 0.14);
+  --system-segment-border: 0;
+  --system-segment-radius: var(--r-xs);
+  --system-segment-on-bg: linear-gradient(180deg, #5ac8fa, #0a84ff);
+  --system-segment-on-shadow: 0 1px 2px rgba(10, 132, 255, 0.32);
+  /* Glass carries colour better than bitmap paper, so the same reach is
+     allowed to go further before it stops reading as a material. */
+  --ss-tint-ceiling: 14%;
+  --ss-panel: rgba(255, 255, 255, 0.36);
+  --ss-rule: rgba(16, 17, 20, 0.12);
+  --ss-rule-strong: rgba(16, 17, 20, 0.18);
+  --soundscape-search-input-border: 1px solid rgba(255, 255, 255, 0.62);
+  --soundscape-search-input-radius: var(--r-md);
+  --icon-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.24)),
+    rgba(255, 255, 255, 0.26);
+  --icon-border: 1px solid rgba(255, 255, 255, 0.5);
+  --mini-icon-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.24)),
+    rgba(255, 255, 255, 0.26);
+  --mini-icon-border: 1px solid rgba(255, 255, 255, 0.5);
+  --large-mini-icon-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.24)),
+    rgba(255, 255, 255, 0.26);
+  --large-mini-icon-border: 1px solid rgba(255, 255, 255, 0.58);
+  --glass-tint: var(--liquid-content-surface);
+  --glass-border: rgba(255, 255, 255, 0.72);
+  --glass-edge: var(--liquid-edge-contrast);
+  --glass-highlight: rgba(255, 255, 255, 0.82);
+  --liquid-menu-active:
+    linear-gradient(180deg, rgba(16, 17, 20, 0.82), rgba(16, 17, 20, 0.64)),
+    rgba(16, 17, 20, 0.68);
+  --liquid-menu-active-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 2px 5px rgba(0, 0, 0, 0.22);
+  --liquid-menu-panel:
+    radial-gradient(118% 150% at 8% 0%, rgba(255, 255, 255, 0.76), transparent 43%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(243, 248, 251, 0.78)),
+    rgba(248, 251, 252, var(--liquid-menu-alpha));
+  --liquid-menu-panel-shadow:
+    0 12px 30px rgba(18, 28, 38, 0.12),
+    0 2px 8px rgba(18, 28, 38, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 0 rgba(16, 17, 20, 0.06);
+  /* Opaque-enough fill + blur for rendered-markdown reading surfaces (the
+     writing-route previews and the Review Desk preview). Unlike the editor
+     tints, reading surfaces scroll inside a backdrop-filter window and can
+     float over other windows, so they must stay solid: a transparent scroller
+     nested under a backdrop-filter ancestor also produces WebKit text-clipping
+     repaint artifacts. */
+  --glass-reading-surface:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(246, 251, 253, 0.86)),
+    rgba(246, 251, 253, 0.9);
+  --glass-reading-blur: blur(18px) saturate(135%);
+  /* Mirrors the Apple macOS 27 UI Kit / Materials / Liquid Glass stack:
+     neutral white fill, paired 1.25px side hairlines, Y +/- 40 glow wash,
+     and a 0 8 15 / 4% shadow. */
+  --glass-surface:
+    radial-gradient(128% 170% at 14% 0%, rgba(255, 255, 255, 0.46), transparent 40%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.07)),
+    rgba(255, 255, 255, 0.14);
+  --glass-edge-glow:
+    inset 1.25px 0 0 -0.75px rgba(230, 230, 230, 0.78),
+    inset -1.25px 0 0 -0.75px rgba(229, 229, 229, 0.78),
+    inset 0 -40px 10px -40px rgba(17, 17, 17, 0.22),
+    inset 0 -1px 0 0 rgba(38, 38, 38, 0.16),
+    inset 0 -4px 0.5px -4px rgba(153, 153, 153, 0.28),
+    inset -20px 0 20px -30px rgba(217, 217, 217, 0.46),
+    inset 20px 0 20px -30px rgba(217, 217, 217, 0.42);
+  --glass-rim:
+    radial-gradient(106% 128% at 100% 100%, rgba(16, 17, 20, 0.12), transparent 44%),
+    linear-gradient(180deg, transparent 40%, rgba(16, 17, 20, 0.035));
+  /* The tint slider drives the chrome material, not only the overlay uniform.
+     --liquid-tint-level 0 reads clear, 0.5 reproduces the shipped surface
+     exactly, 1 reads tinted, so an upgraded desk looks unchanged until the
+     reader moves the control. */
+  --glass-title-surface:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, calc(0.48 + 0.48 * var(--liquid-tint-level, 0.5))),
+      rgba(255, 255, 255, calc(0.14 + 0.28 * var(--liquid-tint-level, 0.5)))
+    ),
+    rgba(255, 255, 255, calc(0.16 + 0.36 * var(--liquid-tint-level, 0.5)));
+  --system-titlebar-active-bg: var(--glass-title-surface);
+  --system-titlebar-inactive-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.22)),
+    var(--liquid-inactive-chrome);
+  --system-titlebar-background-origin: padding-box;
+  --system-titlebar-background-clip: border-box;
+  --system-titlebar-control-focus-outline: 0;
+  --system-titlebar-control-focus-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.72),
+    0 0 0 5px rgba(16, 17, 20, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.58),
+    0 6px 14px rgba(18, 28, 38, 0.16);
+  --system-titlebar-close-attention-mark-opacity: 0.88;
+  --system-titlebar-resize-attention-mark-opacity: 0.88;
+  --system-titlebar-inactive-control-filter: none;
+  --system-titlebar-inactive-control-opacity: 1;
+  /* Glass keeps its traffic lights on background windows, but macOS turns them
+     one flat gray rather than dimming the colours — the colour is what says
+     "this window is in front", the same job the System 6 stripes do. */
+  --system-titlebar-inactive-control-visibility: visible;
+  --system-titlebar-inactive-title-color: rgba(16, 17, 20, 0.72);
+  /* Measured off a live macOS 27 window at 2x: a 14pt disc that brightens
+     toward the bottom, and carries a 0.5pt rim in the
+     lamp's own dark hue, strongest at the sides. Background lamps are
+     near-white with a grey rim. Stops live on each lamp as --lamp-*. */
+  --glass-lamp-close: #ea7468;
+  --glass-lamp-zoom: #7cca4a;
+  --glass-lamp-inactive: #f1f1f4;
+  --glass-lamp-mark-opacity: 0.62;
+  /* Window-chrome specimen: the lamp cluster sits at the left of the bar in
+     close / minimize / zoom order, the same 15px disc the real chrome draws. */
+  /* Glass keeps backdrop lamps but turns them one flat grey, not a dimmed
+     colour — the same rule the real title bar follows. */
+  --glass-accent: #0a84ff;
+  /* A focused field stays glass. Classic marks focus with a hard dark frame;
+     glass marks it by lighting the same material — brighter rim, denser fill,
+     one accent halo — so the field never drops back to a black rectangle. */
+  --glass-field-focus-rim: rgba(255, 255, 255, 0.94);
+  --glass-field-focus-fill: rgba(255, 255, 255, 0.42);
+  --glass-field-focus-ring: rgba(0, 122, 255, 0.3);
+  /* ---- Slider material -------------------------------------------------
+     The tint slider is the one control that carries this appearance's own
+     name, and it shipped with no material: the browser drew its default
+     track and knob, so the control that says "Liquid Glass" was the only
+     object in the window with no glass on it.
+
+     The recipe is the window chrome's own stack cut down to control size —
+     the paired 1.25px side hairlines and the soft drop of --glass-edge-glow,
+     the top-left radial specular of --glass-surface — plus the two things a
+     control has that a window pane does not: a well that reads as cut into
+     the panel, and a lens that refracts what it travels over.
+
+     All of it is value. Two lengths (the well's thickness and the lens's
+     diameter) are the only geometry, and each is read by one rule. */
+  --glass-slider-row-height: 34px;
+  /* The slider is a Mac control first: a 4px track and a 20px knob, the
+     geometry the platform has used since Big Sur. The appearance's material
+     belongs in how those two are painted, not in their size — the 12px well
+     and 22px lens this recipe shipped with read as an iOS pill, and a slider
+     that changes size on approach reads as decoration rather than control. */
+  --glass-slider-thickness: 4px;
+  --glass-slider-lens-size: 20px;
+  /* Where the value has reached, measured to the lens centre rather than to
+     the raw percentage: the lens travels inside the track, so a plain
+     percentage puts the bright rim ahead of the lens at one end and behind
+     it at the other.
+
+     It reads --liquid-tint-level, which the slider already writes on the root
+     element for the window chrome — so the fill, its rim and the lens all
+     follow the drag with no script of their own. The reference must be to
+     that property and not to one re-published on the control: a var() inside
+     a custom property is substituted where the custom property is DECLARED,
+     so a value handed up from the input would never reach this line, and the
+     fill would sit at the default however far the lens travelled. */
+  --glass-slider-fill:
+    calc(
+      var(--liquid-tint-level, 0.5) * (100% - var(--glass-slider-lens-size))
+      + var(--glass-slider-lens-size) / 2
+    );
+  --glass-slider-lit: #0a84ff;
+  --glass-slider-well: rgba(16, 17, 20, 0.12);
+  /* Two flat runs: the value's accent up to the knob, a quiet well after it.
+     No groove and no bright rim — a Mac slider is a line and a knob, and the
+     track must not compete with the control that carries the appearance's
+     own name. The hairline keeps the line from dissolving into the pane. */
+  --glass-slider-track-bg:
+    linear-gradient(
+      90deg,
+      var(--glass-slider-lit) 0 var(--glass-slider-fill),
+      var(--glass-slider-well) var(--glass-slider-fill) 100%
+    );
+  --glass-slider-track-shadow: inset 0 0 0 0.5px rgba(16, 17, 20, 0.06);
+  /* The knob: opaque white, one hairline, one short drop. It carries no blur
+     of its own — the appearance's glass is the panel behind it. */
+  --glass-slider-lens-bg: #ffffff;
+  --glass-slider-lens-shadow:
+    0 0 0 0.5px rgba(16, 17, 20, 0.08),
+    0 0.5px 1px rgba(16, 17, 20, 0.18),
+    0 2px 5px rgba(18, 28, 38, 0.18);
+  --glass-slider-lens-filter: none;
+  --glass-slider-lens-scale: 1;
+  /* Travel and duration are tokens so reduced motion can take them to
+     nothing without a second copy of the state rules. */
+  /* A Mac knob keeps its size: hover and press move the material, never the
+     geometry, so the pointer cannot resize the target under itself. */
+  --glass-slider-hover-scale: 1;
+  --glass-slider-press-scale: 1;
+  --glass-slider-motion: var(--control-motion-fast-in);
+  --glass-blue: #64d2ff;
+  --glass-progress-blue: #0a84ff;
+  --glass-progress-accent: #5ac8fa;
+  --glass-progress-blue-soft: #64d2ff;
+  --glass-progress-accent-soft: #a6e3ff;
+  /* Shared progress-meter recipe tokens (see 00-foundation.css :root); the
+     rebuild meter's own twin below still owns the glass blur/backdrop, which
+     is not a plain value swap, but these three period tokens are. */
+  --progress-radius: var(--r-pill);
+  --progress-fill-radius: var(--r-pill);
+  --progress-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  --progress-fill-active-bg: linear-gradient(90deg, var(--glass-progress-blue-soft), var(--glass-progress-accent-soft), var(--glass-progress-blue-soft));
+  --progress-fill-active-size: 50% 100%;
+  /* ClioChart's second visual language: cool translucent plotting paper and a
+     luminous blue signal. Geometry and mark identity remain shared with the
+     Classic 1-bit theme. */
+  --clio-chart-surface:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.74), rgba(241, 246, 248, 0.46)),
+    rgba(247, 250, 251, 0.56);
+  --clio-chart-ink: #20272c;
+  --clio-chart-rule: rgba(32, 45, 54, 0.18);
+  --clio-chart-muted: rgba(32, 39, 44, 0.56);
+  --clio-chart-panel:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.66), rgba(232, 239, 243, 0.34)),
+    rgba(243, 247, 249, 0.46);
+  --clio-chart-panel-quiet: rgba(255, 255, 255, 0.38);
+  --clio-chart-accent: rgba(31, 57, 74, 0.82);
+  --clio-chart-mark-border: 1px solid var(--clio-chart-rule);
+  --clio-chart-track: rgba(31, 57, 74, 0.14);
+  --clio-chart-pattern-paper: rgba(250, 252, 253, 0.82);
+  --clio-chart-reference: rgba(42, 69, 86, 0.08);
+  --clio-chart-focus-shadow:
+    0 0 0 3px rgba(10, 132, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  /* Liquid Glass marks the selected cell with the same luminous blue signal the
+     rest of the theme uses. The Classic 2px ink frame reads as a hard black box
+     against the translucent material. */
+  --clio-chart-selected-outline: 1.5px solid rgba(10, 132, 255, 0.62);
+  --clio-chart-selected-outline-offset: -1.5px;
+  --clio-chart-solid-fill:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.08) 48%, rgba(31, 57, 74, 0.12) 49%),
+    rgba(92, 130, 154, 0.42);
+  --clio-chart-pattern-1:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.44), transparent 48%, rgba(31, 57, 74, 0.08)),
+    repeating-conic-gradient(rgba(31, 57, 74, 0.42) 0 25%, rgba(255, 255, 255, 0.32) 0 50%) 0 0 / 3px 3px;
+  --clio-chart-pattern-2:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.44), transparent 48%, rgba(31, 57, 74, 0.08)),
+    repeating-linear-gradient(45deg, rgba(31, 57, 74, 0.42) 0 1px, rgba(255, 255, 255, 0.3) 1px 4px);
+  --clio-chart-pattern-3:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.44), transparent 48%, rgba(31, 57, 74, 0.08)),
+    conic-gradient(rgba(31, 57, 74, 0.4) 0 25%, rgba(255, 255, 255, 0.3) 0) 0 0 / 4px 4px;
+  --clio-chart-pattern-4:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.44), transparent 48%, rgba(31, 57, 74, 0.08)),
+    repeating-linear-gradient(90deg, rgba(31, 57, 74, 0.4) 0 1px, rgba(255, 255, 255, 0.3) 1px 4px);
+  --clio-chart-pattern-5:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.44), transparent 48%, rgba(31, 57, 74, 0.08)),
+    repeating-linear-gradient(-45deg, rgba(31, 57, 74, 0.4) 0 1px, rgba(255, 255, 255, 0.3) 1px 5px);
+  --clio-chart-material-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.76),
+    inset 0 -1px 0 rgba(31, 57, 74, 0.14),
+    0 3px 9px rgba(31, 57, 74, 0.1);
+  --clio-chart-material-filter: blur(7px) saturate(125%);
+  --clio-chart-typeface: var(--preview-font);
+  --clio-chart-type-size: 12px;
+  --clio-chart-radius: var(--r-md);
+  --clio-chart-cell-radius: var(--clio-chart-radius);
+  --clio-chart-pane-bg:
+    radial-gradient(110% 130% at 10% 0%, rgba(255, 255, 255, 0.52), transparent 44%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.1)),
+    rgba(255, 255, 255, 0.14);
+  --clio-chart-pane-border: 1px solid rgba(255, 255, 255, 0.64);
+  --clio-chart-pane-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.76),
+    0 12px 30px rgba(31, 57, 74, 0.07);
+  --clio-chart-pane-filter: blur(14px) saturate(135%);
+  --clio-chart-pane-margin: 6px;
+  --clio-chart-pane-padding: 14px 16px;
+  --clio-chart-grid-pane-padding: 14px 16px;
+  --clio-chart-grid-collapse: separate;
+  --clio-chart-grid-spacing: 0 5px;
+  --clio-chart-cell-height: 30px;
+  --clio-chart-cell-padding: 5px 10px;
+  --clio-chart-matrix-size: 11px;
+  --clio-chart-matrix-cell-padding: 6px 10px;
+  --clio-chart-matrix-cell-border: 0;
+  --clio-chart-matrix-row-rule: 1px solid var(--clio-chart-rule);
+  --clio-chart-matrix-note-size: 10px;
+  --clio-chart-card-border: 1px solid var(--clio-chart-rule);
+  --clio-chart-card-radius: var(--clio-chart-radius);
+  --clio-chart-row-gap: 9px;
+  --clio-chart-track-height: 18px;
+  --clio-chart-switcher-width: 100%;
+  --clio-chart-switcher-justify: flex-start;
+  --clio-chart-label-bg: rgba(250, 252, 253, 0.9);
+  --clio-chart-label-padding: 2px 4px;
+  --clio-chart-label-leading: 1.35;
+  --clio-chart-value-bg: rgba(250, 252, 253, 0.94);
+  --clio-chart-density-12:
+    conic-gradient(rgba(31, 57, 74, 0.16) 0 12.5%, rgba(255, 255, 255, 0.34) 0) 0 0 / 5px 5px;
+  --clio-chart-density-25:
+    conic-gradient(rgba(31, 57, 74, 0.2) 0 25%, rgba(255, 255, 255, 0.34) 0) 0 0 / 5px 5px;
+  --clio-chart-density-50:
+    repeating-conic-gradient(rgba(31, 57, 74, 0.24) 0 25%, rgba(255, 255, 255, 0.4) 0 50%) 0 0 / 5px 5px;
+  --clio-chart-density-75:
+    conic-gradient(rgba(255, 255, 255, 0.38) 0 25%, rgba(31, 57, 74, 0.3) 0) 0 0 / 5px 5px;
+  --clio-chart-spatial-cell-height: 76px;
+  --clio-chart-spatial-label-size: 11px;
+  --clio-chart-spatial-value-size: 16px;
+  --mde-scrollbar-offset: 16px;
+  --desktop-icon-column-gap: 4px;
+  --desktop-icon-width: 84px;
+  /* Liquid Glass desktop labels are the glass chip; values live here so the
+     base .desktop-icon span:last-child rule needs no glass twin. */
+  --desktop-label-bg: rgba(255, 255, 255, 0.54);
+  --desktop-label-fg: var(--ink);
+  --desktop-label-radius: var(--r-sm);
+  --desktop-label-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  /* 104: the chip's own padding left 88px for "Applications" at 88px, so
+     it broke as "Application / s" (2026-10-08 survey). */
+  --desktop-label-max-width: 104px;
+  --liquid-desktop-icon-padding: 2px 2px;
+  --liquid-desktop-icon-label-line-height: 1;
+  --settings-scrollbar-lane-bg: transparent;
+  --settings-scrollbar-lane-padding-right: 12px;
+  /* The pane's scroller, the appearance's own bar: a quiet lane, a translucent
+     pill, and a darker pill on approach. A scrollbar is never global here —
+     the rest of the app leaves the platform's bar alone — but the pane cannot
+     leave its own alone, because the shared recipe's defaults are the Mac OS 8
+     lane (paper track, inked left edge, inked thumb), which down the side of a
+     glass panel read as a black ribbon. No ink survives in these values. */
+  --settings-scrollbar-width: 12px;
+  --settings-scrollbar-track-bg: transparent;
+  --settings-scrollbar-track-edge: 0;
+  --settings-scrollbar-thumb-border: 3px solid transparent;
+  --settings-scrollbar-thumb-radius: var(--r-pill);
+  --settings-scrollbar-thumb-bg: rgba(16, 17, 20, 0.34);
+  --settings-scrollbar-thumb-hover-bg: rgba(16, 17, 20, 0.5);
+  --settings-scrollbar-thumb-clip: padding-box;
+  --settings-scrollbar-thumb-shadow: none;
+
+  /* Migrated twin overrides. Each pairs with a default in :root in
+     styles/00-foundation.css. Deleting the corresponding body[data-theme="liquid-glass"]
+     <selector> rule below dropped liquidGlassTwinCount accordingly. */
+  --menu-divider-color: rgba(16, 17, 20, 0.12);
+  --menu-shortcut-color: currentColor;
+  --menu-shortcut-opacity: 0.78;
+  --menu-button-fg: rgba(16, 17, 20, 0.82);
+  --menu-button-active-bg: var(--liquid-menu-active);
+  --menu-button-active-fg: #ffffff;
+  --menu-button-active-shadow: var(--liquid-menu-active-shadow);
+  --menu-chip-active-bg: var(--liquid-menu-active);
+  --menu-chip-active-fg: #ffffff;
+  --menu-chip-active-shadow: var(--liquid-menu-active-shadow);
+  --menu-item-fg: #101114;
+  --menu-item-active-bg: var(--liquid-menu-active);
+  --menu-item-active-fg: #ffffff;
+  /* The stock 12px check offset fits the glass menu's wide gutter; stated so
+     the era answers the token. */
+  --menu-check-left: 12px;
+  --menu-item-active-shadow: var(--liquid-menu-active-shadow);
+  --menu-panel-shadow: var(--liquid-menu-panel-shadow);
+  --liquid-disabled-control-border: rgba(16, 17, 20, 0.22);
+  --liquid-disabled-control-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.54), rgba(255, 255, 255, 0.2)),
+    rgba(255, 255, 255, 0.2);
+  /* 0.42 measured 2.68:1 on the glass control face; 0.52 clears 3:1 and still
+     reads clearly lighter than enabled ink. */
+  --liquid-disabled-control-fg: rgba(16, 17, 20, 0.52);
+  --liquid-disabled-control-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
+  --tdi-tab-wrap-dragging-opacity: 1;
+  --docmap-node-circle-fill: rgba(255, 255, 255, 0.88);
+  --docmap-node-circle-stroke-width: 2.2px;
+  --video-chip-border: 1px solid rgba(47, 157, 179, 0.2);
+  --video-chip-radius: var(--r-pill);
+  --video-chip-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.24)),
+    rgba(0, 122, 255, 0.1);
+  --video-chip-fg: rgba(16, 17, 20, 0.72);
+  --video-timeline-min-height: 38px;
+  --video-timeline-border: 1px solid rgba(16, 17, 20, 0.11);
+  --video-timeline-radius: var(--r-md);
+  --video-timeline-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.22)),
+    rgba(255, 255, 255, 0.22);
+  --video-timeline-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 5px 14px rgba(18, 28, 38, 0.035);
+  --video-timeline-fg: rgba(16, 17, 20, 0.88);
+  --video-timeline-selected-border-color: rgba(255, 255, 255, 0.26);
+  --video-timeline-selected-bg:
+    linear-gradient(180deg, rgba(16, 17, 20, 0.86), rgba(16, 17, 20, 0.66)),
+    rgba(16, 17, 20, 0.76);
+  --video-timeline-selected-fg: #ffffff;
+  --video-timeline-selected-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 8px 20px rgba(18, 28, 38, 0.12);
+  --video-timeline-selected-span-fg: rgba(255, 255, 255, 0.76);
+  --empty-note-border: 1px solid rgba(255, 255, 255, 0.42);
+  --empty-note-radius: var(--r-lg);
+  --empty-note-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.18)),
+    rgba(255, 255, 255, 0.2);
+  --empty-note-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 10px 28px rgba(18, 28, 38, 0.07);
+  --empty-note-fg: rgba(16, 17, 20, 0.78);
+  --scrollbar-corner-bg: rgba(255, 255, 255, 0.16);
+  --active-window-shadow: 0 8px 15px rgba(0, 0, 0, 0.045), 0 28px 68px rgba(18, 28, 38, 0.1);
+  --card-caption-color: rgba(16, 17, 20, 0.58);
+  --finder-navigation-border: 1px solid rgba(16, 17, 20, 0.1);
+  --finder-navigation-bg: rgba(255, 255, 255, 0.24);
+  --finder-breadcrumb-radius: var(--r-sm);
+  --finder-breadcrumb-text-decoration: none;
+  --finder-breadcrumb-hover-bg: rgba(16, 17, 20, 0.84);
+  --finder-breadcrumb-hover-fg: #ffffff;
+  --finder-breadcrumb-current-color: rgba(16, 17, 20, 0.82);
+  --finder-continuation-display: inline-flex;
+  --finder-continuation-border: 1px solid rgba(255, 255, 255, 0.62);
+  --finder-continuation-radius: var(--r-pill);
+  --finder-continuation-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.2)),
+    rgba(255, 255, 255, 0.2);
+  --finder-continuation-fg: rgba(16, 17, 20, 0.72);
+  --finder-continuation-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.82),
+    0 6px 18px rgba(18, 28, 38, 0.14);
+  --finder-continuation-backdrop: blur(12px) saturate(150%);
+  --menu-bar-height: 30px;
+  /* Glass popovers tuck 3px under the bar's lip. */
+  --menu-popover-top: calc(var(--menu-bar-height) + var(--safe-area-top) - 3px);
+  --tab-radius: var(--r-md);
+  --tab-overlap: 0px;
+  --tab-bg: rgba(16, 17, 20, 0.06);
+  --tab-hover-bg: rgba(255, 255, 255, 0.42);
+  --tab-active-bg: rgba(255, 255, 255, 0.72);
+  /* Theme Family Contract: the keyboard ring. The base layer writes System 6's
+     dotted ink ring, so every era that never answered wore it. Each era already
+     names its own ring for controls; this points the shared role at it. */
+  --system-focus-outline: var(--control-focus-outline);
+  --control-focus-outline: 2px solid rgba(0, 122, 255, 0.92);
+  --control-choice-hover-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.86),
+    0 7px 16px rgba(18, 28, 38, 0.12);
+  --memory-cards-pane-bg: rgba(255, 255, 255, 0.16);
+  --memory-cards-details-bg: rgba(255, 255, 255, 0.28);
+  --memory-cards-details-border: 1px solid rgba(16, 17, 20, 0.1);
+  --memory-cards-board-bg: rgba(255, 255, 255, 0.12);
+  --memory-cards-board-border: 1px solid rgba(255, 255, 255, 0.38);
+  --memory-cards-board-radius: var(--r-lg);
+  --memory-cards-board-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58);
+  --memory-card-bg:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.42)),
+    rgba(255, 255, 255, 0.4);
+  --memory-card-border: 1px solid rgba(16, 17, 20, 0.18);
+  --memory-card-radius: var(--r-md);
+  --memory-card-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.82),
+    0 7px 16px rgba(18, 28, 38, 0.13);
+  --memory-card-hover-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    0 11px 22px rgba(18, 28, 38, 0.18);
+  --memory-card-back-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.74), rgba(255, 255, 255, 0.24));
+  --memory-card-back-mark-bg: rgba(16, 17, 20, 0.12);
+  --memory-card-face-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.44),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.24);
+  --memory-card-match-ring:
+    inset 0 0 0 3px rgba(255, 255, 255, 0.86),
+    inset 0 0 0 5px rgba(16, 17, 20, 0.62);
+  --guide-start-card-padding: 14px 16px;
+  --startup-settings-modal-padding: 28px 32px 24px;
+  --startup-settings-form-gap: 18px;
+  --startup-settings-header-gap: 18px;
+  --startup-settings-disk-icon-width: 48px;
+  --startup-settings-disk-icon-height: 48px;
+  --startup-settings-disk-icon-border: 1px solid rgba(16, 17, 20, 0.2);
+  --startup-settings-disk-icon-radius: var(--r-md);
+  --startup-settings-disk-icon-bg:
+    linear-gradient(rgba(16, 17, 20, 0.74), rgba(16, 17, 20, 0.74)) 13px 25px / 22px 3px no-repeat,
+    linear-gradient(rgba(16, 17, 20, 0.5), rgba(16, 17, 20, 0.5)) 32px 10px / 2px 9px no-repeat,
+    linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.28)),
+    rgba(255, 255, 255, 0.3);
+  --startup-settings-disk-icon-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.82),
+    0 10px 24px rgba(18, 28, 38, 0.12);
+  --startup-settings-option-gap: 10px;
+  --startup-settings-option-radius: var(--r-pill);
+  --startup-settings-hr-border: 0;
+  --startup-settings-hr-border-top: 1px solid rgba(16, 17, 20, 0.16);
+  --startup-settings-hr-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+  --startup-settings-subhead-color: rgba(16, 17, 20, 0.9);
+  --startup-settings-radio-focus-outline: 0;
+  --startup-settings-radio-focus-outline-offset: 0;
+  --startup-settings-radio-focus-visible-outline: 0;
+  --startup-settings-radio-focus-visible-outline-offset: 0;
+  --startup-settings-radio-focus-visible-shadow:
+    0 0 0 3px rgba(0, 122, 255, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    0 6px 14px rgba(18, 28, 38, 0.08);
+  --balloon-help-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.54)),
+    rgba(238, 246, 252, 0.74);
+  --balloon-help-border: 1px solid rgba(255, 255, 255, 0.82);
+  --balloon-help-radius: var(--r-lg);
+  --balloon-help-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 12px 28px rgba(18, 28, 38, 0.18);
+  --balloon-help-padding: 11px 14px;
+  --balloon-help-backdrop: blur(18px) saturate(1.2);
+  --status-panel-border: 1px solid rgba(255, 255, 255, 0.48);
+  --status-panel-radius: var(--r-lg);
+  --status-panel-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.16)),
+    rgba(255, 255, 255, 0.18);
+  --status-panel-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.76),
+    0 12px 32px rgba(18, 28, 38, 0.08);
+  --status-clock-border: var(--status-panel-border);
+  --status-clock-radius: var(--status-panel-radius);
+  --status-clock-bg: var(--status-panel-bg);
+  --status-clock-shadow: var(--status-panel-shadow);
+  --status-clock-gap: 4px;
+  --status-clock-padding: 14px 12px;
+  --status-clock-time-shadow: 0 1px 0 rgba(255, 255, 255, 0.56);
+  --model-state-panel-border: var(--status-panel-border);
+  --model-state-panel-radius: var(--status-panel-radius);
+  --model-state-panel-bg: var(--status-panel-bg);
+  --model-state-panel-shadow: var(--status-panel-shadow);
+  --model-state-panel-gap: 9px;
+  --model-state-panel-padding: 12px 14px;
+  --model-state-title-color: rgba(16, 17, 20, 0.92);
+  --model-state-title-font-size: 13px;
+  --model-state-list-gap: 6px;
+  --model-state-row-padding: 5px 8px;
+  --model-state-row-border-left: 0;
+  --model-state-row-radius: var(--r-md);
+  --model-state-row-bg: rgba(255, 255, 255, 0.18);
+  --model-state-row-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.52);
+  --model-state-row-current-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.54), rgba(255, 255, 255, 0.2)),
+    rgba(90, 200, 250, 0.24);
+  --model-state-row-done-bg: var(--model-state-row-current-bg);
+  --model-state-running-outline: 0;
+  --model-state-running-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.76),
+    0 0 0 3px rgba(0, 122, 255, 0.22),
+    0 12px 32px rgba(18, 28, 38, 0.08);
+  --model-state-next-margin: 0;
+  --model-state-next-padding-top: 8px;
+  --model-state-next-border-top: 1px solid rgba(16, 17, 20, 0.1);
+  --model-state-next-color: rgba(16, 17, 20, 0.66);
+  --cloud-state-panel-border: var(--status-panel-border);
+  --cloud-state-panel-radius: var(--status-panel-radius);
+  --cloud-state-panel-bg: var(--status-panel-bg);
+  --cloud-state-panel-shadow: var(--status-panel-shadow);
+  --cloud-state-panel-gap: 9px;
+  --cloud-state-panel-padding: 12px 14px;
+  --cloud-state-title-color: rgba(16, 17, 20, 0.92);
+  --cloud-state-title-font-size: 13px;
+  --cloud-state-name-color: rgba(16, 17, 20, 0.92);
+  --cloud-state-status-color: rgba(16, 17, 20, 0.82);
+  --cloud-state-status-font-size: 12px;
+  --cloud-state-usage-gap: 5px 14px;
+  --cloud-state-usage-padding-top: 8px;
+  --cloud-state-usage-border-top: 1px solid rgba(16, 17, 20, 0.1);
+  --cloud-state-usage-font-size: 12px;
+  --cloud-state-usage-label-color: rgba(16, 17, 20, 0.48);
+  --system-status-pane-gap: 14px;
+  --system-status-pane-padding: 14px;
+  --system-status-pane-bg:
+    linear-gradient(135deg, rgba(232, 238, 242, 0.14), rgba(235, 241, 247, 0.12)),
+    rgba(255, 255, 255, 0.14);
+  --writing-bell-time-border: 1px solid rgba(16, 17, 20, 0.16);
+  --writing-bell-time-radius: var(--r-sm);
+  --writing-bell-time-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0.18)),
+    rgba(255, 255, 255, 0.24);
+  --writing-bell-time-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  --writing-bell-pane-gap: 10px;
+  --writing-bell-pane-padding: 14px;
+  --writing-bell-pane-bg:
+    linear-gradient(135deg, rgba(232, 238, 242, 0.12), rgba(235, 241, 247, 0.16)),
+    rgba(255, 255, 255, 0.14);
+  --writing-bell-mode-gap: 3px;
+  --writing-bell-mode-padding: 3px;
+  --writing-bell-mode-border: 1px solid rgba(16, 17, 20, 0.14);
+  --writing-bell-mode-radius: var(--r-md);
+  --writing-bell-mode-bg: rgba(255, 255, 255, 0.34);
+  --writing-bell-mode-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  --writing-bell-mode-button-min-height: 30px;
+  --writing-bell-mode-button-border: 1px solid transparent;
+  --writing-bell-mode-button-border-right: 1px solid transparent;
+  --writing-bell-mode-button-last-border-right: 1px solid transparent;
+  --writing-bell-mode-button-radius: var(--r-sm);
+  --writing-bell-mode-button-bg: transparent;
+  --writing-bell-mode-button-fg: rgba(16, 17, 20, 0.82);
+  --writing-bell-mode-active-border-top-color: rgba(16, 17, 20, 0.66);
+  --writing-bell-mode-active-border-right-color: rgba(16, 17, 20, 0.66);
+  --writing-bell-mode-active-border-bottom-color: rgba(16, 17, 20, 0.66);
+  --writing-bell-mode-active-border-left-color: rgba(16, 17, 20, 0.66);
+  --writing-bell-mode-active-bg:
+    linear-gradient(180deg, rgba(16, 17, 20, 0.84), rgba(16, 17, 20, 0.68)),
+    rgba(16, 17, 20, 0.76);
+  --writing-bell-mode-active-fg: #ffffff;
+  --writing-bell-mode-active-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  --dictation-capture-gap: 3px;
+  --dictation-capture-padding: 3px;
+  --dictation-capture-border: 1px solid rgba(16, 17, 20, 0.14);
+  --dictation-capture-radius: var(--r-md);
+  --dictation-capture-bg: rgba(255, 255, 255, 0.34);
+  --dictation-capture-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  --dictation-capture-button-min-height: 30px;
+  --dictation-capture-button-border: 1px solid transparent;
+  --dictation-capture-button-border-right: 1px solid transparent;
+  --dictation-capture-button-last-border-right: 1px solid transparent;
+  --dictation-capture-button-radius: var(--r-sm);
+  --dictation-capture-button-bg: transparent;
+  --dictation-capture-button-fg: rgba(16, 17, 20, 0.82);
+  --writing-bell-preset-border-color: rgba(255, 255, 255, 0.64);
+  --writing-bell-preset-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.54), rgba(255, 255, 255, 0.18)),
+    rgba(255, 255, 255, 0.32);
+  --writing-bell-preset-fg: rgba(16, 17, 20, 0.9);
+  --writing-bell-preset-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 8px 22px rgba(18, 28, 38, 0.06);
+  --writing-bell-preset-hover-border-color: rgba(16, 17, 20, 0.24);
+  --writing-bell-preset-hover-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.68), rgba(255, 255, 255, 0.28)),
+    rgba(255, 255, 255, 0.42);
+  --writing-bell-preset-hover-fg: rgba(16, 17, 20, 0.94);
+  --writing-bell-preset-hover-shadow:
+    inset 1.25px 0 0 -0.75px rgba(255, 255, 255, 0.92),
+    inset -1.25px 0 0 -0.75px rgba(229, 229, 229, 0.86),
+    inset 0 40px 10px -40px rgba(17, 17, 17, 0.2),
+    inset 0 -40px 10px -40px rgba(17, 17, 17, 0.18),
+    inset -20px 0 20px -30px rgba(217, 217, 217, 0.5),
+    inset 20px 0 20px -30px rgba(217, 217, 217, 0.45),
+    0 1px 2px rgba(0, 0, 0, 0.1),
+    0 10px 22px rgba(0, 0, 0, 0.13);
+  --writing-bell-preset-pressed-border-color: rgba(16, 17, 20, 0.24);
+  --writing-bell-preset-pressed-bg: var(--writing-bell-preset-hover-bg);
+  --writing-bell-preset-pressed-fg: var(--writing-bell-preset-hover-fg);
+  --writing-bell-preset-pressed-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 8px 18px rgba(18, 28, 38, 0.12);
+  --writing-bell-preset-active-border-color: rgba(16, 17, 20, 0.72);
+  --writing-bell-preset-active-bg:
+    linear-gradient(180deg, rgba(16, 17, 20, 0.84), rgba(16, 17, 20, 0.68)),
+    rgba(16, 17, 20, 0.76);
+  --writing-bell-preset-active-fg: #ffffff;
+  --writing-bell-preset-active-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 8px 18px rgba(18, 28, 38, 0.12);
+  --writing-bell-preset-active-pressed-bg:
+    linear-gradient(180deg, rgba(16, 17, 20, 0.9), rgba(16, 17, 20, 0.74)),
+    rgba(16, 17, 20, 0.78);
+  --writing-bell-preset-active-pressed-fg: #ffffff;
+  --dictionary-result-border: 1px solid rgba(16, 17, 20, 0.16);
+  --dictionary-result-radius: var(--r-lg);
+  --dictionary-result-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.2)),
+    rgba(255, 255, 255, 0.22);
+  --dictionary-result-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.74),
+    0 12px 32px rgba(18, 28, 38, 0.08);
+  --dictionary-empty-note-max-width: none;
+  --dictionary-empty-note-margin: 14px auto;
+  --dictionary-empty-note-border: 1px solid rgba(16, 17, 20, 0.14);
+  --dictionary-empty-note-radius: var(--r-lg);
+  --dictionary-empty-note-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.24)),
+    rgba(255, 255, 255, 0.26);
+  --dictionary-empty-note-fg: rgba(16, 17, 20, 0.76);
+  --dictionary-empty-note-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  --dictionary-pane-gap: 10px;
+  --dictionary-pane-padding: 10px;
+  --dictionary-pane-bg: rgba(255, 255, 255, 0.2);
+  --dictionary-form-label-color: rgba(16, 17, 20, 0.86);
+  --dictionary-recent-min-height: 34px;
+  --dictionary-recent-border-top: 1px solid rgba(16, 17, 20, 0.14);
+  --dictionary-recent-color: rgba(16, 17, 20, 0.78);
+  --dictionary-recent-button-border: 1px solid rgba(255, 255, 255, 0.56);
+  --dictionary-recent-button-radius: var(--r-pill);
+  --dictionary-recent-button-bg: rgba(255, 255, 255, 0.34);
+  --dictionary-recent-button-fg: rgba(16, 17, 20, 0.86);
+  --find-file-pane-gap: 12px;
+  --find-file-pane-padding: 14px;
+  --find-file-pane-bg:
+    linear-gradient(135deg, rgba(232, 238, 242, 0.12), rgba(235, 241, 247, 0.14)),
+    rgba(255, 255, 255, 0.14);
+  --find-file-search-row-gap: 12px;
+  --find-file-label-color: rgba(16, 17, 20, 0.9);
+  --find-file-results-padding: 10px;
+  --find-file-results-border: 1px solid rgba(16, 17, 20, 0.16);
+  --find-file-results-radius: var(--r-lg);
+  --find-file-results-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.16)),
+    rgba(255, 255, 255, 0.2);
+  --find-file-results-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.74),
+    0 12px 32px rgba(18, 28, 38, 0.08);
+  --find-file-empty-note-max-width: none;
+  --find-file-empty-note-margin: 4px auto;
+  --find-file-empty-note-padding: 14px 16px;
+  --find-file-empty-note-border: 1px solid rgba(16, 17, 20, 0.12);
+  --find-file-empty-note-radius: var(--r-md);
+  --find-file-empty-note-bg:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.64), rgba(255, 255, 255, 0.24)),
+    rgba(255, 255, 255, 0.24);
+  --find-file-empty-note-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  --find-file-empty-note-fg: rgba(16, 17, 20, 0.76);
+  --find-file-result-margin-bottom: 6px;
+  --find-file-result-border: 1px solid rgba(255, 255, 255, 0.44);
+  --find-file-result-border-bottom: var(--find-file-result-border);
+  --find-file-result-radius: var(--r-md);
+  --find-file-result-bg: rgba(255, 255, 255, 0.2);
+  --find-file-result-fg: var(--ink);
+  --find-file-result-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.54);
+  --find-file-result-active-border-color: rgba(16, 17, 20, 0.72);
+  --find-file-result-active-border-bottom-color: var(--find-file-result-active-border-color);
+  --find-file-result-active-bg:
+    linear-gradient(180deg, rgba(16, 17, 20, 0.78), rgba(16, 17, 20, 0.64)),
+    rgba(16, 17, 20, 0.66);
+  --find-file-result-active-fg: #ffffff;
+  --find-path-pane-gap: 12px;
+  --find-path-pane-padding: 14px;
+  --find-path-pane-bg:
+    linear-gradient(135deg, rgba(232, 238, 242, 0.12), rgba(235, 241, 247, 0.14)),
+    rgba(255, 255, 255, 0.14);
+  --find-path-summary-border: 1px solid rgba(255, 255, 255, 0.52);
+  --docmap-mobile-hint-border: 1px solid rgba(255, 255, 255, 0.5);
+  --find-path-results-gap: 8px;
+  --find-path-results-padding: 10px;
+  --find-path-results-border: 1px solid rgba(16, 17, 20, 0.16);
+  --find-path-results-radius: var(--r-lg);
+  --find-path-results-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.16)),
+    rgba(255, 255, 255, 0.2);
+  --find-path-results-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.74),
+    0 12px 32px rgba(18, 28, 38, 0.08);
+  --find-path-empty-note-max-width: none;
+  --find-path-empty-note-margin: 4px;
+  --find-path-empty-note-padding: 16px 18px;
+  --find-path-empty-note-border: 1px solid rgba(16, 17, 20, 0.12);
+  --find-path-empty-note-radius: var(--r-md);
+  --find-path-empty-note-bg:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.68), rgba(255, 255, 255, 0.26)),
+    rgba(255, 255, 255, 0.24);
+  --find-path-empty-note-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  --find-path-empty-note-fg: rgba(16, 17, 20, 0.82);
+  --find-path-result-gap: 5px;
+  --find-path-result-border: 1px solid rgba(255, 255, 255, 0.48);
+  --find-path-result-border-bottom: var(--find-path-result-border);
+  --find-path-result-last-border-bottom: var(--find-path-result-border);
+  --find-path-result-last-hover-border-bottom: var(--find-path-result-hover-border-bottom);
+  --find-path-result-radius: var(--r-md);
+  --find-path-result-bg: rgba(255, 255, 255, 0.24);
+  --find-path-result-fg: rgba(16, 17, 20, 0.94);
+  --find-path-result-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  --find-path-result-title-color: rgba(16, 17, 20, 0.96);
+  --find-path-result-detail-color: rgba(16, 17, 20, 0.72);
+  --find-path-result-body-color: rgba(16, 17, 20, 0.72);
+  --find-path-result-selected-border: 1px solid rgba(16, 17, 20, 0.72);
+  --find-path-result-selected-border-bottom: var(--find-path-result-selected-border);
+  --find-path-result-selected-bg: rgba(16, 17, 20, 0.84);
+  --find-path-result-selected-fg: #ffffff;
+  --find-path-result-selected-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 8px 18px rgba(18, 28, 38, 0.12);
+  --find-path-result-selected-title-color: #ffffff;
+  --find-path-result-selected-detail-color: rgba(255, 255, 255, 0.86);
+  --find-path-result-hover-border: 1px solid rgba(16, 17, 20, 0.24);
+  --find-path-result-hover-border-bottom: var(--find-path-result-hover-border);
+  --find-path-result-hover-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.24)),
+    rgba(255, 255, 255, 0.26);
+  --find-path-result-hover-fg: rgba(16, 17, 20, 0.96);
+  --find-path-result-hover-shadow: var(--find-path-result-selected-shadow);
+  --find-path-result-hover-title-color: rgba(16, 17, 20, 0.78);
+  --find-path-result-hover-detail-color: rgba(16, 17, 20, 0.78);
+  --find-path-result-selected-hover-border: var(--find-path-result-selected-border);
+  --find-path-result-selected-hover-border-bottom: var(--find-path-result-selected-border-bottom);
+  --find-path-result-selected-hover-bg:
+    linear-gradient(180deg, rgba(16, 17, 20, 0.84), rgba(16, 17, 20, 0.68)),
+    rgba(16, 17, 20, 0.72);
+  --find-path-result-selected-hover-fg: #ffffff;
+  --find-path-result-selected-hover-shadow: var(--find-path-result-selected-shadow);
+  --find-path-translation-border: 1px solid rgba(255, 255, 255, 0.38);
+  --find-path-translation-radius: var(--r-md);
+  --find-path-translation-bg: rgba(255, 255, 255, 0.16);
+  --find-path-translation-shadow: none;
+  --finder-op-caption-color: rgba(16, 17, 20, 0.52);
+  --finder-op-item-min-height: 48px;
+  --finder-op-last-border: 1px solid rgba(255, 255, 255, 0.42);
+  --select-divider: 0 none rgba(16, 17, 20, 0.08);
+  --system-select-option-margin: 2px 0;
+  --system-select-option-min-height: 32px;
+  --system-select-option-border: 0;
+  --system-select-option-radius: var(--r-md);
+  --system-select-option-bg: rgba(255, 255, 255, 0.08);
+  --system-select-option-fg: rgba(16, 17, 20, 0.92);
+  --system-select-option-shadow: none;
+  --system-select-option-active-bg: var(--liquid-menu-active);
+  --system-select-option-active-fg: #ffffff;
+  --system-select-option-active-shadow: var(--liquid-menu-active-shadow);
+  --system-select-option-active-next-border-top-color: rgba(255, 255, 255, 0.18);
+  --teachtext-blockquote-border: 1px solid rgba(16, 17, 20, 0.24);
+  --teachtext-attachments-empty-border: 1px solid rgba(16, 17, 20, 0.24);
+  --teachtext-preview-bg: var(--glass-reading-surface);
+  --teachtext-preview-title-divider: 1px solid rgba(16, 17, 20, 0.14);
+  --teachtext-preview-section-marker: 3px solid rgba(16, 17, 20, 0.18);
+  --teachtext-preview-image-border: 1px solid rgba(16, 17, 20, 0.14);
+  --teachtext-preview-image-bg: rgba(255, 255, 255, 0.24);
+  --teachtext-preview-blockquote-bg: rgba(255, 255, 255, 0.22);
+  --reader-content-border: 1px solid rgba(16, 17, 20, 0.14);
+  /* Inset 11px inside the window corner; stay concentric with it. */
+  --reader-content-inset: 11px;
+  --reader-content-radius: max(var(--r-xs), calc(var(--r-xl) - var(--reader-content-inset)));
+  --reader-content-bg:
+    linear-gradient(135deg, rgba(232, 238, 242, 0.045), rgba(235, 241, 247, 0.035)),
+    rgba(255, 255, 255, 0.12);
+  --reader-content-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 12px 32px rgba(18, 28, 38, 0.07);
+  --reader-meta-divider: 1px solid rgba(16, 17, 20, 0.1);
+  --drop-target-inset: 12px;
+  --drop-target-border: 1px solid rgba(0, 122, 255, 0.42);
+  --drop-target-radius: var(--r-lg);
+  --drop-target-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.16)),
+    rgba(0, 122, 255, 0.08);
+  --drop-target-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.34),
+    0 0 0 4px rgba(0, 122, 255, 0.1);
+  --drop-target-fg: rgba(16, 17, 20, 0.8);
+  --drop-target-font-family: var(--title-font);
+  --drop-target-font-size: 16px;
+  --drop-target-font-weight: 700;
+  --drop-target-text-align: center;
+  --drop-target-text-shadow: 0 1px 0 rgba(255, 255, 255, 0.72);
+  --drop-target-backdrop-filter: blur(6px) saturate(128%);
+  --reader-transcript-view-gap: 14px;
+  --reader-transcript-list-gap: 12px;
+  --reader-transcript-card-border: 1px solid rgba(16, 17, 20, 0.12);
+  --reader-transcript-card-radius: var(--r-md);
+  --reader-transcript-card-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.24)),
+    rgba(255, 255, 255, 0.2);
+  --reader-transcript-card-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 10px 24px rgba(18, 28, 38, 0.07);
+  --reader-transcript-block-header-color: rgba(16, 17, 20, 0.58);
+  --reader-transcript-button-border: 1px solid rgba(255, 255, 255, 0.58);
+  --reader-transcript-button-radius: var(--r-pill);
+  --reader-transcript-button-bg: rgba(255, 255, 255, 0.42);
+  --reader-transcript-button-fg: rgba(16, 17, 20, 0.9);
+  --reader-transcript-button-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 6px 16px rgba(18, 28, 38, 0.08);
+  --reader-transcript-blocks-border: 1px solid rgba(16, 17, 20, 0.16);
+  --reader-transcript-summary-border: 0;
+  --time-machine-toolbar-bg: rgba(255, 255, 255, 0.22);
+  --time-machine-toolbar-border: 1px solid rgba(255, 255, 255, 0.52);
+  --time-machine-popover-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(240, 245, 249, 0.94)),
+    rgba(244, 248, 251, 0.96);
+  --time-machine-popover-border: 1px solid rgba(255, 255, 255, 0.9);
+  --time-machine-popover-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.94),
+    inset 0 0 0 1px rgba(16, 17, 20, 0.08),
+    0 22px 54px rgba(18, 28, 38, 0.24);
+  --time-machine-popover-backdrop-filter: blur(28px) saturate(125%) brightness(1.04);
+  --time-machine-popover-fg: rgba(16, 17, 20, 0.94);
+  --time-machine-popover-muted: rgba(16, 17, 20, 0.68);
+  --time-machine-popover-divider: rgba(16, 17, 20, 0.14);
+  --time-machine-calendar-day-bg: rgba(255, 255, 255, 0.74);
+  --time-machine-calendar-day-border: rgba(16, 17, 20, 0.26);
+  --time-machine-time-active-bg:
+    linear-gradient(135deg, rgba(0, 122, 255, 0.16), rgba(122, 92, 255, 0.1)),
+    rgba(255, 255, 255, 0.28);
+  --time-machine-time-border: 1px solid rgba(0, 122, 255, 0.42);
+  --time-machine-frame-border: 1px solid rgba(16, 17, 20, 0.14);
+  --time-machine-frame-radius: var(--r-lg);
+  --time-machine-frame-bg: rgba(255, 255, 255, 0.16);
+  --time-machine-frame-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.74),
+    0 12px 32px rgba(18, 28, 38, 0.08);
+  --time-machine-archive-color: rgba(0, 92, 210, 0.94);
+  --time-machine-loading-bg: rgba(240, 246, 252, 0.78);
+  --scrap-selection-actions-border: 1px solid rgba(16, 17, 20, 0.1);
+  --notification-item-divider: 1px solid rgba(16, 17, 20, 0.08);
+  --view-switch-border: 1px solid rgba(255, 255, 255, 0.62);
+  --view-switch-radius: var(--r-pill);
+  --view-switch-bg: rgba(255, 255, 255, 0.36);
+  --view-switch-shadow: inset 0 1px 0 var(--glass-highlight), 0 8px 22px rgba(18, 28, 38, 0.08);
+  --view-switch-thumb-radius: var(--r-pill);
+  --view-switch-thumb-bg: linear-gradient(180deg, rgba(16, 17, 20, 0.88), rgba(16, 17, 20, 0.68)), rgba(16, 17, 20, 0.82);
+  --view-switch-thumb-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 8px 18px rgba(18, 28, 38, 0.14);
+  --view-switch-fg: rgba(16, 17, 20, 0.68);
+  --view-switch-active-fg: #ffffff;
+  --view-switch-focus-outline: 0;
+  /* List rows: hover is a light translucent tint (dark text), selected is a
+     soft rounded deep fill (white text) — distinct from hover, and rounded to
+     fit the glass surface. */
+  --help-row-hover-bg: rgba(16, 17, 20, 0.08);
+  --help-row-hover-fg: var(--ink);
+  --help-row-selected-bg: rgba(16, 17, 20, 0.82);
+  --help-row-selected-fg: #ffffff;
+  --help-row-active-radius: var(--r-md);
+  --system-help-panel-border: 1px solid rgba(255, 255, 255, 0.44);
+  --system-help-panel-radius: var(--r-lg);
+  /* Both panes are scrollers now, so they take the solid reading surface: a
+     transparent scroller under the window backdrop filter reads the window
+     behind it and clips its own text while scrolling. */
+  --system-help-panel-bg: var(--glass-reading-surface);
+  --system-help-panel-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.68),
+    0 10px 28px rgba(18, 28, 38, 0.07);
+  --system-help-search-input-border: 1px solid rgba(16, 17, 20, 0.14);
+  --system-help-search-input-radius: var(--r-md);
+  --system-help-list-button-border-bottom: 1px solid rgba(16, 17, 20, 0.1);
+  /* A sticky group heading is a scroller surface: it must stay solid so rows
+     do not read through it while the list moves. */
+  /* Opaque, and deliberately not the translucent reading surface the list
+     itself wears: this row is sticky, so it is the lid over the rows that
+     scroll under it. At 90% the covered row's icon and label read through it
+     as a ghost under the heading's own text — the owner reported the pair as
+     overlapping labels. The value is what the reading surface composites to
+     over the window, so the list does not show a seam. */
+  --system-help-group-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 1), rgba(250, 253, 254, 1)),
+    #f7fbfd;
+  --system-help-group-border-bottom: 1px solid rgba(16, 17, 20, 0.16);
+  --system-help-head-border-bottom: 1px solid rgba(16, 17, 20, 0.16);
+  --system-help-actions-border-top: 1px solid rgba(16, 17, 20, 0.12);
+  --system-help-alias-border: 1px solid rgba(16, 17, 20, 0.16);
+  /* Liquid Glass object art is solid, not 1-bit outline: it needs two more
+     pixels to stay readable at list-row size. */
+  --system-help-row-icon-size: 22px;
+  --context-panel-list-bg:
+    linear-gradient(135deg, rgba(232, 238, 242, 0.045), rgba(235, 241, 247, 0.035)),
+    rgba(255, 255, 255, 0.1);
+  --context-panel-list-bg-color: rgba(255, 255, 255, 0.1);
+  --context-item-border: 1px solid rgba(16, 17, 20, 0.14);
+  --context-item-radius: var(--r-md);
+  --context-item-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.12)),
+    rgba(255, 255, 255, 0.12);
+  --context-item-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 8px 20px rgba(18, 28, 38, 0.06);
+  --context-item-dropped-bg: var(--context-item-bg);
+  --source-registry-item-border-style: solid;
+  --context-header-border-bottom: 1px solid rgba(16, 17, 20, 0.12);
+  --context-header-badge-border: 1px solid rgba(16, 17, 20, 0.16);
+  --context-section-title-border-bottom: 2px solid rgba(16, 17, 20, 0.12);
+  --context-item-actions-border-top: 1px solid rgba(16, 17, 20, 0.12);
+  --key-caps-pane-gap: 12px;
+  --key-caps-pane-padding: 12px;
+  --key-caps-pane-bg: rgba(255, 255, 255, 0.2);
+  --key-caps-pane-bg-color: rgba(255, 255, 255, 0.2);
+  --key-caps-note-width: fit-content;
+  --key-caps-note-padding: 3px 10px;
+  --key-caps-note-radius: var(--r-pill);
+  --key-caps-note-bg: rgba(255, 255, 255, 0.38);
+  --key-caps-note-fg: rgba(16, 17, 20, 0.86);
+  --key-caps-note-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.64);
+  --shortcut-grid-overflow: hidden;
+  --shortcut-grid-border: 1px solid rgba(16, 17, 20, 0.16);
+  --shortcut-grid-radius: var(--r-lg);
+  --shortcut-grid-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.22)),
+    rgba(255, 255, 255, 0.22);
+  --shortcut-grid-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.74),
+    0 12px 32px rgba(18, 28, 38, 0.08);
+  --shortcut-grid-divider: 1px solid rgba(16, 17, 20, 0.1);
+  --shortcut-grid-key-border-right: 1px solid rgba(16, 17, 20, 0.14);
+  --shortcut-grid-key-bg: rgba(255, 255, 255, 0.28);
+  --character-map-gap: 8px;
+  --character-map-button-min-height: 32px;
+  --character-map-button-border: 1px solid rgba(255, 255, 255, 0.56);
+  --character-map-button-radius: var(--r-md);
+  --character-map-button-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.68), rgba(255, 255, 255, 0.3)),
+    rgba(255, 255, 255, 0.28);
+  --character-map-button-fg: rgba(16, 17, 20, 0.9);
+  --character-map-button-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    0 6px 16px rgba(18, 28, 38, 0.08);
+  --character-map-button-hover-border-color: rgba(16, 17, 20, 0.72);
+  --character-map-button-hover-bg: rgba(16, 17, 20, 0.86);
+  --character-map-button-hover-fg: #ffffff;
+  --character-map-button-active-bg: var(--character-map-button-hover-bg);
+  --character-map-button-active-fg: var(--character-map-button-hover-fg);
+  --calculator-pane-gap: 8px;
+  --calculator-pane-padding: 10px;
+  --calculator-pane-bg: rgba(255, 255, 255, 0.2);
+  --calculator-pane-bg-color: rgba(255, 255, 255, 0.2);
+  --calculator-display-border: 1px solid rgba(16, 17, 20, 0.18);
+  --calculator-display-radius: var(--r-md);
+  --calculator-display-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.36), rgba(255, 255, 255, 0.2)),
+    rgba(255, 255, 255, 0.28);
+  --calculator-display-shadow:
+    inset 0 1px 5px rgba(18, 28, 38, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.74);
+  --calculator-keys-gap: 7px;
+  --calculator-keys-row-height: 34px;
+  --calculator-key-height: 34px;
+  --calculator-key-border: 1px solid rgba(255, 255, 255, 0.56);
+  --calculator-key-radius: var(--r-md);
+  --calculator-key-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.68), rgba(255, 255, 255, 0.28)),
+    rgba(255, 255, 255, 0.28);
+  --calculator-key-fg: rgba(16, 17, 20, 0.92);
+  --calculator-key-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    0 6px 16px rgba(18, 28, 38, 0.08);
+  --calculator-key-hover-border-color: rgba(16, 17, 20, 0.64);
+  --calculator-key-hover-bg: rgba(255, 255, 255, 0.56);
+  --calculator-key-active-transform: var(--liquid-press-transform);
+  --calculator-key-active-bg: rgba(16, 17, 20, 0.86);
+  --calculator-key-active-fg: #ffffff;
+  --calculator-key-active-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  --calculator-equals-height: auto;
+  --calculator-equals-border-color: rgba(109, 124, 0, 0.38);
+  --calculator-equals-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.22)),
+    rgba(90, 200, 250, 0.42);
+  --puzzle-window-width: 212px;
+  --puzzle-window-height: auto;
+  --puzzle-pane-flex: 0 0 auto;
+  --puzzle-pane-align-items: center;
+  --puzzle-pane-gap: 10px;
+  --puzzle-pane-padding: 12px;
+  --puzzle-pane-bg: rgba(255, 255, 255, 0.2);
+  --puzzle-pane-bg-color: rgba(255, 255, 255, 0.2);
+  --puzzle-board-gap: 6px;
+  --puzzle-board-width: 176px;
+  --puzzle-board-height: 176px;
+  --puzzle-board-padding: 8px;
+  --puzzle-board-border: 1px solid rgba(16, 17, 20, 0.16);
+  --puzzle-board-radius: var(--r-lg);
+  --puzzle-board-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.2)),
+    rgba(255, 255, 255, 0.22);
+  --puzzle-board-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.74),
+    0 12px 32px rgba(18, 28, 38, 0.08);
+  --puzzle-tile-width: auto;
+  --puzzle-tile-height: auto;
+  --puzzle-tile-border: 1px solid rgba(255, 255, 255, 0.56);
+  --puzzle-tile-border-right: var(--puzzle-tile-border);
+  --puzzle-tile-border-bottom: var(--puzzle-tile-border);
+  --puzzle-tile-radius: var(--r-md);
+  --puzzle-tile-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.68), rgba(255, 255, 255, 0.3)),
+    rgba(255, 255, 255, 0.3);
+  --puzzle-tile-fg: var(--ink);
+  --puzzle-tile-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    0 6px 16px rgba(18, 28, 38, 0.08);
+  --puzzle-tile-edge-border-right: var(--puzzle-tile-border);
+  --puzzle-tile-edge-border-bottom: var(--puzzle-tile-border);
+  --puzzle-tile-hover-border-color: rgba(16, 17, 20, 0.64);
+  --puzzle-tile-hover-bg: rgba(255, 255, 255, 0.58);
+  --puzzle-tile-active-border-color: var(--puzzle-tile-hover-border-color);
+  --puzzle-tile-active-bg: rgba(16, 17, 20, 0.86);
+  --puzzle-tile-active-fg: #ffffff;
+  --puzzle-tile-active-shadow: var(--puzzle-tile-shadow);
+  --puzzle-blank-border-style: solid;
+  --puzzle-blank-border-color: rgba(16, 17, 20, 0.18);
+  --puzzle-blank-bg: rgba(255, 255, 255, 0.16);
+  --puzzle-blank-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.44);
+  --puzzle-footer-width: 176px;
+  --puzzle-footer-badge-display: inline-flex;
+  --puzzle-footer-badge-min-height: 26px;
+  --puzzle-footer-badge-padding: 2px 10px;
+  --puzzle-footer-badge-radius: var(--r-pill);
+  --puzzle-footer-badge-bg: rgba(255, 255, 255, 0.34);
+  --puzzle-footer-badge-fg: rgba(16, 17, 20, 0.82);
+  --btn-border-color: rgba(255, 255, 255, 0.66);
+  --btn-radius: var(--r-md);
+  --btn-bg: rgba(255, 255, 255, 0.3);
+  --btn-fg: rgba(16, 17, 20, 0.94);
+  --btn-shadow:
+    inset 1.25px 0 0 -0.75px rgba(230, 230, 230, 0.8),
+    inset -1.25px 0 0 -0.75px rgba(229, 229, 229, 0.8),
+    inset 0 1px 0 0 rgba(38, 38, 38, 0.14),
+    inset 0 -1px 0 0 rgba(38, 38, 38, 0.12),
+    inset -20px 0 20px -30px rgba(217, 217, 217, 0.42),
+    inset 20px 0 20px -30px rgba(217, 217, 217, 0.38),
+    0 1px 2px rgba(0, 0, 0, 0.08),
+    0 8px 18px rgba(0, 0, 0, 0.1);
+  --btn-hover-bg: rgba(255, 255, 255, 0.42);
+  --btn-hover-fg: rgba(16, 17, 20, 0.94);
+  --btn-hover-shadow:
+    inset 1.25px 0 0 -0.75px rgba(255, 255, 255, 0.92),
+    inset -1.25px 0 0 -0.75px rgba(229, 229, 229, 0.86),
+    inset 0 40px 10px -40px rgba(17, 17, 17, 0.2),
+    inset 0 -40px 10px -40px rgba(17, 17, 17, 0.18),
+    inset -20px 0 20px -30px rgba(217, 217, 217, 0.5),
+    inset 20px 0 20px -30px rgba(217, 217, 217, 0.45),
+    0 8px 15px rgba(0, 0, 0, 0.05);
+  --btn-active-border-color: rgba(16, 17, 20, 0.72);
+  --btn-active-bg: linear-gradient(180deg, rgba(16, 17, 20, 0.84), rgba(16, 17, 20, 0.68)), rgba(16, 17, 20, 0.76);
+  --btn-active-fg: #ffffff;
+  --btn-active-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 8px 18px rgba(18, 28, 38, 0.12);
+  --clio-stage-pane-rows: auto minmax(280px, 1fr) auto;
+  --clio-stage-pane-gap: 12px;
+  --clio-stage-pane-bg:
+    linear-gradient(135deg, rgba(232, 238, 242, 0.14), rgba(235, 241, 247, 0.14)),
+    rgba(255, 255, 255, 0.14);
+  --clio-stage-toolbar-align-items: center;
+  --clio-stage-toolbar-gap: 10px 14px;
+  --clio-stage-responsive-toolbar-align-items: center;
+  --clio-stage-controls-gap: 9px;
+  --clio-stage-view-switcher-gap: 9px;
+  --clio-stage-nav-min-width: 48px;
+  --clio-stage-nav-padding-inline: 14px;
+  --clio-stage-nav-font-size: 18px;
+  --clio-stage-nav-line-height: 1.2;
+  --clio-stage-page-font-family: var(--preview-font);
+  --clio-stage-page-font-size: 14px;
+  --clio-stage-page-font-weight: 590;
+  --clio-stage-page-letter-spacing: 0.01em;
+  --clio-stage-view-button-min-height: 36px;
+  --clio-stage-view-button-border-color: rgba(255, 255, 255, 0.6);
+  --clio-stage-view-button-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.68), rgba(255, 255, 255, 0.26)),
+    rgba(255, 255, 255, 0.28);
+  --clio-stage-view-button-fg: rgba(16, 17, 20, 0.9);
+  --clio-stage-view-button-opacity: 1;
+  --clio-stage-view-default-border-color: rgba(255, 255, 255, 0.78);
+  --clio-stage-view-default-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.24)),
+    var(--glass-accent);
+  --clio-stage-view-default-fg: rgba(16, 17, 20, 0.98);
+  --clio-stage-view-disabled-border-color: rgba(255, 255, 255, 0.42);
+  --clio-stage-view-disabled-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.18)),
+    rgba(255, 255, 255, 0.18);
+  --clio-stage-view-disabled-fg: rgba(16, 17, 20, 0.5);
+  --clio-stage-view-disabled-opacity: 1;
+  --clio-stage-details-bar-gap: 14px;
+  --clio-stage-viewport-min-height: 280px;
+  --clio-stage-viewport-border: 1px solid rgba(16, 17, 20, 0.14);
+  --clio-stage-viewport-radius: var(--r-lg);
+  --clio-stage-viewport-bg:
+    linear-gradient(135deg, rgba(232, 238, 242, 0.18), rgba(235, 241, 247, 0.18)),
+    rgba(255, 255, 255, 0.22);
+  --clio-stage-viewport-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 12px 32px rgba(18, 28, 38, 0.07);
+  --clio-stage-viewport-padding: 24px;
+  --clio-stage-viewport-active-border-color: rgba(0, 122, 255, 0.52);
+  --clio-stage-viewport-active-bg:
+    linear-gradient(135deg, rgba(0, 122, 255, 0.22), rgba(90, 200, 250, 0.18)),
+    rgba(255, 255, 255, 0.26);
+  --clio-stage-slide-mode-min-height: 320px;
+  --clio-stage-slide-mode-padding: 18px;
+  --clio-stage-slide-mode-bg:
+    linear-gradient(135deg, rgba(232, 238, 242, 0.18), rgba(235, 241, 247, 0.16)),
+    rgba(255, 255, 255, 0.2);
+  --clio-stage-slide-frame-border: 1px solid rgba(16, 17, 20, 0.52);
+  --clio-stage-slide-frame-radius: var(--r-sm);
+  --clio-stage-slide-frame-shadow: 0 18px 42px rgba(18, 28, 38, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.74);
+  --clio-stage-cue-mode-min-height: 320px;
+  --clio-stage-cue-mode-border-color: rgba(16, 17, 20, 0.58);
+  --clio-stage-cue-mode-bg:
+    linear-gradient(180deg, rgba(16, 17, 20, 0.96), rgba(16, 17, 20, 0.9)),
+    #101114;
+  --clio-stage-cue-current-font-size: clamp(24px, 3.1vw, 56px);
+  --clio-stage-cue-current-h1-font-size: clamp(34px, 5vw, 86px);
+  --clio-stage-cue-current-h1-line-height: 1.08;
+  --clio-stage-cue-current-h2-font-size: clamp(28px, 3.8vw, 62px);
+  --clio-stage-cue-next-border-top-color: rgba(255, 255, 255, 0.42);
+  --clio-stage-cue-next-fg: rgba(255, 255, 255, 0.78);
+  --attached-context-bg:
+    linear-gradient(135deg, rgba(232, 238, 242, 0.07), rgba(235, 241, 247, 0.045)),
+    rgba(255, 255, 255, 0.18);
+  --attached-context-border: 1px solid rgba(255, 255, 255, 0.46);
+  --attached-context-label-color: rgba(16, 17, 20, 0.72);
+  --attached-context-pill-radius: var(--r-pill);
+  --attached-context-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58);
+  --print-directory-preview-border: 1px solid rgba(255, 255, 255, 0.58);
+  --print-directory-preview-bg: var(--glass-reading-surface);
+  --print-directory-preview-radius: var(--r-lg);
+  --print-directory-preview-shadow: inset 0 1px 0 var(--glass-highlight), 0 12px 32px rgba(18, 28, 38, 0.08);
+  --print-directory-heading-border: 1px solid rgba(16, 17, 20, 0.16);
+  --print-directory-table-border: 1px solid rgba(16, 17, 20, 0.16);
+  --print-directory-table-heading-bg: rgba(255, 255, 255, 0.34);
+  --file-preview-border: 1px solid rgba(255, 255, 255, 0.58);
+  --file-preview-bg: var(--glass-reading-surface);
+  --file-preview-radius: var(--r-lg);
+  --file-preview-shadow: inset 0 1px 0 var(--glass-highlight), 0 12px 32px rgba(18, 28, 38, 0.08);
+  --project-cd-grid-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.12)),
+    rgba(255, 255, 255, 0.14);
+  --project-cd-grid-border: 1px solid rgba(255, 255, 255, 0.5);
+  --project-cd-grid-radius: var(--r-lg);
+  --project-cd-grid-shadow: inset 0 1px 0 var(--glass-highlight), 0 10px 28px rgba(18, 28, 38, 0.07);
+  --note-pad-pane-bg: rgba(255, 255, 255, 0.08);
+  --note-pad-pane-border: 1px solid rgba(255, 255, 255, 0.42);
+  --note-pad-pane-radius: var(--r-lg);
+  --note-pad-pane-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48);
+  --note-pad-details-bg: rgba(255, 255, 255, 0.18);
+  --note-pad-details-border: 1px solid rgba(16, 17, 20, 0.1);
+  --note-pad-details-radius: var(--r-md);
+  --clipboard-pane-bg: rgba(255, 255, 255, 0.08);
+  --clipboard-pane-border: 1px solid rgba(255, 255, 255, 0.42);
+  --clipboard-pane-radius: var(--r-lg);
+  --clipboard-pane-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48);
+  --cmf-panel-border: 1px solid rgba(255, 255, 255, 0.58);
+  --cmf-panel-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.12)),
+    rgba(255, 255, 255, 0.14);
+  --cmf-panel-radius: var(--r-lg);
+  --cmf-panel-shadow: inset 0 1px 0 var(--glass-highlight), 0 12px 32px rgba(18, 28, 38, 0.08);
+  --cmf-toolbar-bg: rgba(255, 255, 255, 0.2);
+  --cmf-toolbar-border: 1px solid rgba(255, 255, 255, 0.5);
+  --cmf-toolbar-radius: var(--r-md);
+  --cmf-toolbar-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
+  --cmf-preview-head-bg: rgba(255, 255, 255, 0.18);
+  --cmf-muted: rgba(16, 17, 20, 0.62);
+  --cmf-hover-bg: rgba(255, 255, 255, 0.3);
+  --cmf-selected-bg: rgba(16, 17, 20, 0.82);
+  --cmf-selected-fg: rgba(255, 255, 255, 0.96);
+  --cmf-live-bg: rgba(255, 255, 255, 0.28);
+  --cmf-live-border: 1px solid rgba(255, 255, 255, 0.54);
+  --cmf-stage-bg:
+    linear-gradient(45deg, rgba(255, 255, 255, 0.22) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(255, 255, 255, 0.22) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(16, 17, 20, 0.05) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(16, 17, 20, 0.05) 75%),
+    rgba(255, 255, 255, 0.1);
+  --cmf-strip-bg: rgba(255, 255, 255, 0.16);
+  --cmf-strip-border: 1px solid rgba(16, 17, 20, 0.1);
+  --cmf-thumb-border: 1px solid rgba(255, 255, 255, 0.5);
+  --cmf-thumb-bg: rgba(255, 255, 255, 0.24);
+  --cmf-thumb-active-border: rgba(16, 17, 20, 0.72);
+  --cmf-thumb-active-bg: rgba(16, 17, 20, 0.78);
+  --cmf-thumb-active-fg: rgba(255, 255, 255, 0.96);
+  --cmf-thumb-active-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 8px 18px rgba(18, 28, 38, 0.12);
+  --cmf-row-divider: 1px solid rgba(16, 17, 20, 0.1);
+  --cmf-chip-bg: rgba(255, 255, 255, 0.22);
+  --cmf-chip-selected-shadow: inset 0 0 0 2px rgba(16, 17, 20, 0.72), 0 6px 14px rgba(18, 28, 38, 0.1);
+  --cmf-chip-focus-outline: 2px solid rgba(0, 122, 255, 0.56);
+  --bureaucracy-pane-bg:
+    linear-gradient(rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.22)),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.035) 0 1px, rgba(0, 0, 0, 0.035) 1px 3px),
+    #242523;
+  --bureaucracy-surface-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.07) 42%, rgba(0, 0, 0, 0.24)),
+    rgba(28, 30, 29, 0.86);
+  --bureaucracy-surface-border: 1px solid rgba(255, 255, 255, 0.26);
+  --bureaucracy-surface-radius: var(--r-sm);
+  --bureaucracy-surface-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34), 0 14px 28px rgba(0, 0, 0, 0.24);
+  --bureaucracy-ink: #f5f2e8;
+  --bureaucracy-muted: rgba(245, 242, 232, 0.68);
+  --bureaucracy-hover-bg: rgba(255, 255, 255, 0.09);
+  --bureaucracy-selected-bg: rgba(12, 13, 13, 0.72);
+  --bureaucracy-selected-fg: #f7f3e7;
+  --bureaucracy-selected-shadow: inset 0 0 0 1px rgba(160, 65, 48, 0.95);
+  --bureaucracy-control-bg: rgba(12, 13, 13, 0.72);
+  --bureaucracy-control-fg: #f7f3e7;
+  --bureaucracy-control-border: 1px solid rgba(255, 255, 255, 0.26);
+  --bureaucracy-thumbnail-border: 1px solid rgba(0, 0, 0, 0.65);
+  --bureaucracy-thumbnail-filter: none;
+  --bureaucracy-preview-bg: #080908;
+  --bureaucracy-error: #ffd0c5;
+  --endfield-pane-bg:
+    linear-gradient(rgba(0, 0, 0, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.045) 1px, transparent 1px),
+    url("assets/endfield-background.svg"),
+    radial-gradient(circle at 88% 8%, rgba(234, 253, 79, 0.32), transparent 34%),
+    rgba(255, 255, 255, 0.28);
+  --endfield-pane-bg-size: 34px 34px, 34px 34px, max(1200px, 118vw) auto, auto, auto;
+  --endfield-pane-bg-position: center, center, 45% 20%, center, center;
+  --endfield-pane-bg-repeat: repeat, repeat, no-repeat, no-repeat, no-repeat;
+  --endfield-sidebar-bg: rgba(249, 250, 244, 0.76);
+  --endfield-surface-bg: rgba(250, 251, 245, 0.82);
+  --endfield-surface-border: 1px solid rgba(255, 255, 255, 0.62);
+  --endfield-surface-radius: var(--r-md);
+  --endfield-surface-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 14px 30px rgba(18, 28, 38, 0.12);
+  --endfield-muted: rgba(16, 17, 20, 0.62);
+  /* Hover is a state and quiet is a surface, so the appearance answers both:
+     an ink tint for the row under the pointer (which deepens the blueprint
+     instead of washing it out) and its own translucent white for the inset
+     behind inline code and quotes. */
+  --endfield-hover-bg: rgba(16, 17, 20, 0.08);
+  --endfield-quiet-bg: rgba(255, 255, 255, 0.46);
+  --endfield-selected-bg: rgba(16, 17, 20, 0.82);
+  --endfield-selected-fg: rgba(255, 255, 255, 0.96);
+  --endfield-evidence-divider: 1px solid rgba(16, 17, 20, 0.14);
+  --endfield-index-bg: rgba(255, 255, 255, 0.48);
+  --endfield-index-border: 1px solid rgba(16, 17, 20, 0.34);
+  --endfield-index-radius: var(--r-sm);
+  --endfield-context-rule: 1px solid rgba(16, 17, 20, 0.16);
+  --endfield-context-bg: rgba(255, 255, 255, 0.4);
+  --endfield-context-radius: var(--r-sm);
+  --endfield-quote-rule: 2px solid rgba(16, 17, 20, 0.3);
+  --endfield-quote-radius: var(--r-md);
+  --demo-caption-bg:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(232, 238, 242, 0.42)),
+    rgba(255, 255, 255, 0.58);
+  --demo-caption-border: 1px solid var(--glass-border);
+  --demo-caption-radius: var(--r-lg);
+  --demo-caption-shadow: inset 0 1px 0 var(--glass-highlight), 0 16px 44px rgba(18, 28, 38, 0.18);
+  --demo-caption-fg: rgba(16, 17, 20, 0.94);
+  --demo-highlight-border: #ff3b30;
+  --demo-highlight-ring: 0 0 0 3px rgba(255, 255, 255, 0.9), 0 0 0 6px rgba(16, 17, 20, 0.82);
+  --demo-highlight-label-bg: rgba(255, 255, 255, 0.78);
+  --demo-highlight-label-border: 1px solid var(--glass-border);
+  --demo-highlight-label-fg: rgba(16, 17, 20, 0.94);
+  --quick-draft-panel-bg: var(--glass-surface);
+  --quick-draft-panel-border: 1px solid rgba(255, 255, 255, 0.46);
+  --quick-draft-panel-radius: var(--r-md);
+  --quick-draft-panel-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.58),
+    0 8px 20px rgba(18, 28, 38, 0.06);
+  --quick-draft-sidebar-border: 1px solid rgba(255, 255, 255, 0.34);
+  --quick-draft-divider-border: 1px solid rgba(16, 17, 20, 0.1);
+  --quick-draft-actions-bg: rgba(255, 255, 255, 0.28);
+  --quick-draft-secondary-fg: rgba(16, 17, 20, 0.68);
+  --quick-draft-selected-fg: var(--selected-fg);
+  --quick-draft-field-focus-bg: transparent;
+  --quick-draft-field-focus-shadow: none;
+  --quick-draft-grain-model-fg: rgba(16, 17, 20, 0.44);
+  --quick-draft-grain-model-decoration: underline dotted rgba(16, 17, 20, 0.36);
+  --quick-draft-grain-mask-fg: rgba(47, 157, 179, 0.55);
+  --quick-draft-grain-border: 1px solid rgba(16, 17, 20, 0.1);
+  --quick-draft-grain-generation-border: 1px solid rgba(16, 17, 20, 0.26);
+  --quick-draft-grain-swatch-author: rgba(16, 17, 20, 0.88);
+  --quick-draft-grain-swatch-model: rgba(16, 17, 20, 0.26);
+  /* 文字亮室 state language overrides: Liquid selected keeps the same quiet
+     material as the input state and differs by thin outline + corner control
+     points; AI working is a slow travelling edge light, never a spinner. */
+  --quick-draft-state-selected-outline: 1px solid rgba(16, 17, 20, 0.4);
+  --quick-draft-state-control-points:
+    radial-gradient(circle 2.5px at 50% 50%, rgba(47, 157, 179, 0.9) 99%, transparent 100%) 0 0 / 7px 7px no-repeat,
+    radial-gradient(circle 2.5px at 50% 50%, rgba(47, 157, 179, 0.9) 99%, transparent 100%) 100% 0 / 7px 7px no-repeat,
+    radial-gradient(circle 2.5px at 50% 50%, rgba(47, 157, 179, 0.9) 99%, transparent 100%) 0 100% / 7px 7px no-repeat,
+    radial-gradient(circle 2.5px at 50% 50%, rgba(47, 157, 179, 0.9) 99%, transparent 100%) 100% 100% / 7px 7px no-repeat;
+  --quick-draft-state-selected-surface: none, var(--quick-draft-state-control-points);
+  --quick-draft-state-selected-animation: none;
+  --quick-draft-state-working-surface: linear-gradient(115deg, transparent 22%, rgba(255, 255, 255, 0.9) 42%, rgba(47, 157, 179, 0.42) 50%, rgba(255, 255, 255, 0.9) 58%, transparent 78%) 0 0 / 62% 100% no-repeat;
+  --quick-draft-state-working-animation: quickDraftWorkingSweep 2.6s ease-in-out infinite;
+  --quick-draft-protected-fg: rgba(47, 157, 179, 0.8);
+  /* 拼台 canvas overrides: quiet glass object on a faint dot grid; handles
+     and the rotation handle stay the same object grammar. */
+
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.56), rgba(212, 221, 228, 0.5)),
+    #e4e8ea;
+}
+
+/* Two attributes keep this rule's (0,2,1): it outranked the era root when
+   it was written as the class plus data-theme. */
+/* Tahoe pale desk: soft blue-grey wash + light grid (structure only; not the
+   stock photo). Slightly cooler and more layered so the floating Dock reads
+   against a real surface rather than a flat sheet. */
+body[data-theme="liquid-glass"][data-theme-family="liquid-glass"] .desktop {
+  background:
+    radial-gradient(ellipse 70% 45% at 12% 8%, rgb(255 255 255 / 0.55), transparent 42%),
+    radial-gradient(ellipse 55% 40% at 88% 18%, rgb(190 210 230 / 0.35), transparent 55%),
+    radial-gradient(ellipse 80% 50% at 50% 100%, rgb(160 180 200 / 0.22), transparent 55%),
+    linear-gradient(rgba(255, 255, 255, 0.42) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.34) 1px, transparent 1px),
+    linear-gradient(148deg, #f6f9fb 0%, #e2eaf0 38%, #d5dee6 62%, #e8ece8 100%);
+  background-size: auto, auto, auto, 20px 20px, 20px 20px, auto;
+}
+
+body[data-theme="liquid-glass"] #liquid-glass-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+}
+
+body[data-theme="liquid-glass"] #clock:not(.is-hidden) {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 9px;
+  line-height: 22px;
+}
+
+/* Specificity-only twin: 60-responsive's later grouped rule (.menu-bar >
+   .menu > button, .project-switcher-button, …) would otherwise set the classic
+   height on the menu buttons in glass. Value is single-sourced through the
+   token. */
+body[data-theme="liquid-glass"] .menu-bar > .menu > button {
+  height: var(--menu-button-height);
+}
+
+body[data-theme="liquid-glass"] .menu-popover,
+body[data-theme="liquid-glass"] .menu-submenu-popover,
+body[data-theme="liquid-glass"] .menu-sub-popover,
+body[data-theme="liquid-glass"] .system-select-menu {
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-md);
+  background: var(--liquid-menu-panel);
+  box-shadow: var(--menu-panel-shadow);
+  backdrop-filter: blur(34px) saturate(160%) brightness(1.04);
+  -webkit-backdrop-filter: blur(34px) saturate(160%) brightness(1.04);
+  /* A menu-bar panel hands over its own overflow (60-responsive.css). */
+  overflow: var(--menu-popover-overflow, hidden);
+}
+
+body[data-theme="liquid-glass"] .menu-bar > .menu > .menu-popover,
+body[data-theme="liquid-glass"] .menu-bar > .project-switcher-menu > .menu-popover {
+  top: var(--menu-popover-top);
+}
+
+body[data-theme="liquid-glass"] .project-switcher-menu .menu-popover {
+  min-width: min(430px, calc(100vw - 18px));
+  background: var(--liquid-menu-panel);
+}
+
+body[data-theme="liquid-glass"] .project-switcher-copy small {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+body[data-theme="liquid-glass"] .menu-popover button,
+body[data-theme="liquid-glass"] .menu-submenu-trigger,
+body[data-theme="liquid-glass"] .menu-sub-popover button {
+  --liquid-disabled-control-border: transparent;
+  --liquid-disabled-control-bg: transparent;
+  --liquid-disabled-control-fg: rgba(16, 17, 20, 0.38);
+  --liquid-disabled-control-shadow: none;
+  width: calc(100% - 10px);
+  margin: 1px 5px;
+  border-radius: var(--r-sm);
+  padding-top: 5px;
+  padding-bottom: 5px;
+  line-height: 1.15;
+  background: var(--menu-item-bg);
+  color: var(--menu-item-fg);
+  box-shadow: var(--menu-item-shadow);
+  min-height: 30px;
+}
+
+body[data-theme="liquid-glass"] .menu-section-label {
+  padding-top: 8px;
+  padding-bottom: 4px;
+  color: rgba(16, 17, 20, 0.62);
+}
+
+body[data-theme="liquid-glass"] .window,
+body[data-theme="liquid-glass"] .spine-toolbox-panel,
+body[data-theme="liquid-glass"] .system-modal,
+body[data-theme="liquid-glass"] .startup-settings-modal,
+body[data-theme="liquid-glass"] .finder-operation-modal {
+  isolation: isolate;
+  border: 0;
+  border-radius: var(--r-xl);
+  background: var(--glass-surface);
+  box-shadow: var(--system-shadow);
+  /* The literal used to live here twice while --window-backdrop-filter held
+     the same value in the token block, so the two could drift apart with no
+     gate able to see it. The twin stays for its four extra selectors; the
+     value is single-sourced. */
+  backdrop-filter: var(--window-backdrop-filter);
+  -webkit-backdrop-filter: var(--window-backdrop-filter);
+}
+
+body[data-theme="liquid-glass"] .spine-toolbox-panel {
+  position: relative;
+}
+
+body[data-theme="liquid-glass"] .writing-spine-panel {
+  background: transparent;
+  box-shadow: none;
+}
+/* Specificity-only twin: the generic body[data-theme="liquid-glass"] .window rule above
+   sets box-shadow at (0,0,2,0), same as base .window.is-active, so we restate
+   the active-state shadow at higher specificity. Value still lives in the
+   --active-window-shadow token (defined in :root + body[data-theme="liquid-glass"]). */
+body[data-theme="liquid-glass"] .window.is-active {
+  box-shadow: var(--active-window-shadow);
+}
+
+body[data-theme="liquid-glass"] .window::before,
+body[data-theme="liquid-glass"] .spine-toolbox-panel::before,
+body[data-theme="liquid-glass"] .system-modal::before,
+body[data-theme="liquid-glass"] .startup-settings-modal::before,
+body[data-theme="liquid-glass"] .finder-operation-modal::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background:
+    linear-gradient(118deg, rgba(0, 122, 255, 0.045), transparent 18% 78%, rgba(90, 200, 250, 0.035)),
+    linear-gradient(298deg, transparent 8%, rgba(255, 255, 255, 0.18) 12%, transparent 24% 100%),
+    var(--glass-rim),
+    var(--glass-tint);
+  box-shadow: var(--glass-edge-glow);
+  pointer-events: none;
+}
+
+body[data-theme="liquid-glass"] .system-modal {
+  width: min(520px, calc(100vw - 32px));
+  padding: 28px 30px 26px;
+}
+
+body[data-theme="liquid-glass"] .system-modal form {
+  display: grid;
+  gap: 22px;
+}
+
+body[data-theme="liquid-glass"] .system-modal p {
+  display: flex;
+  gap: 18px;
+  align-items: start;
+  min-height: 58px;
+  margin: 0;
+  padding-left: 0;
+  color: rgba(16, 17, 20, 0.92);
+  font-size: 16px;
+  line-height: 1.45;
+  overflow-wrap: break-word;
+}
+
+body[data-theme="liquid-glass"] .system-modal p::before {
+  position: static;
+  flex: 0 0 54px;
+  width: 54px;
+  height: 54px;
+  border: 1px solid rgba(16, 17, 20, 0.16);
+  border-radius: var(--r-lg);
+  /* The glass tile holds the caution art; the shared rule no longer draws a
+     "!" glyph, which left this tile empty (2026-10-08). */
+  background:
+    url("./assets/themes/aqua/sheet-warning-64.svg") center / 34px no-repeat,
+    linear-gradient(180deg, rgba(255, 255, 255, 0.76), rgba(255, 255, 255, 0.28)),
+    rgba(255, 255, 255, 0.3);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.82),
+    0 10px 24px rgba(18, 28, 38, 0.12);
+}
+body[data-theme="liquid-glass"] .system-modal .button-row {
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+body[data-theme="liquid-glass"] .system-modal .btn {
+  min-height: 36px;
+  padding-inline: 18px;
+}
+
+body[data-theme="liquid-glass"] .finder-operation-modal {
+  width: min(680px, calc(100vw - 32px));
+}
+
+body[data-theme="liquid-glass"] .finder-operation-modal form {
+  padding: 28px;
+}
+
+body[data-theme="liquid-glass"] .finder-operation-layout {
+  grid-template-columns: 156px minmax(0, 1fr);
+  gap: 30px;
+}
+
+body[data-theme="liquid-glass"] .finder-operation-subject {
+  padding: 16px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: var(--r-xl);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0.12)),
+    rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.66);
+}
+
+body[data-theme="liquid-glass"] .finder-operation-subject .icon {
+  margin-bottom: 4px;
+  filter: drop-shadow(0 8px 18px rgba(18, 28, 38, 0.12));
+}
+
+body[data-theme="liquid-glass"] .finder-operation-list {
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: var(--r-lg);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0.14)),
+    rgba(255, 255, 255, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.68),
+    0 12px 30px rgba(18, 28, 38, 0.08);
+}
+
+body[data-theme="liquid-glass"] .finder-operation-item {
+  padding: 7px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.54);
+}
+
+body[data-theme="liquid-glass"] .finder-operation-item.is-empty {
+  color: rgba(16, 17, 20, 0.48);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+body[data-theme="liquid-glass"] .finder-operation-item .sys-icon {
+  width: 24px;
+  height: 24px;
+}
+
+body[data-theme="liquid-glass"] .finder-operation-result {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.36);
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56);
+}
+
+body[data-theme="liquid-glass"] .finder-operation-actions {
+  gap: 10px;
+  margin-top: 20px;
+}
+
+body[data-theme="liquid-glass"] .assistant-window .messages {
+  padding: 0;
+  background: var(--glass-reading-surface);
+  backdrop-filter: var(--glass-reading-blur);
+  -webkit-backdrop-filter: var(--glass-reading-blur);
+}
+
+body[data-theme="liquid-glass"] .docmap-markmap-svg .markmap-link {
+  stroke-opacity: 0.9;
+}body[data-theme="liquid-glass"] .reader-content > .empty-folder-note {
+  --empty-note-max-width: 760px;
+  --empty-note-margin: 32px auto 0;
+  --empty-note-padding: 16px 22px;
+  --empty-note-radius: var(--r-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 64px;
+  font-family: var(--title-font);
+  font-size: 17px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+/* Golden Gate 6.1: the chrome bars stacked at the top of a window read as one
+   continuous system region -- one material, no interior hairlines -- while the
+   title bar, status strip and navigator keep their separate semantics. The one
+   divider belongs where chrome meets content, so it sits on the pane. */
+body[data-theme="liquid-glass"] .window > :is(.title-bar, .details-bar, .finder-navigation-bar) {
+  border-bottom-color: transparent;
+  background: var(--glass-title-surface);
+  box-shadow: none;
+  backdrop-filter: var(--window-chrome-backdrop-filter);
+  -webkit-backdrop-filter: var(--window-chrome-backdrop-filter);
+}
+
+body[data-theme="liquid-glass"] .window > .window-pane {
+  border-top: 1px solid rgba(16, 17, 20, 0.12);
+}
+
+body[data-theme="liquid-glass"] .title-bar {
+  height: auto;
+  min-height: 34px;
+  grid-template-columns: 18px minmax(0, 1fr) 18px;
+  gap: 7px;
+  margin: 0.1rem 0;
+  padding: 5px 9px;
+  border-bottom: 1px solid rgba(16, 17, 20, 0.16);
+  background: var(--glass-title-surface);
+  box-shadow:
+    inset 0 -1px 0 rgba(16, 17, 20, 0.12);
+  backdrop-filter: var(--window-chrome-backdrop-filter);
+  -webkit-backdrop-filter: var(--window-chrome-backdrop-filter);
+}
+
+body[data-theme="liquid-glass"] .title-bar h1,
+body[data-theme="liquid-glass"] .title-bar h2 {
+  min-height: 0;
+  height: auto;
+  padding: 0 10px;
+  background: transparent;
+  border: 0;
+  color: rgba(16, 17, 20, 0.82);
+  line-height: 18px;
+  font-weight: 700;
+}
+
+body[data-theme="liquid-glass"] .window:not(.is-active) .title-bar h1,
+body[data-theme="liquid-glass"] .window:not(.is-active) .title-bar h2 {
+  color: rgba(16, 17, 20, 0.72);
+  font-weight: 650;
+}
+
+/* A backdrop window quietens its chrome, never its document. The status strip
+   and the buttons it carries are chrome; .window-pane keeps full contrast, so
+   the reader can still read a window that is not the current target. */
+body[data-theme="liquid-glass"] .window:not(.is-active) {
+  --liquid-action-ink: rgba(16, 17, 20, 0.62);
+  /* The suggested action of a backdrop window is still the suggested action,
+     but it is not the current target: mute the blue rather than erase it, and
+     keep the label above 4.5:1 on the muted fill. */
+  --btn-default-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.03)),
+    linear-gradient(180deg, #5b87b4, #4d78a4);
+  --btn-default-active-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.02)),
+    linear-gradient(180deg, #4d78a4, #436c95);
+  --btn-default-text-shadow: none;
+}
+
+body[data-theme="liquid-glass"] .window:not(.is-active) :is(.details-bar, .details-bar .sys-icon) {
+  color: rgba(16, 17, 20, 0.62);
+}
+
+html:lang(zh-Hans) body[data-theme="liquid-glass"] .title-bar h1,
+html:lang(zh-Hans) body[data-theme="liquid-glass"] .title-bar h2 {
+  font-size: 13px;
+}
+
+body[data-theme="liquid-glass"] .close-box,
+body[data-theme="liquid-glass"] .resize-box {
+  width: 14px;
+  height: 14px;
+  align-self: center;
+  margin: 0;
+  border: 0;
+}
+
+body[data-theme="liquid-glass"] .close-box {
+  justify-self: start;
+}
+
+body[data-theme="liquid-glass"] .resize-box {
+  justify-self: start;
+}
+
+body[data-theme="liquid-glass"] .window.alarm-clock-window {
+  border-radius: var(--alarm-clock-frame-radius);
+  background: var(--alarm-clock-surface-bg);
+  box-shadow: var(--alarm-clock-frame-shadow);
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  border: var(--alarm-clock-frame-border);
+}
+
+body[data-theme="liquid-glass"] .grow-box {
+  /* No stacking token needed: identical to the base 10-windows.css .grow-box
+     token; the base rule's value already applies here, this twin only
+     overrides paint. */
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-sm);
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 0;
+}
+
+body[data-theme="liquid-glass"] .grow-box::before {
+  content: "";
+  position: absolute;
+  right: var(--grow-box-arc-inset);
+  bottom: var(--grow-box-arc-inset);
+  width: var(--grow-box-arc-radius);
+  height: var(--grow-box-arc-radius);
+  border-right: 3px solid rgba(16, 17, 20, 0.42);
+  border-bottom: 3px solid rgba(16, 17, 20, 0.42);
+  /* The grabber is part of the corner it lives in, so it is drawn concentric
+     with the window's own radius instead of a radius of its own: Apple's own
+     nesting rule is outer radius minus the gap, and here that is the window's
+     corner minus the one inset. It used to be a flat 14px, which crossed the
+     window's curve — measured on an iPhone shell whose corner had left the
+     era's hands (see --edge-radius), where the arc read as a stray stroke. */
+  border-radius: 0 0 var(--grow-box-arc-radius) 0;
+  box-shadow: 1px 1px 0 rgba(255, 255, 255, 0.42);
+}
+
+body[data-theme="liquid-glass"] .grow-box:hover,
+body[data-theme="liquid-glass"] .grow-box:focus,
+body[data-theme="liquid-glass"] .grow-box:focus-visible {
+  background: transparent;
+  outline: 0;
+  box-shadow: inset -4px -4px 0 rgba(255, 255, 255, 0.44);
+}
+
+body[data-theme="liquid-glass"] .grow-box:hover::before,
+body[data-theme="liquid-glass"] .grow-box:focus::before,
+body[data-theme="liquid-glass"] .grow-box:focus-visible::before {
+  border-color: rgba(16, 17, 20, 0.62);
+}
+
+body[data-theme="liquid-glass"] textarea,
+body[data-theme="liquid-glass"] input[type="url"],
+body[data-theme="liquid-glass"] input[type="text"],
+body[data-theme="liquid-glass"] input[type="password"],
+body[data-theme="liquid-glass"] input[type="number"],
+body[data-theme="liquid-glass"] input[type="date"],
+body[data-theme="liquid-glass"] .system-select-button {
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  border-radius: var(--r-md);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.16)),
+    rgba(255, 255, 255, 0.16);
+  color: var(--ink);
+  box-shadow:
+    inset 1.5px -1.5px 1px -1px rgba(255, 255, 255, 0.82),
+    inset -1.5px 1.5px 1px -1px rgba(255, 255, 255, 0.68),
+    inset 0 0 3px rgba(15, 23, 42, 0.13),
+    0 6px 18px rgba(18, 28, 38, 0.06);
+  backdrop-filter: blur(5px) saturate(135%);
+  -webkit-backdrop-filter: blur(5px) saturate(135%);
+}
+
+/* The native select's arrow survives the glass background because the arrow is
+   part of the material (the responsive layer once re-added it with priority
+   after this shorthand; now it lives here and the override is gone). */
+body[data-theme="liquid-glass"] select {
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  border-radius: var(--r-md);
+  background:
+    url("./assets/select-arrow.svg") right 6px center / 17px 17px no-repeat,
+    rgba(255, 255, 255, 0.16);
+  color: var(--ink);
+  box-shadow:
+    inset 1.5px -1.5px 1px -1px rgba(255, 255, 255, 0.82),
+    inset -1.5px 1.5px 1px -1px rgba(255, 255, 255, 0.68),
+    inset 0 0 3px rgba(15, 23, 42, 0.13),
+    0 6px 18px rgba(18, 28, 38, 0.06);
+  backdrop-filter: blur(5px) saturate(135%);
+  -webkit-backdrop-filter: blur(5px) saturate(135%);
+}
+
+/* :not(.mde-input) — a writing surface is not a field. Its ink is painted by an
+   overlay BEHIND the textarea (50-apps.css), so this fill washed out every word
+   in the Question Sheet, the Outline, Section Drafts and the Review Desk the
+   moment the writer clicked in. TeachText was carved out one rule at a time
+   below; the guard belongs on the field rule, where it holds for all of them. */
+body[data-theme="liquid-glass"] textarea:not(.mde-input):focus,
+body[data-theme="liquid-glass"] input:focus,
+body[data-theme="liquid-glass"] select:focus,
+body[data-theme="liquid-glass"] .system-select-button:focus-visible {
+  outline: 0;
+  outline-offset: 0;
+  border-color: var(--glass-field-focus-rim);
+  /* background-color, not the background shorthand: the select keeps its arrow
+     image, which lives in the same shorthand as the fill. */
+  background-color: var(--glass-field-focus-fill);
+  box-shadow:
+    inset 1.5px -1.5px 1px -1px rgba(255, 255, 255, 0.9),
+    inset -1.5px 1.5px 1px -1px rgba(255, 255, 255, 0.76),
+    inset 0 1px 0 var(--glass-highlight),
+    0 0 0 3px var(--glass-field-focus-ring),
+    0 8px 22px rgba(18, 28, 38, 0.08);
+}
+
+body[data-theme="liquid-glass"] input[type="checkbox"],
+body[data-theme="liquid-glass"] input[type="radio"] {
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  min-width: 18px;
+  height: 18px;
+  min-height: 18px;
+  border: 1px solid rgba(16, 17, 20, 0.32);
+  border-radius: var(--choice-radius);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.68), rgba(255, 255, 255, 0.24)),
+    rgba(255, 255, 255, 0.28);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    0 6px 14px rgba(18, 28, 38, 0.08);
+}
+
+/* Order-specific twin: the mixed rule above paints the rounded checkbox shape, but the radio has always rendered as a circle — the base rule's 50%
+   must win here. Kept as a later same-selector rule with the value tokenized. */
+body[data-theme="liquid-glass"] input[type="radio"] {
+  border-radius: var(--radio-radius);
+}
+
+body[data-theme="liquid-glass"] input[type="checkbox"]::before,
+body[data-theme="liquid-glass"] input[type="radio"]::before {
+  content: "";
+  display: block;
+  transform: scale(0);
+  transition: transform 0.12s ease-out;
+}
+
+body[data-theme="liquid-glass"] input[type="checkbox"]::before {
+  width: 10px;
+  height: 10px;
+  /* A tick, as every macOS draws a checked box; the cross read as "off". */
+  clip-path: polygon(0 55%, 14% 41%, 38% 64%, 86% 12%, 100% 26%, 38% 92%);
+  background: rgba(16, 17, 20, 0.86);
+}
+
+body[data-theme="liquid-glass"] input[type="radio"]::before {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--r-circle);
+  background: rgba(16, 17, 20, 0.86);
+}
+
+body[data-theme="liquid-glass"] input[type="checkbox"]:checked,
+body[data-theme="liquid-glass"] input[type="radio"]:checked {
+  border-color: rgba(16, 17, 20, 0.5);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.04)),
+    linear-gradient(180deg, #0a84ff, #0071e3);
+}
+
+body[data-theme="liquid-glass"] input[type="checkbox"]:checked::before,
+body[data-theme="liquid-glass"] input[type="radio"]:checked::before {
+  background: rgba(255, 255, 255, 0.96);
+  transform: scale(1);
+}
+
+/* ---- The appearance slider ------------------------------------------------
+   Scope is the named row, not every range control in the product: Cover Glass
+   already draws its own glass sliders at its own proportions, and Theme Lab's
+   era slider belongs to the sheet that owns the lab. A rule for every slider
+   would silently reshape both.
+
+   Eight selectors carry it, and none of them holds a value. The two states
+   that the user drives — pointer approach and drag — only swap tokens on the
+   input, and the track and lens read those tokens through inheritance, so the
+   material is described once and the states say how much of it. */
+body[data-theme="liquid-glass"] .liquid-tint-row input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  /* Taller than the lens so the lens's drop is not clipped by the input box.
+     The row centres its children, so the extra height moves nothing. */
+  height: var(--glass-slider-row-height);
+  background: transparent;
+  cursor: pointer;
+}
+
+body[data-theme="liquid-glass"] .liquid-tint-row input[type="range"]:focus {
+  outline: none;
+}
+
+/* Approach deepens the knob's drop a touch and does nothing else: the pointer
+   must not resize what it is about to grab. */
+body[data-theme="liquid-glass"] .liquid-tint-row input[type="range"]:hover {
+  --glass-slider-lens-scale: var(--glass-slider-hover-scale);
+  --glass-slider-lens-shadow:
+    0 0 0 0.5px rgba(16, 17, 20, 0.1),
+    0 1px 2px rgba(16, 17, 20, 0.22),
+    0 3px 7px rgba(18, 28, 38, 0.2);
+}
+
+/* Keyboard focus must be at least as findable as hover, so it keeps the
+   hover lift and adds the accent halo the fields use. */
+body[data-theme="liquid-glass"] .liquid-tint-row input[type="range"]:focus-visible {
+  --glass-slider-lens-scale: var(--glass-slider-hover-scale);
+  --glass-slider-lens-shadow:
+    0 0 0 0.5px rgba(16, 17, 20, 0.1),
+    0 1px 2px rgba(16, 17, 20, 0.22),
+    0 0 0 4px var(--glass-field-focus-ring),
+    0 3px 7px rgba(18, 28, 38, 0.2);
+}
+
+/* The drag. A held knob sits into the line — a shade cooler, a shorter drop,
+   the accent halo the focus ring already uses — so the press reads as contact
+   rather than as a bigger object. */
+body[data-theme="liquid-glass"] .liquid-tint-row input[type="range"]:active {
+  --glass-slider-lens-scale: var(--glass-slider-press-scale);
+  --glass-slider-lens-bg: #f2f3f5;
+  --glass-slider-lens-shadow:
+    0 0 0 0.5px rgba(16, 17, 20, 0.14),
+    0 0 0 5px rgba(10, 132, 255, 0.22),
+    0 1px 2px rgba(18, 28, 38, 0.24);
+}
+
+body[data-theme="liquid-glass"] .liquid-tint-row input[type="range"]::-webkit-slider-runnable-track {
+  height: var(--glass-slider-thickness);
+  border-radius: var(--r-pill);
+  background: var(--glass-slider-track-bg);
+  box-shadow: var(--glass-slider-track-shadow);
+}
+
+body[data-theme="liquid-glass"] .liquid-tint-row input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: var(--glass-slider-lens-size);
+  height: var(--glass-slider-lens-size);
+  /* Centres the lens on the well. Both terms are the tokens above, so the
+     two never drift out of register when either one is retuned. */
+  margin-top: calc((var(--glass-slider-thickness) - var(--glass-slider-lens-size)) / 2);
+  border-radius: var(--r-pill);
+  background: var(--glass-slider-lens-bg);
+  box-shadow: var(--glass-slider-lens-shadow);
+  backdrop-filter: var(--glass-slider-lens-filter);
+  -webkit-backdrop-filter: var(--glass-slider-lens-filter);
+  transform: scale(var(--glass-slider-lens-scale));
+  transition:
+    transform var(--glass-slider-motion) var(--control-motion-ease),
+    box-shadow var(--glass-slider-motion) var(--control-motion-ease);
+}
+
+body[data-theme="liquid-glass"] .liquid-tint-row input[type="range"]::-moz-range-track {
+  height: var(--glass-slider-thickness);
+  border-radius: var(--r-pill);
+  background: var(--glass-slider-track-bg);
+  box-shadow: var(--glass-slider-track-shadow);
+}
+
+body[data-theme="liquid-glass"] .liquid-tint-row input[type="range"]::-moz-range-thumb {
+  width: var(--glass-slider-lens-size);
+  height: var(--glass-slider-lens-size);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--glass-slider-lens-bg);
+  box-shadow: var(--glass-slider-lens-shadow);
+  transform: scale(var(--glass-slider-lens-scale));
+  transition:
+    transform var(--glass-slider-motion) var(--control-motion-ease),
+    box-shadow var(--glass-slider-motion) var(--control-motion-ease);
+}
+
+body[data-theme="liquid-glass"] .btn {
+  border: 1px solid var(--btn-border-color);
+  border-radius: var(--btn-radius);
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  box-shadow: var(--btn-shadow);
+  transition:
+    transform var(--control-motion-medium-in) var(--control-motion-ease),
+    background var(--control-motion-medium-in) var(--control-motion-ease),
+    box-shadow var(--control-motion-medium-in) var(--control-motion-ease);
+}
+
+/* Specificity-only twins: the generic .btn rule above and 60-responsive's
+   button.btn rule both outrank a plain .btn.default base rule, so the default
+   button material must keep its own glass rule. Values stay single-sourced
+   through the tokens. */
+body[data-theme="liquid-glass"] .btn.default {
+  background: var(--btn-default-bg);
+  color: var(--btn-default-fg);
+  text-shadow: var(--btn-default-text-shadow);
+  box-shadow: var(--btn-default-shadow);
+}
+
+body[data-theme="liquid-glass"] .btn.default:active:not(:disabled):not(.is-disabled) {
+  background: var(--btn-default-active-bg);
+  color: var(--btn-default-active-fg);
+}
+
+body[data-theme="liquid-glass"] .btn:hover:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected) {
+  background: var(--btn-hover-bg);
+  box-shadow: var(--btn-hover-shadow);
+}
+
+body[data-theme="liquid-glass"] .btn:active:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected) {
+  transform: var(--liquid-press-transform);
+  background: rgba(255, 255, 255, 0.64);
+  color: rgba(16, 17, 20, 0.94);
+  box-shadow: inset 0 2px 4px rgba(18, 28, 38, 0.12);
+}
+
+body[data-theme="liquid-glass"] .btn.is-glass-pressed:not(:disabled):not(.is-disabled):not(.is-selected):not(.is-multi-selected) {
+  transform: var(--liquid-press-transform);
+  background: var(--liquid-interaction-tint);
+  color: var(--liquid-action-ink);
+  box-shadow:
+    inset 0 2px 4px rgba(18, 28, 38, 0.12),
+    0 0 0 3px var(--glass-field-focus-ring);
+}
+
+body[data-theme="liquid-glass"] .btn.danger:not(:disabled):not(.is-disabled) {
+  border-color: rgba(228, 54, 54, 0.38);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.68), rgba(255, 255, 255, 0.24)),
+    rgba(255, 82, 82, 0.14);
+  color: rgb(185, 28, 28);
+  -webkit-text-fill-color: rgb(185, 28, 28);
+}
+
+body[data-theme="liquid-glass"] .btn.danger:hover:not(:disabled):not(.is-disabled),
+body[data-theme="liquid-glass"] .btn.danger:focus-visible:not(:disabled):not(.is-disabled) {
+  border-color: rgba(228, 54, 54, 0.52);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.3)),
+    rgba(255, 82, 82, 0.2);
+  color: rgb(165, 24, 24);
+  -webkit-text-fill-color: rgb(165, 24, 24);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.82),
+    0 8px 22px rgba(132, 36, 36, 0.12),
+    0 0 0 3px rgba(228, 54, 54, 0.12);
+}
+
+body[data-theme="liquid-glass"] .btn:disabled,
+body[data-theme="liquid-glass"] .btn.is-disabled,
+body[data-theme="liquid-glass"] .btn.default:disabled,
+body[data-theme="liquid-glass"] .btn.default.is-disabled {
+  border-color: rgba(16, 17, 20, 0.22);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.54), rgba(255, 255, 255, 0.2)),
+    rgba(255, 255, 255, 0.2);
+  color: rgba(16, 17, 20, 0.42);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
+  cursor: default;
+  opacity: 1;
+}
+
+body[data-theme="liquid-glass"] .btn:disabled:active,
+body[data-theme="liquid-glass"] .btn.is-disabled:active,
+body[data-theme="liquid-glass"] .btn.default:disabled:active,
+body[data-theme="liquid-glass"] .btn.default.is-disabled:active {
+  transform: none;
+  color: rgba(16, 17, 20, 0.42);
+}
+
+body[data-theme="liquid-glass"] .composer {
+  /* The composer keeps its docked layout while its visible surface follows
+     the same rounded panel role as the rest of Liquid Glass. */
+  border-radius: var(--r-lg);
+  background: var(--clio-composer-bg);
+  box-shadow: var(--clio-composer-shadow);
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+}
+
+body[data-theme="liquid-glass"] .assistant-window .composer-action-row {
+  box-sizing: border-box;
+}
+
+body[data-theme="liquid-glass"] .window:has(> .grow-box) .window-pane > .button-row:last-child,
+body[data-theme="liquid-glass"] .window:has(> .grow-box) .teachtext-actions:last-child,
+body[data-theme="liquid-glass"] .window:has(> .grow-box) .dictation-bottom-actions,
+body[data-theme="liquid-glass"] .window:has(> .grow-box) .translation-pad-actions {
+  box-sizing: border-box;
+}
+
+body[data-theme="liquid-glass"] .assistant-window .composer label {
+  width: fit-content;
+  min-height: auto;
+  display: block;
+  border-radius: 0;
+  background: transparent;
+  color: rgba(16, 17, 20, 0.86);
+  box-shadow: none;
+  font-weight: 700;
+}
+
+body[data-theme="liquid-glass"] .assistant-window .composer textarea {
+  border: 0;
+  border-radius: var(--r-md);
+  background: transparent;
+}
+
+body[data-theme="liquid-glass"] .assistant-window .composer textarea:focus {
+  outline: 0;
+  box-shadow: none;
+}
+
+body[data-theme="liquid-glass"] .mde-surface::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: min(100%, var(--mde-paper-width));
+  transform: translateX(-50%);
+  border: 1px solid rgba(255, 255, 255, 0.44);
+  border-radius: var(--r-lg);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.18)),
+    rgba(255, 255, 255, 0.22);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 14px 34px rgba(18, 28, 38, 0.08);
+  pointer-events: none;
+}
+
+body[data-theme="liquid-glass"] .mde-surface::after {
+  right: 14px;
+}
+
+body[data-theme="liquid-glass"] .mde-surface > .mde-input {
+  scrollbar-gutter: stable;
+}
+
+body[data-theme="liquid-glass"] .teachtext-pane textarea {
+  /* Concentric with the window corner, not a second window inside it. */
+  --container-inset: 12px;
+  border-radius: max(var(--r-xs), calc(var(--container-radius) - var(--container-inset)));
+  /* Transparent so the highlight overlay shows; the container holds the glass. */
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
+  outline: 0;
+}
+
+body[data-theme="liquid-glass"] .teachtext-pane textarea:focus {
+  outline: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* The editor tint stops at the writing surfaces, for the same reason TeachText
+   above is transparent: their ink is painted by an overlay BEHIND the textarea,
+   so a fill in the textarea's own layer washes out every glyph it covers. These
+   three kept the tint because they are more specific than the base
+   `.mde-surface > .mde-input` rule, and the writer read Question Sheet, Outline
+   and Section Drafts through a 16% white veil. The glass they were reaching for
+   is already on .mde-surface::before, which sits behind the ink. */
+body[data-theme="liquid-glass"] .question-sheet-pane textarea:not(.mde-input),
+body[data-theme="liquid-glass"] .outline-content:not(.mde-input),
+body[data-theme="liquid-glass"] .draft-editor textarea:not(.mde-input) {
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: none;
+  outline: 0;
+}
+
+/* Rendered-markdown previews are reading surfaces, not editors. They can float
+   over other windows and scroll inside a backdrop-filter window, so the 16%
+   editor tint (writing route) and full transparency (Review Desk, see below)
+   both let underlying text bleed through, collide, and clip on scroll. Give
+   them a solid reading fill + blur. Win over the base .teachtext-preview rule
+   on specificity, so they need no priority override. */
+body[data-theme="liquid-glass"] .specialized-teachtext-preview,
+body[data-theme="liquid-glass"] .review-desk-preview {
+  background: var(--glass-reading-surface);
+  box-shadow: none;
+  outline: 0;
+  backdrop-filter: var(--glass-reading-blur);
+  -webkit-backdrop-filter: var(--glass-reading-blur);
+}
+
+body[data-theme="liquid-glass"] .dictation-field-button {
+  min-width: 52px;
+  border: 1px solid rgba(255, 255, 255, 0.56);
+  border-radius: var(--r-pill);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.3)),
+    rgba(255, 255, 255, 0.34);
+  color: rgba(16, 17, 20, 0.92);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78), 0 8px 20px rgba(18, 28, 38, 0.12);
+  backdrop-filter: blur(10px) saturate(145%);
+  -webkit-backdrop-filter: blur(10px) saturate(145%);
+}
+
+body[data-theme="liquid-glass"] .dictation-field-button:hover,
+body[data-theme="liquid-glass"] .dictation-field-button:focus {
+  outline: 0;
+  border-color: rgba(0, 122, 255, 0.42);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.38)),
+    rgba(255, 255, 255, 0.42);
+  color: rgba(16, 17, 20, 0.94);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.86),
+    0 10px 24px rgba(18, 28, 38, 0.14),
+    0 0 0 2px rgba(0, 122, 255, 0.12);
+}
+
+body[data-theme="liquid-glass"] .chooser-panel .control-section {
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  border-radius: var(--r-lg);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.16)),
+    rgba(255, 255, 255, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 12px 30px rgba(18, 28, 38, 0.08);
+}
+
+body[data-theme="liquid-glass"] .chooser-panel .control-section h3 {
+  margin: 0;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 255, 255, 0.44);
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.34);
+  color: rgba(16, 17, 20, 0.92);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  line-height: 1.6;
+}
+
+body[data-theme="liquid-glass"] .chooser-source {
+  grid-template-columns: 42px minmax(0, 1fr);
+}
+
+body[data-theme="liquid-glass"] .chooser-source .sys-icon {
+  grid-column: 1;
+  width: 38px;
+  height: 38px;
+}
+
+body[data-theme="liquid-glass"] .chooser-panel .select-wrap,
+body[data-theme="liquid-glass"] .chooser-panel .system-select-button {
+  grid-column: 2;
+  width: 100%;
+}
+
+body[data-theme="liquid-glass"] .chooser-panel .system-select-button,
+body[data-theme="liquid-glass"] .chooser-panel select {
+  min-height: 34px;
+  border-radius: var(--r-pill);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.3)),
+    rgba(255, 255, 255, 0.28);
+}
+
+body[data-theme="liquid-glass"] .chooser-panel .control-status {
+  padding: 9px 0 0;
+  border-top: 1px solid rgba(16, 17, 20, 0.1);
+  color: rgba(16, 17, 20, 0.72);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+body[data-theme="liquid-glass"] .chooser-panel #importer-status {
+  max-height: 7.2em;
+  overflow: auto;
+}
+
+body[data-theme="liquid-glass"] .find-file-pane .button-row {
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+body[data-theme="liquid-glass"] .control-panel .control-footer {
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  --container-inset: 9px;
+  border-radius: max(var(--r-xs), calc(var(--container-radius) - var(--container-inset)));
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.16)),
+    rgba(255, 255, 255, 0.18);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 10px 26px rgba(18, 28, 38, 0.07);
+  color: rgba(16, 17, 20, 0.82);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+body[data-theme="liquid-glass"] .memory-card:hover:not([aria-disabled="true"]) {
+  border-color: rgba(16, 17, 20, 0.28);
+}
+body[data-theme="liquid-glass"] .memory-card.is-face-up,
+body[data-theme="liquid-glass"] .memory-card.is-matched {
+  border-color: rgba(16, 17, 20, 0.28);
+}
+
+body[data-theme="liquid-glass"] #memory-cards-status {
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.36);
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58);
+  color: rgba(16, 17, 20, 0.86);
+}
+
+body[data-theme="liquid-glass"] .compose-tools-menu {
+  min-width: 286px;
+  padding: 6px;
+  gap: 3px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-md);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(246, 251, 253, 0.84)),
+    rgba(246, 251, 253, 0.92);
+  box-shadow: 0 22px 54px rgba(18, 28, 38, 0.2), 0 2px 10px rgba(18, 28, 38, 0.12);
+  backdrop-filter: blur(24px) saturate(170%);
+  -webkit-backdrop-filter: blur(24px) saturate(170%);
+  overflow: hidden;
+}
+
+body[data-theme="liquid-glass"] .compose-tools-menu button {
+  padding: 7px 9px;
+  border-radius: var(--r-md);
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Specificity-only twin: the generic liquid button rule above (0,3,1) would
+   otherwise beat the base hover rule (0,3,0) and the hover feedback would
+   disappear in glass. The values stay single-sourced through the tokens. */
+body[data-theme="liquid-glass"] .compose-tools-menu button:hover,
+body[data-theme="liquid-glass"] .compose-tools-menu button:focus-visible {
+  /* The bold line reads its ink from a token, so hand it the hover ink here
+     rather than restating white in two more selectors. The small line cannot
+     follow: the base sheet paints it color: var(--paper) directly, and under
+     glass --paper is half-transparent, so it keeps the pair below. */
+  --compose-tool-copy-b: var(--compose-menu-hover-fg);
+  background: var(--compose-menu-hover-bg);
+  color: var(--compose-menu-hover-fg);
+}
+
+body[data-theme="liquid-glass"] .compose-tools-menu button:hover .compose-tool-copy small,
+body[data-theme="liquid-glass"] .compose-tools-menu button:focus-visible .compose-tool-copy small {
+  color: var(--compose-menu-hover-fg);
+}
+
+body[data-theme="liquid-glass"] .compose-tool-icon {
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(16, 17, 20, 0.62);
+  border-radius: var(--r-sm);
+  background-color: rgba(255, 255, 255, 0.55);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76), 0 5px 14px rgba(18, 28, 38, 0.1);
+}
+
+body[data-theme="liquid-glass"] .memory-transfer-window .details-bar {
+  border-bottom: 1px solid rgba(16, 17, 20, 0.1);
+  background: rgba(255, 255, 255, 0.24);
+}
+
+body[data-theme="liquid-glass"] .memory-transfer-pane {
+  gap: 16px;
+  padding: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.14)),
+    rgba(255, 255, 255, 0.2);
+}
+
+body[data-theme="liquid-glass"] .memory-transfer-note,
+body[data-theme="liquid-glass"] .memory-transfer-note {
+  grid-template-columns: 48px minmax(0, 1fr);
+  min-height: 68px;
+  padding: 12px 14px;
+}
+
+body[data-theme="liquid-glass"] .memory-transfer-note b {
+  color: rgba(16, 17, 20, 0.96);
+}
+
+body[data-theme="liquid-glass"] .memory-transfer-note span:not(.compose-tool-icon) {
+  color: rgba(16, 17, 20, 0.58);
+  font-size: 13px;
+}
+
+body[data-theme="liquid-glass"] .memory-transfer-field label {
+  margin-bottom: 0;
+}
+
+body[data-theme="liquid-glass"] .file-picker {
+  gap: 12px;
+}
+
+body[data-theme="liquid-glass"] .file-picker .file-picker-button {
+  min-width: 126px;
+}
+
+body[data-theme="liquid-glass"] .file-picker-name {
+  border: 1px solid rgba(16, 17, 20, 0.18);
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.42);
+  color: rgba(16, 17, 20, 0.88);
+  box-shadow: inset 0 1px 0 var(--glass-highlight), 0 6px 18px rgba(18, 28, 38, 0.06);
+}
+
+body[data-theme="liquid-glass"] .file-picker-input:focus-visible + .file-picker-button {
+  outline: 0;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.28), inset 0 1px 0 var(--glass-highlight);
+}
+
+body[data-theme="liquid-glass"] .memory-transfer-footer {
+  gap: 12px;
+}
+
+body[data-theme="liquid-glass"] .memory-transfer-footer .hint {
+  color: rgba(16, 17, 20, 0.8);
+}
+
+body[data-theme="liquid-glass"] .import-preview > .empty-folder-note,
+body[data-theme="liquid-glass"] .backup-preview > .empty-folder-note {
+  --empty-note-max-width: none;
+  --empty-note-margin: 10px;
+  --empty-note-radius: var(--r-md);
+}
+
+body[data-theme="liquid-glass"] .backup-preview-section {
+  gap: 10px;
+  margin-top: 8px;
+  padding: 14px 16px;
+  border: 1px solid rgba(16, 17, 20, 0.12);
+  border-radius: var(--r-lg);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.08)),
+    rgba(255, 255, 255, 0.1);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.48),
+    0 8px 22px rgba(18, 28, 38, 0.05);
+}
+
+body[data-theme="liquid-glass"] .backup-preview-section summary {
+  font-size: 14px;
+  line-height: 1.2;
+  color: rgba(16, 17, 20, 0.96);
+}
+
+body[data-theme="liquid-glass"] .backup-preview-section > span {
+  margin-top: -2px;
+  color: rgba(16, 17, 20, 0.62);
+  font-size: 13px;
+  line-height: 1.22;
+}
+
+body[data-theme="liquid-glass"] .backup-action-row {
+  grid-template-columns: minmax(0, 1fr) minmax(180px, auto);
+  gap: 12px;
+}
+
+body[data-theme="liquid-glass"] .backup-preview-section .file-picker {
+  grid-template-columns: minmax(116px, auto) minmax(150px, 1fr);
+  gap: 10px;
+}
+
+body[data-theme="liquid-glass"] .backup-preview {
+  min-height: 72px;
+}
+
+body[data-theme="liquid-glass"] .backup-preview > .empty-folder-note {
+  display: block;
+  padding: 4px 2px;
+  text-align: left;
+}
+
+body[data-theme="liquid-glass"] .backup-preview:has(> .empty-folder-note) {
+  min-height: 0;
+  border: 0;
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
+}
+
+body[data-theme="liquid-glass"] .backup-preview:has(> .empty-folder-note) > .empty-folder-note {
+  --empty-note-margin: 0;
+  --empty-note-border: 0;
+  --empty-note-bg: transparent;
+  --empty-note-shadow: none;
+  --empty-note-fg: rgba(16, 17, 20, 0.58);
+  background-image: none;
+}
+
+body[data-theme="liquid-glass"] .backup-action-row #import-project-backup {
+  justify-self: end;
+  max-width: 230px;
+}
+
+body[data-theme="liquid-glass"] .teachtext-desk-strip {
+  gap: 4px;
+  border: 1px solid rgba(16, 17, 20, 0.14);
+  --container-inset: 11px;
+  border-radius: max(var(--r-xs), calc(var(--container-radius) - var(--container-inset)));
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.22)),
+    rgba(255, 255, 255, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72), 0 8px 24px rgba(18, 28, 38, 0.07);
+  padding: 4px;
+  font-family: var(--text-font);
+}
+
+body[data-theme="liquid-glass"] .teachtext-desk-strip span {
+  border-right: 0;
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.28);
+  color: rgba(16, 17, 20, 0.86);
+}
+
+/* The route's status strip is the same instrument as the desk strip above it,
+   so it takes the same glass rather than the raw paper token - otherwise the
+   two sit on each other as visibly different materials. */
+body[data-theme="liquid-glass"] .window-status-strip.has-message {
+  border: 1px solid rgba(16, 17, 20, 0.14);
+  --container-inset: 11px;
+  border-radius: max(var(--r-xs), calc(var(--container-radius) - var(--container-inset)));
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.56), rgba(255, 255, 255, 0.22)),
+    rgba(255, 255, 255, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  font-family: var(--text-font);
+  color: rgba(16, 17, 20, 0.86);
+}
+
+body[data-theme="liquid-glass"] .spine-toolbox-panel {
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-lg);
+  box-shadow: 0 18px 52px rgba(18, 28, 38, 0.18), 0 2px 8px rgba(18, 28, 38, 0.1);
+}
+
+body[data-theme="liquid-glass"] .writing-spine-panel.is-shaded .spine-toolbox-panel {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body[data-theme="liquid-glass"] .writing-spine-panel.is-shaded .spine-toolbox-panel::before {
+  content: none;
+}
+
+body[data-theme="liquid-glass"] .writing-spine-panel.is-shaded .spine-title-row {
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-pill);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76), 0 1px 3px rgba(18, 28, 38, 0.06);
+}
+
+body[data-theme="liquid-glass"] .spine-title-row {
+  border-bottom: 1px solid rgba(16, 17, 20, 0.1);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.16)),
+    rgba(255, 255, 255, 0.24);
+  background-clip: border-box;
+}
+
+body[data-theme="liquid-glass"] .review-desk-markdown:focus {
+  outline: 0;
+}
+
+body[data-theme="liquid-glass"] .review-desk-splitter {
+  height: 12px;
+  border-top: 1px solid rgba(16, 17, 20, 0.1);
+  border-bottom: 1px solid rgba(16, 17, 20, 0.1);
+  background:
+    linear-gradient(90deg, transparent, rgba(16, 17, 20, 0.12), transparent) center / 88% 1px no-repeat,
+    rgba(255, 255, 255, 0.2);
+}
+
+body[data-theme="liquid-glass"] .review-desk-empty-note,
+body[data-theme="liquid-glass"] .style-sheet-results > .empty-folder-note,
+body[data-theme="liquid-glass"] .claim-results > .empty-folder-note,
+body[data-theme="liquid-glass"] .claim-section-meta.empty-folder-note {
+  --empty-note-max-width: min(680px, calc(100% - 48px));
+  --empty-note-margin: 22px auto;
+}
+
+body[data-theme="liquid-glass"] .review-desk-window.is-review-locked .review-desk-empty-note {
+  width: min(var(--mde-page-width), calc(100% - 64px));
+  min-height: 180px;
+  margin: 0;
+  padding: 30px 36px;
+  border: 1px solid rgba(16, 17, 20, 0.12);
+  border-radius: var(--r-lg);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.18)),
+    rgba(255, 255, 255, 0.22);
+  color: rgba(16, 17, 20, 0.82);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 14px 34px rgba(18, 28, 38, 0.08);
+}
+
+body[data-theme="liquid-glass"] .shutdown-screen,
+body[data-theme="liquid-glass"] .boot-screen {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.32) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.26) 1px, transparent 1px),
+    radial-gradient(circle at 18% 14%, rgba(0, 122, 255, 0.28), transparent 31%),
+    radial-gradient(circle at 90% 10%, rgba(90, 200, 250, 0.32), transparent 34%),
+    linear-gradient(135deg, #e9eef2 0%, #cbd4db 56%, #edf0e6 100%);
+  background-size: 22px 22px, 22px 22px, auto, auto, auto;
+}
+
+body[data-theme="liquid-glass"] .happy-mac {
+  border-radius: var(--r-md);
+  background:
+    linear-gradient(rgba(16, 17, 20, 0.92), rgba(16, 17, 20, 0.92)) 16px 84px / 11px 4px no-repeat,
+    linear-gradient(rgba(16, 17, 20, 0.92), rgba(16, 17, 20, 0.92)) 57px 84px / 40px 4px no-repeat,
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.34)),
+    rgba(255, 255, 255, 0.32);
+  box-shadow: var(--happy-mac-shadow);
+  backdrop-filter: var(--happy-mac-backdrop);
+  -webkit-backdrop-filter: var(--happy-mac-backdrop);
+}
+
+body[data-theme="liquid-glass"] .happy-mac::after {
+  border-radius: 0 0 4px 4px;
+  background: rgba(255, 255, 255, 0.36);
+}
+
+body[data-theme="liquid-glass"] .happy-mac-face {
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: var(--happy-mac-face-shadow);
+}
+
+body[data-theme="liquid-glass"] .shutdown-ledger,
+body[data-theme="liquid-glass"] .boot-ledger {
+  border: 1px solid rgba(16, 17, 20, 0.16);
+  border-radius: var(--r-lg);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.26)),
+    rgba(255, 255, 255, 0.24);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    0 16px 42px rgba(18, 28, 38, 0.12);
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+}
+
+body[data-theme="liquid-glass"] .shutdown-ledger .btn {
+  color: rgba(16, 17, 20, 0.96);
+}
+
+body[data-theme="liquid-glass"] .boot-progress {
+  border: 1px solid rgba(16, 17, 20, 0.18);
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.38);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+body[data-theme="liquid-glass"] .boot-progress span {
+  border-radius: var(--r-pill);
+  background: linear-gradient(90deg, var(--glass-progress-blue), var(--glass-progress-accent));
+}
+
+body[data-theme="liquid-glass"] .progress-track {
+  height: 14px;
+  border: 1px solid rgba(16, 17, 20, 0.18);
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.44);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    inset 0 -1px 0 rgba(16, 17, 20, 0.06);
+}
+
+body[data-theme="liquid-glass"] .progress-bar {
+  width: 160%;
+  border-radius: inherit;
+  background:
+    linear-gradient(90deg, var(--glass-progress-blue), var(--glass-progress-accent), var(--glass-progress-blue));
+  background-size: 50% 100%;
+  animation: liquid-progress 1.2s linear infinite;
+}
+
+body[data-theme="liquid-glass"] .rebuild-progress-meter {
+  height: 12px;
+  border: 1px solid rgba(16, 17, 20, 0.14);
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.42);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+body[data-theme="liquid-glass"] .rebuild-progress-meter span {
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--glass-progress-blue), var(--glass-progress-accent));
+}
+
+body[data-theme="liquid-glass"] .rebuild-progress-meter.is-working span {
+  background: linear-gradient(90deg, var(--glass-progress-blue-soft), var(--glass-progress-accent-soft), var(--glass-progress-blue-soft));
+  background-size: 50% 100%;
+  animation: liquid-progress 1.2s linear infinite;
+}
+
+body[data-theme="liquid-glass"] .scrapbook-pane {
+  padding: 18px 24px 22px;
+}
+
+body[data-theme="liquid-glass"] .scrap-editor {
+  padding: 18px 20px;
+}
+
+body[data-theme="liquid-glass"] .scrap-editor {
+  border: 1px solid rgba(255, 255, 255, 0.44);
+  border-radius: var(--r-lg);
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68);
+}
+
+body[data-theme="liquid-glass"] .scrap-title-display {
+  border: 0;
+}
+
+/* Specificity-only twin: the editor container also carries the window frame
+   scroller class, whose rule would otherwise beat the base editor rule in
+   glass and strip the rounded transparent material. Values are single-sourced
+   through the tokens. */
+body[data-theme="liquid-glass"] .teachtext-editor-container {
+  border-radius: var(--teachtext-editor-radius);
+  background: var(--teachtext-editor-bg);
+  box-shadow: var(--teachtext-editor-shadow);
+  overflow: hidden;
+  border: var(--teachtext-editor-border);
+}
+
+body[data-theme="liquid-glass"] #scrap-body-input:focus {
+  outline: 0;
+}
+
+@keyframes liquid-progress {
+  from { transform: translateX(-36%); }
+  to { transform: translateX(0); }
+}
+
+body[data-theme="liquid-glass"] .message,
+body[data-theme="liquid-glass"] .scrap-list button,
+body[data-theme="liquid-glass"] .trash-list button,
+body[data-theme="liquid-glass"] .finder-list-row:not(:hover):not(.is-selected) {
+  border-color: rgba(255, 255, 255, 0.48);
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.24);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+/* Specificity-only twin: `.scrap-list button { border: 0; background:
+   transparent }` would otherwise strip the empty card's frame and material.
+   The values are single-sourced through the scrap tokens in :root + the
+   body[data-theme="liquid-glass"] token block. */
+body[data-theme="liquid-glass"] .scrap-empty-card {
+  background: var(--scrap-empty-card-bg);
+  border: var(--scrap-empty-card-border);
+}
+
+body[data-theme="liquid-glass"] .message {
+  border-radius: var(--r-sm);
+}
+
+body[data-theme="liquid-glass"] .message-content h1,
+body[data-theme="liquid-glass"] .message-content h2,
+body[data-theme="liquid-glass"] .message-content h3 {
+  display: block;
+  margin: 8px 0 8px;
+  padding: 0 0 7px;
+  border-bottom: 1px solid rgba(16, 17, 20, 0.18);
+  background: transparent;
+  color: rgba(16, 17, 20, 0.94);
+  box-shadow: none;
+}
+
+body[data-theme="liquid-glass"] .message-content hr {
+  border-top: 1px solid rgba(16, 17, 20, 0.14);
+  margin: 10px 0;
+}
+
+body[data-theme="liquid-glass"] .message-content blockquote,
+body[data-theme="liquid-glass"] .message-content pre,
+body[data-theme="liquid-glass"] .message-translation {
+  border: 1px solid rgba(255, 255, 255, 0.46);
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58);
+}
+
+body[data-theme="liquid-glass"] .message-content blockquote {
+  border-left: 3px solid rgba(16, 17, 20, 0.24);
+}
+
+body[data-theme="liquid-glass"] .message-content :not(pre) > code {
+  border: 1px solid rgba(16, 17, 20, 0.12);
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.28);
+}
+body[data-theme="liquid-glass"] .finder-list-header {
+  margin: 2px 0 6px;
+  padding: 7px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.36);
+  border-bottom: 1px solid rgba(16, 17, 20, 0.12);
+  border-radius: var(--r-md);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.46), rgba(255, 255, 255, 0.16)),
+    rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68);
+}
+
+body[data-theme="liquid-glass"] .finder-list-group {
+  margin: 6px 0 4px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.28);
+  color: rgba(16, 17, 20, 0.72);
+}
+
+body[data-theme="liquid-glass"] .finder-list-row {
+  margin-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.28);
+}
+
+body[data-theme="liquid-glass"] .empty-folder-note .icon {
+  border-color: rgba(255, 255, 255, 0.5);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.24)),
+    rgba(255, 255, 255, 0.26);
+}
+
+body[data-theme="liquid-glass"] .empty-folder-note .export-empty-icon {
+  border-color: rgba(16, 17, 20, 0.2);
+  background:
+    linear-gradient(rgba(16, 17, 20, 0.78), rgba(16, 17, 20, 0.78)) 7px 9px / 24px 2px no-repeat,
+    linear-gradient(rgba(16, 17, 20, 0.78), rgba(16, 17, 20, 0.78)) 7px 15px / 22px 2px no-repeat,
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.28)),
+    rgba(255, 255, 255, 0.3);
+}
+
+body[data-theme="liquid-glass"] .finder-grid {
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  gap: 14px 12px;
+}
+
+body[data-theme="liquid-glass"] .document-icon-grid,
+body[data-theme="liquid-glass"] .project-disk-grid,
+body[data-theme="liquid-glass"] .text-disk-grid {
+  padding: 14px;
+}
+
+body[data-theme="liquid-glass"] .project-finder-pathbar {
+  border-bottom: 1px solid rgba(16, 17, 20, 0.1);
+}
+
+body[data-theme="liquid-glass"] .finder-item {
+  width: 118px;
+  min-height: 94px;
+  display: grid;
+  grid-template-rows: 44px minmax(0, auto) minmax(0, auto);
+  justify-items: center;
+  align-content: start;
+  gap: 5px;
+  padding: 8px 7px;
+  border: 1px solid transparent;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+
+body[data-theme="liquid-glass"] .finder-item .sys-icon {
+  width: 44px;
+  height: 44px;
+  margin: 0;
+}
+
+body[data-theme="liquid-glass"] .finder-item span:last-of-type,
+body[data-theme="liquid-glass"] .finder-item:focus span:last-of-type,
+body[data-theme="liquid-glass"] .finder-item:hover span:last-of-type,
+body[data-theme="liquid-glass"] .finder-item.is-selected span:last-of-type,
+body[data-theme="liquid-glass"] .finder-item small {
+  width: 100%;
+  max-width: 100%;
+  display: block;
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: keep-all;
+}
+
+body[data-theme="liquid-glass"] .finder-item span:last-of-type {
+  line-height: 1.18;
+  padding: 2px 5px;
+}
+
+body[data-theme="liquid-glass"] .finder-item small {
+  color: rgba(16, 17, 20, 0.58);
+  line-height: 1.2;
+  padding: 1px 5px;
+}
+
+body[data-theme="liquid-glass"] .finder-item:hover,
+body[data-theme="liquid-glass"] .finder-item:focus-visible {
+  background: rgba(255, 255, 255, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.54), 0 8px 26px rgba(18, 28, 38, 0.1);
+}
+
+body[data-theme="liquid-glass"] .finder-item.is-selected {
+  border-color: rgba(255, 255, 255, 0.6);
+  background: rgba(16, 17, 20, 0.84);
+  color: #ffffff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 12px 30px rgba(18, 28, 38, 0.18);
+}
+
+body[data-theme="liquid-glass"] .finder-item.is-selected span:last-of-type,
+body[data-theme="liquid-glass"] .finder-item.is-selected small {
+  background: transparent;
+  color: #ffffff;
+}
+
+body[data-theme="liquid-glass"] .finder-item.is-selected .sys-icon {
+  color: #ffffff;
+  background: transparent;
+}
+
+body[data-theme="liquid-glass"] .finder-list-row.is-selected,
+body[data-theme="liquid-glass"] .scrap-list button.is-selected,
+body[data-theme="liquid-glass"] .scrap-list button.is-multi-selected,
+body[data-theme="liquid-glass"] .trash-list button.is-selected {
+  background: rgba(16, 17, 20, 0.84);
+  color: #ffffff;
+}
+
+body[data-theme="liquid-glass"] .finder-marquee {
+  border: 1px solid rgba(0, 122, 255, 0.38);
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.42),
+    0 0 0 1px rgba(0, 122, 255, 0.16);
+  backdrop-filter: blur(2px) saturate(112%);
+  -webkit-backdrop-filter: blur(2px) saturate(112%);
+}
+
+body[data-theme="liquid-glass"] .desktop-icon {
+  border-radius: var(--r-lg);
+  padding: var(--liquid-desktop-icon-padding);
+  width: var(--desktop-icon-width);
+}
+
+body[data-theme="liquid-glass"] .desktop-icon:hover,
+body[data-theme="liquid-glass"] .desktop-icon:focus-visible,
+body[data-theme="liquid-glass"] .desktop-icon.is-selected,
+body[data-theme="liquid-glass"] .spine-actions button:hover,
+body[data-theme="liquid-glass"] .spine-actions button:focus-visible,
+body[data-theme="liquid-glass"] .spine-actions button.is-selected {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: var(--r-lg);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.54), 0 8px 26px rgba(18, 28, 38, 0.12);
+  backdrop-filter: blur(8px) saturate(140%);
+  -webkit-backdrop-filter: blur(8px) saturate(140%);
+  outline: 0;
+}
+
+body[data-theme="liquid-glass"] .spine-actions b {
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.54);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+body[data-theme="liquid-glass"] .spine-actions button.holds-pen .spine-step-number {
+  background: rgba(16, 17, 20, 0.84);
+  color: #ffffff;
+  -webkit-text-fill-color: #ffffff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+body[data-theme="liquid-glass"] .spine-actions .spine-step-number {
+  /* This era's step badge is a 24px circle where the other five draw a 17px
+     square chip. The difference is the shape, and only the shape: the circle
+     sits on the icon's top-left corner like every other era's chip, so the map
+     reads the same and a reader only re-learns what a step looks like, not
+     where to look for it. An earlier pass "unified" these by deleting this
+     rule and giving the pen badge a circle in every era - wrong in both
+     directions at once, and one of them shipped. Top and left are deliberately
+     not set here: the shared rule places the badge, and so does the
+     small-icons variant. */
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 0;
+  border-radius: var(--r-pill);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.34)),
+    rgba(255, 255, 255, 0.22);
+  color: rgba(18, 28, 38, 0.72);
+  font-family: var(--ui-font);
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.5rem;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 0 1px rgba(255, 255, 255, 0.44),
+    0 8px 20px rgba(18, 28, 38, 0.1);
+}
+
+body[data-theme="liquid-glass"] .desktop-app-icon span[data-liquid-label] {
+  width: fit-content;
+  max-width: min(104px, calc(100vw - 24px));
+  line-height: var(--liquid-desktop-icon-label-line-height);
+}
+
+body[data-theme="liquid-glass"] .desktop-app-icon span[data-liquid-label] {
+  font-size: 0;
+}
+
+body[data-theme="liquid-glass"] .desktop-app-icon span[data-liquid-label]::before {
+  content: attr(data-liquid-label);
+  font-size: var(--system-text-size);
+}
+
+html:lang(zh-Hans) body[data-theme="liquid-glass"] .desktop-app-icon span[data-liquid-label-zh]::before {
+  content: attr(data-liquid-label-zh);
+}
+
+html:lang(zh-Hans) body[data-theme="liquid-glass"] .desktop-app-icon span[data-liquid-label-zh-main] {
+  width: max-content;
+  max-width: min(104px, calc(100vw - 24px));
+  line-height: 1.12;
+}
+
+html:lang(zh-Hans) body[data-theme="liquid-glass"] .desktop-app-icon span[data-liquid-label-zh-main]::before,
+html:lang(zh-Hans) body[data-theme="liquid-glass"] .desktop-app-icon span[data-liquid-label-zh-sub]::after {
+  display: block;
+  font-size: var(--system-text-size);
+  white-space: nowrap;
+}
+
+html:lang(zh-Hans) body[data-theme="liquid-glass"] .desktop-app-icon span[data-liquid-label-zh-main]::before {
+  content: attr(data-liquid-label-zh-main);
+}
+
+html:lang(zh-Hans) body[data-theme="liquid-glass"] .desktop-app-icon span[data-liquid-label-zh-sub]::after {
+  content: attr(data-liquid-label-zh-sub);
+}
+
+body[data-theme="liquid-glass"] .desktop-app-icon span[data-liquid-label-mode="nowrap"] {
+  width: max-content;
+  max-width: min(132px, calc(100vw - 24px));
+  white-space: nowrap;
+}
+
+body[data-theme="liquid-glass"] .desktop-app-icon span[data-liquid-label-mode="wrap"] {
+  max-width: 92px;
+}
+
+/* A dimmed icon (File Floppy with no floppy in) carries the disabled control's
+   -webkit-text-fill-color, and that inherits past `color` onto the name. On the
+   dark selection plate it painted the name 42% black on 84% black, so the
+   selected item became unreadable. The reversed name has to set the fill too. */
+body[data-theme="liquid-glass"] .desktop-icon:hover span:last-child,
+body[data-theme="liquid-glass"] .desktop-icon:focus span:last-child,
+body[data-theme="liquid-glass"] .desktop-icon.is-selected span:last-child,
+body[data-theme="liquid-glass"] .spine-actions button:hover b,
+body[data-theme="liquid-glass"] .spine-actions button:focus-visible b,
+body[data-theme="liquid-glass"] .spine-actions button.is-selected b {
+  background: rgba(16, 17, 20, 0.84);
+  color: #ffffff;
+  -webkit-text-fill-color: #ffffff;
+}
+
+body[data-theme="liquid-glass"] .icon,
+body[data-theme="liquid-glass"] .mini-icon {
+  filter: drop-shadow(0 4px 8px rgba(18, 28, 38, 0.16));
+}
+
+body[data-theme="liquid-glass"] .sys-icon-classic {
+  display: none;
+}
+
+body[data-theme="liquid-glass"] .sys-icon-liquid {
+  display: block;
+}
+
+body[data-theme="liquid-glass"] .sys-icon {
+  color: #101114;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  filter: none;
+  padding: 0;
+}
+
+/* Golden Gate applies the rounded-rectangle boundary to applications and
+   tools at render time. Free-form Finder objects keep their hardware, paper,
+   folder, document, disc, and trash silhouettes. The 22% radius is a local
+   adaptation of the macOS mask geometry; it is deliberately not baked into
+   the source PNGs. */
+body[data-theme="liquid-glass"] .sys-icon-svg.liquid-glass-rounded {
+  border-radius: 22%;
+  clip-path: inset(0 round 22%);
+  overflow: hidden;
+}
+
+body[data-theme="liquid-glass"] :is(.menu-bar, .control-strip) .sys-icon,
+body[data-theme="liquid-glass"] .finder-list-name-cell .sys-icon,
+body[data-theme="liquid-glass"] .finder-list-row > span:first-child .sys-icon,
+body[data-theme="liquid-glass"] .system-select-button .sys-icon,
+body[data-theme="liquid-glass"] .compose-tools-menu .sys-icon,
+body[data-theme="liquid-glass"] .details-bar .sys-icon {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  color: inherit;
+  filter: none;
+  padding: 0;
+}
+
+body[data-theme="liquid-glass"] .sys-icon-svg {
+  stroke-width: var(--system-icon-stroke-width);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  shape-rendering: var(--system-icon-shape-rendering, geometricPrecision);
+}
+
+/* .classic-ink is opted out: transport glyphs stay solid in both themes. */
+body[data-theme="liquid-glass"] .sys-icon-liquid path:not(.classic-ink),
+body[data-theme="liquid-glass"] .sys-icon-liquid rect,
+body[data-theme="liquid-glass"] .sys-icon-liquid circle {
+  fill: none;
+  vector-effect: non-scaling-stroke;
+}
+
+body[data-theme="liquid-glass"] .sys-icon-liquid .icon-fill {
+  fill: rgba(255, 255, 255, 0.54);
+}
+
+body[data-theme="liquid-glass"] .sys-icon-liquid .icon-fill-soft {
+  fill: rgba(0, 122, 255, 0.18);
+}
+
+body[data-theme="liquid-glass"] .sys-icon-liquid .icon-accent {
+  stroke: #6d7c00;
+  fill: rgba(90, 200, 250, 0.36);
+}
+
+body[data-theme="liquid-glass"] .desktop-icon .sys-icon,
+body[data-theme="liquid-glass"] .spine-actions .sys-icon {
+  width: var(--liquid-desktop-icon-size);
+  height: var(--liquid-desktop-icon-size);
+}
+
+body[data-theme="liquid-glass"] .desktop-icon:hover .sys-icon,
+body[data-theme="liquid-glass"] .desktop-icon:focus-visible .sys-icon,
+body[data-theme="liquid-glass"] .desktop-icon.is-selected .sys-icon,
+body[data-theme="liquid-glass"] .spine-actions button:hover .sys-icon,
+body[data-theme="liquid-glass"] .spine-actions button:focus-visible .sys-icon {
+  background: transparent;
+  box-shadow: none;
+  filter: drop-shadow(0 5px 9px rgba(18, 28, 38, 0.2)) saturate(1.08);
+}
+body[data-theme="liquid-glass"] .docmap-pane {
+  background:
+    linear-gradient(135deg, rgba(232, 238, 242, 0.12), rgba(235, 241, 247, 0.1)),
+    rgba(255, 255, 255, 0.14);
+}
+
+body[data-theme="liquid-glass"] .docmap-map-toolbar {
+  padding: 0 2px 2px;
+}
+
+body[data-theme="liquid-glass"] .docmap-tree,
+body[data-theme="liquid-glass"] .docmap-markmap-frame,
+body[data-theme="liquid-glass"] .video-docmap-map,
+body[data-theme="liquid-glass"] .video-docmap-inspector,
+body[data-theme="liquid-glass"] .video-docmap-node {
+  border: 1px solid rgba(16, 17, 20, 0.12);
+  border-radius: var(--r-lg);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.16)),
+    rgba(255, 255, 255, 0.2);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.68),
+    0 10px 26px rgba(18, 28, 38, 0.05);
+}
+
+body[data-theme="liquid-glass"] .docmap-drop-zone {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body[data-theme="liquid-glass"] .docmap-tree {
+  border-color: rgba(16, 17, 20, 0.1);
+  background:
+    radial-gradient(circle at 18% 12%, rgba(232, 238, 242, 0.34), transparent 38%),
+    radial-gradient(circle at 88% 18%, rgba(235, 241, 247, 0.28), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.14)),
+    rgba(255, 255, 255, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.68),
+    0 8px 22px rgba(18, 28, 38, 0.04);
+}
+
+/* One glass surface for the canvas: the tree already carries it, so the frame
+   inside drops the border the shared rule above gave it. */
+body[data-theme="liquid-glass"] .docmap-markmap-frame {
+  border: 0;
+  border-radius: var(--r-lg);
+  background: transparent;
+  box-shadow: none;
+  overflow: hidden;
+}
+
+body[data-theme="liquid-glass"] .docmap-markmap-svg .markmap-node > circle {
+  fill: rgba(255, 255, 255, 0.9);
+  stroke: rgba(16, 17, 20, 0.36);
+}
+
+body[data-theme="liquid-glass"] .docmap-markmap-svg .markmap-link {
+  stroke-width: 3px;
+  opacity: 0.92;
+}
+
+body[data-theme="liquid-glass"] .video-docmap-workbench {
+  gap: 14px;
+}
+
+body[data-theme="liquid-glass"] .video-docmap-map {
+  padding: 10px 6px 10px 10px;
+  background: transparent;
+  box-shadow: none;
+}
+
+body[data-theme="liquid-glass"] .video-docmap-inspector {
+  gap: 12px;
+  padding: 0 0 0 10px;
+  border-left: 1px solid rgba(16, 17, 20, 0.1);
+  border-radius: var(--r-lg);
+  background: transparent;
+  box-shadow: none;
+}
+
+body[data-theme="liquid-glass"] .video-docmap-timeline {
+  gap: 7px;
+  padding: 2px 4px 2px 0;
+}
+
+body[data-theme="liquid-glass"] .video-docmap-timeline button:hover,
+body[data-theme="liquid-glass"] .video-docmap-timeline button:focus-visible {
+  border-color: rgba(47, 157, 179, 0.34);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.66), rgba(255, 255, 255, 0.3)),
+    rgba(0, 122, 255, 0.08);
+}
+
+body[data-theme="liquid-glass"] .video-docmap-node {
+  padding: 16px 18px;
+  border-color: rgba(16, 17, 20, 0.1);
+  border-radius: var(--r-lg);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0.2)),
+    rgba(255, 255, 255, 0.2);
+}
+
+body[data-theme="liquid-glass"] .video-docmap-node header {
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+body[data-theme="liquid-glass"] .video-docmap-node header b {
+  color: rgba(16, 17, 20, 0.92);
+  font-size: 17px;
+  line-height: 1.3;
+}
+
+body[data-theme="liquid-glass"] .video-docmap-node .video-docmap-time {
+  color: rgba(16, 17, 20, 0.6);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+body[data-theme="liquid-glass"] .video-docmap-node header small,
+body[data-theme="liquid-glass"] .video-docmap-node blockquote {
+  margin-top: 12px;
+  border-left-color: rgba(47, 157, 179, 0.48);
+  color: rgba(16, 17, 20, 0.82);
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: var(--r-md);
+}
+
+body[data-theme="liquid-glass"] .teachtext-command-popover,
+body[data-theme="liquid-glass"] .docmap-command-popover {
+  gap: 3px;
+  padding: 6px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-md);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(246, 251, 253, 0.76)),
+    rgba(246, 251, 253, 0.82);
+  box-shadow: 0 16px 38px rgba(18, 28, 38, 0.13), 0 2px 8px rgba(18, 28, 38, 0.07);
+  backdrop-filter: blur(18px) saturate(135%);
+  -webkit-backdrop-filter: blur(18px) saturate(135%);
+  overflow: var(--teachtext-command-popover-overflow, hidden);
+}
+
+body[data-theme="liquid-glass"] .question-sheet-window .teachtext-command-popover,
+body[data-theme="liquid-glass"] .outline-window .teachtext-command-popover,
+body[data-theme="liquid-glass"] .section-drafts-window .teachtext-command-popover {
+  width: max-content;
+  min-width: 184px;
+  max-width: min(280px, calc(100vw - 48px));
+}
+
+html:lang(zh-Hans) body[data-theme="liquid-glass"] .question-sheet-window .teachtext-command-popover,
+html:lang(zh-Hans) body[data-theme="liquid-glass"] .outline-window .teachtext-command-popover,
+html:lang(zh-Hans) body[data-theme="liquid-glass"] .section-drafts-window .teachtext-command-popover {
+  min-width: 160px;
+  max-width: min(220px, calc(100vw - 48px));
+}
+
+body[data-theme="liquid-glass"] .docmap-command-popover {
+  min-width: 300px;
+}
+
+body[data-theme="liquid-glass"] .teachtext-command-popover .btn,
+body[data-theme="liquid-glass"] .teachtext-command-subpopover .btn {
+  min-height: 34px;
+  min-width: 0;
+  padding: 4px 12px;
+  border: 0;
+  border-radius: var(--r-md);
+  background: transparent;
+  color: rgba(16, 17, 20, 0.96);
+  box-shadow: none;
+  opacity: 1;
+  text-shadow: none;
+}
+
+body[data-theme="liquid-glass"] .docmap-command-popover .btn {
+  overflow-wrap: anywhere;
+}
+
+body[data-theme="liquid-glass"] .teachtext-command-popover .btn:hover,
+body[data-theme="liquid-glass"] .teachtext-command-popover .btn:focus-visible {
+  outline: 0;
+  border: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.24)),
+    rgba(255, 255, 255, 0.22);
+  color: rgba(16, 17, 20, 0.96);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+body[data-theme="liquid-glass"] .teachtext-command-popover .btn:disabled,
+body[data-theme="liquid-glass"] .teachtext-command-popover .btn.is-disabled,
+body[data-theme="liquid-glass"] .teachtext-command-menu.is-disabled summary {
+  border-color: rgba(255, 255, 255, 0.44);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.2)),
+    rgba(255, 255, 255, 0.2);
+  color: rgba(16, 17, 20, 0.5);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.58);
+  opacity: 1;
+}
+
+body[data-theme="liquid-glass"] .teachtext-command-popover .btn:not(:disabled):not(.is-disabled):not(:hover):not(:focus-visible) {
+  color: rgba(16, 17, 20, 0.96);
+}
+
+html:not(:lang(zh-Hans)) body[data-theme="liquid-glass"] .question-sheet-window .details-bar-button,
+html:not(:lang(zh-Hans)) body[data-theme="liquid-glass"] .outline-window .details-bar-button,
+html:not(:lang(zh-Hans)) body[data-theme="liquid-glass"] .section-drafts-window .details-bar-button {
+  max-width: min(190px, 34vw);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html:not(:lang(zh-Hans)) body[data-theme="liquid-glass"] .section-draft-nav .btn {
+  min-height: 46px;
+  padding-inline: 14px;
+  line-height: 1.12;
+  overflow-wrap: normal;
+}
+
+html:not(:lang(zh-Hans)) body[data-theme="liquid-glass"] .section-draft-nav {
+  grid-template-columns: minmax(120px, 1fr) minmax(0, 1.35fr) minmax(120px, 1fr);
+}
+
+body[data-theme="liquid-glass"] .specialized-command-menu .teachtext-command-popover {
+  width: min(360px, calc(100vw - 48px));
+  min-width: 250px;
+  padding: 8px;
+}
+
+body[data-theme="liquid-glass"] .question-sheet-window .specialized-command-menu .teachtext-command-popover,
+body[data-theme="liquid-glass"] .outline-window .specialized-command-menu .teachtext-command-popover,
+body[data-theme="liquid-glass"] .section-drafts-window .specialized-command-menu .teachtext-command-popover {
+  width: max-content;
+  min-width: 184px;
+  max-width: min(280px, calc(100vw - 48px));
+  padding: 6px;
+}
+
+html:lang(zh-Hans) body[data-theme="liquid-glass"] .question-sheet-window .specialized-command-menu .teachtext-command-popover,
+html:lang(zh-Hans) body[data-theme="liquid-glass"] .outline-window .specialized-command-menu .teachtext-command-popover,
+html:lang(zh-Hans) body[data-theme="liquid-glass"] .section-drafts-window .specialized-command-menu .teachtext-command-popover {
+  min-width: 160px;
+  max-width: min(220px, calc(100vw - 48px));
+}
+
+body[data-theme="liquid-glass"] .review-desk-actions .specialized-command-menu .teachtext-command-popover {
+  width: min(300px, calc(100vw - 56px));
+  min-width: 220px;
+  max-height: min(330px, calc(100vh - 190px));
+  overflow: auto;
+}
+
+body[data-theme="liquid-glass"] .specialized-command-menu .teachtext-command-popover .btn {
+  min-height: 34px;
+  white-space: normal;
+  line-height: 1.18;
+}
+
+body[data-theme="liquid-glass"] .specialized-command-menu .teachtext-command-popover .btn:disabled,
+body[data-theme="liquid-glass"] .specialized-command-menu .teachtext-command-popover .btn.is-disabled,
+body[data-theme="liquid-glass"] .review-desk-window.is-review-locked .specialized-command-menu .teachtext-command-popover .btn {
+  border-color: rgba(255, 255, 255, 0.48);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.66), rgba(255, 255, 255, 0.24)),
+    rgba(255, 255, 255, 0.24);
+  color: rgba(16, 17, 20, 0.62);
+  opacity: 1;
+}
+
+body[data-theme="liquid-glass"] .teachtext-command-popover hr {
+  width: auto;
+  margin: 3px 10px;
+  border-top: 1px solid rgba(16, 17, 20, 0.12);
+}
+
+body[data-theme="liquid-glass"] .view-controls {
+  gap: 0;
+  height: 28px;
+  padding: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: var(--r-md);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.42)),
+    rgba(255, 255, 255, 0.3);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.88),
+    0 8px 22px rgba(18, 28, 38, 0.08);
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+}
+
+body[data-theme="liquid-glass"] .view-btn {
+  width: 30px;
+  height: 22px;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: transparent;
+  box-shadow: none;
+  transition: background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+body[data-theme="liquid-glass"] .view-btn:hover:not(.is-active),
+body[data-theme="liquid-glass"] .view-btn:focus-visible:not(.is-active) {
+  border-color: rgba(16, 17, 20, 0.18);
+  background: rgba(255, 255, 255, 0.42);
+  outline: none;
+}
+
+body[data-theme="liquid-glass"] .view-btn.is-active {
+  border-color: rgba(16, 17, 20, 0.7);
+  background:
+    linear-gradient(180deg, rgba(16, 17, 20, 0.86), rgba(16, 17, 20, 0.68)),
+    rgba(16, 17, 20, 0.78);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 5px 12px rgba(18, 28, 38, 0.14);
+}
+
+body[data-theme="liquid-glass"] .view-btn[data-view="icon"]::before {
+  border-radius: 1px;
+  background: rgba(16, 17, 20, 0.84);
+  box-shadow:
+    6px 0 0 rgba(16, 17, 20, 0.84),
+    0 6px 0 rgba(16, 17, 20, 0.84),
+    6px 6px 0 rgba(16, 17, 20, 0.84);
+}
+
+body[data-theme="liquid-glass"] .view-btn[data-view="icon"].is-active::before {
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow:
+    6px 0 0 rgba(255, 255, 255, 0.9),
+    0 6px 0 rgba(255, 255, 255, 0.9),
+    6px 6px 0 rgba(255, 255, 255, 0.9);
+}
+
+body[data-theme="liquid-glass"] .view-btn[data-view="list"]::before {
+  width: 13px;
+  border-radius: var(--r-pill);
+  background: rgba(16, 17, 20, 0.84);
+  box-shadow: 0 -5px 0 rgba(16, 17, 20, 0.84), 0 5px 0 rgba(16, 17, 20, 0.84);
+}
+
+body[data-theme="liquid-glass"] .view-btn[data-view="list"].is-active::before {
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 -5px 0 rgba(255, 255, 255, 0.9), 0 5px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* A disabled field in the glass ink of every other disabled control; the
+   field recipe's var(--ink) sat at the same weight earlier in the file. */
+body[data-theme="liquid-glass"] :is(input, textarea):disabled {
+  color: var(--liquid-disabled-control-fg);
+  -webkit-text-fill-color: currentColor;
+}
+
+body[data-theme="liquid-glass"] button:disabled:not(.memory-card),
+body[data-theme="liquid-glass"] button.is-disabled:not(.memory-card),
+body[data-theme="liquid-glass"] .btn:disabled,
+body[data-theme="liquid-glass"] .btn.is-disabled,
+body[data-theme="liquid-glass"] .btn.default:disabled,
+body[data-theme="liquid-glass"] .btn.default.is-disabled,
+/* The three state suffixes were spelled out once per disabled shape —
+   eighteen selectors that all said the same thing. :is() folds them to six
+   and moves no weight: every argument is a single pseudo-class, so each
+   compound keeps exactly the specificity its spelled-out form had. The
+   restatements themselves stay, because out-weighing the enabled hover and
+   active rules is the job they were written for. */
+body[data-theme="liquid-glass"] button:disabled:not(.memory-card):is(:hover, :focus-visible, :active),
+body[data-theme="liquid-glass"] button.is-disabled:not(.memory-card):is(:hover, :focus-visible, :active),
+body[data-theme="liquid-glass"] .btn:disabled:is(:hover, :focus-visible, :active),
+body[data-theme="liquid-glass"] .btn.is-disabled:is(:hover, :focus-visible, :active),
+body[data-theme="liquid-glass"] .btn.default:disabled:is(:hover, :focus-visible, :active),
+body[data-theme="liquid-glass"] .btn.default.is-disabled:is(:hover, :focus-visible, :active) {
+  --menu-shortcut-color: var(--liquid-disabled-control-fg);
+  border-color: var(--liquid-disabled-control-border);
+  background: var(--liquid-disabled-control-bg);
+  color: var(--liquid-disabled-control-fg);
+  box-shadow: var(--liquid-disabled-control-shadow);
+  cursor: default;
+  opacity: 1;
+}
+
+/* One rule, not eleven. The state variants could never change the outcome:
+   nothing sets colour on an enabled default button between this selector's
+   weight and theirs, and the .shutdown-ledger copies only out-weighed
+   .shutdown-ledger .btn, which this already beats. The :active state now falls
+   through to --btn-default-active-fg, which is the same white but reaches it
+   through the token instead of a second literal. */
+body[data-theme="liquid-glass"] .btn.default:not(:disabled):not(.is-disabled) {
+  color: var(--btn-default-fg);
+}
+
+body[data-theme="liquid-glass"] .btn:not(.default):not(:disabled):not(.is-disabled):active {
+  color: rgba(16, 17, 20, 0.94);
+}
+
+/* Final readability guard: non-default glass action buttons stay dark on light
+   glass. The ink is a token so a backdrop window can quieten it by inheritance
+   -- this rule is deliberately specific, and out-specifying it would start the
+   arms race css-no-pingpong forbids. */
+body[data-theme="liquid-glass"] .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled),
+body[data-theme="liquid-glass"] .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled):hover,
+body[data-theme="liquid-glass"] .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled):focus-visible,
+body[data-theme="liquid-glass"] .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled):active {
+  color: var(--liquid-action-ink);
+  -webkit-text-fill-color: var(--liquid-action-ink);
+  text-shadow: none;
+}
+
+body[data-theme="liquid-glass"] .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled):hover,
+body[data-theme="liquid-glass"] .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled):focus-visible,
+body[data-theme="liquid-glass"] .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled):active {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.68), rgba(255, 255, 255, 0.28)),
+    rgba(255, 255, 255, 0.42);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    0 8px 22px rgba(18, 28, 38, 0.08);
+}
+
+body[data-theme="liquid-glass"] .btn.danger:not(:disabled):not(.is-disabled),
+body[data-theme="liquid-glass"] .btn.danger:not(:disabled):not(.is-disabled):hover,
+body[data-theme="liquid-glass"] .btn.danger:not(:disabled):not(.is-disabled):focus-visible,
+body[data-theme="liquid-glass"] .btn.danger:not(:disabled):not(.is-disabled):active {
+  color: rgb(185, 28, 28);
+  -webkit-text-fill-color: rgb(185, 28, 28);
+}
+
+body[data-theme="liquid-glass"] .teachtext-actions .btn:not(.default):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected),
+body[data-theme="liquid-glass"] .teachtext-actions .btn:not(.default):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):hover,
+body[data-theme="liquid-glass"] .teachtext-actions .btn:not(.default):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):focus,
+body[data-theme="liquid-glass"] .teachtext-actions .btn:not(.default):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):focus-visible,
+body[data-theme="liquid-glass"] .teachtext-actions .btn:not(.default):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):active {
+  color: rgba(16, 17, 20, 0.94);
+  -webkit-text-fill-color: rgba(16, 17, 20, 0.94);
+  text-shadow: none;
+}
+
+body[data-theme="liquid-glass"] .btn:hover:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected):not(.tdi-tab-close):not(.view-switch-option):not(.system-help-related-link),
+body[data-theme="liquid-glass"] button:hover:not(.menu-bar button):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected):not(.tdi-tab-close):not(.tdi-stack-open):not(.tdi-stack-close):not(.view-switch-option):not(.system-help-related-link):not(.title-bar > button),
+body[data-theme="liquid-glass"] .btn:focus:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected):not(.tdi-tab-close):not(.view-switch-option):not(.system-help-related-link),
+body[data-theme="liquid-glass"] button:focus:not(.menu-bar button):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected):not(.tdi-tab-close):not(.tdi-stack-open):not(.tdi-stack-close):not(.view-switch-option):not(.system-help-related-link):not(.title-bar > button),
+body[data-theme="liquid-glass"] .btn:focus-visible:not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected):not(.tdi-tab-close):not(.view-switch-option):not(.system-help-related-link),
+body[data-theme="liquid-glass"] button:focus-visible:not(.menu-bar button):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):not(.is-multi-selected):not(.tdi-tab-close):not(.tdi-stack-open):not(.tdi-stack-close):not(.view-switch-option):not(.system-help-related-link):not(.title-bar > button) {
+  outline: 0;
+  border-color: rgba(0, 122, 255, 0.56);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.82),
+    0 8px 22px rgba(18, 28, 38, 0.1),
+    0 0 0 3px rgba(0, 122, 255, 0.18);
+}
+
+body[data-theme="liquid-glass"] .btn:active:not(:disabled):not(.is-disabled):not(.tdi-tab-close):not(.view-switch-option):not(.system-help-related-link),
+body[data-theme="liquid-glass"] button:active:not(.menu-bar button):not(:disabled):not(.tdi-tab-close):not(.tdi-stack-open):not(.tdi-stack-close):not(.view-switch-option):not(.system-help-related-link):not(.title-bar > button) {
+  border-color: rgba(0, 122, 255, 0.56);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.82),
+    0 8px 22px rgba(18, 28, 38, 0.1),
+    0 0 0 3px rgba(0, 122, 255, 0.18);
+}
+
+body[data-theme="liquid-glass"] .btn.default:hover:not(:disabled):not(.is-disabled),
+body[data-theme="liquid-glass"] .btn.default:focus:not(:disabled):not(.is-disabled),
+body[data-theme="liquid-glass"] .btn.default:focus-visible:not(:disabled):not(.is-disabled) {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.06)),
+    linear-gradient(180deg, #178bff, #0071e3);
+}
+
+body[data-theme="liquid-glass"] button:disabled:not(.memory-card),
+body[data-theme="liquid-glass"] button.is-disabled:not(.memory-card),
+body[data-theme="liquid-glass"] .btn:disabled,
+body[data-theme="liquid-glass"] .btn.is-disabled,
+body[data-theme="liquid-glass"] .btn.default:disabled,
+body[data-theme="liquid-glass"] .btn.default.is-disabled,
+/* Same fold as the disabled-material rule above, for the same reason. */
+body[data-theme="liquid-glass"] button:disabled:not(.memory-card):is(:hover, :focus-visible, :active),
+body[data-theme="liquid-glass"] button.is-disabled:not(.memory-card):is(:hover, :focus-visible, :active),
+body[data-theme="liquid-glass"] .btn:disabled:is(:hover, :focus-visible, :active),
+body[data-theme="liquid-glass"] .btn.is-disabled:is(:hover, :focus-visible, :active),
+body[data-theme="liquid-glass"] .btn.default:disabled:is(:hover, :focus-visible, :active),
+body[data-theme="liquid-glass"] .btn.default.is-disabled:is(:hover, :focus-visible, :active) {
+  color: var(--liquid-disabled-control-fg);
+  -webkit-text-fill-color: var(--liquid-disabled-control-fg);
+  text-shadow: none;
+}
+
+@supports (-apple-visual-effect: -apple-system-glass-material) {
+  body[data-theme="liquid-glass"] .window,
+  body[data-theme="liquid-glass"] .menu-popover,
+  body[data-theme="liquid-glass"] .system-modal,
+  body[data-theme="liquid-glass"] .startup-settings-modal {
+    background: transparent;
+    /* Where the system has its own glass material, that material IS the
+       material: stacking the CSS blur on top of it blurred the surface twice.
+       The CSS approximation stays for engines that have no system material,
+       which is what the rest of this stylesheet paints. */
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    -apple-visual-effect: -apple-system-glass-material;
+  }
+
+  /* The menu bar is the one surface that does NOT take the system material.
+     The material is applied to the bar's whole layer, so the small labels
+     inside it arrive washed and soft — the owner reported exactly that on an
+     iPhone, where the bar runs as the top strip of the screen and the system
+     has the strongest hand on it. Dropping the bar's own CSS blur (below,
+     where the material is not available) took the second blur off the same
+     strip; this takes the remaining one off as well, and the bar paints the
+     appearance's own translucent gradient instead. Windows, popovers and the
+     modals keep the system material: their content is large and sits on the
+     material, not in it. */
+  body[data-theme="liquid-glass"] .menu-bar {
+    background: var(--menu-bar-bg);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    /* Refuse the material by name, rather than only leaving the bar out of the
+       grant list above. This property is why the bar arrived washed and soft on
+       an iPhone, and no test browser can evaluate it — CSS.supports is false in
+       both Chromium and WebKit — so the branch is invisible to every gate. An
+       omission cannot be verified; a refusal can, and it costs a browser that
+       does not know the property nothing. */
+    -apple-visual-effect: none;
+  }
+
+  body[data-theme="liquid-glass"] .menu-bar::before {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+/* Golden Gate 6.7: under reduced motion an interactive glass control answers
+   with colour and border only. Zeroing the transition alone still leaves a
+   discrete 1px jump, which is the motion a reduced-motion reader asked not to
+   see, so drop the movement itself. */
+@media (prefers-reduced-motion: reduce) {
+  body[data-theme="liquid-glass"] {
+    --liquid-press-transform: none;
+    /* The lens keeps its material and its states; it only stops travelling.
+       Hover and drag still read, through the rim and the halo. */
+    --glass-slider-hover-scale: 1;
+    --glass-slider-press-scale: 1;
+    --glass-slider-motion: 0s;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  /* The hierarchy has to survive without the refraction: the well and the
+     lens go opaque, and the value stays as readable as it was. */
+  body[data-theme="liquid-glass"] {
+    --glass-slider-lens-filter: none;
+    --glass-slider-well: rgba(120, 122, 128, 0.42);
+    --glass-slider-lens-bg:
+      linear-gradient(180deg, #ffffff, #f2f4f7);
+  }
+
+  body[data-theme="liquid-glass"] .assistant-window .messages {
+    background: var(--paper);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  body[data-theme="liquid-glass"] .assistant-window .message.assistant[data-reply-state="temporary"]:not(.clio-welcome) {
+    border-style: solid;
+  }
+}
+
+/* Increase Contrast for Liquid Glass. The canonical block (every era) ends
+   styles/65-appearance-themes.css; this sheet loads after it, so its era root
+   above would win the tie. The same answer, after that root. */
+@media (prefers-contrast: more) {
+  body[data-theme="liquid-glass"] {
+    --system-secondary-divider: 1px solid var(--ink);
+    --system-disabled-fg: #3f3f3f;
+  }
+}

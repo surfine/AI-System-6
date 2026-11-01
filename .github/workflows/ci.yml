@@ -1,0 +1,79 @@
+name: CI
+
+# Cloud CI is manual-only. Releases are validated locally.
+on:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    name: lint · build · unit · integration · source contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Lint changed server boundaries
+        run: npm run lint
+      - name: Build the browser bundle
+        run: npm run build
+      - name: CSS budgets and cascade-layer conformance
+        run: npm run verify:css
+      - name: Source contract tests
+        run: npm run verify:contracts
+      - name: Focused unit tests
+        run: npm run test:unit
+      - name: Route integration tests
+        run: npm run test:integration
+      - name: Version identity consistency
+        run: npm run verify:version
+      - name: Frontend checkJs
+        run: npm run verify:checkjs
+      - name: Server typecheck
+        run: npm run verify:src
+      - name: Documentation mirrors
+        run: npm run verify:docs
+      - name: Public tree verification
+        run: npm run verify:public-tree
+      - name: Clean generated public snapshot smoke
+        if: ${{ hashFiles('tooling/smoke-clean-public-snapshot.mjs') != '' }}
+        run: npm run test:public-clean
+
+  browser-smoke:
+    # One browser boot, no suite: start the app, close the guide, make a
+    # project, put two windows on the desk, reload and read the state back.
+    # This is the check that would notice a bundle the browser cannot run, and
+    # it costs a couple of minutes instead of an afternoon.
+    name: ${{ matrix.browser }} smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+        project: [chromium-desktop, webkit-desktop]
+        exclude:
+          - browser: chromium
+            project: webkit-desktop
+          - browser: webkit
+            project: chromium-desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Install ${{ matrix.browser }}
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Build the browser bundle
+        run: npm run build
+      - name: Run the ${{ matrix.project }} smoke
+        run: npm run test:static-smoke
+        env:
+          AISYSTEM6_STATIC_ENGINE: ${{ matrix.browser }}

@@ -1,0 +1,325 @@
+// Control Strip: Mac OS 9's floating status surface, adapted to AI System 6.
+// This contract locks the lazy lifecycle, the unified preference state and
+// its legacy migration, the manageable module registry, the edge-anchored
+// geometry (move/resize/reorder/remove), the Control Strip Modules folder,
+// the Soundscape subscription bridge, and the shared Classic/Liquid DOM.
+// Real-browser behavior is covered by tests/e2e/control-strip.spec.mjs.
+
+import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
+
+const test = createFeatureTest("control-strip");
+const manifest = read("tooling/runtime-manifest.mjs");
+// Windows whose markup moved into their own lazy module: the boot payload no
+// longer carries a window this module already loads on demand. These
+// assertions are about what the window CONTAINS, not which file stores it,
+// so they read both surfaces and stay true wherever it is built.
+const html = read("index.html");
+const persistence = read("app/core/persistence-status.js");
+const domHandles = read("app/core/dom-handles.js");
+const wireup = read("app/core/wireup.js");
+const config = read("app/core/config.js");
+const boot = read("app/core/boot.js");
+const actions = read("app/core/actions.js");
+const windowManager = read("app/core/window-manager.js");
+const appBundleSource = read("app.js");
+const dragDrop = read("app/core/drag-drop.js");
+const module = read("app/features/control-strip.js");
+const windowRegistryRead = () => read("app/core/window-registry.js");
+const modules = read("app/features/control-strip-modules.js");
+const projectDisk = read("app/features/project-disk.js");
+const cloudModel = read("app/features/cloud-model.js");
+const multiFinder = read("app/core/multi-finder.js");
+const quickDraftHandoff = read("app/features/quick-draft-handoff.js");
+const soundscape = read("app/features/soundscape.js");
+const foundation = read("styles/00-foundation.css");
+const liquidGlass = read("styles/70-liquid-glass.css");
+const stripCss = read("styles/89-control-strip.css");
+const en = read("app/data/translations-en.js");
+const zh = read("app/data/translations-zh.js");
+
+function zValue(source, name) {
+  const match = String(source).match(new RegExp(`${name}\\s*:\\s*([0-9]+)`));
+  return match ? Number(match[1]) : NaN;
+}
+
+// --- Control Panel entry ---------------------------------------------------
+
+test.assertIncludes(html, 'id="control-strip-show" type="checkbox"', "Control Panel exposes one Control Strip switch");
+test.assertNotMatches(html, /id="control-strip"[^>]*checked/, "Control Strip is off by default");
+// Mac OS 8/9 shipped one Control Strip switch, in the Control Strip's own
+// control panel. General used to carry a second checkbox writing the same
+// `enabled` field, which asked the writer the same question twice.
+test.assertNotIncludes(html, 'id="control-strip"', "the desk carries no duplicate master switch in General");
+test.assertIncludes(html, 'id="control-tab-strip"', "Control Panel has a dedicated Control Strip tab");
+test.assertIncludes(html, 'id="control-panel-strip"', "the Control Strip tab owns a settings panel");
+// The module menu's face and size are the system's call — era font, touch size —
+// not two Control Panel dropdowns a writer has to reason about.
+test.assertNotIncludes(html, 'id="control-strip-font"', "the module menu font is not a preference");
+test.assertNotIncludes(html, 'id="control-strip-font-size"', "the module menu font size is not a preference");
+[
+  "control-strip-show",
+  "control-strip-hotkey",
+  "control-strip-hotkey-record",
+  "control-strip-hotkey-clear",
+  "control-strip-module-list",
+  "control-strip-move-up",
+  "control-strip-move-down",
+  "control-strip-enable",
+  "control-strip-disable",
+  "control-strip-reset",
+].forEach((id) => test.assertIncludes(html, `id="${id}"`, `the Control Strip settings panel has #${id}`));
+
+// --- Persistence and migration --------------------------------------------
+
+test.assertIncludes(persistence, "controlStripState", "Control Strip preferences live in one record in the desk settings");
+test.assertIncludes(persistence, "function defaultControlStripState", "the record has a real default shape");
+["version", "enabled", "visible", "collapsed", "edge", "offsetRatio", "expandedLength", "moduleOrder", "disabledModules", "scrollOffset", "hotkey"]
+  .forEach((field) => {
+    test.assertIncludes(persistence, `${field}:`, `controlStripState carries ${field}`);
+  });
+test.assertIncludes(persistence, "restoreControlStripState(settings)", "the unified record is restored on boot");
+test.assertIncludes(persistence, "settings.controlStripCollapsed === true", "legacy collapsed data still migrates");
+test.assertIncludes(persistence, "controlStrip: controlStripState.enabled", "the master switch persists through the unified record");
+test.assertIncludes(persistence, "controlStripState,", "the full record is written with saveDeskState");
+test.assertIncludes(domHandles, "controlStripShowInput", "the switch is wired into the shared DOM handles");
+test.assertIncludes(domHandles, "controlStripHotkeyInput", "the hot key field is wired into the shared DOM handles");
+test.assertIncludes(domHandles, "controlStripModuleList", "the module list is wired into the shared DOM handles");
+test.assertIncludes(wireup, "applyControlStripState()", "toggling the checkbox applies the runtime state");
+test.assertIncludes(wireup, "saveDeskState()", "toggling the checkbox persists");
+test.assertIncludes(wireup, "window.AISystem6ControlStrip?.renderSettings?.()", "opening the Control Strip tab loads the settings renderer");
+test.assertIncludes(config, "function ensureControlStripModule", "the strip loads from one lazy loader");
+test.assertIncludes(config, "function ensureControlStripModulesModule", "module descriptors load through a second lazy loader");
+test.assertNotIncludes(config, "ensureControlStripModulesFolderModule", "the Control Strip Modules folder window is gone: its modules live in the Control Panel tab");
+test.assertIncludes(config, "function applyControlStripState", "enabling loads the module; disabling removes it");
+test.assertIncludes(boot, "applyControlStripState({ silent: true })", "the strip activates after boot without blocking it");
+test.assertIncludes(manifest, '"app/features/control-strip.js"', "the strip is a lazy module");
+test.assertIncludes(manifest, '"app/features/control-strip-modules.js"', "module descriptors are a lazy module");
+test.assert(manifest.indexOf('"app/features/control-strip.js"') < manifest.indexOf('"app/features/control-strip-modules.js"'),
+  "the shell loads before its descriptors");
+test.assertNotIncludes(manifest.split("lazyRuntimePaths = [")[0], "app/features/control-strip.js", "the strip is not part of the startup bundle list");
+
+// --- Registry API ----------------------------------------------------------
+
+test.assertIncludes(module, "window.AISystem6ControlStrip", "the strip exposes a lifecycle API");
+test.assertIncludes(module, "function registerModule", "modules register through one registry");
+test.assertIncludes(module, "function unregisterModule", "modules unregister cleanly");
+test.assertIncludes(module, "function disable()", "disabling removes the strip from the desk");
+test.assertIncludes(module, "Mac OS 9", "the strip records which system it reproduces");
+test.assertIncludes(module, 'state === "unknown"', "a module with no real source is not registered");
+test.assertIncludes(module, "already registered", "duplicate ids are rejected instead of silently overwritten");
+test.assertIncludes(module, "rejected an invalid module descriptor", "invalid descriptors cannot crash the desk");
+test.assertIncludes(module, "dispose?.()", "unregister disposes the descriptor");
+test.assertNotMatches(module + modules, /runModelTask|requestChat|createProject|downloadMarkdown/, "menus change settings or open existing windows; they never start work");
+test.assertNotMatches(module + modules, /submenu|subMenu/, "one flat menu per module, never a second menu bar");
+test.assertNotMatches(module + modules, /已连接|Connected/, "network status never claims a model connection");
+test.assertIncludes(module, "menu-popover", "module menus reuse the existing menu primitive");
+test.assertIncludes(module, "descriptor.renderMenu(popover)", "menu-bar extras can render their canonical menu into the strip host");
+test.assertIncludes(module, "descriptor.menuClass", "shared menus retain their canonical component styling");
+test.assertIncludes(module, "queueMicrotask(() => closeStripMenu())", "a command in a shared menu closes its Control Strip host after delegation");
+test.assertIncludes(module, "stripModuleRegistry", "one registry owns available modules");
+test.assertIncludes(module, "orderedEnabledModuleIds", "enabled and ordered views derive from persisted state");
+test.assertIncludes(module, "reconcileModuleState", "new modules are appended without disturbing user order");
+test.assertIncludes(module, "handleModuleDrop", "the strip accepts module files dropped from the folder");
+test.assertIncludes(module, "scrollStripBy", "overflow scrolling exists");
+test.assertIncludes(module, "beginHotkeyRecording", "the hot key recorder is exposed");
+test.assertIncludes(module, "event.altKey", "Option is expressed through event.altKey");
+test.assertIncludes(module, "STRIP_DRAG_THRESHOLD", "a reliable drag threshold exists");
+test.assertIncludes(module, "stripSuppressClickUntil", "a drag suppresses the same-round click");
+test.assertIncludes(module, "stripRefreshDeferred", "a background refresh never dismisses an open module menu");
+test.assertMatches(module, /function onHandleClick\(\)[\s\S]{0,180}?playSystemSound\?\.\("click"\)/,
+  "the deliberate collapse/expand action gets one mechanical click");
+test.assertIncludes(module, 'playSystemSound?.("menu")', "Control Strip menu choices get the shared menu sound");
+test.assertNotMatches(module, /pointer(over|out)[\s\S]{0,160}?playSystemSound/,
+  "ordinary hover never produces Control Strip sound noise");
+test.assertIncludes(module, "function syncMenuExtraExclusivity", "the strip has one owner for menu-bar-extra mutual exclusion");
+test.assertIncludes(module, "stripEnabled && stripPrefs().visible !== false", "menu extras return when the strip is not actually shown");
+test.assertIncludes(module, 'document.querySelectorAll("[data-control-strip-counterpart]")', "mutual exclusion is scoped to declared counterparts");
+test.assertIncludes(module, 'extra.classList.toggle("is-control-strip-counterpart-hidden", stripOwnsExtras)', "counterpart menu extras cannot appear beside the Control Strip");
+test.assertIncludes(module, 'extra.setAttribute("aria-hidden", String(stripOwnsExtras))', "hidden counterparts also leave the accessibility tree");
+
+// --- First-party module descriptors ---------------------------------------
+
+test.assertIncludes(modules, "window.AISystem6ControlStripModules", "built-in descriptors are exposed to the shell and the folder");
+// A tile is a control you set in one click, the way the classic strip carried
+// volume, the printer selector and the CD transport. Read-only gauges
+// (network, context, indexing, long tasks, output queue) were removed: their
+// state belongs to System Status, the Context Panel and Searcher, which can
+// actually explain it.
+["soundscape", "projectDisk", "model", "writingBell", "appearance", "balloonHelp", "nowPlaying", "finderEnvironment", "notifications", "clock", "heldPlace"]
+  .forEach((slot) => {
+    test.assertIncludes(modules, `id: "${slot}"`, `${slot} is a declared module descriptor`);
+  });
+["network", "context", "indexing", "longTasks", "outputQueue"].forEach((slot) => {
+  test.assertNotMatches(modules, new RegExp(`id: "${slot}"`), `${slot} is not a Control Strip tile: it is a readout, not a control`);
+});
+["defaultOrder", "defaultEnabled", "finderIcon", "openOwner"].forEach((field) => {
+  test.assertIncludes(modules, `${field}:`, `descriptors carry ${field}`);
+});
+test.assertIncludes(modules, "subscribe: controlStripSubscribeSoundscape", "Soundscape modules subscribe to player state");
+test.assertIncludes(modules, "ensureRuntime: controlStripEnsureSoundscapeRuntime", "strip modules load the Soundscape adapter lazily");
+test.assertNotMatches(modules, /\bbattery\b|screen depth|\bresolution\b|\bprinter\b|\bairport\b/i, "no browser-unreachable hardware is faked");
+test.assertIncludes(modules, "run: () => applyTheme(theme.id)", "the appearance tile sets any registered Appearance instead of linking to a panel");
+test.assertIncludes(modules, "setBalloonHelpEnabled(", "the Balloon Help tile sets Balloon Help directly");
+test.assertIncludes(modules, 'menuClass: "project-switcher-popover"', "the disk tile adopts the menu-bar project switcher styling");
+test.assertIncludes(modules, "renderProjectSwitcher(popover)", "the disk tile reuses the menu-bar project renderer");
+test.assertIncludes(projectDisk, "renderProjectSwitcher(targetPopover = projectSwitcherPopoverEl)", "the project switcher renderer accepts an adapted host");
+test.assertIncludes(modules, 'menuClass: "cloud-model-popover"', "the model tile adopts the menu-bar model styling");
+test.assertIncludes(modules, "window.renderCloudModelPopover?.(popover)", "the model tile reuses the menu-bar model renderer");
+test.assertIncludes(cloudModel, "targetPopover || document.querySelector(\"#cloud-model-popover\")", "the model renderer keeps its menu-bar host as the default");
+test.assertIncludes(multiFinder, "async function setFinderEnvironment", "Finder mode has one shared state transition");
+test.assertIncludes(quickDraftHandoff, 'setFinderEnvironment("multifinder"', "Quick Draft uses the same Finder mode transition as the strip");
+// Your Place is the desk's one home for holding a place and holding a thought.
+// It is an ordinary descriptor: it dispatches the existing Apple-menu commands
+// instead of owning a command, and it reads the same availability map the menu
+// rows read, so a tile can never offer what the menu knows is unavailable.
+test.assertIncludes(modules, 'id: "heldPlace"', "the strip carries one Your Place module for the pause button");
+test.assertIncludes(modules, 'run: () => handleAction("hold-that-thought")', "the tile reuses the desk's own hold command");
+test.assertIncludes(modules, 'run: () => handleAction("hold-that-thought")', "and the same tile carries the passing thought");
+test.assertIncludes(modules, "function controlStripActionAvailable", "module rows read one availability map instead of restating conditions");
+test.assertIncludes(modules, "getActionAvailability()[action] !== false", "that map is the one the menu rows already use");
+test.assertIncludes(modules, "subscribe: controlStripSubscribeNotifications", "the notification module follows the canonical unread indicator");
+test.assertIncludes(modules, "subscribe: controlStripSubscribeClock", "the clock module follows the system clock cadence");
+test.assertIncludes(modules, "formatSystemClockTime()", "the clock module uses the menu clock formatter");
+test.assertIncludes(persistence, "function formatSystemClockTime", "menu bar and strip share one clock formatter");
+
+// --- Control Panel tab (the old Control Strip Modules folder) ---------------
+
+test.assertNotIncludes(html, 'data-window="controlStripModules"', "Control Strip Modules is no longer a separate window");
+test.assertNotIncludes(html, "open-control-strip-modules", "System Folder no longer lists a Control Strip Modules folder");
+test.assertIncludes(html, 'data-control-tab="strip"', "the Control Panel carries a Control Strip tab");
+test.assertIncludes(html, 'id="control-strip-module-list"', "the tab lists every module");
+test.assertIncludes(windowRegistryRead(), 'controlStripModules: "control"', "the old window name opens the Control Panel");
+test.assertMatches(actions, /"open-control-strip-modules",\{handler:async\(\)=>\{await openWindow\("control"\);[\s\S]{0,80}setControlTab\("strip"\)/, "the old command opens the Control Strip tab");
+test.assertIncludes(actions, '"open-control-strip-module"', "a module opens its owner through the action registry");
+test.assertIncludes(module, "openOwner", "double-click opens the module's owner window");
+test.assertIncludes(module, "control_strip_module_info", "modules without an owner window still explain themselves");
+test.assertIncludes(html, 'data-control-strip-counterpart="projectDisk"', "Project Hard Disk declares its Control Strip counterpart");
+test.assertIncludes(html, 'data-control-strip-counterpart="model"', "the model indicator declares its Control Strip counterpart");
+test.assertIncludes(html, 'data-control-strip-counterpart="notifications"', "System Messages declares its Control Strip counterpart");
+test.assertNotIncludes(html, 'data-control-strip-counterpart="finderEnvironment"', "MultiFinder remains a menu-bar application switcher while the strip only changes environments");
+test.assertNotIncludes(html, 'data-control-strip-counterpart="clock"', "the historically persistent menu clock remains visible with the strip");
+
+// --- Soundscape bridge ------------------------------------------------------
+
+test.assertIncludes(soundscape, "function subscribePlayer", "Soundscape exposes a subscription API");
+test.assertIncludes(soundscape, "playerListeners.forEach", "a listener error cannot block the others");
+test.assertIncludes(soundscape, "notifyPlayerListeners", "state changes notify subscribers");
+test.assertIncludes(soundscape, "function ensureRuntime", "the strip can run the Soundscape adapter without attach()");
+test.assertNotMatches(soundscape, /classList\.contains\("is-hidden"\)[^\n]*systemRequestInFlight/, "system music sync no longer depends on the window being visible");
+
+// --- Balloon Help ----------------------------------------------------------
+
+test.assertIncludes(module, "balloon_${descriptor.labelKey}", "modules carry Balloon Help, not only a tooltip");
+test.assertMatches(zh, /balloon_control_strip_now_playing:[^\n]*应用音量|control_strip_volume: "应用音量"/,
+  "the volume module never passes itself off as system volume");
+test.assertIncludes(zh, 'control_strip_label: "控制条"', "Chinese UI uses the localized Control Strip brand name");
+test.assertIncludes(zh, 'control_strip_collapse: "收起控制条"', "the collapse affordance is localized in Chinese");
+for (const key of [
+  "balloon_control_strip_soundscape",
+  "balloon_control_strip_project_disk",
+  "balloon_control_strip_model",
+  "balloon_control_strip_finder_environment",
+  "balloon_control_strip_notifications",
+  "balloon_control_strip_clock",
+  "balloon_control_strip_writing_bell",
+  "balloon_control_strip_now_playing",
+  "balloon_control_strip_held_place",
+]) {
+  test.assertIncludes(en, `${key}:`, `English Balloon Help exists for ${key}`);
+  test.assertIncludes(zh, `${key}:`, `Chinese Balloon Help exists for ${key}`);
+}
+for (const retired of ["network", "context", "indexing", "long_tasks", "output_queue"]) {
+  test.assertNotIncludes(en, `balloon_control_strip_${retired}:`, `retired ${retired} module help is removed`);
+  test.assertNotIncludes(zh, `balloon_control_strip_${retired}:`, `retired ${retired} module help is removed in Chinese`);
+}
+
+// --- Geometry, scroll, and collapse ----------------------------------------
+
+test.assertNotMatches(stripCss, /\.control-strip\.is-collapsed\s*\{[^}]*\bwidth:/,
+  "the collapsed strip keeps its width, so no layout is animated");
+test.assertIncludes(module, "syncStripToolbarStops", "the toolbar is one tab stop walked with the arrow keys");
+test.assertIncludes(module, "moveStripToolbarFocus", "arrow keys move module focus");
+test.assertIncludes(module, "onHandleKeydown", "the handle has keyboard alternatives for resize and move");
+test.assertIncludes(module, "scrollModuleIntoView", "focused modules scroll into view");
+test.assertIncludes(module, 'window.innerHeight - rect.top + 2', "module menus anchor above the movable strip");
+test.assertIncludes(stripCss, "--control-strip-menu-bottom", "the menu consumes its runtime strip anchor");
+test.assertNotIncludes(stripCss, "aria-live", "no aria-live spam for live counts");
+
+test.assertNotMatches(stripCss, /!important/, "no new !important in the strip stylesheet");
+test.assertNotMatches(stripCss, /z-index\s*:\s*[0-9]+/, "no new arbitrary z-index in the strip stylesheet");
+test.assertIncludes(foundation, "--control-strip-thickness: var(--system-menu-height)", "the strip and menu bar share one height token");
+test.assertIncludes(stripCss, "z-index: var(--z-control-strip)", "the strip consumes its global floating layer");
+test.assertIncludes(stripCss, "shape-rendering: crispEdges", "compact module icons keep crisp pixel edges");
+test.assertMatches(stripCss, /\.control-strip-module \.sys-icon\s*\{[^}]*padding:\s*0;[^}]*border:\s*0;/s,
+  "Liquid Glass does not shrink strip glyphs inside the global icon tile padding");
+test.assertMatches(stripCss, /\.control-strip-module \.sys-icon\s*\{[^}]*background-color:\s*transparent;/s,
+  "Control Strip clears tile material without erasing era sprite painters");
+test.assertIncludes(liquidGlass, "body[data-theme=\"liquid-glass\"] :is(.menu-bar, .control-strip) .sys-icon", "the late Liquid Glass icon layer preserves the strip's compact glyph reset without duplicating its theme selector");
+test.assertIncludes(stripCss, "--system-icon-shape-rendering: crispEdges", "the strip keeps crisp glyphs through the late Liquid Glass SVG rule");
+test.assertIncludes(stripCss, ".control-strip-menu.project-switcher-popover", "the shared project menu is sized for the strip host");
+test.assertIncludes(stripCss, ".control-strip-menu.cloud-model-popover", "the shared model menu is sized for the strip host");
+test.assertMatches(stripCss, /\.control-strip-module \.multifinder-icon\s*\{[^}]*currentColor/s,
+  "the Finder mode tile reuses the crisp menu-bar glyph and follows inversion color");
+test.assertIncludes(foundation, "--control-strip-grip: repeating-linear-gradient(to bottom, currentColor",
+  "the Classic handle grip follows foreground color and stays visible when the tab inverts");
+test.assertMatches(stripCss, /\.control-strip-handle::after\s*\{[^}]*background:\s*var\(--control-strip-grip\)/s,
+  "the handle consumes the era-owned grip token");
+
+// --- Themes ------------------------------------------------------------------
+
+test.assertNotMatches(liquidGlass, /body\[data-theme="liquid-glass"\] \.control-strip\s*\{/, "the strip material is themed by tokens, not a selector twin");
+test.assertIncludes(liquidGlass, "--control-strip-hover-bg", "Liquid Glass uses a light hover material instead of a full black inversion");
+test.assertIncludes(liquidGlass, "--control-strip-thickness: var(--menu-bar-height)", "Liquid Glass strip follows its taller menu bar token");
+test.assertIncludes(stripCss, "background: var(--control-strip-hover-bg)", "strip hover states consume the owned material token");
+test.assertIncludes(foundation, "--z-control-strip", "the floating layer is a named token, not a literal");
+test.assertIncludes(persistence, "controlStripCollapsed", "the collapsed state persists in the existing settings record");
+test.assertIncludes(module, "renderModuleSettingsList();", "the module list re-renders after the lazy registry populates");
+test.assert(zValue(foundation, "--z-control-strip") > zValue(foundation, "--z-window-priority"),
+  "the strip floats above windows, as it does in Mac OS 9");
+test.assert(zValue(foundation, "--z-control-strip") > zValue(foundation, "--z-window-layer-max"),
+  "the strip stays above the window manager's highest dynamic layer");
+test.assert(zValue(foundation, "--z-control-strip") > zValue(foundation, "--z-window-pinned"),
+  "the strip stays above pinned windows");
+test.assert(zValue(foundation, "--z-control-strip") < zValue(foundation, "--z-system-menu"),
+  "…but never above the system menu bar");
+
+// --- Six-era strip materials (tokens only, one DOM) --------------------------
+// Platinum is the strip's native era (Mac OS 8/9): raised tiles, a rounded
+// outer-end tab with grip ribs. Aqua, Snow Leopard, and Yosemite are *signed
+// counterfactuals* — the Control Strip died with Mac OS X 10.0, so their
+// materials are built from each era's real controls and must say so in the
+// stylesheet. Every era is a token table; no era owns a .control-strip
+// selector of its own.
+const appearanceCss = read("styles/65-appearance-themes.css");
+const aquaCss = read("styles/67-aqua-appearance.css");
+test.assertIncludes(stripCss, "background: var(--control-strip-tile-bg)", "module tiles consume the era tile material");
+test.assertIncludes(stripCss, "background: var(--control-strip-grip)", "the handle grip texture is an era token");
+test.assertIncludes(stripCss, "border-radius: var(--control-strip-radius-mirrored)", "a right-anchored strip mirrors its rounded tab end");
+// B4 (2026-10-16): measured on Mac OS 9.0.4 the strip is square and flat --
+// a #c0c0c0 body in a black frame, each tile lit white at its top-left and
+// shaded #a0a0a0 / #808080 at its bottom-right, no capsule, no gradient.
+test.assertIncludes(appearanceCss, "--control-strip-radius: 0;", "Platinum's strip is square, as on the real machine");
+test.assertIncludes(appearanceCss, "--control-strip-tile-shadow: inset 1px 1px #c0c0c0, inset 2px 2px #ffffff, inset -1px -1px #808080, inset -2px -2px #a0a0a0;", "Platinum tiles carry the measured one-pixel bevel");
+test.assertNotIncludes(appearanceCss, "--control-strip-tile-bg: linear-gradient", "Platinum tiles draw no gradient");
+test.assertMatches(aquaCss, /counterfactual[\s\S]*--control-strip-bg/, "the Aqua-family strip materials are labeled counterfactual, not reproduction");
+test.assertMatches(appearanceCss, /counterfactual[\s\S]*--control-strip-bg: rgba\(251, 251, 251, 0\.82\)/, "the Yosemite strip material is labeled counterfactual");
+test.assertNotMatches(aquaCss, /\.control-strip[\s-]/, "Aqua-family eras theme the strip through tokens, never selectors");
+
+// The strip used to report how loud the desk could be. It now reports what is
+// sounding, which is the thing a Control Strip module is for — the classic
+// strip carried an AppleCD Audio Player for exactly this. The honesty rules
+// hold in both directions: a desk with the level at zero is not playing
+// whatever the transport says, and it is muted rather than paused, because
+// those are different facts about different things.
+const strip = read("app/features/control-strip-modules.js");
+test.assertIncludes(strip, 'id: "nowPlaying"', "the strip names what is sounding");
+test.assertNotIncludes(strip, 'id: "volume"', "the volume-only module is retired, not left beside it");
+test.assertMatches(strip, /playing && level > 0 \? title/, "a track counts as playing only when the desk can actually be heard");
+test.assertMatches(strip, /playing \? t\("control_strip_now_playing_muted", title\)/, "a muted desk says muted, not paused");
+test.assertMatches(strip, /if \(!player\?\.queue\?\.length && !snap\) return \{ state: "unknown"/, "a desk with no sound at all renders no player slot");
+for (const key of ["control_strip_now_playing", "control_strip_now_playing_idle", "control_strip_now_playing_muted", "control_strip_play", "control_strip_next"]) {
+  test.assertIncludes(en, `${key}:`, `English copy includes ${key}`);
+  test.assertIncludes(zh, `${key}:`, `Chinese copy includes ${key}`);
+}
+
+test.finish();

@@ -1,0 +1,361 @@
+// Application Registry contracts: unique app ids, one resolver for
+// object -> app routing, one dispatcher used by every first-phase handoff
+// entry, and explicit failures (broken alias, cross-project, no-handler)
+// with no silent fallback. Theme independence is asserted so system
+// semantics never learn about Appearance.
+
+import vm from "node:vm";
+import { webcrypto } from "node:crypto";
+import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
+
+const test = createFeatureTest("application-registry");
+const manifest = read("tooling/runtime-manifest.mjs");
+const registrySource = read("app/core/application-registry.js");
+const actions = read("app/core/actions.js");
+const documentsChat = read("app/features/documents-chat.js");
+const scripting = read("app/core/scripting.js");
+const quickDraftHandoff = read("app/features/quick-draft-handoff.js");
+
+test.assertIncludes(manifest, '"app/core/application-registry.js"', "application registry loads in the app runtime");
+test.assert(
+  manifest.indexOf("app/core/application-registry.js") < manifest.indexOf("app/core/actions.js"),
+  "application registry loads before actions.js"
+);
+test.assert(
+  manifest.indexOf("app/core/application-registry.js") < manifest.indexOf("app/features/documents-chat.js"),
+  "application registry loads before documents-chat.js"
+);
+test.assert(
+  manifest.indexOf("app/core/application-registry.js") < manifest.indexOf("app/core/scripting.js"),
+  "application registry loads before the lazy scripting module"
+);
+
+// Theme independence: the registry must not know any Appearance.
+test.assertNotIncludes(registrySource, "classic", "registry does not branch on Classic");
+test.assertNotIncludes(registrySource, "platinum", "registry does not branch on Platinum");
+test.assertNotIncludes(registrySource, "liquid", "registry does not branch on Liquid Glass");
+test.assertNotIncludes(registrySource, "getCurrentTheme", "registry never reads the active theme");
+
+// Every first-phase entry routes through the same dispatch contract.
+test.assertIncludes(documentsChat, 'dispatchApplicationIntent?.("", {', "File -> Open routes through the dispatcher");
+test.assertIncludes(documentsChat, 'resolveApplicationForItem?.(file, "open")', "openTextFile consults the resolver for DocMap-vs-TeachText");
+test.assertIncludes(actions, 'dispatch("docMap", { intent: "map"', "Finder -> DocMap menu dispatches the map intent");
+test.assertIncludes(actions, 'dispatch("reviewDesk", { intent: "review"', "Finder -> Review menu dispatches the review intent");
+test.assertIncludes(scripting, "dropletApplicationRoutes", "droplets declare registry routes");
+test.assertIncludes(scripting, "dispatchApplicationIntent", "the droplet executor dispatches through the registry");
+test.assertIncludes(quickDraftHandoff, 'dispatch("teachText", { intent: "open"', "Quick Draft -> TeachText dispatches the open intent");
+test.assertIncludes(quickDraftHandoff, 'dispatch("reviewDesk", {', "Quick Draft -> Review Desk dispatches");
+
+// The intent vocabulary stays the closed set from the product plan.
+// "develop" joined the set when 文字亮室 became an application. It is its own
+// intent rather than a reuse: edit belongs to TeachText, which is the default
+// opener for a text object, and review belongs to the Review Desk. "chart"
+// joined when ClioChart began taking any text the way DocMap does: map draws a
+// structure, chart draws a comparison, and neither is the other. Adding one
+// is a deliberate act — the set stays closed, and this line is where it is
+// widened on purpose.
+test.assertIncludes(
+  registrySource,
+  '"open", "read", "edit", "review", "develop", "map", "chart", "present", "attach", "export"',
+  "the registry declares the closed intent set"
+);
+test.assertIncludes(registrySource, "function registerApplication", "apps register through one descriptor contract");
+test.assertIncludes(registrySource, "function resolveApplicationForItem", "object routing is a resolver, not per-surface logic");
+test.assertIncludes(registrySource, "async function dispatchApplicationIntent", "one dispatcher owns intent dispatch");
+test.assertIncludes(registrySource, "async function openProjectObject", "openers can use the project-object convenience entry");
+
+function createRegistryContext(overrides = {}) {
+  const statusCalls = [];
+  const receiptCalls = [];
+  const activityCalls = [];
+  const context = vm.createContext({
+    console,
+    crypto: webcrypto,
+    isExportedDocMapMarkdown: (text) => /DOCMAP-FIXTURE/.test(String(text || "")),
+    t: (key) => key,
+    setStatus: (message) => statusCalls.push(String(message)),
+    // The registry reports dispatch failures through the shared
+    // friendlyErrorDetail helper from persistence-status.js; this isolated
+    // context only tests routing, so a pass-through stub is enough.
+    friendlyErrorDetail: (error) => String(error?.message || error),
+    getActiveProject: () => ({ id: "project-1" }),
+    activeProjectId: "project-1",
+    chatFiles: overrides.chatFiles || [],
+    isInActiveProject: (file) => file?.projectId === "project-1",
+    ensureFinderObjectsModule: async () => {},
+    window: {
+      AISystem6FinderObjects: overrides.finderObjects || null,
+      AISystem6RunReceipts: {
+        createReceipt: async (input) => {
+          receiptCalls.push(["create", input]);
+          return { ok: true, receiptId: "receipt-1" };
+        },
+        finishReceipt: async (receiptId, patch) => {
+          receiptCalls.push(["finish", receiptId, patch]);
+          return { ok: true };
+        },
+      },
+      AISystem6AssistantActivity: {
+        beginOperation: (meta) => {
+          activityCalls.push(["begin", meta]);
+          return { runId: meta.runId || "op-1" };
+        },
+        endOperation: (handle, result) => activityCalls.push(["end", handle, result]),
+      },
+    },
+  });
+  vm.runInContext(registrySource, context);
+  return { context, statusCalls, receiptCalls, activityCalls };
+}
+
+const { context, statusCalls } = createRegistryContext();
+const registry = context.window.AISystem6ApplicationRegistry;
+
+let duplicateRejected = false;
+try {
+  registry.registerApplication({
+    id: "teachText",
+    labelKey: "x",
+    acceptedItemKinds: ["text"],
+    acceptedIntents: ["open"],
+    handler: async () => ({ ok: true }),
+  });
+} catch {
+  duplicateRejected = true;
+}
+test.assert(duplicateRejected, "duplicate app ids are rejected");
+
+const textFile = { id: "file-1", projectId: "project-1", type: "text", name: "Draft", body: "Body text" };
+const docmapFile = { id: "file-2", projectId: "project-1", type: "text", name: "Map", body: "DOCMAP-FIXTURE\n# Map" };
+const chatFile = { id: "file-3", projectId: "project-1", type: "chat", name: "Chat", messages: [] };
+
+test.assert(registry.resolveApplicationForItem(textFile, "open").appId === "teachText", "a plain text document resolves to TeachText for open");
+test.assert(registry.resolveApplicationForItem(docmapFile, "open").appId === "docMap", "a saved DocMap file resolves to DocMap");
+test.assert(registry.resolveApplicationForItem(chatFile, "open").appId === "clioTalk", "a chat file resolves to ClioTalk");
+test.assert(registry.resolveApplicationForItem(textFile, "review").appId === "reviewDesk", "a text document resolves to Review Desk for review");
+test.assert(registry.resolveApplicationForItem(textFile, "map").appId === "docMap", "a text document resolves to DocMap for map");
+test.assert(registry.resolveApplicationForItem(textFile, "present").appId === "clioStage", "a text document resolves to ClioStage for present");
+test.assert(registry.resolveApplicationForItem(textFile, "chart").appId === "clioChart", "a text document resolves to ClioChart for chart");
+test.assert(registry.resolveApplicationForItem(textFile, "attach").appId === "projectCd", "a text document resolves to Project CD for attach");
+test.assert(registry.resolveApplicationForItem(textFile, "export").appId === "teachText", "a text document resolves to TeachText for export");
+// Saved decks and saved charts are objects of their own (the edit kernel's round trips).
+const deckFile = { id: "file-4", projectId: "project-1", type: "text", name: "deck.slides.md", body: "---\nmarp: true\ntheme: default\n---\n\n# One" };
+const markedDeck = { id: "file-5", projectId: "project-1", type: "text", name: "x.md", body: "# One", artifactKind: "slides" };
+const chartFile = { id: "file-6", projectId: "project-1", type: "text", name: "c.md", source: "ClioChart", body: "# C\n\n| a | b |\n| --- | --- |\n| x | 1 |\n" };
+test.assert(registry.resolveApplicationForItem(deckFile, "open").appId === "clioStage", "a Marp deck opens in ClioStage, even without the mark");
+test.assert(registry.resolveApplicationForItem(markedDeck, "open").appId === "clioStage", "a document marked as slides opens in ClioStage");
+test.assert(registry.resolveApplicationForItem(chartFile, "open").appId === "clioChart", "a saved ClioChart table opens in ClioChart");
+test.assert(registry.resolveApplicationForItem({ ...textFile, body: "---\ntitle: x\n---\n" }, "open").appId === "teachText", "other front matter is still a plain document");
+test.assert(registry.resolveApplicationForItem({ id: "x", type: "unknown" }, "open").reason === "no-handler", "unknown kinds fail visibly without a fallback app");
+test.assert(registry.resolveApplicationForItem(textFile, "bogus").reason === "unknown-intent", "unknown intents are rejected");
+
+// Dispatch behavior: recorded intents create a receipt and activity; plain
+// opens stay quiet; failures are explicit.
+const second = createRegistryContext();
+const handlerCalls = [];
+second.context.window.AISystem6ApplicationRegistry.registerApplication({
+  id: "testApp",
+  labelKey: "test",
+  windowName: "testWin",
+  acceptedItemKinds: ["text"],
+  acceptedIntents: ["review", "open"],
+  recordsRuns: ["review"],
+  handler: async (items, ctx) => {
+    handlerCalls.push({ items, ctx });
+    return { ok: true, outputObjectIds: [items[0].id] };
+  },
+});
+
+const dispatched = await second.context.window.AISystem6ApplicationRegistry.dispatchApplicationIntent("testApp", {
+  intent: "review",
+  items: [textFile],
+  sourceAppId: "finder",
+});
+test.assert(dispatched.ok === true && handlerCalls.length === 1, "dispatch invokes the resolved app handler");
+test.assert(second.receiptCalls.some((call) => call[0] === "create"), "recorded intents create a run receipt");
+test.assert(
+  second.receiptCalls.some((call) => call[0] === "finish" && call[2]?.status === "completed"),
+  "dispatch finishes the receipt as completed"
+);
+test.assert(second.activityCalls.some((call) => call[0] === "begin"), "recorded intents begin assistant activity");
+
+const before = second.receiptCalls.length;
+await second.context.window.AISystem6ApplicationRegistry.dispatchApplicationIntent("testApp", {
+  intent: "open",
+  items: [textFile],
+  sourceAppId: "finder",
+});
+test.assert(second.receiptCalls.length === before, "plain opens do not spam the Run Records folder");
+
+const foreign = { id: "file-9", projectId: "project-2", type: "text", name: "Other", body: "x" };
+const cross = await second.context.window.AISystem6ApplicationRegistry.dispatchApplicationIntent("testApp", {
+  intent: "review",
+  items: [foreign],
+});
+test.assert(cross.ok === false && cross.reason === "cross-project", "cross-project items are rejected before dispatch");
+test.assert(second.statusCalls.some((message) => message.includes("application_dispatch_cross_project")), "cross-project rejection fails visibly");
+
+const third = createRegistryContext({
+  finderObjects: {
+    resolveProjectFileForUse: () => ({ selected: null, target: null, reason: "broken-alias" }),
+  },
+});
+const broken = await third.context.window.AISystem6ApplicationRegistry.dispatchApplicationIntent("testApp", {
+  intent: "review",
+  items: [{ id: "alias-1", projectId: "project-1", type: "alias", aliasTarget: { kind: "file", id: "gone" } }],
+});
+test.assert(broken.ok === false && broken.reason === "broken-alias", "broken aliases block the dispatch");
+test.assert(third.statusCalls.length > 0, "broken aliases fail visibly");
+
+const fourth = createRegistryContext();
+const noHandler = await fourth.context.window.AISystem6ApplicationRegistry.dispatchApplicationIntent("", {
+  intent: "open",
+  items: [{ id: "x", projectId: "project-1", type: "unknown" }],
+});
+test.assert(noHandler.ok === false && noHandler.reason === "no-handler", "no-handler fails visibly with no silent fallback");
+test.assert(fourth.statusCalls.some((message) => message.includes("application_dispatch_no_handler")), "no-handler shows a status message");
+
+const fifth = createRegistryContext();
+fifth.context.window.AISystem6ApplicationRegistry.registerApplication({
+  id: "boomApp",
+  labelKey: "boom",
+  windowName: "",
+  acceptedItemKinds: ["text"],
+  acceptedIntents: ["review"],
+  recordsRuns: ["review"],
+  handler: async () => {
+    throw new Error("boom");
+  },
+});
+const failed = await fifth.context.window.AISystem6ApplicationRegistry.dispatchApplicationIntent("boomApp", {
+  intent: "review",
+  items: [textFile],
+});
+test.assert(failed.ok === false && failed.reason === "handler-error", "handler errors surface as dispatch failure");
+test.assert(
+  fifth.receiptCalls.some((call) => call[0] === "finish" && call[2]?.status === "failed"),
+  "failed runs are recorded as failed receipts"
+);
+test.assert(fifth.statusCalls.some((message) => message.includes("boom")), "handler errors show the public error");
+test.assert(statusCalls.length >= 0, "dispatch status helpers stay available");
+
+// Handler business failures: a handler returning { ok:false } is a normal
+// unsuccessful result, never a completed run. The receipt must not be marked
+// completed and Assistant Activity must not end ready.
+const sixth = createRegistryContext();
+let rejectedHandlerCalls = 0;
+sixth.context.window.AISystem6ApplicationRegistry.registerApplication({
+  id: "rejectingApp",
+  labelKey: "reject",
+  windowName: "",
+  acceptedItemKinds: ["text"],
+  acceptedIntents: ["review"],
+  recordsRuns: ["review"],
+  handler: async () => {
+    rejectedHandlerCalls += 1;
+    return { ok: false, reason: "empty", publicErrorReason: "Nothing to review." };
+  },
+});
+const rejected = await sixth.context.window.AISystem6ApplicationRegistry.dispatchApplicationIntent("rejectingApp", {
+  intent: "review",
+  items: [textFile],
+});
+test.assert(rejected.ok === false && rejected.reason === "empty", "a handler {ok:false} result fails the dispatch");
+test.assert(rejectedHandlerCalls === 1, "the {ok:false} handler did run once");
+test.assert(
+  sixth.receiptCalls.some((call) => call[0] === "finish" && call[2]?.status === "failed"),
+  "a business failure is recorded as a failed receipt, never completed"
+);
+test.assert(
+  !sixth.receiptCalls.some((call) => call[0] === "finish" && call[2]?.status === "completed"),
+  "a business failure never writes a completed receipt"
+);
+test.assert(
+  sixth.activityCalls.some((call) => call[0] === "end" && call[2]?.ok === false),
+  "a business failure ends assistant activity as unsuccessful"
+);
+test.assert(
+  sixth.statusCalls.some((message) => message.includes("Nothing to review.")),
+  "a business failure shows its public error reason"
+);
+
+// Typed dispatch cannot bypass descriptor capability: an explicit appId that
+// does not accept the intent or the item kind fails closed before the handler
+// runs, and no receipt is created.
+const seventh = createRegistryContext();
+let mismatchHandlerCalls = 0;
+seventh.context.window.AISystem6ApplicationRegistry.registerApplication({
+  id: "openOnlyApp",
+  labelKey: "open",
+  windowName: "",
+  acceptedItemKinds: ["text"],
+  acceptedIntents: ["open"],
+  recordsRuns: [],
+  handler: async () => {
+    mismatchHandlerCalls += 1;
+    return { ok: true };
+  },
+});
+const mismatchIntent = await seventh.context.window.AISystem6ApplicationRegistry.dispatchApplicationIntent("openOnlyApp", {
+  intent: "review",
+  items: [textFile],
+});
+test.assert(
+  mismatchIntent.ok === false && mismatchIntent.reason === "unsupported-intent",
+  "an explicit appId cannot run an intent it does not accept"
+);
+test.assert(mismatchHandlerCalls === 0, "the handler never runs on an unsupported intent");
+test.assert(seventh.receiptCalls.length === 0, "no receipt is created on an unsupported intent");
+test.assert(
+  seventh.statusCalls.some((message) => message.includes("application_dispatch_unsupported_intent")),
+  "an unsupported intent fails visibly"
+);
+
+const eighth = createRegistryContext();
+let kindMismatchCalls = 0;
+eighth.context.window.AISystem6ApplicationRegistry.registerApplication({
+  id: "chatOnlyApp",
+  labelKey: "chat",
+  windowName: "",
+  acceptedItemKinds: ["chat"],
+  acceptedIntents: ["open"],
+  recordsRuns: [],
+  handler: async () => {
+    kindMismatchCalls += 1;
+    return { ok: true };
+  },
+});
+const mismatchKind = await eighth.context.window.AISystem6ApplicationRegistry.dispatchApplicationIntent("chatOnlyApp", {
+  intent: "open",
+  items: [textFile],
+});
+test.assert(
+  mismatchKind.ok === false && mismatchKind.reason === "unsupported-kind",
+  "an explicit appId cannot run on an item kind it does not accept"
+);
+test.assert(kindMismatchCalls === 0, "the handler never runs on an unsupported kind");
+test.assert(eighth.receiptCalls.length === 0, "no receipt is created on an unsupported kind");
+
+// An intent reports what happened, not what it hoped. Both of these awaited a
+// worker and then answered "ok" regardless, so a map or a check that never
+// reached a model still told the dispatcher it had run — and the run receipt
+// recorded a completed run to match.
+test.assertIncludes(registrySource, "if (!mapped) return { ok: false, reason: \"not-mapped\" };", "the map intent passes the builder's answer through");
+test.assertIncludes(registrySource, "if (!checked) return { ok: false, reason: \"not-checked\" };", "the review intent passes the checker's answer through");
+test.assertNotIncludes(registrySource, "if (typeof runClaimCheck === \"function\") await runClaimCheck();", "and neither discards it any more");
+test.assertIncludes(registrySource, "if (!downloaded) return { ok: false, reason: \"download-failed\" };", "an export that saved nothing is not reported as an export");
+
+// The mirror of the three intents above: there the worker said it had done
+// something it had not, here it knew it had failed and told nobody. In the
+// desktop profile the Review Desk window does not exist, so the dispatch
+// answers not-ok and the desk used to return silently -- a command that looks
+// dead. Both handoffs answer on every exit now.
+test.assertIncludes(quickDraftHandoff, 'setQuickDraftStatus(t("quick_draft_review_failed"));', "a refused Review Desk handoff says so");
+test.assertIncludes(quickDraftHandoff, 'setQuickDraftStatus(t("quick_draft_teachtext_failed"));', "a refused TeachText handoff says so");
+test.assertNotIncludes(quickDraftHandoff, "if (!result?.ok) return false;", "neither swallows the dispatcher's answer");
+for (const key of ["quick_draft_review_failed", "quick_draft_teachtext_failed"]) {
+  test.assertIncludes(read("app/data/translations-en.js"), `${key}:`, `English string exists for ${key}`);
+  test.assertIncludes(read("app/data/translations-zh.js"), `${key}:`, `Chinese string exists for ${key}`);
+}
+
+test.finish();

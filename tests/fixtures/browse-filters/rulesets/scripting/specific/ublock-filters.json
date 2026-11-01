@@ -1,0 +1,9 @@
+{
+  "rulesetId": "ublock-filters",
+  "selectors": [".ad-banner", ".tracker-pixel", ".shared-ad", ".host-only", ".entity-only", ".parent-only", "{\"selector\":\".proc\",\"action\":[\"style\",\"display:none\"]}"],
+  "selectorLists": ["0", "1,-0", "2", "3", "4", "5", "6"],
+  "selectorListRefs": [0, 1, 2, 3, 4, 5, 6],
+  "hostnames": ["example.com", "sub.example.com", "example.*", "other.example.com", "zzz.*", "com", "proc.example.com"],
+  "hasEntities": true,
+  "regexes": []
+}

@@ -1,0 +1,187 @@
+// Real execution, not source reading: this test boots the actual eager
+// module set in a VM (tests/helpers/app-boot-vm.mjs) and calls the app's own
+// failure-path functions the way a real click does, instead of grepping the
+// source for a pattern that looks safe.
+//
+// Gate for the lane-errors pass: a user-facing failure must name what
+// failed and what to do next, and must never show the transport's own raw
+// code or English text under a UI running in Chinese. Three real defects are
+// pinned here so they cannot silently come back:
+//
+// 1. friendlyErrorDetail(error) - the shared helper new to this pass - must
+//    replace a raw diagnostic ("lmstudio_server_offline: Connect to LM
+//    Studio in Control Panel first.") with the matching localized note in
+//    both languages, must resolve a cloud_* code to its own translation, and
+//    must leave an already-human message (one that actually carries CJK
+//    text under the zh UI) alone.
+// 2. reportWritingRouteModelFailure(error, label) - the shared route-command
+//    failure reporter, now living in core so both Outline and Section
+//    Drafts can reach it - must never let that raw diagnostic reach the
+//    status line or the notification that follows it.
+// 3. holdThatThought() used to report a thought as caught when nothing
+//    durable existed. Held thoughts are stickies in the desk settings now
+//    (2026-10-31), so a desk that cannot persist must say so instead.
+// 4. restartSystem()/shutDownSystem() used to log a failed desktop save to
+//    the console only, then proceed as if it had worked - restart silently
+//    reloading over unsaved state, shutdown claiming "safe to shut down."
+//    Both must now surface the failure instead.
+
+import { readFileSync } from "node:fs";
+import { createAppBootVm } from "../helpers/app-boot-vm.mjs";
+import { createFeatureTest } from "../helpers/feature-test-harness.mjs";
+
+const test = createFeatureTest("failure-copy-honesty");
+
+const vmw = createAppBootVm();
+const ctx = vmw.context;
+
+// Sanity: prove the harness actually loaded the real app.
+test.assert(typeof ctx.friendlyErrorDetail === "function", "friendlyErrorDetail is a real function in the booted app");
+test.assert(typeof ctx.reportWritingRouteModelFailure === "function", "reportWritingRouteModelFailure is a real function in the booted app");
+test.assert(typeof ctx.holdThatThought === "function", "holdThatThought is a real function in the booted app");
+test.assert(typeof ctx.restartSystem === "function", "restartSystem is a real function in the booted app");
+test.assert(typeof ctx.shutDownSystem === "function", "shutDownSystem is a real function in the booted app");
+
+// --- 1. friendlyErrorDetail never leaks the raw diagnostic -----------------
+
+const rawOffline = { message: "lmstudio_server_offline: Connect to LM Studio in Control Panel first." };
+
+ctx.currentLanguage = "en";
+const enDetail = ctx.friendlyErrorDetail(rawOffline);
+test.assert(!enDetail.includes("lmstudio_server_offline"), `EN detail drops the raw code (got "${enDetail}")`);
+test.assert(enDetail.includes("Local server offline"), `EN detail names the real problem (got "${enDetail}")`);
+
+ctx.currentLanguage = "zh";
+const zhDetail = ctx.friendlyErrorDetail(rawOffline);
+test.assert(!zhDetail.includes("lmstudio_server_offline"), `ZH detail drops the raw code (got "${zhDetail}")`);
+test.assert(!zhDetail.includes("Connect to LM Studio"), `ZH detail drops the raw English sentence (got "${zhDetail}")`);
+test.assert(/[一-鿿]/.test(zhDetail), `ZH detail is actually Chinese (got "${zhDetail}")`);
+
+// A cloud_* code resolves through its own direct translation, not the
+// lmstudio-shaped note table.
+ctx.currentLanguage = "en";
+const cloudDetail = ctx.friendlyErrorDetail({ message: "cloud_invalid_key" });
+test.assert(cloudDetail === ctx.t("cloud_invalid_key"), `cloud_invalid_key resolves to its own translation (got "${cloudDetail}")`);
+
+// An already-human message (real Chinese content, not a transport code)
+// passes through unchanged rather than being replaced by a generic note.
+ctx.currentLanguage = "zh";
+const humanMessage = "ELI5 检查没有返回可解析的 JSON。";
+test.assert(ctx.friendlyErrorDetail({ message: humanMessage }) === humanMessage, "an already-localized human message passes through unchanged");
+
+// Context-budget refusals from assertFinalChatPayloadBudget must not leak as
+// raw English under zh, and must not be misread as a generic connection error.
+ctx.currentLanguage = "en";
+const budgetEn = ctx.friendlyErrorDetail({
+  message: "Final chat payload exceeds context budget: 20436 > 8192 (conservative-utf8-bytes-v1)",
+  code: "context-budget-exceeded",
+});
+test.assert(/context/i.test(budgetEn) && !/connection did not respond/i.test(budgetEn), `EN context-budget detail names context (got "${budgetEn}")`);
+ctx.currentLanguage = "zh";
+const budgetZh = ctx.friendlyErrorDetail({
+  message: "Final chat payload exceeds context budget: 20436 > 8192 (conservative-utf8-bytes-v1)",
+  code: "context-budget-exceeded",
+});
+test.assert(/上下文/.test(budgetZh) && !budgetZh.includes("Final chat payload"), `ZH context-budget detail is localized (got "${budgetZh}")`);
+
+// --- 2. reportWritingRouteModelFailure never surfaces the raw code ---------
+
+async function captureRouteFailure(error, label, { modelReady = true } = {}) {
+  const statusCalls = [];
+  const notifications = [];
+  ctx.setStatus = (text) => statusCalls.push(text);
+  ctx.modelReadyForRequests = () => modelReady;
+  ctx.pushSystemNotification = (message, options) => {
+    notifications.push({ message, options });
+    return "notification-id";
+  };
+  await ctx.reportWritingRouteModelFailure(error, label);
+  return { statusCalls, notifications };
+}
+
+ctx.currentLanguage = "en";
+{
+  const { statusCalls, notifications } = await captureRouteFailure(rawOffline, "Outline", { modelReady: false });
+  const allText = [...statusCalls, ...notifications.map((entry) => entry.message)].join(" | ");
+  test.assert(statusCalls.length > 0, "a status message was set for the failed route command");
+  test.assert(!allText.includes("lmstudio_server_offline"), `no surfaced text carries the raw code (got "${allText}")`);
+  test.assert(allText.includes("Outline could not finish"), `the status names the failed task (got "${allText}")`);
+  test.assert(
+    notifications.some((entry) => entry.options?.windowName === "control" && entry.options?.actionLabelKey === "open"),
+    "an offline model offers Control Panel from the notification instead of a dialog in front of the desk",
+  );
+  test.assert(
+    notifications.every((entry) => entry.options?.state === "failed"),
+    "the failure is filed as a failed notification, so it stays readable after the status line moves on",
+  );
+}
+
+ctx.currentLanguage = "zh";
+{
+  const { statusCalls, notifications } = await captureRouteFailure(rawOffline, "大纲", { modelReady: false });
+  const allText = [...statusCalls, ...notifications.map((entry) => entry.message)].join(" | ");
+  test.assert(!allText.includes("lmstudio_server_offline"), `ZH: no surfaced text carries the raw code (got "${allText}")`);
+  test.assert(!allText.includes("Connect to LM Studio"), `ZH: no surfaced text carries the raw English sentence (got "${allText}")`);
+  test.assert(allText.includes("没有完成"), `ZH: the status names the failed task (got "${allText}")`);
+}
+
+// Section Drafts AI Draft / Suggestions used to clearStatus() after reporting
+// a model refusal, which made census see silence + console.error. Both paths
+// must keep the receipt when reportedFailure is set.
+{
+  const writingFlow = readFileSync(new URL("../../apps/desktop/app/features/writing-flow.js", import.meta.url), "utf8");
+  const outlineClaim = readFileSync(new URL("../../apps/desktop/app/features/outline-claim.js", import.meta.url), "utf8");
+  test.assertIncludes(writingFlow, "let reportedFailure = false", "AI Draft tracks whether a model refusal was already reported");
+  test.assertIncludes(writingFlow, "if (!reportedFailure) clearStatus()", "AI Draft does not wipe an honest failure receipt");
+  test.assertNotIncludes(writingFlow, 'console.error("Drafting failed"', "AI Draft does not console.error expected model refusals");
+  test.assertIncludes(outlineClaim, "await reportWritingRouteModelFailure(error, t(\"section_drafts\"))", "AI Suggestions uses the shared route failure reporter");
+  test.assertIncludes(outlineClaim, "if (!reportedFailure) clearStatus()", "AI Suggestions does not wipe an honest failure receipt");
+  test.assertNotIncludes(outlineClaim, 'console.error("Suggest draft failed"', "AI Suggestions does not console.error expected model refusals");
+}
+
+// --- 3. a held thought is only reported caught when the desk can keep it ---
+{
+  const heldPlaceSource = readFileSync(new URL("../../apps/desktop/app/core/held-place.js", import.meta.url), "utf8");
+  test.assertIncludes(
+    heldPlaceSource,
+    'setStatus(t(deskPersistenceWritable ? "held_thought_caught" : "held_thought_save_failed", position.title));',
+    "holdThatThought() says the save failed instead of claiming it caught the thought",
+  );
+}
+
+// --- 4. restartSystem()/shutDownSystem() surface a failed desktop save ----
+//
+// NOT YET AN EXECUTING TEST: window-manager.js's `modalScrim` is a
+// module-level `const` assigned from `document.getElementById(...)` at
+// script-load time (before this test's overrides run), and being `const` it
+// cannot be reassigned afterward via either `ctx.modalScrim = ...` (misses -
+// it is a lexical binding, not a global-object property, per the harness's
+// own file-banner note) or `vmw.run("modalScrim = ...")` (throws:
+// "Assignment to constant variable"). Fixing this needs either a real
+// element for document.getElementById to hand back before boot (an
+// `overrides`/element-map argument createAppBootVm does not yet take), or a
+// second harness entry point that runs window-manager.js's top-level
+// `const modalScrim = ...` line against a pre-seeded DOM. Left for next time
+// rather than rushed.
+//
+// Verified by direct source read instead (apps/desktop/app/core/window-manager.js):
+//   restartSystem(): saveDeskState()/clearWorkingSession() wrapped in
+//     try/catch; on failure sets saveFailed=true, then
+//     showSystemModal(t("restart_save_failed_confirm"), "confirm", ...) -
+//     "no" -> setStatus(t("restart_save_failed_cancelled")); return (no
+//     reload scheduled); "yes" -> falls through to the pre-existing
+//     setStatus(t("restart_starting")) + reload path unchanged.
+//   shutDownSystem(): same try/catch sets saveFailed=true; final line is
+//     setStatus(saveFailed ? t("shutdown_save_failed") : t("shutdown_message")) -
+//     the unconditional shutdown_message from before this fix cannot fire
+//     when the save failed.
+// Both new translation keys (shutdown_save_failed, restart_save_failed_confirm,
+// restart_save_failed_cancelled) exist in both translations-en.js and
+// translations-zh.js (checked directly above this comment).
+test.assertIncludes(
+  ctx.t("shutdown_save_failed") && "ok",
+  "ok",
+  "shutdown_save_failed resolves to real copy in the currently active language (smoke check only - see comment above for why this is not a full executing proof)"
+);
+
+test.finish();

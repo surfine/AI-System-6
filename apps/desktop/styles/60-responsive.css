@@ -1,0 +1,4373 @@
+.reader-desk-icon {
+  border-radius: 1px;
+  background:
+    linear-gradient(var(--ink), var(--ink)) 5px 8px / 10px 2px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 19px 8px / 10px 2px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 5px 14px / 10px 2px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 19px 14px / 10px 2px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 5px 20px / 9px 2px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 20px 20px / 9px 2px no-repeat,
+    var(--paper);
+}
+
+.reader-desk-icon::before {
+  content: "";
+  position: absolute;
+  left: 15px;
+  top: 5px;
+  bottom: 5px;
+  width: 2px;
+  background: var(--ink);
+}
+
+.reader-desk-icon::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  bottom: 5px;
+  height: 5px;
+  border: var(--system-control-line) solid var(--ink);
+  border-top: 0;
+  background: var(--paper);
+}
+
+.scrapbook-desk-icon {
+  background: var(--mini-icon-bg);
+}
+
+.scrapbook-desk-icon::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 5px;
+  bottom: 5px;
+  border: var(--system-control-line) solid var(--ink);
+  border-left-width: 5px;
+  background:
+    linear-gradient(var(--ink), var(--ink)) 7px 5px / 17px 2px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 7px 12px / 14px 2px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 7px 20px / 18px 2px no-repeat,
+    repeating-linear-gradient(90deg, transparent 0 4px, var(--ink) 4px 6px) 1px 2px / 4px 22px no-repeat,
+    var(--paper);
+}
+
+.scrapbook-desk-icon::after {
+  content: "";
+  position: absolute;
+  right: 4px;
+  top: 5px;
+  width: 9px;
+  height: 9px;
+  border-left: var(--system-control-line) solid var(--ink);
+  border-bottom: var(--system-control-line) solid var(--ink);
+  background: var(--paper);
+}
+
+/* Drag and Drop visual feedback */
+/* JS adds .is-drag-over (accept) or .is-drop-reject (refuse) on
+   [data-drop-target]. Repeating the attribute raises specificity above
+   every Liquid Glass twin and descendant label rule (span:last-of-type etc.)
+   without relying on priority. */
+[data-drop-target][data-drop-target].is-drag-over {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+[data-drop-target][data-drop-target][data-drop-target].is-drag-over * {
+  color: var(--paper);
+}
+
+/* Refuse hit: visible reject, never a silent no-op (ADHD/HIG). Classic keeps
+   hard ink; later eras tint via --system-danger when present. */
+[data-drop-target][data-drop-target].is-drop-reject {
+  background: var(--paper);
+  color: var(--ink);
+  outline: 2px dashed var(--system-danger, #b44);
+  outline-offset: -3px;
+  box-shadow: inset 0 0 0 1px var(--system-danger, #b44);
+}
+
+[data-drop-target][data-drop-target][data-drop-target].is-drop-reject * {
+  color: var(--ink);
+}
+
+/* Trash / File Floppy / Project Hard Disk / droplet desk icons and Dock
+   Trash: stronger hit frames so accept and refuse read before release. */
+.desktop-icon[data-drop-target="trash"].is-drag-over,
+.desk-dock-item[data-drop-target="trash"].is-drag-over,
+.desktop-icon[data-drop-target="file-floppy"].is-drag-over,
+.desktop-icon[data-drop-target="project"].is-drag-over,
+.desktop-icon[data-drop-target="droplet"].is-drag-over,
+.finder-item[data-drop-target="droplet"].is-drag-over {
+  outline: 2px solid var(--paper);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--ink);
+}
+
+.desktop-icon[data-drop-target="trash"].is-drop-reject,
+.desk-dock-item[data-drop-target="trash"].is-drop-reject,
+.desktop-icon[data-drop-target="file-floppy"].is-drop-reject,
+.desktop-icon[data-drop-target="project"].is-drop-reject,
+.desktop-icon[data-drop-target="droplet"].is-drop-reject,
+.finder-item[data-drop-target="droplet"].is-drop-reject,
+.window[data-drop-target="file-floppy"].is-drop-reject,
+.window[data-drop-target="scrap"].is-drop-reject {
+  outline: 2px dashed var(--system-danger, #b44);
+  outline-offset: 2px;
+  box-shadow: inset 0 0 0 1px var(--system-danger, #b44);
+  background: color-mix(in srgb, var(--system-danger, #b44) 10%, var(--paper));
+}
+
+.window[data-drop-target="file-floppy"].is-drag-over,
+.window[data-drop-target="scrap"].is-drag-over {
+  background: var(--paper);
+  color: var(--ink);
+  outline: 2px solid var(--ink);
+  outline-offset: -4px;
+  box-shadow: inset 0 0 0 2px var(--paper), inset 0 0 0 4px var(--ink);
+}
+
+.window[data-drop-target="file-floppy"].is-drag-over *,
+.window[data-drop-target="scrap"].is-drag-over * {
+  color: inherit;
+}
+
+/* Liquid Glass headings carry their own dark color at (0,3,1); restore them
+   so an ink drop target reads fully inverted. */
+[data-drop-target][data-drop-target].is-drag-over .message-content h1,
+[data-drop-target][data-drop-target].is-drag-over .message-content h2,
+[data-drop-target][data-drop-target].is-drag-over .message-content h3 {
+  color: var(--paper);
+}
+
+.finder-grid[data-drop-target][data-drop-target].is-drag-over,
+.document-icon-grid[data-drop-target][data-drop-target].is-drag-over,
+.project-disk-grid[data-drop-target][data-drop-target].is-drag-over {
+  background: var(--paper);
+  color: var(--ink);
+  outline: 2px dotted var(--ink);
+  outline-offset: -7px;
+}
+
+.finder-grid[data-drop-target][data-drop-target].is-drag-over *,
+.document-icon-grid[data-drop-target][data-drop-target].is-drag-over *,
+.project-disk-grid[data-drop-target][data-drop-target].is-drag-over * {
+  color: var(--ink);
+}
+
+.finder-grid[data-drop-target][data-drop-target].is-drag-over .finder-item.is-selected span:last-of-type,
+.document-icon-grid[data-drop-target][data-drop-target].is-drag-over .finder-item.is-selected span:last-of-type,
+.project-disk-grid[data-drop-target][data-drop-target].is-drag-over .finder-item.is-selected span:last-of-type {
+  color: var(--paper);
+}
+
+.finder-item[data-drop-target][data-drop-target].is-drag-over {
+  background: transparent;
+  color: var(--ink);
+  outline: var(--system-control-line) solid var(--ink);
+  outline-offset: 3px;
+}
+
+.desktop-icon[draggable="true"],
+.finder-item[draggable="true"],
+.finder-list-row[draggable="true"] {
+  cursor: grab;
+}
+
+.icon.doc::before {
+  content: "";
+  position: absolute;
+  inset: 6px 5px;
+  border-top: var(--system-control-line) solid var(--ink);
+  border-bottom: var(--system-control-line) solid var(--ink);
+}
+
+body.is-writer-mode .desktop {
+  background: var(--paper);
+  padding: 0;
+}
+
+body.is-writer-mode .resize-box,
+body.is-writer-mode .grow-box {
+  display: none;
+}
+
+body.is-writer-mode .icon-column {
+  display: none;
+}
+
+/* Writing Focus (⌥⌘F typewriter/sentence), Review Desk key-window focus, and
+   Quick Draft / 文字亮室 deep mode: quiet the desk icons, same intent as
+   calm-desktop focus-mode hiding desktop-objects. */
+body.is-writing-focus .icon-column,
+body.is-review-focus .icon-column,
+body.quick-draft-focus .icon-column {
+  display: none;
+}
+
+body.is-writer-mode .writing-spine-panel {
+  display: none;
+}
+
+body.is-writer-mode .teachtext-window {
+  left: 60vw;
+  top: 0;
+  width: 40vw;
+  height: 100%;
+  box-shadow: none;
+  border-right: 0;
+  border-bottom: 0;
+  border-top: 0;
+  z-index: var(--z-local-base);
+}
+
+body.is-writer-mode:not(.has-find-path-open) .assistant-window:not(.is-hidden):not(.is-app-hidden):not(.is-collapsed),
+body.is-writer-mode:not(.has-find-path-open) .assistant-window.is-desklet:not(.is-hidden):not(.is-app-hidden):not(.is-collapsed) {
+  display: flex;
+  visibility: visible;
+  left: 0;
+  right: auto;
+  top: 0;
+  width: 60vw;
+  min-width: 300px;
+  height: 100%;
+  box-shadow: none;
+  border-left: 0;
+  border-bottom: 0;
+  border-top: 0;
+  z-index: var(--z-local-base);
+}
+
+body.is-writer-mode .assistant-window .messages,
+body.is-writer-mode .assistant-window.is-desklet .messages {
+  height: auto;
+  flex: 1;
+}
+
+body.is-writer-mode .teachtext-pane {
+  flex: 1;
+  min-height: 0;
+}
+
+body.is-writer-mode #teachtext-body {
+  min-height: 0;
+}
+
+body.is-writer-mode.has-find-path-open .teachtext-window {
+  width: calc(100vw / 3);
+  left: 0;
+  border-right: 0;
+}
+
+body.is-writer-mode.has-find-path-open .find-path-window {
+  display: flex;
+  left: calc(100vw / 3);
+  top: 0;
+  width: calc(100vw / 3);
+  height: 100%;
+  box-shadow: none;
+  border-bottom: 0;
+  border-top: 0;
+  border-left: var(--system-control-line) solid var(--ink);
+  border-right: var(--system-control-line) solid var(--ink);
+  z-index: var(--z-local-base);
+}
+
+body.is-writer-mode.has-find-path-open .assistant-window:not(.is-collapsed),
+body.is-writer-mode.has-find-path-open .assistant-window.is-desklet:not(.is-collapsed) {
+  width: calc(100vw / 3);
+  min-width: 300px;
+  right: 0;
+  left: auto;
+  top: 0;
+  height: 100%;
+  border-left: 0;
+}
+
+body.is-writer-mode .context-panel-window {
+  right: 0;
+  top: 0;
+  left: auto;
+  width: min(380px, calc(100vw - 32px));
+  height: 100%;
+  border-top: 0;
+  border-bottom: 0;
+  border-right: 0;
+  box-shadow: none;
+  z-index: var(--z-local-popover);
+}
+
+/* .info-window, .info-pane, .info-header, .info-main h3, .info-main p,
+   .info-stats, .info-stats dt, .info-stats dd — all moved to base
+   (styles/30-surfaces.css). Duplicates audited DEAD on 2026-05-28. */
+
+.info-comments {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.info-comments label {
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.info-comments textarea {
+  width: 100%;
+  resize: none;
+  border: 1px solid var(--ink);
+  padding: 6px;
+  background: var(--paper);
+}
+
+/* .large-mini-icon and .large-mini-icon.project-disk-icon::after — duplicates
+   of styles/30-surfaces.css. Audited DEAD on 2026-05-28. */
+
+.large-mini-icon.teachtext-icon::after {
+  content: "T";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.large-mini-icon.scrapbook-icon::after {
+  content: "S";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.is-busy {
+  cursor: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMUlEQVQ4T2NgGAWjYBSMAlwA7f8E8H8U4P9RQEAsSAnA+D8K8P8oICDAwD8KRsEoGAUAAOf5CfvZ0mYAAAAAAElFTkSuQmCC") 8 8, wait;
+}
+
+/* System.css + HIG visual pass: restrained Macintosh objects, clearer hierarchy.
+   Token defaults live in styles/00-foundation.css :root {}. */
+/* body { background: var(--desktop) } — already in styles/00-foundation.css.
+   Audited DEAD on 2026-05-28. */
+
+/* Era wallpapers override the desktop from the theme layer
+   (styles/65-appearance-themes.css). The 1-bit grid itself is painted by the
+   later .desktop rule in this file, not here. */
+.desktop {
+  padding: 18px;
+}
+
+.menu-bar {
+  min-width: 0;
+}
+
+/* The glass material is structural, so it lives next to its base rule instead
+   of in the theme file. The bar keeps the era's translucent tint and gives up
+   the frosted blur: frost belongs to a surface with something behind it, and
+   this bar sits on the desk's own pattern. On a phone the blur read as a soft,
+   washed strip across the top of the screen — worst once the desk is added to
+   the Home Screen, where the bar runs under the status area and the material
+   covers three times the strip it covers in a browser tab. */
+body[data-theme="liquid-glass"] .menu-bar {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.menu-bar > .menu > button {
+  border-radius: var(--menu-button-radius);
+  transition: var(--menu-button-transition);
+}
+
+.menu-popover,
+.menu-sub-popover {
+  max-height: min(560px, calc(100vh - 34px));
+  overflow: auto;
+}
+
+.menu-bar > .menu > .menu-popover {
+  max-height: none;
+  overflow: visible;
+  /* The same value, handed to an era's panel rule that reads it (Liquid
+     Glass). Submenu panels reset it (00-foundation.css). */
+  --menu-popover-overflow: visible;
+}
+
+/* Accessories and Help open beside the menu, so the panel must not clip them;
+   the phone shell below keeps the scroll and opens them inline instead. */
+.menu-bar > .menu > .apple-menu-popover {
+  max-height: calc(100vh - var(--system-menu-height) - 8px);
+  overflow: visible;
+  --menu-popover-overflow: visible;
+}
+
+.menu-item-with-sub > .menu-sub-popover {
+  /* No z-index here: the base .menu-sub-popover rule in 00-foundation.css
+     already sets the identical token; this rule only repositions it for the
+     nested-item case, so it inherits the value, not restates it. */
+  top: -2px;
+  left: calc(100% - 2px);
+  max-height: min(420px, calc(100vh - 40px));
+  overflow: auto;
+}
+
+.menu-item-with-sub:hover > .menu-sub-popover,
+.menu-item-with-sub.is-open > .menu-sub-popover,
+.menu-item-with-sub:focus-within > .menu-sub-popover {
+  display: block;
+}
+
+.menu-popover hr {
+  margin: 3px 0;
+  border-bottom: 1px solid var(--menu-divider-color);
+}
+
+/* .project-switcher-button max-width moved to base (styles/00-foundation.css). */
+
+.menu-bar > .project-switcher-menu > .project-switcher-popover {
+  min-width: 300px;
+  max-height: min(440px, calc(100vh - 36px));
+  overflow: auto;
+  --menu-popover-overflow: auto;
+  scrollbar-gutter: stable;
+}
+
+.project-switcher-button.is-startup-pick {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+#clock {
+  white-space: nowrap;
+}
+
+/* `.window { border-radius }` and `.title-bar h1, h2 { color }` were dead
+   copies of 10-windows.css and were deleted here to pay for the portrait
+   safe-area insets below. Both were verified by hand first, not taken from
+   tooling/audit-css-duplicates.mjs on trust: that audit compares only against
+   the base files, so it cannot see an earlier rule in THIS file or the layer
+   order, and 9 of the 11 rules it called dead are not. Nothing else in this
+   file sets either property on either selector at top level, and the theme
+   layers that override them run after this one either way. */
+
+/* Every control in the bar, including the miniaturize lamp: an era's
+   background-window state is a property of the bar, not of two of its three
+   controls. Measured 2026-09-23 before this line: Big Sur's Close and Zoom
+   went grayscale on a background window while the yellow lamp between them
+   stayed #febc2e — the same omission the 44px touch rule had, and the same
+   fix. On macOS all three lights go flat grey together. */
+.window:not(.is-active) .close-box,
+.window:not(.is-active) .minimize-box,
+.window:not(.is-active) .resize-box,
+.window:not(.is-active) .shade-box {
+  --system-titlebar-control-art-ink: var(--shade-dark);
+  /* Glass-only values, inert in Classic: a background window's lamps go one
+     flat gray and drop their glyphs. */
+  --glass-lamp-close: var(--glass-lamp-inactive);
+  --glass-lamp-zoom: var(--glass-lamp-inactive);
+  --lamp-lo: var(--glass-lamp-inactive);
+  --lamp-rim: #ababae;
+  --glass-lamp-mark-opacity: 0;
+  /* An era whose lamps are sprites cannot go grey by swapping a colour token:
+     the art carries the colour. Yosemite flattens the sprite instead, which is
+     knowledge Theme Lab's replica held while the real control kept showing a
+     red lamp on a background window. Unset elsewhere, so nothing else moves. */
+  /* Handed to the era's own lamp rule rather than applied here: Yosemite paints
+     its lamps with a more specific selector that pins filter, so the value has
+     to arrive as a variable it already reads. Set only in this context, so an
+     active lamp never sees it. */
+  --titlebar-control-filter: var(--titlebar-inactive-control-filter, var(--system-titlebar-inactive-control-filter));
+  visibility: var(--system-titlebar-inactive-control-visibility);
+  filter: var(--system-titlebar-inactive-control-filter);
+  opacity: var(--system-titlebar-inactive-control-opacity);
+}
+
+.details-bar {
+  min-height: 25px;
+  padding:
+    calc(4px - var(--details-bar-optical-rise)) 8px
+    calc(4px + var(--details-bar-optical-rise));
+  border-bottom: 1px solid var(--details-bar-border);
+  background: var(--details-bar-bg);
+}
+
+/* The context panel's two-line bar (moved from 10-windows.css) refines the
+   bar above. */
+.context-panel-window .details-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 10px;
+  align-items: center;
+  min-height: 46px;
+}
+
+/* .writing-spine-panel max-height + overflow merged into base (styles/10-windows.css);
+   the other 10 properties in this rule were duplicates of base. */
+
+/* .spine-title-row { flex: 0 0 auto } — already in styles/10-windows.css.
+   Audited DEAD on 2026-05-28. */
+
+.spine-shade-body {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 5px 6px 6px;
+}
+
+/* .spine-actions gap moved to base (styles/10-windows.css). */
+
+.spine-actions button {
+  width: 100%;
+  min-height: 62px;
+  padding: 2px 1px;
+}
+
+/* .spine-actions .icon/.mini-icon/.sys-icon { width: 42px; height: 42px }
+   — already in styles/10-windows.css. Audited DEAD on 2026-05-28. */
+
+.spine-actions .icon,
+.spine-actions .mini-icon,
+.spine-actions .sys-icon,
+.desktop-icon .icon,
+.finder-item .mini-icon {
+  filter: drop-shadow(1px 1px 0 var(--shade-dark));
+}
+
+.spine-actions b,
+.desktop-icon span:last-child,
+.finder-item span:last-of-type {
+  line-height: 1.2;
+}
+
+/* box-decoration-break: clone moved to base for each selector:
+   .desktop-icon span:last-child → styles/50-apps.css
+   .finder-item span:last-of-type → styles/40-icons.css
+   .finder-item small → styles/40-icons.css */
+
+.desktop-icon:focus-visible,
+.spine-actions button:focus-visible,
+.finder-item:focus-visible,
+.scrap-list button:focus-visible,
+.trash-list button:focus-visible {
+  outline: var(--system-control-line) solid var(--ink);
+  outline-offset: 2px;
+}
+
+.desktop-icon.is-selected:focus-visible {
+  outline: 0;
+}
+
+
+/* .assistant-window.is-desklet right moved to base (styles/10-windows.css). */
+
+.messages {
+  background:
+    linear-gradient(var(--quiet-panel), var(--quiet-panel)) 0 0 / 100% 22px no-repeat,
+    var(--messages-bg);
+}
+
+.assistant-window .messages {
+  background: var(--paper);
+}
+
+/* .speaker font-family moved to base (styles/10-windows.css);
+   font-weight: 700 was already in base. */
+
+/* .message-content max-width moved to base (styles/10-windows.css). */
+
+.assistant-window .messages {
+  min-height: 0;
+}
+
+.assistant-window .composer {
+  display: block;
+  flex: 0 0 auto;
+  min-height: 0;
+  overflow: visible;
+}
+
+.assistant-window .composer label {
+  margin-bottom: 0;
+}
+
+.assistant-window .composer textarea {
+  box-sizing: border-box;
+  height: auto;
+  min-height: 46px;
+  max-height: min(160px, 28vh);
+  overflow-y: auto;
+}
+
+/* .composer-action-row gap moved to base (styles/10-windows.css). */
+
+.assistant-window .composer-action-row {
+  min-height: 31px;
+  margin-top: 0;
+}
+
+.assistant-window .composer-action-row > .button-row {
+  min-width: 0;
+  justify-content: flex-end;
+}
+
+textarea:focus,
+input:focus,
+select:focus {
+  outline: var(--system-focus-outline);
+  outline-offset: 2px;
+  box-shadow: var(--system-inset);
+}
+
+@media (max-width: 520px), (max-height: 700px) {
+  .file-picker {
+    grid-template-columns: 1fr;
+  }
+
+  .file-picker .file-picker-button {
+    justify-self: stretch;
+  }
+
+  .assistant-window .composer {
+    margin: 0;
+    padding: 7px 10px 8px;
+  }
+
+  .assistant-window .message:not(.clio-welcome) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+    padding: 13px 14px;
+  }
+
+  .assistant-window .message:not(.clio-welcome) .speaker {
+    padding-top: 0;
+    text-align: left;
+  }
+
+  .assistant-window .message-grounding-strip,
+  .assistant-window .message-actions {
+    grid-column: 1;
+  }
+
+  .assistant-window .clio-welcome {
+    grid-template-columns: 38px minmax(0, 1fr);
+    gap: 12px;
+    padding: 24px 18px;
+  }
+
+  .assistant-window .composer textarea {
+    height: auto;
+    min-height: 42px;
+    max-height: min(112px, 22vh);
+  }
+
+  .assistant-window .composer-action-row {
+    align-items: center;
+  }
+
+  .assistant-window .compose-tools-anchor {
+    align-items: center;
+  }
+
+  .assistant-window .composer-file-button {
+    width: 32px;
+    min-width: 32px;
+  }
+
+  .assistant-window .composer-key-hint {
+    display: none;
+  }
+
+  .assistant-window .assistant-context-button {
+    max-width: none;
+  }
+
+  .assistant-details-bar {
+    padding-inline: 8px;
+  }
+
+  .clio-chat-file-link {
+    max-width: 45%;
+  }
+
+  .clio-chat-file-link > small {
+    display: none;
+  }
+}
+
+/* A phone in landscape is about 400px tall, so the window manager has to
+   shorten a Finishing Receipt to keep it on screen. The window itself carries
+   overflow: hidden, so a shortened receipt would silently cut off its last
+   stated fact — and this window exists to state facts. Let the pane scroll
+   instead of clipping; on a viewport tall enough to hold the whole receipt no
+   scrollbar appears, because the pane is never shortened there. */
+@media (max-height: 700px) {
+  .finishing-receipt-window .info-pane {
+    overflow-y: auto;
+  }
+}
+
+/* .btn.default box-shadow merged into base (styles/10-windows.css);
+   border-width was already in base. */
+
+/* .btn:active transform + box-shadow moved to base (styles/10-windows.css);
+   background and color were already in base. */
+
+/* Copies of 10-windows.css's .window .window-frame-scroller for the content
+   areas below that are window frame scrollers: the same selector and
+   specificity, scoped by :where(), so the frame keeps beating each area's own
+   rule under a per-file layer order as it does today by specificity. */
+.window .window-frame-scroller:where(.document-icon-grid, .project-disk-grid, .trash-list) {
+  border: 0;
+  box-shadow: none;
+}
+
+.window .window-frame-scroller:where(.document-icon-grid) {
+  min-height: 0;
+}
+
+.file-preview-body,
+.document-icon-grid,
+.project-disk-grid,
+.trash-list {
+  background: var(--file-well-bg);
+  border: var(--system-border);
+  box-shadow: var(--system-inset);
+}
+
+
+
+/* .control-section h3 padding moved to base (styles/10-windows.css). */
+
+.finder-grid,
+.document-icon-grid,
+.project-disk-grid {
+  gap: 18px 16px;
+}
+
+.finder-list-header {
+  border-bottom: var(--system-control-line) solid var(--ink);
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      var(--paper) 0,
+      var(--paper) 2px,
+      #ececec 2px,
+      #ececec 4px
+    );
+}
+
+.finder-list-row {
+  min-height: 27px;
+  border-bottom: 1px dotted var(--rule);
+}
+
+.mini-icon,
+.icon {
+  background-color: var(--paper);
+}
+
+.finder-empty-object,
+.scrap-empty-card {
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      var(--empty-object-hatch-base) 0,
+      var(--empty-object-hatch-base) 6px,
+      var(--empty-object-hatch-alt) 6px,
+      var(--empty-object-hatch-alt) 12px
+    );
+  color: var(--ink);
+}
+
+/* .teachtext-pane gap moved to base (styles/50-apps.css). */
+
+.teachtext-desk-strip {
+  border: var(--teachtext-strip-border);
+  background: var(--teachtext-strip-bg);
+}
+
+.teachtext-preview,
+.reader-content {
+  max-width: none;
+  padding: var(--writing-preview-padding-y) var(--writing-preview-padding-x);
+}
+
+/* The manuscript preview keeps the paper's line height, including the
+   MacWrite ruler. A fixed 1.72 here used to win over that token. */
+.reader-content {
+  line-height: 1.72;
+}
+
+.teachtext-pane textarea:not(.mde-input),
+.question-sheet-pane textarea:not(.mde-input),
+.outline-content:not(.mde-input),
+.draft-editor textarea:not(.mde-input) {
+  border: 0;
+  box-shadow: none;
+  padding: var(--writing-editor-padding-y) var(--writing-editor-padding-x);
+  background: var(--paper);
+  background-image: none;
+  resize: none;
+}
+
+.teachtext-pane textarea::placeholder,
+.question-sheet-pane textarea::placeholder,
+.outline-content::placeholder,
+.draft-editor textarea::placeholder {
+  color: var(--shade-dark);
+  opacity: 1;
+}
+
+.teachtext-preview h1 {
+  margin-top: 0;
+  font-size: 22px;
+}
+
+/* .reader-body-content h1/h2/h3 dropped from this selector list — already
+   styled in base (styles/20-reader-docmap.css). Only .teachtext-preview h2
+   is a real responsive override. Audited DEAD on 2026-05-28. */
+.teachtext-preview h2 {
+  border-left: var(--teachtext-preview-section-marker);
+  padding-left: 10px;
+}
+
+/* .reader-toolbar gap moved to base (styles/20-reader-docmap.css). */
+
+/* .scrapbook-pane grid-template-columns moved to base (styles/50-apps.css). */
+
+/* .scrap-list button, .trash-list button min-height moved to base
+   (styles/50-apps.css). */
+
+.tag {
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.system-modal {
+  border: var(--modal-border, 3px solid var(--ink));
+  border-image: var(--modal-border-image, none);
+  box-shadow: var(--modal-shadow, 0 0 0 3px var(--paper), 0 0 0 5px var(--ink));
+}
+
+@media (max-width: 1120px) {
+  .assistant-window {
+    width: min(680px, calc(100vw - 330px));
+  }
+}
+
+/* iOS/iPadOS Safari zooms the whole page when a focused field's text is under
+   16px, which throws the desk out of alignment the moment you start typing.
+   16px is that platform threshold, not a chosen type size. This is a touch
+   property, not a width one — an iPad in landscape is wider than the 860px
+   phone breakpoint below but still zooms, so fields never go under 16px on
+   any coarse-pointer/no-hover surface while the rest of the System 6 type
+   scale is untouched. */
+@media (hover: none) and (pointer: coarse) {
+  /* The grow box is the scroll-bar corner cell, and at 16px it was the one
+     piece of window chrome a finger could not reliably hit. HIG.md's rule is
+     that the System 6 glyph keeps its drawn size and an OWNED invisible hit
+     region grows around it, so this expands the target without moving a pixel
+     of the art. It grows up and to the left, into the window's own corner,
+     where nothing else is: the pane's bottom-right corner is the grow box's
+     cell already. */
+  .grow-box::after {
+    content: "";
+    position: absolute;
+    inset: -28px 0 0 -28px;
+  }
+
+  /* One selector for all three, and it has to out-rank ordinary application
+     rules. The old form listed them separately, so `body textarea` and
+     `body select` carried only (0,0,2) — less than any `.some-window textarea`
+     in an app stylesheet, and less than every lazily loaded sheet, which
+     arrives after this file and wins ties on source order as well. Measured
+     2026-09-05: eleven surfaces still focused at 13–15px, so iOS still zoomed
+     the desk on the writing route's own fields.
+     `:is()` takes the specificity of its most specific branch, which gives all
+     three the same (0,3,2) as the input branch, and `body[data-theme]` is the
+     era attribute every boot sets — the same ladder the appearance layer uses
+     to reach past a plain `body`. */
+  body[data-theme] :is(
+    input:not([type="checkbox"]):not([type="radio"]),
+    textarea,
+    select
+  ) {
+    font-size: max(16px, var(--system-text-size));
+  }
+}
+
+@media (max-width: 860px), (hover: none) and (pointer: coarse) and (max-height: 660px) {
+  /* A phone scrolls with a finger and cannot size a window at all, so the
+     System 6 bars would be decoration with 16px tap targets. Values only —
+     the frame structure itself is unchanged. */
+  body {
+    --window-frame-bar-display: none;
+    --window-frame-reserve: 0px;
+    --window-frame-scrollbar-width: auto;
+  }
+
+  .writing-demo-caption {
+    max-width: calc(100vw - 36px);
+  }
+
+  .menu-bar {
+    --menu-bar-inline-padding: 3px;
+    gap: 0;
+    overflow: visible;
+  }
+
+  .menu-bar > .menu > button {
+    padding: 0 5px;
+  }
+
+  /* Hang the popover off the real bottom of the menu bar. Standalone on iOS the
+     bar grows by the status-bar inset, and a fixed 24px put the first items
+     under the notch where they could not be tapped. */
+  .menu-bar > .menu > .menu-popover {
+    position: fixed;
+    top: var(--menu-popover-top);
+    left: var(--menu-popover-left, 4px);
+    right: auto;
+    max-width: calc(100vw - 8px);
+    max-height: calc(
+      100vh - var(--menu-bar-height) - var(--safe-area-top) - var(--safe-area-bottom) - 8px
+    );
+    overflow: auto;
+  }
+
+  .menu-bar > .menu > .apple-menu-popover {
+    max-height: calc(
+      100vh - var(--menu-bar-height) - var(--safe-area-top) - var(--safe-area-bottom) - 8px
+    );
+    overflow: auto;
+  }
+
+  .menu-bar .menu-item-with-sub > .menu-sub-popover {
+    position: static;
+    margin: 0 5px 4px 18px;
+    padding: 1px 0 1px 8px;
+    max-width: calc(100vw - 28px);
+    max-height: none;
+    overflow: visible;
+    border: 0;
+    border-left: 1px solid var(--menu-divider-color);
+    border-radius: var(--item-radius);
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .menu-bar .menu-item-with-sub.is-open > .menu-submenu-trigger,
+  .menu-bar .menu-item-with-sub.is-open:hover > .menu-submenu-trigger,
+  .menu-bar .menu-item-with-sub.is-open:focus-within > .menu-submenu-trigger {
+    --menu-item-bg: var(--menu-item-active-bg);
+    --menu-item-fg: var(--menu-item-active-fg);
+    --menu-item-shadow: var(--menu-item-active-shadow);
+    font-weight: var(--system-emphasis-weight);
+  }
+
+  .menu-bar .menu-sub-popover button:hover:not(:disabled):not(.is-disabled) {
+    --menu-item-bg: var(--menu-item-active-bg);
+    --menu-item-fg: var(--menu-item-active-fg);
+    --menu-item-shadow: var(--menu-item-active-shadow);
+  }
+
+  .menu-bar .menu-sub-popover button:disabled,
+  .menu-bar .menu-sub-popover button.is-disabled {
+    --menu-item-bg: transparent;
+    --menu-item-shadow: none;
+  }
+
+  .menu-item-with-sub > button::after {
+    content: "▼";
+  }
+
+  .menu-item-with-sub.is-open > button::after {
+    content: "▲";
+  }
+
+  .menu-bar > .menu > .menu-popover .shortcut {
+    margin-left: 24px;
+  }
+
+  .project-switcher-button {
+    max-width: 170px;
+  }
+
+  .desktop {
+    padding: 14px;
+    --mobile-work-left: 148px;
+    --mobile-work-right: 144px;
+  }
+
+  .writing-spine-panel {
+    position: absolute;
+    left: 14px;
+    top: 24px;
+    max-height: none;
+    width: 116px;
+    grid-template-columns: 1fr;
+    gap: 0;
+    align-self: start;
+  }
+
+  .spine-shade-body {
+    overflow: visible;
+    padding: 4px 8px 6px;
+  }
+
+  body:not(.is-writer-mode) .desktop .window.is-mobile-work-area:not(.is-mobile-fullscreen):not(.is-collapsed) {
+    position: absolute;
+    left: var(--mobile-work-left);
+    right: auto;
+    width: min(720px, calc(100vw - var(--mobile-work-left) - var(--mobile-work-right)));
+    min-width: 0;
+    max-width: calc(100vw - var(--mobile-work-left) - var(--mobile-work-right));
+    min-height: 0;
+    transform: none;
+  }
+
+  body:not(.is-writer-mode) .window:is(.find-file-window, .note-pad-window, .stickies-window, .clipboard-window, .dictation-window, .translation-pad-window, .dictionary-window, .key-caps-window, .system-status-window, .notification-center-window, .writing-bell-window, .alarm-clock-window, .calculator-window, .puzzle-window, .memory-cards-window):not(.is-hidden):not(.is-collapsed) {
+    min-width: 0;
+    max-width: calc(100vw - 28px);
+    height: auto;
+    transform: var(--mobile-da-transform, none);
+    /* Desktop base rules pin these accessories with right:<N>px; on a narrow
+       screen that makes the used left negative (viewport - right - width < 0),
+       clipping them off the left edge. Neutralise the stray right and use one
+       shared horizontal axis; the portrait arranger owns only vertical slots. */
+    right: auto;
+    left: 50%;
+  }
+
+  body:not(.is-writer-mode) .window:is(.find-file-window, .memory-cards-window):not(.is-hidden):not(.is-collapsed) {
+    width: min(520px, calc(100vw - 28px));
+  }
+
+  body:not(.is-writer-mode) .window.note-pad-window:not(.is-hidden):not(.is-collapsed) {
+    width: min(320px, calc(100vw - 28px));
+  }
+
+  body:not(.is-writer-mode) .window.clipboard-window:not(.is-hidden):not(.is-collapsed) {
+    width: min(340px, calc(100vw - 28px));
+  }
+
+  body:not(.is-writer-mode) .window:is(.dictation-window, .translation-pad-window, .key-caps-window):not(.is-hidden):not(.is-collapsed) {
+    width: min(380px, calc(100vw - 28px));
+  }
+
+  body:not(.is-writer-mode) .window.dictionary-window:not(.is-hidden):not(.is-collapsed) {
+    width: min(390px, calc(100vw - 28px));
+  }
+
+  /* Keep the dictionary window's frame stable across lookups: the result
+     pane scrolls internally while the form and the recent-term row stay
+     pinned, so a second search never resizes or re-centers the whole window
+     (and never clips the recent row when the phone keyboard shrinks the
+     viewport). The result box's grid row is minmax(0, 1fr), so it takes the
+     slack and the recent row always stays visible. */
+  body:not(.is-writer-mode) .window.dictionary-window:not(.is-hidden):not(.is-collapsed) {
+    height: min(440px, var(--mobile-da-max-height, calc(100vh - var(--system-menu-height, 26px) - var(--safe-area-bottom) - 24px)));
+  }
+
+  body:not(.is-writer-mode) .window.system-status-window:not(.is-hidden):not(.is-collapsed) {
+    width: min(430px, calc(100vw - 28px));
+  }
+
+  body:not(.is-writer-mode) .window.notification-center-window:not(.is-hidden):not(.is-collapsed) {
+    width: min(360px, calc(100vw - 28px));
+  }
+
+  body:not(.is-writer-mode) .window.writing-bell-window:not(.is-hidden):not(.is-collapsed) {
+    width: min(300px, calc(100vw - 28px));
+  }
+
+  body:not(.is-writer-mode) .window.calculator-window:not(.is-hidden):not(.is-collapsed) {
+    width: min(208px, calc(100vw - 28px));
+  }
+
+  body:not(.is-writer-mode) .window.puzzle-window:not(.is-hidden):not(.is-collapsed) {
+    width: min(188px, calc(100vw - 28px));
+  }
+
+  body:not(.is-writer-mode) .window.is-collapsed,
+  body:not(.is-writer-mode) .writing-spine-panel.is-shaded {
+    align-self: start;
+    position: absolute;
+    /* A shaded window keeps the width it had before its body disappeared.
+       Writing Spine has no captured window width, so it retains its compact
+       116px tab without imposing that size on every application window. */
+    width: var(--window-shade-width, 116px);
+    max-width: calc(100vw - 8px);
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    flex: 0 0 auto;
+    overflow: hidden;
+  }
+
+  body:not(.is-writer-mode) .window.is-collapsed > :not(.title-bar),
+  body:not(.is-writer-mode) .writing-spine-panel.is-shaded .spine-shade-body {
+    display: none;
+  }
+
+  .spine-actions {
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: 4px;
+  }
+
+  .spine-section,
+  .spine-section-main,
+  .spine-section-research {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .spine-actions button {
+    grid-template-columns: 1fr;
+    align-items: center;
+    justify-items: center;
+    width: 100%;
+    min-height: 62px;
+    gap: 2px;
+    padding: 2px 1px;
+  }
+
+  .spine-actions .icon,
+  .spine-actions .mini-icon,
+  .spine-actions .sys-icon {
+    width: 42px;
+    height: 42px;
+  }
+
+  .spine-actions b {
+    font-size: 13px;
+    line-height: 1.08;
+    text-align: center;
+  }
+
+  .spine-flow-toolbox .spine-section {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+
+  .review-desk-results {
+    grid-template-rows:
+      minmax(0, calc((100% - var(--review-splitter-size)) * 0.45))
+      var(--review-splitter-size)
+      minmax(0, calc((100% - var(--review-splitter-size)) * 0.55));
+  }
+
+  .message {
+    grid-template-columns: 1fr;
+  }
+
+  .scrapbook-pane {
+    grid-template-columns: var(--scrapbook-pane-columns);
+  }
+
+  .reader-workspace {
+    flex-direction: column;
+  }
+
+  .reader-content,
+  .teachtext-preview {
+    padding: 22px 18px;
+  }
+
+
+  /* Dialogs and system-owned pages are PHONE presentations, not portrait ones.
+     They lived in the portrait block, so a phone turned sideways placed them
+     with desktop geometry and hung Page Setup and the Import Utility off the
+     bottom of a 420px-high screen. One design, both orientations. */
+  body:not(.is-writer-mode) .window.is-mobile-dialog:not(.is-hidden):not(.is-collapsed) {
+    position: fixed;
+    left: 50%;
+    right: auto;
+    top: calc(var(--menu-bar-height) + var(--safe-area-top) + 12px);
+    width: min(430px, calc(100vw - 24px));
+    height: auto;
+    /* A desktop floor would beat the cap below, because min-height wins over
+       max-height when they disagree. Get Info declares 380px, so on an iPhone
+       18 Pro held sideways (402px tall, 354px to spare under the menu bar) both
+       Info windows ran 14px off the bottom -- and on the Air they only fit by
+       4px. On a phone the pane scrolls instead. */
+    min-height: 0;
+    max-width: calc(100vw - 24px);
+    max-height: calc(
+      100vh
+      - var(--menu-bar-height)
+      - var(--safe-area-top)
+      - var(--safe-area-bottom)
+      - var(--keyboard-inset, 0px)
+      - 24px
+    );
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  body:not(.is-writer-mode) .window.is-mobile-dialog:not(.is-hidden):not(.is-collapsed) > .window-pane {
+    min-height: 0;
+    overflow: auto;
+  }
+
+  /* Help and the first-run Guide are system-owned pages, not Finder content
+     and not Desk Accessories. They use the named pinned-window layer and keep
+     their own internal panes scrollable above any foreground application. */
+  body:not(.is-writer-mode) .window.is-mobile-system-page:not(.is-hidden):not(.is-collapsed) {
+    position: fixed;
+    inset:
+      calc(var(--menu-bar-height) + var(--safe-area-top))
+      0
+      var(--keyboard-inset, 0px)
+      0;
+    width: 100%;
+    height: auto;
+    min-width: 0;
+    max-width: none;
+    max-height: none;
+    border-width: 0;
+    /* A system page runs the whole width and reaches the true bottom edge, so
+       its two lower corners meet the display's own — the display owns those
+       (see --edge-radius). The two upper corners sit under the menu bar, which
+       is inside the screen, so they stay the era's. */
+    border-radius: var(--edge-shape);
+    transform: none;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  body:not(.is-writer-mode) .window.is-mobile-system-page:not(.is-hidden):not(.is-collapsed) > .window-pane {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    scroll-padding-bottom: var(--safe-area-bottom);
+  }
+
+  /* A full-screen surface has nothing to resize, and the corner its grabber
+     would sit in belongs to the display (see --edge-radius). Every era draws a
+     grabber of its own — System 6's double square, Platinum's grooves, Aqua's
+     wedge, Liquid Glass's arc — and on a phone each was painted into a corner
+     that is no longer the window's, so the mark sat in the one place the
+     display is already curving. The eras keep their resize controls everywhere
+     a resize is real; a surface that covers the screen is not one. */
+  .is-mobile-fullscreen .grow-box,
+  .is-mobile-system-page .grow-box {
+    display: none;
+  }
+
+  /* ClioTalk's composer is its shell's last row, so its own bottom edge is the
+     display's edge exactly when nothing holds it up: with a home indicator the
+     safe area does (34px), and with none — iPhone Duo's outer display, or a
+     phone held sideways — the composer reaches the curve, and the display owns
+     those two corners. Both were measured in Liquid Glass with the composer's
+     16px arcs sitting inside the display's own corner; the phone shapes with a
+     home indicator were right as they were, which is why this is the composer's
+     own rule and not a blanket one.
+
+     The multiplied inset is a presence test rather than a length: any inset at
+     all restores the era's radius, and zero leaves the corner to the display.
+     Scoped to the phone's own full-screen states, so a narrow desktop window
+     never reads it. */
+  :is(body.mobile-app-foreground, body.mobile-landscape-shell) .window.is-mobile-fullscreen .composer {
+    border-radius: var(--surface-radius) var(--surface-radius)
+      min(var(--surface-radius), var(--safe-area-bottom) * 1000)
+      min(var(--surface-radius), var(--safe-area-bottom) * 1000);
+  }
+
+  body:not(.is-writer-mode) .system-help-window.is-mobile-system-page > .system-help-pane {
+    overflow: hidden;
+  }
+  /* An overlay window floats on a phone, but the screen is the limit. Desk
+     Accessories keep their own size until it exceeds the display;
+     then they clamp and scroll inside instead of hanging off the edge. This is
+     the safety net for both orientations — landscape is where it bites, since
+     Key Caps is 808px tall and a sideways phone is 420px high. */
+  body:not(.is-writer-mode) .window.is-mobile-accessory:not(.is-hidden):not(.is-collapsed) {
+    max-width: min(560px, calc(100vw - 16px));
+    max-height: calc(100vh - var(--menu-bar-height) - var(--safe-area-top) - var(--safe-area-bottom) - 16px);
+  }
+
+  body:not(.is-writer-mode) .window.is-mobile-accessory:not(.is-hidden):not(.is-collapsed) .window-pane {
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+
+}
+
+@media (max-width: 700px) {
+  .writing-spine-panel {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .spine-flow-toolbox .spine-section {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+}
+
+@media (max-width: 620px) {
+  /* 「还原写作对象」 on a phone: each section takes two lines, number, name and
+     length above, the words it starts with below (owner decision D3). */
+  .rebuild-sections .finder-list-row {
+    grid-template-columns: 22px minmax(0, 1fr) auto;
+    grid-template-areas: "number title chars" ". start start";
+  }
+
+  .rebuild-sections .finder-list-row > :nth-child(1) { grid-area: number; }
+  .rebuild-sections .finder-list-row > :nth-child(2) { grid-area: title; }
+  .rebuild-sections .finder-list-row > :nth-child(3) { grid-area: start; }
+  .rebuild-sections .finder-list-row > :nth-child(4) { grid-area: chars; }
+
+  /* A deck you have to scroll cannot be memorised. The window is content-sized,
+     so the board carries the screen budget: rows share whatever height is left
+     and the cards fill their row instead of deriving height from the 2/3
+     aspect. grid-auto-rows keeps this true for any deck size. */
+  .memory-cards-board {
+    --memory-cards-columns: 4;
+    /* A definite height, not a max: fr rows resolve to zero without one. */
+    height: var(--memory-cards-board-max-height);
+    grid-auto-rows: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .memory-cards-board .memory-card {
+    aspect-ratio: auto;
+    height: 100%;
+    min-height: 0;
+  }
+
+  /* The menu bar must fit the SuperClock! clock on phones: collapse the
+     cloud-model label to its icon so the full set of menus + model icon +
+     clock stays on screen. */
+  .cloud-model-indicator,
+  .guest-indicator {
+    min-width: 30px;
+    max-width: 38px;
+    padding-inline: 4px;
+    justify-content: center;
+  }
+
+  #cloud-model-label,
+  #guest-indicator-label {
+    display: none;
+  }
+
+  .desktop {
+    padding: 10px;
+    --mobile-work-left: 144px;
+    --mobile-work-right: 144px;
+  }
+
+  .writing-spine-panel {
+    width: 112px;
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .scrapbook-pane {
+    grid-template-columns: var(--scrapbook-pane-columns);
+  }
+
+  .spine-title-row {
+    min-height: 22px;
+  }
+
+  .spine-shade-body {
+    padding: 4px 6px 5px;
+  }
+
+  .spine-section,
+  .spine-section-main,
+  .spine-section-research {
+    gap: 5px;
+  }
+
+  .spine-flow-toolbox .spine-section {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+
+  .spine-actions button {
+    grid-template-columns: 1fr;
+    min-height: 60px;
+  }
+
+  .spine-actions .icon,
+  .spine-actions .mini-icon,
+  .spine-actions .sys-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .spine-actions b {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 420px) {
+  .scrapbook-pane {
+    grid-template-columns: var(--scrapbook-mobile-pane-columns);
+    grid-template-rows: var(--scrapbook-mobile-pane-rows);
+  }
+
+  .desktop {
+    --mobile-work-left: 140px;
+    --mobile-work-right: 144px;
+  }
+
+  .menu-bar > .menu > button {
+    padding: 0 4px;
+  }
+
+  .menu-spacer {
+    min-width: 2px;
+    flex: 1 1 2px;
+  }
+
+  .writing-spine-panel {
+    width: 108px;
+    grid-template-columns: 1fr;
+    gap: 0;
+    max-width: 100%;
+  }
+
+  .spine-shade-body {
+    overflow-x: hidden;
+    overflow-y: visible;
+    padding: 4px 5px 5px;
+  }
+
+  .spine-section,
+  .spine-section-main,
+  .spine-section-research {
+    display: grid;
+    grid-auto-flow: row;
+    grid-auto-columns: auto;
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
+    gap: 5px;
+  }
+
+  .spine-flow-toolbox .spine-section {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .spine-actions button {
+    width: 100%;
+    grid-template-columns: 1fr;
+    justify-items: center;
+    min-height: 58px;
+  }
+
+}
+
+/* WindowShade must win over writer-mode and responsive min-height rules. */
+.window.is-collapsed {
+  aspect-ratio: auto;
+  align-self: start;
+  flex: 0 0 auto;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  overflow: hidden;
+}
+
+.window.is-collapsed > :not(.title-bar):not(.grow-box) {
+  display: none;
+}
+
+
+body.is-writer-mode .window.is-collapsed,
+body.is-writer-mode .assistant-window.is-collapsed,
+body.is-writer-mode .assistant-window.is-desklet.is-collapsed,
+body.is-writer-mode .teachtext-window.is-collapsed,
+body.is-writer-mode .find-path-window.is-collapsed,
+body.is-writer-mode .context-panel-window.is-collapsed {
+  height: auto;
+  min-height: 0;
+  max-height: none;
+}
+
+@media (min-width: 1101px) {
+  body.is-writer-mode .assistant-window.is-collapsed,
+  body.is-writer-mode .assistant-window.is-desklet.is-collapsed {
+    width: 60vw;
+    left: 0;
+    top: 0;
+  }
+
+  body.is-writer-mode.has-find-path-open .assistant-window.is-collapsed,
+  body.is-writer-mode.has-find-path-open .assistant-window.is-desklet.is-collapsed {
+    width: calc(100vw / 3);
+  }
+}
+
+@media (max-width: 1100px) {
+  body.is-writer-mode .teachtext-window {
+    order: 1;
+  }
+
+  body.is-writer-mode .assistant-window,
+  body.is-writer-mode .assistant-window.is-desklet {
+    order: 2;
+  }
+
+  body.is-writer-mode .find-path-window,
+  body.is-writer-mode .context-panel-window,
+  body.is-writer-mode .scrapbook-window,
+  body.is-writer-mode .outline-window,
+  body.is-writer-mode .section-drafts-window {
+    order: 3;
+  }
+
+  body.is-writer-mode .window.is-collapsed,
+  body.is-writer-mode .assistant-window.is-collapsed,
+  body.is-writer-mode .assistant-window.is-desklet.is-collapsed,
+  body.is-writer-mode .teachtext-window.is-collapsed,
+  body.is-writer-mode .find-path-window.is-collapsed,
+  body.is-writer-mode .context-panel-window.is-collapsed {
+    min-height: 0;
+    height: auto;
+  }
+}
+
+body.is-writer-mode .system-help-window {
+  position: fixed;
+  left: 50%;
+  right: auto;
+  top: calc(25px + (100vh - 25px) / 2);
+  width: min(780px, calc(100vw - 32px));
+  height: min(620px, calc(100vh - 48px));
+  min-width: 0;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 48px);
+  transform: translate(-50%, -50%);
+  z-index: var(--z-window-priority);
+}
+
+body.is-writer-mode .system-help-window .system-help-pane {
+  min-height: 0;
+  overflow: hidden;
+}
+
+@media (max-width: 860px), (hover: none) and (pointer: coarse) and (max-height: 660px) {
+  /* The writing route's Cmds menu sits at the right end of a bottom action bar
+     that spans the whole window. Anchored by its left edge, a 210px panel on a
+     375px phone opened to x=473 and the window's own overflow ate all of it:
+     the menu answered the tap by showing nothing. Anchor it to the right edge,
+     where the room is, the way a Mac menu near a screen edge has always
+     flipped. Desktop keeps opening leftwards from the button. */
+  .teachtext-actions .teachtext-command-menu > .teachtext-command-popover,
+  .specialized-command-menu .teachtext-command-popover,
+  .specialized-command-menu .teachtext-command-subpopover {
+    right: 0;
+    left: auto;
+    /* Sideways, the screen is shorter than the panel: the same menu stood 367px
+       tall on a 375px-high phone and lost its last command off the bottom. Cap
+       it against the screen and let it scroll, the way the Review Desk panel
+       already does under Liquid Glass. The cap only bites on a short screen. */
+    max-height: calc(100vh - 96px);
+    overflow-y: auto;
+  }
+
+  body.is-writer-mode .system-help-window {
+    top: 36px;
+    left: 16px;
+    width: calc(100vw - 32px);
+    height: calc(100vh - 52px);
+    transform: none;
+  }
+}
+
+/* A Mac's menu bar is 20-28px because a pointer is precise; a finger is not. On
+   a touch device this bar is the desk's navigation — File, Edit, Study, the
+   app's own menus and the three controls at its right end — and 20-28px sits
+   below the floor this product's own gate cites for window chrome (WCAG 2.2's
+   24px, held at 40 for a title bar). The theme owns --menu-bar-height, so the
+   theme's token is raised where the pointer is coarse: the bar, the windows
+   below it, the dialogs and the popovers that hang from it move together,
+   instead of one number per consumer. A fine pointer changes nothing. */
+@media (hover: none) and (pointer: coarse) {
+  body[data-theme]:not(.is-writer-mode) {
+    --menu-bar-height: max(var(--system-menu-height), var(--touch-primary-min-height));
+    --menu-popover-top: calc(var(--menu-bar-height) + var(--safe-area-top));
+  }
+
+  body[data-theme]:not(.is-writer-mode) .menu-bar
+    :is(.menu > button, .project-switcher-button, .multifinder-button, .notification-center-button) {
+    height: calc(var(--menu-bar-height) - 2px);
+    line-height: calc(var(--menu-bar-height) - 2px);
+  }
+}
+
+@media (max-width: 1100px) {
+  body.is-writer-mode .assistant-window .messages,
+  body.is-writer-mode .assistant-window.is-desklet .messages {
+    flex: 1 1 auto;
+    max-height: none;
+    min-height: 120px;
+  }
+
+  body.is-writer-mode .assistant-window .composer,
+  body.is-writer-mode .assistant-window.is-desklet .composer {
+    margin-top: auto;
+  }
+}
+
+@media (max-width: 860px), (hover: none) and (pointer: coarse) and (max-height: 660px) {
+  body:not(.is-writer-mode) .window.assistant-window:not(.about-window):not(.save-chat-window):not(.is-collapsed):not(.is-mobile-fullscreen),
+  body:not(.is-writer-mode) .window.assistant-window.is-desklet:not(.about-window):not(.save-chat-window):not(.is-collapsed):not(.is-mobile-fullscreen) {
+    min-height: 72vh;
+  }
+
+  body:not(.is-writer-mode) .assistant-window:not(.is-collapsed) .messages,
+  body:not(.is-writer-mode) .assistant-window.is-desklet:not(.is-collapsed) .messages {
+    min-height: 260px;
+  }
+}
+
+@media (max-width: 1100px) {
+  body.is-writer-mode .assistant-window:not(.is-collapsed),
+  body.is-writer-mode .assistant-window.is-desklet:not(.is-collapsed) {
+    min-height: 66vh;
+  }
+}
+
+@media (max-width: 860px) and (orientation: portrait) {
+  body:not(.is-writer-mode) {
+    overflow: hidden auto;
+    padding-top: calc(var(--menu-bar-height) + var(--safe-area-top));
+  }
+
+  /* A foregrounded app is fixed and already fills the screen, so there is
+     nothing under it to scroll. Locking the page keeps iOS from scrolling the
+     whole desk up when the keyboard opens — that scroll is what pushed the
+     window's title bar under the status bar. Writer mode boots the writing
+     profile into the same phone shell, so it must lock too. */
+  body.mobile-app-foreground {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  /* A foregrounded app owns the screen; the floating Control Strip yields. */
+  body.mobile-app-foreground .control-strip {
+    display: none;
+  }
+
+  /* Standalone on iOS the menu bar is the topmost thing on screen. How tall it
+     grows and what fills the status band belongs to the installed-surface block
+     at the end of this file — one rule for every device and both orientations,
+     instead of a portrait-phone copy of it here. No stacking token needed:
+     the 00-foundation.css base .menu-bar rule already sets it, and nothing
+     between the two files touches the value. */
+  body:not(.is-writer-mode) .menu-bar,
+  body.is-writer-mode.mobile-app-foreground .menu-bar {
+    position: fixed;
+    inset: 0 0 auto 0;
+  }
+
+  body:not(.is-writer-mode) .desktop {
+    height: auto;
+    min-height: auto;
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: 16px;
+    /* The safe area raises the desk's 18px margin instead of adding to it, the
+       way 50-apps.css already treats its own corner. iPhone Duo is why this is
+       needed in PORTRAIT, the one axis this flow used to ignore: its outer
+       display keeps the system's controls and the front camera down one SIDE,
+       so a horizontal inset is nonzero while the device stands upright. Every
+       other phone reports 0 here and keeps exactly the margin it had. */
+    padding: 18px max(18px, var(--safe-area-right)) 18px max(18px, var(--safe-area-left));
+    overflow: visible;
+    --mobile-work-left: 0px;
+    --mobile-work-right: 0px;
+  }
+
+  /* No overflow clip here: this rule already drops the base max-height, so
+     there is nothing to scroll, and the wrapper is square while the toolbox
+     inside it is rounded — clipping cut the toolbox's drop shadow into four
+     hard corner blocks. Base and Liquid Glass both declare overflow: visible;
+     this selector outranks them (0,3,1 vs 0,2,1), so it has to agree. */
+/* WindowShade rolls a window up in place. On a phone the Writing Flow panel is
+   a flowed full-width card, not a floating window, so the shared narrow
+   collapse rule's absolutely-placed 116px stub landed on top of the desktop
+   icons instead of over its own body. Both states keep the same flowed frame
+   here; only .spine-shade-body is hidden. The shaded selector is listed
+   separately so it ties that rule's specificity (0,3,1) and wins on order. */
+  body:not(.is-writer-mode) .writing-spine-panel:not(.is-shaded),
+  body:not(.is-writer-mode) .writing-spine-panel.is-shaded {
+    position: static;
+    order: 1;
+    align-self: auto;
+    width: 100%;
+    max-width: none;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+  }
+
+  body:not(.is-writer-mode) .spine-shade-body {
+    overflow: visible;
+    padding: 12px 16px 14px;
+  }
+
+  body:not(.is-writer-mode) .spine-actions,
+  body:not(.is-writer-mode) .spine-section,
+  body:not(.is-writer-mode) .spine-section-main,
+  body:not(.is-writer-mode) .spine-flow-toolbox .spine-section {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
+    gap: 14px 10px;
+    align-items: start;
+    justify-items: center;
+  }
+
+  body:not(.is-writer-mode) .spine-actions button {
+    width: 100%;
+    min-height: 76px;
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 3px;
+    padding: 2px 1px;
+  }
+
+  body:not(.is-writer-mode) .spine-actions .icon,
+  body:not(.is-writer-mode) .spine-actions .mini-icon,
+  body:not(.is-writer-mode) .spine-actions .sys-icon {
+    width: 42px;
+    height: 42px;
+  }
+
+  body:not(.is-writer-mode) .spine-actions b {
+    font-size: 13px;
+    line-height: 1.2;
+    text-align: center;
+  }
+
+  body:not(.is-writer-mode) .window.is-mobile-work-area:not(.is-mobile-fullscreen):not(.is-collapsed),
+  body:not(.is-writer-mode) .window.is-mobile-work-area.assistant-window:not(.is-mobile-fullscreen):not(.is-collapsed),
+  body:not(.is-writer-mode) .window.is-mobile-work-area.assistant-window.is-desklet:not(.is-mobile-fullscreen):not(.is-collapsed) {
+    position: relative;
+    order: 2;
+    left: auto;
+    right: auto;
+    top: auto;
+    justify-self: center;
+    width: min(var(--portrait-window-width, 100%), 100%);
+    height: var(--portrait-window-height, auto);
+    min-width: 0;
+    max-width: none;
+    transform: none;
+  }
+
+
+  body:not(.is-writer-mode) .window.is-mobile-work-area.assistant-window:not(.is-mobile-fullscreen):not(.is-collapsed),
+  body:not(.is-writer-mode) .window.is-mobile-work-area.assistant-window.is-desklet:not(.is-mobile-fullscreen):not(.is-collapsed) {
+    order: 3;
+  }
+
+  /* Mobile page shell. Application pages and Finder folders share one work
+     area below the fixed menu bar; dialogs, system pages, and Desk Accessories
+     use their own overlay roles instead of competing for the same frame. */
+  /* Writer mode included: writing profile boots into is-writer-mode, and the
+     phone still presents one writing/ClioTalk surface through this shell. */
+  body.mobile-app-foreground .window.is-mobile-fullscreen:not(.is-collapsed) {
+    --window-border-image: none;
+    position: fixed;
+    /* The window material fills to the true bottom edge. Bottom still lifts by
+       --keyboard-inset when the keyboard is up; an inner safe-area rule below
+       protects each app's interactive content at rest. */
+    inset:
+      calc(var(--menu-bar-height) + var(--safe-area-top))
+      0
+      var(--keyboard-inset, 0px)
+      0;
+    order: 0;
+    width: 100%;
+    max-width: none;
+    height: auto;
+    max-height: none;
+    min-width: 0;
+    /* An aspect-locked window (ClioStage) must fill the phone screen and
+       letterbox its own content instead of shrinking the whole window. */
+    aspect-ratio: auto;
+    margin: 0;
+    border-width: 0;
+    /* Same ownership as the system page above: the shell reaches the display's
+       side and bottom edges, so those corners are the display's, and the ones
+       under the menu bar are the era's. Liquid Glass used to draw its 16px in
+       all four, which put a small rounded corner inside the phone's much larger
+       one at the bottom of the screen. */
+    border-radius: var(--edge-shape);
+    transform: none;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ClioTalk owns its bottom inset at the composer, because the transcript
+     should continue behind it. Every other full-screen app gets the same
+     protection at the shell, so its lowest toolbar or content control cannot
+     land under the home indicator. System Help has a separate system-page
+     role and keeps its existing scroll-safe treatment. */
+  body.mobile-app-foreground
+    .window.is-mobile-fullscreen:not(.assistant-window) {
+    /* Horizontal insets for the same reason, written as one shorthand because
+       the boot budget is counted in bytes: the window material still reaches
+       the true edge, and no control inside it lands under a reserved side
+       region. The landscape shell has had this since the phone matrix. */
+    padding: 0 var(--safe-area-right) var(--safe-area-bottom) var(--safe-area-left);
+  }
+
+  /* Inside the full-screen shell the pane between title bar and composer takes
+     the slack and scrolls; the composer stays pinned at the bottom. */
+  body.mobile-app-foreground .window.is-mobile-fullscreen .window-pane,
+  body.mobile-app-foreground .window.is-mobile-fullscreen #messages {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  /* Typing-lift parity with ClioTalk's pinned composer: Reader / DocMap /
+     Searcher already own an internal column (ask bar / query row / results).
+     Letting the whole pane scroll as one unit buried those fields under the
+     soft keyboard after the shell lifted. Keep overflow on the inner scroller. */
+  body.mobile-app-foreground .window.is-mobile-fullscreen:is(
+    .reader-window,
+    .docmap-window,
+    .find-path-window
+  ) .window-pane {
+    overflow: hidden;
+  }
+
+  body.mobile-app-foreground .window.is-mobile-fullscreen:is(
+    .reader-window,
+    .docmap-window
+  ) .ask-bar,
+  body.mobile-app-foreground .window.is-mobile-fullscreen.find-path-window .find-path-query-row,
+  body.mobile-app-foreground .window.is-mobile-fullscreen.find-path-window .find-path-actions {
+    flex: 0 0 auto;
+  }
+
+  body.mobile-app-foreground .window.is-mobile-fullscreen.reader-window .reader-workspace,
+  body.mobile-app-foreground .window.is-mobile-fullscreen.docmap-window .docmap-layout,
+  body.mobile-app-foreground .window.is-mobile-fullscreen.find-path-window .find-path-results {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    scroll-padding-bottom: 2.5em;
+  }
+
+  body.mobile-app-foreground .window.is-mobile-fullscreen .composer {
+    flex: 0 0 auto;
+    /* The window's own background already reaches the true edge; this keeps
+       the send button and text clear of the home indicator without pulling the
+       window boundary up. env() reports 0 here once the keyboard covers the
+       indicator, so this never doubles up with --keyboard-inset. ClioTalk is
+       excluded from the shell's inset rule above because it owns its bottom
+       edge here, so it takes the side region here too -- otherwise the one
+       app a phone spends most of its time in is the one left unprotected. */
+    padding: 0 var(--safe-area-right) var(--safe-area-bottom) var(--safe-area-left);
+  }
+
+  /* Finder has one phone browser: changing folders or volumes replaces its
+     visible location. Choosing Finder from the MultiFinder switcher returns
+     to the desktop launcher without discarding the browser's current path. */
+  body.mobile-finder-desktop:not(.is-writer-mode) .window.is-mobile-finder-page {
+    display: none;
+  }
+
+
+  /* Dialogs belong to the page beneath them. They remain compact, centered,
+     and independently scrollable so Save Chat, Page Setup, and Get Info never
+     replace the content the user is acting on. Their normal window layer from
+     the manager remains the owner; no parallel mobile z-index is introduced. */
+
+  /* Home = clear this state; the desktop launcher underneath returns. While an
+     app is foregrounded, the launcher column and writing spine stay out of the
+     way behind it.
+
+     Folded to their own edges, not switched off. `display: none` leaves no box
+     at all, so everything that measures the desk reads the launcher as a zero
+     rect at the desktop's ORIGIN -- under the app's left edge, the one place
+     the launcher never is. The device matrix read exactly that on an iPad mini
+     in portrait (744x1133, below the phone line, so the full-screen shell is
+     correct there) and reported the Reader as covering the launcher it was in
+     fact hiding. Folded, each rail measures as what it is: no width, at the
+     side it lives on. Window placement is unchanged -- getDesktopAvoidanceInsets
+     already treats a zero-width column as absent, the same answer it gave for
+     the display:none one. */
+  body.mobile-app-foreground:not(.is-writer-mode) .icon-column,
+  body.mobile-app-foreground:not(.is-writer-mode) .writing-spine-panel {
+    position: absolute;
+    top: 0;
+    bottom: auto;
+    width: 0;
+    min-width: 0;
+    height: 0;
+    padding: 0;
+    overflow: hidden;
+    visibility: hidden;
+  }
+
+  body.mobile-app-foreground:not(.is-writer-mode) .icon-column {
+    left: auto;
+    right: 0;
+  }
+
+  body.mobile-app-foreground:not(.is-writer-mode) .writing-spine-panel {
+    left: 0;
+    right: auto;
+  }
+
+  /* MultiFinder keeps background applications running, but a phone presents
+     only the frontmost real app. Remove the other app windows from portrait
+     layout without marking their MultiFinder processes hidden; Desk
+     Accessories and system overlays still float above the foreground app. */
+  body.mobile-app-foreground .window:not(.is-mobile-fullscreen):not(.is-mobile-dialog):not(.is-mobile-system-page):not([data-app="accessories"]):not([data-app="system"]):not(.is-collapsed) {
+    display: none;
+  }
+
+  /* WindowShade on a phone: a shaded app page keeps its title-bar shade
+     visible and above the next full-screen window so the second double-click
+     can always find it again. Width/position come from the narrow collapse
+     rule above; the window-manager raises the inline z-index to the pinned
+     layer while the shade is up. */
+  body.mobile-app-foreground .window.is-collapsed {
+    display: flex;
+  }
+
+  /* The full-screen shell keeps the whole System 6 title bar: the close box
+     (top-left) quits, and the zoom box (top-right) restores the window down to
+     a floating window so several can share the screen — it pairs with the grow
+     box in the bottom-right corner. Returning to the desktop while keeping the
+     app running is done from the switcher. */
+
+  body:not(.is-writer-mode) .teachtext-window:not(.is-hidden):not(.is-collapsed) .mde-surface {
+    /* 100%: with the keys up the pane is shorter than the floor; the editor
+       takes the room above them and scrolls its own caret into view. */
+    min-height: min(52vh, 420px, 100%);
+  }
+
+  body:not(.is-writer-mode) .window:is(.import-utility-window, .text-disk-window):not(.is-hidden):not(.is-collapsed) {
+    justify-self: center;
+    max-width: 100%;
+    min-height: 0;
+  }
+
+  body:not(.is-writer-mode) .window:is(.import-utility-window, .text-disk-window):not(.is-hidden):not(.is-collapsed) {
+    width: min(var(--portrait-window-width, 520px), 100%);
+    height: var(--portrait-window-height, auto);
+  }
+
+  body:not(.is-writer-mode) .window:is(.find-file-window, .memory-cards-window):not(.is-hidden):not(.is-collapsed) {
+    width: min(520px, 100%);
+  }
+
+  /* The import button's `auto` track takes what it needs and the picker lives
+     on the remainder: at 375px that was 208px against 139, for a line needing
+     143 -- "No backup selected" ellipsized at the word that says what is going
+     on. In portrait the two stack and each gets the whole row. Landscape is
+     not affected: there the remainder is over 400px. */
+  .backup-action-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  body:not(.is-writer-mode) .window:is(.note-pad-window):not(.is-hidden):not(.is-collapsed) {
+    width: min(320px, 100%);
+  }
+
+  body:not(.is-writer-mode) .window:is(.clipboard-window):not(.is-hidden):not(.is-collapsed) {
+    width: min(340px, 100%);
+  }
+
+  body:not(.is-writer-mode) .window:is(.dictation-window, .translation-pad-window, .key-caps-window):not(.is-hidden):not(.is-collapsed) {
+    width: min(380px, 100%);
+  }
+
+  body:not(.is-writer-mode) .window.dictionary-window:not(.is-hidden):not(.is-collapsed) {
+    width: min(390px, 100%);
+  }
+
+  body:not(.is-writer-mode) .window.system-status-window:not(.is-hidden):not(.is-collapsed) {
+    width: min(430px, 100%);
+  }
+
+  body:not(.is-writer-mode) .window.notification-center-window:not(.is-hidden):not(.is-collapsed) {
+    width: min(360px, 100%);
+  }
+
+  body:not(.is-writer-mode) .window.writing-bell-window:not(.is-hidden):not(.is-collapsed) {
+    width: min(300px, 100%);
+  }
+
+  body:not(.is-writer-mode) .window.calculator-window:not(.is-hidden):not(.is-collapsed) {
+    width: min(208px, 100%);
+  }
+
+  /* Board stays 160px in this band, so the window keeps the desktop width;
+     the wider 220px board (and its 244px window) starts at 430px portrait. */
+  body:not(.is-writer-mode) .window.puzzle-window:not(.is-hidden):not(.is-collapsed) {
+    width: min(var(--puzzle-window-width), 100%);
+  }
+
+  body:not(.is-writer-mode) .window:is(.disk-window, .finder-window, .applications-window, .project-disk-window, .project-cd-window, .documents-window):not(.is-hidden):not(.is-collapsed) {
+    justify-self: stretch;
+    height: var(--portrait-window-height, auto);
+    min-height: 0;
+  }
+
+  body:not(.is-writer-mode) :is(.project-disk-pane, .project-cd-pane, .documents-pane) {
+    min-height: 0;
+  }
+
+  body:not(.is-writer-mode) .finder-navigation-bar {
+    min-height: var(--touch-primary-min-height);
+    gap: 4px;
+    padding: 3px 6px;
+  }
+
+  body:not(.is-writer-mode) .finder-navigation-back {
+    position: relative;
+    width: 36px;
+    min-width: 36px;
+    min-height: var(--touch-primary-min-height);
+    margin-inline: 2px;
+  }
+
+  /* Keep a touch-primary tap width while letting the painted glass button stay narrow. */
+  body:not(.is-writer-mode) .finder-navigation-back::after {
+    content: "";
+    position: absolute;
+    inset: -2px -4px;
+  }
+
+  body:not(.is-writer-mode) :is(.finder-breadcrumb, .finder-breadcrumb-current) {
+    min-height: var(--touch-primary-min-height);
+    padding-inline: 5px;
+  }
+
+  body:not(.is-writer-mode) .finder-breadcrumb-current {
+    max-width: min(58vw, 30ch);
+    /* The current name is a block (for its ellipsis), so its line box
+       centres it in the taller touch row. */
+    line-height: calc(var(--touch-primary-min-height) - 4px);
+  }
+
+  body:not(.is-writer-mode) :is(.project-disk-grid, .project-cd-grid, .document-icon-grid, .disk-grid, .finder-grid) {
+    min-height: 180px;
+    max-height: 42vh;
+    overflow: auto;
+  }
+
+  body:not(.is-writer-mode) .window.is-mobile-fullscreen.is-mobile-finder-page :is(.project-disk-grid, .project-cd-grid, .document-icon-grid, .disk-grid, .finder-grid) {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+  }
+
+  /* A fixed height here (rather than a cap) forced this dialog to a fraction of
+     the viewport regardless of how much its content actually needed — visibly
+     empty for a short tab (Control Panel's General, or Chooser). Content now
+     drives the height, up to the same on-screen fraction as a ceiling. */
+  body:not(.is-writer-mode) .window:is(.control-panel, .chooser-panel):not(.is-hidden):not(.is-collapsed) {
+    position: fixed;
+    top: calc(var(--system-menu-height, 26px) + 10px);
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: min(540px, calc(100vw - 16px));
+    max-width: calc(100vw - 16px);
+    min-height: 0;
+    height: auto;
+    max-height: min(82vh, calc(100vh - var(--system-menu-height, 26px) - 20px));
+  }
+
+  body:not(.is-writer-mode) .window:is(.control-panel, .chooser-panel):not(.is-hidden):not(.is-collapsed) .window-pane {
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  /* A tab view sizes each tab to its own title. The equal share made every tab
+     80px wide on a phone, which cut "Local Model" and "Control Strip" down to
+     "Local M..." and "Control ..." while "General" sat on 33px of slack. Content
+     widths plus the tighter padding a compact tab uses put all four titles in
+     the 328px strip; the strip scrolls rather than truncating if a longer
+     translation or an era with chooser icons still overruns it.
+     65/67/70 load after this file, so these out-specify their token rules. */
+  body .control-chooser {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  body .control-chooser .system-tab {
+    flex: 0 0 auto;
+    padding-inline: 6px;
+  }
+
+  body:not(.is-writer-mode) .window.is-mobile-da-arranged:not(.is-hidden):not(.is-collapsed) {
+    --mobile-da-transform: translateX(-50%);
+
+    position: fixed;
+    left: 50%;
+    top: var(--mobile-da-top, calc(var(--system-menu-height, 26px) + 12px));
+    right: auto;
+    min-height: 0;
+    max-height: var(
+      --mobile-da-max-height,
+      calc(100vh - var(--system-menu-height, 26px) - var(--safe-area-bottom) - 24px)
+    );
+    transform: var(--mobile-da-transform);
+    overflow: hidden;
+  }
+
+  body:not(.is-writer-mode) .window.is-mobile-da-arranged:not(.is-hidden):not(.is-collapsed) > .window-pane {
+    min-height: 0;
+    overflow: auto;
+    /* Typing-lift: keep the last editable line clear of the soft keyboard when
+       the pane itself scrolls (Note Pad, Clipboard, Dictation). */
+    scroll-padding-bottom: 2.5em;
+  }
+
+  /* Long writing fields: browser caret scroll respects padding so selectionEnd
+     does not land under the keys after the shell already lifted. Includes
+     writer-mode TeachText / Question Sheet / Outline / Section Drafts /
+     ClioTalk compose — those boot into is-writer-mode on the writing profile.
+     Searcher / Reader / DocMap / Scrapbook / Side Ask / Dictionary share the
+     same clearance (Goal #2/#4 typing-lift consistency). */
+  .window.is-mobile-fullscreen textarea,
+  body:not(.is-writer-mode) .window.is-mobile-da-arranged textarea,
+  .window.is-mobile-fullscreen [contenteditable="true"],
+  .assistant-window .composer textarea,
+  body.is-writer-mode :is(.teachtext-window, .question-sheet-window, .outline-window, .section-drafts-window) textarea,
+  body.is-writer-mode :is(.teachtext-window, .question-sheet-window, .outline-window, .section-drafts-window) [contenteditable="true"],
+  .window.is-mobile-fullscreen:is(.find-path-window, .reader-window, .docmap-window, .scrapbook-window, .sideask-pad-window, .dictionary-window) input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]),
+  .window.is-mobile-fullscreen.scrapbook-window #scrap-body-input,
+  .window.is-mobile-fullscreen.sideask-pad-window textarea,
+  .window.is-mobile-fullscreen.dictionary-window textarea {
+    scroll-padding-bottom: 2.5em;
+  }
+
+  /* Writing-route panes: same caret clearance the DA rail pane already has.
+     Utility panes (Searcher / Reader / DocMap / Scrapbook / Side Ask /
+     Dictionary) match when their inner scroller still needs a nudge after the
+     shell lifts. */
+  body.mobile-app-foreground .window.is-mobile-fullscreen:is(
+    .teachtext-window,
+    .question-sheet-window,
+    .outline-window,
+    .section-drafts-window,
+    .teachtext-surface-window,
+    .find-path-window,
+    .reader-window,
+    .docmap-window,
+    .scrapbook-window,
+    .sideask-pad-window,
+    .dictionary-window
+  ) .window-pane {
+    scroll-padding-bottom: 2.5em;
+  }
+
+  body:not(.is-writer-mode) .assistant-window:not(.is-collapsed):not(.is-mobile-fullscreen) {
+    height: min(78vh, calc(100vh - var(--system-menu-height, 26px) - 24px));
+    max-height: min(78vh, calc(100vh - var(--system-menu-height, 26px) - 24px));
+    min-height: 360px;
+  }
+
+  body:not(.is-writer-mode) .endfield-terminal-window:not(.is-hidden):not(.is-collapsed):not(.is-mobile-fullscreen) {
+    height: var(--portrait-window-height, calc(100vh - var(--system-menu-height, 26px) - 72px));
+    min-height: min(560px, calc(100vh - var(--system-menu-height, 26px) - 72px));
+  }
+
+  .window[data-zoomed=true]:not(.is-mobile-fullscreen) {
+    height: calc(100vh - 60px);
+  }
+
+  body:not(.is-writer-mode) .assistant-window:not(.is-collapsed) .messages {
+    min-height: 0;
+  }
+
+  body:not(.is-writer-mode) .icon-column {
+    position: static;
+    order: 3;
+    width: 100%;
+    height: auto;
+    max-height: none;
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 14px 18px;
+    overflow: visible;
+  }
+
+  body:not(.is-writer-mode) .icon-column [data-open="trash"] {
+    margin-top: 0;
+  }
+}
+
+/* System.css replica completion layer.
+   Default-theme tokens (sizes, fonts, colors, system-*) consolidated into
+   :root in 00-foundation.css; this block previously duplicated them. */
+
+body.use-modern-fonts {
+  --system-readable-min: 14px;
+  --system-title-size: 13px;
+  --system-control-size: 14px;
+  --system-text-size: 14px;
+  --system-caption-size: 12px;
+  --system-leading: 1.45;
+  --system-window-padding: 11px;
+  --system-control-min-height: 30px;
+  --system-button-min-height: 29px;
+  --system-button-padding-y: 3px;
+  --system-button-padding-x: 15px;
+  --system-menu-height: 26px;
+  --system-titlebar-height: 23px;
+  --system-titlebar-title-height: 14px;
+  --system-titlebar-font-size: 13px;
+  --system-check-size: 14px;
+  --system-title-weight: 500;
+  --system-emphasis-weight: 500;
+  --system-select-control-font-weight: 400;
+  --system-strong-weight: 600;
+  --writing-editor-font-size: 15px;
+  --writing-editor-line-height: 1.58;
+  font-synthesis-weight: none;
+}
+
+body {
+  background: var(--desktop);
+  font-family: var(--ui-font);
+  font-size: var(--system-readable-min);
+  font-weight: 400;
+  line-height: var(--system-leading);
+  letter-spacing: 0;
+}
+
+body.use-modern-fonts .mde-surface,
+body.use-modern-fonts .mde-surface * {
+  font-family: var(--editor-font);
+}
+
+.desktop {
+  background:
+    linear-gradient(90deg, rgba(255,255,255,.34) 1px, transparent 1px) 0 0 / 22px 22px,
+    linear-gradient(rgba(255,255,255,.34) 1px, transparent 1px) 0 0 / 22px 22px,
+    radial-gradient(#777 1px, transparent 1.2px) 5px 5px / 11px 11px,
+    var(--desktop);
+}
+
+.menu-bar,
+.menu-popover,
+.menu-sub-popover,
+.window,
+.system-modal,
+.compose-tools-menu,
+.teachtext-command-popover,
+.teachtext-command-subpopover {
+  background: var(--paper);
+  border-color: var(--ink);
+  color: var(--ink);
+  font-size: var(--system-readable-min);
+}
+
+/* Same trap, one surface further on: the ink longhand above outranks the era's
+   border shorthand, so a command popover kept a System 6 frame in every later
+   era while the real menus followed their own. A command popover is a menu, so
+   it takes the menu panel's frame; eras that declare nothing still resolve to
+   ink through the foundation value. */
+.teachtext-command-popover,
+.teachtext-command-subpopover {
+  border: var(--menu-panel-border);
+}
+
+/* The surface rule above paints every listed surface with ink, and its longhand
+   outranks foundation's border-bottom shorthand -- so an appearance that sets
+   --menu-bar-border never reached the screen. Hand the menu bar its own colour
+   back; appearances that declare nothing still resolve to ink. */
+/* The same trap on the fill, found 2026-09-18 and older than the border one:
+   the grouped `background: var(--paper)` above outranks foundation's
+   `.menu-bar { background: var(--menu-bar-bg) }`, so NO appearance's menu bar
+   material ever reached the screen -- Aqua's pinstripes computed to
+   `background-image: none`, and Liquid Glass painted a flat 50% white where its
+   own token is a gradient stack. Measured in five appearances; Platinum looked
+   right only because its paper and its bar are the same grey. Appearances that
+   declare no bar of their own still resolve to paper. */
+.menu-bar {
+  background: var(--menu-bar-bg, var(--paper));
+  border-bottom-color: var(--menu-bar-border-color, var(--ink));
+}
+
+.menu-bar > .menu > button,
+.project-switcher-button,
+.multifinder-button,
+.notification-center-button {
+  /* Eras that fill the bar (Platinum) override --menu-title-* tokens; the
+     fallback keeps every other appearance on the shared 2px lip. */
+  height: var(--menu-title-height, calc(var(--system-menu-height) - 2px));
+  min-height: var(--menu-title-min-height, calc(var(--system-menu-height) - 2px));
+  padding: 0 10px;
+  font-family: var(--title-font);
+  font-size: var(--system-readable-min);
+  font-weight: var(--system-title-weight);
+  line-height: var(--menu-title-line-height, calc(var(--system-menu-height) - 2px));
+}
+
+.menu-popover,
+.menu-sub-popover {
+  top: calc(var(--system-menu-height) - 2px + var(--menu-popover-offset-top, 0px));
+  padding: var(--menu-popover-padding, 4px 0);
+  border: var(--system-border);
+  border-top-width: var(--menu-panel-border-top-width, 1px);
+  box-shadow: var(--menu-panel-shadow);
+  /* C1: a pull-down panel must fit its longest item. Measured before this:
+     File menu item [41,315,178,18] scrollWidth 230 while the panel's right edge
+     was x219 — the label ran under the border. This one is a deliberate change
+     to every era; the tokens above keep each era's own offset and padding. */
+  width: max-content;
+  max-width: calc(100vw - 16px);
+}
+
+.menu-popover button,
+.menu-sub-popover button,
+.menu-submenu-trigger {
+  /* The responsive fallback owns the generic menu metrics; historical
+     appearances may narrow them through the same tokens used by the base
+     menu rule. Keeping the fallback here preserves Classic while allowing
+     Aqua/Snow/Yosemite Theme Lab specimens to reach their measured rows. */
+  min-height: var(--menu-item-min-height, var(--system-control-min-height));
+  padding: var(--menu-item-padding, 3px 14px 3px 30px);
+  font-family: var(--menu-item-font-family, var(--ui-font));
+  font-size: var(--system-readable-min);
+  font-weight: var(--menu-item-font-weight, 400);
+  line-height: var(--menu-item-line-height-menu, normal);
+}
+
+/* The menus that refine the generic menu metrics above (moved from
+   00-foundation.css): the Apple menu's title slot, the MultiFinder and project
+   switcher panels and the project switcher's rows. They win by specificity
+   today; following the metrics keeps that true under a per-file layer order. */
+.menu-bar > .menu > .apple {
+  width: var(--apple-menu-slot-width, 34px);
+  padding: 0;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.multifinder-menu .menu-popover {
+  left: auto;
+  right: 0;
+  min-width: 220px;
+  max-width: min(320px, calc(100vw - 18px));
+  max-height: min(420px, calc(100vh - 38px));
+  overflow: auto;
+}
+
+.project-switcher-menu .menu-popover {
+  left: auto;
+  right: 0;
+  min-width: 250px;
+  max-width: min(360px, calc(100vw - 18px));
+  max-height: min(420px, calc(100vh - 38px));
+  overflow: auto;
+}
+
+.project-switcher-popover button.project-switcher-item {
+  min-height: 38px;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: start;
+  padding: 4px 12px 5px 8px;
+  line-height: 1.15;
+}
+
+.project-switcher-popover button.is-current {
+  font-weight: var(--system-strong-weight);
+}
+
+/* Kept in this layer on purpose: tests/features/window-frame.test.mjs pins both
+   rules here. They were added after a combined
+   `.window, .writing-spine-panel, .spine-toolbox-panel` rule gave all three the
+   two-pixel panel border, and the contract watches THIS layer for that
+   regression. Both duplicate 10-windows.css, but the duplicate is the guard. */
+.writing-spine-panel {
+  border: 0;
+  box-shadow: none;
+}
+
+.spine-toolbox-panel {
+  border: var(--window-border);
+  box-shadow: var(--active-window-shadow);
+}
+
+.window {
+  border: var(--window-border);
+  /* After the shorthand, which resets it: an appearance may draw the window
+     edge as an image that runs outside the box (Drawing Board's pencil lines
+     and hatched shadow). A border image paints outside the window's own
+     overflow clip and moves nothing. */
+  border-image: var(--window-border-image, none);
+  box-shadow: var(--active-window-shadow);
+}
+
+.window:not(.is-active) {
+  box-shadow: 2px 2px 0 #555;
+}
+
+.title-bar,
+.spine-title-row {
+  height: var(--system-titlebar-height);
+  min-height: var(--system-titlebar-height);
+  display: grid;
+  margin: var(--system-titlebar-margin-y) 0;
+  padding: var(--system-titlebar-padding-y) var(--system-titlebar-padding-x);
+  border-bottom: var(--window-frame-track-border);
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(
+      to bottom,
+      var(--ink) 0 var(--system-titlebar-stripe-line),
+      transparent var(--system-titlebar-stripe-line) var(--system-titlebar-stripe-size)
+    );
+  background-size: 100% var(--system-titlebar-stripe-size);
+  background-repeat: repeat-y;
+  background-origin: content-box;
+  background-clip: content-box;
+}
+
+.title-bar {
+  grid-template-columns:
+    var(--system-titlebar-control-slot)
+    minmax(0, 1fr)
+    var(--system-titlebar-control-slot);
+  border-bottom: var(--window-frame-track-border);
+}
+
+/* The Alarm Clock's native top strip refines the generic bar above, so it
+   follows it (moved from 30-surfaces.css). */
+.window.alarm-clock-window > .title-bar.alarm-clock-title-bar {
+  position: relative;
+  grid-template-columns:
+    var(--alarm-clock-title-control-width)
+    minmax(0, 1fr)
+    var(--alarm-clock-title-control-width);
+  gap: 0;
+  height: var(--alarm-clock-title-height);
+  min-height: var(--alarm-clock-title-height);
+  margin: 0;
+  padding: 0;
+  border-bottom: 0;
+  background-color: var(--alarm-clock-title-bg);
+  background-image: none;
+  box-shadow: none;
+  /* The same value, handed to the era title-bar recipe that reads it. */
+  --titlebar-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  cursor: move;
+  user-select: none;
+}
+
+/* A narrow window's active stripes (moved from 10-windows.css) follow the
+   generic bar above and precede the background-window rule below, which must
+   still win for a window nested in a background window (Theme Lab's
+   specimens). */
+@container (max-width: 760px) {
+  .window.is-active .title-bar {
+    background: var(--system-titlebar-active-bg);
+    background-origin: var(--system-titlebar-background-origin);
+    background-clip: var(--system-titlebar-background-clip);
+  }
+}
+
+.window:not(.is-active) .title-bar {
+  background: var(--system-titlebar-inactive-bg);
+  background-origin: var(--system-titlebar-background-origin);
+  background-clip: var(--system-titlebar-background-clip);
+}
+
+.title-bar h1,
+.title-bar h2,
+.spine-title-row h2 {
+  min-height: 20px;
+  max-width: min(100%, 34ch);
+  margin: 0 auto;
+  padding: 0 0.5em;
+  background: var(--paper);
+  font-family: var(--title-font);
+  font-size: var(--system-title-size);
+  font-weight: var(--system-title-weight);
+  line-height: 1.1;
+}
+
+.spine-title-row {
+  display: grid;
+  /* Shrinkable middle column: a bare max-content title overflowed the rail
+     rightward and read as a left-shifted title. Matches the base rule. */
+  grid-template-columns: minmax(10px, 1fr) minmax(0, max-content) minmax(10px, 1fr);
+  gap: 4px;
+  margin: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.spine-title-row h2 {
+  font-size: var(--system-readable-min);
+  line-height: 20px;
+}
+
+.title-bar h1,
+.title-bar h2 {
+  align-self: center;
+  min-height: var(--system-titlebar-title-height);
+  height: var(--system-titlebar-title-height);
+  margin: 0;
+  font-size: var(--system-titlebar-font-size);
+  line-height: var(--system-titlebar-title-height);
+}
+
+/* Title bars that refine the generic ones above (moved from 10-windows.css):
+   the writing spine's title, ClioTalk's bar and the macOS 11 one-row
+   toolbar's taller bar. They win by specificity today and follow the generic
+   rules so a per-file layer order agrees. */
+.writing-spine-panel .title-bar h2 {
+  max-width: none;
+  padding: 0 4px;
+  font-size: 13px;
+  letter-spacing: 0;
+}
+
+.assistant-window .title-bar {
+  grid-template-columns:
+    var(--titlebar-gutter)
+    minmax(0, 1fr)
+    var(--titlebar-slot-zoom)
+    calc(var(--titlebar-gutter) - var(--titlebar-slot-zoom));
+  background: var(--system-titlebar-active-bg);
+}
+
+@media (min-width: 861px) and (not ((hover: none) and (pointer: coarse) and (max-height: 660px))) {
+  /* In the one-row toolbar the title bar was only the sidebar's cell, so a
+     right-end control sat at the sidebar's edge, mid-window (2026-10-08). The
+     bar now spans the whole first row under the path and view strips, and the
+     view strip stops short of the right end (Lion's full-screen button) by a
+     margin rather than covering it. The
+     bars keep their own material (Liquid Glass's blur included). An era
+     whose sidebar runs to the top of the window (macOS 11) drops the seam
+     between the sidebar and the bar. */
+  body[data-finder-layout="one-row"] .is-toolbar-window > .title-bar {
+    grid-area: 1 / 1 / 2 / -1;
+    min-height: 52px;
+  }
+
+  body[data-finder-layout="one-row"] .is-toolbar-window > .finder-sidebar {
+    border-top: var(--finder-one-row-side-seam, var(--tdi-rail-border));
+  }
+
+  body[data-finder-layout="one-row"] .is-toolbar-window > .details-bar {
+    margin-right: 40px;
+  }
+}
+
+.window:not(.is-active) .title-bar h1,
+.window:not(.is-active) .title-bar h2 {
+  /* Same black Chicago as the front window — System 6 marks a background window
+     by removing its stripes and controls, not by graying its name. */
+  color: var(--system-titlebar-inactive-title-color);
+  /* Also handed to Aqua's title rule, the one era rule this out-ranks today;
+     eras whose own title rules out-rank this one keep their colour. */
+  --titlebar-inactive-title-fg: var(--system-titlebar-inactive-title-color);
+}
+
+/* .details-bar/.finder-list-header/.teachtext-desk-strip/.control-section h3
+   dropped from this selector list — already get background: var(--paper)
+   from base files. Only .composer needs the responsive override. */
+/* .composer background moved to base (styles/10-windows.css), now uses var(--paper). */
+
+.window-pane {
+  padding: var(--system-window-padding);
+}
+
+select:not(:disabled):hover {
+  box-shadow:
+    var(--system-inset),
+    0 0 0 1px var(--ink);
+}
+
+select:disabled {
+  color: var(--shade-dark);
+  background-color: var(--control-disabled-field-bg, var(--panel));
+}
+
+/* A disabled text field says so the way a disabled pop-up does: the era's
+   disabled ink on its disabled field fill. Without it the field recipe's
+   var(--ink) won, and Big Sur's unavailable field read exactly like an
+   editable one (2026-10-09 audit). */
+input:not([type="checkbox"], [type="radio"], [type="range"], [type="button"], [type="submit"], [type="reset"], [type="color"], [type="file"], [type="image"]):disabled,
+textarea:disabled {
+  color: var(--system-disabled-fg, var(--shade-dark));
+  -webkit-text-fill-color: currentColor;
+  background-color: var(--control-disabled-field-bg, var(--panel));
+}
+
+option,
+optgroup {
+  background: var(--paper);
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: var(--ui-font);
+  font-size: var(--system-control-size);
+}
+
+option:checked {
+  background: var(--ink);
+  background-color: var(--ink);
+  color: var(--paper);
+}
+
+input:focus,
+select:focus {
+  outline: var(--system-focus-outline);
+  outline-offset: 2px;
+  box-shadow: var(--system-inset);
+}
+
+select:focus-visible {
+  outline: var(--system-control-line) solid var(--ink);
+  outline-offset: 2px;
+}
+
+@supports (appearance: base-select) {
+  select {
+    appearance: base-select;
+  }
+
+  select::picker-icon {
+    display: none;
+  }
+
+  ::picker(select) {
+    appearance: base-select;
+  }
+
+  select:open {
+    outline: var(--system-control-line) solid var(--ink);
+    outline-offset: 2px;
+    box-shadow:
+      var(--system-inset),
+      0 0 0 2px var(--paper),
+      0 0 0 4px var(--ink);
+  }
+
+  ::picker(select) {
+    margin-top: 4px;
+    padding: 3px;
+    border: var(--system-control-line) solid var(--ink);
+    border-radius: var(--surface-radius);
+    background: var(--paper);
+    box-shadow:
+      2px 2px 0 var(--paper),
+      4px 4px 0 var(--ink);
+    color: var(--ink);
+  }
+
+  ::picker(select) option {
+    min-height: 28px;
+    padding: 4px 28px 4px 10px;
+    border-bottom: 1px dotted var(--shade-dark);
+  }
+
+  ::picker(select) option:last-child {
+    border-bottom: 0;
+  }
+
+  ::picker(select) option:hover,
+  ::picker(select) option:focus,
+  ::picker(select) option:checked {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  option::checkmark {
+    color: currentColor;
+    font-weight: var(--system-strong-weight);
+  }
+}
+
+textarea:focus:not(.mde-input) {
+  outline: var(--system-focus-outline);
+  outline-offset: 2px;
+  background: var(--field-focus-bg);
+  color: var(--ink);
+  box-shadow: var(--system-inset);
+}
+
+/* Writing editors keep their paper background while focused: the generic
+   field-focus fill above would otherwise win by file order. The fill is a
+   cross-theme token so Liquid Glass's transparent editor material wins
+   without a priority fight. */
+.teachtext-pane textarea:focus:not(.mde-input),
+.question-sheet-pane textarea:focus:not(.mde-input),
+.outline-content:focus:not(.mde-input),
+.draft-editor textarea:focus:not(.mde-input) {
+  background: var(--writing-editor-focus-bg);
+  background-image: none;
+}
+
+textarea::placeholder {
+  color: var(--shade-dark);
+  opacity: 1;
+}
+
+/* .btn.default box-shadow merged into base (styles/10-windows.css);
+   border-width was already in base. */
+
+/* .btn:hover merged into base (styles/10-windows.css). It said the same three
+   things plus `transform: none`, and because a later byte-identical rule
+   outranks the base .btn:active in the cascade, keeping it here is what made a
+   plainly pressed button look hovered. One birthplace per state. */
+
+/* `.btn:active` was a byte-identical copy of 10-windows.css:3627 and is the
+   third rule deleted to pay for the insets. Nothing between the windows layer
+   and this one sets background, color, transform or box-shadow on anything
+   matching a pressed .btn (checked across 20/30/40/50), and Liquid Glass's own
+   pressed rules run after this file either way, so the base rule simply
+   becomes the winner it already agreed with. */
+
+.btn:disabled,
+.btn.is-disabled,
+button:disabled {
+  color: var(--shade-dark);
+  font-weight: 400;
+  background: var(
+    --control-disabled-bg,
+    repeating-linear-gradient(45deg, var(--paper) 0, var(--paper) 4px, #eee 4px, #eee 8px)
+  );
+  box-shadow: none;
+  /* Being unavailable dims the whole control, and the border is part of the
+     control. Every era marks a live button with an outline of its own — the
+     default button's ring, Aqua's and Snow Leopard's blue stroke, Yosemite's
+     heavy ink — and leaving that on drew a confident outline around a grey
+     label, which reads as a button waiting to be pressed. The border dims
+     with the text; an era may name its own dim (Liquid Glass does). */
+  border-color: var(--control-disabled-border, var(--shade-dark));
+}
+
+/* .teachtext-preview is deliberately NOT in this list. It is the writer's
+   paper turned over, not chrome, and it takes the writing face and the writing
+   size from styles/50-apps.css. Listing it here set it two points smaller in
+   the system sans, alongside .hint and .tag. */
+.print-directory-preview,
+.reader-content,
+.scrap-preview,
+.source-info-panel,
+.finder-item small,
+.control-status,
+.tag,
+.empty-folder-note,
+.finder-empty-object,
+.scrap-empty-card {
+  font-family: var(--text-font);
+  font-size: var(--system-text-size);
+  font-weight: 400;
+}
+
+/* A <button class="btn"> takes its weight from the button recipe's button.btn
+   (10-windows.css), which out-ranks this list; the list sets the others. */
+.speaker,
+.btn:where(:not(button)),
+.title-bar h1,
+.title-bar h2,
+.spine-actions b,
+.desktop-icon span:last-child,
+.finder-item span:last-of-type,
+.control-section h3,
+.control-advanced summary,
+.field-row label,
+.settings label,
+.teachtext-surface-actions .btn {
+  font-weight: var(--system-emphasis-weight);
+}
+
+.chooser-panel .chooser-source {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: center;
+}
+
+.chooser-panel .chooser-source .sys-icon {
+  grid-column: 1;
+}
+
+.chooser-panel .chooser-source .select-wrap {
+  grid-column: 2;
+  width: 100%;
+}
+
+/* .desktop-icon span:last-child left this group: its material is owned by
+   the --desktop-label-* tokens in styles/50-apps.css (padding and
+   line-height were consolidated there with the same effective values). */
+.finder-item span:last-of-type,
+.spine-actions b {
+  padding: 2px 4px;
+  background: var(--paper);
+  line-height: 1.22;
+}
+
+.finder-item span:last-of-type {
+  background: var(--finder-label-bg);
+  font-weight: var(--finder-label-weight, var(--system-emphasis-weight));
+}
+
+.teachtext-pane textarea:not(.mde-input),
+.question-sheet-pane textarea:not(.mde-input),
+.outline-content:not(.mde-input),
+.draft-editor textarea:not(.mde-input),
+.note-pad-pane textarea,
+.clipboard-pane textarea,
+.scrap-editor textarea,
+.dictation-transcripts textarea,
+.translation-pad-textareas textarea,
+.rebuild-flow-pane textarea,
+.info-comments textarea {
+  font-family: var(--text-font);
+  font-size: var(--writing-editor-font-size);
+  font-weight: 400;
+  line-height: var(--writing-editor-line-height);
+}
+
+/* A <button class="btn mini-btn"> takes both from the button recipe's
+   button.btn (10-windows.css), which out-ranks this list; the list sizes the
+   other mini buttons. */
+.mini-btn:where(:not(button.btn)),
+.message-actions .btn,
+.reader-tabs .btn,
+.details-bar .btn {
+  min-height: calc(var(--system-button-min-height) - 2px);
+  padding: 3px 10px;
+}
+
+body.is-busy,
+body.is-busy * {
+  cursor: url("./assets/cursors/system6-watch.png") 8 8, wait !important;
+}
+
+html:lang(zh-Hans) .title-bar h1,
+html:lang(zh-Hans) .title-bar h2,
+html:lang(zh-Hans) .spine-title-row h2,
+.spine-actions b,
+.desktop-icon span:last-child,
+.finder-item span:last-of-type,
+.spine-step-number {
+  font-size: var(--system-readable-min);
+}
+
+html:lang(zh-Hans) .title-bar h1,
+html:lang(zh-Hans) .title-bar h2 {
+  font-size: var(--system-titlebar-font-size);
+}
+
+html:lang(zh-Hans) .spine-title-row h2 {
+  font-size: var(--system-readable-min);
+}
+
+/* .spine-step-number standalone — width/height/font-size/line-height/
+   font-weight all duplicate styles/10-windows.css. Audited DEAD on 2026-05-28. */
+
+input[type="checkbox"] {
+  width: var(--system-check-size);
+  min-width: var(--system-check-size);
+  height: var(--system-check-size);
+  min-height: var(--system-check-size);
+  flex: 0 0 var(--system-check-size);
+  padding: 0;
+}
+
+input[type="radio"] {
+  width: var(--system-radio-size);
+  min-width: var(--system-radio-size);
+  height: var(--system-radio-size);
+  min-height: var(--system-radio-size);
+  flex: 0 0 var(--system-radio-size);
+  padding: 0;
+}
+
+.control-panel .field-row {
+  align-items: center;
+  gap: 10px;
+}
+
+.control-panel .field-row label {
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+.control-panel :is(h3, summary, label, span, b, small) {
+  font-size: var(--system-readable-min);
+}
+
+/* The Control Panel chooser's tab labels (moved from 30-surfaces.css) refine
+   the panel's text size above. */
+.control-chooser .control-chooser-label {
+  padding: var(--control-chooser-label-padding);
+  font-size: var(--control-chooser-label-size);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Adaptive control label. A control carries both a long and a short label and
+   the enclosing .window decides which fits — a container query, so a narrow
+   window on a wide screen shrinks its own labels. Opt-in per container is what
+   this replaces: four media pairs at three thresholds that only looked at the
+   viewport. */
+.mobile-control-short {
+  display: none;
+}
+
+@container (max-width: 470px) {
+  .mobile-control-long {
+    display: none;
+  }
+
+  .mobile-control-short {
+    display: inline;
+  }
+}
+
+/* The writing action row is designed for one command cluster plus one primary
+   action. The manuscript now also carries SideAsk and the route's next step, so
+   at phone width five controls squeezed every label into an ellipsis. Wrap
+   instead of shrinking, but only when the words do not fit: with the 写 | 读
+   switch the four controls share one row on every phone, and the primary
+   action takes a line of its own only on a window too narrow to hold it. The
+   window is the query container, so a narrow window on a wide screen wraps
+   too. */
+@container (max-width: 470px) {
+  .teachtext-actions {
+    flex-wrap: wrap;
+    row-gap: var(--teachtext-action-gap);
+  }
+
+  .teachtext-actions > .btn.default {
+    flex: 1 0 auto;
+    min-width: 0;
+    /* The same value, handed to the era button recipe that reads it. */
+    --theme-button-min-width: 0px;
+    margin-left: 0;
+  }
+
+  .teachtext-command-group {
+    display: flex;
+  }
+
+  /* A writing step keeps Commands + one primary. The next-step primary takes
+     its own full-width row; never a second row of peer primaries. */
+  .teachtext-surface-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+  }
+
+  .teachtext-surface-actions > .teachtext-command-group {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    flex: 1 0 100%;
+  }
+
+  .teachtext-surface-actions > .btn.default {
+    flex: 1 0 100%;
+    min-height: var(--touch-primary-min-height);
+    margin-left: 0;
+  }
+
+  /* Review Desk shares teachtext-surface-actions; keep empty-note primary and
+     section nav on the same ≥48 floor (title bar chrome stays era-sized). */
+  .review-desk-window .review-desk-empty-note > .btn.default,
+  .review-desk-window .review-section-nav .btn {
+    min-height: var(--touch-primary-min-height);
+  }
+}
+
+/* Touch only (owner decision 2026-10-08): with a mouse or trackpad a narrow
+   desk window keeps its era's own control sizes; the three early-harvest
+   blocks below (A1–A5, C11, E6–E10) apply only to a coarse pointer. */
+/* Early-harvest A1–A5 (proposal v210 / v213–v215): narrow window chrome goes
+   vertical, the one primary fills the row at --touch-primary-min-height (48),
+   Finder-family icon grids collapse to a single readable column, and ClioTalk
+   Send owns its own row. Container-driven so a narrow desk window on a wide
+   screen gets the same calm density as a phone. */
+@media (pointer: coarse) {
+  @container (max-width: 470px) {
+    :is(
+      .disk-window,
+      .finder-window,
+      .applications-window,
+      .trash-window,
+      .note-pad-window,
+      .stickies-window,
+      .clipboard-window,
+      .project-peek-window,
+      .disk-peek-window,
+      .project-cd-window,
+      .documents-window,
+      .project-disks-window,
+      .find-file-window,
+      .image-manager-window,
+      .project-disk-window,
+      .text-disk-window,
+      .reader-window,
+      .scrapbook-window,
+      .chat-file-window,
+      .find-path-window,
+      .clio-stage-window,
+      .cmf-studio-window,
+      .liquid-cover-window,
+      .rebuild-flow-window
+    ) .button-row {
+      flex-direction: column;
+      align-items: stretch;
+      flex-wrap: nowrap;
+    }
+
+    :is(
+      .disk-window,
+      .finder-window,
+      .applications-window,
+      .trash-window,
+      .note-pad-window,
+      .stickies-window,
+      .clipboard-window,
+      .project-peek-window,
+      .disk-peek-window,
+      .project-cd-window,
+      .documents-window,
+      .project-disks-window,
+      .find-file-window,
+      .image-manager-window,
+      .project-disk-window,
+      .text-disk-window,
+      .reader-window,
+      .scrapbook-window,
+      .chat-file-window,
+      .find-path-window,
+      .clio-stage-window,
+      .cmf-studio-window,
+      .liquid-cover-window,
+      .rebuild-flow-window
+    ) .button-row > .btn.default {
+      width: 100%;
+      min-height: var(--touch-primary-min-height);
+      justify-content: center;
+      margin-left: 0;
+    }
+
+    :is(
+      .trash-window,
+      .project-disk-window,
+      .text-disk-window,
+      .scrapbook-window,
+      .chat-file-window
+    ) .button-row > .select-wrap {
+      width: 100%;
+    }
+
+    /* Chat File More+Go was in the select-wrap full-width set but missing from
+       the column stack — select and Do Selected shared a crushed row on narrow. */
+    .chat-file-window .button-row > .btn {
+      width: 100%;
+      min-height: var(--touch-primary-min-height);
+    }
+
+    /* Finder-family path/action chrome leftover: Documents toolbar and Project
+       Hard Disk pathbar stack so Up / New Folder / More+Go never share a crushed
+       row on narrow (ADHD one thing at a time). */
+    .documents-toolbar {
+      flex-wrap: wrap;
+      align-items: stretch;
+      gap: 8px;
+    }
+
+    .documents-toolbar #new-folder-name {
+      flex: 1 1 100%;
+      min-width: 0;
+      min-height: var(--touch-primary-min-height);
+    }
+
+    .documents-toolbar #new-folder {
+      min-height: var(--touch-primary-min-height);
+    }
+
+    .documents-toolbar #new-folder {
+      flex: 1 1 auto;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .project-finder-pathbar,
+    .project-finder-pathbar:has(#project-disk-up:not([hidden])),
+    .project-finder-pathbar:has(#project-disk-path.visually-hidden):not(:has(#project-disk-up:not([hidden]))) {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+    }
+
+    .project-finder-pathbar #project-disk-up {
+      width: 100%;
+      min-height: var(--touch-primary-min-height);
+      justify-content: center;
+    }
+
+    .project-finder-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      width: 100%;
+      gap: 8px;
+    }
+
+    .project-finder-actions .select-wrap,
+    .project-finder-actions .btn {
+      width: 100%;
+      min-height: var(--touch-primary-min-height);
+    }
+
+    :is(
+      .disk-window,
+      .finder-window,
+      .applications-window,
+      .documents-window,
+      .project-disk-window,
+      .project-cd-window,
+      .project-disks-window,
+      .text-disk-window
+    ) :is(.finder-grid, .disk-grid, .project-disk-grid, .project-cd-grid, .document-icon-grid, .text-disk-grid) {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 8px;
+    }
+
+    :is(
+      .disk-window,
+      .finder-window,
+      .applications-window,
+      .documents-window,
+      .project-disk-window,
+      .project-cd-window,
+      .project-disks-window,
+      .text-disk-window
+    ) .finder-item {
+      min-height: 52px;
+      justify-content: flex-start;
+      text-align: left;
+    }
+
+    .image-manager-window .image-manager-list:not(.is-list-view) {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 8px;
+    }
+
+    .note-pad-window .note-pad-details-bar {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 6px;
+    }
+
+    /* Note Pad slip nav / destination + Clipboard row (Clear／Translate／DocMap／
+       Insert) — primary desk actions still on mini-btn / plain .btn floors. */
+    .note-pad-window .note-pad-details-bar .btn,
+    .clipboard-window .button-row > .btn {
+      min-height: var(--touch-primary-min-height);
+    }
+
+    /* Picture Album list rows + per-item actions share the same ≥48 floor. */
+    .image-manager-window .image-manager-list.is-list-view .image-manager-item,
+    .image-manager-window .image-manager-actions .btn {
+      min-height: var(--touch-primary-min-height);
+    }
+
+    /* Reader URL／tabs／selection clip — not only phone-portrait media. */
+    .reader-window .reader-url-row :is(input, .btn),
+    .reader-window .reader-tabs .btn,
+    .reader-window .reader-selection-bar .btn {
+      min-height: var(--touch-primary-min-height);
+    }
+
+    .find-file-window .find-file-search-row,
+    .find-path-window .find-path-query-row {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+    }
+
+    .find-file-window #find-file-query,
+    .find-path-window #find-path-query {
+      width: 100%;
+      min-width: 0;
+      min-height: var(--touch-primary-min-height);
+    }
+
+    .find-file-window .find-file-search-row > .btn.default,
+    .find-path-window .find-path-query-row > .btn.default,
+    .find-file-window .button-row > [data-action="open-selected-find-file"],
+    .find-file-window .button-row > [data-action="reveal-selected-find-file"],
+    .find-path-window .find-path-actions > [data-action="open-selected-in-reader"] {
+      width: 100%;
+      min-height: var(--touch-primary-min-height);
+      justify-content: center;
+    }
+
+    .find-file-window .find-file-result,
+    .find-path-window .find-path-result {
+      min-height: var(--touch-primary-min-height);
+    }
+
+    .assistant-window .composer-action-row {
+      flex-wrap: wrap;
+    }
+
+    .assistant-window .composer .composer-submit-button {
+      flex: 1 0 100%;
+      width: 100%;
+      min-width: 0;
+      height: var(--touch-primary-min-height);
+      min-height: var(--touch-primary-min-height);
+      margin-left: 0;
+      /* The round eras give Send a 50% radius; across a full row that drew a
+         flat ellipse (2026-10-08). Capped at half the row height it becomes a
+         capsule, and an era with square corners keeps them. */
+      border-radius: min(var(--clio-composer-control-radius), calc(var(--touch-primary-min-height) / 2));
+    }
+
+    /* Add stays a square at the touch-primary floor (overrides the 32px phone
+       compact rule); Send owns the full row above. */
+    .assistant-window .composer .composer-file-button {
+      width: var(--touch-primary-min-height);
+      min-width: var(--touch-primary-min-height);
+      height: var(--touch-primary-min-height);
+      min-height: var(--touch-primary-min-height);
+    }
+
+    .assistant-window .clio-welcome-actions {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+    }
+
+    .assistant-window .clio-welcome-actions .btn {
+      width: 100%;
+      min-height: var(--touch-primary-min-height);
+      justify-content: flex-start;
+      text-align: left;
+    }
+
+    .stickies-window .stickies-row {
+      min-height: var(--touch-primary-min-height);
+      align-items: center;
+    }
+
+    .scrapbook-window .scrap-list button:not(.scrap-empty-card),
+    .trash-window .trash-list button {
+      min-height: var(--touch-primary-min-height);
+    }
+
+    .scrapbook-window .scrapbook-pane {
+      grid-template-columns: var(--scrapbook-mobile-pane-columns);
+      grid-template-rows: var(--scrapbook-mobile-pane-rows);
+    }
+
+    .clio-stage-window .clio-stage-slide,
+    .clio-stage-window .clio-stage-pane {
+      min-height: 160px;
+    }
+
+    .rebuild-flow-window .rebuild-actions > .btn.default {
+      order: 3;
+    }
+
+    .draft-desk-window .draft-desk-actions > .btn.default,
+    .draft-desk-window .lightroom-actions > .btn.default,
+    .draft-desk-window .quick-draft-editor-actions > .btn.default {
+      min-height: var(--touch-primary-min-height);
+    }
+
+    .project-peek-window .project-peek-list {
+      max-height: 140px;
+    }
+
+    .disk-peek-window .disk-peek-actions > .btn.default {
+      width: 100%;
+      min-height: var(--touch-primary-min-height);
+    }
+  }
+}
+
+/* Early-harvest C11 (proposal v216): system shell narrow chrome — Control
+   Panel / System Messages / Control Strip settings. Vertical chrome, one
+   primary full-width, list-first strip modules; ADHD one thing at a time. */
+@media (pointer: coarse) {
+  @container (max-width: 470px) {
+    .control-panel .control-chooser {
+      flex-wrap: nowrap;
+    }
+
+    .control-panel .control-section .button-row,
+    .control-panel .control-strip-module-actions,
+    .control-panel .control-strip-hotkey-row,
+    .control-panel .liquid-tint-row {
+      flex-direction: column;
+      align-items: stretch;
+      flex-wrap: nowrap;
+      gap: 8px;
+    }
+
+    .control-panel .control-wide-button,
+    .control-panel .btn.default.control-wide-button,
+    .control-panel .control-strip-module-actions > .btn.default {
+      width: 100%;
+      min-height: var(--touch-primary-min-height);
+      justify-content: center;
+      margin-left: 0;
+    }
+
+    /* Control Panel section chooser tabs are primary navigation on narrow -
+       for a finger. A desk window is narrow too, and there the 48px floor
+       stretched Platinum's native 23px tabs, so their sliced art came apart and
+       the labels sank to the bottom edge (2026-10-08). Touch only. */
+    @media (pointer: coarse) {
+      .control-panel .control-chooser .system-tab {
+        min-height: var(--touch-primary-min-height);
+      }
+    }
+
+    .control-panel .control-strip-module-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .notification-center-window .details-bar {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 6px;
+    }
+
+    .notification-center-window .details-bar > .btn {
+      width: 100%;
+      min-height: 40px;
+      justify-content: center;
+    }
+
+    .notification-center-window .notification-item {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 6px;
+    }
+
+    .notification-center-window .notification-open-button {
+      width: 100%;
+      min-height: 40px;
+      justify-content: center;
+    }
+  }
+}
+
+/* Early-harvest E5 leftovers (proposal v216): journey / shutdown / startup /
+   recovery narrow — beyond C11 settings/notify/strip. Overlays use viewport
+   media; Hold That Thought remains the product journey pad (already A2). */
+@media (max-width: 470px) {
+  .boot-failure-button-row,
+  .startup-settings-actions,
+  .boot-recovery-modal .finder-operation-actions {
+    flex-direction: column;
+    align-items: stretch;
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+
+  .boot-failure-button-row > .btn.default,
+  .startup-settings-actions > .btn.default,
+  .boot-recovery-modal .finder-operation-actions > .btn.default,
+  .shutdown-screen .shutdown-ledger > .btn.default {
+    width: 100%;
+    min-height: var(--touch-primary-min-height);
+    justify-content: center;
+    margin-left: 0;
+  }
+
+  .startup-settings-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .writing-spine-panel .spine-actions button {
+    min-height: var(--touch-primary-min-height);
+  }
+}
+
+/* Early-harvest E6–E10 (proposal v217–v221): rest/games, DA/receipt/utility,
+   import/help/lab, creative/map pads, about/info/sound/dict. Same Harvest A
+   grammar — vertical chrome, one primary full-width at
+   --touch-primary-min-height (48), calm density. */
+@media (pointer: coarse) {
+  @container (max-width: 470px) {
+    :is(
+      .one-more-tune-window,
+      .one-more-tune-film-window,
+      .joyride-window,
+      .rootline-window,
+      .bonsai-window,
+      .puzzle-window,
+      .memory-cards-window,
+      .finishing-receipt-window,
+      .alarm-clock-window,
+      .calculator-window,
+      .print-directory-window,
+      .dictation-window,
+      .chooser-panel,
+      .key-caps-window,
+      .import-utility-window,
+      .system-help-window,
+      .page-setup-window,
+      .writing-bell-window,
+      .system-status-window,
+      .save-chat-window,
+      .endfield-terminal-window,
+      .bureaucracy-meme-window,
+      .image-prompt-studio-window,
+      .clio-paint-window,
+      .docmap-window,
+      .clio-project-window,
+      .sideask-pad-window,
+      .find-change-window,
+      .translation-pad-window,
+      .context-panel-window,
+      .about-window,
+      .info-window,
+      .time-machine-window,
+      .soundscape-window,
+      .dictionary-window
+    ) .button-row {
+      flex-direction: column;
+      align-items: stretch;
+      flex-wrap: nowrap;
+      gap: 8px;
+    }
+
+    :is(
+      .one-more-tune-window,
+      .one-more-tune-film-window,
+      .joyride-window,
+      .rootline-window,
+      .bonsai-window,
+      .puzzle-window,
+      .memory-cards-window,
+      .finishing-receipt-window,
+      .alarm-clock-window,
+      .calculator-window,
+      .print-directory-window,
+      .dictation-window,
+      .chooser-panel,
+      .key-caps-window,
+      .import-utility-window,
+      .system-help-window,
+      .page-setup-window,
+      .writing-bell-window,
+      .system-status-window,
+      .save-chat-window,
+      .endfield-terminal-window,
+      .bureaucracy-meme-window,
+      .image-prompt-studio-window,
+      .clio-paint-window,
+      .docmap-window,
+      .clio-project-window,
+      .sideask-pad-window,
+      .find-change-window,
+      .translation-pad-window,
+      .context-panel-window,
+      .about-window,
+      .info-window,
+      .time-machine-window,
+      .soundscape-window,
+      .dictionary-window
+    ) .button-row > .btn.default {
+      width: 100%;
+      min-height: var(--touch-primary-min-height);
+      justify-content: center;
+      margin-left: 0;
+    }
+
+    /* E6 rest / games */
+    .one-more-tune-window .btn.default,
+    .one-more-tune-film-window .btn.default {
+      min-height: var(--touch-primary-min-height);
+    }
+
+    .one-more-tune-window .one-more-tune-play,
+    .bonsai-window .bonsai-setup-actions > .btn.default,
+    .joyride-window .button-row > .btn.default {
+      width: 100%;
+      min-height: var(--touch-primary-min-height);
+      justify-content: center;
+    }
+
+    .puzzle-window .puzzle-board,
+    .memory-cards-window .memory-cards-board {
+      width: 100%;
+      max-width: none;
+    }
+
+    .bonsai-window .bonsai-map-shell,
+    .rootline-window .rootline-map,
+    .joyride-window .joyride-stage {
+      min-height: 140px;
+    }
+
+    /* E7 DA / receipt / utility. The tokens sit on the pane, not on
+       .calculator-window: the window is this query's container, and a
+       container query cannot style its own container. Set there, the row
+       height never changed while the keys' 48px minimum did, so the keys
+       overflowed 30px rows and the window cut off "0" and "." (2026-10-08). */
+    .calculator-window .calculator-pane {
+      --calculator-keys-row-height: var(--touch-primary-min-height);
+      --calculator-key-height: var(--touch-primary-min-height);
+    }
+
+    .calculator-window .calculator-keys {
+      width: 100%;
+      gap: 8px;
+    }
+
+    .calculator-window .calculator-keys button {
+      min-height: var(--touch-primary-min-height);
+    }
+
+    .calculator-window #calculator-display {
+      width: 100%;
+    }
+
+    .alarm-clock-window .alarm-clock-readout,
+    .alarm-clock-window .alarm-clock-modes {
+      width: 100%;
+    }
+
+    /* Alarm Clock mode strip is the primary control (title-bar chrome untouched).
+       On the window's children, because the window is the query container. */
+    .alarm-clock-window > * {
+      --alarm-clock-modes-height: var(--touch-primary-min-height);
+    }
+
+    .alarm-clock-window .alarm-clock-modes,
+    .alarm-clock-window .alarm-clock-mode {
+      min-height: var(--touch-primary-min-height);
+    }
+
+    .key-caps-window .shortcut-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .key-caps-window .character-map {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .key-caps-window .character-map > button {
+      min-height: var(--touch-primary-min-height);
+    }
+
+    .print-directory-window .print-directory-preview {
+      width: 100%;
+      min-height: 120px;
+    }
+
+    .dictation-window .dictation-bottom-actions > .btn.default,
+    .dictation-window .dictation-capture-actions > button:first-child {
+      min-height: var(--touch-primary-min-height);
+    }
+
+    .chooser-panel .chooser-settings > section {
+      padding: 12px;
+    }
+
+    .model-meter-panel .meter-stats {
+      gap: 6px;
+    }
+
+    /* E8 import / help / lab / bell / status / save */
+    .import-utility-window .memory-transfer-footer {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+    }
+
+    .import-utility-window .memory-transfer-footer > .btn.default,
+    .import-utility-window #import-documents {
+      width: 100%;
+      min-height: var(--touch-primary-min-height);
+      justify-content: center;
+    }
+
+    .import-utility-window .backup-action-row {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+    }
+
+    .system-help-window .system-help-control-row,
+    .system-help-window .system-help-layout {
+      flex-direction: column;
+      align-items: stretch;
+      display: flex;
+      gap: 8px;
+    }
+
+    .system-help-window #system-help-query {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .writing-bell-window .writing-bell-actions > .btn.default,
+    .writing-bell-window #writing-bell-start {
+      width: 100%;
+      min-height: var(--touch-primary-min-height);
+      justify-content: center;
+    }
+
+    .writing-bell-window .writing-bell-presets,
+    .writing-bell-window .writing-bell-mode {
+      width: 100%;
+    }
+
+    .writing-bell-window .writing-bell-time {
+      min-height: 100px;
+      width: 100%;
+    }
+
+    .system-status-window #keep-projects-on-device {
+      width: 100%;
+      min-height: var(--touch-primary-min-height);
+      justify-content: center;
+    }
+
+    .save-chat-window .button-row > .btn.default {
+      width: 100%;
+      min-height: var(--touch-primary-min-height);
+    }
+
+    .page-setup-window .button-row > .btn.default {
+      width: 100%;
+      min-height: var(--touch-primary-min-height);
+    }
+
+    .finder-window[data-window="helpFolder"] .finder-grid,
+    .finder-window[data-window="helpFolder"] .help-folder-grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 8px;
+    }
+
+    /* E9 creative / map / pads */
+    .docmap-window .docmap-map-toolbar,
+    .docmap-window .ask-bar-row,
+    .sideask-pad-window .button-row,
+    .image-prompt-studio-window .ips-actions {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+    }
+
+    .docmap-window .ask-bar-row > .btn.default,
+    .docmap-window #docmap-ask-button,
+    .image-prompt-studio-window #ips-go,
+    .sideask-pad-window #sideask-pad-ask {
+      width: 100%;
+      min-height: var(--touch-primary-min-height);
+      justify-content: center;
+      margin-left: 0;
+    }
+
+    .docmap-window .docmap-drop-zone,
+    .docmap-window .docmap-tree,
+    .clio-paint-window .clio-paint-viewport,
+    .image-prompt-studio-window .ips-plate,
+    .clio-project-window .clio-project-canvas-scroll {
+      width: 100%;
+      min-height: 140px;
+    }
+
+    .clio-project-window .clio-project-plan {
+      grid-template-columns: 1fr;
+    }
+
+    .translation-pad-window .translation-pad-textareas {
+      flex-direction: column;
+      display: flex;
+      gap: 10px;
+    }
+
+    .find-change-window .find-change-pane input[type="text"] {
+      width: 100%;
+      min-width: 0;
+    }
+
+    /* E10 getinfo / timemachine / sound / dict */
+    .info-window .info-kind-actions,
+    .info-window .button-row {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .info-window .button-row > .btn {
+      width: 100%;
+      min-height: 40px;
+      justify-content: center;
+    }
+
+    .dictionary-window .dictionary-query-row,
+    .dictionary-window .dictionary-actions {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+    }
+
+    .dictionary-window #dictionary-query,
+    .dictionary-window .dictionary-query-row > .btn,
+    .dictionary-window .dictionary-actions > .btn.default {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .dictionary-window .dictionary-actions > .btn.default {
+      min-height: var(--touch-primary-min-height);
+      justify-content: center;
+    }
+
+    .time-machine-window .time-machine-navigation,
+    .time-machine-window .time-machine-address-form {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+    }
+
+    .time-machine-window #time-machine-address {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .time-machine-window .time-machine-reader,
+    .time-machine-window .time-machine-frame {
+      width: 100%;
+      min-height: 120px;
+    }
+
+    .soundscape-window .soundscape-transport,
+    .soundscape-window .soundscape-now,
+    .soundscape-window .soundscape-artwork {
+      width: 100%;
+    }
+
+    .soundscape-window .soundscape-artwork {
+      min-height: 120px;
+    }
+
+    .soundscape-window #soundscape-save-moment,
+    .soundscape-window .soundscape-save-moment {
+      width: 100%;
+      min-height: var(--touch-primary-min-height);
+      justify-content: center;
+    }
+
+    .soundscape-window .button-row,
+    .soundscape-window .soundscape-source-actions {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+      display: flex;
+    }
+
+    .soundscape-window #soundscape-connect-apple {
+      width: 100%;
+      min-height: var(--touch-primary-min-height);
+      justify-content: center;
+    }
+
+    /* Goal #2 narrow: empty writing-route / locked Review / idle DocMap keep
+       the paper or empty note readable — less chrome fighting the one job. */
+    :is(
+      .question-sheet-window[data-empty],
+      .outline-window[data-empty],
+      .section-drafts-window[data-empty]
+    ) .teachtext-details-bar {
+      flex-wrap: wrap;
+      row-gap: 6px;
+    }
+
+    .review-desk-window.is-review-locked .review-desk-empty-note {
+      width: min(100%, calc(100% - 24px));
+      min-height: 120px;
+      padding: 18px 16px;
+    }
+
+    .review-desk-window.is-review-locked .review-lens-chrome {
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .docmap-window[data-empty] .docmap-layout-picker {
+      display: none;
+    }
+
+    .clipboard-window .empty-folder-note,
+    .stickies-window .empty-folder-note,
+    .image-manager-window .empty-folder-note {
+      margin-inline: auto;
+      max-width: 36ch;
+      text-align: center;
+      line-height: 1.45;
+    }
+  }
+}
+
+@media (max-width: 860px) and (orientation: portrait) {
+  body:not(.is-writer-mode) .window.scrapbook-window:not(.is-hidden):not(.is-collapsed):not(.is-mobile-fullscreen) {
+    left: 18px;
+    top: 74px;
+    width: calc(100vw - 54px);
+    max-width: calc(100vw - 54px);
+    height: calc(100vh - 118px);
+    min-height: 0;
+    max-height: calc(100vh - 118px);
+  }
+
+  body:not(.is-writer-mode) .scrapbook-window .scrapbook-pane {
+    grid-template-columns: var(--scrapbook-pane-columns);
+    grid-template-rows: var(--scrapbook-pane-rows);
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  body:not(.is-writer-mode) .scrapbook-window .scrap-list,
+  body:not(.is-writer-mode) .scrapbook-window .scrap-editor {
+    min-height: 0;
+    max-height: none;
+    overflow: auto;
+  }
+
+  body:not(.is-writer-mode) .scrapbook-window #scrap-body-input {
+    min-height: 120px;
+  }
+}
+
+@media (max-width: 640px) {
+  .clio-stage-toolbar {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .clio-stage-toolbar,
+  .clio-stage-view-switcher {
+    align-items: var(--clio-stage-responsive-toolbar-align-items);
+  }
+
+  .clio-stage-controls {
+    display: grid;
+    grid-template-columns: auto minmax(var(--touch-primary-min-height), auto) auto;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .clio-stage-view-switcher {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: 100%;
+    margin-left: 0;
+  }
+
+}
+
+@media (max-width: 430px) and (orientation: portrait) {
+  body:not(.is-writer-mode) .scrapbook-window .scrapbook-pane {
+    grid-template-columns: var(--scrapbook-mobile-pane-columns);
+    grid-template-rows: var(--scrapbook-mobile-pane-rows);
+    overflow: hidden;
+  }
+
+  .quick-draft-editor-actions > .btn.default {
+    min-width: 72px;
+    padding-inline: 5px;
+  }
+
+  /* 文字亮室: no canvas on a phone. The screen cannot hold it; phones get the
+     body and reading views, with material in a drawer. */
+  .quick-draft-canvas,
+  .quick-draft-view-switch {
+    display: none;
+  }
+
+  /* 钟点稿 on a phone: the three-region collapse itself is a container query
+     in 50-apps.css (the window is the container), so it also covers a narrow
+     desk window. What belongs to touch is the target size. */
+  .quick-draft-editor-actions .btn,
+  .quick-draft-editor-actions summary.btn {
+    min-height: var(--touch-primary-min-height);
+  }
+
+  body.mobile-app-foreground .assistant-window.is-mobile-fullscreen .messages {
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+  }
+
+  body.mobile-app-foreground .assistant-window.is-mobile-fullscreen .message-content {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  body.mobile-app-foreground .assistant-window.is-mobile-fullscreen .message-content :is(pre, table, img, video, iframe) {
+    max-width: 100%;
+  }
+
+  body.mobile-app-foreground .assistant-window.is-mobile-fullscreen .message-content :is(pre, table) {
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+  }
+
+
+  body.mobile-app-foreground .assistant-window.is-mobile-fullscreen .composer textarea {
+    min-height: 42px;
+    max-height: min(108px, 20vh);
+  }
+
+  .reader-pane {
+    gap: 6px;
+    padding: 6px;
+  }
+
+  .reader-url-row :is(input, .btn) {
+    min-height: var(--touch-primary-min-height);
+  }
+
+  .reader-selection-bar {
+    right: 8px;
+    bottom: 8px;
+    max-width: calc(100% - 16px);
+  }
+
+  .reader-selection-bar .btn {
+    min-height: var(--touch-primary-min-height);
+  }
+
+  .reader-content {
+    padding: 18px 16px;
+    overflow-x: hidden;
+    line-height: 1.65;
+    overflow-wrap: anywhere;
+  }
+
+  .reader-document-header h1 {
+    font-size: 20px;
+  }
+
+  .reader-body-content p {
+    margin: 1em 0;
+    text-align: start;
+    text-indent: 0;
+  }
+
+  .reader-body-content :is(table, pre, img, video, iframe) {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  body:not(.is-writer-mode) .scrapbook-window .scrap-list:has(.scrap-empty-card) {
+    min-height: 132px;
+    max-height: 156px;
+  }
+
+  .view-switch-option {
+    min-height: var(--touch-primary-min-height);
+  }
+
+  /* One touch-target rule for every ask bar. Written as two descendant
+     selectors on purpose: minifyCss drops the space before a descendant
+     `:is(...)`, which silently kills the rule in the bundle. */
+  .ask-bar-row input,
+  .ask-bar-row .btn {
+    min-height: var(--touch-primary-min-height);
+  }
+
+  .clio-stage-window .window-pane.clio-stage-pane {
+    gap: 6px;
+    padding: 6px;
+  }
+
+  .clio-stage-toolbar {
+    gap: 6px;
+  }
+
+  .clio-stage-controls {
+    grid-template-columns: var(--touch-primary-min-height) auto var(--touch-primary-min-height);
+    gap: 4px;
+  }
+
+  .clio-stage-view-switcher {
+    gap: 4px;
+  }
+
+  .clio-stage-pane .clio-stage-view-switcher .view-switch-option,
+  .clio-stage-pane .clio-stage-nav-button {
+    min-width: 0;
+    min-height: var(--touch-primary-min-height);
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .clio-stage-pane .clio-stage-view-switcher .view-switch-option {
+    padding-inline: 4px;
+  }
+
+  body:not(.is-writer-mode) .window.puzzle-window:not(.is-hidden):not(.is-collapsed) {
+    --puzzle-window-width: 244px;
+    --puzzle-board-width: 220px;
+    --puzzle-board-height: 220px;
+    --puzzle-tile-width: auto;
+    --puzzle-tile-height: auto;
+    --puzzle-footer-width: 220px;
+  }
+
+  /* Control Strip on phones: a thin bottom drawer with touch-sized modules
+     that scroll horizontally, never wraps, and never becomes a hamburger.
+     It stays a floating layer (default collapsed to the handle), and the
+     full-screen app shell hides it entirely. */
+  /* 89-control-strip.css loads after this file, so these drawer rules must
+     out-specify the base strip rules (body prefix), matching how the rest of
+     this file wins over later single-feature files. */
+  /* A module menu opened by a finger is read at arm's length, so the system
+     raises its size here instead of asking the writer to pick a point size. */
+  body .control-strip-menu {
+    --control-strip-menu-font-size: 14px;
+  }
+
+  body .control-strip {
+    --control-strip-handle-width: var(--touch-primary-min-height);
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    max-width: none;
+    height: var(--touch-primary-min-height);
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 0;
+    flex-direction: row;
+  }
+
+  /* Collapsing uses the same slide as the desk; the wider touch tab is the
+     only phone difference, so it rides on the token above. */
+  body .control-strip.is-collapsed,
+  body .control-strip[data-edge="right"].is-collapsed {
+    transform: translateX(calc(var(--control-strip-handle-width) - 100%));
+    border-right: var(--control-strip-border);
+    border-bottom: var(--control-strip-border);
+  }
+
+  body .control-strip[data-edge="right"] {
+    left: 0;
+    right: 0;
+    flex-direction: row;
+  }
+
+  body .control-strip.is-fixed-length {
+    width: auto;
+  }
+
+  /* Phones scroll the drawer with the native track; the desktop chevrons and
+     handle drags are Control Panel business on this width. */
+  body .control-strip-scroll {
+    display: none;
+  }
+
+  body .control-strip-modules {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+
+  body .control-strip-module-track {
+    transform: none;
+    direction: ltr;
+  }
+
+  body .control-strip-module {
+    width: 40px;
+    height: 40px;
+  }
+
+  body .control-strip-module.has-gauge {
+    padding: 0 8px;
+  }
+
+}
+
+/* Touch devices (iPad/iPhone, including landscape): stop the page-level
+   rubber-band / pull-to-refresh so dragging a window near an edge never
+   pulls the whole desk. Inner panes keep their own scroll behaviour.
+   `any-pointer: coarse` also catches an iPad with a trackpad, which reports
+   hover but still takes finger taps. */
+@media (hover: none), (any-pointer: coarse) {
+  body {
+    overscroll-behavior: none;
+    /* Controls show their own pressed state; Safari's grey tap flash would
+       paint over it. */
+    -webkit-tap-highlight-color: transparent;
+    /* The desk owns the double tap: an icon opens on it and a title bar rolls
+       the window up. Safari's double-tap-to-zoom competes for the same gesture
+       and rescales the whole screen mid-task, so the desk claims it here.
+       `manipulation` removes only that gesture — pinch-to-zoom still works, so
+       the page is not locked away from anyone who needs to magnify it. Drag
+       surfaces that declare touch-action: none stay untouched: the property is
+       resolved per element, and theirs is the stricter value. */
+    touch-action: manipulation;
+  }
+}
+
+/* The current-application menu is a pointer-era desktop affordance. On touch
+   devices every appearance hides it (the base rule defaults to none and Aqua
+   re-enables it via --menu-current-app-display), so the menu bar fits the
+   viewport instead of pushing the trailing Model / New Project buttons off
+   the right edge of a phone. */
+@media (hover: none) {
+  .menu-bar-current-app {
+    display: none;
+  }
+}
+
+/* The compact phone menu bar rule must win over the iPad-portrait block
+   above. That block applies at every width up to 860px in portrait, so its
+   10px button padding overrides the narrower phone rule and pushes the
+   trailing Model / New Project buttons past a 320px viewport in English.
+   Source order decides the cascade, so this narrow-phone override stays after
+   it: phones keep compact 4px padding, tablets keep the roomier 10px. */
+@media (max-width: 420px) {
+  .menu-bar > .menu > button {
+    padding: 0 4px;
+  }
+}
+
+/* Use Result on a phone: the dialog stacks its two panes, so it should take the
+   screen it is given. Capping it at the desktop 620px left ~150px of the phone
+   unused while the panes scrolled inside it. */
+@media (max-width: 560px) {
+  .clio-use-result-modal[open] {
+    max-height: calc(100vh - 36px);
+  }
+}
+
+/* A phone held sideways hands the whole screen to the foreground app page.
+   Portrait already does this; without the landscape counterpart an app ran in
+   a small floating window that spent most of a 912x420 display on desktop
+   pattern and clipped its own chrome. This used to admit only the three games,
+   on the reasoning that their content IS the screen — but a landscape phone
+   has no room for a window plus a desktop either, and the zoom box still
+   restores the window down, so this stays a maximize and never a lock.
+   The shell sets the body class, so this rule never re-derives the state.
+   Left and right take the safe-area insets because a notch or Dynamic Island
+   sits on the SIDE of a phone held sideways. */
+@media (orientation: landscape) and (max-width: 860px), (orientation: landscape) and (hover: none) and (pointer: coarse) and (max-height: 660px) {
+  body.mobile-landscape-shell {
+    overflow: hidden;
+  }
+
+  body.mobile-landscape-shell .window.is-mobile-fullscreen:not(.is-collapsed) {
+    --window-border-image: none;
+    position: fixed;
+    inset:
+      calc(var(--menu-bar-height) + var(--safe-area-top))
+      var(--safe-area-right)
+      var(--keyboard-inset, 0px)
+      var(--safe-area-left);
+    width: auto;
+    max-width: none;
+    height: auto;
+    max-height: none;
+    min-width: 0;
+    margin: 0;
+    border-width: 0;
+    /* Landscape is the same ownership as portrait (see the portrait shell):
+       the lower edge is the display's, whatever the safe-area insets are on
+       the sides. */
+    border-radius: var(--edge-shape);
+    transform: none;
+    aspect-ratio: auto;
+  }
+
+  body.mobile-landscape-shell .window.is-mobile-fullscreen .window-pane {
+    padding-bottom: var(--safe-area-bottom);
+  }
+
+  /* Landscape typing-lift parity: same pin as portrait — ask / query chrome
+     stays above --keyboard-inset; results / map / article / scrap scroll inside. */
+  body.mobile-landscape-shell .window.is-mobile-fullscreen:is(
+    .reader-window,
+    .docmap-window,
+    .find-path-window,
+    .scrapbook-window,
+    .sideask-pad-window,
+    .dictionary-window
+  ) .window-pane {
+    overflow: hidden;
+    scroll-padding-bottom: 2.5em;
+  }
+
+  body.mobile-landscape-shell .window.is-mobile-fullscreen:is(
+    .reader-window,
+    .docmap-window
+  ) .ask-bar,
+  body.mobile-landscape-shell .window.is-mobile-fullscreen.find-path-window .find-path-query-row,
+  body.mobile-landscape-shell .window.is-mobile-fullscreen.find-path-window .find-path-actions {
+    flex: 0 0 auto;
+  }
+
+  body.mobile-landscape-shell .window.is-mobile-fullscreen.reader-window .reader-workspace,
+  body.mobile-landscape-shell .window.is-mobile-fullscreen.docmap-window .docmap-layout,
+  body.mobile-landscape-shell .window.is-mobile-fullscreen.find-path-window .find-path-results {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    scroll-padding-bottom: 2.5em;
+  }
+
+  /* An immersive app's artifact is the screen: the canvas reaches the safe-area
+     edge instead of sitting inside the pane's reading padding. Every other app
+     keeps its padding, because its content is text and controls. */
+  body.mobile-landscape-shell.mobile-immersive-app .window.is-mobile-fullscreen .window-pane {
+    padding-inline: 0;
+  }
+
+  /* A foregrounded immersive app owns the landscape screen exactly as it owns
+     portrait: the launcher column and writing spine yield behind it. Without
+     this counterpart the spine's floating layer keeps intercepting the app's
+     left toolbar in the writing workspace profile. */
+  /* Folded to its own edge, not switched off. `display: none` leaves no box, so
+     `getBoundingClientRect()` reports (0,0,0,0) and every reader of the desk's
+     geometry -- window placement, the zoom box, the device matrix -- is told
+     the launcher sits at the desktop's ORIGIN, underneath the foreground app.
+     The portrait rule above was corrected first; this is the same lie in the
+     other orientation, and it is fixed here rather than left for whoever adds
+     a landscape desk cell to the matrix. `visibility: hidden` keeps the rail
+     unpainted and un-hittable, so nothing on screen changes. */
+  body.mobile-landscape-shell:not(.is-writer-mode) .icon-column,
+  body.mobile-landscape-shell:not(.is-writer-mode) .writing-spine-panel {
+    position: absolute;
+    top: 0;
+    bottom: auto;
+    width: 0;
+    min-width: 0;
+    height: 0;
+    padding: 0;
+    overflow: hidden;
+    visibility: hidden;
+  }
+
+  body.mobile-landscape-shell:not(.is-writer-mode) .icon-column {
+    left: auto;
+    right: 0;
+  }
+
+  body.mobile-landscape-shell:not(.is-writer-mode) .writing-spine-panel {
+    left: 0;
+    right: auto;
+  }
+}
+
+
+/* A home-screen web app owns the whole screen: the notch and the home indicator
+   are real. Safari keeps the drawn chrome; the hook is the platform's own
+   signal (navigator.standalone / display-mode), never a user agent. The title
+   bar is NOT grown for a finger here: every appearance keeps the height and the
+   controls it draws on the desk (owner's decision, 2026-09-26; the 44px bar of
+   2026-09-22/23 was reverted). Reasoning: DEBT-AUDIT.zh-CN.md §11. */
+@media (hover: none) and (pointer: coarse) {
+  /* The status band, wherever there is one. This started as a portrait-phone
+     rule inside the 860px query above, which left the other two surfaces alone:
+     measured 2026-09-23 in WebKit with a clip's own insets injected, an iPad's
+     bar stayed 44px tall in flow with no top padding, so the first menu
+     button's box began at y=1 under a 24pt status bar — the clock and the
+     battery were painted over 文件 / 编辑 / 对话 / 特别 in all eight
+     appearances, and in landscape the same thing happens on a phone. One rule
+     now covers every touch device and both orientations; a browser tab reports
+     an inset of 0, so none of it reaches that surface.
+
+     Sticky, not fixed: that is the one arrangement the MacRumors thread
+     reports as making the system yield its blur (a fixed header the reply
+     warned would be painted over anyway), and a sticky bar is in flow, so it
+     reserves its own height. The portrait block above pads the body instead,
+     because there the bar is out of flow — installed, that padding would count
+     the band twice. */
+  html[data-installed] body:not(.is-writer-mode) {
+    padding-top: 0;
+  }
+
+  html[data-installed] body:not(.is-writer-mode) .menu-bar {
+    position: sticky;
+    inset: auto;
+    top: 0;
+    height: calc(var(--menu-bar-height) + var(--safe-area-top));
+    padding-top: var(--safe-area-top);
+    /* A flat strip, not a material. A home-screen web app gets a system blur
+       painted across the top of the screen; a blur over a translucent bar IS
+       the desk showing through it, which is the washed band this file's
+       Liquid Glass rule already documents from the browser's side. The
+       appearance's gradients stay — what goes away is the see-through half of
+       the fill. Measured with a black backdrop swapped for a white one behind
+       the bar: yosemite at 0.9, big-sur at 0.86 and liquid-glass at 0.9 were
+       the three appearances whose strip changed colour with it; the other five
+       were already opaque and resolve to their own --paper. */
+    background-color: var(--menu-bar-base, var(--paper));
+  }
+
+  /* The same courtesy the sides already get, on the axis that was missing: a
+     window's bottom-right grow box is a live control on a tablet, and it was
+     landing inside the 20px home-indicator band. The desk keeps its work above
+     the inset instead of flush to it. */
+  html[data-installed] body:not(.is-writer-mode) .desktop {
+    padding-bottom: max(16px, var(--safe-area-bottom));
+  }
+
+  /* The composer's Add and Send are the two controls a thumb hits most — 36px
+     is a mouse size. */
+  html[data-installed] .assistant-window .composer :is(.composer-submit-button, .composer-file-button) {
+    width: var(--touch-primary-min-height);
+    height: var(--touch-primary-min-height);
+  }
+}
+
+/* Only System 6 chose between Finder and MultiFinder; from System 7 on the
+   system always multitasks, so the choice is not offered. */
+body:not([data-theme="classic"]) .startup-settings-choice-row {
+  display: none;
+}

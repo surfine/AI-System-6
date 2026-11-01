@@ -1,0 +1,208 @@
+/* Lion (Mac OS X 10.7, 2011).
+
+   A child of Snow Leopard: it inherits every rule 10.6 scopes by
+   [data-lineage~="snow-leopard"] and owns only what 10.7 changed.
+
+   Evidence, two independent native sources that agree to within a level or
+   two (internal/evidence/drafts/lion-reference/README.zh-CN.md):
+   - Apple's Mac OS X Human Interface Guidelines, revision 2011-07-26, the
+     Lion edition; its embedded screenshots are 1x;
+   - 512 Pixels' Lion screenshot library, 109 captures of a real 10.7.5
+     machine at 2x.
+
+   What 10.7 changed, and so what this sheet draws:
+   - a lighter window frame: #f1f1f1 highlight over #e5e5e5 -> #b7b7b7, a
+     #bcbcbc band and a #696969 base line (10.6: #e2e2e2, #d0d0d0 -> #bcbcbc,
+     #515151);
+   - 12 px lamps, and at the title bar's right end a full-screen button
+     (two outward arrows, 14 px, no bezel) beside the green Zoom lamp;
+   - overlay scroll bars: no lane, no track, a 7 px capsule of 50% black in a
+     10 pt gutter, shown only while scrolling;
+   - white document and list content on a #ededed window body;
+   - the source list's blue-grey gradient and flatter push buttons;
+   - the Andromeda galaxy as the default desktop picture. */
+html[data-theme="lion"],
+body[data-theme="lion"] {
+  /* No hover outline on choices in this era (no native evidence of one). */
+  --control-choice-hover-shadow: none;
+  /* Lion's Dock menu: dark grey, nearly opaque (Macworld's 10.7 capture,
+     rgb 64 over a light window); 88-desk-dock.css draws it. */
+  --desk-dock-dark-menu-bg: rgb(48 48 50 / 0.92);
+  /* Title bar, HIG p.142 / p.160 at 1x (512 Pixels agrees at 2x).
+     The full 22pt stack lives in the gradient: #f1f1f1 highlight, silver
+     ramp to #b7b7b7, #bcbcbc light band, then the #696969 baseline. A CSS
+     border-bottom would steal that last pixel under border-box and hide
+     the light band; Snow Leopard's inset white titlebar-shadow would also
+     bleach row 0 past the measured #f1f1f1. */
+  --system-titlebar-active-bg: linear-gradient(to bottom,
+    #f1f1f1 0 1px, #e5e5e5 1px, #dcdcdc 6px, #d3d3d3 10px, #cacaca 13px,
+    #c0c0c0 16px, #b7b7b7 20px, #bcbcbc 20px 21px, #696969 21px 22px);
+  --system-titlebar-inactive-bg: linear-gradient(to bottom,
+    #fbfbfb 0 1px, #f7f7f7 1px, #e2e2e2 20px, #e7e7e7 20px 21px, #a7a7a7 21px 22px);
+  --titlebar-border: 0;
+  --titlebar-border-inactive: 0;
+  --titlebar-shadow: none;
+  --titlebar-title-fg: #313131;
+  --system-titlebar-inactive-title-color: #858585;
+  /* Unified toolbar: the same ramp continued down to #b2b2b2 over a
+     #6b6b6b line (Finder, HIG p.151 and 512 Pixels' Finder-Home). */
+  --toolbar-bg: linear-gradient(#c0c0c0, #b2b2b2);
+  --toolbar-bg-inactive: linear-gradient(#e6e6e6, #e0e0e0);
+  --toolbar-border: 1px solid #6b6b6b;
+  /* 12 px lamps (10.6's were 14 px); art and placement: 88-desk-dock.css. */
+  --traffic-light-size: 12px;
+  /* Content is white again; the window body stays #ededed. */
+  --paper: #fff;
+  --pane-bg: #fff;
+  --window-bg: #ededed;
+  /* Both sources fit a 4 pt corner, top and bottom (10.6 drew 5 px). */
+  --window-radius: 4px;
+  --window-border: 1px solid #696969;
+  /* Lion's frame is a hair lighter than 10.6; keep the falloff short so the
+     Andromeda desk stays readable behind stacked windows (HIG p.142). */
+  --window-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.22),
+    0 3px 8px rgba(0, 0, 0, 0.18),
+    0 7px 14px rgba(0, 0, 0, 0.12);
+  --active-window-shadow: var(--window-shadow);
+  --inactive-window-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  /* Source list: #e8ecf1 -> #d2d8e0 in a focused window, flat #f0f0f0
+     behind; selection a #6ab1e5 -> #3787d2 ramp between a #5ca4df top line
+     and a #317ac2 base (HIG p.153; 512 Pixels' Applications). */
+  --sidebar-bg: linear-gradient(#e8ecf1, #d2d8e0);
+  --sidebar-bg-inactive: #f0f0f0;
+  --sidebar-selection-bg: linear-gradient(#5ca4df 0 1px, #72b9ea 1px 2px, #6ab1e5 2px, #3787d2 calc(100% - 1px), #317ac2 calc(100% - 1px));
+  --sidebar-selection-bg-unfocused: linear-gradient(#bcc5d6 0 1px, #c4cce0 1px 2px, #bdc6db 2px, #9eacc7 calc(100% - 1px), #93a0ba calc(100% - 1px));
+  --sidebar-selection-bg-inactive: var(--sidebar-selection-bg-unfocused);
+  /* Push buttons, HIG p.199: white top half, a hard step at mid-height to
+     #ececec, rising to #f2f2f2; the default button a two-half blue gloss. */
+  --btn-bg: linear-gradient(#ffffff 0%, #f3f3f3 48%, #ececec 50%, #f2f2f2 100%);
+  --btn-default-bg: linear-gradient(#d6edff 0%, #a4d3fa 48%, #88c7fb 50%, #d5faff 100%);
+  /* Same page: a 21 pt button with a 4 pt corner, not 10.6's pill. The
+     pill inherited from Snow Leopard turned every Lion button into a
+     capsule, and a tall one into a lozenge (2026-10-08 survey). */
+  --btn-radius: 4px;
+  /* Overlay scroll bars, HIG p.136/p.148: nothing reserved beside the
+     content, a 7 px capsule of 50% black in a 10 pt gutter, no track, no
+     arrows. The same model Big Sur uses, which is where it began. */
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: rgba(0, 0, 0, 0.5);
+  --scrollbar-width: 10px;
+  --scrollbar-track-border: 0;
+  --scrollbar-track-shadow: none;
+  --scrollbar-thumb-shadow: none;
+  --scrollbar-button-border: 0;
+  --scrollbar-button-shadow: none;
+  --window-frame-lane: 10px;
+  --window-frame-track-bg: transparent;
+  --window-frame-track-border: 0;
+  --window-frame-thumb-bg: var(--scrollbar-thumb);
+  --window-frame-thumb-bg-horizontal: var(--scrollbar-thumb);
+  --window-frame-thumb-border: 1.5px solid transparent;
+  --window-frame-thumb-radius: 5px;
+  --window-frame-arrow-bg: transparent;
+  --window-frame-arrow-ink: transparent;
+  --window-frame-bar-display: none;
+  --window-frame-reserve: 0px;
+  --window-frame-scrollbar-width: thin;
+  /* The Andromeda galaxy, as gradients: a tilted band of blue arms across
+     the middle with a warm core, on a deep blue sky darkest at the top.
+     Colours are 512 Pixels' Desktop capture, sampled on a 10 x 5 grid. */
+  /* Period tokens every era answers, with the values Snow Leopard already
+     draws (the foundation defaults it inherits). */
+  --balloon-help-shadow: var(--system-object-shadow);
+  --control-strip-tile-height: calc(var(--control-strip-thickness) - 2px);
+  --control-strip-tile-margin: 0;
+  --control-strip-tile-radius: 0;
+  --desktop-label-box-shadow: none;
+  --menu-item-fg: var(--ink);
+  --surface-backdrop-filter: none;
+  --window-backdrop-filter: none;
+  --desktop: #1d3a64;
+  /* Lion "Andromeda Galaxy": warm core, dual dust lanes, blue halo, star field
+     (512 Pixels 10.7; structure only). */
+  --desktop-surface:
+    radial-gradient(ellipse 13% 9% at 47% 46%, rgba(255, 244, 228, 1), rgba(240, 208, 180, 0.8) 35%, transparent 100%),
+    radial-gradient(ellipse 28% 10% at 48% 47%, rgba(255, 220, 180, 0.55), transparent 70%),
+    radial-gradient(ellipse 18% 7% at 50% 44%, rgba(255, 200, 160, 0.4), transparent 70%),
+    radial-gradient(ellipse 24% 8% at 37% 51%, rgba(210, 166, 164, 0.65), transparent 75%),
+    radial-gradient(ellipse 24% 8% at 59% 41%, rgba(210, 166, 164, 0.6), transparent 75%),
+    radial-gradient(ellipse 20% 9% at 19% 60%, rgba(115, 130, 195, 0.7), transparent 75%),
+    radial-gradient(ellipse 24% 11% at 31% 55%, rgba(130, 135, 190, 0.75), transparent 75%),
+    radial-gradient(ellipse 24% 11% at 66% 38%, rgba(130, 135, 190, 0.75), transparent 75%),
+    radial-gradient(ellipse 20% 9% at 80% 32%, rgba(115, 130, 195, 0.65), transparent 75%),
+    radial-gradient(ellipse 14% 6% at 91% 28%, rgba(105, 125, 195, 0.5), transparent 75%),
+    radial-gradient(circle at 30% 35%, rgba(255, 255, 255, 0.9) 0 3px, rgba(200, 215, 255, 0.35) 6px, transparent 16px),
+    radial-gradient(1px 1px at 17px 23px, rgba(255, 255, 255, 0.85), transparent 1.5px) 0 0 / 97px 83px,
+    radial-gradient(1px 1px at 61px 9px, rgba(255, 255, 255, 0.6), transparent 1.5px) 0 0 / 131px 107px,
+    radial-gradient(1px 1px at 5px 44px, rgba(220, 230, 255, 0.5), transparent 1.5px) 0 0 / 59px 71px,
+    radial-gradient(1px 1px at 88px 61px, rgba(255, 255, 255, 0.45), transparent 1.5px) 0 0 / 73px 91px,
+    radial-gradient(1px 1px at 42px 71px, rgba(255, 255, 255, 0.55), transparent 1.5px) 0 0 / 113px 97px,
+    radial-gradient(ellipse 48% 20% at 52% 45%, rgba(90, 120, 190, 0.35), transparent 75%),
+    radial-gradient(ellipse 70% 60% at 15% 75%, rgba(30, 90, 160, 0.45), transparent 70%),
+    radial-gradient(ellipse 50% 40% at 85% 20%, rgba(40, 70, 140, 0.35), transparent 70%),
+    linear-gradient(to bottom, #12182a 0%, #1b2f50 22%, #174277 50%, #134680 64%, #0f2f5c 86%, #070e1c 100%);
+  /* Overlay / full-screen accept + era-rail thumb
+     (polishTodos overlay-scrollbars-accept, full-screen-accept,
+     thumbnail-vs-snow-leopard). */
+  --overlay-scroll-accept: 1;
+  --fullscreen-accept: 1;
+  /* HIG 2011-07-26 p.135 in-situ 14×14 control tile (glyph + local titlebar
+     wash). SVG arrows were short on material + mark; polish specimen reads
+     the token. */
+  --fullscreen-lamp-bg: url("./assets/themes/lion/lamp-fullscreen.png") center / 14px 14px no-repeat;
+  /* Full screen in 10.7 (88-desk-dock.css places these). The space behind
+     the slide is the system's grey linen, a seamless tile cut from 512
+     Pixels' 10.7 Mission Control capture (2x: 320 device px = 160 CSS px).
+     A full-screen window never shows its title bar, even with the menu bar
+     pulled down (OS X HIG, "Show the toolbar if the full-screen task
+     requires it"); the exit control is the blue button at the menu bar's
+     right end, cut from 512 Pixels' 10.7 Full Screen App capture (42 x 30
+     device px, a 21 x 15 pt button, corners keyed). */
+  --fullscreen-space-bg: #6e7079 url("./assets/themes/lion/fullscreen-linen.png") 0 0 / 160px 160px repeat;
+  --fullscreen-titlebar-reveal: -100%;
+  --fullscreen-exit-bg: url("./assets/themes/lion/fullscreen-exit.png") center / 21px 15px no-repeat;
+  --era-rail-thumb-bg: linear-gradient(to bottom, #f1f1f1, #b7b7b7);
+  --era-rail-thumb-border: 1px solid #696969;
+  --era-rail-thumb-radius: 4px;
+  --era-rail-thumb-shadow: inset 0 1px 0 #ffffff;
+  /* P2 menu bar: 10.7 lets Andromeda show through (translucent menu bar).
+     Opaque SL gradient is wrong here; frost is lighter than Yosemite's 20px. */
+  /* Sampled from 512 Pixels' 10-7-Lion-Desktop at 2x: a 1 px #eef0f4
+     highlight, then a ramp from about #dadee5 to #9a9ca2 over 22 pt, with
+     the galaxy lending only a few levels of blue. A flat 78% grey let the
+     desk through as a uniform #b8c1cd - bluer and darker at the top than
+     the real bar (2026-10-08). 90% keeps the native tint and its ramp. */
+  --menu-bar-bg: linear-gradient(to bottom,
+    rgba(242, 244, 248, 0.94) 0 1px, rgba(240, 244, 248, 0.9) 1px,
+    rgba(168, 171, 177, 0.9) 100%);
+  --menu-bar-base: #e6e6e6;
+  --menu-bar-backdrop-filter: blur(12px) saturate(140%);
+  --menu-bar-border-color: rgba(0, 0, 0, 0.22);
+  --menu-bar-border: 1px solid var(--menu-bar-border-color);
+  --menu-bar-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+body[data-theme="lion"] .desktop {
+  background: var(--desktop-surface);
+}
+
+/* The title bar's right end: Lion's full-screen button, a separate control
+   beside the left-hand green Zoom lamp (app/core/window-fullscreen.js adds
+   it). Two outward arrows, 14 px, no bezel (HIG p.135; identical in Safari,
+   Preview and iCal on 512 Pixels). Art is the keyed HIG crop; its placement
+   is in 88-desk-dock.css. */
+body[data-theme="lion"] .title-bar > .fullscreen-button {
+  background: var(--fullscreen-lamp-bg);
+}
+
+body[data-theme="lion"] .window:not(.is-active) .title-bar > .fullscreen-button {
+  opacity: 0.55;
+}
+
+/* 10.7 draws no resize control: any window edge resizes. The corner keeps
+   its hit area and cursor so resizing still works, but paints nothing over
+   the content that now runs to the edge. */
+body[data-theme="lion"] .grow-box {
+  background: transparent;
+}

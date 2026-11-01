@@ -1,0 +1,252 @@
+{
+  "schemaVersion": 1,
+  "purpose": "The official sources behind the 26 history-context and 15 presenter additions merged 2026-09-23. Imported verbatim from one_more_tune_improvement_20260922 (data/sources.json, 2026-09-22); each record keeps that package's own accessedOn and its checked / notChecked notes, so a reader can see what was and was not read.",
+  "importedFrom": {
+    "package": "one_more_tune_improvement_20260922",
+    "path": "data/sources.json",
+    "packagedOn": "2026-09-22",
+    "note": "The package's item files carried no researchIds; this file is the id set they attach to."
+  },
+  "items": [
+    {
+      "id": "iphone07",
+      "date": "2007-01-09",
+      "event": "Macworld 2007",
+      "url": "https://www.apple.com/newsroom/2007/01/09Apple-Reinvents-the-Phone-with-iPhone/",
+      "title": "iPhone announcement",
+      "accessedOn": "2026-09-22",
+      "checked": "Apple webpage text read in this session",
+      "notChecked": [
+        "full video",
+        "clip timing",
+        "audio",
+        "image reuse licence"
+      ]
+    },
+    {
+      "id": "air08",
+      "date": "2008-01-15",
+      "event": "Macworld 2008",
+      "url": "https://www.apple.com/newsroom/2008/01/15Apple-Introduces-MacBook-Air-The-Worlds-Thinnest-Notebook/",
+      "title": "MacBook Air announcement",
+      "accessedOn": "2026-09-22",
+      "checked": "Apple webpage text read in this session",
+      "notChecked": [
+        "full video",
+        "clip timing",
+        "audio",
+        "image reuse licence"
+      ]
+    },
+    {
+      "id": "3gs09",
+      "date": "2009-06-08",
+      "event": "WWDC 2009",
+      "url": "https://www.apple.com/newsroom/2009/06/08Apple-Announces-the-New-iPhone-3GS-The-Fastest-Most-Powerful-iPhone-Yet/",
+      "title": "iPhone 3GS announcement",
+      "accessedOn": "2026-09-22",
+      "checked": "Apple webpage text read in this session",
+      "notChecked": [
+        "full video",
+        "clip timing",
+        "audio",
+        "image reuse licence"
+      ]
+    },
+    {
+      "id": "ipad10",
+      "date": "2010-01-27",
+      "event": "Apple Special Event · January 2010",
+      "url": "https://www.apple.com/newsroom/2010/01/27Apple-Launches-iPad/",
+      "title": "iPad announcement",
+      "accessedOn": "2026-09-22",
+      "checked": "Apple webpage text read in this session",
+      "notChecked": [
+        "full video",
+        "clip timing",
+        "audio",
+        "image reuse licence"
+      ]
+    },
+    {
+      "id": "cloud11",
+      "date": "2011-06-06",
+      "event": "WWDC 2011",
+      "url": "https://www.apple.com/newsroom/2011/06/06Apple-Introduces-iCloud/",
+      "title": "iCloud announcement",
+      "accessedOn": "2026-09-22",
+      "checked": "Apple webpage text read in this session",
+      "notChecked": [
+        "full video",
+        "clip timing",
+        "audio",
+        "image reuse licence"
+      ]
+    },
+    {
+      "id": "retina12",
+      "date": "2012-06-11",
+      "event": "WWDC 2012",
+      "url": "https://www.apple.com/newsroom/2012/06/11Apple-Introduces-All-New-MacBook-Pro-with-Retina-Display/",
+      "title": "Retina MacBook Pro announcement",
+      "accessedOn": "2026-09-22",
+      "checked": "Apple webpage text read in this session",
+      "notChecked": [
+        "full video",
+        "clip timing",
+        "audio",
+        "image reuse licence"
+      ]
+    },
+    {
+      "id": "pro13",
+      "date": "2013-06-10",
+      "event": "WWDC 2013",
+      "url": "https://www.apple.com/newsroom/2013/06/10Apple-Gives-Sneak-Peek-Into-the-Future-of-the-Pro-Desktop/",
+      "title": "Mac Pro preview",
+      "accessedOn": "2026-09-22",
+      "checked": "Apple webpage text read in this session",
+      "notChecked": [
+        "full video",
+        "clip timing",
+        "audio",
+        "image reuse licence"
+      ]
+    },
+    {
+      "id": "sdk14",
+      "date": "2014-06-02",
+      "event": "WWDC 2014",
+      "url": "https://www.apple.com/newsroom/2014/06/02Apple-Releases-iOS-8-SDK-With-Over-4-000-New-APIs/",
+      "title": "iOS 8 SDK announcement",
+      "accessedOn": "2026-09-22",
+      "checked": "Apple webpage text read in this session",
+      "notChecked": [
+        "full video",
+        "clip timing",
+        "audio",
+        "image reuse licence"
+      ]
+    },
+    {
+      "id": "pencil15",
+      "date": "2015-09-09",
+      "event": "Apple Special Event · September 2015",
+      "url": "https://www.apple.com/newsroom/2015/09/09Apple-Introduces-iPad-Pro-Featuring-Epic-12-9-inch-Retina-Display/",
+      "title": "iPad Pro and accessories announcement",
+      "accessedOn": "2026-09-22",
+      "checked": "Apple webpage text read in this session",
+      "notChecked": [
+        "full video",
+        "clip timing",
+        "audio",
+        "image reuse licence"
+      ]
+    },
+    {
+      "id": "photo16",
+      "date": "2016-10-27",
+      "event": "Apple Special Event · October 2016",
+      "url": "https://www.apple.com/newsroom/2016/10/highlights-from-apples-october-2016-event/",
+      "title": "October 2016 named photo captions",
+      "accessedOn": "2026-09-22",
+      "checked": "Apple webpage text read in this session",
+      "notChecked": [
+        "full video",
+        "clip timing",
+        "audio",
+        "image reuse licence"
+      ]
+    },
+    {
+      "id": "home17",
+      "date": "2017-06-05",
+      "event": "WWDC 2017",
+      "url": "https://www.apple.com/newsroom/2017/06/homepod-reinvents-music-in-the-home/",
+      "title": "HomePod preview",
+      "accessedOn": "2026-09-22",
+      "checked": "Apple webpage text read in this session",
+      "notChecked": [
+        "full video",
+        "clip timing",
+        "audio",
+        "image reuse licence"
+      ]
+    },
+    {
+      "id": "photo17",
+      "date": "2017-09-12",
+      "event": "Apple Special Event · September 2017",
+      "url": "https://www.apple.com/newsroom/2017/09/highlights-from-apples-keynote-event/",
+      "title": "September 2017 named photo captions",
+      "accessedOn": "2026-09-22",
+      "checked": "Apple webpage text read in this session",
+      "notChecked": [
+        "full video",
+        "clip timing",
+        "audio",
+        "image reuse licence"
+      ]
+    },
+    {
+      "id": "photo18sep",
+      "date": "2018-09-12",
+      "event": "Apple Special Event · September 2018",
+      "url": "https://www.apple.com/newsroom/2018/09/highlights-from-apples-keynote-event/",
+      "title": "September 2018 named photo captions",
+      "accessedOn": "2026-09-22",
+      "checked": "Apple webpage text read in this session",
+      "notChecked": [
+        "full video",
+        "clip timing",
+        "audio",
+        "image reuse licence"
+      ]
+    },
+    {
+      "id": "photo18",
+      "date": "2018-10-30",
+      "event": "Apple Special Event · October 2018",
+      "url": "https://www.apple.com/newsroom/2018/10/highlights-from-apples-keynote-event/",
+      "title": "October 2018 named photo captions",
+      "accessedOn": "2026-09-22",
+      "checked": "Apple webpage text read in this session",
+      "notChecked": [
+        "full video",
+        "clip timing",
+        "audio",
+        "image reuse licence"
+      ]
+    },
+    {
+      "id": "photo19",
+      "date": "2019-03-25",
+      "event": "Apple Special Event · March 2019",
+      "url": "https://www.apple.com/newsroom/2019/03/highlights-from-apples-keynote-event/",
+      "title": "March 2019 named photo captions",
+      "accessedOn": "2026-09-22",
+      "checked": "Apple webpage text read in this session",
+      "notChecked": [
+        "full video",
+        "clip timing",
+        "audio",
+        "image reuse licence"
+      ]
+    },
+    {
+      "id": "ipados19",
+      "date": "2019-06-03",
+      "event": "WWDC 2019",
+      "url": "https://www.apple.com/newsroom/2019/06/the-new-ipados-powers-unique-experiences-designed-for-ipad/",
+      "title": "iPadOS preview",
+      "accessedOn": "2026-09-22",
+      "checked": "Apple webpage text read in this session",
+      "notChecked": [
+        "full video",
+        "clip timing",
+        "audio",
+        "image reuse licence"
+      ]
+    }
+  ]
+}

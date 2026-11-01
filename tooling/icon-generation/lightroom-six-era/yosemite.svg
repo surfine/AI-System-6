@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="yosemite-panel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff"/>
+      <stop offset="1" stop-color="#eef2f5"/>
+    </linearGradient>
+    <filter id="yosemite-shadow" x="-30%" y="-30%" width="180%" height="190%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#1b3447" flood-opacity=".23"/>
+    </filter>
+  </defs>
+  <g filter="url(#yosemite-shadow)" transform="rotate(-3 59 61)">
+    <rect x="17" y="22" width="80" height="72" rx="9" fill="url(#yosemite-panel)" stroke="#aab5be" stroke-width="3"/>
+    <rect x="27" y="34" width="14" height="14" rx="2" fill="#5dc7ee"/>
+    <rect x="27" y="54" width="14" height="14" rx="2" fill="#c5d0d8"/>
+    <rect x="47" y="35" width="36" height="4" rx="2" fill="#7e8992"/>
+    <rect x="47" y="45" width="28" height="4" rx="2" fill="#b3bdc5"/>
+    <rect x="47" y="55" width="34" height="4" rx="2" fill="#7e8992"/>
+    <rect x="47" y="65" width="23" height="4" rx="2" fill="#b3bdc5"/>
+    <rect x="27" y="77" width="55" height="3" rx="1.5" fill="#d0d7dc"/>
+  </g>
+  <circle cx="86" cy="81" r="24" fill="#edf9fe" stroke="#2a8ac7" stroke-width="5"/>
+  <circle cx="86" cy="81" r="10" fill="#58bee8"/>
+  <path d="M86 61v7M86 94v7M66 81h7M99 81h7M72 67l5 5M95 90l5 5M100 67l-5 5M77 90l-5 5" fill="none" stroke="#7a8d9b" stroke-width="3" stroke-linecap="round"/>
+  <path d="M86 81 96 69" fill="none" stroke="#176faa" stroke-width="4" stroke-linecap="round"/>
+</svg>

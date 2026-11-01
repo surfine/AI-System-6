@@ -1,0 +1,2896 @@
+/* Aqua research appearance partial.
+   Aqua is its own recipe root (registry family "aqua", recipeBase null);
+   Snow Leopard descends from it (family "aqua", recipeBase "aqua"). This file
+   exists so the Aqua branch is physically isolated from the Liquid Glass /
+   Yosemite branch while both are being rebuilt in parallel. Every selector is
+   explicit: no Liquid Glass family class or family-scoped selector may style
+   the Aqua branch. Values are measured from the 10.2 evidence chain (Apple
+   Aqua HIG June 2002, GUIdebook 1x captures, 512 Pixels, Quaqua Jaguar). */
+
+/* Era wallpapers override the System 6 desktop grid from the theme layer:
+   Platinum uses the abstracted Mac OS 9 field; the Liquid Glass family
+   (Aqua / Snow Leopard / Yosemite) paints their measured wallpaper ramps. */
+body[data-theme-family="aqua"] .desktop {
+
+  background: var(--desktop-surface);
+
+}
+
+/* Family decisions, declared once for every Mac OS X Aqua-family era: the
+   sheet's 64px warning is drawn on the form, so the message carries no second
+   icon; and body copy's Chinese is the era's Heiti, not Songti (2026-10-08).
+   Snow Leopard's lineage below names its own Hiragino face. */
+body[data-theme-family="aqua"] {
+  --alert-icon-display: none;
+  --alert-icon-gutter: 0;
+  --theme-cjk-font: "STHeiti", "Heiti SC";
+  /* Mac OS X tabs are a short connected row centred on the top edge of the
+     box they open (Jaguar's Universal Access pane, guidebook capture), not a
+     strip stretched across the window. */
+  --tab-strip-justify: center;
+  --tab-flex: 0 0 auto;
+  /* Clio's glass layout wears each era's own material: the source list, a
+     soft wash of the era's selection blue, the era's button recipe and its
+     corner size. Declared once for the family from tokens every era already
+     answers, so no era sets a Clio-only token (99-cliotalk-shell.css reads
+     these; the agent surfaces read --agent-selected-*). */
+  --cl-era-sidebar: var(--sidebar-bg);
+  --cl-era-hover: color-mix(in srgb, var(--selection-edge) 14%, #fff);
+  --cl-era-selected: color-mix(in srgb, var(--selection-edge) 28%, #fff);
+  --cl-era-accent: var(--selection-edge);
+  --cl-era-r-sm: min(var(--btn-radius), 6px);
+  --cl-era-r-md: min(var(--btn-radius), 8px);
+  --cl-era-r-lg: min(var(--btn-radius), 10px);
+  --cl-era-window-min: 740px;
+  --cl-era-btn-radius: var(--btn-radius);
+  --cl-era-btn-bg: var(--btn-bg);
+  --cl-era-btn-border: var(--btn-border-color);
+  --cl-era-btn-shadow: var(--btn-shadow);
+  --cl-era-default-bg: var(--btn-default-bg);
+  --cl-era-default-fg: var(--btn-default-fg);
+  --cl-era-default-border: var(--btn-border-color);
+  --cl-era-default-shadow: var(--btn-default-shadow);
+  --agent-selected-bg: var(--selection-bg);
+  --agent-selected-fg: var(--selection-fg);
+}
+
+html[data-theme="aqua"],
+body[data-theme="aqua"] {
+  --btn-fg: var(--ink); /* period token (Platinum N1, 2026-09-25): the value this era already drew */
+  /* Period tokens Platinum made shared (2026-09-25, second batch), answered
+     with the values this era already drew. */
+  --choice-checkmark-size: 12px 12px;
+  --menu-button-active-shadow: none;
+  --menu-item-active-shadow: none;
+  /* Period tokens Platinum made shared (2026-09-25), answered with the values
+     this era already drew, so nothing here changes on screen. */
+  --tab-last-border-right: var(--system-border);
+  --system-select-option-min-height: 28px;
+  --system-select-option-active-bg: var(--ink);
+  --system-select-option-active-fg: var(--paper);
+  --system-select-option-active-shadow: none;
+  --modal-bg: var(--paper);
+
+  /* Jaguar evidence boundary: Apple's June 2002 Aqua HIG owns control geometry;
+     original 10.2 captures own final appearance. Quaqua 9.1 supplies the
+     explicitly Jaguar pinstripe, 22px title bar, wrap tabs and file chooser.
+     Quaqua's own guide warns that Jaguar JButtons fall back to Panther, so its
+     common button sprites are material/state evidence only, never ground truth.
+     Quaqua artwork is measured but not redistributed. */
+  /* 华文黑体: the Simplified system face of Mac OS X 10.0 through 10.5. */
+  --theme-ui-font: "Lucida Grande", "Lucida Sans Unicode", "STHeiti", "Heiti SC", "Microsoft YaHei", sans-serif;
+  --theme-title-font: var(--theme-ui-font);
+  /* Aqua pop-up arrow: compact double-arrow well on the right edge. */
+  --system-select-arrow-right: 9px;
+  --system-select-arrow-top: 4px;
+  --system-select-arrow-width: 4px;
+  --system-select-arrow-height: 12px;
+  --system-select-arrow-transform: none;
+  --system-select-arrow-bg: url("./assets/themes/aqua/popup-arrows.svg");
+  --system-readable-min: 13px;
+  --system-title-size: 13px;
+  --system-control-size: 13px;
+  --system-text-size: 13px;
+  --system-caption-size: 11px;
+  --system-menu-height: 22px;
+  --system-titlebar-height: 22px;
+  --system-titlebar-control-slot: 24px;
+  --system-titlebar-control-size: 15px;
+  --system-titlebar-title-height: 15px;
+  --system-titlebar-font-size: 13px;
+  --system-titlebar-margin-y: 0;
+  --system-titlebar-padding-y: 0;
+  --system-titlebar-padding-x: 6px;
+  --system-titlebar-inactive-control-filter: grayscale(1);
+  --system-titlebar-inactive-title-color: #6d6d6d;
+  --system-control-min-height: 22px;
+  /* 20px is measured, not chosen: in the canonical 10.2 Shut Down capture the
+     Cancel capsule fills tile rows 1-20 and its outline closes on row 21. The
+     push button used to override this with a literal 21px and paint its first
+     scanline dialog grey to make up the difference, which put a grey bar on
+     the button everywhere the surface was not #e4e4e4. */
+  --system-button-min-height: 20px;
+  --system-button-small-height: 17px;
+  --system-button-mini-height: 17px;
+  --system-button-small-font-size: 11px;
+  --system-button-mini-font-size: 10px;
+  --system-button-small-padding-x: 8px;
+  --system-button-mini-padding-x: 7px;
+  --system-button-padding-y: 0;
+  --system-button-padding-x: 14px;
+  --titlebar-content-padding-inline: 7px;
+  --titlebar-title-weight: 400;
+  --titlebar-title-text-shadow: 0 1px 0 rgba(255, 255, 255, 0.82);
+  /* The lamp's box; its art and placement are 88-desk-dock.css's tokens. */
+  --traffic-light-size: 13px;
+  --select-control-min-height: 20px;
+  --select-control-padding: 1px 27px 1px 9px;
+  --select-control-border: 1px solid #00005f;
+  --select-control-radius: 10px;
+  --select-control-bg-color: #f7f7f7;
+  --select-control-bg-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='14' viewBox='0 0 6 14'%3E%3Cpath d='m.5 5.5 2.5-3 2.5 3zM.5 8.5l2.5 3 2.5-3z' fill='%23064a79'/%3E%3C/svg%3E"),
+    linear-gradient(#5f9bc1, #5f9bc1),
+    linear-gradient(to bottom,
+      #dde1f4 0 5%, #bed4ef 5% 10%, #a6c8eb 10% 15%,
+      #9ac1ea 15% 25%, #94bdea 25% 30%, #8ebbea 30% 40%,
+      #8ebdec 40% 45%, #64a8f2 45% 50%, #6bb0f6 50% 55%,
+      #73b7fd 55% 60%, #7cbfff 60% 65%, #86c9ff 65% 70%,
+      #93d2ff 70% 75%, #a0dcff 75% 85%, #a9e6ff 85% 95%,
+      #bff 95% 100%),
+    linear-gradient(to bottom,
+      #fcfcfc 0 5%, #f6f6f6 5% 10%, #f0f0f0 10% 15%,
+      #eee 15% 35%, #e1e1e1 35% 45%, #e6e6e6 45% 50%,
+      #e9e9e9 50% 55%, #ececec 55% 60%, #efefef 60% 65%,
+      #f3f3f3 65% 70%, #f6f6f6 70% 75%, #f8f8f8 75% 80%,
+      #fcfcfc 80% 90%, #fff 90% 100%);
+  --select-control-bg-position: right 5px center, right 18px top, right top, left top;
+  --select-control-bg-size: 6px 14px, 1px 100%, 19px 100%, 100% 100%;
+  --select-control-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92), 0 1px 2px rgba(0, 0, 0, 0.34);
+  --select-control-font-weight: 400;
+  --system-select-control-min-height: 20px;
+  --system-select-control-padding: 1px 27px 1px 9px;
+  --system-select-control-border: 1px solid #00005f;
+  /* 4px, measured: in the 10.2 General pane the pop-up's top rail reaches
+     within two pixels of both ends, so the control is an 89x21 rounded
+     rectangle, not a capsule and not a 10px bevel. */
+  --system-select-control-radius: 4px;
+  --system-select-control-bg:
+    linear-gradient(#5f9bc1, #5f9bc1) right 18px top / 1px 100% no-repeat,
+    linear-gradient(to bottom, #dde1f4 0 5%, #bed4ef 5% 10%, #a6c8eb 10% 15%, #9ac1ea 15% 25%, #94bdea 25% 30%, #8ebbea 30% 40%, #8ebdec 40% 45%, #64a8f2 45% 50%, #6bb0f6 50% 55%, #73b7fd 55% 60%, #7cbfff 60% 65%, #86c9ff 65% 70%, #93d2ff 70% 75%, #a0dcff 75% 85%, #a9e6ff 85% 95%, #bff 95% 100%) right top / 19px 100% no-repeat,
+    linear-gradient(to bottom, #fcfcfc 0 5%, #f6f6f6 5% 10%, #f0f0f0 10% 15%, #eee 15% 35%, #e1e1e1 35% 45%, #e6e6e6 45% 50%, #e9e9e9 50% 55%, #ececec 55% 60%, #efefef 60% 65%, #f3f3f3 65% 70%, #f6f6f6 70% 75%, #f8f8f8 75% 80%, #fcfcfc 80% 90%, #fff 90% 100%);
+  --system-select-control-shadow: var(--aqua-popup-frame);
+  --system-select-control-font-weight: 400;
+  --search-field-min-height: 22px;
+  --search-field-padding: 2px 8px 2px 21px;
+  --search-field-radius: 999px;
+  --search-field-background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 11 11'%3E%3Ccircle cx='4.5' cy='4.5' r='3' fill='none' stroke='%23757575'/%3E%3Cpath d='m6.8 6.8 3 3' stroke='%23757575' stroke-width='1.4' stroke-linecap='round'/%3E%3Cpath d='M2.8 3.4a2.2 2.2 0 0 1 2.9-.9' fill='none' stroke='%23fff' stroke-linecap='round' opacity='.9'/%3E%3C/svg%3E") 7px center / 11px 11px no-repeat,
+    var(--field-bg);
+  /* Searcher result table, Jaguar expression: white/blue zebra rows (the
+     iTunes list idiom), a rounded Sherlock-style search field from the
+     measured search-field tokens above, and the rank-mapped relevance bar. */
+  --find-path-header-display: grid;
+  --find-path-relevance-display: block;
+  --find-path-relevance-radius: 999px;
+  --find-path-result-display: grid;
+  --find-path-result-align: baseline;
+  --find-path-result-column-gap: 10px;
+  --find-path-results-bg: #fff;
+  --find-path-result-border-bottom: 0;
+  --find-path-result-last-border-bottom: 0;
+  --find-path-result-selected-border-bottom: 0;
+  --find-path-result-even-bg: #edf3fe;
+  --find-path-header-padding: 2px 10px;
+  --find-path-header-border-bottom: 1px solid #b4b4b4;
+  --find-path-header-bg: linear-gradient(#fff, #e4e4e4);
+  --find-path-query-min-height: var(--search-field-min-height);
+  --find-path-query-padding: var(--search-field-padding);
+  --find-path-query-radius: var(--search-field-radius);
+  --find-path-query-bg: var(--search-field-background, var(--field-bg));
+  --progress-height: 15px;
+  --progress-padding: 1px;
+  --progress-border-color: #7b7b7b;
+  --progress-radius: 999px;
+  --progress-bg: linear-gradient(#d1d1d1, #fff 48%, #c5c5c5);
+  --progress-fill-radius: 999px;
+  --progress-fill-bg: linear-gradient(#cdf3ff 0%, #64c9ff 42%, #138adb 50%, #086cc1 56%, #74d0ff 100%);
+  --progress-fill-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88);
+  --progress-shadow: none;
+  /* Jaguar's pill never stripes while busy -- the gel stays smooth. */
+  --progress-fill-active-bg: var(--progress-fill-bg);
+  --progress-fill-active-size: 100% 100%;
+  --ink: #171717;
+  --paper: #fff;
+  --panel: #e9e9e9;
+  --quiet-panel: #fafafa;
+  --shade: #c4c4c4;
+  /* 3.41:1 on paper, where this token carries 13px text (--system-readable-min)
+     as well as chrome. The floor is 4.5:1; #6b6b6b measures 5.33:1. */
+  --shade-dark: #6b6b6b;
+  /* Theme Family Contract §5, the two divider roles. System 6 rules a desk in
+     ink — a solid black primary rule and a dotted secondary one — and Platinum
+     keeps the dotted hairline. Aqua rules it in grey hairlines and had never
+     said so, so every divider that reads the family role was still drawing
+     Classic ink: the dotted rules under each Quick Draft field are the ones
+     you can see without looking for them. */
+  --system-primary-divider: 1px solid var(--rule);
+  --system-secondary-divider: 1px solid var(--shade);
+  --rule: #a5a5a5;
+  --pane-bg: #fff;
+  --messages-bg: #fff;
+  --settings-scrollbar-lane-bg: #fff;
+  --details-bar-bg:
+    repeating-linear-gradient(to bottom, #f1f1f1 0 1px, #fff 1px 2px, #f1f1f1 2px 3px, #eaeaea 3px 4px);
+  --details-bar-border: #7f7f7f;
+  /* Abstracted from the 10.2 default wallpaper (512 Pixels 6k capture): the
+     medium blue water with a lighter crest band. Measured vertical ramp, no
+     raster payload. */
+  --desktop: #4979b0;
+  /* Jaguar Aqua Blue: light ribbon through water, crest lower-left to
+     upper-right, a second caustic band, no raster payload. */
+  --desktop-surface:
+    radial-gradient(90% 55% at 18% 6%, rgb(255 255 255 / 0.52), transparent 42%),
+    radial-gradient(40% 22% at 34% 28%, rgb(220 240 255 / 0.35), transparent 55%),
+    radial-gradient(55% 32% at 48% 42%, rgb(180 220 255 / 0.32), transparent 60%),
+    radial-gradient(45% 28% at 62% 58%, rgb(120 180 230 / 0.22), transparent 58%),
+    radial-gradient(70% 40% at 72% 78%, rgb(40 90 150 / 0.42), transparent 55%),
+    linear-gradient(128deg,
+      #2a568c 0%, #3b6ba3 16%, #4d86ba 32%, #6ea6d6 42%,
+      #a8d0f2 50%, #6ea6d6 58%, #4d85ba 72%, #355f92 88%, #244870 100%);
+  /* Endfield terminal: the story pane dresses in the era's blue, overlaid with
+     the terminal's contour-line survey (等高线), a soft gradient wash and a
+     faint chartreuse glow — the same Endfield recipe Liquid Glass wears. */
+  --endfield-pane-bg:
+    linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+    url("assets/endfield-background.svg"),
+    radial-gradient(circle at 88% 8%, rgba(234, 253, 79, 0.24), transparent 34%),
+    linear-gradient(150deg, #e6eff8 0%, #b9d1e9 40%, #d6e5f2 72%, #eef4f9 100%);
+  --endfield-pane-bg-size: 34px 34px, 34px 34px, max(1200px, 118vw) auto, auto, auto;
+  --endfield-pane-bg-position: center, center, 45% 20%, center, center;
+  --endfield-pane-bg-repeat: repeat, repeat, no-repeat, no-repeat, no-repeat;
+  --window-bg:
+    repeating-linear-gradient(to bottom, #f1f1f1 0 1px, #fff 1px 2px, #f1f1f1 2px 3px, #eaeaea 3px 4px);
+  --window-border: 1px solid #8b8b8b;
+  --window-radius: 8px 8px 2px 2px;
+  /* Real 10.2 windows cast a dense contact shadow with a short falloff,
+     not a wide diffuse bloom. */
+  /* Theme Family Contract: the shared object shadow. `2px 2px 0 var(--ink)`
+     is System 6's hard offset shadow, and only Liquid Glass had ever replaced
+     it — so a focused Quick Draft field, a Time Machine popover and a
+     ClioStage frame all stood on a solid black bar in Aqua too. This is the
+     era's own window shadow at object scale. */
+  --system-shadow: 0 1px 1px rgba(0, 0, 0, 0.35), 0 3px 7px rgba(0, 0, 0, 0.22);
+  /* Theme Family Contract: the shadow a small raised object casts — the
+     composer, an action chip, a help tag. The base layer writes System 6's
+     hard offset; Aqua casts the same soft shadow it gives every other object. */
+  --system-object-shadow: var(--system-shadow);
+  /* Mac OS X help tag: a pale yellow slip with a thin grey rule and a small
+     corner. The base layer's balloon is System 6's — white paper inside a
+     black hairline with a 12px corner — and only Platinum had answered with
+     its own, so Aqua was still popping a System 6 balloon. */
+  --balloon-help-bg: #fbfbc8;
+  --balloon-help-border: 1px solid #9d9d7d;
+  --balloon-help-radius: 3px;
+  /* Dense contact + short falloff (Jaguar desktop capture), not a wide bloom. */
+  --window-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.35),
+    0 2px 3px rgba(0, 0, 0, 0.32),
+    0 5px 10px rgba(0, 0, 0, 0.22);
+  --active-window-shadow: var(--window-shadow);
+  --inactive-window-shadow: 0 3px 8px rgba(0, 0, 0, 0.18);
+  /* Exact 21-row columns sampled from Jaguar's 2x22 title-bar sprite; the
+     final source row is the #7f divider represented by --titlebar-border. */
+  --system-titlebar-active-bg: linear-gradient(to bottom,
+    #fff 0 2px, #f1f1f1 2px 3px, #eaeaea 3px 4px,
+    #f0f0f0 4px 5px, #fefefe 5px 6px, #f0f0f0 6px 7px, #e9e9e9 7px 8px,
+    #efefef 8px 9px, #fdfdfd 9px 10px, #eee 10px 11px, #e6e6e6 11px 12px,
+    #ebebeb 12px 13px, #f8f8f8 13px 14px, #e8e8e8 14px 15px, #dfdfdf 15px 16px,
+    #e4e4e4 16px 17px, #f0f0f0 17px 18px, #e1e1e1 18px 19px, #d8d8d8 19px 20px,
+    #dedede 20px 21px);
+  /* Jaguar inactive title bars are blue-gray pinstripes over a darker
+     window edge, not a desaturated copy of the active bar. The 21 rows are
+     sampled from the inactive window in the 10.2 desktop capture. */
+  /* Real 10.2 inactive title bars are translucent blue-gray over the
+     desktop. Alpha keeps the pinstripe legible without an opaque sheet.
+     Two-pixel stops compress the 21-row pinstripe at this alpha. */
+  --system-titlebar-inactive-bg: linear-gradient(to bottom,
+    rgba(207, 221, 235, 0.82) 0 2px, rgba(193, 205, 220, 0.82) 2px 4px,
+    rgba(196, 210, 224, 0.82) 4px 6px, rgba(194, 207, 220, 0.82) 6px 8px,
+    rgba(202, 214, 226, 0.82) 8px 10px, rgba(189, 201, 213, 0.82) 10px 12px,
+    rgba(198, 210, 222, 0.82) 12px 14px, rgba(186, 198, 210, 0.82) 14px 16px,
+    rgba(183, 195, 207, 0.82) 16px 18px, rgba(181, 193, 205, 0.82) 18px 20px,
+    rgba(176, 186, 199, 0.82) 20px 21px);
+  --system-titlebar-background-origin: padding-box;
+  --system-titlebar-background-clip: border-box;
+  --system-titlebar-inactive-control-visibility: visible;
+  --system-titlebar-inactive-control-opacity: 0.52;
+  --titlebar-title-bg: transparent;
+  --titlebar-title-fg: #191919;
+  --titlebar-border: 1px solid #7f7f7f;
+  --titlebar-border-inactive: 1px solid #7f7f7f;
+  --titlebar-shadow: inset 0 1px 0 #fff;
+  --surface-primary: #fff;
+  --surface-secondary:
+    repeating-linear-gradient(to bottom, #f1f1f1 0 1px, #fff 1px 2px, #f1f1f1 2px 3px, #eaeaea 3px 4px);
+  --surface-inset: #fff;
+  --toolbar-bg:
+    repeating-linear-gradient(to bottom, #fafafa 0 1px, #fff 1px 2px, #fafafa 2px 3px, #e9e9e9 3px 4px);
+  --toolbar-bg-inactive: var(--toolbar-bg);
+  --toolbar-border: 1px solid #7f7f7f;
+  --app-toolbar-bg: var(--toolbar-bg);
+  --app-toolbar-border-bottom: 1px solid #c7c7c7;
+  --sidebar-bg: #fff;
+  --sidebar-bg-inactive: #fff;
+  --selection-bg: #3479d4;
+  --selection-edge: #3479d4;
+  --selection-fg: #fff;
+  --sidebar-selection-bg: var(--selection-bg);
+  --sidebar-selection-fg: #fff;
+  /* Jaguar Scrapbook keeps the object browser in an Aqua drawer rather than
+     adopting the single-item System 6 page rail. */
+  --scrapbook-list-display: block;
+  --scrapbook-pager-display: none;
+  --scrapbook-pane-columns: minmax(160px, 0.72fr) minmax(0, 1fr);
+  --scrapbook-pane-rows: minmax(0, 1fr) auto auto;
+  --scrapbook-pane-gap: 10px;
+  --scrapbook-mobile-pane-columns: 1fr;
+  --scrapbook-mobile-pane-rows: minmax(132px, 156px) minmax(0, 1fr) auto;
+  --scrap-list-bg:
+    repeating-linear-gradient(to bottom, #f1f1f1 0 1px, #fff 1px 2px, #f1f1f1 2px 3px, #eaeaea 3px 4px);
+  --scrap-list-border: 1px solid #7f7f7f;
+  --scrap-list-radius: 4px;
+  --scrap-list-shadow: inset 1px 1px 0 #fff, 2px 2px 4px rgba(0, 0, 0, 0.18);
+  --scrap-list-item-divider: 1px solid rgba(80, 80, 80, 0.24);
+  --scrap-list-item-bg: linear-gradient(rgba(255, 255, 255, 0.82), rgba(229, 229, 229, 0.82));
+  --scrap-list-item-selected-bg: linear-gradient(#73baff, #2778d8);
+  --scrap-list-item-selected-fg: #fff;
+  --scrap-list-item-selected-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  /* Jaguar document rails borrow the Aqua drawer: pinstripe metal around
+     raised source rows, with the same blue selection used by native lists.
+     The rail remains fixed TDI chrome; no drawer motion or behavior fork. */
+  --tdi-rail-padding: 5px;
+  --tdi-rail-border: 1px solid #7f7f7f;
+  --tdi-rail-radius: 4px;
+  --tdi-rail-bg:
+    repeating-linear-gradient(to bottom, #f1f1f1 0 1px, #fff 1px 2px, #f1f1f1 2px 3px, #eaeaea 3px 4px);
+  --tdi-rail-shadow: inset 1px 1px 0 #fff, 2px 2px 4px rgba(0, 0, 0, 0.22);
+  --tdi-tabs-gap: 3px;
+  --tdi-tabs-padding: 0;
+  --tdi-tabs-bg: transparent;
+  --tdi-tabs-border-bottom: 0;
+  --tdi-tab-height: 40px;
+  --tdi-tab-min-height: 40px;
+  --tdi-tab-border: 1px solid #7d7d7d;
+  --tdi-tab-border-bottom: var(--tdi-tab-border);
+  --tdi-tab-radius: 4px;
+  --tdi-tab-bg: linear-gradient(#fff, #e5e5e5);
+  --tdi-tab-shadow: inset 0 1px 0 #fff;
+  --tdi-tab-active-border: 1px solid #0d4aa6;
+  --tdi-tab-active-border-bottom: var(--tdi-tab-active-border);
+  --tdi-tab-active-bg: linear-gradient(#73baff, #2778d8);
+  --tdi-tab-active-fg: #fff;
+  --tdi-tab-active-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  --tdi-tab-small-color: #5f5f5f;
+  --tdi-tab-active-small-color: rgba(255, 255, 255, 0.86);
+  /* Tier 2 selection states. Unfocused desaturates the pinstripe drawer's
+     blue selection to the same grey every Mac OS X source list turns to when
+     its window is not key. Hover/pressed stay inside the drawer's existing
+     white-to-grey pinstripe ramp -- one step lighter, one step darker. */
+  --tdi-tabs-heading-padding: 6px 9px 3px;
+  --tdi-tabs-heading-fg: #5f5f5f;
+  --tdi-tabs-heading-font-size: 10px;
+  --tdi-tabs-heading-letter-spacing: 0.03em;
+  --tdi-tabs-heading-text-transform: uppercase;
+  --tdi-tabs-heading-border-bottom: 0;
+  --tdi-tab-active-unfocused-border: 1px solid #9a9a9a;
+  --tdi-tab-active-unfocused-border-bottom: 1px solid #9a9a9a;
+  --tdi-tab-active-unfocused-bg: linear-gradient(#d9d9d9, #b0b0b0);
+  --tdi-tab-active-unfocused-fg: #3f3f3f;
+  --tdi-tab-active-unfocused-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  --tdi-tab-active-unfocused-small-color: rgba(0, 0, 0, 0.55);
+  --tdi-tab-hover-bg: linear-gradient(#fff, #ececec);
+  --tdi-tab-hover-fg: #000;
+  --tdi-tab-hover-shadow: inset 0 1px 0 #fff;
+  --tdi-tab-pressed-bg: linear-gradient(#5599e0, #1a5bb8);
+  --tdi-tab-pressed-fg: #fff;
+  --tdi-tab-pressed-shadow: inset 0 2px 3px rgba(0, 63, 114, 0.35);
+  --tdi-tab-close-size: 16px;
+  --tdi-tab-close-gutter: 5px;
+  --tdi-tab-close-border: 1px solid #767676;
+  --tdi-tab-close-radius: 999px;
+  --tdi-tab-close-bg: linear-gradient(#f9f9f9, #c9c9c9);
+  --tdi-tab-close-shadow: inset 0 1px 0 #fff;
+  --tdi-tab-close-active-bg: rgba(255, 255, 255, 0.82);
+  --tdi-tab-close-active-fg: #1d4f8b;
+  --tdi-tab-close-active-shadow: inset 0 1px 0 #fff;
+  --tdi-tab-close-hover-bg: #fff;
+  --tdi-tab-close-hover-fg: #173f70;
+  --tdi-tab-close-hover-shadow: 0 0 0 2px rgba(52, 121, 212, 0.24);
+  /* 10.2 desktop labels are shadowed white text straight on the wallpaper;
+     selection paints the rounded blue pill. No System 6 paper tag. */
+  --desktop-label-bg: transparent;
+  --desktop-label-fg: #fff;
+  --desktop-label-text-shadow: 0 1px 2px rgba(0, 10, 40, 0.85);
+  --desktop-label-radius: 8px;
+  --desktop-label-selected-bg: var(--selection-bg);
+  --desktop-label-selected-fg: var(--selection-fg);
+  --separator: #9b9b9b;
+  --control-shadow: inset 0 1px 0 #fff, 0 1px 1px rgba(0, 0, 0, 0.28);
+  --control-active-shadow: inset 0 2px 3px rgba(0, 63, 114, 0.45);
+  /* Theme Family Contract: the keyboard ring. The base layer writes System 6's
+     dotted ink ring, so every era that never answered wore it. Each era already
+     names its own ring for controls; this points the shared role at it. */
+  --system-focus-outline: var(--control-focus-outline);
+  /* One frame for both renderings of the same control: the select harness and
+     the native <select> Aqua paints itself. The 1px side shadows are the left
+     and right edges a scanline body cannot paint; the offset pair is the soft
+     inward shade about three pixels in; the contact row is the capture's own
+     #c4c4c4, not the push button's hard pair — a pop-up sits nearer its
+     surface than a push button does. */
+  --aqua-popup-frame:
+    inset 1px 0 0 #b0b0b0,
+    inset -1px 0 0 #b0b0b0,
+    inset 5px 0 4px -4px rgba(0, 0, 0, 0.12),
+    inset -5px 0 4px -4px rgba(0, 0, 0, 0.12),
+    0 1px 0 #c4c4c4;
+  --control-focus-outline: 3px solid rgba(64, 157, 224, 0.72);
+  --control-focus-offset: 1px;
+  --control-disabled-bg: linear-gradient(#f7f7f7, #dedede 52%, #f4f4f4);
+  --control-disabled-field-bg: #f7f7f7;
+  /* Quaqua's disabled frames are the enabled material at one-half alpha. That
+     came from a 10.6-era Java clone, and the native 10.2 Open dialog disagrees
+     for the push button: its disabled capsule keeps a fully opaque #cbcbcb
+     outline while the four-row Jaguar pinstripe remains visible through the
+     interior. At one-half alpha the outline disappeared and only the label
+     survived. The button now owns its opacity and outline; the other controls
+     keep this fade until a native reference is pinned for each of them. */
+  --control-disabled-opacity: 0.5;
+  /* Same reason as Platinum: the disabled pop-up and button run at opacity 1,
+     and --shade-dark reads 2.35:1 on Aqua's #e9e9e9 face. */
+  --system-disabled-fg: #828282;
+  --btn-disabled-opacity: 1;
+  /* Open-dialog disabled rim measured nearer #a4a4a4 than #cbcbcb. Soft outer
+     AA ring is honest paint; Theme Lab silhouette still maxes (geo 1 / edge 8)
+     against the soft capture — residual documented, not fake-green. */
+  --btn-disabled-border-color: #a4a4a4;
+  /* Family disabled rule reads --btn-disabled-border (not *-color). */
+  --btn-disabled-border: #a4a4a4;
+  /* A disabled Jaguar button still sits on the surface: the Open dialog's
+     greyed Open carries an #a4a4a4 bottom rim over a soft #cfcfcf contact row,
+     lighter than the enabled button's #565656/#b9b9b9 pair but not absent.
+     box-shadow: none floated it. Paint a muted gel fill so Theme Lab's flat
+     fixture (and non-pinstripe parents) still silhouette; transparent over
+     dialog pinstripe remains the native story when that parent is present. */
+  --btn-disabled-shadow: 0 1px 0 #cfcfcf, 0 0 0 1px rgba(120, 120, 120, 0.22);
+  --btn-disabled-bg: linear-gradient(#f9f9f9 0%, #e8e8e8 35%, #d2d2d2 52%, #e6e6e6 78%, #f4f4f4 100%);
+  --control-choice-hover-shadow: 0 0 0 3px rgba(65, 157, 224, 0.45);
+  --system-border: 1px solid #909090;
+  --system-inset: inset 0 1px 2px rgba(0, 0, 0, 0.3), inset 0 -1px 0 #fff;
+  --control-radius: 7px;
+  --btn-border-color: rgba(39, 39, 39, 0.82);
+  --btn-active-border-color: #00005f;
+  /* Half the push button's own height, not infinity. At 20px the browser
+     clamps either value to the same capsule, so the canonical button is
+     unchanged — but 999px also turned every taller control into a stadium,
+     a shape Aqua never drew. Past 20px this corner is the era's bevel
+     button instead. Controls that really are round (the composer's Add and
+     Send) say so through --clio-composer-control-radius. */
+  --btn-radius: 10px;
+  --clio-composer-control-radius: 50%;
+  /* Quaqua's common 10-state Aqua painter supplies the hard material breaks;
+     native Jaguar captures and the 2002 HIG correct its Panther fallback. */
+  --btn-bg: linear-gradient(to bottom,
+    #f5f5f5 0 5%, #f4f4f4 5% 10%, #f0f0f0 10% 15%,
+    #eee 15% 35%, #d9d9d9 35% 45%, #dedede 45% 50%,
+    #e3e3e3 50% 55%, #e6e6e6 55% 60%, #e9e9e9 60% 65%,
+    #eee 65% 70%, #f3f3f3 70% 75%, #f5f5f5 75% 80%,
+    #fff 80% 90%, #fcfcfc 90% 100%);
+  --btn-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.96),
+    0 1px 0 rgba(0, 0, 0, 0.42),
+    0 2px 1px rgba(0, 0, 0, 0.18),
+    0 3px 2px rgba(0, 0, 0, 0.06);
+  /* Jaguar itself never answered the pointer, but the desk does: a thin
+     white veil over the resting gel is the restrained hover the owner asked
+     for — the material stays the same, it just catches a little more light. */
+  --aqua-btn-hover-veil: rgba(255, 255, 255, 0.3);
+  --btn-hover-bg: linear-gradient(var(--aqua-btn-hover-veil), var(--aqua-btn-hover-veil)), var(--btn-bg);
+  --btn-hover-fg: #111;
+  --btn-hover-shadow: var(--btn-shadow);
+  --btn-active-bg: linear-gradient(to bottom,
+    #c7cae8 0 5%, #bfc8e8 5% 10%, #afc1e5 10% 15%,
+    #9cb9e3 15% 25%, #89b4e1 25% 30%, #7fafe1 30% 40%,
+    #78ade4 40% 45%, #4693e2 45% 50%, #549eee 50% 55%,
+    #58a4f1 55% 60%, #62adf7 60% 65%, #66b1fd 65% 70%,
+    #6bb8ff 70% 75%, #76c2ff 75% 85%, #78caff 85% 95%,
+    #77d5fd 95% 100%);
+  --btn-active-fg: #06131d;
+  --btn-active-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    inset 0 -1px 1px rgba(0, 45, 104, 0.5),
+    0 1px 0 rgba(0, 0, 0, 0.42),
+    0 2px 1px rgba(0, 0, 0, 0.18),
+    0 3px 2px rgba(0, 0, 0, 0.06);
+  --btn-default-bg: linear-gradient(to bottom,
+    #c6d3eb 0 5%, #bed1eb 5% 10%, #b0cbe9 10% 15%,
+    #a4c4e7 15% 25%, #9fc0e6 25% 30%, #97bee6 30% 40%,
+    #91bdeb 40% 45%, #6dabeb 45% 50%, #7ab5f2 50% 55%,
+    #7ebcfa 55% 60%, #87c2fe 60% 65%, #8ac7fe 65% 70%,
+    #91ceff 70% 75%, #9adaff 75% 85%, #9fe1ff 85% 95%,
+    #a4f1fc 95% 100%);
+  --btn-default-fg: #000;
+  --btn-default-text-shadow: none;
+  /* Aqua HIG pp.120-122: the pulse is the default button's affordance; a
+     hard 3px focus halo on top of it was ahistorical. */
+  --btn-default-focus-outline: 0;
+  --btn-default-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.82),
+    inset 0 -1px 1px rgba(0, 45, 104, 0.42),
+    0 1px 0 rgba(0, 0, 0, 0.42),
+    0 2px 1px rgba(0, 0, 0, 0.18),
+    0 3px 2px rgba(0, 0, 0, 0.06);
+  --btn-default-active-bg: var(--btn-active-bg);
+  --btn-default-active-fg: #06131d;
+  --field-bg: #fff;
+  --field-focus-bg: #fff;
+  --field-border: 1px solid #8c8c8c;
+  --field-radius: 2px;
+  /* ClioTalk reply slip: Aqua text-box idiom (field border + radius + inset
+     highlight). The Classic dotted outline must not leak into Aqua. */
+  --clio-slip-radius: 2px;
+  --clio-slip-surface: #fff;
+  --clio-slip-border: 1px solid #8c8c8c;
+  --clio-slip-shadow: inset 0 1px 0 #fff;
+  --clio-slip-kept-surface: #fff;
+  --clio-slip-kept-border: 1px solid #4d4d4d;
+  --clio-slip-kept-shadow: none;
+  --clio-slip-mark-border: 1px solid #8c8c8c;
+  --clio-slip-mark-kept: #333;
+  --clio-said-rule: 3px solid #8c8c8c;
+  /* --shade-dark (#8b8b8b) reads 2.8:1 on the details bar's near-white face --
+     under this theme's own accepted disabled-state floor. Liquid Glass already
+     carries its own --clio-muted-copy for the same reason; Aqua needs one too
+     rather than a component-scoped color, since every "pending/disabled copy"
+     surface in ClioTalk reads this one token. */
+  --clio-muted-copy: #707070;
+  --field-control-padding: 2px 6px;
+  --select-radius: 10px;
+  --field-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 1px 0 #fff;
+  --field-focus-border: 1px solid #4d9ed8;
+  --field-focus-ring: 0 0 0 3px rgba(63, 153, 220, 0.58);
+  --choice-bg: transparent;
+  --choice-border: 0;
+  --choice-radius: 0;
+  --choice-shadow: none;
+  --choice-checked-bg: transparent;
+  --aqua-checkbox-unchecked-image: url("./assets/themes/aqua/checkbox-unchecked.svg");
+  --choice-checkmark-image: url("./assets/themes/aqua/checkbox-checked.svg");
+  --aqua-checkbox-pressed-unchecked-image: url("./assets/themes/aqua/checkbox-pressed-unchecked.svg");
+  --aqua-checkbox-pressed-image: url("./assets/themes/aqua/checkbox-pressed-checked.svg");
+  --system-check-size: 18px;
+  --system-radio-size: 18px;
+  --radio-bg: transparent;
+  --radio-border: 0;
+  --radio-shadow: none;
+  --radio-image: url("./assets/themes/aqua/radio-unselected.svg");
+  --radio-focus-image: var(--radio-image);
+  --radio-checked-image: url("./assets/themes/aqua/radio-selected.svg");
+  --radio-checked-focus-image: var(--radio-checked-image);
+  --aqua-radio-pressed-unchecked-image: url("./assets/themes/aqua/radio-pressed-unselected.svg");
+  --aqua-radio-pressed-image: url("./assets/themes/aqua/radio-pressed-selected.svg");
+  --apple-menu-slot-width: 44px;
+  /* The Apple menu icon is the app's own constant pixel glyph in every
+     appearance (base opacity 1); no per-era Apple logo character is drawn. */
+  --menu-bar-bg: repeating-linear-gradient(to bottom, #fafafa 0 1px, #fff 1px 2px, #fafafa 2px 3px, #e9e9e9 3px 4px);
+  --menu-bar-border-color: #8e8e8e;
+  --menu-bar-border: 1px solid var(--menu-bar-border-color);
+  --menu-bar-shadow: inset 0 1px 0 #fff;
+  /* Near-opaque: the 10.2 capture shows no readable text through a menu
+     (guidebook-desktop-full.png); at 0.94 the Finder labels behind read
+     through the menu items (2026-10-08). */
+  --menu-panel-bg: rgba(250, 250, 250, 0.98);
+  --menu-panel-border: 1px solid #666;
+  --menu-panel-radius: 4px;
+  --menu-panel-shadow: 0 6px 14px rgba(0, 0, 0, 0.42);
+  --menu-button-active-bg: linear-gradient(#3973c1, #346cbe 50%, #2c61b9);
+  --menu-button-active-fg: #fff;
+  /* The Jaguar menu capture is a 1px pinstripe rhythm, not a smooth ramp:
+     one pale separator row followed by base/base-highlight/base-shadow. Keep
+     the measured stop colours, but preserve the source pixel cadence. */
+  --menu-item-active-bg: linear-gradient(to bottom,
+    #dfe1e4 0 1px, #346cbe 1px 3px, #3973c1 3px 4px,
+    #346cbe 4px 5px, #2c61b9 5px 6px, #346cbe 6px 7px,
+    #3973c1 7px 8px, #346cbe 8px 9px, #2c61b9 9px 10px,
+    #346cbe 10px 11px, #3973c1 11px 12px, #346cbe 12px 13px,
+    #2c61b9 13px 14px, #346cbe 14px 15px, #3973c1 15px 16px,
+    #346cbe 16px 17px, #2c61b9 17px 18px, #346cbe 18px 20px);
+  --menu-item-active-fg: #fff;
+  --window-frame-lane: 15px;
+  --window-frame-track-bg: linear-gradient(90deg,
+    #b8b8b8 0 7%, #c0c0c0 7% 13%, #c8c8c8 13% 20%,
+    #d3d3d3 20% 27%, #dbdbdb 27% 33%, #e4e4e4 33% 40%,
+    #ebebeb 40% 47%, #f1f1f1 47% 53%, #f6f6f6 53% 60%,
+    #fafafa 60% 67%, #fbfbfb 67% 73%, #fcfcfc 73% 80%,
+    #f9f9f9 80% 87%, #f4f4f4 87% 93%, #eee 93% 100%);
+  --window-frame-track-border: 1px solid #9b9b9b;
+  /* The Jaguar thumb ends in a bright peak then a dark 1px edge; the
+     address-book capture shows the 92,92,92 right rail. The mid-column stops
+     are sampled from the 10.2 capture, not the common Aqua button ramp. */
+  --window-frame-thumb-bg: linear-gradient(90deg,
+    #0039b3 0 14%, #769ddc 14% 21%, #8cb8e6 21% 29%,
+    #89b6e6 29% 36%, #7fb1e7 36% 43%, #408ae0 43% 50%,
+    #529aec 50% 57%, #65acfb 57% 64%, #76bcff 64% 71%,
+    #83cdff 71% 79%, #90dbff 79% 86%, #87d0ff 86% 92%,
+    #5c5c5c 92% 100%);
+  /* The same cross-lane ramp rotated for the horizontal bar: the stripes run
+     across the bar's 15px height, with the dark rail at the bottom. Without
+     this twin the 90deg recipe tiles its columns along the thumb's length. */
+  --window-frame-thumb-bg-horizontal: linear-gradient(180deg,
+    #0039b3 0 14%, #769ddc 14% 21%, #8cb8e6 21% 29%,
+    #89b6e6 29% 36%, #7fb1e7 36% 43%, #408ae0 43% 50%,
+    #529aec 50% 57%, #65acfb 57% 64%, #76bcff 64% 71%,
+    #83cdff 71% 79%, #90dbff 79% 86%, #87d0ff 86% 92%,
+    #5c5c5c 92% 100%);
+  --window-frame-thumb-border: 1px solid #617d91;
+  --window-frame-thumb-radius: 7px;
+  --window-frame-arrow-bg: linear-gradient(#fff, #d3d3d3 52%, #f5f5f5);
+  /* Jaguar's own arrow buttons, cut from the 10.2 address-book capture. They
+     reached the specimen board and nothing else, so real windows drew a 1-bit
+     triangle where Jaguar drew a button. Vertical only: the horizontal lane
+     keeps the generic recipe until there is a horizontal capture to cut. */
+  /* Jaguar stacks both boxes under the track. The capture proves it: the
+     buttons run y218-248 and the track ends above them, with no arrow at the
+     top of the lane at all. */
+  --window-frame-arrow-up-order: 1;
+  --window-frame-arrow-down-order: 2;
+  --window-frame-arrow-down-border-top: 0;
+  --window-frame-arrow-up-art: url("./assets/themes/aqua/scrollbar-cap-decrement.svg");
+  --window-frame-arrow-up-art-size: 15px 16px;
+  --window-frame-arrow-up-art-position: left top;
+  --window-frame-arrow-down-art: url("./assets/themes/aqua/scrollbar-cap-increment.svg");
+  --window-frame-arrow-down-art-size: 15px 15px;
+  --window-frame-arrow-down-art-position: center;
+  --scrollbar-track: var(--window-frame-track-bg);
+  --scrollbar-thumb: var(--window-frame-thumb-bg);
+  --scrollbar-button: var(--window-frame-arrow-bg);
+  --scrollbar-width: 15px;
+  --tab-radius: 7px 7px 0 0;
+  --tab-overlap: 0;
+  /* Explicit Jaguar wrap-tab sprites, not the common button painter. */
+  --tab-bg: linear-gradient(to bottom,
+    #fbfbfb 0 5%, #f6f6f6 5% 10%, #f2f2f2 10% 15%,
+    #ededed 15% 25%, #ececec 25% 30%, #e9e9e9 30% 40%,
+    #e8e8e8 40% 45%, #e7e7e7 45% 50%, #e5e5e5 50% 55%,
+    #dbdbdb 55% 60%, #dedede 60% 65%, #e2e2e2 65% 70%,
+    #e6e6e6 70% 75%, #eaeaea 75% 80%, #ececec 80% 85%,
+    #f2f2f2 85% 90%, #f8f8f8 90% 95%, #fff 95% 100%);
+  --tab-hover-bg: var(--tab-bg);
+  --tab-active-bg: linear-gradient(to bottom,
+    #e2ecf9 0 5%, #cbdff4 5% 10%, #b8d3f0 10% 15%,
+    #accded 15% 25%, #a3c7ec 25% 30%, #9ec5ec 30% 35%,
+    #9ac1eb 35% 40%, #94bfeb 40% 45%, #91beea 45% 50%,
+    #69a8e8 50% 55%, #71adeb 55% 60%, #76b1ee 60% 65%,
+    #7fb8f4 65% 70%, #85bef9 70% 75%, #8cc6ff 75% 80%,
+    #93caff 80% 85%, #98d0ff 85% 90%, #a0d8ff 90% 95%,
+    #b8eeff 95% 100%);
+  --tab-active-fg: #06131d;
+  --theme-lab-button-min-width: 69px;
+  --theme-lab-pane-gap: 10px 18px;
+  --theme-lab-pane-padding: 10px 14px 14px;
+  --theme-lab-pane-bg:
+    repeating-linear-gradient(to bottom, #e6e6e6 0 1px, #eee 1px 2px, #f2f2f2 2px 3px, #eee 3px 4px);
+  --theme-lab-group-padding: 4px 10px 10px;
+  --theme-lab-group-bg: transparent;
+  --theme-lab-group-border: 0;
+  --theme-lab-group-shadow: none;
+  --theme-lab-heading-margin: 0 0 10px;
+  --theme-lab-heading-padding-bottom: 5px;
+  --theme-lab-heading-border-bottom: 1px solid #9b9b9b;
+  --theme-lab-heading-weight: 700;
+  --theme-lab-button-row-gap: 8px;
+  --theme-lab-button-row-margin-bottom: 11px;
+  --theme-lab-choice-gap: 5px 12px;
+  --theme-lab-choice-row-min-height: 19px;
+  --theme-lab-checkbox-checkmark-image: var(--choice-checkmark-image);
+  /* Aqua's pressed art is its own (the .is-active rules below); no extra darkening. */
+  --theme-lab-choice-active-filter: none;
+  --theme-lab-form-gap: 7px 12px;
+  --theme-lab-form-label-columns: minmax(88px, max-content) minmax(0, 1fr);
+  --theme-lab-form-label-align: right;
+  --theme-lab-form-label-column-gap: 7px;
+  --theme-lab-form-label-align-items: center;
+  --tab-strip-gap: 3px;
+  --tab-strip-padding: 0 12px 7px;
+  --tab-strip-border-bottom: 0;
+  --tab-min-height: 24px;
+  --tab-height: 24px;
+  --tab-padding: 3px 13px 2px;
+  --tab-active-min-height: 24px;
+  --tab-active-height: 24px;
+  --tab-active-fg: #06131d;
+  --tab-panel-min-height: 31px;
+  --tab-panel-margin-top: -1px;
+  --tab-panel-padding: 6px 9px;
+  --tab-panel-border: 1px solid #6b8191;
+  --tab-panel-radius: 0 0 3px 3px;
+  --tab-panel-bg: var(--window-bg);
+  --tab-panel-shadow: inset 0 1px 0 #fff;
+  --theme-lab-navigation-generic-label-display: none;
+  --theme-lab-column-browser-label-display: inline;
+  --theme-lab-generic-browser-display: none;
+  --theme-lab-aqua-browser-display: grid;
+  --theme-lab-split-min-height: 150px;
+  --theme-lab-split-columns: repeat(3, minmax(0, 1fr));
+  --theme-lab-split-rows: minmax(0, 1fr) 15px;
+  --theme-lab-browser-columns: repeat(3, 190px);
+  --theme-lab-browser-column-scrollbar-width: 15px;
+  --theme-lab-browser-column-scrollbar-display: block;
+  --theme-lab-browser-column-border-right: 1px solid #a8a8a8;
+  --theme-lab-browser-column-bg: #fff;
+  --theme-lab-browser-column-scrollbar-border: 1px solid #8e8e8e;
+  --theme-lab-browser-column-scrollbar-bg: linear-gradient(90deg, #e1e1e1, #fff 47%, #d2d2d2 76%, #f3f3f3);
+  --theme-lab-browser-column-scrollbar-shadow: inset 0 0 2px rgba(0, 0, 0, 0.28);
+  --theme-lab-browser-column-thumb-top: 3px;
+  --theme-lab-browser-column-thumb-height: 42px;
+  --theme-lab-browser-column-thumb-border: 1px solid #00478f;
+  --theme-lab-browser-column-thumb-radius: 7px;
+  --theme-lab-browser-column-thumb-bg: linear-gradient(90deg, #0c61c3 0%, #64bfff 18%, #c2f2ff 43%, #45a9ec 58%, #8bdcff 80%, #0756b6 100%);
+  --theme-lab-browser-column-thumb-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.5), inset -1px 0 0 rgba(0, 35, 105, 0.36);
+  --theme-lab-browser-column-scrollbar-button-border: 1px solid #8e8e8e;
+  --theme-lab-browser-column-scrollbar-button-bg: var(--btn-bg);
+  --theme-lab-browser-column-scrollbar-arrow-color: #202020;
+  --theme-lab-split-border: 1px solid #8e8e8e;
+  --theme-lab-split-radius: 3px;
+  --theme-lab-split-bg: #fff;
+  --theme-lab-split-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.24), 0 1px 0 #fff;
+  --theme-lab-sidebar-padding: 0;
+  --theme-lab-sidebar-border-right: 1px solid #a8a8a8;
+  --theme-lab-sidebar-bg: #fff;
+  --theme-lab-list-row-min-height: 18px;
+  --theme-lab-list-row-gap: 4px;
+  --theme-lab-list-row-padding: 1px 6px;
+  --theme-lab-list-row-radius: 0;
+  --theme-lab-list-row-font-size: 12px;
+  --theme-lab-list-row-line-height: 16px;
+  --theme-lab-sidebar-icon-size: 16px;
+  --theme-lab-sidebar-icon-bg: transparent;
+  --theme-lab-sidebar-system-svg-opacity: 0;
+  --theme-lab-sidebar-startup-disk-image: url("./assets/themes/aqua/browser-volume-16.svg");
+  --theme-lab-sidebar-applications-image: url("./assets/themes/aqua/browser-folder-16.svg");
+  --theme-lab-sidebar-document-image: url("./assets/themes/aqua/browser-document-16.svg");
+  --theme-lab-sidebar-trash-image: url("./assets/themes/aqua/trash.svg");
+  --theme-lab-sidebar-selected-bg: #bfd8fa;
+  --theme-lab-sidebar-selected-fg: #111;
+  --theme-lab-list-frame-border: 0;
+  --theme-lab-list-row-border-bottom: 1px solid #d8d8d8;
+  --theme-lab-list-selected-bg: #bfd8fa;
+  --theme-lab-list-selected-fg: #111;
+  --theme-lab-list-icon-display: block;
+  --theme-lab-list-icon-size: 16px;
+  --theme-lab-list-icon-image: url("./assets/themes/aqua/browser-folder-16.svg");
+  --theme-lab-list-document-image: url("./assets/themes/aqua/browser-document-16.svg");
+  --theme-lab-browser-disclosure-display: block;
+  --theme-lab-browser-disclosure-color: #747474;
+  --theme-lab-browser-horizontal-scrollbar-display: block;
+  --theme-lab-browser-scrollbar-border: 1px solid #8e8e8e;
+  --theme-lab-browser-scrollbar-bg: linear-gradient(#d1d1d1, #fff 48%, #c3c3c3);
+  --theme-lab-browser-scrollbar-shadow: inset 0 0 2px rgba(0, 0, 0, 0.28);
+  --theme-lab-browser-scrollbar-thumb-border: 1px solid #00478f;
+  --theme-lab-browser-scrollbar-thumb-bg: linear-gradient(#a4e6ff, #2b96dd 50%, #79d2ff);
+  --theme-lab-browser-scrollbar-thumb-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  --theme-lab-list-scrollbar-width: 15px;
+  --theme-lab-layer-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  --theme-lab-layer-gap: 9px;
+  --theme-lab-layer-border: 1px solid #6f6f6f;
+  --theme-lab-layer-radius: 5px;
+  --theme-lab-layer-bg: rgba(250, 250, 250, 0.94);
+  --theme-lab-layer-shadow: 0 5px 11px rgba(0, 0, 0, 0.34);
+  --theme-lab-layer-padding: 10px 12px;
+  --menu-panel-padding: 3px 0;
+  --menu-item-min-height: 21px;
+  --menu-item-padding: 2px 9px 2px 21px;
+  /* The 21px text inset leaves no room for the default 12px-at-12px check
+     box — its glyph touched the label. Seat the check against the left
+     edge, as the real menus draw it, so a clear gap stands before the text. */
+  --menu-check-left: 4px;
+  --menu-item-line-height: 16px;
+  --menu-item-disabled-bg: #f9f9f9;
+  --menu-item-disabled-fg: #a4a4a4;
+  --menu-item-disabled-opacity: 1;
+  --menu-separator-margin: 3px 0;
+  --menu-separator-border-bottom: 1px solid #a7a7a7;
+  --theme-lab-popover-generic-label-display: none;
+  --theme-lab-help-tag-label-display: block;
+  --theme-lab-alert-icon-display: block;
+  --theme-lab-alert-icon-size: 64px;
+  /* Authored from the 10.2 warning-sheet silhouette; no Quaqua/Apple artwork. */
+  --theme-lab-alert-icon-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x2='0' y2='1'%3E%3Cstop stop-color='%23fff78a'/%3E%3Cstop offset='.45' stop-color='%23ffd91b'/%3E%3Cstop offset='1' stop-color='%23f0a900'/%3E%3C/linearGradient%3E%3Cfilter id='s' x='-20%25' y='-20%25' width='140%25' height='150%25'%3E%3CfeDropShadow dx='0' dy='2' stdDeviation='1.4' flood-opacity='.42'/%3E%3C/filter%3E%3C/defs%3E%3Cpath d='M31.9 5.5c1.9 0 3.5 1 4.5 2.8l24 42c1 1.8 1 3.8 0 5.5-1 1.7-2.7 2.7-4.8 2.7H8.2c-2.1 0-3.8-1-4.8-2.7-1-1.7-1-3.7 0-5.5l24-42c1-1.8 2.6-2.8 4.5-2.8z' fill='url(%23g)' stroke='%23a66a00' stroke-width='2' filter='url(%23s)'/%3E%3Cpath d='M31.9 9.3 7.1 53.9c-.2.4-.1.7.1.9.2.3.5.4 1 .4h47.4c.5 0 .8-.1 1-.4.2-.2.3-.5.1-.9L31.9 9.3z' fill='none' stroke='%23fff' stroke-opacity='.7'/%3E%3Cpath d='M28.4 21.2h7l-1.2 22h-4.6l-1.2-22z' fill='%23fff' stroke='%23b77b00' stroke-width='.7'/%3E%3Cellipse cx='31.9' cy='49.3' rx='3.3' ry='3.1' fill='%23fff' stroke='%23b77b00' stroke-width='.7'/%3E%3C/svg%3E");
+  --theme-lab-sheet-specimen-display: block;
+  --theme-lab-sheet-specimen-position: relative;
+  --theme-lab-sheet-specimen-grid-column: 1 / -1;
+  --theme-lab-sheet-specimen-min-height: 116px;
+  --theme-lab-sheet-owner-window-border: 1px solid #858585;
+  --theme-lab-sheet-owner-window-radius: 7px 7px 2px 2px;
+  --theme-lab-sheet-owner-window-bg: #fff;
+  --theme-lab-sheet-owner-window-shadow: 0 3px 7px rgba(0, 0, 0, 0.3);
+  --theme-lab-sheet-owner-window-overflow: hidden;
+  --theme-lab-sheet-owner-display: flex;
+  --theme-lab-sheet-owner-body-height: 92px;
+  --theme-lab-sheet-owner-body-bg: #fff;
+  /* Alarm Clock DA: Aqua window chrome, white face, candy controls. */
+  --alarm-clock-frame-border: 1px solid #858585;
+  --alarm-clock-frame-radius: 5px;
+  --alarm-clock-frame-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+  --alarm-clock-title-bg: #f2f2f2;
+  --alarm-clock-surface-bg: #fff;
+  --alarm-clock-readout-bg: #fff;
+  --alarm-clock-divider: 1px solid #b3b3b3;
+  --alarm-clock-active-bg: linear-gradient(#2a8cff, #0a5bd0);
+  --alarm-clock-active-fg: #fff;
+  --alarm-clock-close-size: 12px;
+  --alarm-clock-close-border: 1px solid #b0453e;
+  --alarm-clock-close-radius: 50%;
+  --alarm-clock-close-bg: radial-gradient(circle at 35% 30%, #ff9f98 0 2px, #e6483e 4px, #a52a24 5px);
+  --alarm-clock-close-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  --alarm-clock-lever-radius: 3px;
+  --alarm-clock-lever-bg: #e8e8e8;
+  --alarm-clock-lever-hover-bg: #dcdcdc;
+  --alarm-clock-lever-fg: #202020;
+  --alarm-clock-lever-shadow: inset 0 1px 0 #fff, 0 1px 1px rgba(0, 0, 0, 0.2);
+  --alarm-clock-lever-focus-outline: 2px solid rgba(20, 90, 200, 0.6);
+  --alarm-clock-mode-divider: 1px solid #c8c8c8;
+  --alarm-clock-mode-radius: 4px;
+  --alarm-clock-mode-bg: #f2f2f2;
+  --alarm-clock-mode-hover-bg: #e8f3ff;
+  --alarm-clock-mode-active-shadow: inset 0 0 0 2px #0a5bd0;
+  --alarm-clock-section-gap: 3px;
+  /* The lamp is a 1:1 sprite like its two siblings, cut from the same 10.2
+     capture at the same 14 px box. The gradient it replaces was drawn by hand:
+     it came out wider, higher, rimless, and lit from the middle instead of the
+     top, so the three lamps did not read as one set. */
+  --theme-lab-sheet-display: grid;
+  --theme-lab-sheet-position: absolute;
+  --theme-lab-sheet-top: 22px;
+  --theme-lab-sheet-right: 18px;
+  --theme-lab-sheet-left: 18px;
+  --theme-lab-sheet-margin-top: 0;
+  --theme-lab-sheet-columns: 32px minmax(0, 1fr);
+  --theme-lab-sheet-gap: 5px 9px;
+  --theme-lab-sheet-padding: 9px 14px 11px;
+  --theme-lab-sheet-border: 1px solid #858585;
+  --theme-lab-sheet-border-top-width: 0;
+  --theme-lab-sheet-radius: 0 0 6px 6px;
+  --theme-lab-sheet-bg:
+    repeating-linear-gradient(to bottom, #e6e6e6 0 1px, #eee 1px 2px, #fff 2px 3px, #eee 3px 4px);
+  --theme-lab-sheet-shadow: 0 5px 9px rgba(0, 0, 0, 0.38);
+  --theme-lab-sheet-owner-content: none;
+  --theme-lab-sheet-icon-display: block;
+  --theme-lab-sheet-icon-size: 32px;
+  --theme-lab-sheet-icon-image: url("./assets/themes/aqua/sheet-warning-64.svg");
+  --theme-lab-sheet-copy-gap: 3px;
+  --theme-lab-sheet-actions-display: flex;
+  --theme-lab-sheet-generic-copy-display: none;
+  --theme-lab-sheet-generic-action-display: none;
+  --theme-lab-sheet-aqua-copy-display: block;
+  --theme-lab-sheet-aqua-action-display: inline-flex;
+  --theme-lab-sheet-actions-column: 2;
+  --theme-lab-sheet-actions-margin-top: 2px;
+  --theme-lab-sheet-action-gap: 12px;
+  --theme-lab-sheet-button-min-width: 69px;
+  /* 10.2 puts all three lamps at the left in close / minimize / zoom order,
+     on the same ladder as this era's title-bar specimens above. */
+  --theme-lab-finder-window-display: block;
+  --theme-lab-finder-window-border: 1px solid #858585;
+  --theme-lab-finder-window-radius: 7px 7px 2px 2px;
+  --theme-lab-finder-window-bg: #fff;
+  --theme-lab-finder-window-shadow: 0 4px 9px rgba(0, 0, 0, 0.34);
+  --theme-lab-finder-window-overflow: hidden;
+  --theme-lab-finder-status-display: flex;
+  --theme-lab-finder-status-height: 19px;
+  --theme-lab-finder-status-border-top: 1px solid #a3a3a3;
+  --theme-lab-finder-status-border-bottom: 1px solid #a3a3a3;
+  --theme-lab-finder-status-bg: var(--toolbar-bg);
+  --theme-lab-finder-status-shadow: inset 0 1px 0 #fff;
+  --theme-lab-toolbar-min-height: 56px;
+  --theme-lab-toolbar-gap: 16px;
+  --theme-lab-toolbar-padding: 6px 10px;
+  --theme-lab-toolbar-border: 1px solid #7f7f7f;
+  --theme-lab-toolbar-border-inline: 0;
+  --theme-lab-toolbar-radius: 0;
+  --theme-lab-toolbar-bg: var(--toolbar-bg);
+  --theme-lab-toolbar-shadow: inset 0 1px 0 #fff;
+  --theme-lab-toolbar-button-display: none;
+  --theme-lab-toolbar-location-display: none;
+  --theme-lab-toolbar-status-display: none;
+  --theme-lab-separator-display: none;
+  --theme-lab-toolbar-icon-strip-display: flex;
+  --theme-lab-toolbar-icon-gap: 12px;
+  /* The 10.2 Finder labels every toolbar item, search included: the pill sits
+     over a "Search" caption instead of holding the word as placeholder text. */
+  --theme-lab-toolbar-search-display: grid;
+  --theme-lab-toolbar-search-label-display: block;
+  --theme-lab-toolbar-search-placeholder-color: transparent;
+  --theme-lab-toolbar-search-width: 120px;
+  --theme-lab-toolbar-navigation-image-size: 24px;
+  --theme-lab-toolbar-back-image: url("./assets/themes/aqua/toolbar-back.svg");
+  --theme-lab-toolbar-forward-image: url("./assets/themes/aqua/toolbar-forward.svg");
+  --theme-lab-toolbar-computer-image: url("./assets/themes/aqua/toolbar-computer.svg");
+  --theme-lab-toolbar-home-image: url("./assets/themes/aqua/toolbar-home.svg");
+  --theme-lab-toolbar-favorites-image: url("./assets/themes/aqua/toolbar-favorites.svg");
+  --theme-lab-toolbar-applications-image: url("./assets/themes/aqua/toolbar-applications.svg");
+  --theme-lab-toolbar-view-icon-image: url("./assets/themes/aqua/view-icon-12.svg");
+  --theme-lab-toolbar-view-list-image: url("./assets/themes/aqua/view-list-12.svg");
+  --theme-lab-toolbar-view-columns-image: url("./assets/themes/aqua/view-columns-12.svg");
+  --theme-lab-toolbar-era-separator-display: block;
+  --theme-lab-toolbar-era-separator-bg: #969696;
+  --theme-lab-toolbar-era-separator-shadow: 1px 0 #fff;
+  --theme-lab-finder-min-height: 146px;
+  --theme-lab-finder-columns: repeat(6, minmax(58px, 1fr));
+  --theme-lab-finder-gap: 4px;
+  --theme-lab-finder-padding: 10px 7px;
+  --theme-lab-finder-border: 0;
+  --theme-lab-finder-border-top: 0;
+  --theme-lab-finder-bg: #fff;
+  --theme-lab-finder-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.18);
+  --theme-lab-finder-item-width: auto;
+  --theme-lab-finder-item-icon-size: 48px;
+  --theme-lab-finder-item-font-family: var(--theme-ui-font);
+  --theme-lab-finder-item-font-size: 13px;
+  --theme-lab-finder-icon-selected-bg: #b4d1f7;
+  --theme-lab-finder-icon-selected-fg: #111;
+  --theme-lab-finder-label-bg: #fff;
+  --theme-lab-finder-label-margin-top: 4px;
+  --theme-lab-finder-label-padding: 1px 3px;
+  --theme-lab-finder-label-font-weight: 400;
+  --theme-lab-finder-system-svg-opacity: 0;
+  --theme-lab-finder-icon-bg: transparent;
+  --theme-lab-finder-startup-disk-image: url("./assets/themes/aqua/startup-disk.svg");
+  --theme-lab-finder-folder-image: url("./assets/themes/aqua/folder.svg");
+  --theme-lab-finder-app-image: url("./assets/themes/aqua/finder-app.svg");
+  --theme-lab-finder-document-image: url("./assets/themes/aqua/document.svg");
+  --theme-lab-finder-era-extra-display: flex;
+  --theme-lab-finder-rows-display: none;
+  --theme-lab-finder-rows-border: 1px solid #8e8e8e;
+  --theme-lab-finder-rows-bg: #fff;
+  --theme-lab-finder-rows-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.16);
+  --theme-lab-finder-row-min-height: 25px;
+  --theme-lab-finder-row-padding: 3px 6px;
+  --theme-lab-finder-row-border-bottom: 1px solid #d1d1d1;
+
+  /* Control Panel section chooser — the Jaguar System Preferences language:
+     an icon-and-label toolbar row, the chosen section pressed into a
+     recessed tint. Same tablist DOM as every era. */
+  --control-settings-columns: minmax(0, 1fr);
+  --control-settings-rows: none;
+  --control-chooser-area: auto;
+  --control-chooser-direction: row;
+  --control-chooser-gap: 2px;
+  --control-chooser-border-bottom: 1px solid #b9b9bd;
+  --control-chooser-border-right: 0;
+  --control-chooser-item-direction: column;
+  --control-chooser-item-flex: 1 1 0;
+  --control-chooser-item-gap: 2px;
+  --control-chooser-item-padding: 4px 8px;
+  --control-chooser-item-offset: 0px;
+  --control-chooser-item-border: 0;
+  --control-chooser-item-radius: 5px;
+  --control-chooser-item-bg: transparent;
+  --control-chooser-item-fg: #333;
+  --control-chooser-hover-bg: rgba(0, 20, 60, 0.08);
+  --control-chooser-hover-fg: #222;
+  --control-chooser-active-bg: rgba(0, 20, 60, 0.16);
+  --control-chooser-active-fg: #111;
+  --control-chooser-label-padding: 0;
+  --control-chooser-active-label-bg: transparent;
+  --control-chooser-active-label-fg: currentColor;
+  --control-chooser-active-weight: inherit;
+  --control-chooser-active-shadow: inset 0 1px 2px rgba(0, 0, 30, 0.28);
+  --control-chooser-icon-display: block;
+  --control-chooser-icon-size: 24px;
+  --control-chooser-label-size: 10px;
+  /* The toolbar rail's own height: 24px icon + 2px gap + the 12px name, in a
+     4px 8px cell, on the 1px-ruled rail. Aqua's strip has no padding of its
+     own, so this is the whole rail. */
+  --control-chooser-min-height: 47px;
+
+  /* Control Strip — a signed counterfactual: the strip died with Mac OS X
+     10.0, so this is "the strip had it survived into Jaguar", built from
+     real Jaguar control materials (porcelain capsule body, gel-blue tab,
+     gel selection). Not a reproduction of any shipped 10.2 object. */
+  --control-strip-thickness: 26px;
+  --control-strip-bg: linear-gradient(#fff, #d9d9de 48%, #ccccd2 52%, #ececf1);
+  --control-strip-border: 1px solid #8e8e94;
+  --control-strip-divider: 1px solid rgba(0, 0, 0, 0.12);
+  --control-strip-radius: 13px;
+  --control-strip-radius-mirrored: 13px;
+  --control-strip-shadow: 0 2px 6px rgba(0, 0, 40, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.9);
+  --control-strip-hover-bg: linear-gradient(#e2eeff, #b6d2f8 50%, #a2c6f6);
+  --control-strip-hover-fg: #10306a;
+  --control-strip-hover-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.7);
+  --control-strip-active-bg: linear-gradient(#b4d2fa, #4f8ef2 50%, #2f6ad0);
+  --control-strip-active-fg: #fff;
+  --control-strip-active-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.6);
+  --control-strip-gauge: #4f8ef2;
+  --control-strip-gauge-bg: #fff;
+  --control-strip-grip-inset: 0;
+  --control-strip-grip:
+    repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.85) 0 1px, rgba(0, 0, 0, 0) 1px 4px) 50% 50% / 8px 60% no-repeat,
+    linear-gradient(#cfe4ff, #6ba2f7 45%, #3672e8 55%, #7fb0f8);
+}
+
+html[data-lineage~="snow-leopard"],
+body[data-lineage~="snow-leopard"] {
+  /* 10.6's own Appearance pane shows "Place scroll arrows: Together" (both
+     boxes under the track), as Jaguar's does; the lineage drew one at each end. */
+  --window-frame-arrow-up-order: 1;
+  --window-frame-arrow-down-order: 2;
+  --window-frame-arrow-down-border-top: 0;
+
+  /* Evidence boundary: Quaqua 9.1's Quaqua16SnowLeopardLookAndFeel.java (the
+     Snow LAF introduced in Quaqua 6.0) owns native geometry, state variants,
+     silver chrome and mature Aqua controls. Chromium f108f78's
+     platform-mac-snowleopard rules supply Web-toolbar and compact-scrollbar
+     evidence only. Real 10.6 captures win conflicts. No source selectors or
+     artwork are imported here. */
+  /* 冬青黑体: Snow Leopard is the release where Apple replaced 华文黑体
+     with Hiragino Sans GB as the Simplified system face, so the era
+     switch has to show it. */
+  --theme-ui-font: "Lucida Grande", "Lucida Sans Unicode", "Hiragino Sans GB", "STHeiti", "Microsoft YaHei", sans-serif;
+  --theme-title-font: var(--theme-ui-font);
+  /* Body copy's Chinese in the era's own face (see the family block). */
+  --theme-cjk-font: "Hiragino Sans GB", "STHeiti";
+  /* Snow Leopard pop-up arrow: the era's blue double arrow, placed the same
+     way Aqua places its own — a fixed top offset in the control's own 22px
+     box, no transform. The old glyph drew 6x3 triangles with a 3px gap, so at
+     1x the pair read as one rounded blob, and with no top offset the arrow sat
+     against the control's upper edge instead of in the middle of its well.
+     The triangles now carry the measured 4px height and 4px gap this family
+     uses, with the era's steel blue. */
+  --system-select-arrow-right: 6px;
+  --system-select-arrow-top: 4px;
+  --system-select-arrow-width: 8px;
+  --system-select-arrow-height: 14px;
+  --system-select-arrow-transform: none;
+  --system-select-arrow-bg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='14' viewBox='0 0 8 14'%3E%3Cpath d='M4 1 7 5H1Zm0 12 3-4H1Z' fill='%23064a79' shape-rendering='crispEdges'/%3E%3C/svg%3E");
+  --system-readable-min: 13px;
+  --system-title-size: 13px;
+  --system-control-size: 13px;
+  --system-text-size: 13px;
+  --system-caption-size: 11px;
+  /* 10.6 kept the 22px menu bar Aqua introduced. Without this the era fell
+     back to the System 6 default and drew a 24px bar. */
+  --system-menu-height: 22px;
+  --system-titlebar-height: 22px;
+  --system-titlebar-control-slot: 24px;
+  --system-titlebar-control-size: 14px;
+  --system-titlebar-title-height: 16px;
+  --system-titlebar-font-size: 13px;
+  --system-titlebar-margin-y: 0;
+  --system-titlebar-padding-y: 0;
+  --system-titlebar-padding-x: 5px;
+  --system-titlebar-inactive-control-filter: grayscale(1);
+  --system-titlebar-inactive-title-color: #777;
+  --system-control-min-height: 22px;
+  /* Quaqua 9.1 regular push button face is ~21px of material in a 23px
+     frame; 22px box height keeps the 10.6 compact silhouette. */
+  --system-button-min-height: 22px;
+  --system-button-small-height: 20px;
+  --system-button-mini-height: 18px;
+  --system-button-small-font-size: 11px;
+  --system-button-mini-font-size: 9px;
+  --system-button-small-padding-x: 8px;
+  --system-button-mini-padding-x: 6px;
+  --system-button-padding-y: 2px;
+  --system-button-padding-x: 12px;
+  --titlebar-content-padding-inline: 7px;
+  --titlebar-title-text-shadow: 0 1px 0 rgba(255, 255, 255, 0.72);
+  /* The lamp's box; its art and placement are 88-desk-dock.css's tokens. */
+  --traffic-light-size: 14px;
+  /* Alarm Clock DA: 10.6 silver chrome, light face, restrained controls. */
+  --alarm-clock-frame-border: 1px solid #8e8e8e;
+  --alarm-clock-frame-radius: 4px;
+  --alarm-clock-frame-shadow: 0 3px 7px rgba(0, 0, 0, 0.25);
+  --alarm-clock-title-bg: #e6e6e6;
+  --alarm-clock-surface-bg: #f2f2f2;
+  --alarm-clock-readout-bg: #fff;
+  --alarm-clock-divider: 1px solid #a3a3a3;
+  --alarm-clock-active-bg: linear-gradient(#69a3da, #1468b6);
+  --alarm-clock-active-fg: #fff;
+  --alarm-clock-close-size: 12px;
+  --alarm-clock-close-border: 1px solid #9f3934;
+  --alarm-clock-close-radius: 50%;
+  --alarm-clock-close-bg: radial-gradient(circle at 35% 30%, #ffd7d3 0 1px, #ed7a72 2px, #d6534b 5px, #9f3934 6px);
+  --alarm-clock-close-shadow: none;
+  --alarm-clock-lever-radius: 3px;
+  --alarm-clock-lever-bg: #e4e4e4;
+  --alarm-clock-lever-hover-bg: #dcdcdc;
+  --alarm-clock-lever-fg: #202020;
+  --alarm-clock-lever-shadow: inset 0 1px 0 #fff, 0 1px 1px rgba(0, 0, 0, 0.18);
+  --alarm-clock-lever-focus-outline: 1px solid #4a6c8f;
+  --alarm-clock-mode-divider: 1px solid #c0c0c0;
+  --alarm-clock-mode-radius: 4px;
+  --alarm-clock-mode-bg: #e6e6e6;
+  --alarm-clock-mode-hover-bg: #d6e4f0;
+  --alarm-clock-mode-active-shadow: inset 0 0 0 2px #216cb7;
+  --alarm-clock-section-gap: 2px;
+  /* 10.6 popup geometry measured on the native Appearance pane (Number of
+     Recent Items popup): 21px control, 4px corner, 21px arrow well, compact
+     navy double chevron. The 22px/5px/20px version read bulbous. */
+  --select-control-min-height: 21px;
+  --select-control-padding: 2px 26px 2px 7px;
+  --select-control-border: 1px solid #a3a3a3;
+  --select-control-radius: 4px;
+  --select-control-bg-color: #f7f7f7;
+  --select-control-bg-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='7' height='11' viewBox='0 0 7 11'%3E%3Cpath d='m0.5 4 3-3 3 3zM0.5 7l3 3 3-3z' fill='%231c3d5f'/%3E%3C/svg%3E"),
+    linear-gradient(#7ca6bf, #7ca6bf),
+    linear-gradient(#d2e5f5 0%, #9dd4f5 40%, #73b5e8 51%, #aedbfc 100%),
+    linear-gradient(#fff 0%, #fafafa 45%, #dcdcdc 52%, #f1f1f1 100%);
+  --select-control-bg-position: right 7px center, right 20px top, right top, left top;
+  --select-control-bg-size: 7px 11px, 1px 100%, 21px 100%, 100% 100%;
+  --select-control-shadow: var(--btn-shadow);
+  --select-control-font-weight: 400;
+  --system-select-control-min-height: 21px;
+  --system-select-control-padding: 2px 26px 2px 7px;
+  --system-select-control-border: var(--field-border);
+  --system-select-control-radius: var(--select-radius);
+  --system-select-control-bg:
+    linear-gradient(#7ca6bf, #7ca6bf) right 19px top / 1px 100% no-repeat,
+    linear-gradient(#d2e5f5 0%, #9dd4f5 40%, #73b5e8 51%, #aedbfc 100%) right top / 20px 100% no-repeat,
+    linear-gradient(#fff 0%, #fafafa 45%, #dcdcdc 52%, #f1f1f1 100%);
+  --system-select-control-shadow: var(--btn-shadow);
+  --system-select-control-font-weight: 400;
+  --field-control-padding: 3px 6px;
+  --theme-lab-toolbar-min-height: 34px;
+  --theme-lab-toolbar-padding: 4px 7px;
+  --theme-lab-toolbar-radius: 0;
+  --theme-lab-toolbar-search-display: block;
+  --theme-lab-toolbar-search-width: 236px;
+  /* Real 10.6 Finder toolbar (1440x900 capture): #d5d5d5 -> #bebebe ->
+     #a7a7a7. The Chromium Web-toolbar gradient stays the semantic token. */
+  /* Real 10.6 Finder toolbar (512 Pixels Home capture, 1:1): silver ramp
+     measured ~#c0c0c0 (top) -> #b1b1b1 (mid) -> #b3b3b3 (bottom), with a
+     darker bottom edge. Previously the fixture used a darker #d5d5d5 ->
+     #a7a7a7 ramp that read more like gray plastic than 10.6 chrome. */
+  --theme-lab-toolbar-bg: linear-gradient(#c0c0c0 0%, #b1b1b1 55%, #b3b3b3 100%);
+  /* The Home capture's 29px control band is a nearly linear #bebebe ->
+     #a7a7a7 ramp. Its separator sits on the following pixel, outside the
+     canonical control-row crop. */
+  --theme-lab-snow-toolbar-height: 30px;
+  --theme-lab-snow-toolbar-bg: linear-gradient(#bebebe, #a7a7a7);
+  --theme-lab-snow-toolbar-shadow: none;
+  --theme-lab-nav-row-min-height: 24px;
+  --theme-lab-nav-row-padding-block: 2px;
+  --theme-lab-finder-row-min-height: 27px;
+  /* Theme Lab Finder surface renders the full 10.6 window: the product's own
+     title bar, unified toolbar, status strip, content. */
+  --theme-lab-finder-window-display: block;
+  --theme-lab-finder-window-border: 1px solid #8e8e8e;
+  --theme-lab-finder-window-radius: 5px 5px 2px 2px;
+  --theme-lab-finder-window-bg: #fff;
+  --theme-lab-finder-window-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  --theme-lab-finder-status-display: flex;
+  --theme-lab-finder-status-height: 19px;
+  --theme-lab-finder-status-border-top: 1px solid #515151;
+  /* Real 10.6 Finder status bar (1440x900 capture): #cbcbcb -> #a7a7a7. */
+  --theme-lab-finder-status-bg: linear-gradient(#cbcbcb 0%, #b2b2b2 45%, #a7a7a7 100%);
+  --search-field-min-height: 20px;
+  --search-field-padding: 2px 9px;
+  --search-field-radius: 999px;
+  /* Searcher result table, 10.6 expression: header on, relevance column off
+     (two-column template), hairline row separators, and the query row on
+     full-bleed unified toolbar material with an NSSearchField-style field. */
+  --find-path-header-display: grid;
+  --find-path-table-columns: minmax(0, 1fr) minmax(0, 36%);
+  --find-path-result-display: grid;
+  --find-path-result-align: baseline;
+  --find-path-result-column-gap: 10px;
+  --find-path-result-padding: 6px 10px;
+  --find-path-results-bg: #fff;
+  --find-path-result-border-bottom: 1px solid #e3e3e3;
+  --find-path-result-last-border-bottom: 0;
+  --find-path-header-padding: 2px 10px;
+  --find-path-header-border-bottom: 1px solid #c8c8c8;
+  --find-path-header-bg: linear-gradient(#fbfbfb, #e8e8e8);
+  --find-path-query-min-height: var(--search-field-min-height);
+  --find-path-query-padding: var(--search-field-padding);
+  --find-path-query-radius: var(--search-field-radius);
+  --find-path-query-bg: var(--field-bg);
+  --find-path-query-row-width: auto;
+  --find-path-query-row-margin: calc(-1 * var(--find-path-pane-padding)) calc(-1 * var(--find-path-pane-padding)) 0;
+  --find-path-query-row-padding: 6px var(--find-path-pane-padding);
+  --find-path-query-row-bg: var(--toolbar-bg);
+  --find-path-query-row-border-bottom: var(--toolbar-border);
+  --progress-height: 13px;
+  --progress-padding: 1px;
+  --progress-border-color: #9d9d9d;
+  --progress-radius: 6px;
+  --progress-bg: linear-gradient(#d0d0d0, #f8f8f8 48%, #c9c9c9);
+  --progress-fill-radius: 5px;
+  --progress-fill-bg: linear-gradient(#9fd4fb, #3c91d3 52%, #72b7e9);
+  --progress-fill-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.66);
+  --progress-shadow: none;
+  --progress-fill-active-bg: var(--progress-fill-bg);
+  --progress-fill-active-size: 100% 100%;
+  --ink: #1f1f1f;
+  --paper: #fff;
+  --panel: #d6d6d6;
+  --quiet-panel: #f7f7f7;
+  --shade: #c4c4c4;
+  --shade-dark: #707070;
+  --md-marker-ink: #6b6b6b;  /* ground #fff (was #ededed until 2026-10-08) */
+  /* Theme Family Contract §5, the two divider roles. System 6 rules a desk in
+     ink — a solid black primary rule and a dotted secondary one — and Platinum
+     keeps the dotted hairline. Snow Leopard rules it in grey hairlines and had never
+     said so, so every divider that reads the family role was still drawing
+     Classic ink: the dotted rules under each Quick Draft field are the ones
+     you can see without looking for them. */
+  --system-primary-divider: 1px solid var(--rule);
+  --system-secondary-divider: 1px solid var(--shade);
+  --rule: #b5b5b5;
+  /* Content is white in 10.6 (512 Pixels Finder Home and Cover Flow captures);
+     window-grey panes made the composer, transcript, Finder content and Quick
+     Draft materials read as disabled. Tiger and Lion already set #fff. */
+  --pane-bg: #fff;
+  --details-bar-bg: linear-gradient(#f3f3f3, #ebebeb);
+  --details-bar-border: #cacaca;
+  /* Abstracted from the 10.6 default wallpaper (512 Pixels 6k capture): the
+     deep purple wave with a bright magenta-purple crest. Measured vertical
+     ramp, no raster payload. */
+  --desktop: #471858;
+  /* 10.6 purple aurora: cooler crest, warmer mid band, deep violet foot
+     (512 Pixels sl-fin structure; CSS only). */
+  --desktop-surface:
+    radial-gradient(ellipse 55% 22% at 42% 8%, rgb(255 235 250 / 0.55), transparent 55%),
+    radial-gradient(ellipse 70% 32% at 28% 14%, rgb(255 220 245 / 0.45), transparent 58%),
+    radial-gradient(ellipse 55% 28% at 78% 38%, rgb(180 120 220 / 0.38), transparent 62%),
+    radial-gradient(ellipse 40% 20% at 55% 48%, rgb(200 90 180 / 0.22), transparent 65%),
+    radial-gradient(ellipse 90% 50% at 70% 72%, rgb(40 8 48 / 0.55), transparent 60%),
+    linear-gradient(180deg, #240c2c 0%, #813271 12%, #c45eae 26%, #b868b8 40%, #8a4a9c 60%, #5a2a68 80%, #2a0e34 100%);
+  /* Endfield terminal: lavender-paper survey, contour lines (等高线) and a
+     chartreuse glow over the era's violet. */
+  --endfield-pane-bg:
+    linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+    url("assets/endfield-background.svg"),
+    radial-gradient(circle at 88% 8%, rgba(234, 253, 79, 0.24), transparent 34%),
+    linear-gradient(160deg, #ece4f2 0%, #c9b4da 40%, #dccce8 72%, #f0e9f4 100%);
+  --endfield-pane-bg-size: 34px 34px, 34px 34px, max(1200px, 118vw) auto, auto, auto;
+  --endfield-pane-bg-position: center, center, 45% 20%, center, center;
+  --endfield-pane-bg-repeat: repeat, repeat, no-repeat, no-repeat, no-repeat;
+  --window-bg: #ededed;
+  --window-border: 1px solid #8b8b8b;
+  --window-radius: 5px;
+  /* Theme Family Contract: the shared object shadow. `2px 2px 0 var(--ink)`
+     is System 6's hard offset shadow, and only Liquid Glass had ever replaced
+     it — so a focused Quick Draft field, a Time Machine popover and a
+     ClioStage frame all stood on a solid black bar in Snow Leopard too. This is the
+     era's own window shadow at object scale. */
+  --system-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 9px rgba(0, 0, 0, 0.2);
+  /* Theme Family Contract: the shadow a small raised object casts — the
+     composer, an action chip, a help tag. The base layer writes System 6's
+     hard offset; Snow Leopard casts the same soft shadow it gives every other object. */
+  --system-object-shadow: var(--system-shadow);
+  /* Mac OS X help tag: a pale yellow slip with a thin grey rule and a small
+     corner. The base layer's balloon is System 6's — white paper inside a
+     black hairline with a 12px corner — and only Platinum had answered with
+     its own, so Snow Leopard was still popping a System 6 balloon. */
+  --balloon-help-bg: #fbfbc8;
+  --balloon-help-border: 1px solid #9d9d7d;
+  --balloon-help-radius: 3px;
+  /* 10.6 softens Jaguar's contact shadow but stays shorter than a modern bloom. */
+  --window-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.28),
+    0 4px 10px rgba(0, 0, 0, 0.22),
+    0 8px 16px rgba(0, 0, 0, 0.14);
+  --active-window-shadow: var(--window-shadow);
+  --inactive-window-shadow: 0 3px 10px rgba(0, 0, 0, 0.14);
+  /* Real 10.6 Finder-Home capture, sampled at 1x: a one-pixel #e2e2e2 top
+     edge over a smooth #d0d0d0 -> #bcbcbc silver ramp. The real capture
+     wins conflicts with the lighter Quaqua Java title pane. */
+  --system-titlebar-active-bg: linear-gradient(to bottom,
+    #e2e2e2 0 1px, #d0d0d0 1px 3px, #cdcdcd 3px 6px, #cacaca 6px 9px,
+    #c6c6c6 9px 12px, #c3c3c3 12px 15px, #c0c0c0 15px 18px,
+    #bcbcbc 18px 22px);
+  --system-titlebar-inactive-bg: linear-gradient(to bottom,
+    #f0f0f0 0 1px, #e7e7e7 1px 8px, #dedede 8px 22px);
+  --system-titlebar-background-origin: padding-box;
+  --system-titlebar-background-clip: border-box;
+  --system-titlebar-inactive-control-visibility: visible;
+  --system-titlebar-inactive-control-opacity: 0.48;
+  --titlebar-title-bg: transparent;
+  --titlebar-title-fg: #202020;
+  --titlebar-border: 1px solid #515151;
+  --titlebar-border-inactive: 1px solid #999;
+  --titlebar-shadow: inset 0 1px 0 #fff;
+  --surface-primary: #fff;
+  --surface-secondary: #e2e2e2;
+  --surface-inset: #fff;
+  /* Chromium f108f78 platform-mac-snowleopard: active #bdbdbd -> #a7a7a7,
+     inactive #e4e4e4 -> #d8d8d8. */
+  --toolbar-bg: linear-gradient(#c0c0c0, #b1b1b1 55%, #b3b3b3);
+  --toolbar-bg-inactive: linear-gradient(#e4e4e4, #d8d8d8);
+  --toolbar-border: 1px solid #515151;
+  --finder-sidebar-font-size: 12px;
+  --finder-sidebar-row-height: 20px;
+  --app-toolbar-bg: linear-gradient(to bottom, #f0f0f0 0%, #e3e3e3 45%, #d2d2d2 100%);
+  --app-toolbar-border-bottom: 1px solid #a9a9a9;
+  --toolbar-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.66);
+  /* Quaqua jtree.png (10.6 source list): measured #dde4eb surface with a
+     light blue selection and dark label; the saturated Aqua selection stays
+     on content lists and menus. */
+  --sidebar-bg: #dde4eb;
+  --sidebar-bg-inactive: #ededed;
+  /* Real 10.6 Apple menu capture (512 Pixels, 10-6 Go-Menu, 1:1): the
+     open-menu selection is a saturated blue ramp measured ~#577dea (top) ->
+     #3766f2 (mid) -> #1d5bf2 (bottom) with white labels. */
+  --selection-bg: linear-gradient(#577dea, #3766f2 50%, #1d5bf2);
+  /* The flat companion: this era's selection is a ramp, and a ramp cannot be a
+     border or an outline colour. The mid stop is the era's own flat answer,
+     shared with --editor-selection-tint below. */
+  --selection-edge: #3766f2;
+  --selection-fg: #fff;
+  /* A ::selection takes a colour, not a ramp, and a writing surface must mix a
+     flat colour to stay translucent. The editor selection takes the mid stop of
+     the ramp above. */
+  --editor-selection-tint: #3766f2;
+  /* 10.6 keeps the Aqua desktop-label recipe: shadowed white text on the
+     wallpaper, rounded selection pill from the era's own selection ramp. */
+  --desktop-label-bg: transparent;
+  --desktop-label-fg: #fff;
+  --desktop-label-text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  --desktop-label-radius: 8px;
+  --desktop-label-selected-bg: var(--selection-bg);
+  --desktop-label-selected-fg: var(--selection-fg);
+  /* Real 10.6 Finder Cover Flow list selection (512 Pixels, 1:1): an 18px
+     active row with a #3875d7 rim, #5b8dde center band and white labels.
+     This is independent from the source-list gradient below. */
+  --theme-lab-list-selected-bg:
+    linear-gradient(#3875d7 0 22%, #4a81da 22% 28%, #5b8dde 33% 78%, #3875d7 78% 100%);
+  --theme-lab-list-selected-fg: #fff;
+  --theme-lab-list-row-min-height: 18px;
+  --theme-lab-list-row-gap: 4px;
+  --theme-lab-list-row-padding: 1px 6px;
+  --theme-lab-list-row-border-bottom: 0;
+  --theme-lab-list-row-font-size: 12px;
+  --theme-lab-list-row-line-height: 16px;
+  --theme-lab-list-icon-display: block;
+  --theme-lab-list-icon-size: 16px;
+  --theme-lab-list-icon-image: url("./assets/themes/snow-leopard/folder-16.svg");
+  --theme-lab-list-document-image: url("./assets/themes/snow-leopard/document-16.svg");
+  /* Real 10.6 source list (512 Pixels Finder-Home): #69a3da -> #1468b6. */
+  --sidebar-selection-bg:
+    linear-gradient(#69a3da, #69a3da) top / 100% 1px no-repeat,
+    linear-gradient(#69a3da, #1468b6);
+  --sidebar-selection-bg-unfocused:
+    linear-gradient(#a2b1cb, #a2b1cb) top / 100% 1px no-repeat,
+    linear-gradient(#b1bfd8, #8296b8);
+  --sidebar-selection-bg-inactive:
+    linear-gradient(#a8a8a8, #a8a8a8) top / 100% 1px no-repeat,
+    linear-gradient(#c1c1c1, #9c9c9c);
+  --sidebar-selection-fg: #fff;
+  /* 10.6 Scrapbook reads as a Finder source list: quiet blue-gray rail,
+     borderless rows, and the measured source-list selection ramp. */
+  --scrapbook-list-display: block;
+  --scrapbook-pager-display: none;
+  --scrapbook-pane-columns: minmax(160px, 0.72fr) minmax(0, 1fr);
+  --scrapbook-pane-rows: minmax(0, 1fr) auto auto;
+  --scrapbook-pane-gap: 10px;
+  --scrapbook-mobile-pane-columns: 1fr;
+  --scrapbook-mobile-pane-rows: minmax(132px, 156px) minmax(0, 1fr) auto;
+  --scrap-list-bg: var(--sidebar-bg);
+  --scrap-list-border: 1px solid #a6adb5;
+  --scrap-list-radius: 0;
+  --scrap-list-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.42);
+  --scrap-list-item-divider: 0;
+  --scrap-list-item-bg: transparent;
+  --scrap-list-item-selected-bg: var(--sidebar-selection-bg);
+  --scrap-list-item-selected-fg: var(--sidebar-selection-fg);
+  --scrap-list-item-selected-radius: 3px;
+  --scrap-list-item-selected-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  /* 10.6 source list: one blue-gray rail, compact category heading, quiet
+     borderless rows, and the measured Finder Home selection gradient. */
+  --tdi-rail-padding: 0;
+  --tdi-rail-border: 1px solid #a6adb5;
+  --tdi-rail-radius: 0;
+  --tdi-rail-bg: var(--sidebar-bg);
+  --tdi-rail-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.42);
+  --tdi-source-label-display: block;
+  --tdi-source-label-padding: 8px 9px 4px;
+  --tdi-source-label-bg: transparent;
+  --tdi-source-label-fg: #728194;
+  --tdi-source-label-font-size: 10px;
+  --tdi-source-label-letter-spacing: 0.04em;
+  --tdi-source-label-text-transform: uppercase;
+  --tdi-tabs-gap: 0;
+  --tdi-tabs-padding: 0 5px 5px;
+  --tdi-tabs-bg: transparent;
+  --tdi-tabs-border-bottom: 0;
+  --tdi-tab-height: 38px;
+  --tdi-tab-min-height: 38px;
+  --tdi-tab-border: 0;
+  --tdi-tab-border-bottom: 0;
+  --tdi-tab-radius: 3px;
+  --tdi-tab-bg: transparent;
+  --tdi-tab-shadow: none;
+  --tdi-tab-active-border: 0;
+  --tdi-tab-active-border-bottom: 0;
+  --tdi-tab-active-bg: var(--sidebar-selection-bg);
+  --tdi-tab-active-fg: var(--sidebar-selection-fg);
+  --tdi-tab-active-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  --tdi-tab-small-color: #66717d;
+  --tdi-tab-active-small-color: rgba(255, 255, 255, 0.9);
+  /* Tier 2 selection states. The heading reuses the source-list label's own
+     tokens above -- one quiet-caption recipe, not two. Unfocused and hover
+     finally give --sidebar-selection-bg-unfocused/-inactive (declared with
+     the rest of the source-list ramp above, never consumed until now) a real
+     reader: inactive is the window-backgrounded grey, unfocused is the
+     softer "selected but not the responder" ramp real 10.6 source lists use
+     for hover-preview. Pressed goes one step past the full selection blue. */
+  --tdi-tabs-heading-padding: var(--tdi-source-label-padding);
+  --tdi-tabs-heading-fg: var(--tdi-source-label-fg);
+  --tdi-tabs-heading-font-size: var(--tdi-source-label-font-size);
+  --tdi-tabs-heading-letter-spacing: var(--tdi-source-label-letter-spacing);
+  --tdi-tabs-heading-text-transform: var(--tdi-source-label-text-transform);
+  --tdi-tabs-heading-border-bottom: 0;
+  --tdi-tab-active-unfocused-border: 0;
+  --tdi-tab-active-unfocused-border-bottom: 0;
+  --tdi-tab-active-unfocused-bg: var(--sidebar-selection-bg-inactive);
+  --tdi-tab-active-unfocused-fg: var(--sidebar-selection-fg);
+  --tdi-tab-active-unfocused-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  --tdi-tab-active-unfocused-small-color: rgba(255, 255, 255, 0.75);
+  --tdi-tab-hover-bg: var(--sidebar-selection-bg-unfocused);
+  --tdi-tab-hover-fg: #fff;
+  --tdi-tab-hover-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  --tdi-tab-pressed-bg: var(--sidebar-selection-bg);
+  --tdi-tab-pressed-fg: var(--sidebar-selection-fg);
+  --tdi-tab-pressed-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  --tdi-tab-close-size: 16px;
+  --tdi-tab-close-gutter: 5px;
+  --tdi-tab-close-border: 0;
+  --tdi-tab-close-radius: 999px;
+  --tdi-tab-close-bg: transparent;
+  --tdi-tab-close-fg: #4d5660;
+  --tdi-tab-close-shadow: none;
+  --tdi-tab-close-active-bg: rgba(255, 255, 255, 0.22);
+  --tdi-tab-close-active-fg: #fff;
+  --tdi-tab-close-active-shadow: none;
+  --tdi-tab-close-hover-bg: rgba(0, 0, 0, 0.12);
+  --tdi-tab-close-hover-fg: currentColor;
+  --tdi-tab-close-hover-shadow: none;
+  --separator: #c6c6c6;
+  --control-shadow: inset 0 1px 0 #fff, 0 1px 1px rgba(0, 0, 0, 0.18);
+  --control-active-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.34);
+  /* Theme Family Contract: the keyboard ring. The base layer writes System 6's
+     dotted ink ring, so every era that never answered wore it. Each era already
+     names its own ring for controls; this points the shared role at it. */
+  --system-focus-outline: var(--control-focus-outline);
+  --control-focus-outline: 3px solid rgba(83, 154, 219, 0.58);
+  --control-focus-offset: 1px;
+  --control-disabled-bg: linear-gradient(#f7f7f7, #ececec);
+  --control-disabled-field-bg: #f2f2f2;
+  --system-border: 1px solid #a5a5a5;
+  --system-inset: inset 0 1px 2px rgba(0, 0, 0, 0.2), inset 0 -1px 0 #fff;
+  --control-radius: 4px;
+  /* Quaqua 9.1 Button.borders.png frame 0 (enabled): dark outline, ~6px
+     corner arc, silver fill #f6f6f6 -> #ebebeb -> #d9d9d9 (midline) ->
+     #e6e6e6 -> #fdfdfd, bottom drop shadow. */
+  --btn-border-color: #7d7d7d;
+  /* Measured from the 10.6 Empty Trash dialog: the Cancel/Empty Trash caps
+     inset 7px over an 11-row half-height, i.e. a full pill, not the 6px
+     rounded rectangle this had. 11px is that half-height stated as a bound:
+     the 22px button is the same pill, and a taller control stops turning
+     into a stadium. Same reasoning as Aqua above. */
+  --btn-radius: 11px;
+  --clio-composer-control-radius: 50%;
+  --btn-bg: linear-gradient(#f6f6f6 0%, #ebebeb 38%, #d9d9d9 44%, #e6e6e6 58%, #fdfdfd 100%);
+  --btn-shadow: inset 0 1px 0 #fff, inset 0 0 0 1px rgba(255, 255, 255, 0.35), 0 1px 2px rgba(0, 0, 0, 0.28);
+  --btn-hover-bg: linear-gradient(#f8fbff 0%, #eef4fb 38%, #d8e4ee 44%, #eaf1f7 58%, #fff 100%);
+  --btn-hover-fg: #111;
+  --btn-hover-shadow: inset 0 1px 0 #fff, 0 1px 2px rgba(28, 92, 145, 0.22);
+  --btn-active-bg: linear-gradient(#d8d8d8 0%, #b7b7b7 48%, #9c9c9c 54%, #d2d2d2 100%);
+  --btn-active-fg: #111;
+  --btn-active-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.26);
+  /* Real 10.6 dialogs (512 Pixels Empty-Trash / Eject-Warning): the default
+     button is a light blue ramp #c1dbf2 -> #70acdd -> #c5f0fb with dark
+     labels and no dark outline. */
+  --btn-default-bg: linear-gradient(#c1dbf2 0%, #a9cdec 20%, #8ec7e9 35%, #70acdd 48%, #84b9e3 60%, #a0cff6 80%, #c5f0fb 100%);
+  --btn-default-fg: #1a1a1a;
+  --btn-default-text-shadow: none;
+  --btn-default-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --btn-default-active-bg: linear-gradient(#a8c8e8, #4f94cf 52%, #84c4ec);
+  --btn-default-active-fg: #fff;
+  --field-bg: #fff;
+  --field-focus-bg: #fff;
+  --field-border: 1px solid #a3a3a3;
+  --field-radius: 3px;
+  /* ClioTalk reply slip: 10.6 text-box idiom (measured field border/radius,
+     inset highlight only -- no drop shadow, which would read as a card). */
+  --clio-slip-radius: 3px;
+  --clio-slip-surface: #fff;
+  --clio-slip-border: 1px solid #c8c8c8;
+  --clio-slip-shadow: inset 0 1px 0 #fff;
+  --clio-slip-kept-surface: #fff;
+  --clio-slip-kept-border: 1px solid #7a7a7a;
+  --clio-slip-kept-shadow: none;
+  --clio-slip-mark-border: 1px solid #c8c8c8;
+  --clio-slip-mark-kept: #333;
+  --clio-said-rule: 3px solid #9a9a9a;
+  --select-radius: 5px;
+  --field-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.18), 0 1px 0 #fff;
+  --field-focus-border: 1px solid #4f91cc;
+  --field-focus-ring: 0 0 0 3px rgba(94, 158, 219, 0.42);
+  --choice-bg: linear-gradient(#fff, #dedede);
+  --choice-border: 1px solid #949494;
+  --choice-radius: 3px;
+  --choice-shadow: inset 0 1px 0 #fff;
+  /* Quaqua 9.1 CheckBox.icons.png frame 2, read out of the fidelity tile one
+     pixel column at a time (x=3, the first interior column the check does not
+     cross). The 10.6 checked box is a concave glass well, not a solid chip:
+     a bright rim at the top, the darkest band around 58%, then a strong bounce
+     that ends near-white cyan at the bottom. The previous ramp started at
+     #3b7cc6 — luminance 114 against the reference's 218 — so the whole control
+     read as a flat dark blue block and swallowed its own check. */
+  --choice-checked-bg: #7daee1;
+  --choice-checked-bg-image:
+    linear-gradient(
+      to bottom,
+      #c6d5ee 0%,
+      #9dc2e7 15%,
+      #92bae4 25%,
+      #7daee1 42%,
+      #5ca5ef 58%,
+      #6db4fe 67%,
+      #7ec3ff 75%,
+      #8cd5ff 83%,
+      #a1f1ff 92%,
+      #b4ffff 100%
+    );
+  /* The frame is not one flat colour: navy across the top, near-black down the
+     right, dark grey along the bottom, and a blue rail down the left. */
+  --choice-checked-border-color: #00006a #0a0a0a #272727 #0f57c8;
+  /* Quaqua 9.1 CheckBox.icons.png frame 2 draws a dark check, not the shared
+     one-pixel X used by earlier eras. It is a 14px tick in a 14px well: the
+     capture's mark runs from a vertex two thirds of the way down to a tip that
+     reaches the well's own top edge. The arm's last two pixels in the reference
+     sit ABOVE that edge - the tick is drawn by the cell there - and this one
+     stops at it, because a background image is clipped to the control and the
+     boot payload has no room for the second mechanism an overlay would need. */
+  --choice-checkmark-image: url("./assets/themes/snow-leopard/checkbox-checked-dark.svg");
+  --choice-checkmark-size: 14px 14px;
+  --choice-disabled-checkmark-image: url("./assets/themes/snow-leopard/checkbox-checked-disabled.svg");
+  /* A gradient is an image, not a colour: as --radio-bg it made the shared
+     background-color invalid and the unchecked well vanished. The well is the
+     image layer, over a colour close to its middle. */
+  --radio-bg: #efefef;
+  --radio-border: 1px solid #949494;
+  --radio-shadow: inset 0 1px 0 #fff;
+  --radio-image: linear-gradient(#fff, #dedede);
+  --radio-focus-image: var(--radio-image);
+  /* Project-owned reconstruction from Quaqua 9.1 RadioButton.icons.png frame
+     3: a navy-to-steel rim around the measured concave lavender/cyan well, and
+     the native 2×3 centre mark. The transparent first layer preserves the
+     shared two-layer 7px/14px background-size contract. */
+  --radio-checked-image:
+    radial-gradient(circle, transparent 0 100%),
+    url("./assets/themes/snow-leopard/radio-selected.svg");
+  /* 10.6 draws a disabled checked control; it does not fade the enabled one.
+     Measured from the disabled frames of the same Quaqua strips (frame 6):
+     checkbox well rgb(239,239,239) with a rgb(122,122,122) mark and a
+     rgb(168,168,168)..rgb(227,227,227) frame; radio well rgb(246,246,246) with a
+     rgb(120,120,120) dot. The blue is gone, so the opacity fade goes too. */
+  --choice-disabled-checked-bg: #efefef;
+  --choice-disabled-checked-bg-image: none;
+  --choice-disabled-border-color: #a8a8a8;
+  --choice-disabled-opacity: 1;
+  --radio-disabled-checked-image:
+    radial-gradient(circle, #787878 0 1.75px, transparent 2.5px),
+    radial-gradient(circle, #f6f6f6 0 5px, #c0c0c0 5.5px, #a8a8a8 6px, transparent 6.5px);
+  --radio-disabled-checked-size: 14px;
+  --radio-checked-focus-image: var(--radio-checked-image);
+  /* Theme Lab draws the fixture through the same two layers as the app
+     recipe; a single layer would be compressed to the 7px dot size. */
+  --theme-lab-radio-checked-bg: var(--radio-checked-image);
+  --theme-lab-radio-dot-content: none;
+  /* 10.6 menu bar is opaque metal — frost stays foundation `none` (unlike
+     Lion+); do not set --menu-bar-backdrop-filter here or it becomes a
+     period token that expands older-era debt. */
+  --menu-bar-bg: linear-gradient(#f6f6f6, #d4d4d4);
+  --menu-bar-border-color: #9f9f9f;
+  --menu-bar-border: 1px solid var(--menu-bar-border-color);
+  --menu-bar-shadow: inset 0 1px 0 #fff, inset 0 -1px 0 rgba(0, 0, 0, 0.08);
+  --menu-panel-bg: rgba(250, 250, 250, 0.98);
+  --menu-panel-border: 1px solid #9a9a9a;
+  --menu-panel-radius: 4px;
+  --menu-panel-shadow: 0 4px 12px rgba(0, 0, 0, 0.32);
+  --menu-panel-backdrop-filter: none;
+  /* Real 10.6 Apple menu capture (512 Pixels, 10-6 Go-Menu, 1:1): the 10.6
+     menu selection is the saturated blue ramp #577dea -> #3766f2 -> #1d5bf2
+     with white labels. (Previously the 10.10 #2176e9 ramp sat here.) */
+  --menu-button-active-bg: linear-gradient(#577dea, #3766f2 50%, #1d5bf2);
+  --menu-button-active-fg: #fff;
+  --menu-item-active-bg: linear-gradient(#577dea, #3766f2 50%, #1d5bf2);
+  --menu-item-active-fg: #fff;
+  --window-frame-lane: 15px;
+  /* Quaqua ScrollBar.track.v.png (15px tile): #b8b8b8 -> #fcfcfc ->
+     #efefef horizontal ramp. */
+  --window-frame-track-bg: linear-gradient(90deg, #b8b8b8 0%, #c8c8c8 14%, #dbdbdb 29%, #ebebeb 43%, #f6f6f6 57%, #fcfcfc 79%, #efefef 100%);
+  --window-frame-track-border: 1px solid #9b9b9b;
+  /* Measured frame 3 anatomy: light gray rounded end caps, dark navy
+     outline (stronger at the caps), a two-lobe bright blue body, and a gray
+     right edge. The first layer paints the vertical caps/ends; the second
+     paints the horizontal body underneath. */
+  /* 10.6 thumb, sampled from the Quaqua ScrollBar.thumb.v strip (frame 3):
+     a capsule whose caps fade over ~6px at each end and whose body is a
+     two-lobe horizontal ramp with a visible center seam. The caps are
+     pixel-anchored top/bottom layers so they never migrate into the body
+     when the thumb stretches — the old percentage bands did exactly that
+     and read as painted-on stripes. */
+  --window-frame-thumb-bg:
+    linear-gradient(180deg, rgba(18, 72, 141, 0.82) 0, rgba(44, 119, 206, 0.5) 2px, rgba(90, 158, 236, 0.18) 5px, rgba(90, 158, 236, 0) 7px) top / 100% 7px no-repeat,
+    linear-gradient(0deg, rgba(13, 69, 139, 0.82) 0, rgba(38, 113, 205, 0.5) 2px, rgba(76, 146, 227, 0.18) 5px, rgba(76, 146, 227, 0) 7px) bottom / 100% 7px no-repeat,
+    linear-gradient(90deg, #4a7fc0 0%, #759fdc 8%, #90bae6 17%, #8bb8e7 26%, #83b4e9 34%, #438de3 46%, #579eee 56%, #6aaefd 65%, #7cc0ff 73%, #88cfff 81%, #92daff 90%, #8bd0ff 100%);
+  /* The same recipe rotated for the horizontal bar: the caps anchor to the
+     left/right ends and the two-lobe body ramp runs across the lane's height.
+     Without this twin the vertical recipe paints its caps along the thumb's
+     length and the body ramp tiles as stripes. */
+  --window-frame-thumb-bg-horizontal:
+    linear-gradient(90deg, rgba(18, 72, 141, 0.82) 0, rgba(44, 119, 206, 0.5) 2px, rgba(90, 158, 236, 0.18) 5px, rgba(90, 158, 236, 0) 7px) left / 7px 100% no-repeat,
+    linear-gradient(270deg, rgba(13, 69, 139, 0.82) 0, rgba(38, 113, 205, 0.5) 2px, rgba(76, 146, 227, 0.18) 5px, rgba(76, 146, 227, 0) 7px) right / 7px 100% no-repeat,
+    linear-gradient(180deg, #4a7fc0 0%, #759fdc 8%, #90bae6 17%, #8bb8e7 26%, #83b4e9 34%, #438de3 46%, #579eee 56%, #6aaefd 65%, #7cc0ff 73%, #88cfff 81%, #92daff 90%, #8bd0ff 100%);
+  --window-frame-thumb-border: 1px solid #1c4f96;
+  --window-frame-thumb-radius: 999px;
+  --window-frame-arrow-bg: linear-gradient(#fff, #d4d4d4 52%, #f5f5f5);
+  --scrollbar-track: var(--window-frame-track-bg);
+  --scrollbar-thumb: var(--window-frame-thumb-bg);
+  --scrollbar-button: var(--window-frame-arrow-bg);
+  --scrollbar-width: 15px;
+  /* Chromium Inspector's app-specific compact Web scrollbar is retained as a
+     separate semantic variant; it is not the 10.6 system scrollbar. */
+  --scrollbar-compact-width: 11px;
+  --tab-radius: 5px;
+  --tab-overlap: 0;
+  /* Real 10.6 Displays preference pane (512 Pixels, 1:1): compact connected
+     tabs use a neutral gloss at rest and a blue Aqua gloss when selected. */
+  --tab-bg: linear-gradient(#f9f9f9 0%, #ededed 42%, #e3e3e3 50%, #fff 100%);
+  --tab-hover-bg: linear-gradient(#fff, #f0f0f0);
+  --tab-active-bg: linear-gradient(#eaf2fb 0%, #acd1f0 42%, #7ab7e8 48%, #9cd1fb 75%, #cfffff 100%);
+  /* The box under the tabs is the window's grey, as Aqua's is; without its own
+     value it fell back to the selected tab's blue gloss and read as a pressed
+     bar (2026-10-09 audit). */
+  --tab-panel-bg: var(--window-bg);
+  --tab-active-fg: #111;
+  --tab-strip-gap: 0;
+  --tab-strip-border-bottom: 0;
+  --tab-strip-border-top: 0;
+  --tab-strip-bg: #ededed;
+  --tab-strip-padding: 1px 0 0;
+  --tab-min-height: 22px;
+  --tab-height: 22px;
+  --tab-padding: 1px 12px;
+  --tab-border: 1px solid #777;
+  --tab-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.74);
+  --tab-active-min-height: 22px;
+  --tab-active-height: 22px;
+  --tab-active-fg: #111;
+  --tab-active-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  --tab-first-radius: 5px 0 0 5px;
+  --tab-last-radius: 0 5px 5px 0;
+  --tab-last-border-right: 1px solid #777;
+  /* 10.6 shrank the choice controls that Jaguar drew at 18px. Every Quaqua 9.1
+     state strip paints the frame across a 14px cell, and the pinned 10.6
+     specimens crop 14x14 while Aqua's crop 18x18 — so the 18px inherited from
+     the Aqua block was a size the reference never draws. It also cost the glyph
+     metrics: an 18px control centres its mark 2px away from where a 14px
+     reference centres it, which no path can correct. */
+  --system-radio-size: 14px;
+  --system-check-size: 14px;
+  --theme-lab-button-min-width: 72px;
+  --theme-lab-group-bg: #ededed;
+  --theme-lab-group-border: 1px solid #b7b7b7;
+  --theme-lab-group-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  /* Real 10.6 Apple menu capture (512 Pixels, 10-6 Go-Menu, 1:1): a 20px row
+     with a ~21px left icon gutter and the full-width saturated blue ramp
+     (#577dea -> #1d5bf2, owned by --menu-item-active-bg below). These Theme
+     Lab fixture tokens keep the selected row at the 10.6 reference geometry
+     instead of the generic 22px default row. */
+  --menu-item-min-height: 16px;
+  --menu-item-padding: 2px 9px 2px 21px;
+  /* Same trap as Aqua above: the 21px gutter cannot hold the default check
+     box at left 12px without touching the label. */
+  --menu-check-left: 4px;
+  --menu-item-line-height: 16px;
+
+  /* Control Panel section chooser — the Aqua icon toolbar matured into the
+     10.6 unified silver bar: same skeleton as the parent recipe, candy
+     removed, selection as the dark recessed capsule with a white label. */
+  --control-settings-columns: minmax(0, 1fr);
+  --control-settings-rows: none;
+  --control-chooser-area: auto;
+  --control-chooser-bg: linear-gradient(#cfcfcf, #b6b6b6);
+  --control-chooser-direction: row;
+  --control-chooser-gap: 4px;
+  --control-chooser-padding: 2px 8px;
+  --control-chooser-border-bottom: 1px solid #838383;
+  --control-chooser-border-right: 0;
+  --control-chooser-item-direction: column;
+  --control-chooser-item-flex: 1 1 0;
+  --control-chooser-item-gap: 2px;
+  --control-chooser-item-padding: 3px 8px 4px;
+  --control-chooser-item-offset: 0px;
+  --control-chooser-item-border: 0;
+  --control-chooser-item-radius: 5px;
+  --control-chooser-item-bg: transparent;
+  --control-chooser-item-fg: #2e2e2e;
+  --control-chooser-hover-bg: rgba(0, 0, 0, 0.12);
+  --control-chooser-hover-fg: #1c1c1c;
+  --control-chooser-active-bg: rgba(0, 0, 0, 0.28);
+  --control-chooser-active-fg: #fff;
+  --control-chooser-label-padding: 0;
+  --control-chooser-active-label-bg: transparent;
+  --control-chooser-active-label-fg: currentColor;
+  --control-chooser-active-weight: inherit;
+  --control-chooser-active-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 0 rgba(255, 255, 255, 0.3);
+  --control-chooser-icon-display: block;
+  --control-chooser-icon-size: 22px;
+  --control-chooser-label-size: 10px;
+  /* The toolbar rail's own height: 22px icon + 2px gap + the 12px name, in a
+     3px 8px 4px cell, on the 2px-padded rail with its bottom rule. */
+  --control-chooser-min-height: 48px;
+
+  /* Control Strip — signed counterfactual (see the Aqua note): brushed
+     silver gradient, etched hairline dividers, quiet shadow, the selection
+     recessed like the 10.6 toolbar item. */
+  --control-strip-thickness: 25px;
+  --control-strip-bg: linear-gradient(#f4f4f4, #d2d2d2);
+  --control-strip-border: 1px solid #7e7e7e;
+  --control-strip-divider: 1px solid rgba(0, 0, 0, 0.12);
+  --control-strip-radius: 5px 10px 10px 5px;
+  --control-strip-radius-mirrored: 10px 5px 5px 10px;
+  --control-strip-shadow: 0 2px 5px rgba(0, 0, 10, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  --control-strip-hover-bg: rgba(0, 0, 0, 0.08);
+  --control-strip-hover-fg: #1c1c1c;
+  --control-strip-hover-shadow: none;
+  --control-strip-active-bg: rgba(0, 0, 0, 0.22);
+  --control-strip-active-fg: #fff;
+  --control-strip-active-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.35);
+  --control-strip-gauge: #5787d8;
+  --control-strip-gauge-bg: #fff;
+  --control-strip-grip-inset: 5px 0;
+  --control-strip-grip: repeating-linear-gradient(to bottom, #8a8a8a 0 1px, rgba(0, 0, 0, 0) 1px 3px) 50% 50% / 6px 100% no-repeat;
+}
+
+/* Snow Leopard era-specific Finder fixtures (dev-only Theme Lab). The shared
+   toolbar is replaced inside the Finder window by the 10.6 unified toolbar;
+   the source-list specimen renders real 10.6 sidebar groups. */
+html[data-lineage~="snow-leopard"] .theme-lab-snow-toolbar,
+body[data-lineage~="snow-leopard"] .theme-lab-snow-toolbar,
+html[data-lineage~="snow-leopard"] .theme-lab-snow-source-list,
+body[data-lineage~="snow-leopard"] .theme-lab-snow-source-list {
+
+  display: block;
+
+}
+
+/* body-only: Theme Lab renders after boot, when body carries the theme;
+   the html twin was boot-era defense a runtime-only window never needs. */
+body[data-lineage~="snow-leopard"] .theme-lab-finder-window > .theme-lab-toolbar {
+
+  display: none;
+
+}
+
+/* Historical chrome recipe. Each branch owns its selector; the values stay in
+   the per-theme token tables above. Classic and Liquid Glass keep their own
+   native title bars from the base files. */
+body[data-theme-family="aqua"] .title-bar {
+
+  background: var(--system-titlebar-active-bg);
+  background-origin: var(--system-titlebar-background-origin);
+  background-clip: var(--system-titlebar-background-clip);
+  border-bottom: var(--titlebar-border);
+}
+
+body[data-theme-family="aqua"] .window:not(.is-active) .title-bar {
+
+  background: var(--system-titlebar-inactive-bg);
+
+}
+
+body[data-theme-family="aqua"] .title-bar h1,
+body[data-theme-family="aqua"] .title-bar h2 {
+
+  background: var(--titlebar-title-bg);
+  /* A background window's title hands over its colour (60-responsive.css). */
+  color: var(--titlebar-inactive-title-fg, var(--titlebar-title-fg));
+  font-family: var(--theme-title-font);
+
+}
+
+body[data-theme="aqua"] .theme-lab-window {
+
+  border-radius: var(--window-radius);
+  background: var(--window-bg);
+  box-shadow: var(--active-window-shadow);
+
+}
+
+body[data-theme="aqua"] .theme-lab-window:not(.is-active) {
+
+  background: var(--window-bg);
+  box-shadow: var(--inactive-window-shadow);
+  /* Jaguar inactive frames keep a dark blue top edge (44,85,133). */
+  border-color: #2c5585;
+
+}
+
+/* The Jaguar Finder pushes the search pill to the right of the toolbar and
+   leaves the round-icon buttons breathing room between groups. */
+body[data-theme="aqua"] .theme-lab-toolbar-search {
+  /* The 10.2 capture keeps the search pill 23px clear of the window frame,
+     not flush against the toolbar's 10px inset. */
+  margin-inline-end: 12px;
+}
+
+body[data-theme="aqua"] :where(
+  input[type="url"],
+  input[type="text"],
+  input[type="password"],
+  input[type="search"],
+  input[type="number"]
+) {
+
+  height: 22px;
+  min-height: 22px;
+  padding: var(--field-control-padding);
+  border: var(--field-border);
+  border-radius: var(--field-radius);
+  background: var(--field-bg);
+  box-shadow: var(--field-shadow);
+  font-family: var(--theme-ui-font);
+  font-size: var(--system-control-size);
+  line-height: 16px;
+
+}
+
+body[data-theme-family="aqua"] input[type="search"] {
+
+  appearance: none;
+  -webkit-appearance: none;
+  padding: var(--search-field-padding);
+  border-radius: var(--search-field-radius);
+  background: var(--search-field-background, var(--field-bg));
+
+}
+
+body[data-theme="aqua"] :where(
+  textarea,
+  input[type="url"],
+  input[type="text"],
+  input[type="password"],
+  input[type="search"],
+  input[type="number"]
+):not(.mde-input):is(:focus, .theme-lab-focus-demo) {
+
+  border: var(--field-focus-border);
+  outline: 0;
+  /* Preserve the arrow and other control images while changing the fill. */
+  background-color: var(--field-focus-bg);
+
+}
+
+/* Held choice control, 10.6 only. Quaqua 9.1 CheckBox.icons.png and
+   RadioButton.icons.png frames 1 and 3 (pressed off / pressed on) are frames 0
+   and 2 with the well and rim darkened: centre column #efefef -> #cfcfcf,
+   #a1c5e8 -> #78a0c7, rim #727272 -> #444444; the black mark is unchanged.
+   Tiger and Lion inherit 10.6's choice art but have no pressed capture of
+   their own on disk, so they are not named here. */
+body[data-theme="snow-leopard"] {
+  --choice-pressed-filter: brightness(0.84);
+}
+
+body[data-theme="aqua"] :is(input[type="checkbox"], input[type="radio"]) {
+
+  background-size: 18px 18px;
+
+}
+
+body[data-theme="aqua"] input[type="checkbox"]:not(:checked) {
+
+  background-image: var(--aqua-checkbox-unchecked-image);
+  background-size: 18px 18px;
+
+}
+
+body[data-theme="aqua"] input[type="checkbox"]:checked {
+
+  background-image: var(--choice-checkmark-image);
+  background-size: 18px 18px;
+
+}
+
+body[data-theme="aqua"] input[type="checkbox"]:is(:active, .is-active):not(:disabled):not(:checked) {
+
+  background: transparent var(--aqua-checkbox-pressed-unchecked-image) center / 18px 18px no-repeat;
+
+}
+
+body[data-theme="aqua"] input[type="checkbox"]:is(:active, .is-active):not(:disabled):checked {
+
+  background: transparent var(--aqua-checkbox-pressed-image) center / 18px 18px no-repeat;
+
+}
+
+body[data-theme="aqua"] input[type="radio"]:not(:checked) {
+
+  background-image: var(--radio-image);
+  background-size: 18px 18px;
+
+}
+
+body[data-theme="aqua"] input[type="radio"]:checked {
+
+  background-image: var(--radio-checked-image);
+  background-size: 18px 18px;
+
+}
+
+body[data-theme="aqua"] input[type="radio"]:is(:active, .is-active):not(:disabled):not(:checked) {
+
+  background: transparent var(--aqua-radio-pressed-unchecked-image) center / 18px 18px no-repeat;
+
+}
+
+body[data-theme="aqua"] input[type="radio"]:is(:active, .is-active):not(:disabled):checked {
+
+  background: transparent var(--aqua-radio-pressed-image) center / 18px 18px no-repeat;
+
+}
+
+/* The Aqua title bar: red, yellow and green together at the left (owner,
+   2026-11-01). The grid is gutter | title | gutter; the yellow and green
+   lamps stack into the first gutter beside Close (styles/88-desk-dock.css),
+   so no column moves. */
+body[data-theme="aqua"] .window > .title-bar {
+  grid-template-columns:
+    var(--titlebar-gutter)
+    minmax(0, 1fr)
+    var(--titlebar-gutter);
+}
+
+body[data-theme="aqua"] .title-bar > :is(.close-box, .resize-box) {
+  width: var(--traffic-light-size);
+  height: var(--traffic-light-size);
+}
+
+  /* Not a restatement of the base: these three eras are the traffic-light
+     eras, where the era's own tradition puts three lamps in a row at the
+     left. This is the product's choice stated explicitly where history
+     pulls the other way -- Close at the left edge, Zoom at the right --
+     and window-frame.test.mjs holds each era to saying so. The duplicate
+     is the guard. */
+body[data-theme="aqua"] .title-bar > .close-box {
+  grid-column: 1;
+  justify-self: start;
+
+}
+
+body[data-theme="aqua"] .title-bar > .resize-box {
+  grid-column: 1;
+  justify-self: start;
+
+}
+
+/* Inactive Aqua title bars let the desktop show through: a slight blur
+   keeps the title and lamps legible over the wallpaper. */
+body[data-theme="aqua"] .window:not(.is-active) > .title-bar {
+  backdrop-filter: blur(2px) saturate(120%);
+  -webkit-backdrop-filter: blur(2px) saturate(120%);
+}
+
+/* The responsive Classic layer paints windows, modals, and popovers with
+   --paper and --ink. Aqua reclaims these surfaces with its own material
+   tokens so the real app never falls back to the System 6 face. */
+body[data-theme="aqua"] :is(.window, .system-modal) {
+  background: var(--window-bg);
+  border-color: #8b8b8b;
+}
+
+/* The Aqua branch's resize control is a small gray wedge grip in the
+   lower-right corner (HIG Fig 5-1, Fig 8-9) - not the System 6 grow box
+   with its double square and hairlines. The wedge is a project-authored SVG
+   derived from the 10.2 Open dialog corner; 10.6 uses the same grip. */
+body[data-theme-family="aqua"] .grow-box {
+  width: 15px;
+  height: 15px;
+  /* A background window's grow box hands over none (10-windows.css). */
+  background:
+    var(--grow-box-art, url("./assets/themes/aqua/resize-grip.svg")) bottom right / 15px 15px no-repeat;
+  cursor: nwse-resize;
+  border: 0;
+}
+
+body[data-theme="aqua"] .system-modal {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9), 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+
+/* Aqua alert anatomy (HIG pp.95-124): 64x64 application/warning icon at the
+   left, bold 13pt message, right-aligned button row. */
+body[data-theme="aqua"] .system-modal form {
+  position: relative;
+  padding-left: 96px;
+  min-height: 92px;
+}
+
+body[data-theme="aqua"] .system-modal form::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 64px;
+  height: 64px;
+  background: url("./assets/themes/aqua/sheet-warning-64.svg") center / 64px 64px no-repeat;
+}
+
+body[data-theme="aqua"] .system-modal #system-modal-message {
+  font-family: var(--theme-ui-font);
+  font-weight: 700;
+  color: #111;
+}
+
+body[data-theme="aqua"] :is(
+  .menu-popover,
+  .menu-sub-popover,
+  .compose-tools-menu,
+  .teachtext-command-popover,
+  .teachtext-command-subpopover
+) {
+  background: var(--menu-panel-bg);
+  border: var(--menu-panel-border);
+  border-radius: var(--menu-panel-radius);
+}
+
+/* Aqua HIG: menu separators are blank space, not lines. */
+body[data-theme="aqua"] :is(.menu-popover, .menu-sub-popover) hr {
+  height: 7px;
+  margin: 2px 8px;
+  border: 0;
+  background: transparent;
+}
+
+/* The Aqua default button pulses a soft blue glow to draw attention
+   (HIG pp.120-122). The fidelity/snapshot harness disables animations, so
+   the resting state is unchanged. */
+@keyframes aqua-default-button-pulse {
+  0%, 100% {
+    box-shadow: var(--aqua-btn-frame);
+  }
+  50% {
+    box-shadow:
+      var(--aqua-btn-frame),
+      0 0 9px 1px rgba(42, 128, 220, 0.55);
+  }
+}
+
+body[data-theme="aqua"] .btn.default {
+  animation: aqua-default-button-pulse 2.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-theme="aqua"] .btn.default {
+    animation: none;
+    /* Pulse off means focus needs the ring back. Setting the token on the
+       element feeds the base .btn.default:focus-visible rule. */
+    --btn-default-focus-outline: var(--control-focus-outline);
+  }
+}
+
+/* Real-app native selects are the System 6 harness by default (black border,
+   Classic arrow). Aqua renders them as the glossy popup with the blue
+   double-arrow well, matching the custom system-select-button recipe. */
+/* The old first two background layers here were the color swatch of the
+   Highlight Color popup's "Blue" OPTION, copied from the canonical capture
+   as if it were control chrome; real Jaguar popups carry no swatch. */
+body[data-theme="aqua"] select:not([multiple]) {
+  min-height: 21px;
+  height: 21px;
+  padding: 1px 25px 1px 10px;
+  border: 0;
+  border-radius: 4px;
+  background:
+    url("./assets/themes/aqua/popup-arrows.svg") right 9px center / 4px 12px no-repeat,
+    linear-gradient(to bottom,
+      #00005f 0 1px, #dee2f4 1px 2px, #bed4ef 2px 3px,
+      #a6c8eb 3px 4px, #9ac1ea 4px 5px, #94bdea 5px 6px,
+      #8ebbea 6px 7px, #8ebdec 7px 8px, #8bbbee 8px 9px,
+      #64a8f2 9px 10px, #6bb0f6 10px 11px, #73b7fd 11px 12px,
+      #7cbfff 12px 13px, #86c9ff 13px 14px, #93d2ff 14px 15px,
+      #97daff 15px 16px, #a0e0ff 16px 17px, #a9e6ff 17px 18px,
+      #b1f3ff 18px 19px, #bff 19px 20px, #4e4e4e 20px 21px)
+      right top / 21px 21px no-repeat,
+    linear-gradient(to bottom,
+      #8b8b8b 0 1px, #fcfcfc 1px 2px, #f6f6f6 2px 3px,
+      #f0f0f0 3px 4px, #eee 4px 5px, #ededed 5px 7px,
+      #ececec 7px 9px, #e1e1e1 9px 10px, #e6e6e6 10px 11px,
+      #e9e9e9 11px 12px, #ececec 12px 13px, #efefef 13px 14px,
+      #f3f3f3 14px 15px, #f6f6f6 15px 16px, #f8f8f8 16px 17px,
+      #fcfcfc 17px 18px, #fff 18px 20px, #4e4e4e 20px 21px);
+  box-shadow: var(--aqua-popup-frame);
+  font-family: var(--theme-ui-font);
+  font-size: var(--system-control-size);
+  font-weight: 400;
+  color: var(--ink);
+}
+
+body[data-theme="aqua"] select:disabled {
+  filter: grayscale(0.7);
+  opacity: var(--select-disabled-opacity, 0.65);
+}
+
+body[data-theme="aqua"] .info-comments textarea {
+  background: var(--field-bg);
+  box-shadow: var(--field-shadow);
+}
+
+/* Control Panel / Chooser settings use native webkit scrollbars styled as
+   System 6 by default. Aqua gives them the 15px blue-thumb scrollbar. */
+body[data-theme="aqua"] :is(.control-panel, .chooser-panel) .settings::-webkit-scrollbar,
+body[data-theme="aqua"] :is(.control-panel, .chooser-panel) .settings::-webkit-scrollbar-track {
+  background: #fff;
+  border-left: 0;
+}
+
+body[data-theme="aqua"] :is(.control-panel, .chooser-panel) .settings::-webkit-scrollbar-thumb {
+  border: 0;
+  border-radius: var(--window-frame-thumb-radius);
+  background: var(--window-frame-thumb-bg);
+  box-shadow: none;
+}
+
+/* The blue ramp is directional; a horizontal native thumb takes the rotated
+   twin so the stripes stay across the lane, not along it. */
+body[data-theme="aqua"] :is(.control-panel, .chooser-panel) .settings::-webkit-scrollbar-thumb:horizontal {
+  background: var(--window-frame-thumb-bg-horizontal, var(--window-frame-thumb-bg));
+}
+
+body[data-theme="aqua"] :is(.control-panel, .chooser-panel) .settings::-webkit-scrollbar-corner {
+  background: #fff;
+}
+
+/* Same as Aqua: red, yellow and green together at the left; the yellow lamp beside Close ships with the era's Dock
+   (styles/88-desk-dock.css). */
+body[data-lineage~="snow-leopard"] .window > .title-bar {
+
+  grid-template-columns:
+    var(--titlebar-gutter)
+    minmax(0, 1fr)
+    var(--titlebar-gutter);
+
+}
+
+body[data-lineage~="snow-leopard"] .window > .title-bar :is(h1, h2) {
+
+  padding-inline: var(--titlebar-content-padding-inline);
+  font-weight: var(--titlebar-title-weight, 600);
+  letter-spacing: 0;
+  text-shadow: var(--titlebar-title-text-shadow);
+
+}
+
+body[data-lineage~="snow-leopard"] .window:not(.is-active) > .title-bar {
+
+  border-bottom: var(--titlebar-border-inactive, var(--titlebar-border));
+
+}
+
+body[data-lineage~="snow-leopard"] .title-bar > :is(.close-box, .resize-box) {
+  width: var(--traffic-light-size);
+  height: var(--traffic-light-size);
+}
+
+body[data-lineage~="snow-leopard"] .title-bar > .close-box {
+  grid-column: 1;
+  justify-self: start;
+}
+
+body[data-lineage~="snow-leopard"] .title-bar > .resize-box {
+  grid-column: 1;
+  justify-self: start;
+}
+
+body[data-lineage~="snow-leopard"] select:not([multiple]) {
+
+  min-height: var(--select-control-min-height);
+  padding: var(--select-control-padding);
+  border: var(--select-control-border);
+  border-radius: var(--select-control-radius);
+  background-color: var(--select-control-bg-color);
+  background-image: var(--select-control-bg-image);
+  background-position: var(--select-control-bg-position);
+  background-size: var(--select-control-bg-size);
+  /* The arrow well is a background layer pinned to 100%. Measured against the
+     padding box it lands 1px short of the border on every side, so a hairline
+     of button body shows around it and the well reads as a separate pill
+     floating outside the control. Measure it against the border box. */
+  background-origin: border-box;
+  box-shadow: var(--select-control-shadow);
+  font-family: var(--theme-ui-font);
+  font-weight: var(--select-control-font-weight);
+}
+
+body[data-lineage~="snow-leopard"] .system-modal {
+  background: linear-gradient(to bottom, #fff 0%, #f2f2f2 100%);
+  border: 1px solid #8e8e8e;
+  border-radius: 4px 4px 3px 3px;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85), 0 5px 14px rgba(0, 0, 0, 0.35);
+}
+
+body[data-lineage~="snow-leopard"] .system-modal form {
+  position: relative;
+  padding-left: 96px;
+  min-height: 92px;
+}
+
+body[data-lineage~="snow-leopard"] .system-modal form::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 64px;
+  height: 64px;
+  background: url("./assets/themes/aqua/sheet-warning-64.svg") center / 64px 64px no-repeat;
+}
+
+body[data-lineage~="snow-leopard"] .system-modal #system-modal-message {
+  font-family: var(--theme-ui-font);
+  font-weight: 700;
+  color: #111;
+}
+
+body[data-theme-family="aqua"] .view-btn {
+  width: 26px;
+  background: linear-gradient(to bottom, #fff 0%, #efefef 55%, #e0e0e0 100%);
+  border: 1px solid #a3a3a3;
+  border-right: 0;
+}
+
+body[data-theme="aqua"] .view-btn.is-active {
+  background: linear-gradient(to bottom, #7fb1e8 0%, #4c8fd6 55%, #3f7ec8 100%);
+  border-color: #2f6fb8;
+}
+
+body[data-lineage~="snow-leopard"] .view-btn.is-active {
+  background: linear-gradient(to bottom, #b8b8b8 0%, #9f9f9f 55%, #8d8d8d 100%);
+  border-color: #7e7e7e;
+}
+
+body[data-theme-family="aqua"] .view-btn.is-active::before {
+  background: #fff;
+  box-shadow:
+    6px 0 0 #fff,
+    0 6px 0 #fff,
+    6px 6px 0 #fff;
+}
+
+body[data-theme-family="aqua"] .view-btn[data-view="list"].is-active::before {
+  background: #fff;
+  box-shadow: 0 -4px 0 #fff, 0 4px 0 #fff;
+}
+
+body[data-theme-family="aqua"] .system-select-button:not(:disabled) {
+
+  min-height: var(--system-select-control-min-height);
+  padding: var(--system-select-control-padding);
+  border: var(--system-select-control-border);
+  border-radius: var(--system-select-control-radius);
+  background: var(--system-select-control-bg);
+  /* Same trap as the native <select> well above (see its "measure it against
+     the border box" note): the default padding-box origin measures the
+     layered well gradients 1px inside the 1px border on every side, so on
+     Snow Leopard's bordered button the arrow-well capsule read as a separate
+     pill detached from the control's own frame. Aqua's own popup button
+     below sets border:0, so this is a no-op there. */
+  background-origin: border-box;
+  box-shadow: var(--system-select-control-shadow);
+  font-family: var(--theme-ui-font);
+  font-size: var(--system-control-size);
+  font-weight: var(--system-select-control-font-weight);
+
+}
+
+/* Native Aqua pop-ups expose both directions in the blue arrow well. The base
+   Classic disclosure triangle remains untouched outside this family. */
+body[data-theme-family="aqua"] .system-select-button::after {
+
+  right: var(--system-select-arrow-right, 6px);
+  top: var(--system-select-arrow-top, auto);
+  width: var(--system-select-arrow-width, 8px);
+  height: var(--system-select-arrow-height, 13px);
+  border: 0;
+  transform: var(--system-select-arrow-transform, translateY(-50%));
+  background: var(--system-select-arrow-bg) center / var(--system-select-arrow-width, 8px) var(--system-select-arrow-height, 13px) no-repeat;
+
+}
+
+/* A Jaguar push button is a capsule with a closed outline and ends that carry
+   volume: the frame runs the whole way round, and the face darkens about nine
+   pixels inward from each cap so the ends read as turned edges rather than a
+   strip cut short. The recipe this replaces drew a straight dark chord across
+   the top, left both caps unstroked, and stood the 20px capsule in a 21px box
+   whose first scanline was painted dialog grey — on any surface that was not
+   #e4e4e4 the button wore a grey bar, and next to a real Aqua button the flat
+   ends gave it away at a glance.
+
+   Row colours are the capture's own pixels (guidebook.macosx102.shutdown-
+   dialog, Cancel at 249,114, text-free column x=70, rows 1-20). Frame and face
+   are element-scoped custom properties: the default, pressed and hover states
+   restate one colour each instead of a second copy of the ladder. */
+body[data-theme="aqua"] .btn {
+
+  --aqua-btn-rim: #9b9b9b;
+  --aqua-btn-rim-top: #6f6f6f;
+  --aqua-btn-arc-ink: rgba(0, 0, 0, 0.17);
+  --aqua-btn-arc-reach: 8px;
+  --aqua-btn-arc-blur: 6px;
+  --aqua-btn-arc-spread: -6px;
+  --aqua-btn-cap-core: rgba(0, 0, 0, 0.26);
+  --aqua-btn-cap-mid: rgba(0, 0, 0, 0.08);
+  --aqua-btn-cap-edge: rgba(0, 0, 0, 0);
+  /* Cap volume, in two parts. The inset pair in the frame follows the border
+     radius, so its falloff is measured from the arc and not from the box —
+     that is the part a background layer cannot do. The radial pair here adds
+     the extra weight the capture carries in rows 3-11 only: on the real
+     button the ends darken against the upper body and let the bright bottom
+     edge through, and one arc-following shade at a single strength either
+     loses the top or smudges the bottom.
+
+     The face is three anchored bands, not one 20px ladder. A ladder measured
+     off a 20px capture only paints a 20px control: every taller button kept
+     the gloss at the top and went flat for the rest, which is what made the
+     chips and the wide command buttons read as balloons. Anchoring the gloss
+     to the top edge and the bounce light to the bottom edge leaves the waist
+     — the one part of an Aqua face that is genuinely a flat two-tone step —
+     as the piece that stretches. At 20px the two bands meet over a 2px waist
+     and the result is the capture, row for row. */
+  --aqua-btn-face:
+    radial-gradient(9px 60% at 0 30%,
+      var(--aqua-btn-cap-core) 0%, var(--aqua-btn-cap-mid) 46%,
+      var(--aqua-btn-cap-edge) 100%) left center / 10px 100% no-repeat,
+    radial-gradient(9px 60% at 100% 30%,
+      var(--aqua-btn-cap-core) 0%, var(--aqua-btn-cap-mid) 46%,
+      var(--aqua-btn-cap-edge) 100%) right center / 10px 100% no-repeat,
+    linear-gradient(to bottom,
+      #f5f5f5 0 2px, #f2f2f2 2px 3px, #efefef 3px 4px,
+      #eaeaea 4px 5px, #e9e9e9 5px 6px, #e8e8e8 6px 7px,
+      #e7e7e7 7px 8px) top / 100% 8px no-repeat,
+    linear-gradient(to bottom,
+      #e8e8e8 0 1px, #eaeaea 1px 2px, #efefef 2px 3px,
+      #f3f3f3 3px 4px, #f8f8f8 4px 5px, #fcfcfc 5px 6px,
+      #fff 6px 10px) bottom / 100% 10px no-repeat,
+    linear-gradient(to bottom, #dedede 0 50%, #e1e1e1 50%);
+  /* The two 1px side shadows close the outline around the caps, where a
+     background layer can only ever paint a horizontal row. */
+  --aqua-btn-frame:
+    inset 0 1px 0 var(--aqua-btn-rim-top),
+    inset 1px 0 0 var(--aqua-btn-rim),
+    inset -1px 0 0 var(--aqua-btn-rim),
+    inset var(--aqua-btn-arc-reach) 0 var(--aqua-btn-arc-blur)
+      var(--aqua-btn-arc-spread) var(--aqua-btn-arc-ink),
+    inset calc(-1 * var(--aqua-btn-arc-reach)) 0 var(--aqua-btn-arc-blur)
+      var(--aqua-btn-arc-spread) var(--aqua-btn-arc-ink),
+    0 1px 0 #565656,
+    0 2px 0 #b9b9b9;
+  /* The shared hover rule repaints in --btn-hover-bg; without these pins it
+     would swap the sprite face for the resolution-free --btn-bg and the
+     material would change under the cursor. The hover keeps the same face
+     under a thin white veil — the restrained brightening the owner asked
+     for — and the veil composes over whichever face the element carries, so
+     the default button's blue gel brightens the same way. */
+  --btn-hover-bg: linear-gradient(var(--aqua-btn-hover-veil), var(--aqua-btn-hover-veil)), var(--aqua-btn-face);
+  --btn-hover-shadow: var(--aqua-btn-frame);
+  --btn-default-hover-bg: linear-gradient(var(--aqua-btn-hover-veil), var(--aqua-btn-hover-veil)), var(--aqua-btn-face);
+  position: relative;
+  min-width: 69px;
+  border: 0;
+  border-radius: var(--btn-radius);
+  background: var(--aqua-btn-face);
+  color: var(--ink);
+  box-shadow: var(--aqua-btn-frame);
+  font-family: var(--theme-ui-font);
+  font-size: var(--system-control-size);
+  font-weight: 400;
+  line-height: 13px;
+
+}
+
+body[data-theme="aqua"] .btn.default {
+
+  /* The Aqua-family shared rule below repaints .default from --btn-default-*,
+     at the same specificity and later in the file. Bridging the two tokens on
+     the element means both rules resolve to this recipe instead of one of them
+     quietly winning; element-level custom properties beat the body block
+     whichever rule ends up applying the background. */
+  --btn-default-bg: var(--aqua-btn-face);
+  --btn-default-shadow: var(--aqua-btn-frame);
+  --aqua-btn-rim: #050c9d;
+  --aqua-btn-rim-top: #00006e;
+  /* The blue button's outline is a thicker stroke than the grey one's: the
+     capture keeps near-zero red for about two and a half pixels in from the
+     arc, all the way round the top and both caps. */
+  --aqua-btn-arc-ink: rgba(0, 2, 120, 0.95);
+  --aqua-btn-arc-reach: 5px;
+  --aqua-btn-arc-blur: 3px;
+  --aqua-btn-arc-spread: -3px;
+  --aqua-btn-cap-core: #0142b9;
+  --aqua-btn-cap-mid: #297cd3;
+  --aqua-btn-cap-edge: rgba(80, 150, 220, 0);
+  /* Two shades per cap. The upper blob is the deep navy shoulder the capture
+     carries at about ten o'clock; the wide ellipse under it is the horizontal
+     ramp back to the body blue, which reaches furthest at the widest point of
+     the capsule and shortens toward both ends. */
+  --aqua-btn-face:
+    radial-gradient(7px 7px at 2px 4px,
+      #00046e 0%, rgba(2, 20, 140, 0.75) 38%, rgba(20, 70, 180, 0.35) 62%,
+      var(--aqua-btn-cap-edge) 100%) left center / 19px 100% no-repeat,
+    radial-gradient(7px 7px at calc(100% - 2px) 4px,
+      #00046e 0%, rgba(2, 20, 140, 0.75) 38%, rgba(20, 70, 180, 0.35) 62%,
+      var(--aqua-btn-cap-edge) 100%) right center / 19px 100% no-repeat,
+    radial-gradient(18px 42% at 0 44%,
+      var(--aqua-btn-cap-core) 0%, #0259c3 17%, #0a69ca 23%,
+      var(--aqua-btn-cap-mid) 33%, #3584d6 44%, #438ed8 56%,
+      var(--aqua-btn-cap-edge) 100%) left center / 19px 100% no-repeat,
+    radial-gradient(18px 42% at 100% 44%,
+      var(--aqua-btn-cap-core) 0%, #0259c3 17%, #0a69ca 23%,
+      var(--aqua-btn-cap-mid) 33%, #3584d6 44%, #438ed8 56%,
+      var(--aqua-btn-cap-edge) 100%) right center / 19px 100% no-repeat,
+    linear-gradient(to bottom,
+      #d2d3ec 0 2px, #bac7ea 2px 3px, #9dbee5 3px 4px,
+      #88b4e1 4px 5px, #81b0e0 5px 6px, #7bace0 6px 7px,
+      #77ace0 7px 8px) top / 100% 8px no-repeat,
+    linear-gradient(to bottom,
+      #5a9de0 0 1px, #61a3e6 1px 2px, #69aaeb 2px 3px,
+      #70b1f1 3px 4px, #78b8fa 4px 5px, #7fbfff 5px 6px,
+      #86c7ff 6px 7px, #8dceff 7px 8px, #93d8ff 8px 9px,
+      #95dbff 9px 10px) bottom / 100% 10px no-repeat,
+    linear-gradient(to bottom, #478fd8 0 50%, #5096dc 50%);
+  background: var(--aqua-btn-face);
+  color: var(--btn-default-fg);
+  box-shadow: var(--aqua-btn-frame);
+  text-shadow: var(--btn-default-text-shadow);
+
+}
+
+/* ClioTalk's round Send is a circle, not a capsule -- --aqua-btn-face above is
+   the pill's two side caps plus a horizontal top/bottom ladder, and mapped
+   onto a 36px circle its caps overlap and its waist vanishes, which is why it
+   read as a flat ring rather than a gel button. A round control needs its own
+   anatomy: a top-third specular highlight, a radial ambient shade toward the
+   rim, a closed rim stroke, and the drop shadow below the control that a pill
+   button gets from --aqua-btn-frame's arc but a circle needs as a plain
+   offset shadow. Colour stops are the same capture-sampled blues as the pill
+   above (--aqua-btn-cap-core/-mid, the #5a9de0..#95dbff bottom ladder, the
+   #050c9d/#00006e rim) -- recomposed radially, not resampled. */
+body[data-theme="aqua"] .assistant-window .composer .composer-submit-button {
+
+  border-color: #00006e;
+  background:
+    radial-gradient(circle at 50% 20%,
+      rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.5) 20%,
+      rgba(255, 255, 255, 0) 46%) center / 100% 100% no-repeat,
+    radial-gradient(circle at 50% 130%,
+      rgba(0, 20, 90, 0.55) 0%, rgba(0, 20, 90, 0) 58%) center / 100% 100% no-repeat,
+    linear-gradient(to bottom,
+      #8dceff 0%, #5a9de0 26%, #297cd3 52%, #0142b9 76%, #00046e 100%);
+  box-shadow:
+    0 2px 3px rgba(0, 10, 40, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -1px 1px rgba(0, 6, 40, 0.4);
+  color: #fff;
+
+}
+
+body[data-theme="aqua"] .assistant-window .composer .composer-submit-button:disabled {
+
+  border-color: #9d9d9d;
+  background: linear-gradient(to bottom, #f2f2f2 0%, #dcdcdc 55%, #cfcfcf 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  /* #a8a8a8 read 1.7-2.1:1 across this gradient -- the arrow glyph was nearly
+     the same grey as its own disabled face. #707070 (already this file's
+     --clio-muted-copy for the same reason) clears 3.2:1 even against the
+     gradient's darkest stop. */
+  color: #707070;
+
+}
+
+/* The "+" attach button is a neutral (not default/primary) round control --
+   same circular anatomy, grey-on-white instead of blue, matching the pill
+   grey button's --aqua-btn-rim/-cap tokens near the top of this file. */
+body[data-theme="aqua"] .assistant-window .composer .composer-file-button {
+
+  border-color: #9b9b9b;
+  background:
+    radial-gradient(circle at 50% 20%,
+      rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.6) 20%,
+      rgba(255, 255, 255, 0) 46%) center / 100% 100% no-repeat,
+    radial-gradient(circle at 50% 130%,
+      rgba(0, 0, 0, 0.16) 0%, rgba(0, 0, 0, 0) 58%) center / 100% 100% no-repeat,
+    linear-gradient(to bottom, #fff 0%, #f2f2f2 45%, #e2e2e2 100%);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  color: #333;
+
+}
+
+body[data-theme="aqua"] .assistant-window .composer .composer-file-button:hover,
+body[data-theme="aqua"] .assistant-window .composer .composer-file-button:focus-visible {
+
+  background:
+    radial-gradient(circle at 50% 20%,
+      rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.6) 20%,
+      rgba(255, 255, 255, 0) 46%) center / 100% 100% no-repeat,
+    radial-gradient(circle at 50% 130%,
+      rgba(0, 0, 0, 0.16) 0%, rgba(0, 0, 0, 0) 58%) center / 100% 100% no-repeat,
+    linear-gradient(to bottom, #fff 0%, #e8f0fc 45%, #cfe1f7 100%);
+  border-color: #7ba7dd;
+  color: #1a1a1a;
+
+}
+
+body[data-theme="aqua"] .btn:is(.is-active, :active):not(:disabled):not(.is-disabled) {
+
+  /* Same bridge as .default above: the shared pressed rule is later and equal,
+     so the frame has to travel through the token it reads. */
+  --btn-active-shadow: var(--aqua-btn-frame);
+  --aqua-btn-rim: #01236f;
+  --aqua-btn-rim-top: #00005f;
+  --aqua-btn-arc-ink: rgba(0, 24, 120, 0.5);
+  --aqua-btn-arc-reach: 6px;
+  --aqua-btn-arc-blur: 5px;
+  --aqua-btn-arc-spread: -5px;
+  border-color: var(--btn-active-border-color);
+  background: var(--btn-active-bg);
+  color: var(--btn-active-fg);
+  box-shadow: var(--aqua-btn-frame);
+
+}
+
+body[data-theme="aqua"] select:disabled {
+
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='14' viewBox='0 0 6 14'%3E%3Cpath d='m.5 5.5 2.5-3 2.5 3zM.5 8.5l2.5 3 2.5-3z' fill='%23959595'/%3E%3C/svg%3E"),
+    linear-gradient(#b5b5b5, #b5b5b5),
+    linear-gradient(#f5f5f5, #cecece 52%, #eee),
+    linear-gradient(#fafafa, #e6e6e6 52%, #f6f6f6);
+
+}
+
+body[data-theme="aqua"] :is(.btn:disabled, .btn.is-disabled, .system-select-button:disabled) {
+
+  border: 1px solid var(--btn-disabled-border-color, #a4a4a4);
+  background: var(--btn-disabled-bg, var(--control-disabled-bg));
+  /* Reads the appearance token instead of a literal, so Aqua's disabled ink is
+     set in one place. #999 measured 2.35:1 on the era's own button face. */
+  color: var(--system-disabled-fg, #999);
+  box-shadow: var(--btn-disabled-shadow, none);
+  opacity: var(--btn-disabled-opacity, var(--control-disabled-opacity));
+
+}
+
+body[data-theme="aqua"] .system-select-button:not(:disabled) {
+
+  min-height: 21px;
+  height: 21px;
+  padding: 1px 25px 1px 12px;
+  border: 0;
+  /* Measured, not inherited from the push button: in the 10.2 General pane
+     the Number-of-Recent-Items pop-up is an 89x21 rounded RECTANGLE whose
+     corner arc is about 4px — the top rail reaches within two pixels of both
+     ends. The capsule this replaces was a workaround for the missing side
+     rings below: with nothing drawn down the left and right edges the control
+     read as an open strip, and closing it with a 999px radius traded one
+     wrong shape for another. */
+  border-radius: 4px;
+  background:
+    linear-gradient(to bottom,
+      #00005f 0 1px, #dee2f4 1px 2px, #bed4ef 2px 3px,
+      #a6c8eb 3px 4px, #9ac1ea 4px 5px, #94bdea 5px 6px,
+      #8ebbea 6px 7px, #8ebdec 7px 8px, #8bbbee 8px 9px,
+      #64a8f2 9px 10px, #6bb0f6 10px 11px, #73b7fd 11px 12px,
+      #7cbfff 12px 13px, #86c9ff 13px 14px, #93d2ff 14px 15px,
+      #97daff 15px 16px, #a0e0ff 16px 17px, #a9e6ff 17px 18px,
+      #b1f3ff 18px 19px, #bff 19px 20px, #4e4e4e 20px 21px)
+      right top / 21px 21px no-repeat,
+    linear-gradient(to bottom,
+      #8b8b8b 0 1px, #fcfcfc 1px 2px, #f6f6f6 2px 3px,
+      #f0f0f0 3px 4px, #eee 4px 5px, #ededed 5px 7px,
+      #ececec 7px 9px, #e1e1e1 9px 10px, #e6e6e6 10px 11px,
+      #e9e9e9 11px 12px, #ececec 12px 13px, #efefef 13px 14px,
+      #f3f3f3 14px 15px, #f6f6f6 15px 16px, #f8f8f8 16px 17px,
+      #fcfcfc 17px 18px, #fff 18px 20px, #4e4e4e 20px 21px);
+  box-shadow: var(--aqua-popup-frame);
+
+}
+
+body[data-theme="aqua"] .system-select-menu {
+
+  top: calc(100% + 2px);
+  padding: 3px 0;
+  border: 1px solid #666;
+  border-radius: 3px;
+  background: rgba(250, 250, 250, 0.94);
+  box-shadow: 0 5px 11px rgba(0, 0, 0, 0.4);
+
+}
+
+body[data-theme="aqua"] .system-select-option {
+
+  min-height: 20px;
+  padding: 2px 24px;
+  font-family: var(--theme-ui-font);
+  line-height: 16px;
+
+}
+
+body[data-theme="aqua"] .theme-lab-toolbar-round-icon {
+
+  width: 24px;
+  height: 24px;
+  border: 0;
+  box-shadow: none;
+
+}
+
+body[data-theme="aqua"] .theme-lab-toolbar-round-icon.is-back {
+
+  background: var(--theme-lab-toolbar-back-image) center / 24px 24px no-repeat;
+
+}
+
+body[data-theme="aqua"] .theme-lab-toolbar-round-icon.is-forward {
+
+  background: var(--theme-lab-toolbar-forward-image) center / 24px 24px no-repeat;
+
+}
+
+/* Aqua-family shared recipe set. Aqua and Snow Leopard consume the same
+   control skeleton; every value comes from each theme's own token table, so
+   the Jaguar candy and the 10.6 silver chrome stay separate. These selectors
+   deliberately name the Aqua family directly - no Liquid Glass family class
+   may style the Aqua branch. */
+body[data-theme-family="aqua"] .window:not(.is-active) {
+
+  box-shadow: var(--inactive-window-shadow);
+
+}
+
+body[data-theme-family="aqua"] :where(.btn) {
+
+  border-color: var(--btn-border-color);
+  border-radius: var(--btn-radius);
+  background: var(--btn-bg);
+  box-shadow: var(--btn-shadow);
+  font-family: var(--theme-ui-font);
+  font-weight: 400;
+
+}
+
+body[data-theme-family="aqua"] .btn.default {
+
+  background: var(--btn-default-bg);
+  border-color: #1c6bc7;
+  color: var(--btn-default-fg);
+  text-shadow: var(--btn-default-text-shadow);
+  box-shadow: var(--btn-default-shadow);
+
+}
+
+body[data-theme-family="aqua"] .btn:is(.is-active, :active):not(:disabled):not(.is-disabled) {
+
+  background: var(--btn-active-bg);
+  color: var(--btn-active-fg);
+  box-shadow: var(--btn-active-shadow);
+
+}
+
+body[data-theme-family="aqua"] :is(.btn:disabled, .btn.is-disabled) {
+
+  /* Prefer the era's push-button disabled face (--btn-disabled-bg) over the
+     generic control ramp; Aqua pins a muted gel so silhouette edges match
+     the Open-dialog crop. */
+  background: var(--btn-disabled-bg, var(--control-disabled-bg));
+  color: var(--system-disabled-fg, var(--shade-dark));
+  /* The era marks a live default button with its blue stroke, and that stroke
+     has to dim with the rest of the control: a blue outline around a grey
+     label reads as a button waiting to be pressed. */
+  border-color: var(--btn-disabled-border, var(--shade-dark));
+  /* Through the token, not a literal: this rule and the one above it are the
+     same weight and this one is later, so a literal here silently outranks the
+     era's answer. An era that declares nothing still gets none. */
+  box-shadow: var(--btn-disabled-shadow, none);
+
+}
+
+body[data-theme-family="aqua"] :where(
+  textarea,
+  input[type="url"],
+  input[type="text"],
+  input[type="password"],
+  input[type="search"],
+  input[type="number"]
+) {
+
+  /* Same rule as the Yosemite recipe: single-line controls keep the shared
+     22px control minimum from the base rule; textareas stay content-sized so
+     app-owned transcript/editor min-heights win (dictation 84px, translation
+     pad 118px, rebuild 180px). */
+  padding: var(--field-control-padding);
+  border: var(--field-border);
+  border-radius: var(--field-radius);
+  background: var(--field-bg);
+  box-shadow: var(--field-shadow);
+  font-family: var(--theme-ui-font);
+  font-size: var(--system-control-size);
+
+}
+
+/* :not(.mde-input) — a writing surface is not a field. Its ink is painted by an
+   overlay BEHIND the textarea (50-apps.css), so this opaque focus fill sat on
+   top of the words: in Aqua and Snow Leopard the writer clicked into TeachText,
+   the Question Sheet, the Outline, Section Drafts or the Review Desk and the
+   text went white. The same guard is on the base rules in 60-responsive.css. */
+body[data-theme-family="aqua"] :is(input, textarea, select):not(.mde-input):focus {
+
+  border: var(--field-focus-border);
+  outline: 0;
+  /* Preserve the arrow and other control images while changing the fill. */
+  background-color: var(--field-focus-bg);
+  box-shadow: var(--field-focus-ring);
+
+}
+
+body[data-theme-family="aqua"] .theme-lab-toolbar {
+
+  border-radius: var(--theme-lab-toolbar-radius);
+  box-shadow: var(--toolbar-highlight);
+
+}
+
+body[data-theme="aqua"] :is(.theme-lab-sidebar, .theme-lab-list) button:not(:disabled), body[data-lineage~="snow-leopard"] .theme-lab-sidebar button {
+
+  /* The nav-row metric tokens are defined for snow-leopard only (and yosemite,
+     in 65). A var() with no fallback naming an undefined custom property is
+     invalid at computed-value time, so on the aqua branch these two did NOT
+     fall back to the base rule in 66-theme-lab.css -- they computed to auto
+     and 0, collapsing the row. Aqua already carries its own complete row
+     metrics (--theme-lab-list-row-min-height/-padding above), so it joins this
+     rule for the separator only and takes its sizing from the base. */
+  border-bottom: 1px solid #d8d8d8;
+
+}
+
+body[data-lineage~="snow-leopard"] .theme-lab-sidebar button {
+
+  min-height: var(--theme-lab-nav-row-min-height);
+  padding-block: var(--theme-lab-nav-row-padding-block);
+
+}
+
+/* Aqua 10.2 keeps a disabled column-browser row fully shaped: the icon and
+   label stay in place and only desaturate/grey. One :is() selector covers
+   both the row and its icon without spending a second Aqua ratchet slot. */
+body[data-theme="aqua"] :is(.theme-lab-sidebar button:disabled, .theme-lab-sidebar button:disabled .sys-icon) {
+  color: #7f7f7f;
+  filter: grayscale(1);
+  opacity: 0.65;
+}
+
+body[data-theme-family="aqua"] .theme-lab-finder-rows > div {
+
+  min-height: var(--theme-lab-finder-row-min-height);
+
+}
+
+/* Snow Leopard is the Aqua descendant, not an early-Aqua desaturation. The
+   compact, unified silver chrome and quieter controls below are the delta. */
+/* Text-like controls only. A checkbox or radio is not faded in 10.6: it is
+   redrawn in grey, which the --choice-disabled-* roles above own. Leaving them
+   in this rule let its opacity and field background outrank those roles. */
+body[data-lineage~="snow-leopard"] :is(select, input:not([type="checkbox"]):not([type="radio"])):disabled {
+
+  /* Dimmed once, by colour. The opacity here dimmed already-grey ink a second
+     time, the same shape removed from yosemite in 65-appearance-themes.css. */
+  color: #8c8c8c;
+  background-color: #f2f2f2;
+
+}
+
+body[data-lineage~="snow-leopard"] .window:not(.is-active) .theme-lab-sidebar {
+
+  background: var(--sidebar-bg-inactive);
+
+}
+
+body[data-lineage~="snow-leopard"] .window:not(.is-active) .theme-lab-sidebar button.is-selected {
+
+  background: var(--sidebar-selection-bg-inactive);
+
+}
+/* Aqua and Snow Leopard own complete 56-object families. Runtime source-size
+   dispatch lives in system-icons.js: lists/menus use 16, normal surfaces 32,
+   and desktop/Retina surfaces 128. */
+:where(body[data-theme-family="aqua"])
+  .sys-icon[data-system-icon]:not(:where([data-system-icon="play"], [data-system-icon="pause"], [data-system-icon="previousTrack"], [data-system-icon="nextTrack"], [data-system-icon="shuffleTracks"], [data-system-icon="repeatTracks"], [data-system-icon="speaker"])) {
+  border-radius: 0;
+  background-color: transparent;
+  background-image: none;
+  background-repeat: no-repeat;
+  box-shadow: none;
+}
+:where(body[data-theme-family="aqua"]) .sys-icon-svg :is(.sys-icon-classic, .sys-icon-platinum-core, .sys-icon-aqua, .sys-icon-snow-leopard, .sys-icon-yosemite, .sys-icon-liquid) {
+  display: none;
+}
+
+/* :is(), not :where(): the shared hide rule in 50-apps.css is a class
+   selector, and a zero-specificity :where() wrapper loses to it, which
+   blanked every Aqua and Snow Leopard icon. */
+:is(body[data-theme="aqua"] .sys-icon-svg .sys-icon-aqua, body[data-lineage~="snow-leopard"] .sys-icon-svg .sys-icon-snow-leopard) {
+  display: block;
+}
+body[data-theme="aqua"] .sys-icon {
+  --aqua-icon: url("./assets/themes/aqua/aqua-sprite.png");
+}
+
+
+/* Aqua/SL boot/shutdown: same shared harness as Classic/LG, era material only. */
+:where(body[data-theme-family="aqua"]) :is(.boot-screen, .shutdown-screen) { background: linear-gradient(180deg, #20294a, #0e1429); color: #fff; animation: aqua-screen-in .4s ease-out; }
+body[data-lineage~="snow-leopard"] :is(.boot-screen, .shutdown-screen) { background: linear-gradient(180deg, #262626, #111); }
+:where(body[data-theme-family="aqua"]) .happy-mac { border-color: #6f86b0; border-radius: 8px; background: linear-gradient(180deg, #f4f8ff, #cfe0f5 45%, #a8c3e8); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 10px 24px rgba(0, 0, 0, 0.35); animation: aqua-mac-in .6s ease-out both; }
+:where(body[data-theme-family="aqua"]) .happy-mac::after { border-color: #6f86b0; border-radius: 0 0 4px 4px; background: linear-gradient(180deg, #e8f0fb, #b9cdec); }
+:where(body[data-theme-family="aqua"]) .happy-mac-face { border-color: #6f86b0; border-radius: 4px; background: linear-gradient(180deg, #fff, #e8f0fb); }
+body[data-lineage~="snow-leopard"] .happy-mac { border-color: #7f8a99; border-radius: 6px; background: linear-gradient(180deg, #f5f5f5, #d9d9d9 45%, #bdbdbd); box-shadow: inset 0 1px 0 #fff, 0 8px 20px rgba(0, 0, 0, 0.4); animation-duration: 0.45s; }
+body[data-lineage~="snow-leopard"] .happy-mac::after { border-color: #7f8a99; background: linear-gradient(180deg, #ececec, #c4c4c4); }
+body[data-lineage~="snow-leopard"] .happy-mac-face { border-color: #7f8a99; background: linear-gradient(180deg, #fff, #f0f0f0); }
+:where(body[data-theme-family="aqua"]) .boot-progress { border: 0; height: 12px; padding: 0; border-radius: 6px; background: rgba(0, 0, 0, 0.48); }
+:where(body[data-theme-family="aqua"]) .boot-progress span { position: relative; overflow: hidden; border-radius: 6px; background: linear-gradient(180deg, #7ca5ef, #3f70d8 55%, #2f5cc4); }
+body[data-lineage~="snow-leopard"] .boot-progress span { background: linear-gradient(180deg, #6f9fe6, #3e7cd0 60%, #2e68b8); }
+:where(body[data-theme-family="aqua"]) .boot-progress span::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent); transform: translateX(-100%); animation: aqua-progress-sheen 1.7s ease-in-out infinite; }
+:where(body[data-theme-family="aqua"]) :is(.boot-ledger, .shutdown-ledger) { border: 1px solid rgba(255, 255, 255, 0.16); background: rgba(9, 13, 28, 0.55); color: #fff; }
+@keyframes aqua-screen-in { from { opacity: 0 } to { opacity: 1 } }
+@keyframes aqua-mac-in { from { opacity: 0; transform: scale(calc(var(--boot-mac-scale) * 0.97)) } to { opacity: 1; transform: scale(var(--boot-mac-scale)) } }
+@keyframes aqua-progress-sheen { from { transform: translateX(-100%) } to { transform: translateX(100%) } }
+@media (prefers-reduced-motion: reduce) { :where(body[data-theme-family="aqua"]) :is(.boot-screen, .shutdown-screen), :where(body[data-theme-family="aqua"]) .happy-mac, :where(body[data-theme-family="aqua"]) .boot-progress span::after { animation: none } }
+
+/* Increase Contrast for the Aqua family. The canonical block (every era) ends
+   styles/65-appearance-themes.css; this sheet loads after it, so Aqua's and
+   Snow Leopard's era roots above would win the tie. The same answer, after
+   them. */
+@media (prefers-contrast: more) {
+  body[data-theme-family="aqua"] {
+    --system-secondary-divider: 1px solid var(--ink);
+    --system-disabled-fg: #3f3f3f;
+  }
+}
+
+/* Tiger Finder board sheet: metal, not Snow Leopard white. Toolbar bands
+   stay clear so the brushed sheet shows through. */
+body[data-theme="tiger"] {
+  --theme-lab-finder-window-bg: var(--tiger-metal);
+  --theme-lab-toolbar-bg: transparent;
+  --theme-lab-snow-toolbar-bg: transparent;
+}
+
+/* The gel eras' glyphs: no capture shows them, so they stay the plain marks
+   this product already drew (x, -, +), at ~42% of the lamp. */
+body[data-theme-family="aqua"] .title-bar {
+  --tl-mark: rgba(0, 0, 0, 0.5);
+  --tl-glyph-close:
+    linear-gradient(45deg, transparent calc(50% - 0.5px), var(--tl-mark) calc(50% - 0.5px) calc(50% + 0.5px), transparent calc(50% + 0.5px)) center / 42% 42% no-repeat,
+    linear-gradient(-45deg, transparent calc(50% - 0.5px), var(--tl-mark) calc(50% - 0.5px) calc(50% + 0.5px), transparent calc(50% + 0.5px)) center / 42% 42% no-repeat;
+  --tl-glyph-minimize: linear-gradient(var(--tl-mark), var(--tl-mark)) center / 42% 1px no-repeat;
+  --tl-glyph-zoom:
+    linear-gradient(var(--tl-mark), var(--tl-mark)) center / 42% 1px no-repeat,
+    linear-gradient(var(--tl-mark), var(--tl-mark)) center / 1px 42% no-repeat;
+}

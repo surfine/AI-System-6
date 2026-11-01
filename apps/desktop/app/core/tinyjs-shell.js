@@ -1,0 +1,355 @@
+// Lazy native host adapter. The same writing objects and persistence path are
+// used in the browser and in the Mac application.
+window.AISystem6TinyShell = (() => {
+  "use strict";
+  let fileActivities = 0, lastDownload = null;
+  const pendingNativeDownloads = new Map();
+  let initialized = false, busy = false, lastUpdate = null, statusEl;
+  let collectionQueue = Promise.resolve(), filesOpening = false;
+  const recentRoutes = new Map();
+  const call = async (name, data = {}) => {
+    try { return await window.tiny.api.call("shell." + name, data); }
+    catch (error) { throw error instanceof Error ? error : new Error(typeof error === "string" ? error : String(error?.message || error)); }
+  };
+  const preferencesKey = "ai-system6-native-preferences";
+  function preferences() {
+    try { return JSON.parse(localStorage.getItem(preferencesKey) || "{}"); } catch { return {}; }
+  }
+  function activeWork() {
+    return fileActivities > 0 || pendingNativeDownloads.size > 0 || (typeof activeAbortController !== "undefined" && !!activeAbortController)
+      || (typeof activeLongTasks !== "undefined" && activeLongTasks.size > 0)
+      || !!document.querySelector("[aria-busy='true'], .is-generating, .is-loading")
+      || !deskPersistenceWritable;
+  }
+  function message(value) {
+    if (statusEl) statusEl.textContent = value;
+    else setStatus(value);
+  }
+  // Storage identity lives in storage-fingerprint.js, which the bootstrap page
+  // also runs before the desk can write. Returns { fingerprint, manifest }.
+  async function measure() {
+    const db = await openAppDb();
+    try { return await window.AISystem6StorageFingerprint.read(db); }
+    catch { throw new Error(t("native_storage_failed")); }
+    finally { db.close(); }
+  }
+  async function fingerprint() { return (await measure()).fingerprint; }
+  // The updater compares the storage this launch was handed (measured by the
+  // bootstrap page before any desk code ran) with the storage the previous app
+  // measured before it quit. Whatever this build rewrites while booting is
+  // checked as "no record lost" instead of byte identity.
+  async function readyStorage() {
+    const store = window.AISystem6StorageFingerprint;
+    const arrival = store.takeArrival();
+    const current = await measure();
+    const lost = arrival ? store.lostRecords(arrival.manifest, current.manifest) : [];
+    return { dataFingerprint: arrival ? arrival.fingerprint : current.fingerprint,
+      writerData: { checked: !!arrival, lost: lost.length, missing: lost.slice(0, 10).map((item) => item.slice(0, 120)),
+        rewritten: !!arrival && arrival.fingerprint !== current.fingerprint, stores: store.counts(current.manifest) } };
+  }
+  async function collect(candidate) {
+    if (!candidate?.text?.trim() || busy) return;
+    const project = getActiveProject();
+    if (!project) { message(t("no_project_mounted")); return; }
+    const projectId = project.id;
+    const edited = await showInputDialog({ title: t(candidate.source === "screenshot" ? "native_capture" : "scrapbook"), message: t("native_edit_candidate"),
+      defaultValue: candidate.text, multiline: true });
+    if (edited === null || !edited.trim()) return;
+    candidate = { ...candidate, text: edited };
+    const title = candidate.text.trim().split("\n")[0].slice(0, 80);
+    const accepted = await window.tiny.dialog.confirm(t("native_collect_confirm", project.name));
+    if (!accepted) return;
+    if (getActiveProject()?.id !== projectId) { message(t("native_project_changed")); return; }
+    createScrap(title, candidate.text, { sourceKind: candidate.source || "native", source: { url: candidate.sourceURL || "", sourceKind: candidate.source || "native" } });
+    if (!await saveDeskState()) throw new Error(t("native_storage_failed"));
+    openWindow("scrapbook");
+  }
+  function enqueueCollection(candidate) {
+    collectionQueue = collectionQueue.then(async () => {
+      if (busy) return;
+      const end = beginFileActivity();
+      try { await collect(candidate); } finally { end(); }
+    }).catch((e) => message(t("native_operation_failed", e.message)));
+    return collectionQueue;
+  }
+  async function checkUpdate({ silent = false } = {}) {
+    if (busy) return;
+    try {
+      lastUpdate = await call("checkUpdate");
+      if (lastUpdate.available) message(t("native_update_available", lastUpdate.latest));
+      else if (!silent) message(t("native_update_current"));
+      const button = document.querySelector("#native-install-update");
+      if (button) button.disabled = !lastUpdate.available;
+      if (typeof refreshDisabled === "function") refreshDisabled();
+    } catch (e) { if (!silent) message(t("native_update_failed", e.message)); }
+  }
+  async function installUpdate() {
+    if (busy || !lastUpdate?.available) return;
+    if (activeWork()) { message(t("native_update_wait")); return; }
+    busy = true;
+    // Freeze input during preparation so the snapshot cannot become stale while
+    // the download is running. Existing tasks have already been checked above.
+    const surfaces = [...document.body.children].filter((el) => el instanceof HTMLElement && el.tagName !== "SCRIPT");
+    const inertStates = surfaces.map((el) => el.inert);
+    surfaces.forEach((el) => { el.inert = true; });
+    let browserFrozen = false;
+    const browser = window.AISystem6Native?.browser && window.webkit?.messageHandlers?.aisystem6Browser;
+    try {
+      if (browser) {
+        if (!await browser.postMessage({ method: "updateFreeze", frozen: true })) throw new Error(t("native_update_wait"));
+        browserFrozen = true;
+      }
+      if (!await saveDeskState() || activeWork()) throw new Error(t("native_update_wait"));
+      const dataFingerprint = await fingerprint();
+      message(t("native_update_installing"));
+      await call("installUpdate", { latest: lastUpdate.latest, saved: true, dataFingerprint });
+    } catch (e) {
+      if (browserFrozen) await browser.postMessage({ method: "updateFreeze", frozen: false }).catch(() => {});
+      surfaces.forEach((el, index) => { el.inert = inertStates[index]; });
+      busy = false;
+      message(t("native_update_failed", e.message));
+    }
+  }
+  async function openFiles() {
+    if (busy || filesOpening) return;
+    filesOpening = true;
+    const end = beginFileActivity();
+    try {
+    const pending = await call("files");
+    if (!pending.length) return;
+    for (const item of pending) {
+      const accepted = await window.tiny.dialog.confirm(t("native_import_confirm", item.name));
+      if (!accepted) continue;
+      const result = await call("readFile", { id: item.id });
+      const bytes = Uint8Array.from(atob(result.base64), (c) => c.charCodeAt(0));
+      if (/\.json$/i.test(result.name)) {
+        const backup = JSON.parse(new TextDecoder().decode(bytes));
+        await importProjectBackupAsNewProject(backup);
+      } else {
+        selectedImportFiles = [new File([bytes], result.name)];
+        await previewImportFiles();
+        openWindow("importUtility");
+      }
+    }
+    } finally { filesOpening = false; end(); }
+  }
+  async function command(id) {
+    if (busy) return;
+    if (id === "settings") { await openWindow("control"); setControlTab("native"); }
+    if (id === "check-update") await checkUpdate();
+    if (["screenshot", "selected-text"].includes(id)) {
+      const end = beginFileActivity();
+      try { await enqueueCollection(await call(id === "screenshot" ? "screenshot" : "selection")); }
+      finally { end(); }
+    }
+  }
+  async function onEvent({ type, data }) {
+    if (busy && type !== "download") return;
+    try {
+      if (type === "collect") await enqueueCollection(data);
+      if (type === "clipboard-unavailable") {
+        const checkbox = document.querySelector("#native-clipboard");
+        if (checkbox) checkbox.checked = false;
+        message(t("native_clipboard_unavailable"));
+      }
+      if (type === "command") await command(data);
+      if (type === "files") await openFiles();
+      if (type === "download") receiveNativeDownload(data, false);
+      if (type === "notification") {
+        const exists = systemNotifications.some((entry) => entry.id === data);
+        if (exists) openSystemNotification(data); else message(t("native_target_missing"));
+      }
+      if (type === "route") {
+        const key = JSON.stringify([data.target, data.id]);
+        const now = Date.now();
+        if (now - (recentRoutes.get(key) || 0) < 5000) return;
+        recentRoutes.set(key, now);
+        for (const [value, time] of recentRoutes) if (now - time >= 5000) recentRoutes.delete(value);
+        if (data.target === "settings") { await command("settings"); return; }
+        const item = data.id ? (data.target === "project" ? projects.find((p) => p.id === data.id)
+          : data.target === "scrapbook" ? scraps.find((p) => p.id === data.id)
+          : chatFiles.find((p) => p.id === data.id && p.type === "text")) : null;
+        if (data.id && !item) { message(t("native_target_missing")); return; }
+        const projectId = item && (data.target === "project" ? item.id : item.projectId);
+        if (projectId && (projectId !== activeProjectId || !isProjectMounted)) {
+          const project = projects.find((p) => p.id === projectId);
+          if (!project) { message(t("native_target_missing")); return; }
+          if (activeWork() || busy) { message(t("native_update_wait")); return; }
+          if (!await window.tiny.dialog.confirm(t("native_open_project_confirm", project.name))) return;
+          if (!await saveDeskState()) throw new Error(t("native_storage_failed"));
+          await switchProject(project.id);
+          if (activeProjectId !== project.id || !isProjectMounted) throw new Error(t("native_storage_failed"));
+        }
+        if (data.target === "project") await openWindow("projects");
+        else if (data.target === "scrapbook") {
+          if (item) { selectedScrapId = item.id; selectedScrapIds.clear(); selectedScrapIds.add(item.id); renderScraps(); }
+          await openWindow("scrapbook");
+        } else if (item) openTextFile(item.id);
+        else await openWindow("teachText");
+      }
+    } catch (e) { message(t("native_operation_failed", e.message)); }
+  }
+  function panel() {
+    const general = document.querySelector("#control-tab-general");
+    const generalPanel = document.querySelector("#control-panel-general");
+    if (!general || !generalPanel) throw new Error("Control Panel unavailable");
+    const tab = general.cloneNode(true);
+    tab.id = "control-tab-native"; tab.dataset.controlTab = "native";
+    tab.setAttribute("aria-controls", "control-panel-native");
+    tab.querySelector("[data-i18n]").dataset.i18n = "native_settings";
+    tab.querySelector("[data-i18n]").textContent = t("native_settings");
+    tab.addEventListener("click", () => setControlTab("native"));
+    general.parentNode.append(tab);
+    const pane = document.createElement("div");
+    pane.id = "control-panel-native"; pane.dataset.controlPanel = "native"; pane.hidden = true;
+    pane.setAttribute("role", "tabpanel"); pane.setAttribute("aria-labelledby", tab.id);
+    // Built from the Control Panel's own group-box idiom: each concern is a
+    // .control-section with its own h3, settings are .field-row/.control-field,
+    // and actions are .btn inside a .button-row. Before this the pane stacked
+    // eight bare `system-button` elements and no rule owned their face or
+    // arrangement. Groups are named for what is in them and keep each control
+    // beside what it drives: the selection shortcut sits with the buttons it
+    // arms, and the Quick Look pair lives in its own group.
+    const section = (titleKey) => {
+      const el = document.createElement("section"); el.className = "control-section";
+      const heading = document.createElement("h3");
+      heading.dataset.i18n = titleKey; heading.textContent = t(titleKey);
+      el.append(heading);
+      return el;
+    };
+    const actionRow = (...buttons) => {
+      const row = document.createElement("div"); row.className = "button-row";
+      row.append(...buttons);
+      return row;
+    };
+    const actionButton = (key, action, id, disabled = false) => {
+      const button = document.createElement("button"); button.type = "button"; button.className = "btn";
+      button.id = id; button.dataset.i18n = key; button.textContent = t(key); button.disabled = disabled;
+      button.addEventListener("click", async () => {
+        if (button.disabled) return;
+        button.disabled = true;
+        try { await action(); }
+        catch (e) { message(t("native_operation_failed", e.message)); }
+        finally { refreshDisabled(); }
+      });
+      return button;
+    };
+
+    const capture = section("native_group_capture");
+    const checkboxRow = document.createElement("label"); checkboxRow.className = "field-row";
+    const checkbox = document.createElement("input"); checkbox.type = "checkbox"; checkbox.id = "native-clipboard";
+    checkbox.checked = preferences().clipboard === true;
+    const clipboardText = document.createElement("span");
+    clipboardText.dataset.i18n = "native_clipboard"; clipboardText.textContent = t("native_clipboard");
+    checkboxRow.append(checkbox, clipboardText); capture.append(checkboxRow);
+    const shortcut = document.createElement("input"); shortcut.type = "text"; shortcut.value = preferences().hotkey || "";
+    shortcut.placeholder = "cmd+shift+k";
+    const shortcutLabel = document.createElement("label"); shortcutLabel.className = "control-field";
+    const shortcutText = document.createElement("span");
+    shortcutText.dataset.i18n = "native_shortcut"; shortcutText.textContent = t("native_shortcut");
+    shortcutLabel.append(shortcutText, shortcut); capture.append(shortcutLabel);
+    async function changed() {
+      const next = { clipboard: checkbox.checked, hotkey: shortcut.value.trim().toLowerCase() };
+      try { await call("settings", next); localStorage.setItem(preferencesKey, JSON.stringify(next)); }
+      catch (e) { message(t("native_operation_failed", e.message)); checkbox.checked = preferences().clipboard === true; shortcut.value = preferences().hotkey || ""; }
+    }
+    checkbox.addEventListener("change", changed); shortcut.addEventListener("change", changed);
+    const captureButtons = [
+      actionButton("native_capture", () => command("screenshot"), "native-capture"),
+      actionButton("native_selection", () => command("selected-text"), "native-selection"),
+    ];
+    capture.append(actionRow(...captureButtons));
+    pane.append(capture);
+
+    const quickLook = section("native_group_quick_look");
+    const previewButton = actionButton("native_preview", async () => {
+      const result = await call("previewFile");
+      if (result?.previewing) previewing = true;
+    }, "native-preview");
+    const closePreviewButton = actionButton("native_close_preview", async () => {
+      await call("closePreview");
+      previewing = false;
+    }, "native-close-preview");
+    quickLook.append(actionRow(previewButton, closePreviewButton));
+    pane.append(quickLook);
+
+    const updates = section("native_group_updates");
+    updates.append(actionRow(
+      actionButton("native_check_update", checkUpdate, "native-check-update"),
+      actionButton("native_install_update", installUpdate, "native-install-update", true)));
+    pane.append(updates);
+
+    const downloads = section("native_group_downloads");
+    const revealButton = actionButton("native_reveal_download", revealDownload, "native-reveal-download");
+    const cancelButton = actionButton("native_cancel_download", cancelDownload, "native-cancel-download");
+    downloads.append(actionRow(revealButton, cancelButton));
+    pane.append(downloads);
+
+    // Buttons whose meaning depends on live state stay disabled while that
+    // state is absent, the way a toolbar button does — no dead clicks. Quick
+    // Look is a native panel with no DOM surface, so its state is tracked
+    // from the calls' results.
+    let previewing = false;
+    function refreshDisabled() {
+      closePreviewButton.disabled = !previewing;
+      cancelButton.disabled = pendingNativeDownloads.size === 0;
+      revealButton.disabled = !lastDownload;
+      previewButton.disabled = busy;
+    }
+    refreshDisabled();
+
+    statusEl = document.createElement("p"); statusEl.className = "hint"; statusEl.setAttribute("role", "status"); pane.append(statusEl);
+    generalPanel.parentNode.append(pane);
+  }
+  async function init() {
+    if (initialized || !window.tiny?.api || location.origin !== "http://127.0.0.1:4173") return;
+    initialized = true;
+    panel();
+    window.tiny.api.on("system6-shell", onEvent);
+    const { dataFingerprint, writerData } = await readyStorage();
+    const build = window.AISystem6BuildInfo;
+    const report = await call("ready", { dataFingerprint, writerData, frontendVersion: build?.version, frontendBuild: build?.build, frontendSource: build?.sourceCommit });
+    await call("settings", preferences());
+    if (report.pendingFiles) await openFiles();
+    if (cloudRuntimeApiKey && typeof window.migrateTinyShellCloudCredential === "function") {
+      const accepted = await window.tiny.dialog.confirm(t("native_key_migration"));
+      if (accepted) await window.migrateTinyShellCloudCredential();
+    }
+    void checkUpdate({ silent: true });
+  }
+  function notify(item) {
+    if (!initialized || !["done", "failed", "error"].includes(item?.state)) return;
+    void call("notify", { id: item.id, title: "AI System 6" }).catch(() => {});
+  }
+  function receiveNativeDownload(event, nativeBrowser = true) {
+    if (event.state === "started") { pendingNativeDownloads.set(event.id, nativeBrowser); }
+    if (["done", "failed", "cancelled", "denied"].includes(event.state)) {
+      pendingNativeDownloads.delete(event.id);
+      if (event.state === "done") { lastDownload = { id: event.id, nativeBrowser }; message(t("native_download_done", event.filename || "")); }
+      else message(t(event.state === "cancelled" ? "native_download_cancelled" : "native_download_failed"));
+    }
+    if (typeof refreshDisabled === "function") refreshDisabled();
+  }
+  async function revealDownload() {
+    if (!lastDownload) { message(t("native_target_missing")); return; }
+    if (lastDownload.nativeBrowser) {
+      const ok = await window.webkit.messageHandlers.aisystem6Browser.postMessage({ method: "downloadReveal", id: lastDownload.id });
+      if (!ok) message(t("native_target_missing"));
+    } else await call("revealDownload", { id: lastDownload.id });
+  }
+  async function cancelDownload() {
+    for (const [id, nativeBrowser] of pendingNativeDownloads) {
+      if (nativeBrowser) await window.webkit.messageHandlers.aisystem6Browser.postMessage({ method: "downloadCancel", id });
+      else await call("cancelDownload", { id });
+    }
+  }
+  function beginFileActivity() {
+    if (busy) throw new Error(t("native_update_installing"));
+    fileActivities += 1;
+    let finished = false;
+    return () => { if (!finished) { finished = true; fileActivities -= 1; } };
+  }
+  return { init, fingerprint, readyStorage, activeWork, checkUpdate, installUpdate, notify, beginFileActivity,
+    receiveNativeDownload, isInstalling: () => busy };
+
+})();

@@ -1,0 +1,19 @@
+[
+  {"action":{"type":"block"},"condition":{"urlFilter":"||ads.example.com^"},"priority":10},
+  {"action":{"type":"block"},"condition":{"urlFilter":"||sep.example.com^"},"priority":10},
+  {"action":{"type":"block"},"condition":{"urlFilter":"||wild.example.com/*/ad.js"},"priority":10},
+  {"action":{"type":"block"},"condition":{"urlFilter":"|https://start.example.com/"},"priority":10},
+  {"action":{"type":"block"},"condition":{"requestDomains":["rd.example.com"]},"priority":10},
+  {"action":{"type":"block"},"condition":{"urlFilter":"||third.example.com^","domainType":"thirdParty"},"priority":10},
+  {"action":{"type":"block"},"condition":{"urlFilter":"||init.example.com^","initiatorDomains":["good.example"]},"priority":10},
+  {"action":{"type":"block"},"condition":{"urlFilter":"||exclinit.example.com^","excludedInitiatorDomains":["trusted.example"]},"priority":10},
+  {"action":{"type":"block"},"condition":{"urlFilter":"||scriptonly.example.com^","resourceTypes":["script"]},"priority":10},
+  {"action":{"type":"block"},"condition":{"urlFilter":"||tie.example.com^"},"priority":10},
+  {"action":{"type":"allow"},"condition":{"urlFilter":"||tie.example.com^"},"priority":10},
+  {"action":{"type":"block"},"condition":{"urlFilter":"||prio.example.com^"},"priority":20},
+  {"action":{"type":"allow"},"condition":{"urlFilter":"||prio.example.com^"},"priority":10},
+  {"action":{"type":"allowAllRequests"},"condition":{"requestDomains":["aar.example"],"resourceTypes":["main_frame","sub_frame"]},"priority":10},
+  {"action":{"type":"block"},"condition":{"urlFilter":"||tracker.example^"},"priority":10},
+  {"action":{"type":"redirect"},"condition":{"urlFilter":"||redir.example^"}}, 
+  {"action":{"type":"block"},"condition":{"urlFilter":"||method.example^","requestMethods":["post"]}}
+]

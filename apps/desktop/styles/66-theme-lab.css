@@ -1,0 +1,3041 @@
+/* Internal Appearance specimen. Every era uses this one DOM and one component
+   stylesheet; only semantic tokens and the small shared era recipes change. */
+
+.theme-lab-window {
+  left: max(18px, calc(50vw - 540px));
+  top: 38px;
+  width: min(1080px, calc(100vw - 72px));
+  /* Sized to the tab it opens on. At 730px the Chrome board finished around
+     480px and the window carried 250px of empty grey every time it opened,
+     which reads as an unfinished workbench. The taller boards scroll, which is
+     what an inventory is supposed to do. */
+  height: min(600px, calc(100vh - 82px));
+  min-width: 360px;
+}
+
+.theme-lab-window > .details-bar {
+  min-height: var(--theme-lab-details-min-height, 24px);
+  padding: var(--theme-lab-details-padding, calc(4px - var(--details-bar-optical-rise)) 8px calc(4px + var(--details-bar-optical-rise)));
+  border-bottom: var(--theme-lab-details-border-bottom, 1px solid var(--details-bar-border));
+  background: var(--theme-lab-details-bg, var(--details-bar-bg));
+}
+
+/* The pane carries two fixed rows: the era bar, then the tab sheet. Specimen
+   columns live inside a panel, so switching era or tab never reflows the
+   window frame the fidelity captures crop. */
+.theme-lab-pane {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  align-content: start;
+  gap: var(--theme-lab-pane-gap, 10px);
+  padding: var(--theme-lab-pane-padding, 10px);
+  border: var(--theme-lab-pane-border, 0);
+  border-top: var(--theme-lab-pane-border-top, 0);
+  overflow: auto;
+  background: var(--theme-lab-pane-bg, var(--surface-secondary));
+  box-shadow: var(--theme-lab-pane-shadow, none);
+}
+
+/* Era bar — the spine. Six segments in registry order, each naming the era and
+   its system font, plus the recipe lineage the current era derives from. */
+.theme-lab-era-bar {
+  display: grid;
+  gap: 6px;
+}
+
+/* The era axis. Ticks sit at their true distance in years, so 1999 and 2002
+   crowd together and 2014 to 2026 opens up — the shape of the timeline is the
+   point. The rail is lab chrome, not a historical specimen, so it is drawn from
+   shared tokens rather than reproducing any era's real slider. */
+.theme-lab-era-switch {
+  /* One thumb width, read by the rail and by the axis. A range thumb's
+     centre travels from half a thumb inside each end, so the tick axis
+     takes the same inset — otherwise the circle never lands on the mark
+     it selects, and the error is worst at 1988 and 2026. */
+  --theme-lab-era-thumb: var(--theme-lab-era-thumb-width, 13px);
+
+  position: relative;
+  display: grid;
+  gap: 0;
+  padding: 0 9px;
+}
+
+.theme-lab-era-range {
+  width: 100%;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.theme-lab-era-range::-webkit-slider-runnable-track {
+  height: var(--theme-lab-era-track-height, 4px);
+  border: var(--theme-lab-era-track-border, 1px solid var(--rule));
+  border-radius: var(--theme-lab-era-track-radius, var(--control-radius));
+  background: var(--theme-lab-era-track-bg, var(--surface-inset));
+  box-shadow: var(--theme-lab-era-track-shadow, none);
+}
+
+.theme-lab-era-range::-moz-range-track {
+  height: var(--theme-lab-era-track-height, 4px);
+  border: var(--theme-lab-era-track-border, 1px solid var(--rule));
+  border-radius: var(--theme-lab-era-track-radius, var(--control-radius));
+  background: var(--theme-lab-era-track-bg, var(--surface-inset));
+  box-shadow: var(--theme-lab-era-track-shadow, none);
+}
+
+.theme-lab-era-range::-webkit-slider-thumb {
+  width: var(--theme-lab-era-thumb);
+  height: var(--theme-lab-era-thumb-height, var(--theme-lab-era-thumb));
+  margin-top: var(--theme-lab-era-thumb-offset, -6px);
+  appearance: none;
+  border: var(--era-rail-thumb-border, var(--theme-lab-era-thumb-border, 1px solid var(--ink)));
+  border-radius: var(--era-rail-thumb-radius, var(--theme-lab-era-thumb-radius, 50%));
+  background: var(--era-rail-thumb-bg, var(--theme-lab-era-thumb-bg, var(--paper)));
+  box-shadow: var(--era-rail-thumb-shadow, var(--theme-lab-era-thumb-shadow, var(--system-inset)));
+}
+
+.theme-lab-era-range::-moz-range-thumb {
+  width: var(--theme-lab-era-thumb);
+  height: var(--theme-lab-era-thumb-height, var(--theme-lab-era-thumb));
+  border: var(--era-rail-thumb-border, var(--theme-lab-era-thumb-border, 1px solid var(--ink)));
+  border-radius: var(--era-rail-thumb-radius, var(--theme-lab-era-thumb-radius, 50%));
+  background: var(--era-rail-thumb-bg, var(--theme-lab-era-thumb-bg, var(--paper)));
+  box-shadow: var(--era-rail-thumb-shadow, var(--theme-lab-era-thumb-shadow, var(--system-inset)));
+}
+
+.theme-lab-era-range:focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: var(--control-focus-offset);
+}
+
+.theme-lab-era-ticks {
+  position: relative;
+  height: 26px;
+  margin-inline: calc(var(--theme-lab-era-thumb) / 2);
+  container-type: inline-size;
+}
+
+/* Close years collide at any width (1998/1999; 2009/2011 on a phone). The
+   rail lays its labels out as rendered (theme-lab.js spaceEraTickLabels):
+   the selected year and the two ends first, and any label that would touch
+   one already kept is withheld. Every tick mark stays a jump target. */
+.theme-lab-era-tick.is-crowded > span {
+  visibility: hidden;
+}
+
+/* Each tick is its own jump target, so the axis stays keyboard- and
+   pointer-reachable without dragging. --theme-lab-era-t is the year's
+   proportional position, set once when the rail is built. */
+.theme-lab-era-tick {
+  position: absolute;
+  left: calc(var(--theme-lab-era-t) * 100%);
+  top: 0;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--shade-dark);
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+  transform: translateX(-50%);
+}
+
+.theme-lab-era-tick > i {
+  width: 1px;
+  height: 5px;
+  background: var(--rule);
+}
+
+.theme-lab-era-tick:hover {
+  color: var(--ink);
+}
+
+.theme-lab-era-tick:focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: var(--control-focus-offset);
+}
+
+.theme-lab-era-tick.is-active {
+  color: var(--ink);
+  font-weight: var(--system-strong-weight);
+}
+
+.theme-lab-era-tick.is-active > i {
+  height: 7px;
+  background: var(--ink);
+}
+
+/* The readout the axis writes to: the year and era you have travelled to, the
+   face that era wore, then the lineage and art tiers behind it. */
+.theme-lab-era-lineage {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  margin: 0;
+  color: var(--shade-dark);
+  font-size: 11px;
+}
+
+.theme-lab-era-lineage b {
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: var(--system-emphasis-weight);
+}
+
+.theme-lab-era-lineage em {
+  color: var(--ink);
+  font-style: normal;
+}
+
+/* The tab specimen's panel wears the era's tabbed-dialog metrics. They live
+   here rather than on .system-tab-panel because Control Panel's sections use
+   that class too and answer to a settings navigation, not to a tab strip. */
+.theme-lab-tab-specimen > .system-tab-panel {
+  min-height: var(--tab-panel-min-height, auto);
+  margin-top: var(--tab-panel-margin-top, 0);
+  padding: var(--tab-panel-padding, var(--guide-start-card-padding));
+  border: var(--tab-panel-border, var(--system-border));
+  border-top: var(--tab-panel-border-top, none);
+  border-radius: var(--tab-panel-radius, 0);
+  background: var(--tab-panel-bg, var(--tab-active-bg));
+  box-shadow: var(--tab-panel-shadow, none);
+}
+
+/* The Lab's own section navigation is furniture, not a specimen. It is built
+   from the real tab so it looks like the system, but it must not wear an era's
+   tab metrics: Platinum pins a tab to the 74px width of its selected-tab art,
+   which is right for a specimen and wrong for a rail whose names are Chrome,
+   Objects, Surfaces and Tokens. Base metrics only; the specimen next to it is
+   where the era's own tab is shown. */
+.theme-lab-panel-tabs {
+  /* Content width is the basis here, not zero: the rail's names differ in
+     length and an era's wider tab padding clipped "Surfaces" at every window
+     width. Furniture, so it stays out of the shipping tab's default. */
+  --tab-flex: var(--theme-lab-rail-tab-flex, 1 1 auto);
+  --tab-width: var(--theme-lab-rail-tab-width, auto);
+  --tab-min-width: var(--theme-lab-rail-tab-min-width, 0);
+  --tab-min-height: var(--theme-lab-rail-tab-min-height, 28px);
+  --tab-height: var(--theme-lab-rail-tab-height, auto);
+  /* The selected tab is one of the rail's tabs, so it takes the rail's height
+     too. Each era's --tab-active-min-height (22-25px) used to escape the
+     rail's 28px, leaving one short tab among three tall ones. */
+  --tab-active-min-height: var(--tab-min-height);
+  --tab-active-height: var(--tab-height);
+  --tab-padding: var(--theme-lab-rail-tab-padding, 4px 10px);
+  --tab-margin: var(--theme-lab-rail-tab-margin, 0);
+  --tab-strip-padding: var(--theme-lab-rail-strip-padding, 0);
+  --tab-strip-overflow: var(--theme-lab-rail-strip-overflow, visible);
+  --tab-edge-content: var(--theme-lab-rail-edge-content, none);
+}
+
+/* P03 / C5: Platinum's rail is the real Mac OS 9 tab (P01 metrics), not the
+   Lab's base metrics. Same tokens as the shipping tab, so the native-cut caps
+   come in and the 2-row seam under the active tab goes away with them.
+   The Lab answers the era through its own token family; this one selector is
+   the sheet's only theme selector (explicit budget in tooling/css-budget.json). */
+body[data-lineage~="platinum"] {
+  --theme-lab-rail-tab-flex: 0 0 auto;
+  --theme-lab-rail-tab-min-height: 22px;
+  --theme-lab-rail-tab-height: 22px;
+  --theme-lab-rail-tab-padding: 1px 16px 0;
+  --theme-lab-rail-strip-padding: 0 4px;
+  --theme-lab-rail-edge-content: "";
+
+  /* P23: the era slider wears the same Mac OS 9 slider as P07 (capture 35) —
+     a 5px etched groove and the 15x16 downward lavender thumb. */
+  --theme-lab-era-track-height: 5px;
+  --theme-lab-era-track-border: 1px solid #222222;
+  --theme-lab-era-track-radius: 3px;
+  --theme-lab-era-track-bg: #aaaaaa;
+  --theme-lab-era-track-shadow: -1px -1px 0 #aaaaaa, 0 1px 0 #ffffff;
+  --theme-lab-era-thumb: 16px;
+  --theme-lab-era-thumb-width: 15px;
+  --theme-lab-era-thumb-height: 16px;
+  --theme-lab-era-thumb-offset: -6px;
+  --theme-lab-era-thumb-border: 0;
+  --theme-lab-era-thumb-radius: 0;
+  --theme-lab-era-thumb-bg: url("./assets/themes/platinum/chrome/slider-thumb-15x16.svg") center / 15px 16px no-repeat;
+  --theme-lab-era-thumb-shadow: none;
+  /* P18/P19: the specimens' checked box keeps its bevel and the radio uses
+     the native art, not the Lab's drawn dot. */
+  --theme-lab-checkbox-mark-shadow: none;
+  --theme-lab-radio-dot-content: none;
+}
+
+.theme-lab-sheet-shell {
+  align-self: start;
+}
+
+/* One panel per tab, each a two-column specimen board. Only the panel on
+   screen holds content, so the era switch repaints one board, not six. */
+.theme-lab-panel {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: var(--theme-lab-pane-gap, 10px);
+}
+
+/* The shared tab panel stacks its actions at full width. A specimen must keep
+   the control's real geometry, so the Lab's panels hand that back. */
+.theme-lab-panel .btn {
+  width: auto;
+}
+
+/* Capture hook. The snapshot and canonical-fidelity harnesses want the whole
+   atlas in one shot, so they set the attribute and every panel opens. It is
+   never set by the interface itself. */
+[data-theme-lab-capture="all"] .theme-lab-panel[hidden] {
+  display: grid;
+}
+
+.theme-lab-group {
+  position: var(--theme-lab-group-position, static);
+  min-width: 0;
+  margin: var(--theme-lab-group-margin, 0);
+  padding: var(--theme-lab-group-padding, 10px);
+  border: var(--theme-lab-group-border, var(--system-border));
+  border-radius: var(--control-radius);
+  background: var(--theme-lab-group-bg, var(--surface-primary));
+  box-shadow: var(--theme-lab-group-shadow, var(--system-inset));
+}
+
+.theme-lab-icon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.theme-lab-icon-tile {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 2px 5px;
+  border: 1px solid var(--rule);
+  border-radius: var(--control-radius);
+  background: var(--surface-primary);
+  color: var(--ink);
+  font: 10px/1.2 var(--theme-ui-font);
+  cursor: default;
+}
+
+.theme-lab-icon-hint {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.theme-lab-icon-tile .sys-icon {
+  width: 32px;
+  height: 32px;
+  background-color: transparent;
+}
+
+/* C13: a lab tile label may wrap to two lines. The tile grid is 76px wide and
+   names like "Control Pa…" and "Multi Finder App" ellipsised at one line, which
+   hid which object was which. Two lines is a lab layout fix for every era. */
+.theme-lab-icon-tile b {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  text-align: center;
+  font-weight: normal;
+}
+
+/* Every era is accepted object by object, not as a themed thumbnail sheet.
+   One board serves all six: the era supplies its authored tiers and appearance
+   variants, the sixteen objects and four states never change. */
+.theme-lab-object-lab {
+  grid-column: 1 / -1;
+}
+
+.theme-lab-object-intro {
+  margin: 0 0 6px;
+  color: var(--shade-dark);
+}
+
+/* The era's own provenance statement. One slot in every era, so the shape
+   stays uniform while the words stay honest about that era's evidence. */
+.theme-lab-object-evidence {
+  margin: 0 0 9px;
+  padding-left: 8px;
+  border-left: 2px solid var(--rule);
+  color: var(--shade-dark);
+  font-size: 11px;
+}
+
+.theme-lab-object-key {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 8px 5px;
+  border-bottom: 1px solid var(--rule);
+  color: var(--shade-dark);
+  font-size: 10px;
+}
+
+.theme-lab-object-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  padding-top: 6px;
+}
+
+.theme-lab-object-card {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0 5px;
+  padding: 5px;
+  border: 1px solid var(--separator);
+  background: var(--paper);
+}
+
+/* Provenance class from the icon lineage audit, carried on the object rather
+   than in a paragraph, so each card states its own evidence standing. */
+.theme-lab-object-class {
+  padding: 0 0 4px;
+  border-bottom: 1px solid var(--separator);
+  color: var(--shade-dark);
+  font: 10px/1.2 var(--mono-font);
+  white-space: nowrap;
+}
+
+.theme-lab-object-class.is-class-a {
+  color: var(--ink);
+  font-weight: var(--system-emphasis-weight);
+}
+
+.theme-lab-object-card.is-inspected {
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+
+.theme-lab-object-inspector h4,
+.theme-lab-object-context h4 {
+  margin: 0;
+  font: inherit;
+  font-weight: var(--system-emphasis-weight);
+}
+
+.theme-lab-object-inspect {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 5px;
+  padding: 0 0 4px;
+  border: 0;
+  border-bottom: 1px solid var(--separator);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.theme-lab-object-inspect code,
+.theme-lab-object-inspector code {
+  display: block;
+  color: var(--shade-dark);
+  font: 10px/1.2 var(--mono-font);
+}
+
+.theme-lab-object-states {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 3px;
+  margin-top: 5px;
+}
+
+/* A lab cell is not a Finder row: it owns its own stacking, label size, and
+   wrapping so a four-state card reads the same in every era, whatever geometry
+   that era gives its real Finder items. */
+.theme-lab-object-states .theme-lab-object-item.finder-item {
+  /* Weighted past the era's own Finder cell width: Liquid Glass pins
+     .finder-item to 118px, which is wider than a four-track cell, so the
+     selected state's fill spilled over the neighbouring card. A lab cell
+     follows the grid, not the era's desktop geometry. */
+  width: 100%;
+  /* .finder-item carries a Finder cell's own min-width. In a four-track grid
+     that min-width wins over the track, so the selected state's fill spilled
+     past the card and over its neighbour. minmax(0, 1fr) alone cannot stop
+     that; the item has to give up its floor too. */
+  min-width: 0;
+  min-height: 60px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  padding: 3px 1px;
+  border: 0;
+  background: var(--paper);
+  font-size: 8px;
+  cursor: default;
+}
+
+/* Size and wrapping only. Ink stays with the era, so the selected cell keeps
+   whatever inversion that era's Finder item performs. */
+.theme-lab-object-item.finder-item > span:last-child {
+  max-width: 100%;
+  overflow: visible;
+  font-size: 8px;
+  line-height: 1.2;
+  text-align: center;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+/* The four display sizes an object cell can ask for. They are the authored
+   tiers themselves (compact, ordinary, the Platinum desktop tier, and the
+   large tier capped so a 128 px file still fits a context box), so they belong
+   here as literal specimen sizes rather than as window geometry tokens.
+
+   The cell is a real Finder item, which is the point — but an era is entitled
+   to size Finder icons, and Liquid Glass does: `.finder-item .sys-icon` at
+   44 px is three classes and beat the two-class tier rule these used to be.
+   Every tier then collapsed to one size and the 16 px source was stretched
+   2.75x, which is the blur this avoids. Stage geometry is the lab's to set, so
+   each rule carries the lab section and the icon class as well: four classes
+   outrank any era rule of the `body.theme .finder-item .sys-icon` shape. */
+.theme-lab-object-lab .theme-lab-object-item .sys-icon.theme-lab-object-px-16 {
+  width: 16px;
+  height: 16px;
+}
+
+.theme-lab-object-lab .theme-lab-object-item .sys-icon.theme-lab-object-px-32 {
+  width: 32px;
+  height: 32px;
+}
+
+.theme-lab-object-lab .theme-lab-object-item .sys-icon.theme-lab-object-px-42 {
+  width: 42px;
+  height: 42px;
+}
+
+.theme-lab-object-lab .theme-lab-object-item .sys-icon.theme-lab-object-px-72 {
+  width: 72px;
+  height: 72px;
+}
+
+/* Theme Lab audits authored PNG pixels. Retina output and the explicit
+   200–400% inspector zoom must reveal those pixels, not blur them through
+   bilinear resampling. Classic's authored SVG remains smooth.
+
+   Doubling exact pixels only reads as pixels while the cell box equals the
+   authored tier. Where the box is larger the ratio stops being a whole number,
+   the same source pixel is repeated an uneven count, and the cell mushes —
+   which is why the tier rules above must outrank an era's Finder icon size. */
+.theme-lab-object-item .sys-icon-era-raster {
+  image-rendering: pixelated;
+}
+
+.theme-lab-object-inspector {
+  min-height: 280px;
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 10px;
+  margin-top: 8px;
+  padding: 8px;
+  border: 1px solid var(--rule);
+  background: var(--surface-inset);
+}
+
+.theme-lab-object-inspector h4 code {
+  margin-top: 4px;
+}
+
+.theme-lab-object-inspector h4 small {
+  display: block;
+  margin-top: 6px;
+  color: var(--shade-dark);
+  font-size: 10px;
+  font-weight: normal;
+}
+
+/* One row per appearance the era declares. Five eras declare one, so the row
+   heading stays out of their way; Liquid Glass declares three and the same
+   zoom ladder repeats under each. */
+.theme-lab-object-appearances {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.theme-lab-object-appearance h5 {
+  margin: 0 0 4px;
+  color: var(--shade-dark);
+  font: inherit;
+  font-size: 10px;
+  font-weight: normal;
+}
+
+.theme-lab-object-zooms {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  overflow-x: auto;
+}
+
+.theme-lab-object-zooms figure {
+  flex: 0 0 auto;
+  margin: 0;
+  text-align: center;
+}
+
+.theme-lab-object-zooms img {
+  display: block;
+  object-fit: contain;
+  image-rendering: auto;
+}
+
+.theme-lab-object-zooms img.is-raster {
+  image-rendering: pixelated;
+}
+
+.theme-lab-object-zooms figcaption {
+  margin-top: 3px;
+  color: var(--shade-dark);
+  font-size: 10px;
+}
+
+.theme-lab-object-contexts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.theme-lab-object-context {
+  padding: 8px;
+  border: 1px solid var(--rule);
+  background: var(--surface-inset);
+}
+
+.theme-lab-object-context > div {
+  min-height: 94px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 7px;
+  padding: 8px;
+  border: var(--system-border);
+  background: var(--paper);
+}
+
+.theme-lab-object-context.is-desktop > div {
+  background: var(--desktop-surface);
+}
+
+/* Surface check. Every era answers the same question — does the object hold up
+   on the surfaces this era actually has — using its own tokens, so the check
+   needs no per-era selector and no hard-coded material. */
+.theme-lab-object-context.is-surface-check > div {
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+}
+
+.theme-lab-object-surface {
+  width: 100%;
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+}
+
+.theme-lab-object-surface.is-on-desktop {
+  background: var(--desktop-surface);
+}
+
+.theme-lab-object-surface.is-on-paper {
+  background: var(--paper);
+}
+
+.theme-lab-object-surface.is-on-chrome {
+  background: var(--shade);
+}
+
+.theme-lab-object-context.is-surface-check .theme-lab-object-item {
+  width: auto;
+  min-height: 0;
+  gap: 0;
+}
+
+.theme-lab-object-context.is-surface-check .theme-lab-object-item > span:last-child {
+  display: none;
+}
+
+.theme-lab-object-context .theme-lab-object-item {
+  width: 80px;
+  min-height: 74px;
+  padding: 2px;
+  border: 0;
+  background: transparent;
+}
+
+.theme-lab-object-context.is-list-view > div {
+  min-height: 94px;
+  flex-direction: column;
+  gap: 0;
+}
+
+.theme-lab-object-context .is-list-row {
+  width: 100%;
+  min-height: 24px;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  justify-items: start;
+  align-items: center;
+  text-align: left;
+}
+
+.theme-lab-object-context .is-list-row span:last-of-type {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Token workbench. Rows are read from the live CSSOM, so this is the only
+   place in the lab whose content is not a specimen; it stays inside the same
+   group frame so the era paints it like everything else. */
+.theme-lab-token-desk {
+  grid-column: 1 / -1;
+}
+
+.theme-lab-token-summary {
+  margin: 0 0 8px;
+  color: var(--shade-dark);
+}
+
+.theme-lab-token-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.theme-lab-token-filters > label {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.theme-lab-token-table {
+  max-height: 340px;
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  padding: 6px;
+  overflow-y: auto;
+  border: 1px solid var(--rule);
+  background: var(--surface-inset);
+}
+
+.theme-lab-token-row {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) auto minmax(0, 3fr) minmax(0, 3fr) minmax(0, 5fr);
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px;
+  background: var(--paper);
+}
+
+.theme-lab-token-row.is-dirty {
+  box-shadow: inset 2px 0 0 var(--ink);
+}
+
+.theme-lab-token-row > code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 10px/1.4 var(--mono-font);
+}
+
+.theme-lab-token-flag {
+  color: var(--shade-dark);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.theme-lab-token-flag.is-overridden {
+  color: var(--ink);
+}
+
+.theme-lab-token-base {
+  overflow: hidden;
+  color: var(--shade-dark);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 10px/1.4 var(--mono-font);
+}
+
+.theme-lab-token-computed {
+  overflow: hidden;
+  color: var(--ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 10px/1.4 var(--mono-font);
+}
+
+.theme-lab-token-editor {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.theme-lab-token-editor input {
+  min-width: 0;
+  flex: 1 1 auto;
+  font: 10px/1.4 var(--mono-font);
+}
+
+.theme-lab-token-swatch {
+  flex: 0 0 auto;
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--rule);
+  background: var(--theme-lab-swatch, transparent);
+}
+
+.theme-lab-token-empty {
+  margin: 0;
+  padding: 8px;
+  color: var(--shade-dark);
+}
+
+.theme-lab-desk-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.theme-lab-desk-status {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  color: var(--shade-dark);
+  text-overflow: ellipsis;
+  font-size: 11px;
+}
+
+/* The output is meant to be selected and pasted, so it keeps its own
+   monospaced reading surface rather than borrowing a specimen's. */
+.theme-lab-desk-output {
+  max-height: 300px;
+  margin: 8px 0 0;
+  padding: 8px;
+  overflow: auto;
+  border: 1px solid var(--rule);
+  background: var(--glass-reading-surface, var(--surface-inset));
+  color: var(--ink);
+  font: 11px/1.5 var(--mono-font);
+  white-space: pre;
+  user-select: text;
+}
+
+@container (max-width: 760px) {
+  .theme-lab-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .theme-lab-object-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .theme-lab-object-inspector {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .theme-lab-object-contexts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .theme-lab-token-filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .theme-lab-token-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .theme-lab-token-row > :is(.theme-lab-token-base, .theme-lab-token-computed) {
+    display: none;
+  }
+
+  .theme-lab-token-editor {
+    grid-column: 1 / -1;
+  }
+}
+
+.theme-lab-group h3 {
+  position: var(--theme-lab-heading-position, static);
+  left: var(--theme-lab-heading-left, auto);
+  top: var(--theme-lab-heading-top, auto);
+  margin: var(--theme-lab-heading-margin, 0 0 9px);
+  padding: var(--theme-lab-heading-padding, 0);
+  padding-bottom: var(--theme-lab-heading-padding-bottom, 5px);
+  border-bottom: var(--theme-lab-heading-border-bottom, 1px solid var(--separator));
+  background: var(--theme-lab-heading-bg, transparent);
+  font: inherit;
+  font-weight: var(--theme-lab-heading-weight, var(--system-emphasis-weight));
+  line-height: var(--theme-lab-heading-line-height, normal);
+  transform: var(--theme-lab-heading-transform, none);
+}
+
+.theme-lab-navigation-generic-label {
+  display: var(--theme-lab-navigation-generic-label-display, inline);
+}
+
+.theme-lab-column-browser-label {
+  display: var(--theme-lab-column-browser-label-display, none);
+}
+
+.theme-lab-current-era {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.theme-lab-button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--theme-lab-button-row-gap, 9px);
+  align-items: center;
+  margin-bottom: var(--theme-lab-button-row-margin-bottom, 12px);
+}
+
+.theme-lab-button-row .btn {
+  min-width: var(--theme-lab-button-min-width, 82px);
+}
+
+.theme-lab-size-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  margin: var(--theme-lab-size-row-margin, -3px 0 11px);
+}
+
+.theme-lab-size-row > span {
+  margin-right: 2px;
+  color: var(--shade-dark);
+}
+
+.theme-lab-size-row .btn {
+  --theme-button-min-width: 0;
+  min-width: 0;
+}
+
+.theme-lab-size-row .theme-lab-size-small {
+  height: var(--system-button-small-height);
+  min-height: var(--system-button-small-height);
+  padding-inline: var(--system-button-small-padding-x);
+  font-size: var(--system-button-small-font-size);
+}
+
+.theme-lab-size-row .theme-lab-size-mini {
+  display: var(--theme-lab-size-mini-display, inline-flex);
+  height: var(--system-button-mini-height);
+  min-height: var(--system-button-mini-height);
+  padding-inline: var(--system-button-mini-padding-x);
+  font-size: var(--system-button-mini-font-size);
+}
+
+.theme-lab-focus-control {
+  outline: var(--control-focus-outline);
+  outline-offset: var(--control-focus-offset);
+}
+
+.theme-lab-choice-matrix {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--theme-lab-choice-gap, 7px);
+  align-items: center;
+  margin-bottom: 9px;
+}
+
+.theme-lab-choice-matrix .field-row {
+  min-width: 0;
+  min-height: var(--theme-lab-choice-row-min-height, auto);
+  gap: var(--theme-lab-choice-label-gap, 5px);
+}
+
+.theme-lab-choice-matrix .field-row:has(input:disabled) {
+  color: var(--shade-dark);
+}
+
+.theme-lab-choice-matrix .theme-lab-era-choice-state {
+  display: var(--theme-lab-era-choice-state-display, flex);
+}
+
+.theme-lab-choice-matrix input {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.theme-lab-choice-matrix input[type="checkbox"]::before {
+  content: var(--theme-lab-checkbox-frame-overlay-content, none);
+  position: absolute;
+  inset: var(--theme-lab-checkbox-frame-overlay-inset, auto);
+  width: 12px;
+  height: 12px;
+  background: var(--theme-lab-checkbox-frame-overlay-bg, transparent);
+  pointer-events: none;
+}
+
+/* Live boxes only; a disabled checked box is the real control's
+   :checked:disabled art (same weight, so this later rule used to cover it). */
+.theme-lab-choice-matrix input[type="checkbox"]:checked:where(:not(:disabled)) {
+  background-image:
+    var(--theme-lab-checkbox-checkmark-image, var(--choice-checkmark-image)),
+    var(--choice-checked-bg-image, none);
+}
+
+.theme-lab-choice-matrix input[type="checkbox"]:checked::after {
+  content: var(--theme-lab-checkbox-mark-content, none);
+  position: var(--theme-lab-checkbox-mark-position, static);
+  inset: var(--theme-lab-checkbox-mark-inset, auto);
+  display: block;
+  width: var(--theme-lab-checkbox-mark-width, 10px);
+  height: var(--theme-lab-checkbox-mark-height, 5px);
+  margin: var(--theme-lab-checkbox-mark-margin, 0 0 0 1.5px);
+  border-bottom: var(--theme-lab-checkbox-mark-border-bottom, 1.5px solid var(--theme-lab-checkbox-mark-color, currentColor));
+  border-left: var(--theme-lab-checkbox-mark-border-left, 1.5px solid var(--theme-lab-checkbox-mark-color, currentColor));
+  background: var(--theme-lab-checkbox-mark-bg, transparent);
+  box-shadow: var(--theme-lab-checkbox-mark-shadow, none);
+  transform: var(--theme-lab-checkbox-mark-transform, rotate(-45deg));
+  pointer-events: none;
+}
+
+/* Pressed is the era's own art, a step darker. Replacing the art with a
+   token default drew a checked box for an unchecked one, and in eras that
+   never set the token it fell back to System 6's bitmap (2026-10-09 audit). */
+.theme-lab-choice-matrix input:is([type="checkbox"], [type="radio"]).is-active:not(:disabled) {
+  filter: var(--theme-lab-choice-active-filter, brightness(0.82));
+}
+
+.theme-lab-choice-matrix input[type="checkbox"]:checked:disabled::after {
+  border-color: var(--theme-lab-checkbox-disabled-mark-color, currentColor);
+  box-shadow: var(--theme-lab-checkbox-disabled-mark-shadow, none);
+  filter: var(--theme-lab-checkbox-disabled-mark-filter, none);
+}
+
+/* Not disabled: a disabled checked radio is the real control's own
+   :checked:disabled art, which this rule (later in the cascade) used to cover.
+   :where() keeps the weight at (0,3,1), so an era's own :checked recipe still
+   wins (Liquid Glass paints its radio itself and sets no art token). */
+.theme-lab-choice-matrix input[type="radio"]:checked:where(:not(:disabled)) {
+  background-image: var(--theme-lab-radio-checked-bg, var(--radio-checked-image));
+  box-shadow: var(--theme-lab-radio-checked-shadow, none);
+}
+
+.theme-lab-choice-matrix input[type="radio"]:checked::after {
+  content: var(--theme-lab-radio-dot-content, none);
+  display: block;
+  width: 6px;
+  height: 6px;
+  margin: 2px;
+  border-radius: 50%;
+  background: var(--theme-lab-radio-dot-bg, currentColor);
+}
+
+.theme-lab-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--theme-lab-form-gap, 8px 12px);
+  align-items: end;
+}
+
+/* Every row the same height, whatever control sits in it. A pop-up is shorter
+   than a text field, so the rows used to step up and down and the two columns
+   stopped reading as one grid. */
+.theme-lab-form-grid > label:not(.field-row) {
+  display: grid;
+  min-height: var(--theme-lab-form-row-min-height, 26px);
+  align-content: center;
+  grid-template-columns: var(--theme-lab-form-label-columns, minmax(0, 1fr));
+  align-items: var(--theme-lab-form-label-align-items, stretch);
+  gap: 4px var(--theme-lab-form-label-column-gap, 4px);
+  min-width: 0;
+  color: var(--control-label-fg);
+}
+
+.theme-lab-form-grid > label:not(.field-row) > span:first-child {
+  text-align: var(--theme-lab-form-label-align, left);
+}
+
+.theme-lab-form-grid input[type="search"] {
+  width: 100%;
+  min-width: 0;
+  padding: 6px 8px;
+  border: var(--field-border);
+  border-radius: var(--field-radius);
+  background: var(--field-bg);
+  color: var(--ink);
+  box-shadow: var(--field-shadow);
+  outline: 0;
+}
+
+/* The focused specimen wears the era's own focus tokens, the same ones its
+   real :focus recipe reads. The class is doubled on purpose: every era's resting
+   field rule sits between (0,2,1) and (0,2,2), so at (0,2,0) this lost to them
+   and Big Sur and Liquid Glass showed a focused field with no ring at all
+   (2026-10-09 audit); Snow Leopard's and Aqua's search fields lost the same way.
+   The search field keeps its own fill, so its radius and material stay. */
+.theme-lab-form-grid :is(input:not([type="search"]), select).theme-lab-focus-demo.theme-lab-focus-demo {
+  border: var(--field-focus-border);
+  background: var(--field-focus-bg);
+  box-shadow: var(--field-focus-ring);
+}
+
+.theme-lab-form-grid input[type="search"].theme-lab-focus-demo.theme-lab-focus-demo {
+  border: var(--field-focus-border);
+  box-shadow: var(--field-focus-ring);
+}
+
+.theme-lab-form-grid input:disabled {
+  --theme-lab-disabled-control-border-color: var(--theme-lab-disabled-field-border-color);
+  --theme-lab-disabled-control-bg: var(--theme-lab-disabled-field-bg);
+  --theme-lab-disabled-control-fg: var(--theme-lab-disabled-field-fg);
+  --theme-lab-disabled-control-shadow: var(--theme-lab-disabled-field-shadow);
+}
+
+.theme-lab-form-grid select:disabled {
+  --theme-lab-disabled-control-border-color: var(--theme-lab-disabled-popup-border-color);
+  --theme-lab-disabled-control-bg: var(--control-disabled-bg);
+  --theme-lab-disabled-control-fg: var(--theme-lab-disabled-popup-fg);
+  --theme-lab-disabled-control-shadow: var(--theme-lab-disabled-popup-shadow);
+}
+
+/* The view switcher specimen sat flush against the last field's bottom edge,
+   so the two frames read as one broken control. */
+.theme-lab-view-specimen {
+  margin-block: 10px;
+}
+
+.theme-lab-view-icon {
+  width: var(--theme-lab-view-icon-width, 12px);
+  height: var(--theme-lab-view-icon-height, 10px);
+  display: var(--theme-lab-view-icon-display, block);
+  flex: 0 0 auto;
+  color: currentColor;
+}
+
+.theme-lab-view-icon.is-icon {
+  background:
+    linear-gradient(currentColor, currentColor) 0 0 / 4px 4px no-repeat,
+    linear-gradient(currentColor, currentColor) 8px 0 / 4px 4px no-repeat,
+    linear-gradient(currentColor, currentColor) 0 6px / 4px 4px no-repeat,
+    linear-gradient(currentColor, currentColor) 8px 6px / 4px 4px no-repeat;
+}
+
+.theme-lab-view-icon.is-list {
+  background:
+    linear-gradient(currentColor, currentColor) 0 0 / 3px 2px no-repeat,
+    linear-gradient(currentColor, currentColor) 5px 0 / 7px 2px no-repeat,
+    linear-gradient(currentColor, currentColor) 0 4px / 3px 2px no-repeat,
+    linear-gradient(currentColor, currentColor) 5px 4px / 7px 2px no-repeat,
+    linear-gradient(currentColor, currentColor) 0 8px / 3px 2px no-repeat,
+    linear-gradient(currentColor, currentColor) 5px 8px / 7px 2px no-repeat;
+}
+
+.theme-lab-view-icon.is-columns {
+  background:
+    linear-gradient(currentColor, currentColor) 0 0 / 2px 10px no-repeat,
+    linear-gradient(currentColor, currentColor) 5px 0 / 2px 10px no-repeat,
+    linear-gradient(currentColor, currentColor) 10px 0 / 2px 10px no-repeat,
+    linear-gradient(currentColor, currentColor) 0 0 / 12px 1px no-repeat,
+    linear-gradient(currentColor, currentColor) 0 9px / 12px 1px no-repeat;
+}
+
+.theme-lab-split-view {
+  min-height: var(--theme-lab-split-min-height, 172px);
+  display: grid;
+  grid-template-columns: var(--theme-lab-split-columns, minmax(132px, 0.78fr) minmax(180px, 1.22fr));
+  grid-template-rows: var(--theme-lab-split-rows, minmax(0, 1fr));
+  gap: var(--theme-lab-split-gap, 0);
+  padding: var(--theme-lab-split-padding, 0);
+  border: var(--theme-lab-split-border, var(--system-border));
+  border-radius: var(--theme-lab-split-radius, var(--control-radius));
+  background: var(--theme-lab-split-bg, transparent);
+  overflow: var(--theme-lab-split-overflow, hidden);
+  box-shadow: var(--theme-lab-split-shadow, var(--system-inset));
+}
+
+.theme-lab-generic-browser {
+  display: var(--theme-lab-generic-browser-display, grid);
+}
+
+.theme-lab-aqua-browser {
+  display: var(--theme-lab-aqua-browser-display, none);
+  grid-template-columns: var(--theme-lab-browser-columns, repeat(3, minmax(0, 1fr)));
+  grid-template-rows: minmax(0, 1fr) 15px;
+}
+
+.theme-lab-browser-column {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--theme-lab-browser-column-scrollbar-width, 0);
+  border-right: var(--theme-lab-browser-column-border-right, 0);
+  background: var(--theme-lab-browser-column-bg, transparent);
+  overflow: hidden;
+}
+
+.theme-lab-browser-column > :is(.theme-lab-sidebar, .theme-lab-list-frame) {
+  min-width: 0;
+  height: 100%;
+}
+
+.theme-lab-browser-column > .theme-lab-list-frame {
+  border-left: 1px solid #a8a8a8;
+  box-shadow: inset 1px 0 0 #ffffff;
+}
+
+.theme-lab-browser-column-scrollbar {
+  position: relative;
+  width: var(--theme-lab-browser-column-scrollbar-width, 0);
+  display: var(--theme-lab-browser-column-scrollbar-display, none);
+  border-left: var(--theme-lab-browser-column-scrollbar-border, 0);
+  background: var(--theme-lab-browser-column-scrollbar-bg, var(--scrollbar-track));
+  box-shadow: var(--theme-lab-browser-column-scrollbar-shadow, none);
+}
+
+.theme-lab-browser-column-thumb {
+  position: absolute;
+  top: var(--theme-lab-browser-column-thumb-top, 3px);
+  right: 1px;
+  left: 1px;
+  height: var(--theme-lab-browser-column-thumb-height, 38px);
+  border: var(--theme-lab-browser-column-thumb-border, 1px solid var(--scrollbar-thumb));
+  border-radius: var(--theme-lab-browser-column-thumb-radius, 999px);
+  background: var(--theme-lab-browser-column-thumb-bg, var(--scrollbar-thumb));
+  box-shadow: var(--theme-lab-browser-column-thumb-shadow, none);
+}
+
+.theme-lab-browser-column-scrollbar > i {
+  position: absolute;
+  right: 0;
+  width: 100%;
+  height: var(--theme-lab-browser-column-scrollbar-width, 0);
+  display: block;
+  border-top: var(--theme-lab-browser-column-scrollbar-button-border, 0);
+  background: var(--theme-lab-browser-column-scrollbar-button-bg, var(--scrollbar-button));
+}
+
+.theme-lab-browser-column-scrollbar > i.is-decrement {
+  bottom: var(--theme-lab-browser-column-scrollbar-width, 0);
+}
+
+.theme-lab-browser-column-scrollbar > i.is-increment {
+  bottom: 0;
+}
+
+.theme-lab-browser-column-scrollbar > i::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  border-right: 4px solid transparent;
+  border-left: 4px solid transparent;
+  transform: translate(-50%, -50%);
+}
+
+.theme-lab-browser-column-scrollbar > i.is-decrement::after {
+  border-bottom: 5px solid var(--theme-lab-browser-column-scrollbar-arrow-color, #202020);
+}
+
+.theme-lab-browser-column-scrollbar > i.is-increment::after {
+  border-top: 5px solid var(--theme-lab-browser-column-scrollbar-arrow-color, #202020);
+}
+
+.theme-lab-browser-disclosure {
+  width: 0;
+  height: 0;
+  display: var(--theme-lab-browser-disclosure-display, none);
+  flex: 0 0 auto;
+  margin-left: auto;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 5px solid var(--theme-lab-browser-disclosure-color, #777777);
+}
+
+.theme-lab-browser-horizontal-scrollbar {
+  position: relative;
+  grid-column: 1 / -1;
+  display: var(--theme-lab-browser-horizontal-scrollbar-display, none);
+  border-top: var(--theme-lab-browser-scrollbar-border, 1px solid #8e8e8e);
+  background: var(--theme-lab-browser-scrollbar-bg, var(--scrollbar-track));
+  box-shadow: var(--theme-lab-browser-scrollbar-shadow, none);
+}
+
+.theme-lab-browser-horizontal-scrollbar::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 2px;
+  width: 54%;
+  bottom: 2px;
+  border: var(--theme-lab-browser-scrollbar-thumb-border, 1px solid #617d91);
+  border-radius: 999px;
+  background: var(--theme-lab-browser-scrollbar-thumb-bg, var(--scrollbar-thumb));
+  box-shadow: var(--theme-lab-browser-scrollbar-thumb-shadow, none);
+}
+
+.theme-lab-browser-horizontal-scrollbar::after {
+  content: "◀  ▶";
+  position: absolute;
+  right: 3px;
+  top: 0;
+  color: #202020;
+  font-size: 8px;
+  line-height: 14px;
+  letter-spacing: 1px;
+}
+
+.theme-lab-sidebar,
+.theme-lab-list {
+  display: grid;
+  align-content: start;
+  background: var(--sidebar-bg);
+}
+
+.theme-lab-sidebar {
+  padding: var(--theme-lab-sidebar-padding, 7px);
+  border: var(--theme-lab-sidebar-border, 0);
+  border-right: var(--theme-lab-sidebar-border-right, 1px solid var(--separator));
+  background: var(--theme-lab-sidebar-bg, var(--sidebar-bg));
+  box-shadow: var(--theme-lab-sidebar-shadow, none);
+  backdrop-filter: var(--sidebar-backdrop-filter, var(--surface-backdrop-filter));
+  -webkit-backdrop-filter: var(--sidebar-backdrop-filter, var(--surface-backdrop-filter));
+}
+
+.theme-lab-toolbar {
+  backdrop-filter: var(--titlebar-toolbar-backdrop-filter, none);
+  -webkit-backdrop-filter: var(--titlebar-toolbar-backdrop-filter, none);
+}
+
+.theme-lab-sidebar button,
+.theme-lab-list button {
+  width: 100%;
+  min-height: var(--theme-lab-list-row-min-height, 30px);
+  display: flex;
+  align-items: center;
+  gap: var(--theme-lab-list-row-gap, 7px);
+  padding: var(--theme-lab-list-row-padding, 4px 7px);
+  border: 0;
+  border-radius: var(--theme-lab-list-row-radius, var(--control-radius));
+  background: var(--theme-lab-list-row-bg, transparent);
+  color: var(--ink);
+  font-family: var(--theme-lab-list-row-font-family, inherit);
+  font-size: var(--theme-lab-list-row-font-size, inherit);
+  line-height: var(--theme-lab-list-row-line-height, normal);
+  text-align: left;
+}
+
+.theme-lab-sidebar button.is-selected {
+  background: var(--theme-lab-sidebar-selected-bg, var(--sidebar-selection-bg));
+  color: var(--theme-lab-sidebar-selected-fg, var(--sidebar-selection-fg, var(--selection-fg)));
+  outline: var(--theme-lab-sidebar-selected-outline, 0);
+  outline-offset: var(--theme-lab-sidebar-selected-outline-offset, 0);
+}
+
+/* 10.10 source-list section label (Applications capture “Devices”): smaller,
+   quiet grey, title case — not the Snow Leopard uppercase Places header.
+   Shared board furniture (no era selector here — appearance-system keeps
+   Theme Lab to one component stylesheet). Eras that hide the generic browser
+   never paint this node. */
+.theme-lab-sidebar-group {
+  display: block;
+  margin: 10px 0 2px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 14px;
+  color: #6e6e6e;
+}
+
+.theme-lab-sidebar .sys-icon {
+  width: var(--theme-lab-sidebar-icon-size, 20px);
+  height: var(--theme-lab-sidebar-icon-size, 20px);
+  background-color: var(--theme-lab-sidebar-icon-bg, var(--paper));
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+}
+
+.theme-lab-sidebar .sys-icon-svg {
+  opacity: var(--theme-lab-sidebar-system-svg-opacity, 1);
+}
+
+.theme-lab-sidebar [data-system-icon="startupDisk"] {
+  background-image: var(--theme-lab-sidebar-startup-disk-image, none);
+}
+
+.theme-lab-sidebar [data-system-icon="applications"] {
+  background-image: var(--theme-lab-sidebar-applications-image, none);
+}
+
+.theme-lab-sidebar [data-system-icon="document"] {
+  background-image: var(--theme-lab-sidebar-document-image, none);
+}
+
+.theme-lab-sidebar [data-system-icon="trash"] {
+  background-image: var(--theme-lab-sidebar-trash-image, none);
+}
+
+.theme-lab-list {
+  background: var(--theme-lab-list-bg, var(--surface-primary));
+}
+
+.theme-lab-list-frame {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--theme-lab-list-scrollbar-width, 0);
+  border: var(--theme-lab-list-frame-border, 0);
+  background: var(--theme-lab-list-bg, var(--surface-primary));
+  box-shadow: var(--theme-lab-list-frame-shadow, none);
+  overflow: hidden;
+}
+
+.theme-lab-list-frame:is(:focus-visible, .is-focused) {
+  outline: var(--theme-lab-list-focus-outline, 0);
+  outline-offset: var(--theme-lab-list-focus-outline-offset, 0);
+}
+
+.theme-lab-list-icon {
+  width: var(--theme-lab-list-icon-size, 16px);
+  height: var(--theme-lab-list-icon-size, 16px);
+  display: var(--theme-lab-list-icon-display, none);
+  flex: 0 0 auto;
+  background: var(--theme-lab-list-icon-image, none) center / contain no-repeat;
+  image-rendering: pixelated;
+}
+
+.theme-lab-list-icon.is-document {
+  background-image: var(--theme-lab-list-document-image, var(--theme-lab-list-icon-image, none));
+}
+
+.theme-lab-list button {
+  border-bottom: var(--theme-lab-list-row-border-bottom, 1px solid var(--separator));
+  border-radius: 0;
+}
+
+.theme-lab-list button.is-selected {
+  background: var(--theme-lab-list-selected-bg, var(--system-selection-bg, var(--selection-bg)));
+  color: var(--theme-lab-list-selected-fg, var(--system-selection-fg, var(--selection-fg)));
+}
+
+.theme-lab-layer-grid {
+  display: grid;
+  grid-template-columns: var(--theme-lab-layer-columns, repeat(2, minmax(0, 1fr)));
+  gap: var(--theme-lab-layer-gap, 9px);
+}
+
+/* Fixed-content historical fixtures stay in the normal Theme Lab DOM. Their
+   geometry is measured at 1x from the cited Mac OS 9 captures; copyrighted
+   source pixels are never embedded. Other eras keep the generic specimens. */
+.theme-lab-generic-browser.theme-lab-generic-fixture {
+  display: var(--theme-lab-generic-fixture-display, var(--theme-lab-generic-browser-display, grid));
+}
+
+.theme-lab-platinum-fixture {
+  display: var(--theme-lab-platinum-fixture-display, none);
+}
+
+.theme-lab-open-list-capture {
+  width: 218px;
+  height: 128px;
+  box-sizing: border-box;
+  grid-template-columns: 201px 15px;
+  border: 1px solid #000000;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.theme-lab-open-list-items {
+  min-width: 0;
+  background: #ffffff;
+}
+
+.theme-lab-open-list-items button {
+  width: 100%;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0 2px;
+  border: 0;
+  border-radius: 0;
+  background: #ffffff;
+  color: #000000;
+  font-family: var(--theme-ui-font);
+  font-size: 12px;
+  font-weight: 700;
+  font-variation-settings: "wdth" 113;
+  line-height: 18px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.theme-lab-open-list-items button.is-selected {
+  background: #ccccff;
+}
+
+.theme-lab-open-list-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  background: url("./assets/themes/platinum/finder-app-16.svg") center / 16px 16px no-repeat;
+  image-rendering: pixelated;
+}
+
+.theme-lab-open-list-icon.is-dvd-player {
+  background-image: url("./assets/themes/platinum/open-list/apple-dvd-player.svg"), url("./assets/themes/platinum/finder-app-16.svg");
+}
+
+.theme-lab-open-list-icon.is-video-player {
+  background-image: url("./assets/themes/platinum/open-list/apple-video-player.svg"), url("./assets/themes/platinum/finder-app-16.svg");
+}
+
+.theme-lab-open-list-icon.is-audio-player {
+  background-image: url("./assets/themes/platinum/open-list/applecd-audio-player.svg"), url("./assets/themes/platinum/finder-app-16.svg");
+}
+
+.theme-lab-open-list-icon.is-quicktime {
+  background-image: url("./assets/themes/platinum/open-list/quicktime.svg"), url("./assets/themes/platinum/finder-app-16.svg");
+}
+
+.theme-lab-open-list-icon.is-security {
+  background-image: url("./assets/themes/platinum/open-list/security.svg"), url("./assets/themes/platinum/finder-app-16.svg");
+}
+
+.theme-lab-open-scrollbar {
+  min-width: 0;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: 97px 15px 14px;
+  border-left: 1px solid #000000;
+  background: #eeeeee;
+}
+
+.theme-lab-open-scroll-track {
+  background: #eeeeee;
+}
+
+.theme-lab-open-scroll-button {
+  position: relative;
+  background: #dddddd;
+  box-shadow: inset 1px 1px #ffffff, inset -1px -1px #aaaaaa;
+}
+
+.theme-lab-open-scroll-button::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #888888;
+}
+
+.theme-lab-open-scroll-button.is-decrement {
+  border-top: 1px solid #555555;
+}
+
+.theme-lab-open-scroll-button.is-decrement::before {
+  -webkit-mask: url("./assets/vendor/classic-stylesheets/macos9/arrow-up.svg") center / 8px 4px no-repeat;
+  mask: url("./assets/vendor/classic-stylesheets/macos9/arrow-up.svg") center / 8px 4px no-repeat;
+}
+
+.theme-lab-open-scroll-button.is-increment {
+  border-top: 1px solid #888888;
+}
+
+.theme-lab-open-scroll-button.is-increment::before {
+  -webkit-mask: url("./assets/vendor/classic-stylesheets/macos9/arrow-down.svg") center / 8px 4px no-repeat;
+  mask: url("./assets/vendor/classic-stylesheets/macos9/arrow-down.svg") center / 8px 4px no-repeat;
+}
+
+.theme-lab-menu-capture {
+  width: 199px;
+  height: 259px;
+  grid-column: var(--theme-lab-menu-grid-column, auto);
+  grid-row: var(--theme-lab-menu-grid-row, auto);
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.theme-lab-menu--platinum {
+  width: 198px;
+  height: 258px;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: 17px 2px 20px repeat(11, 18px) 17px;
+  padding: 1px 0;
+  border: 1px solid #000000;
+  overflow: hidden;
+  background: #dddddd;
+  box-shadow: inset 1px 1px #ffffff, inset -1px -1px #999999, 1px 1px #222222;
+}
+
+.theme-lab-menu--platinum button {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  display: block;
+  padding: 0 13px 0 40px;
+  border: 0;
+  border-radius: 0;
+  background: #dddddd;
+  color: #000000;
+  font-family: var(--theme-ui-font);
+  font-size: 12px;
+  font-weight: 700;
+  font-variation-settings: "wdth" 113;
+  line-height: 16px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.theme-lab-menu--platinum button.is-about {
+  padding-left: 21px;
+}
+
+.theme-lab-menu--platinum hr {
+  width: 100%;
+  height: 2px;
+  margin: 0;
+  border: 0;
+  background: linear-gradient(to bottom, #888888 0 1px, #ffffff 1px 2px);
+}
+
+.theme-lab-platinum-menu-icon {
+  position: absolute;
+  left: 19px;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  background-position: center;
+  background-size: 16px 16px;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  transform: translateY(-50%);
+}
+
+.theme-lab-platinum-menu-icon.is-system-profiler { background-image: url("./assets/themes/platinum/menu/system-profiler.svg"); }
+.theme-lab-platinum-menu-icon.is-calculator { background-image: url("./assets/themes/platinum/menu/calculator.svg"); }
+.theme-lab-platinum-menu-icon.is-chooser { background-image: url("./assets/themes/platinum/menu/chooser.svg"); }
+.theme-lab-platinum-menu-icon.is-control-panels { background-image: url("./assets/themes/platinum/menu/control-panels.svg"); }
+.theme-lab-platinum-menu-icon.is-favorites { background-image: url("./assets/themes/platinum/menu/favorites.svg"); }
+.theme-lab-platinum-menu-icon.is-key-caps { background-image: url("./assets/themes/platinum/menu/key-caps.svg"); }
+.theme-lab-platinum-menu-icon.is-network-browser { background-image: url("./assets/themes/platinum/menu/network-browser.svg"); }
+.theme-lab-platinum-menu-icon.is-recent-applications { background-image: url("./assets/themes/platinum/menu/recent-applications.svg"); }
+.theme-lab-platinum-menu-icon.is-recent-documents { background-image: url("./assets/themes/platinum/menu/recent-documents.svg"); }
+.theme-lab-platinum-menu-icon.is-remote-access { background-image: url("./assets/themes/platinum/menu/remote-access.svg"); }
+.theme-lab-platinum-menu-icon.is-scrapbook { background-image: url("./assets/themes/platinum/menu/scrapbook.svg"); }
+.theme-lab-platinum-menu-icon.is-sherlock { background-image: url("./assets/themes/platinum/menu/sherlock.svg"); }
+.theme-lab-platinum-menu-icon.is-stickies { background-image: url("./assets/themes/platinum/menu/stickies.svg"); }
+
+.theme-lab-platinum-disclosure {
+  position: absolute;
+  left: 185px;
+  top: 50%;
+  width: 6px;
+  height: 11px;
+  background: #000000;
+  -webkit-mask: url("./assets/vendor/classic-stylesheets/macos9/menu-right.svg") center / 6px 11px no-repeat;
+  mask: url("./assets/vendor/classic-stylesheets/macos9/menu-right.svg") center / 6px 11px no-repeat;
+  transform: translateY(-50%);
+}
+
+/* AUDIT1-72 / v443: About/Calculator is a 273×110 face. Sitting in column 2
+   of the layer grid with max-width:100% it shrank to ~239px and the fidelity
+   crop walked off the right border into white — geometry could not close.
+   Own the full row (same honesty as .theme-lab-dialog-specimen) and keep the
+   native capture width so the black outline lands on the crop edge. */
+.theme-lab-about-capture {
+  width: 273px;
+  min-width: 273px;
+  max-width: 273px;
+  height: 110px;
+  grid-column: 1 / -1;
+  justify-self: start;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.theme-lab-dialog--platinum-about {
+  --theme-button-min-width: 65px;
+  position: relative;
+  width: 272px;
+  height: 109px;
+  box-sizing: border-box;
+  border: 1px solid #000000;
+  background: #dddddd;
+  box-shadow:
+    inset 1px 1px #bbbbbb,
+    inset 2px 2px #ffffff,
+    inset -1px -1px #555555,
+    inset -2px -2px #999999,
+    1px 1px #000000;
+}
+
+.theme-lab-calculator-icon {
+  position: absolute;
+  left: 26px;
+  top: 16px;
+  width: 32px;
+  height: 32px;
+  background: url("./assets/themes/platinum/calculator-32.svg") center / 32px 32px no-repeat;
+  image-rendering: pixelated;
+}
+
+.theme-lab-dialog--platinum-about > strong {
+  position: absolute;
+  left: 69px;
+  top: 23px;
+  font-family: var(--theme-ui-font);
+  font-size: 12px;
+  font-weight: 700;
+  font-variation-settings: "wdth" 113;
+  line-height: 14px;
+}
+
+.theme-lab-dialog--platinum-about > .btn {
+  position: absolute;
+  left: 189px;
+  top: 71px;
+  width: 65px;
+  margin: 0;
+}
+
+/* Dialog specimen stage. The real modal centres itself on the screen; the
+   board shows one in place. Placement only -- frame, material and the action
+   row are the modal's own. */
+.theme-lab-dialog-specimen {
+  display: var(--theme-lab-generic-fixture-display, block);
+  position: static;
+  transform: none;
+  max-height: none;
+  margin: 0;
+  /* The modal is a 600px object. Left in one cell of a two-column layer grid it
+     had 209px to lay out a subject, a body and an action row in, and the lede
+     spilled. It takes the whole row here and keeps a cap, which is the board
+     placing a large object -- the modal's own width rule is untouched. */
+  grid-column: 1 / -1;
+  width: 100%;
+  max-width: var(--theme-lab-dialog-specimen-max-width, 420px);
+}
+
+/* The era's caution icon, shown in the modal's real subject slot. Only
+   Platinum and Aqua draw one; the rest leave the image token unset and the
+   slot holds the label alone. */
+.theme-lab-alert-icon {
+  width: var(--theme-lab-alert-icon-size, 32px);
+  height: var(--theme-lab-alert-icon-size, 32px);
+  display: var(--theme-lab-alert-icon-display, none);
+  background: var(--theme-lab-alert-icon-image, none) center / contain no-repeat;
+  image-rendering: pixelated;
+}
+
+/* Balloon specimen stage. The real balloon is fixed beside the pointer and
+   never takes clicks; the board shows one in place. Relative, not static: the
+   tail is an absolutely placed pseudo-element and has to resolve against the
+   balloon itself. Placement only -- the tail, the material and the copy layout
+   are the balloon's own. */
+.theme-lab-popover-specimen {
+  position: relative;
+  /* The real balloon caps itself against the viewport because it floats; in a
+     grid cell the cell is the limit, so cap against that instead of removing
+     the cap and letting it spill. */
+  max-width: 100%;
+  pointer-events: auto;
+  display: grid;
+  gap: 5px;
+}
+
+/* Menu specimen stage. The real menu hides until its .menu is open and floats
+   from the menu bar; the board shows one in place. Placement only. */
+/* Platinum puts its own Apple-menu and About captures on the board and switches
+   the generic specimens off, which is board furniture: which specimens an era
+   shows. The switch used to live on a .theme-lab-generic-fixture class the
+   replicas carried; it belongs with the stage now that the specimens are real
+   components. */
+.theme-lab-menu-specimen {
+  display: var(--theme-lab-generic-fixture-display, block);
+  position: static;
+  min-width: 0;
+  /* A static specimen never scrolls. The shipping menu reserves a stable
+     scrollbar lane for long/open menus, but that lane would remove 16px from
+     this measured one-row surface and compare the wrong paint width. */
+  scrollbar-gutter: auto;
+  /* The historical row crop contains the selected ink only; its panel frame
+     is outside the 300px source band. Keep the frame on shipping menus, not
+     inside this one-row material sample. */
+  border: 0;
+}
+
+/* Tracking, expressed the way the real menu expresses it. */
+.theme-lab-menu-specimen [data-theme-lab-menu-state="tracking"] {
+  --menu-item-bg: var(--menu-item-active-bg);
+  --menu-item-fg: var(--menu-item-active-fg);
+  --menu-item-shadow: var(--menu-item-active-shadow);
+}
+
+.theme-lab-sheet {
+  min-width: 0;
+  border: var(--theme-lab-layer-border, var(--menu-panel-border));
+  border-radius: var(--theme-lab-layer-radius, var(--menu-panel-radius));
+  background: var(--theme-lab-layer-bg, var(--menu-panel-bg));
+  box-shadow: var(--theme-lab-layer-shadow, var(--menu-panel-shadow));
+  backdrop-filter: var(--menu-panel-backdrop-filter);
+  -webkit-backdrop-filter: var(--menu-panel-backdrop-filter);
+}
+
+.theme-lab-sheet {
+  display: grid;
+  align-content: center;
+  gap: var(--theme-lab-layer-content-gap, 5px);
+  padding: var(--theme-lab-layer-padding, 10px);
+}
+
+.theme-lab-balloon-label {
+  display: var(--theme-lab-balloon-label-display, none);
+}
+
+.theme-lab-popover-generic-label {
+  display: var(--theme-lab-popover-generic-label-display, block);
+}
+
+.theme-lab-help-tag-label {
+  display: var(--theme-lab-help-tag-label-display, none);
+}
+
+.theme-lab-sheet span {
+  color: var(--shade-dark);
+  line-height: 1.3;
+}
+
+.theme-lab-alert-icon {
+  width: var(--theme-lab-alert-icon-size, 32px);
+  height: var(--theme-lab-alert-icon-size, 32px);
+  display: var(--theme-lab-alert-icon-display, none);
+  grid-row: span 2;
+  background: var(--theme-lab-alert-icon-image, none) center / contain no-repeat;
+  image-rendering: pixelated;
+}
+
+.theme-lab-sheet-specimen {
+  display: var(--theme-lab-sheet-specimen-display, contents);
+  position: var(--theme-lab-sheet-specimen-position, static);
+  grid-column: var(--theme-lab-sheet-specimen-grid-column, auto);
+  min-height: var(--theme-lab-sheet-specimen-min-height, 0);
+  border: var(--theme-lab-sheet-owner-window-border, 0);
+  border-radius: var(--theme-lab-sheet-owner-window-radius, 0);
+  background: var(--theme-lab-sheet-owner-window-bg, transparent);
+  box-shadow: var(--theme-lab-sheet-owner-window-shadow, none);
+  overflow: var(--theme-lab-sheet-owner-window-overflow, visible);
+  isolation: isolate;
+}
+
+.theme-lab-sheet-owner-body {
+  display: var(--theme-lab-sheet-owner-display, none);
+}
+
+.theme-lab-sheet-owner-body {
+  min-height: var(--theme-lab-sheet-owner-body-height, 0);
+  background: var(--theme-lab-sheet-owner-body-bg, transparent);
+}
+
+.theme-lab-sheet {
+  display: var(--theme-lab-sheet-display, grid);
+  position: var(--theme-lab-sheet-position, static);
+  top: var(--theme-lab-sheet-top, auto);
+  right: var(--theme-lab-sheet-right, auto);
+  bottom: var(--theme-lab-sheet-bottom, auto);
+  left: var(--theme-lab-sheet-left, auto);
+  grid-template-columns: var(--theme-lab-sheet-columns, minmax(0, 1fr));
+  align-items: start;
+  gap: var(--theme-lab-sheet-gap, var(--theme-lab-layer-content-gap, 5px));
+  margin-top: var(--theme-lab-sheet-margin-top, 0);
+  padding: var(--theme-lab-sheet-padding, var(--theme-lab-layer-padding, 10px));
+  border: var(--theme-lab-sheet-border, var(--theme-lab-layer-border, var(--menu-panel-border)));
+  border-top-width: var(--theme-lab-sheet-border-top-width, 3px);
+  border-radius: var(--theme-lab-sheet-radius, 0 0 var(--menu-panel-radius) var(--menu-panel-radius));
+  background: var(--theme-lab-sheet-bg, var(--theme-lab-layer-bg, var(--menu-panel-bg)));
+  box-shadow: var(--theme-lab-sheet-shadow, var(--theme-lab-layer-shadow, var(--menu-panel-shadow)));
+}
+
+.theme-lab-sheet-icon {
+  width: var(--theme-lab-sheet-icon-size, 32px);
+  height: var(--theme-lab-sheet-icon-size, 32px);
+  display: var(--theme-lab-sheet-icon-display, none);
+  grid-row: span 2;
+  background: var(--theme-lab-sheet-icon-image, none) center / contain no-repeat;
+}
+
+.theme-lab-sheet-copy {
+  display: grid;
+  gap: var(--theme-lab-sheet-copy-gap, 3px);
+}
+
+.theme-lab-sheet-generic-copy {
+  display: var(--theme-lab-sheet-generic-copy-display, block);
+}
+
+.theme-lab-sheet-generic-action {
+  display: var(--theme-lab-sheet-generic-action-display, inline-flex);
+}
+
+.theme-lab-sheet-aqua-copy {
+  display: var(--theme-lab-sheet-aqua-copy-display, none);
+}
+
+.theme-lab-sheet-aqua-action {
+  display: var(--theme-lab-sheet-aqua-action-display, none);
+}
+
+.theme-lab-sheet-actions {
+  display: var(--theme-lab-sheet-actions-display, none);
+  justify-content: flex-end;
+  gap: var(--theme-lab-sheet-action-gap, 6px);
+  grid-column: var(--theme-lab-sheet-actions-column, auto);
+  margin-top: var(--theme-lab-sheet-actions-margin-top, 0);
+}
+
+.theme-lab-sheet-actions .btn {
+  min-width: var(--theme-lab-sheet-button-min-width, 58px);
+}
+
+.theme-lab-sheet::before {
+  content: var(--theme-lab-sheet-owner-content, none);
+  position: absolute;
+  left: var(--theme-lab-sheet-owner-left, -1px);
+  right: var(--theme-lab-sheet-owner-right, -1px);
+  bottom: 100%;
+  height: var(--theme-lab-sheet-owner-height, 0);
+  border: var(--theme-lab-sheet-owner-border, 0);
+  border-radius: var(--theme-lab-sheet-owner-radius, 0);
+  background: var(--theme-lab-sheet-owner-bg, transparent);
+  box-shadow: var(--theme-lab-sheet-owner-shadow, none);
+}
+
+/* The progress specimen is the real .progress-meter part (see
+   20-reader-docmap.css / 00-foundation.css --progress-* tokens) -- this row
+   is only the Lab's own layout furniture around it, still posed at a fixed
+   fill so a still specimen reads as one. */
+.theme-lab-progress-row {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  gap: var(--theme-lab-progress-row-gap, 8px);
+  margin-top: var(--theme-lab-progress-row-margin-top, 11px);
+}
+
+.theme-lab-progress-row .progress-meter span {
+  width: 62%;
+}/* The scroll specimen is a framed document window: the product's own frame
+   installer fits its arrows,
+track and thumb,
+and real scroll position drives
+   them. All the board sets is how tall the window is,
+so the content overflows
+   and the bars have something to report. */
+/* Inactive state for the two fixtures that have one. Nothing on screen adds
+   this class: the fidelity harness applies it to capture an inactive-state
+   specimen (tests/visual/theme-lab-fidelity),
+so the base is where the state
+   has to be declared for an era to have something to override. The dimming
+   itself belongs to the era. */
+.theme-lab-generic-browser.is-inactive .theme-lab-sidebar {
+  color: var(--shade-dark);
+}
+
+/* A priority object's tile is a way in, not a label. Button reset only -- the
+   tile's material is the inventory's, and the selected one reads through the
+   card that opens below it. */
+.theme-lab-icon-tile.is-selectable {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: inherit;
+}
+
+/* The chosen tile, in the era's own selection ink -- the same treatment a
+   selected Finder item gets, so the board reads as the desktop does. */
+.theme-lab-icon-tile.is-selectable.is-inspected {
+  background: var(--selection-bg);
+  color: var(--selection-fg);
+}
+
+.theme-lab-icon-tile.is-selectable:focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: var(--control-focus-offset);
+}
+
+/* The coverage worklist. One line of arithmetic, then the unanswered tokens
+   grouped by family — closed by default, because the number is the point and
+   the list is what you open when you sit down to answer it. */
+.theme-lab-token-coverage {
+  margin: 4px 0 8px;
+  display: grid;
+  gap: 3px;
+}
+
+.theme-lab-coverage-line {
+  margin: 0;
+  font-size: var(--system-caption-size, 10px);
+  line-height: 1.5;
+}
+
+.theme-lab-coverage-line.is-complete {
+  font-weight: var(--system-strong-weight);
+}
+
+.theme-lab-coverage-group > summary {
+  cursor: pointer;
+  font-size: var(--system-caption-size, 10px);
+  line-height: 1.5;
+}
+
+.theme-lab-coverage-group ul {
+  margin: 2px 0 4px;
+  padding-left: 18px;
+  display: grid;
+  gap: 1px;
+}
+
+.theme-lab-coverage-group li {
+  font-size: var(--system-caption-size, 10px);
+  line-height: 1.4;
+}
+
+.theme-lab-coverage-group small {
+  margin-left: 6px;
+  color: var(--shade-dark);
+}
+
+/* The note above a historical reproduction. Board furniture: it names what the
+   fixture is so it is not read as a specimen of a product component. */
+.theme-lab-fixture-note {
+  margin: 6px 0 3px;
+  color: var(--shade-dark);
+  font-size: var(--system-caption-size, 10px);
+  line-height: 1.4;
+}
+
+.theme-lab-fixture-note code {
+  font-size: inherit;
+}
+
+.theme-lab-scroll-specimen {
+  margin-top: 9px;
+}
+
+.theme-lab-scroll-specimen > .window {
+  position: relative;
+  /* Tall enough for a track between the arrows in every era. At 76px the
+     corner NeXTSTEP keeps for its horizontal scroller left the track 9px, and
+     its arrows looked parked at the top of the bar. */
+  height: 112px;
+}
+
+.theme-lab-scroll-specimen > .window > .window-pane {
+  /* An era whose vertical scroller sits on the LEFT (NeXTSTEP) answers
+     --window-frame-lane-start, so the list text starts clear of it (C9). */
+  padding: 5px 8px 5px calc(8px + var(--window-frame-lane-start, 0px));
+  overflow: hidden;
+}
+
+.theme-lab-scroll-specimen p {
+  margin: 0 0 5px;
+}
+
+/* The window chrome specimen is a pair of real windows, so the era paints it
+   through .window and .title-bar with no help from here. Fifty-six
+   --theme-lab-mini-* tokens and a hand-drawn three-lamp title bar used to
+   stand in this place, re-deriving that material era by era and inventing a
+   Minimize control the product does not have. All the Lab still owns is where
+   the two specimens sit and how wide they are. */
+.theme-lab-window-specimens {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 9px;
+}
+
+/* A managed window is placed by the window manager; a specimen is placed by
+   the board it sits on. Position and size only -- material stays with the era.
+   Relative, not static: a real window is a positioned box, and the frame bars
+   and any absolutely placed chrome resolve against it. */
+.theme-lab-window-specimens > .window {
+  position: relative;
+  min-height: 48px;
+}
+
+.theme-lab-window-specimens > .window > .window-pane {
+  min-height: 26px;
+}
+
+.theme-lab-finder {
+  grid-column: var(--theme-lab-finder-grid-column, auto);
+}
+
+.theme-lab-finder-window {
+  /* The fixture is a real window now, and a real window is absolutely placed by
+     the manager. Nothing places this one but the board, and an absolutely
+     positioned block shrink-wraps to its content -- the whole capture collapsed
+     to two pixels wide. Placement only; the material stays with the era. */
+  position: var(--theme-lab-finder-window-position, relative);
+  width: var(--theme-lab-finder-window-width, auto);
+  max-width: 100%;
+  display: var(--theme-lab-finder-window-display, contents);
+  border: var(--theme-lab-finder-window-border, 0);
+  border-radius: var(--theme-lab-finder-window-radius, 0);
+  background: var(--theme-lab-finder-window-bg, transparent);
+  box-shadow: var(--theme-lab-finder-window-shadow, none);
+  overflow: var(--theme-lab-finder-window-overflow, visible);
+}
+
+.theme-lab-finder-status-strip {
+  height: var(--theme-lab-finder-status-height, 0);
+  display: var(--theme-lab-finder-status-display, none);
+  align-items: center;
+  justify-content: center;
+  border-top: var(--theme-lab-finder-status-border-top, 0);
+  border-bottom: var(--theme-lab-finder-status-border-bottom, 0);
+  background: var(--theme-lab-finder-status-bg, transparent);
+  box-shadow: var(--theme-lab-finder-status-shadow, none);
+  font-family: var(--theme-ui-font, inherit);
+  font-size: var(--system-caption-size, inherit);
+}
+
+.theme-lab-toolbar {
+  min-height: var(--theme-lab-toolbar-min-height, 36px);
+  display: flex;
+  align-items: center;
+  gap: var(--theme-lab-toolbar-gap, 8px);
+  padding: var(--theme-lab-toolbar-padding, 5px 7px);
+  border: var(--theme-lab-toolbar-border, var(--toolbar-border));
+  border-inline: var(--theme-lab-toolbar-border-inline, var(--theme-lab-toolbar-border, var(--toolbar-border)));
+  border-radius: var(--theme-lab-toolbar-radius, var(--control-radius) var(--control-radius) 0 0);
+  background: var(--theme-lab-toolbar-bg, var(--toolbar-bg));
+  box-shadow: var(--theme-lab-toolbar-shadow, none);
+}
+
+.theme-lab-toolbar .btn {
+  min-width: 58px;
+  display: var(--theme-lab-toolbar-button-display, inline-flex);
+}
+
+.theme-lab-toolbar-location {
+  display: var(--theme-lab-toolbar-location-display, inline);
+}
+
+.theme-lab-toolbar-status {
+  display: var(--theme-lab-toolbar-status-display, none);
+  flex: 1;
+  font-weight: var(--theme-lab-toolbar-status-weight, 400);
+  text-align: center;
+}
+
+.theme-lab-toolbar-icon-strip {
+  display: var(--theme-lab-toolbar-icon-strip-display, none);
+  align-items: end;
+  gap: var(--theme-lab-toolbar-icon-gap, 5px);
+}
+
+.theme-lab-toolbar-icon-button,
+.theme-lab-toolbar-view-control {
+  min-width: 42px;
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+}
+
+.theme-lab-toolbar-icon-button small,
+.theme-lab-toolbar-view-control small,
+.theme-lab-toolbar-search small {
+  font-family: var(--theme-ui-font, inherit);
+  font-size: 10px;
+  line-height: 11px;
+}
+
+.theme-lab-toolbar-round-icon {
+  width: 22px;
+  height: 22px;
+  display: block;
+  border: 1px solid #737373;
+  border-radius: 50%;
+  background: var(--btn-bg) center / 12px 12px no-repeat;
+  box-shadow: var(--btn-shadow);
+}
+
+.theme-lab-toolbar-round-icon.is-back {
+  background: var(--theme-lab-toolbar-back-image, none) center / var(--theme-lab-toolbar-navigation-image-size, 12px) var(--theme-lab-toolbar-navigation-image-size, 12px) no-repeat, var(--btn-bg);
+}
+
+.theme-lab-toolbar-round-icon.is-forward {
+  background: var(--theme-lab-toolbar-forward-image, none) center / var(--theme-lab-toolbar-navigation-image-size, 12px) var(--theme-lab-toolbar-navigation-image-size, 12px) no-repeat, var(--btn-bg);
+}
+
+.theme-lab-toolbar-role-icon {
+  width: 28px;
+  height: 28px;
+  display: block;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 28px 28px;
+}
+
+.theme-lab-toolbar-role-icon.is-computer {
+  background-image: var(--theme-lab-toolbar-computer-image, none);
+}
+
+.theme-lab-toolbar-role-icon.is-home {
+  background-image: var(--theme-lab-toolbar-home-image, none);
+}
+
+.theme-lab-toolbar-role-icon.is-favorites {
+  background-image: var(--theme-lab-toolbar-favorites-image, none);
+}
+
+.theme-lab-toolbar-role-icon.is-applications {
+  background-image: var(--theme-lab-toolbar-applications-image, none);
+}
+
+.theme-lab-toolbar-era-separator {
+  width: 1px;
+  height: 36px;
+  align-self: center;
+  display: var(--theme-lab-toolbar-era-separator-display, none);
+  margin: 0 2px;
+  background: var(--theme-lab-toolbar-era-separator-bg, var(--separator));
+  box-shadow: var(--theme-lab-toolbar-era-separator-shadow, none);
+}
+
+.theme-lab-toolbar-view-buttons {
+  height: 22px;
+  display: grid;
+  grid-template-columns: repeat(3, 22px);
+  overflow: hidden;
+  border: 1px solid #737373;
+  border-radius: 4px;
+  background: var(--btn-bg);
+  box-shadow: var(--btn-shadow);
+}
+
+.theme-lab-toolbar-view-buttons > i {
+  width: 22px;
+  height: 20px;
+  display: block;
+  border-right: 1px solid #8d8d8d;
+  background-color: transparent;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* The plain .theme-lab-view-icon variants paint their glyph with a background
+   shorthand, so a bare background-image here inherits their 4px tile size and
+   corner placement. Repeat the shorthand so the toolbar segment gets the whole
+   12px artwork, centred. */
+.theme-lab-toolbar-view-buttons > i.is-icon {
+  background: var(--theme-lab-toolbar-view-icon-image, none) center / 12px 12px no-repeat;
+}
+
+.theme-lab-toolbar-view-buttons > i.is-list {
+  background: var(--theme-lab-toolbar-view-list-image, none) center / 12px 12px no-repeat;
+}
+
+.theme-lab-toolbar-view-buttons > i.is-columns {
+  background: var(--theme-lab-toolbar-view-columns-image, none) center / 12px 12px no-repeat;
+}
+
+.theme-lab-toolbar-view-buttons > i:first-child {
+  background-color: #8fc8f2;
+}
+
+.theme-lab-toolbar-view-buttons > i:last-child {
+  border-right: 0;
+}
+
+/* The search item can be a plain pill or, on toolbars that label every item,
+   a stacked pill-over-caption cell. Both come from the same markup. */
+.theme-lab-toolbar-search {
+  display: var(--theme-lab-toolbar-search-display, none);
+  justify-items: center;
+  gap: 1px;
+  margin-left: auto;
+}
+
+.theme-lab-toolbar-search small {
+  display: var(--theme-lab-toolbar-search-label-display, none);
+}
+
+/* Toolbars that carry the caption under the pill leave the field itself
+   empty, so the placeholder word is not printed twice. */
+.theme-lab-toolbar-search input::placeholder {
+  color: var(--theme-lab-toolbar-search-placeholder-color, inherit);
+}
+
+.theme-lab-toolbar-search input {
+  width: var(--theme-lab-toolbar-search-width, 120px);
+  min-height: var(--search-field-min-height, 22px);
+  padding: var(--search-field-padding, 2px 9px);
+  border: var(--field-border);
+  border-radius: var(--search-field-radius, 999px);
+  background: var(--search-field-background, #ffffff);
+  box-shadow: var(--field-shadow);
+  font: inherit;
+}
+
+.theme-lab-separator {
+  display: var(--theme-lab-separator-display, block);
+  align-self: stretch;
+  width: var(--theme-lab-separator-width, 1px);
+  background: var(--theme-lab-separator-bg, var(--separator));
+}
+
+.theme-lab-finder-surface {
+  min-height: var(--theme-lab-finder-min-height, 130px);
+  display: grid;
+  grid-template-columns: var(--theme-lab-finder-columns, 86px 86px minmax(0, 1fr));
+  gap: var(--theme-lab-finder-gap, 10px);
+  align-items: start;
+  padding: var(--theme-lab-finder-padding, 10px);
+  border: var(--theme-lab-finder-border, var(--system-border));
+  border-top: var(--theme-lab-finder-border-top, 0);
+  background: var(--theme-lab-finder-bg, var(--surface-inset));
+  box-shadow: var(--theme-lab-finder-shadow, none);
+}
+
+.theme-lab-finder-surface .finder-item {
+  width: var(--theme-lab-finder-item-width, 80px);
+  gap: var(--theme-lab-finder-item-gap, 4px);
+  font-family: var(--theme-lab-finder-item-font-family, inherit);
+  font-size: var(--theme-lab-finder-item-font-size, inherit);
+}
+
+.theme-lab-finder-surface .finder-item.theme-lab-finder-era-extra {
+  display: var(--theme-lab-finder-era-extra-display, none);
+}
+
+.theme-lab-finder-surface .finder-item .sys-icon {
+  width: var(--theme-lab-finder-item-icon-size, 42px);
+  height: var(--theme-lab-finder-item-icon-size, 42px);
+}
+
+.theme-lab-finder-surface .sys-icon {
+  background-color: var(--theme-lab-finder-icon-bg, var(--paper));
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+}
+
+.theme-lab-finder-surface .sys-icon-svg {
+  opacity: var(--theme-lab-finder-system-svg-opacity, 1);
+}
+
+.theme-lab-finder-surface [data-system-icon="startupDisk"] {
+  background-image: var(--theme-lab-finder-startup-disk-image, none);
+}
+
+.theme-lab-finder-surface [data-system-icon="folder"] {
+  background-image: var(--theme-lab-finder-folder-image, none);
+}
+
+.theme-lab-finder-surface [data-system-icon="finderApp"] {
+  background-image: var(--theme-lab-finder-app-image, none);
+}
+
+.theme-lab-finder-surface [data-system-icon="document"] {
+  background-image: var(--theme-lab-finder-document-image, none);
+}
+
+.theme-lab-finder-surface .finder-item.is-selected span:last-of-type {
+  background: var(--theme-lab-finder-icon-selected-bg, var(--selection-bg));
+  color: var(--theme-lab-finder-icon-selected-fg, var(--selection-fg));
+}
+
+.theme-lab-finder-surface .finder-item:not(.is-selected) span:last-of-type {
+  background: var(--theme-lab-finder-label-bg, var(--paper));
+}
+
+.theme-lab-finder-surface .finder-item span:last-of-type {
+  margin-top: var(--theme-lab-finder-label-margin-top, 0);
+  padding: var(--theme-lab-finder-label-padding, 1px 3px);
+  font-weight: var(--theme-lab-finder-label-font-weight, inherit);
+}
+
+.theme-lab-finder-rows {
+  display: var(--theme-lab-finder-rows-display, grid);
+  border: var(--theme-lab-finder-rows-border, var(--system-border));
+  background: var(--theme-lab-finder-rows-bg, var(--surface-primary));
+  box-shadow: var(--theme-lab-finder-rows-shadow, none);
+}
+
+.theme-lab-finder-rows > div {
+  min-height: var(--theme-lab-finder-row-min-height, 31px);
+  display: grid;
+  grid-template-columns: var(--theme-lab-finder-row-columns, 24px minmax(0, 1fr) auto);
+  align-items: center;
+  gap: var(--theme-lab-finder-row-gap, 6px);
+  padding: var(--theme-lab-finder-row-padding, 3px 6px);
+  border-bottom: var(--theme-lab-finder-row-border-bottom, 1px solid var(--separator));
+}
+
+.theme-lab-finder-rows > div:last-child {
+  border-bottom: 0;
+}
+
+.theme-lab-finder-rows > div.is-selected {
+  background: var(--theme-lab-list-selected-bg, var(--selection-bg));
+  color: var(--theme-lab-list-selected-fg, var(--selection-fg));
+}
+
+.theme-lab-finder-rows .sys-icon {
+  width: var(--theme-lab-finder-row-icon-size, 22px);
+  height: var(--theme-lab-finder-row-icon-size, 22px);
+}
+
+.theme-lab-finder-rows small {
+  color: inherit;
+}
+
+@container (max-width: 760px) {
+  .theme-lab-pane {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .theme-lab-current-era {
+    display: none;
+  }
+
+  /* The Finder capture reproduces a window of a fixed historical width, and its
+     Jaguar toolbar does not fold. Narrow, it ran past the edge of a page that
+     must never scroll sideways, so the fixture carries its own lane and the
+     capture stays reachable by scrolling the fixture instead of the desktop. */
+  .theme-lab-finder-window {
+    overflow-x: auto;
+  }
+
+  /* The sheet fixture is pinned to the owner-window height measured in the
+     10.2 capture. Narrow, the sheet's own copy wraps to one line more than the
+     capture had and the action row was clipped away. The capture's height is a
+     desktop fact, so let the fixture grow where it cannot hold. */
+  .theme-lab-sheet-specimen {
+    min-height: 0;
+    overflow: visible;
+  }
+}
+
+@container (max-width: 480px) {
+  .theme-lab-form-grid,
+  .theme-lab-choice-matrix,
+  .theme-lab-layer-grid,
+  .theme-lab-window-specimens {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .theme-lab-split-view {
+    grid-template-columns: 112px minmax(0, 1fr);
+  }
+
+  .theme-lab-finder-surface {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .theme-lab-finder-rows {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Touch. The Lab's own chrome has to clear a finger; its specimens must not.
+   Every rule below names an operating attribute or a lab-furniture class --
+   the elements the window's own click and input delegation actually reads --
+   so no rule can catch a specimen by accident. A checkbox drawn at 13px, the
+   size ladder's mini button, the menu and dialog fixtures, and the Finder
+   cells inside an object card are exhibits: growing one would falsify the
+   measurement the Lab exists to make, and the four-state cells are already
+   `cursor: default` because nothing listens to them.
+
+   Touch, not narrow, is the right test here. An iPad in landscape is
+   1180x820, which no width rule calls a phone, and it is still run with a
+   finger. A Mac never matches -- nothing Apple ships for one reports a coarse
+   primary pointer -- so the desk, and with it every Theme Lab snapshot and
+   fidelity capture, is left exactly as it was. */
+@media (hover: none) and (pointer: coarse) {
+  .theme-lab-era-switch {
+    /* The narrowest gap on the axis. At the smallest supported width the six
+       era marks land 93, 26, 60, 42 and 103 apart, so 26 is the widest a
+       target can be and still belong to one era: anything wider would cover
+       1999 with 2002 and make Platinum unreachable. It clears WCAG 2.2's
+       24px minimum; the 44px rail above is the finger-sized way in. */
+    --theme-lab-era-hit: 26px;
+  }
+
+  /* The rail is the primary era control -- a tap anywhere along it travels to
+     the nearest era. Only the box grows; the 4px track and the 13px thumb
+     keep the metrics the axis comment reasons about, which is the same rule
+     the title-bar controls follow. */
+  .theme-lab-era-range {
+    height: 44px;
+  }
+
+  .theme-lab-era-ticks {
+    height: 44px;
+    /* 18px is the rail on the desk, and the track stays centred in whatever
+       box the input is given, so half of the 26px of growth lands underneath
+       it. Pull that half back and the marks keep exactly the distance from
+       the track they have on a Mac -- the rail and its scale still read as
+       one object rather than two stacked rows. */
+    margin-top: calc((18px - 44px) / 2);
+  }
+
+  /* The mark stays 1x5 at its true year. `align-content: start` holds it and
+     its label at the top of the taller box, so the axis is drawn exactly as
+     it is on the desk and only the invisible target around it changes. */
+  .theme-lab-era-tick {
+    min-width: var(--theme-lab-era-hit);
+    min-height: 44px;
+    align-content: start;
+  }
+
+  /* The section tabs keep their era's own height on touch, as every other
+     tab and title-bar control does. Raising only --tab-min-height grew the
+     unselected tabs to 44px while each era's --tab-active-min-height kept the
+     selected one at 22-25px: labels dropped out of Platinum's trapezoids over
+     grey blocks, and Aqua's selected fill covered half its tab (2026-10-09). */
+
+  .theme-lab-object-inspect {
+    min-height: 44px;
+  }
+
+  /* Each of these carries its section, not just its own name. The shared
+     field rule reaches the search box as `input[type="search"]`, which
+     out-ranks a lone class however late this sheet loads; naming the desk it
+     sits in settles it without borrowing weight it has not earned. */
+  .theme-lab-token-filters .system-select-button,
+  .theme-lab-token-filters .theme-lab-token-search,
+  .theme-lab-token-editor input,
+  .theme-lab-desk-actions .btn {
+    min-height: 44px;
+  }
+}
+
+/* Narrow. The object inspector's appearance rows are grid items, so they kept
+   `min-width: auto` and were sized by the widest zoom figure instead of by
+   their track: 510px of ladder inside a 355px pane, running off the right of
+   a page that must never scroll sideways. The ladder already declares
+   `overflow-x: auto`; it could not use it until the row above agreed to
+   shrink. Same figure as the Finder fixture's own lane a few rules up. */
+@media (max-width: 860px), (hover: none) and (pointer: coarse) and (max-height: 660px) {
+  .theme-lab-object-appearance {
+    min-width: 0;
+  }
+}
+
+/* Snow Leopard era-specific Finder specimens (dev-only Theme Lab fixtures).
+   The blocks stay hidden outside the snow-leopard research appearance so the
+   shared fixture DOM remains the single object grammar for every other era.
+   Geometry comes from the 512 Pixels 10.6 Home capture: a 29px control row
+   below the title bar, paired Back/Forward and four-view controls, an action
+   menu, and a right-aligned NSSearchField; the 135px source list keeps its
+   own 24px blue selected row. */
+.theme-lab-snow-toolbar,
+.theme-lab-snow-source-list {
+  display: none;
+}
+
+.theme-lab-snow-toolbar {
+  position: relative;
+  box-sizing: border-box;
+  height: var(--theme-lab-snow-toolbar-height, 29px);
+  border-bottom: var(--theme-lab-snow-toolbar-border, 1px solid #686868);
+  background: var(--theme-lab-snow-toolbar-bg, var(--theme-lab-toolbar-bg));
+  box-shadow: var(--theme-lab-snow-toolbar-shadow, inset 0 1px 0 #ffffff);
+}
+
+.theme-lab-snow-title {
+  display: none;
+}
+
+.theme-lab-snow-nav {
+  position: absolute;
+  top: var(--theme-lab-snow-controls-top, 1px);
+  left: var(--theme-lab-snow-nav-left, 8px);
+  display: flex;
+}
+
+.theme-lab-snow-droplet {
+  width: var(--theme-lab-snow-droplet-width, 27px);
+  height: var(--theme-lab-snow-droplet-height, 20px);
+  padding: 0;
+  border: 1px solid #767676;
+  background: linear-gradient(#e8e8e8, #bcbcbc);
+  box-shadow: #f1f1f1 0 1px inset, #cccccc 0 1px;
+}
+
+.theme-lab-snow-droplet.is-back {
+  border-radius: 4px 0 0 4px;
+}
+
+.theme-lab-snow-droplet.is-forward {
+  border-radius: 0 4px 4px 0;
+  border-left: 0;
+}
+
+.theme-lab-snow-droplet::after {
+  content: "◀";
+  display: block;
+  font: 10px/18px var(--theme-ui-font);
+  color: #4a4a4a;
+  text-align: center;
+  text-shadow: 0 1px 0 #ffffff;
+}
+
+.theme-lab-snow-droplet.is-forward::after {
+  content: "▶";
+  color: #a4a4a4;
+}
+
+.theme-lab-snow-view-controls {
+  position: absolute;
+  top: var(--theme-lab-snow-controls-top, 1px);
+  left: var(--theme-lab-snow-view-left, 68px);
+  display: flex;
+}
+
+.theme-lab-snow-view-controls > button {
+  width: var(--theme-lab-snow-view-button-width, 28px);
+  height: var(--theme-lab-snow-droplet-height, 20px);
+  padding: 0;
+  border: 1px solid #767676;
+  background: linear-gradient(#e8e8e8, #bcbcbc);
+}
+
+.theme-lab-snow-view-controls > button + button {
+  border-left: 0;
+}
+
+.theme-lab-snow-view-controls > button.is-selected {
+  background: linear-gradient(#767676, #9a9a9a);
+  color: #ffffff;
+}
+
+.theme-lab-snow-view-controls .theme-lab-view-icon {
+  --theme-lab-view-icon-display: block;
+  width: 9px;
+  height: 8px;
+  margin: 6px auto 0;
+}
+
+.theme-lab-view-icon.is-cover {
+  border: 1px solid currentColor;
+  background:
+    linear-gradient(currentColor, currentColor) 50% 0 / 1px 100% no-repeat,
+    linear-gradient(currentColor, currentColor) 0 55% / 100% 1px no-repeat;
+}
+
+.theme-lab-snow-action {
+  position: absolute;
+  top: var(--theme-lab-snow-controls-top, 1px);
+  left: var(--theme-lab-snow-action-left, 188px);
+  width: var(--theme-lab-snow-action-width, 40px);
+  height: var(--theme-lab-snow-droplet-height, 20px);
+  padding: 0;
+  border: 1px solid #767676;
+  border-radius: 4px;
+  background: linear-gradient(#e8e8e8, #bcbcbc);
+  box-shadow: #f1f1f1 0 1px inset, #cccccc 0 1px;
+  color: #303030;
+}
+
+.theme-lab-snow-action::before {
+  content: "⚙";
+  font: 14px/18px var(--theme-ui-font);
+}
+
+.theme-lab-snow-action::after {
+  content: "▾";
+  margin-left: 3px;
+  font: 8px/18px var(--theme-ui-font);
+  vertical-align: 2px;
+}
+
+.theme-lab-snow-search {
+  position: absolute;
+  top: var(--theme-lab-snow-search-top, 1px);
+  right: var(--theme-lab-snow-search-right, 8px);
+}
+
+.theme-lab-snow-search input {
+  width: var(--theme-lab-snow-search-width, 249px);
+  height: var(--theme-lab-snow-search-height, 18px);
+  padding: 0 9px;
+  border: 1px solid #8d8d8d;
+  border-radius: 100px;
+  background: #ffffff;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.12);
+  font: 12px/18px var(--theme-ui-font);
+}
+
+.theme-lab-snow-source-list {
+  box-sizing: border-box;
+  width: var(--theme-lab-snow-source-list-width, 135px);
+  padding: 8px 0 14px;
+  background: var(--theme-lab-snow-source-list-bg, linear-gradient(90deg, #dde4eb 0%, #e3e8ee 100%));
+  border-right: 1px solid #b8b8b8;
+  font: 13px/24px var(--theme-ui-font);
+}
+
+.theme-lab-snow-group {
+  margin: 8px 0 2px 10px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 14px;
+  color: var(--theme-lab-snow-group-color, #728194);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.theme-lab-snow-source-list > button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: calc(100% - 5px);
+  margin: 0 5px;
+  padding: 1px 6px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+}
+
+.theme-lab-snow-source-list > button .sys-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.theme-lab-snow-source-list > button.is-selected {
+  /* Quaqua SnowLeopardSideBarSelectionBorder (focused): 1px top line
+     0x5896d0 + two-stop gradient 0x6ea6d6 -> 0x216cb7; matches the 512
+     Pixels 10.6 capture within ~3 RGB. */
+  background: linear-gradient(#6aa4db 0%, #216cb7 100%);
+  box-shadow: inset 0 1px 0 #5896d0;
+  color: #ffffff;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.45);
+}
+
+/* Polish fidelity boards (v211–v212 product port + v222 calm). Each board
+   exposes a data-theme-lab-polish id matching theme-registry polishTodos so
+   contracts can lock the specimen without reading proposal markup. Calm modes
+   are Theme Lab-local; they never clear registry polishTodos. */
+.theme-lab-polish-boards {
+  margin-bottom: 8px;
+}
+
+.theme-lab-polish-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 12px;
+  margin: 0 0 6px;
+}
+
+.theme-lab-calm-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.theme-lab-polish-pending,
+.theme-lab-polish-measures {
+  margin: 0 0 6px;
+  font-size: 11px;
+  color: var(--shade-dark);
+}
+
+.theme-lab-polish-pending[data-polish-pending="1"] {
+  color: var(--ink);
+}
+
+.theme-lab-polish-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.theme-lab-polish-board {
+  display: grid;
+  gap: 4px;
+  min-height: 72px;
+  padding: 6px;
+  border: 1px solid var(--separator, var(--rule));
+  background: var(--surface-secondary, var(--panel));
+}
+
+.theme-lab-polish-label {
+  margin: 0;
+  font-size: 11px;
+  color: var(--shade-dark);
+}
+
+.theme-lab-keywin-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+/* quiet-focus is the default ADHD calm: demote inactive era ticks; spotlight
+   modes below demote the boards that are not the current measure target. */
+.window[data-window="themeLab"][data-theme-lab-calm="quiet-focus"] .theme-lab-era-tick:not(.is-active),
+.window[data-window="themeLab"][data-theme-lab-calm="eraser"] .theme-lab-era-tick:not(.is-active) {
+  opacity: 0.42;
+}
+
+.theme-lab-polish-boards[data-theme-lab-calm="key-pair"] .theme-lab-keywin-pair {
+  gap: 6px;
+}
+
+.theme-lab-polish-boards[data-theme-lab-calm="key-pair"] .theme-lab-polish-board:not([data-theme-lab-polish="key-window-selection-surfaces"]),
+.theme-lab-polish-boards[data-theme-lab-calm="vibrancy-depth"] .theme-lab-polish-board:not([data-theme-lab-polish="vibrancy-sidebar-fidelity"]),
+.theme-lab-polish-boards[data-theme-lab-calm="gray-quiet"] .theme-lab-polish-board:not([data-theme-lab-polish="grayscale-depth-board"]) {
+  opacity: 0.42;
+}
+
+.theme-lab-vibrancy-stage {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(4rem, 0.9fr) minmax(0, 1.2fr);
+  min-height: 48px;
+  overflow: hidden;
+  /* Desk is painted first (DOM order) as an absolute underlay; sidebar/paper
+     stay in normal flow so Theme Lab needs no local z-index budget. */
+  isolation: isolate;
+}
+
+.theme-lab-vibrancy-desk {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.55;
+  background:
+    radial-gradient(circle at 18% 30%, color-mix(in srgb, var(--system-accent, var(--ink)) 18%, transparent) 0 18%, transparent 42%),
+    radial-gradient(circle at 78% 70%, color-mix(in srgb, var(--shade-dark) 22%, transparent) 0 22%, transparent 48%),
+    linear-gradient(135deg, var(--panel), var(--paper));
+}
+
+.theme-lab-vibrancy-stage > .theme-lab-polish-vibrancy,
+.theme-lab-vibrancy-stage > .theme-lab-vibrancy-paper {
+  position: relative;
+}
+
+.theme-lab-vibrancy-paper {
+  padding: 4px;
+  font-size: 10px;
+  background: color-mix(in srgb, var(--paper) 92%, transparent);
+}
+
+.theme-lab-polish-boards[data-theme-lab-calm="vibrancy-depth"] .theme-lab-vibrancy-desk,
+.theme-lab-polish-boards[data-theme-lab-calm="eraser"] .theme-lab-vibrancy-desk {
+  opacity: 0.78;
+}
+
+.theme-lab-polish-boards[data-theme-lab-calm="gray-quiet"] .theme-lab-gray-steps > span,
+.theme-lab-polish-boards[data-theme-lab-calm="eraser"] .theme-lab-gray-steps > span {
+  box-shadow: none;
+  border: 1px solid color-mix(in srgb, var(--ink) 28%, transparent);
+}
+
+.theme-lab-polish-boards[data-theme-lab-calm="eraser"] .theme-lab-polish-board {
+  border-style: dashed;
+  opacity: 0.9;
+}
+
+.theme-lab-polish-boards[data-theme-lab-calm="eraser"] .theme-lab-polish-board[data-theme-lab-polish="key-window-selection-surfaces"],
+.theme-lab-polish-boards[data-theme-lab-calm="eraser"] .theme-lab-polish-board[data-theme-lab-polish="vibrancy-sidebar-fidelity"],
+.theme-lab-polish-boards[data-theme-lab-calm="eraser"] .theme-lab-polish-board[data-theme-lab-polish="grayscale-depth-board"] {
+  opacity: 1;
+  border-style: solid;
+}
+
+.theme-lab-polish-mini {
+  min-height: 48px;
+  padding: 0;
+  position: relative;
+}
+
+.theme-lab-polish-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.theme-lab-polish-list li {
+  padding: 2px 4px;
+  font-size: 11px;
+}
+
+.theme-lab-polish-mini.is-active .theme-lab-polish-list .is-selected,
+.theme-lab-keywin-pair .window.is-active .theme-lab-polish-list .is-selected {
+  background: var(--system-selection-bg, var(--selection-bg));
+  color: var(--system-selection-fg, var(--selection-fg));
+}
+
+.theme-lab-keywin-pair .window:not(.is-active) {
+  --system-selection-bg: var(--sidebar-selection-bg);
+  --system-selection-fg: var(--sidebar-selection-fg);
+}
+
+.theme-lab-keywin-pair .window:not(.is-active) .theme-lab-polish-list .is-selected {
+  background: var(--system-selection-bg, var(--sidebar-selection-bg));
+  color: var(--system-selection-fg, var(--sidebar-selection-fg));
+}
+
+.theme-lab-polish-vibrancy {
+  min-height: 40px;
+  border-right: 0;
+}
+
+.theme-lab-gray-steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
+  min-height: 36px;
+}
+
+.theme-lab-gray-steps > span {
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  color: var(--ink);
+  background: var(--gray-depth-0, #eeeeee);
+}
+
+.theme-lab-gray-steps > span[data-level="1"] { background: var(--gray-depth-1, #cccccc); }
+.theme-lab-gray-steps > span[data-level="2"] { background: var(--gray-depth-2, #aaaaaa); }
+.theme-lab-gray-steps > span[data-level="3"] { background: var(--gray-depth-3, #555555); color: #fff; }
+
+.theme-lab-textured-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  min-height: 36px;
+}
+
+.theme-lab-textured-swatch {
+  display: block;
+  min-height: 36px;
+  border: 1px solid var(--rule);
+}
+
+.theme-lab-textured-swatch.is-brushed {
+  background: var(--textured-board-brushed, var(--panel));
+}
+
+.theme-lab-textured-swatch.is-unified {
+  background: var(--textured-board-unified, var(--paper));
+}
+
+.theme-lab-icon-palette {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
+  min-height: 36px;
+}
+
+.theme-lab-icon-palette > i {
+  display: block;
+  min-height: 16px;
+  background: var(--icon-palette-swatch-0, var(--ink));
+}
+
+.theme-lab-icon-palette > i[data-swatch="1"] { background: var(--icon-palette-swatch-1, var(--paper)); border: 1px solid var(--rule); }
+.theme-lab-icon-palette > i[data-swatch="2"] { background: var(--icon-palette-swatch-2, #dd0000); }
+.theme-lab-icon-palette > i[data-swatch="3"] { background: var(--icon-palette-swatch-3, #00aa00); }
+.theme-lab-icon-palette > i[data-swatch="4"] { background: var(--icon-palette-swatch-4, #0000dd); }
+.theme-lab-icon-palette > i[data-swatch="5"] { background: var(--icon-palette-swatch-5, #dddd00); }
+.theme-lab-icon-palette > i[data-swatch="6"] { background: var(--icon-palette-swatch-6, #aa55aa); }
+.theme-lab-icon-palette > i[data-swatch="7"] { background: var(--icon-palette-swatch-7, #55aaaa); }
+
+.theme-lab-pencil-safe {
+  min-height: 36px;
+  padding: 8px;
+  border: var(--pencil-safe-border, 1px solid var(--drawing-board-pencil, var(--ink)));
+  background: var(--pencil-safe-bg, var(--paper));
+  font-size: 11px;
+  color: var(--ink);
+}
+
+.theme-lab-pencil-safe > span {
+  display: inline-block;
+  padding: 1px 3px;
+  background: var(--paper);
+}
+
+.theme-lab-overlay-scroll {
+  position: relative;
+  min-height: 40px;
+  background: var(--paper);
+  box-shadow: inset 0 0 0 1px var(--rule);
+}
+
+.theme-lab-overlay-scroll::after {
+  content: "";
+  position: absolute;
+  top: 6px;
+  right: 2px;
+  width: 7px;
+  height: 22px;
+  border-radius: 5px;
+  background: var(--scrollbar-thumb, rgba(0, 0, 0, 0.5));
+  /* accept=1 paints at full strength so fidelity boards measure ink, not a fade. */
+  opacity: calc(0.25 + (var(--overlay-scroll-accept, 0) * 0.75));
+}
+
+.theme-lab-fullscreen-lamp {
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: 0;
+  background: var(--fullscreen-lamp-bg, var(--shade, #a8a8a8));
+  opacity: calc(0.35 + (var(--fullscreen-accept, 0) * 0.65));
+}

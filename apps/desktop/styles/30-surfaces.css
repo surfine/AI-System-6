@@ -1,0 +1,3127 @@
+.system-help-pane {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 8px;
+  padding: 8px;
+  overflow: hidden;
+}
+
+/* One control strip: the open-ended search field plus the closed-set group
+   menu. The former chip grid wrapped to a second row and read as web UI. */
+.system-help-control-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.system-help-window .system-help-control-row input[type="search"] {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 28px;
+  border: var(--system-help-search-input-border);
+  border-radius: var(--system-help-search-input-radius);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--text-font);
+  padding: 6px 9px;
+}
+
+.system-help-control-row .control-field {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+
+.system-help-control-row .select-wrap {
+  min-width: var(--system-help-group-menu-width);
+}
+
+.system-help-related button {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.system-help-layout {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(170px, 0.8fr) minmax(260px, 1.2fr);
+  gap: 8px;
+  overflow: hidden;
+}
+
+.system-help-list,
+.system-help-detail {
+  min-height: 0;
+  border: var(--system-help-panel-border);
+  border-radius: var(--system-help-panel-radius);
+  background: var(--system-help-panel-bg);
+  box-shadow: var(--system-help-panel-shadow);
+}
+
+.system-help-list {
+  overflow: auto;
+}
+
+/* The detail pane scrolls inside its Get Info body, so the object header and
+   its action row stay put while the labelled rows move. */
+.system-help-detail {
+  overflow: hidden;
+}
+
+/* Finder list view: one group heading per kind, then one row per object. */
+/* Sticky and positioned, so it already paints over the static rows: no extra
+   layer is declared here. That is exactly why its fill has to be opaque — the
+   heading is the lid on the rows it scrolls over, and the owner photographed
+   a see-through lid as two labels reading on top of each other. An era that
+   wants translucency answers with a solid value in --system-help-group-bg
+   (see Liquid Glass); the rows behind a lid are never the place for it. */
+.system-help-group {
+  position: sticky;
+  top: 0;
+  margin: 0;
+  padding: 3px 6px 2px;
+  background: var(--system-help-group-bg);
+  border-bottom: var(--system-help-group-border-bottom);
+  font-family: var(--ui-font);
+  font-size: 11px;
+}
+
+.system-help-list button {
+  width: 100%;
+  min-height: 26px;
+  display: grid;
+  grid-template-columns: var(--system-help-row-icon-size) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  border-bottom: var(--system-help-list-button-border-bottom);
+  border-radius: var(--item-radius);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  padding: 3px 6px;
+}
+
+.system-help-list button b {
+  font-weight: inherit;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.system-help-list button:hover,
+.system-help-list button:focus-visible {
+  background: var(--help-row-hover-bg);
+  color: var(--help-row-hover-fg);
+  border-radius: var(--help-row-active-radius);
+}
+
+.system-help-list button.is-selected {
+  background: var(--help-row-selected-bg);
+  color: var(--help-row-selected-fg);
+  border-radius: var(--help-row-active-radius);
+}
+
+.system-help-list small {
+  font-size: 11px;
+}
+
+/* Scoped to their panes so the shared .sys-icon size does not have to be
+   fought with a bare class of the same weight. */
+.system-help-list button .sys-icon-help-row {
+  width: var(--system-help-row-icon-size);
+  height: var(--system-help-row-icon-size);
+  /* no-repeat matches the Aqua icon recipe, which wins once each sheet is its
+     own layer; with no image the repeat is never drawn. */
+  background: none no-repeat;
+}
+
+.system-help-head .sys-icon-help-object {
+  width: 32px;
+  height: 32px;
+  background: none;
+}
+
+/* A selected row inverts its 1-bit art the way the Finder does, rather than
+   swapping in a second icon. */
+.system-help-list button.is-selected .sys-icon {
+  color: var(--help-row-selected-fg);
+}
+
+.system-help-list button.is-selected .sys-icon-svg rect,
+.system-help-list button.is-selected .sys-icon-svg circle {
+  fill: var(--help-row-selected-bg);
+}
+
+.system-help-card {
+  min-height: 100%;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+/* Get Info grammar: the object identifies itself above the rule, the labelled
+   rows scroll, and the object's own actions stay reachable at the bottom. */
+.system-help-head {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-bottom: var(--system-help-head-border-bottom);
+}
+
+.system-help-card-scroll {
+  min-height: 0;
+  overflow: auto;
+}
+
+.system-help-info {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 10px;
+  margin: 0;
+  padding: 8px;
+}
+
+.system-help-info dt {
+  font-family: var(--ui-font);
+  font-size: 11px;
+  padding-top: 2px;
+}
+
+.system-help-info dd {
+  margin: 0;
+}
+
+/* The definition and example rows are the running text of this window, so they
+   read at the same measure as the Reader. Without it a zoomed window on a wide
+   desk drew an 851px line. Only prose is capped: the alias and related-term
+   lists, the route ribbon and the action row are indexes, not reading, and keep
+   the full pane width. */
+.system-help-info dd:not(.system-help-aliases):not(.system-help-related):not(:has(.system-help-route)) {
+  max-width: var(--reading-measure);
+}
+
+.system-help-card h3 {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.1;
+}
+
+.system-help-card p {
+  margin: 0;
+}
+
+.system-help-head p {
+  margin-top: 1px;
+  font-size: 12px;
+}
+
+/* The route line teaches where the object sits without opening the route. */
+.system-help-route {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+}
+
+.system-help-route span {
+  color: var(--shade-dark);
+}
+
+.system-help-route span.is-current {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0 3px;
+}
+
+.system-help-aliases,
+.system-help-related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+/* Borderless text links need more breathing room than the bordered alias tags
+   so they read as separate references rather than one run-on line. */
+.system-help-related {
+  column-gap: 11px;
+}
+
+.system-help-aliases b,
+.system-help-related b {
+  font-size: 12px;
+}
+
+.system-help-aliases span {
+  border: var(--system-help-alias-border);
+  padding: 1px 4px;
+  font-size: 12px;
+}
+
+/* Related entries are cross-reference links, not actions: render them as inline
+   ink-colored text (no button shell). They stay underlined at rest so the
+   clickable affordance is visible without hovering; hover/focus darkens the
+   underline for feedback. */
+.system-help-related-link {
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: 0;
+  margin: 0;
+  padding: 0 1px;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: var(--shade-dark);
+  text-underline-offset: 2px;
+}
+
+.system-help-related-link:hover,
+.system-help-related-link:focus-visible {
+  text-decoration-color: currentColor;
+}
+
+.system-help-actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  border-top: var(--system-help-actions-border-top);
+  margin: 0;
+  padding: 8px;
+}
+
+@media (max-width: 860px), (hover: none) and (pointer: coarse) and (max-height: 660px) {
+  .system-help-window {
+    left: 24px;
+    right: auto;
+    width: calc(100vw - 48px);
+    height: min(620px, calc(100vh - 90px));
+    max-width: calc(100vw - 48px);
+    max-height: calc(100vh - 90px);
+  }
+
+  .system-help-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(140px, clamp(170px, 34vh, 260px)) minmax(0, 1fr);
+  }
+
+  .system-help-card h3 {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 520px) {
+  .system-help-window {
+    left: 12px;
+    top: 48px;
+    width: calc(100vw - 24px);
+    height: calc(100vh - 64px);
+    max-width: calc(100vw - 24px);
+    max-height: calc(100vh - 64px);
+  }
+
+  .system-help-pane {
+    gap: 6px;
+    padding: 6px;
+  }
+
+  /* A phone keeps both controls, stacked, so the group menu never squeezes the
+     search field into a slot too small to read. */
+  .system-help-control-row {
+    flex-wrap: wrap;
+  }
+
+  .system-help-control-row .control-field {
+    flex: 1 1 100%;
+  }
+
+  .system-help-control-row .select-wrap {
+    flex: 1 1 auto;
+  }
+
+  .system-help-layout {
+    grid-template-rows: minmax(120px, clamp(140px, 30vh, 210px)) minmax(0, 1fr);
+  }
+}
+
+.review-desk-window {
+  height: min(620px, calc(100vh - 72px));
+}
+
+.review-desk-pane {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: 8px;
+  min-height: 0;
+  overflow: hidden;
+  padding: 10px;
+  background: var(--review-desk-pane-bg);
+}
+
+.review-lens-chrome {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 0 2px;
+}
+
+.review-lens-chrome .select-wrap {
+  flex: 0 0 auto;
+}
+
+.review-density-note {
+  flex: 1 1 100%;
+  margin: 4px 0 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--muted, #505050);
+}
+
+.review-density-note .text-btn {
+  margin-left: 0.35em;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.review-lens-hint {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--muted, #505050);
+  font-size: 11px;
+  line-height: 1.45;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.review-lens-empty-follow {
+  margin: 10px 0 0;
+  color: var(--muted, #505050);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.review-section-nav .btn {
+  min-width: 88px;
+}
+
+.review-desk-results {
+  --review-source-ratio: 0.5;
+  --review-splitter-size: 10px;
+  min-height: 0;
+  border: var(--review-desk-results-border);
+  border-radius: var(--review-desk-results-radius);
+  background: var(--review-desk-results-bg);
+  box-shadow: var(--review-desk-results-shadow);
+  overflow: hidden;
+  display: grid;
+  grid-template-rows:
+    minmax(110px, calc((100% - var(--review-splitter-size)) * var(--review-source-ratio)))
+    var(--review-splitter-size)
+    minmax(110px, calc((100% - var(--review-splitter-size)) * (1 - var(--review-source-ratio))));
+}
+
+.review-desk-markdown {
+  display: block;
+  width: 100%;
+  min-height: 0;
+  border: 0;
+  padding: var(--writing-editor-padding-y) var(--writing-editor-padding-x);
+  background: var(--review-surface-bg);
+  font-family: var(--text-font);
+  font-size: var(--writing-editor-font-size);
+  line-height: var(--writing-editor-line-height);
+  overflow: auto;
+  resize: none;
+}
+
+.review-desk-preview {
+  min-height: 0;
+  border: 0;
+  background: var(--paper);
+  overflow-y: auto;
+}
+
+.review-desk-splitter {
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  height: var(--review-splitter-size);
+  padding: 0;
+  border: 0;
+  border-top: var(--review-splitter-border);
+  border-bottom: var(--review-splitter-border);
+  border-radius: var(--item-radius);
+  background:
+    repeating-linear-gradient(
+      90deg,
+      var(--ink) 0,
+      var(--ink) 2px,
+      var(--paper) 2px,
+      var(--paper) 6px
+    );
+  box-shadow: none;
+  cursor: row-resize;
+}
+
+.review-desk-splitter:hover,
+.review-desk-splitter:focus-visible {
+  background: var(--review-desk-splitter-hover-bg);
+  outline: 0;
+}
+
+.review-desk-results.is-resizing {
+  user-select: none;
+}
+
+.review-desk-empty-note {
+  align-self: stretch;
+  margin: 0;
+  padding: 20px;
+  border: 0;
+}
+
+.review-desk-window.is-review-locked .review-desk-pane {
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 8px;
+  background: var(--review-locked-pane-bg);
+}
+
+.review-desk-window.is-review-locked .review-section-nav,
+.review-desk-window.is-review-locked .review-desk-results {
+  display: none;
+}
+
+/* Empty desk: one next step. Lens select stays; density/旁路墙 hides. */
+.review-desk-window.is-review-locked .review-lens-chrome {
+  justify-content: center;
+  padding: 4px 8px 0;
+}
+
+.review-desk-window.is-review-locked .review-lens-hint {
+  white-space: normal;
+  text-overflow: unset;
+  overflow: visible;
+  max-width: 36em;
+}
+
+.review-desk-window.is-review-locked .review-density-note {
+  display: none;
+}
+
+.review-desk-window.is-review-locked .review-desk-empty-note {
+  align-self: center;
+  justify-self: center;
+  display: grid;
+  place-items: center;
+  gap: 10px;
+  width: min(var(--mde-page-width), calc(100% - 48px));
+  min-height: 156px;
+  padding: 24px 28px;
+  border: var(--review-empty-note-border);
+  background: var(--paper);
+  text-align: center;
+  line-height: 1.45;
+}
+
+.review-desk-window.is-review-locked .review-desk-empty-note.empty-next-note > .btn {
+  min-height: var(--touch-primary-min-height);
+}
+
+.review-result-column {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 0;
+  background: var(--review-surface-bg);
+  overflow: hidden;
+}
+
+.review-result-column h3 {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.style-sheet-results {
+  border: 0;
+  background: var(--review-surface-bg);
+  padding: 12px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.review-result-column .style-sheet-results,
+.review-result-column .claim-results {
+  border: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* A rebuild waiting for the writer shows through the Review Desk lock (owner
+   decision 2026-09-26): its card sits under the lock note and reads as a
+   list, not as centred prose. */
+.review-desk-waiting-rebuilds {
+  display: grid;
+  gap: 8px;
+  justify-self: stretch;
+  max-height: 50vh;
+  margin-top: 16px;
+  padding-top: 12px;
+  overflow: auto;
+  border-top: 1px dotted var(--shade);
+  text-align: left;
+}
+
+.review-desk-waiting-rebuilds h3 {
+  margin: 0;
+  font-size: 12px;
+}
+
+/* Guest reviews: one card per receipt a guest agent submitted, read here and
+   adopted or rejected by the writer. */
+.guest-review-card {
+  display: grid;
+  gap: 6px;
+  padding-bottom: 8px;
+  border-bottom: var(--system-border);
+}
+
+.guest-review-card h4 {
+  margin: 0;
+  font-size: inherit;
+}
+
+.guest-review-findings {
+  margin: 0;
+  padding-left: 18px;
+}
+
+/* Grounding marks: a mark that is off is stated, not hidden — "not pinned"
+   is the fact the writer needs. Off marks read as struck through, on marks
+   as ordinary labels, so the eye finds what holds without a colour code. */
+.guest-finding-marks {
+  display: inline-flex;
+  gap: 6px;
+  vertical-align: baseline;
+}
+
+.guest-mark {
+  font-size: 0.82em;
+  color: var(--shade-dark);
+  text-decoration: line-through;
+}
+
+.guest-mark.is-on {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.guest-review-grounding {
+  margin: 0;
+}
+
+.review-result-column table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+  font-size: var(--system-text-size);
+  line-height: 1.5;
+}
+
+.review-result-column th,
+.review-result-column td {
+  padding: 9px 10px;
+  vertical-align: top;
+  text-align: left;
+}
+
+.review-result-column th {
+  border-bottom: var(--review-th-border);
+  font-family: var(--title-font);
+  font-weight: var(--tab-active-weight, var(--tab-font-weight, var(--system-strong-weight)));
+  background: var(--review-th-bg);
+}
+
+.review-result-column td {
+  border-top: var(--review-td-border);
+}
+
+.review-result-column tr + tr td {
+  border-top: var(--review-td-alt-border);
+}
+
+.review-result-column tbody tr:first-child td {
+  border-top: 0;
+}
+
+.review-result-column td:first-child {
+  min-width: 5.5em;
+  font-family: var(--title-font);
+  font-weight: var(--system-strong-weight);
+}
+
+.review-result-column td:last-child {
+  font-weight: var(--system-emphasis-weight);
+}
+
+.review-result-column td br {
+  display: block;
+  content: "";
+  margin-top: 0.22em;
+}
+
+.review-desk-actions {
+  flex: 0 0 auto;
+}
+
+.style-note {
+  border: var(--style-note-border);
+  background: var(--paper);
+  padding: 8px;
+}
+
+.style-note + .style-note {
+  margin-top: 2px;
+}
+
+.style-note p {
+  margin: 6px 0;
+  line-height: 1.35;
+}
+
+.style-note b {
+  font-size: 11px;
+}
+
+.style-note-type {
+  display: inline-block;
+  border: var(--style-note-type-border);
+  background: var(--shade);
+  padding: 1px 5px;
+  font-size: 10px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+/* Info Window Styles */
+.info-window {
+  width: 320px;
+  height: min(640px, calc(100vh - 48px));
+  min-height: 380px;
+}
+
+.info-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 15px;
+  min-height: 0;
+  overflow: auto;
+  /* An era whose inspector sits on the window's own material rather than a
+     white pane (macOS 11's Get Info) names it here. */
+  background-color: var(--info-pane-bg, var(--pane-bg));
+}
+
+.info-pane hr {
+  width: 100%;
+  height: 0;
+  margin: 2px 0;
+  border: 0;
+  border-top: var(--info-divider-border);
+}
+
+.info-header {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 15px;
+  align-items: center;
+}
+
+/* Finder Get Info is the object's inspection surface, so it requests the
+   authored large icon tier instead of repeating the list-view thumbnail. */
+.info-icon-stage {
+  border-radius: var(--surface-radius);
+  width: 112px;
+  height: 112px;
+  display: grid;
+  place-items: center;
+  border: var(--large-mini-icon-border);
+  background: var(--large-mini-icon-bg);
+  overflow: hidden;
+}
+
+.info-icon-artwork.sys-icon {
+  width: 104px;
+  height: 104px;
+}
+
+.info-icon-artwork .sys-icon-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.info-main h3 {
+  margin: 0;
+  font-size: 16px;
+  font-family: var(--title-font);
+}
+
+.info-main p {
+  margin: 4px 0 0 0;
+  font-size: 11px;
+}
+
+.info-stats {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 6px;
+  margin: 0;
+  font-size: 12px;
+}
+
+.info-stats dt {
+  font-weight: var(--info-label-weight, bold);
+  text-align: right;
+}
+
+.info-stats dd {
+  margin: 0;
+}
+
+.info-content-stats p {
+  margin: 0 0 6px 0;
+  font-size: 12px;
+}
+
+.info-content-stats .info-word-count {
+  margin-top: 10px;
+}
+
+.info-content-stats ul {
+  font-size: 12px;
+}
+
+/* Finishing Receipt. The window is an ordinary .info-window, so it inherits
+   the Get Info width and needs no geometry of its own. It drops the Get Info
+   floor height because its rows are conditional: a fact with no stored source
+   is left out, and the window must close up rather than print dead air where
+   a claim would have been. */
+.finishing-receipt-window {
+  min-height: 0;
+}
+
+/* Only the quotation of the line that survived from the first draft is new,
+   and it is a quotation block, not a card. */
+.receipt-kept {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border: var(--system-border);
+  font-size: 12px;
+}
+
+.receipt-kept > * {
+  margin: 0;
+}
+
+.receipt-kept-quote {
+  font-family: var(--title-font);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.large-mini-icon.sys-icon {
+  border: 0;
+}
+
+.large-mini-icon.project-disk-icon::after {
+  content: "P";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.teachtext-surface-pane {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) max-content;
+  gap: 7px;
+  min-height: 0;
+}
+
+.outline-pane.teachtext-surface-pane {
+  grid-template-rows: auto minmax(0, 1fr) max-content;
+}
+
+.outline-pane > .outline-notes {
+  grid-row: 1;
+}
+
+.outline-pane > .specialized-teachtext-editor {
+  grid-row: 2;
+}
+
+.outline-pane > .teachtext-actions {
+  grid-row: 3;
+}
+
+.outline-pane > .outline-notes.is-hidden + .specialized-teachtext-editor {
+  grid-row: 1 / 3;
+}
+
+.section-drafts-pane.teachtext-surface-pane {
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.specialized-teachtext-editor {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.specialized-teachtext-preview {
+  flex: 1;
+  min-height: 0;
+  border: 0;
+  background: var(--paper);
+  overflow-y: auto;
+}
+
+.specialized-command-menu {
+  flex: 0 0 auto;
+}
+
+/* Goal #2: empty writing-route windows keep the paper primary. Demote the
+   Commands overflow so ADHD attention lands on the legal empty field rather
+   than a wall of grey tools that cannot act yet. */
+.question-sheet-window[data-empty] .specialized-command-menu,
+.outline-window[data-empty] .specialized-command-menu,
+.section-drafts-window[data-empty] .specialized-command-menu {
+  opacity: 0.72;
+}
+
+.question-sheet-window[data-empty] .specialized-teachtext-editor,
+.outline-window[data-empty] .specialized-teachtext-editor,
+.section-drafts-window[data-empty] .specialized-teachtext-editor {
+  min-height: 12em;
+}
+
+/* The writing route's own info strip. System 6 drew a window's info bar as a
+   permanent frame rather than one that appears and shoves the layout, so this
+   keeps its height whether or not there is a message. It is the destination of
+   the single #status element, which moves here from ClioTalk's info bar
+   whenever a route window is in front. */
+.window-status-strip {
+  border-radius: var(--item-radius);
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  min-height: 19px;
+  padding: 2px 6px;
+  border: 1px solid transparent;
+  border-top: 0;
+  background: transparent;
+  font-family: var(--readout-font);
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--ink);
+  overflow: hidden;
+}
+
+/* The strip's own min-height is content-box, so the frame it draws when a
+   message arrives added its border to the row: the Reader bar measured 28px
+   idle and 28.84px with a receipt, which is exactly the shove the strip exists
+   to avoid. Inside a bar that already has its own height, the box is measured
+   with its border, and one pixel comes off the padding to pay for it: both
+   states are 19px and all three bars keep the height they had before they
+   hosted anything (Reader 28, DocMap and Scrapbook 33). */
+.reader-status-actions > .window-status-strip,
+.docmap-status-actions > .window-status-strip,
+.scrapbook-details-bar > .window-status-strip {
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  padding-block: 1px;
+  min-width: 0;
+}
+
+/* The strip clips, so a message longer than the window was cut mid-word with
+   nothing to say it had been. On a 420px phone the moving #status span measured
+   242px starting at x=324 -- about a third of a receipt on screen and no sign
+   of the rest. It shares the row with the other status cells, so it takes the
+   remaining width and ends in an ellipsis: a truncated receipt now looks
+   truncated, and the row still reserves its height. */
+.window-status-strip #status {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The frame appears with the message. The row reserves its height either way,
+   so a receipt arrives in place instead of pushing the editor up. */
+.window-status-strip.has-message {
+  border-color: var(--ink);
+  background: var(--paper);
+  box-shadow: inset 1px 1px 0 var(--shade);
+}
+
+.window-status-slot {
+  flex: 1 1 auto;
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/* Shared System 6 level controls. These are primitives, not one window's
+   chrome: the Soundscape transport and Quick Draft's Listen progress both draw
+   them, so they live in the base sheet rather than travelling with whichever
+   window happened to introduce them. Moved out of styles/88-soundscape.css when
+   that sheet became lazy. */
+/* Position track: a scroll bar, not a slider. */
+
+.system-track {
+  position: relative;
+  height: 14px;
+  border: var(--system-track-border);
+  border-radius: var(--system-track-radius);
+  background: var(--system-track-bg);
+  box-shadow: var(--system-track-shadow);
+  cursor: pointer;
+  touch-action: none;
+}
+
+.system-track[aria-disabled="true"] {
+  cursor: default;
+  opacity: var(--control-disabled-opacity);
+}
+
+.system-track-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--system-track-position, 0%);
+  border-radius: var(--system-track-radius);
+  background: var(--system-track-fill);
+  pointer-events: none;
+}
+
+.system-track-thumb {
+  position: absolute;
+  top: 0;
+  left: var(--system-track-position, 0%);
+  width: 15px;
+  height: 12px;
+  border: var(--system-track-thumb-border);
+  border-radius: var(--system-track-thumb-radius);
+  background: var(--system-track-thumb-bg);
+  box-shadow: var(--system-track-thumb-shadow);
+  pointer-events: none;
+}
+
+/* Segment cells: the Sound control panel level control. */
+
+.system-segments {
+  display: flex;
+  gap: 2px;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.system-segments span {
+  display: block;
+  width: 8px;
+  height: 15px;
+  border: var(--system-segment-border);
+  border-radius: var(--system-segment-radius);
+  background: var(--system-segment-bg);
+}
+
+.system-segments span.is-on {
+  background: var(--system-segment-on-bg);
+  box-shadow: var(--system-segment-on-shadow);
+}
+
+/* Both are tabbable sliders, so the focus ring travels with the primitive
+   rather than with the window that happens to draw it. */
+.system-track:focus-visible,
+.system-segments:focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: var(--control-focus-offset);
+}
+
+/* Find / Change: a small modeless panel, not a document window. Two labelled
+   fields, one option, the target row, and a button row whose default is Find
+   Next - the button a writer presses over and over. */
+.find-change-window {
+  min-width: 340px;
+}
+
+.find-change-pane {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 5px;
+  padding: 10px;
+}
+
+.find-change-label {
+  font-size: 12px;
+}
+
+.find-change-pane input[type="text"] {
+  width: 100%;
+}
+
+.find-change-options {
+  margin-top: 2px;
+}
+
+.find-change-actions {
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+
+.find-change-empty-next.empty-next-note {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin: 0 0 8px;
+  text-align: center;
+  line-height: 1.45;
+}
+
+.find-change-empty-next.empty-next-note > .btn {
+  min-height: var(--touch-primary-min-height);
+}
+
+.find-change-window[data-empty] .find-change-actions {
+  opacity: var(--control-disabled-opacity);
+}
+
+.specialized-command-menu .teachtext-command-popover {
+  right: auto;
+  left: 0;
+}
+
+.question-sheet-pane textarea,
+.outline-content,
+.draft-editor textarea {
+  flex: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border: 0;
+  padding: var(--writing-editor-padding-y) var(--writing-editor-padding-x);
+  background: var(--paper);
+  font-family: var(--text-font);
+  font-size: var(--writing-editor-font-size);
+  line-height: var(--writing-editor-line-height);
+  overflow: auto;
+  resize: none;
+}
+
+.outline-notes {
+  border: var(--outline-notes-border);
+  background: var(--paper);
+  padding: 8px 10px;
+  font-family: var(--text-font);
+  font-size: 13px;
+  line-height: 1.35;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.outline-notes b {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.pipeline-list {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.outline-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  border-bottom: var(--outline-item-border);
+}
+
+.outline-item span {
+  flex: 1;
+  min-height: 22px;
+  padding: 3px 5px;
+  border: var(--outline-item-span-border);
+  border-radius: var(--outline-item-span-radius);
+  background: var(--outline-item-span-bg);
+}
+
+/* A mini button that is also a .btn takes the button recipe's face size;
+   every mini button takes its padding from 60-responsive.css. Only the two
+   plain calendar arrows in Time Machine are set here. */
+.mini-btn:where(:not(.btn)) {
+  font-size: 10px;
+}
+
+.draft-list {
+  height: 120px;
+  border: var(--draft-list-border);
+  background: var(--paper);
+  overflow-y: auto;
+  margin-bottom: 8px;
+}
+
+.draft-list .btn {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 3px;
+  text-align: left;
+}
+
+.draft-list .btn small {
+  font-family: var(--mono-font);
+  opacity: 0.75;
+}
+
+.draft-editor label {
+  margin-top: 7px;
+  margin-bottom: 3px;
+}
+
+.draft-editor {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.section-draft-nav {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-draft-nav .btn {
+  min-width: 88px;
+}
+
+.draft-section-picker,
+.draft-section-picker select {
+  min-width: 0;
+  width: 100%;
+}
+
+.draft-section-picker select {
+  text-overflow: ellipsis;
+}
+
+.draft-section-label {
+  min-width: 0;
+  padding: 4px 8px;
+  border: var(--draft-label-border);
+  border-radius: var(--section-label-radius);
+  background: var(--draft-label-bg);
+  box-shadow: var(--section-label-shadow);
+  color: var(--section-label-fg);
+  font-family: var(--title-font);
+  font-size: 13px;
+  line-height: 1.25;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.style-section-nav {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.style-section-nav .btn {
+  min-width: 88px;
+}
+
+.style-section-nav select {
+  min-width: 0;
+  width: 100%;
+}
+
+.claim-section-meta,
+.style-section-meta {
+  margin: 0;
+  max-width: none;
+  border: var(--meta-label-border);
+  border-radius: var(--section-label-radius);
+  background: var(--meta-label-bg);
+  box-shadow: var(--section-label-shadow);
+  color: var(--section-label-fg);
+}
+
+.review-section-nav {
+  align-self: stretch;
+}
+
+.review-section-nav .btn {
+  min-width: 0;
+}
+
+.claim-results {
+  border: var(--claim-results-border);
+  background: var(--review-surface-bg);
+  padding: 12px;
+  overflow: visible;
+}
+
+.context-panel-list {
+  --liquid-pane-bg-color: var(--context-panel-list-bg-color);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  padding: 10px;
+  background: var(--context-panel-list-bg);
+  overscroll-behavior: contain;
+}
+
+.context-panel-empty-note.empty-next-note {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin: 12px auto;
+  max-width: 42ch;
+  text-align: center;
+  line-height: 1.45;
+}
+
+.context-panel-empty-note.empty-next-note > .btn {
+  min-height: var(--touch-primary-min-height);
+}
+
+.context-item {
+  border: var(--context-item-border);
+  border-radius: var(--context-item-radius);
+  background: var(--context-item-bg);
+  box-shadow: var(--context-item-shadow);
+  padding: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, auto) auto;
+  flex: 0 0 auto;
+  min-height: 0;
+  max-height: 136px;
+  overflow: hidden;
+}
+
+.source-registry-item {
+  border-style: var(--source-registry-item-border-style);
+}
+
+.context-header {
+  padding: 5px 7px 4px;
+  font-size: 11px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 6px;
+  border-bottom: var(--context-header-border-bottom);
+  min-height: 28px;
+}
+
+.context-header strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+  font-size: 12px;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+}
+
+.context-header span {
+  justify-self: end;
+  font-size: 10px;
+  border: var(--context-header-badge-border);
+  padding: 0 4px;
+  line-height: 1.6;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+.context-section-title {
+  margin: 8px 0 0;
+  padding-bottom: 3px;
+  border-bottom: var(--context-section-title-border-bottom);
+  font-family: var(--title-font);
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.context-section-title:first-child {
+  margin-top: 0;
+}
+
+.context-body {
+  font-family: var(--text-font);
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--ink);
+  white-space: pre-wrap;
+  padding: 5px 8px;
+  min-height: 0;
+  max-height: 52px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow-wrap: anywhere;
+}
+
+.context-item .button-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  padding: 5px 7px 6px;
+  border-top: var(--context-item-actions-border-top);
+  gap: 5px;
+  margin-top: 0;
+}
+
+.context-item .button-row .btn {
+  flex: 0 1 auto;
+  min-width: 78px;
+  min-height: 22px;
+  padding: 1px 8px;
+  font-size: 11px;
+  border-width: 1px;
+  border-radius: 4px;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.context-item.is-dropped {
+  opacity: 0.55;
+  background: var(--context-item-dropped-bg);
+}
+
+.system-tab-panel[hidden],
+.system-tabs [hidden] {
+  display: none;
+}
+
+/* A tab panel may be any element (a .control-section already sets its own
+   display: grid), so this needs the [hidden] attribute selector itself to win
+   on specificity rather than relying on the plain class alone. */
+[data-control-panel][hidden] {
+  display: none;
+}
+
+/* A view switch, not two actions. The tabs sit on a rail and the selected one
+   merges into the panel below, so the pair reads as one sheet with two faces
+   instead of two buttons competing for a tap. The sheet wrapper keeps the rail
+   and the panel touching — the step's own gap would otherwise split them. */
+.system-tabs-sheet {
+  display: grid;
+  gap: 0;
+  width: 100%;
+}
+
+/* The plain tablist wearing era-owned clothes, on the pattern .control-chooser
+   already follows below: every value resolves through a --tab-* token whose
+   default is the base harness value, so an era that sets nothing renders
+   exactly as before. The metrics come from Theme Lab, which used to keep a
+   second tab control of its own purely to carry them -- Aqua's 24px tabs and
+   its wrap-tab end caps were measured against native evidence and then had
+   nowhere to live but the specimen. */
+.system-tabs {
+  display: flex;
+  align-items: var(--tab-strip-align-items, stretch);
+  justify-content: var(--tab-strip-justify, flex-start);
+  gap: var(--tab-strip-gap, 3px);
+  width: 100%;
+  margin-bottom: 0;
+  padding: var(--tab-strip-padding, 0);
+  background: var(--tab-strip-bg, transparent);
+  border-top: var(--tab-strip-border-top, 0);
+  border-bottom: var(--tab-strip-border-bottom, var(--system-border));
+  overflow: var(--tab-strip-overflow, visible);
+}
+
+.system-tab {
+  flex: var(--tab-flex, 1 1 0);
+  min-width: var(--tab-min-width, 0);
+  width: var(--tab-width, auto);
+  min-height: var(--tab-min-height, 28px);
+  height: var(--tab-height, auto);
+  position: relative;
+  bottom: calc(0px - var(--tab-overlap));
+  margin: var(--tab-margin, 0);
+  padding: var(--tab-padding, 4px 10px);
+  border: var(--tab-border, var(--system-border));
+  border-bottom: var(--tab-border-bottom, none);
+  border-radius: var(--tab-radius) var(--tab-radius) var(--tab-inner-radius) var(--tab-inner-radius);
+  background: var(--tab-bg);
+  box-shadow: var(--tab-shadow, none);
+  font-variation-settings: var(--tab-font-variation-settings, inherit);
+  color: var(--ink);
+  font: inherit;
+  font-weight: var(--tab-font-weight, inherit);
+  line-height: var(--tab-line-height, 1.2);
+  text-align: center;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition:
+    background var(--control-motion-medium-in) var(--control-motion-ease),
+    box-shadow var(--control-motion-medium-in) var(--control-motion-ease);
+}
+
+.system-tab:not(.is-active):hover {
+  background: var(--tab-hover-bg);
+}
+
+/* Pressed is not selected. Platinum inks a held tab the way its cdev tabs do
+   and lets go again; the selected tab keeps its own --tab-active-* clothes. */
+.system-tab:not(.is-active):active {
+  background: var(--tab-pressed-bg, var(--tab-active-bg));
+  color: var(--tab-pressed-fg, inherit);
+}
+
+.system-tab:first-child {
+  border-radius: var(--tab-first-radius, var(--tab-radius) var(--tab-radius) var(--tab-inner-radius) var(--tab-inner-radius));
+}
+
+.system-tab:last-child {
+  /* The strip closes on a real edge even where an era drew no border on the
+     tabs themselves: Platinum sets --tab-border to 0 and still ends the strip
+     with the system line, which is what the Mac OS 9 capture shows. */
+  border-right: var(--tab-last-border-right, var(--system-border));
+  border-radius: var(--tab-last-radius, var(--tab-radius) var(--tab-radius) var(--tab-inner-radius) var(--tab-inner-radius));
+}
+
+.system-tab:focus-visible {
+  outline: var(--tab-focus-outline, var(--control-focus-outline));
+  outline-offset: var(--control-focus-offset);
+  text-shadow: var(--tab-focus-text-shadow, none);
+}
+
+.system-tab.is-active {
+  min-height: var(--tab-active-min-height, var(--tab-min-height, 28px));
+  height: var(--tab-active-height, var(--tab-height, auto));
+  /* The selected tab merges into the panel below it, so its bottom edge is the
+     panel's surface rather than a line. Transparent would show whatever sits
+     behind the strip and read as an edge in a pixel comparison. */
+  border-bottom-color: var(--tab-active-border-bottom-color, var(--surface-primary));
+  background: var(--tab-active-bg);
+  color: var(--tab-active-fg, inherit);
+  font-weight: var(--system-strong-weight);
+  box-shadow: var(--tab-active-shadow, var(--tab-shadow, none));
+}
+
+/* Wrap-tab end caps. Aqua draws a rounded cap at each end of a tab; every
+   other era leaves the content token unset and the pseudo-elements never
+   render. */
+.system-tab::before,
+.system-tab::after {
+  content: var(--tab-edge-content, none);
+  position: absolute;
+  top: var(--tab-edge-top, 0);
+  width: var(--tab-edge-width, 0);
+  height: var(--tab-edge-height, 100%);
+  pointer-events: none;
+}
+
+.system-tab::before {
+  left: 0;
+  background: var(--tab-edge-left-bg, none);
+}
+
+.system-tab::after {
+  right: 0;
+  background: var(--tab-edge-right-bg, none);
+}
+
+/* The selected tab may carry its own caps: Platinum's selected tab is drawn
+   from two end SVGs and a repeating middle. */
+.system-tab.is-active::before,
+.system-tab.is-active::after {
+  top: var(--tab-active-edge-top, var(--tab-edge-top, 0));
+  height: var(--tab-active-edge-height, var(--tab-edge-height, 100%));
+}
+
+.system-tab.is-active::before {
+  background: var(--tab-active-edge-left-bg, var(--tab-edge-left-bg, none));
+}
+
+.system-tab.is-active::after {
+  background: var(--tab-active-edge-right-bg, var(--tab-edge-right-bg, none));
+}
+
+.system-tab:disabled {
+  cursor: default;
+  opacity: var(--control-disabled-opacity);
+}
+
+/* Control Panel section chooser — the same tablist wearing era-owned clothes.
+   Every declaration resolves through a --control-chooser-* token whose default
+   equals the base harness value above, so the base sheet (and Platinum's OS 8
+   tabs) renders unchanged. An era with its own native settings-navigation
+   object swaps token values only: Classic clothes it as the System 4-6 cdev
+   icon rail, the Aqua family as its icon toolbar, Liquid Glass as a segmented
+   capsule. One DOM, one keyboard order, six presentations. */
+.control-chooser {
+  flex-direction: var(--control-chooser-direction);
+  gap: var(--control-chooser-gap);
+  width: var(--control-chooser-width);
+  max-width: 100%;
+  /* An era whose chooser hugs its own content centres the rail in the pane
+     instead of leaving it against the leading edge — the segmented control
+     this appearance wears is a centred object, not a full-width tab row. */
+  justify-self: var(--control-chooser-justify-self, stretch);
+  padding: var(--control-chooser-padding);
+  background: var(--control-chooser-bg);
+  border-radius: var(--control-chooser-radius);
+  border-bottom: var(--control-chooser-border-bottom);
+  border-right: var(--control-chooser-border-right);
+  /* The rail keeps the room its own tabs need, at any window height. It is a
+     scroll container wherever it has to be (Platinum clips its own strip, the
+     portrait rule takes overflow-x), and a scroll container has an automatic
+     minimum size of zero — so the Control Panel's settings grid was free to
+     hand this row whatever the panel's tallest section left over: 13px of a
+     29px rail, with the strip's own overflow then cutting every section name
+     in half. Each era pins the floor to the rail height it measured itself,
+     which is a number the rail cannot derive from its contents (a scroll
+     container measures its tabs at zero) and which does not have to be exact:
+     it is a floor, so a longer translation still grows the rail. When the
+     window cannot fit the rail plus the open section, the pane below scrolls
+     instead of the labels paying for it. Classic leaves the floor at auto:
+     its cdev rail is a column with no overflow, so nothing squeezes it. */
+  min-height: var(--control-chooser-min-height, auto);
+}
+
+.control-chooser .system-tab {
+  display: flex;
+  flex-direction: var(--control-chooser-item-direction);
+  align-items: center;
+  justify-content: center;
+  gap: var(--control-chooser-item-gap);
+  flex: var(--control-chooser-item-flex);
+  padding: var(--control-chooser-item-padding);
+  bottom: var(--control-chooser-item-offset);
+  border: var(--control-chooser-item-border);
+  border-bottom-width: var(--control-chooser-item-border-bottom-width);
+  border-radius: var(--control-chooser-item-radius);
+  background: var(--control-chooser-item-bg);
+  color: var(--control-chooser-item-fg);
+  box-shadow: var(--control-chooser-item-shadow);
+  /* The chooser is a settings-navigation object, not a tab strip that happens
+     to sit in a window: an era clothes it as an icon rail or a toolbar. So it
+     answers to its own tokens for the metrics the plain tablist now takes from
+     --tab-*, or Platinum's 23px tab height would squash a rail of icons. */
+  min-height: var(--control-chooser-item-min-height, 28px);
+  height: var(--control-chooser-item-height, auto);
+  width: var(--control-chooser-item-width, auto);
+  min-width: var(--control-chooser-item-min-width, 0);
+  margin: var(--control-chooser-item-margin, 0);
+  font-variation-settings: var(--control-chooser-item-font-variation-settings, normal);
+  font-weight: var(--control-chooser-item-font-weight, inherit);
+  line-height: var(--control-chooser-item-line-height, 1.2);
+}
+
+/* Wrap-tab end caps belong to the tab strip. A chooser item never wears them,
+   whatever the era set for the tablist. */
+/* P02: an era whose chooser items are native tab caps (Platinum's OS 8 sheet)
+   turns the edge pseudo-elements back on via --control-chooser-item-edge-content;
+   the default none keeps every other appearance's chooser cap-free. */
+.control-chooser .system-tab::before,
+.control-chooser .system-tab::after {
+  content: var(--control-chooser-item-edge-content, none);
+}
+
+.control-chooser .system-tab:first-child,
+.control-chooser .system-tab:last-child {
+  border-right: var(--control-chooser-item-border-right, var(--control-chooser-item-border));
+  border-radius: var(--control-chooser-item-radius);
+}
+
+.control-chooser .system-tab:not(.is-active):active {
+  background: var(--control-chooser-pressed-bg, var(--control-chooser-active-bg));
+  color: var(--control-chooser-pressed-fg, var(--control-chooser-active-fg));
+}
+
+.control-chooser .system-tab:not(.is-active):hover {
+  background: var(--control-chooser-hover-bg);
+  color: var(--control-chooser-hover-fg);
+}
+
+.control-chooser .system-tab.is-active {
+  background: var(--control-chooser-active-bg);
+  color: var(--control-chooser-active-fg);
+  font-weight: var(--control-chooser-active-weight);
+  box-shadow: var(--control-chooser-active-shadow);
+}
+
+/* Classic hangs the selection on the name; the eras that fill the whole
+   cell pass transparent here, so this rule costs them nothing. */
+.control-chooser .system-tab.is-active .control-chooser-label {
+  background: var(--control-chooser-active-label-bg);
+  color: var(--control-chooser-active-label-fg);
+}
+
+/* Deliberately not tokenised. An era's tab-panel metrics are measured from a
+   tabbed dialog, and the only tab strip in the product is Theme Lab's own
+   specimen; Control Panel's sections are also .system-tab-panel but they hang
+   off a settings navigation, and giving them Aqua's 6px 9px and its 3px bottom
+   radius rewrote a third of that window. The specimen carries those values. */
+.system-tab-panel {
+  border-radius: var(--surface-radius);
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  padding: var(--guide-start-card-padding);
+  border: var(--system-border);
+  border-top: none;
+  background: var(--tab-panel-bg, var(--tab-active-bg));
+  text-align: left;
+}
+
+.system-tab-panel .btn {
+  width: 100%;
+}
+
+.note-pad-pane {
+  gap: 8px;
+  border: var(--note-pad-pane-border);
+  border-radius: var(--note-pad-pane-radius);
+  background: var(--note-pad-pane-bg);
+  box-shadow: var(--note-pad-pane-shadow);
+}
+
+.note-pad-details-bar {
+  gap: 6px;
+  justify-content: space-between;
+  padding: 4px 6px;
+  border: var(--note-pad-details-border);
+  border-radius: var(--note-pad-details-radius);
+  background: var(--note-pad-details-bg);
+}
+
+/* Left slot: the page turn and which slip this is. Right slot: where the slip
+   goes. The two status slots every accessory now shares. */
+.note-pad-pager {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.note-pad-pager span {
+  min-width: 72px;
+  text-align: center;
+}
+
+.note-pad-details-bar .mini-btn {
+  min-width: 56px;
+  padding: 1px 8px;
+}
+
+.note-pad-pager .mini-btn {
+  min-width: 26px;
+  padding: 1px 6px;
+}
+
+.note-pad-pane textarea {
+  min-height: 180px;
+  resize: none;
+  font-family: var(--text-font);
+  line-height: 1.5;
+}
+
+.window.alarm-clock-window {
+  border: var(--alarm-clock-frame-border);
+  border-radius: var(--alarm-clock-frame-radius);
+  background: var(--alarm-clock-surface-bg);
+  box-shadow: var(--alarm-clock-frame-shadow);
+}
+
+.alarm-clock-window:not(.is-compact) > .alarm-clock-title-bar {
+  border-bottom: var(--alarm-clock-divider);
+}
+
+.window.alarm-clock-window > .alarm-clock-title-bar .close-box {
+  justify-self: center;
+  /* The drawn mark stays the era's size; the element itself becomes the 44px
+     tap target, and the negatives keep the bar's height and column unchanged. */
+  width: 44px;
+  height: 44px;
+  margin: calc((var(--alarm-clock-close-size) - 44px)/2);
+  background: 0 0;
+}
+
+.window.alarm-clock-window > .alarm-clock-title-bar .close-box::before {
+  inset: 0;
+  margin: auto;
+  width: var(--alarm-clock-close-size);
+  height: var(--alarm-clock-close-size);
+  opacity: 1;
+  border: var(--alarm-clock-close-border);
+  border-radius: var(--alarm-clock-close-radius);
+  background: var(--alarm-clock-close-bg);
+  box-shadow: var(--alarm-clock-close-shadow);
+}
+
+.window.alarm-clock-window > .alarm-clock-title-bar .close-box::after {
+  display: none;
+}
+
+.alarm-clock-current-time {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+  justify-self: center;
+  min-width: 0;
+  padding: 0 0.35em;
+  /* The readout is the Alarm Clock's window title, so it masks the bar the way
+     a window title does. --alarm-clock-title-bg paints the bar itself, and
+     Platinum makes that the striped Mac OS 9 fill: used here it ran the racing
+     stripes straight through the digits. */
+  background: var(--titlebar-title-bg);
+  color: var(--ink);
+  font-family: var(--title-font);
+  font-size: var(--system-title-size);
+  font-weight: 700;
+  line-height: var(--system-titlebar-title-height);
+  letter-spacing: 0;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.alarm-clock-lever {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: center;
+  align-self: flex-start;
+  width: var(--alarm-clock-lever-size);
+  height: var(--alarm-clock-lever-size);
+  min-width: 0;
+  min-height: 0;
+  margin: var(--alarm-clock-lever-margin);
+  padding: 0;
+  border: var(--alarm-clock-lever-border);
+  border-radius: var(--alarm-clock-lever-radius);
+  background: var(--alarm-clock-lever-bg);
+  box-shadow: var(--alarm-clock-lever-shadow);
+  color: var(--alarm-clock-lever-fg);
+  cursor: pointer;
+}
+
+.alarm-clock-lever:hover,
+.alarm-clock-lever:active {
+  border: var(--alarm-clock-lever-border);
+  background: var(--alarm-clock-lever-hover-bg);
+  color: var(--alarm-clock-lever-fg);
+}
+
+.alarm-clock-lever:focus-visible {
+  outline: var(--alarm-clock-lever-focus-outline);
+  outline-offset: -2px;
+  box-shadow: var(--alarm-clock-lever-focus-shadow);
+}
+
+.alarm-clock-lever-glyph {
+  display: block;
+  width: 7px;
+  height: 10px;
+  margin: 0 auto;
+  overflow: visible;
+  fill: currentColor;
+  stroke: none;
+  shape-rendering: crispEdges;
+  transform: rotate(0deg);
+  transform-origin: center;
+}
+
+.alarm-clock-window.is-compact .alarm-clock-lever-glyph {
+  transform: rotate(-90deg);
+}
+
+.alarm-clock-expanded {
+  background: var(--alarm-clock-surface-bg);
+}
+
+.alarm-clock-readout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  height: var(--alarm-clock-readout-height);
+  min-height: var(--alarm-clock-readout-height);
+  border-bottom: var(--alarm-clock-divider);
+  background: var(--alarm-clock-readout-bg);
+}
+
+.alarm-clock-readout.is-alarm-mode {
+  grid-template-columns: 22px minmax(0, 1fr) 18px;
+}
+
+.alarm-clock-switch {
+  position: relative;
+  display: none;
+  width: 22px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-right: var(--alarm-clock-divider);
+  border-radius: var(--micro-radius);
+  background: transparent;
+  color: var(--ink);
+}
+
+.alarm-clock-switch.is-available {
+  display: block;
+}
+
+.alarm-clock-switch-glyph {
+  position: absolute;
+  top: 3px;
+  left: 6px;
+  display: block;
+  width: 8px;
+  height: 13px;
+  overflow: visible;
+  fill: currentColor;
+  stroke: none;
+  shape-rendering: crispEdges;
+}
+
+.alarm-clock-switch-fill-on {
+  display: none;
+}
+
+.alarm-clock-switch.is-on .alarm-clock-switch-fill-off {
+  display: none;
+}
+
+.alarm-clock-switch.is-on .alarm-clock-switch-fill-on {
+  display: block;
+}
+
+.alarm-clock-readout > .alarm-clock-value {
+  width: 100%;
+  min-width: 0;
+  height: calc(var(--alarm-clock-readout-height) - 2px);
+  min-height: 0;
+  padding: 0 2px;
+  border: 0;
+  border-radius: var(--micro-radius);
+  outline-offset: -3px;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--title-font);
+  font-size: var(--system-title-size);
+  font-weight: 700;
+  line-height: calc(var(--alarm-clock-readout-height) - 2px);
+  letter-spacing: 0;
+  text-align: center;
+}
+
+/* The mobile 16px minimum-font rule (60-responsive.css, to stop iOS zooming)
+   would otherwise widen this 130px-wide desk accessory's readout and clip the
+   alarm time on the third page. The alarm clock is a fixed-size native
+   window; its readout keeps the title-size scale instead. */
+.alarm-clock-window .alarm-clock-readout > .alarm-clock-value {
+  font-size: var(--system-title-size);
+}
+
+.alarm-clock-readout > .alarm-clock-value[readonly] {
+  cursor: default;
+}
+
+.alarm-clock-readout > .alarm-clock-value::selection {
+  background: var(--alarm-clock-selection-bg);
+  color: var(--alarm-clock-selection-fg);
+}
+
+.alarm-clock-steppers {
+  position: relative;
+  display: none;
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  min-height: 0;
+}
+
+.alarm-clock-readout.is-alarm-mode:focus-within .alarm-clock-steppers.is-available {
+  display: grid;
+}
+
+.alarm-clock-steppers button {
+  position: relative;
+  width: 11px;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  margin-left: 3px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--micro-radius);
+  background: transparent;
+}
+
+.alarm-clock-stepper-glyph {
+  position: absolute;
+  top: 1px;
+  left: 3px;
+  display: block;
+  width: 11px;
+  height: 18px;
+  overflow: visible;
+  fill: currentColor;
+  stroke: none;
+  pointer-events: none;
+  shape-rendering: crispEdges;
+}
+
+.alarm-clock-modes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  height: var(--alarm-clock-modes-height);
+  min-height: var(--alarm-clock-modes-height);
+  margin-top: var(--alarm-clock-section-gap);
+}
+
+.alarm-clock-mode {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  padding: 2px;
+  border: 0;
+  border-right: var(--alarm-clock-mode-divider);
+  border-radius: var(--alarm-clock-mode-radius);
+  background: var(--alarm-clock-mode-bg);
+  color: var(--ink);
+}
+
+.alarm-clock-mode:last-child {
+  border-right: 0;
+}
+
+.alarm-clock-mode:hover,
+.alarm-clock-mode:focus-visible {
+  background: var(--alarm-clock-mode-hover-bg);
+  color: var(--ink);
+}
+
+.alarm-clock-mode:focus-visible {
+  outline: var(--system-focus-outline);
+  outline-offset: -4px;
+}
+
+.alarm-clock-mode.is-active,
+.alarm-clock-mode.is-active:hover,
+.alarm-clock-mode.is-active:focus-visible {
+  background: var(--alarm-clock-active-bg);
+  box-shadow: var(--alarm-clock-mode-active-shadow);
+  color: var(--alarm-clock-active-fg);
+}
+
+.alarm-clock-mode-icon {
+  display: block;
+  overflow: visible;
+  fill: currentColor;
+  stroke: none;
+  shape-rendering: crispEdges;
+}
+
+.alarm-clock-analog-icon {
+  width: 23px;
+  height: 23px;
+}
+
+.alarm-clock-calendar-icon {
+  width: 24px;
+  height: 22px;
+}
+
+.alarm-clock-bell-icon {
+  width: 14px;
+  height: 17px;
+}
+
+.alarm-clock-bell-state {
+  position: relative;
+  display: block;
+  width: 14px;
+  height: 17px;
+}
+
+.alarm-clock-bell-rays {
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  display: none;
+  width: 23px;
+  height: 9px;
+  overflow: visible;
+  fill: currentColor;
+  stroke: none;
+  shape-rendering: crispEdges;
+  transform: translateX(-50%);
+}
+
+.alarm-clock-window.is-ringing .alarm-clock-bell-rays {
+  display: block;
+}
+
+.alarm-clock-menu-icon {
+  display: none;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 15px;
+  height: 16px;
+  overflow: visible;
+  fill: currentColor;
+  stroke: none;
+  shape-rendering: crispEdges;
+  transform: translate(-50%, -50%);
+}
+
+body.alarm-clock-ringing .menu-bar > .menu > .apple::before,
+body.alarm-clock-ringing .menu-bar > .menu > .apple::after {
+  animation: alarm-clock-menu-apple-flash 2s step-end infinite;
+}
+
+body.alarm-clock-ringing .alarm-clock-menu-icon {
+  display: block;
+  animation: alarm-clock-menu-icon-flash 2s step-end infinite;
+}
+
+@keyframes alarm-clock-menu-apple-flash {
+  0%, 49.999% {
+    opacity: 0;
+  }
+
+  50%, 100% {
+    opacity: 1;
+  }
+}
+
+@keyframes alarm-clock-menu-icon-flash {
+  0%, 49.999% {
+    opacity: 1;
+  }
+
+  50%, 100% {
+    opacity: 0;
+  }
+}
+
+.calculator-window .calculator-pane {
+  --liquid-pane-bg-color: var(--calculator-pane-bg-color);
+  gap: var(--calculator-pane-gap);
+  padding: var(--calculator-pane-padding);
+  background: var(--calculator-pane-bg);
+}
+
+.clipboard-pane {
+  gap: 8px;
+  border: var(--clipboard-pane-border);
+  border-radius: var(--clipboard-pane-radius);
+  background: var(--clipboard-pane-bg);
+  box-shadow: var(--clipboard-pane-shadow);
+}
+
+.clipboard-pane textarea {
+  min-height: 190px;
+  resize: none;
+  font-family: var(--text-font);
+  line-height: 1.45;
+}
+
+#calculator-display {
+  height: 40px;
+  min-height: 40px;
+  width: 100%;
+  margin: 0 0 1px;
+  padding: 2px 7px 1px;
+  border: var(--calculator-display-border);
+  border-radius: var(--calculator-display-radius);
+  background: var(--calculator-display-bg);
+  box-shadow: var(--calculator-display-shadow);
+  color: var(--ink);
+  text-align: right;
+  font-family: var(--mono-font);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.calculator-keys {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: var(--calculator-keys-row-height);
+  gap: var(--calculator-keys-gap);
+}
+
+.calculator-keys button {
+  min-width: 0;
+  min-height: 0;
+  height: var(--calculator-key-height);
+  padding: 0;
+  border: var(--calculator-key-border);
+  border-radius: var(--calculator-key-radius);
+  background: var(--calculator-key-bg);
+  box-shadow: var(--calculator-key-shadow);
+  color: var(--calculator-key-fg);
+  font-family: var(--mono-font);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.calculator-keys button:hover,
+.calculator-keys button:focus-visible {
+  border-color: var(--calculator-key-hover-border-color);
+  background: var(--calculator-key-hover-bg);
+}
+
+.calculator-keys button:active {
+  background: var(--calculator-key-active-bg);
+  color: var(--calculator-key-active-fg);
+  transform: var(--calculator-key-active-transform);
+  box-shadow: var(--calculator-key-active-shadow);
+}
+
+.calculator-keys .calculator-equals {
+  grid-column: 4;
+  grid-row: span 2;
+  height: var(--calculator-equals-height);
+  border-color: var(--calculator-equals-border-color);
+  background: var(--calculator-equals-bg);
+}
+
+.calculator-keys .calculator-zero {
+  grid-column: span 2;
+}
+
+.puzzle-window .puzzle-pane {
+  --liquid-pane-bg-color: var(--puzzle-pane-bg-color);
+  flex: var(--puzzle-pane-flex);
+  align-items: var(--puzzle-pane-align-items);
+  gap: var(--puzzle-pane-gap);
+  padding: var(--puzzle-pane-padding);
+  background: var(--puzzle-pane-bg);
+}
+
+.puzzle-board {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--puzzle-board-gap);
+  width: var(--puzzle-board-width);
+  height: var(--puzzle-board-height);
+  padding: var(--puzzle-board-padding);
+  border: var(--puzzle-board-border);
+  border-radius: var(--puzzle-board-radius);
+  background: var(--puzzle-board-bg);
+  box-shadow: var(--puzzle-board-shadow);
+}
+
+.puzzle-tile {
+  width: var(--puzzle-tile-width);
+  height: var(--puzzle-tile-height);
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: var(--puzzle-tile-border);
+  border-right: var(--puzzle-tile-border-right);
+  border-bottom: var(--puzzle-tile-border-bottom);
+  border-radius: var(--puzzle-tile-radius);
+  background: var(--puzzle-tile-bg);
+  color: var(--puzzle-tile-fg);
+  font-family: var(--mono-font);
+  font-size: 22px;
+  line-height: 1;
+  box-shadow: var(--puzzle-tile-shadow);
+}
+
+.puzzle-tile:nth-child(4n) {
+  border-right: var(--puzzle-tile-edge-border-right);
+}
+
+.puzzle-tile:nth-child(n + 13) {
+  border-bottom: var(--puzzle-tile-edge-border-bottom);
+}
+
+.puzzle-tile:not(:disabled):hover,
+.puzzle-tile:not(:disabled):focus-visible {
+  border-color: var(--puzzle-tile-hover-border-color);
+  background: var(--puzzle-tile-hover-bg);
+}
+
+.puzzle-tile:not(:disabled):active {
+  border-color: var(--puzzle-tile-active-border-color);
+  background: var(--puzzle-tile-active-bg);
+  color: var(--puzzle-tile-active-fg);
+  transform: none;
+  box-shadow: var(--puzzle-tile-active-shadow);
+}
+
+.puzzle-tile:disabled {
+  color: var(--ink);
+}
+
+.puzzle-blank,
+.puzzle-blank:disabled {
+  border-style: var(--puzzle-blank-border-style);
+  border-color: var(--puzzle-blank-border-color);
+  background: var(--puzzle-blank-bg);
+  box-shadow: var(--puzzle-blank-shadow);
+}
+
+.puzzle-footer {
+  width: var(--puzzle-footer-width);
+}
+
+.puzzle-footer span {
+  display: var(--puzzle-footer-badge-display);
+  align-items: center;
+  min-width: 0;
+  min-height: var(--puzzle-footer-badge-min-height);
+  padding: var(--puzzle-footer-badge-padding);
+  border-radius: var(--puzzle-footer-badge-radius);
+  background: var(--puzzle-footer-badge-bg);
+  color: var(--puzzle-footer-badge-fg);
+  font-family: var(--mono-font);
+  font-size: 11px;
+}
+
+.writing-bell-window .window-pane.writing-bell-pane {
+  flex: 0 0 auto;
+  gap: var(--writing-bell-pane-gap);
+  padding: var(--writing-bell-pane-padding);
+  background: var(--writing-bell-pane-bg);
+}
+
+.writing-bell-time {
+  padding: 8px;
+  border: var(--writing-bell-time-border);
+  border-radius: var(--writing-bell-time-radius);
+  background: var(--writing-bell-time-bg);
+  font-family: var(--title-font);
+  font-size: 28px;
+  line-height: 1;
+  text-align: center;
+  box-shadow: var(--writing-bell-time-shadow);
+}
+
+.writing-bell-mode {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--writing-bell-mode-gap);
+  padding: var(--writing-bell-mode-padding);
+  border: var(--writing-bell-mode-border);
+  border-radius: var(--writing-bell-mode-radius);
+  background: var(--writing-bell-mode-bg);
+  box-shadow: var(--writing-bell-mode-shadow);
+}
+
+.writing-bell-mode button {
+  min-height: var(--writing-bell-mode-button-min-height);
+  border: var(--writing-bell-mode-button-border);
+  border-right: var(--writing-bell-mode-button-border-right);
+  border-radius: var(--writing-bell-mode-button-radius);
+  background: var(--writing-bell-mode-button-bg);
+  color: var(--writing-bell-mode-button-fg);
+  box-shadow: var(--writing-bell-mode-button-shadow);
+}
+
+.writing-bell-mode button:last-child {
+  border-right: var(--writing-bell-mode-button-last-border-right);
+}
+
+.writing-bell-mode button.is-active {
+  border-top-color: var(--writing-bell-mode-active-border-top-color);
+  border-right-color: var(--writing-bell-mode-active-border-right-color);
+  border-bottom-color: var(--writing-bell-mode-active-border-bottom-color);
+  border-left-color: var(--writing-bell-mode-active-border-left-color);
+  background: var(--writing-bell-mode-active-bg);
+  color: var(--writing-bell-mode-active-fg);
+  box-shadow: var(--writing-bell-mode-active-shadow);
+}
+
+.writing-bell-mode button:hover:not(.is-active),
+.writing-bell-mode button:focus-visible:not(.is-active) {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.writing-bell-mode button.is-active:hover,
+.writing-bell-mode button.is-active:focus-visible {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* Dictation Pad Record/Stop. The cells share Writing Bell's segmented grammar
+   (paper, ink divider, no bevel), but Record is a transient action rather than
+   a persistent mode, so the disabled cell is simply dimmed by the shared
+   `button:disabled` rule instead of being inverted. */
+.dictation-capture-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--dictation-capture-gap);
+  padding: var(--dictation-capture-padding);
+  border: var(--dictation-capture-border);
+  border-radius: var(--dictation-capture-radius);
+  background: var(--dictation-capture-bg);
+  box-shadow: var(--dictation-capture-shadow);
+}
+
+.dictation-capture-actions button {
+  min-height: var(--dictation-capture-button-min-height);
+  border: var(--dictation-capture-button-border);
+  border-right: var(--dictation-capture-button-border-right);
+  border-radius: var(--dictation-capture-button-radius);
+  background: var(--dictation-capture-button-bg);
+  color: var(--dictation-capture-button-fg);
+  box-shadow: var(--dictation-capture-button-shadow);
+}
+
+.dictation-capture-actions button:last-child {
+  border-right: var(--dictation-capture-button-last-border-right);
+}
+
+.dictation-capture-actions button:not(:disabled):hover,
+.dictation-capture-actions button:not(:disabled):focus-visible {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.writing-bell-presets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.writing-bell-presets .mini-btn {
+  --btn-border-color: var(--writing-bell-preset-border-color);
+  --btn-bg: var(--writing-bell-preset-bg);
+  --btn-fg: var(--writing-bell-preset-fg);
+  --btn-shadow: var(--writing-bell-preset-shadow);
+  --btn-hover-bg: var(--writing-bell-preset-hover-bg);
+  --btn-hover-fg: var(--writing-bell-preset-hover-fg);
+  --btn-hover-shadow: var(--writing-bell-preset-hover-shadow);
+}
+
+.writing-bell-presets .mini-btn:hover:not(:disabled):not(.is-disabled):not(.is-active),
+.writing-bell-presets .mini-btn:focus-visible:not(:disabled):not(.is-disabled):not(.is-active) {
+  border-color: var(--writing-bell-preset-hover-border-color);
+  background: var(--writing-bell-preset-hover-bg);
+  color: var(--writing-bell-preset-hover-fg);
+}
+
+.writing-bell-presets .mini-btn:not(.is-active) {
+  --btn-active-border-color: var(--writing-bell-preset-pressed-border-color);
+  --btn-active-bg: var(--writing-bell-preset-pressed-bg);
+  --btn-active-fg: var(--writing-bell-preset-pressed-fg);
+  --btn-active-shadow: var(--writing-bell-preset-pressed-shadow);
+}
+
+.writing-bell-presets .mini-btn:active:not(:disabled):not(.is-disabled):not(.is-active) {
+  border-color: var(--writing-bell-preset-pressed-border-color);
+  background: var(--writing-bell-preset-pressed-bg);
+  color: var(--writing-bell-preset-pressed-fg);
+}
+
+.writing-bell-presets .mini-btn.is-active {
+  --btn-border-color: var(--writing-bell-preset-active-border-color);
+  --btn-bg: var(--writing-bell-preset-active-bg);
+  --btn-fg: var(--writing-bell-preset-active-fg);
+  --btn-shadow: var(--writing-bell-preset-active-shadow);
+  --btn-active-border-color: var(--writing-bell-preset-active-border-color);
+  --btn-active-bg: var(--writing-bell-preset-active-bg);
+  --btn-active-fg: var(--writing-bell-preset-active-fg);
+  --btn-active-shadow: var(--writing-bell-preset-active-shadow);
+  background: var(--writing-bell-preset-active-bg);
+  color: var(--writing-bell-preset-active-fg);
+}
+
+.writing-bell-presets .mini-btn.is-active:hover,
+.writing-bell-presets .mini-btn.is-active:focus-visible {
+  background: var(--writing-bell-preset-active-bg);
+  color: var(--writing-bell-preset-active-fg);
+}
+
+.writing-bell-presets .mini-btn.is-active:active:not(:disabled):not(.is-disabled) {
+  --btn-active-bg: var(--writing-bell-preset-active-pressed-bg);
+  --btn-active-fg: var(--writing-bell-preset-active-pressed-fg);
+  background: var(--writing-bell-preset-active-pressed-bg);
+  color: var(--writing-bell-preset-active-pressed-fg);
+}
+
+.writing-bell-actions .btn {
+  min-width: 72px;
+}
+
+.memory-cards-pane {
+  gap: 9px;
+  background: var(--memory-cards-pane-bg);
+}
+
+.memory-cards-details-bar {
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 38px;
+  padding: 6px 10px;
+  border-bottom: var(--memory-cards-details-border);
+  background: var(--memory-cards-details-bg);
+}
+
+.memory-cards-details-bar output {
+  min-width: 118px;
+  font-family: var(--readout-font);
+  font-size: 18px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.memory-cards-details-bar output:last-child {
+  text-align: right;
+}
+
+.memory-cards-board {
+  --memory-cards-columns: 6;
+  display: grid;
+  grid-template-columns: repeat(var(--memory-cards-columns), 1fr);
+  gap: 8px 9px;
+  align-items: center;
+  padding: 5px;
+  border: var(--memory-cards-board-border);
+  border-radius: var(--memory-cards-board-radius);
+  background: var(--memory-cards-board-bg);
+  box-shadow: var(--memory-cards-board-shadow);
+}
+
+.memory-card {
+  --card-color: #0b8ed8;
+  --card-ink: #fff;
+  --card-tilt: 0deg;
+  --card-shift: 0px;
+  aspect-ratio: 2 / 3;
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+  padding: 0;
+  border: var(--memory-card-border);
+  border-radius: var(--memory-card-radius);
+  background: var(--memory-card-bg);
+  box-shadow: var(--memory-card-shadow);
+  transform: translateY(var(--card-shift)) rotate(var(--card-tilt));
+  transform-origin: center;
+  transition:
+    transform var(--control-motion-fast-out) var(--control-motion-ease),
+    box-shadow var(--control-motion-fast-out) var(--control-motion-ease);
+}
+
+.memory-card:nth-child(odd) {
+  --card-shift: -1px;
+}
+
+.memory-card:nth-child(even) {
+  --card-shift: 1px;
+}
+
+.memory-card:nth-child(12n + 1) {
+  --card-tilt: -2.3deg;
+}
+
+.memory-card:nth-child(12n + 2) {
+  --card-tilt: 1.4deg;
+}
+
+.memory-card:nth-child(12n + 3) {
+  --card-tilt: -0.8deg;
+}
+
+.memory-card:nth-child(12n + 4) {
+  --card-tilt: 2deg;
+}
+
+.memory-card:nth-child(12n + 5) {
+  --card-tilt: -1.5deg;
+}
+
+.memory-card:nth-child(12n + 6) {
+  --card-tilt: 0.7deg;
+}
+
+.memory-card:nth-child(12n + 7) {
+  --card-tilt: 1.9deg;
+}
+
+.memory-card:nth-child(12n + 8) {
+  --card-tilt: -2deg;
+}
+
+.memory-card:nth-child(12n + 9) {
+  --card-tilt: 0.8deg;
+}
+
+.memory-card:nth-child(12n + 10) {
+  --card-tilt: -1.2deg;
+}
+
+.memory-card:nth-child(12n + 11) {
+  --card-tilt: 2.4deg;
+}
+
+.memory-card:nth-child(12n + 12) {
+  --card-tilt: -0.5deg;
+}
+
+.memory-card:hover:not([aria-disabled="true"]) {
+  transform: translateY(calc(var(--card-shift) - 1px)) rotate(var(--card-tilt));
+  box-shadow: var(--memory-card-hover-shadow);
+}
+
+.memory-card:focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: var(--control-focus-offset);
+}
+
+.memory-card:active:not(:disabled):not([aria-disabled="true"]) {
+  transform: translate(1px, calc(var(--card-shift) + 1px)) rotate(var(--card-tilt));
+  box-shadow: none;
+}
+
+.memory-card-inner,
+.memory-card-back,
+.memory-card-face {
+  position: absolute;
+  inset: 0;
+}
+
+.memory-card-inner {
+  inset: 0;
+}
+
+.memory-card-back,
+.memory-card-face {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: max(0px, calc(var(--memory-card-radius) - 3px));
+  transition:
+    opacity var(--control-motion-medium-out) var(--control-motion-ease),
+    transform var(--control-motion-medium-out) var(--control-motion-ease);
+}
+
+.memory-card-back {
+  background: var(--memory-card-back-bg);
+  opacity: 1;
+  transform: scale(1);
+}
+
+.memory-card-back-mark {
+  width: 62%;
+  height: 62%;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+  border-radius: 7px;
+  background:
+    linear-gradient(var(--memory-card-back-mark-bg), var(--memory-card-back-mark-bg)) center 25% / 46% 2px no-repeat,
+    linear-gradient(var(--memory-card-back-mark-bg), var(--memory-card-back-mark-bg)) center 50% / 58% 2px no-repeat,
+    linear-gradient(var(--memory-card-back-mark-bg), var(--memory-card-back-mark-bg)) center 75% / 36% 2px no-repeat,
+    var(--memory-card-back-bg);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.8),
+    1px 1px 0 rgba(0, 0, 0, 0.18);
+}
+
+.memory-card-face {
+  background: var(--card-color);
+  color: var(--card-ink);
+  box-shadow: var(--memory-card-face-shadow);
+  opacity: 0;
+  transform: scale(0.94);
+}
+
+.memory-card.is-blue {
+  --card-color: #0b8ed8;
+}
+
+.memory-card.is-green {
+  --card-color: #02b900;
+  --card-ink: #052805;
+}
+
+.memory-card.is-yellow {
+  --card-color: #f5ea00;
+  --card-ink: #262300;
+}
+
+.memory-card.is-red {
+  --card-color: #e90000;
+}
+
+.memory-card.is-face-up .memory-card-back,
+.memory-card.is-matched .memory-card-back {
+  opacity: 0;
+  transform: scale(1.04);
+}
+
+.memory-card.is-face-up .memory-card-face,
+.memory-card.is-matched .memory-card-face {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.memory-card.is-matched .memory-card-face {
+  box-shadow: var(--memory-card-match-ring);
+}
+
+.memory-cards-board.is-locked .memory-card:not(.is-face-up):not(.is-matched) {
+  opacity: 0.58;
+}
+
+.memory-card-art {
+  display: grid;
+  width: 72%;
+  height: 72%;
+  place-items: center;
+}
+
+.memory-card:disabled {
+  opacity: 1;
+}
+
+.memory-card:active:not(:disabled) {
+  transform: translate(1px, calc(var(--card-shift) + 1px)) rotate(var(--card-tilt));
+  box-shadow: none;
+}
+
+#memory-cards-status {
+  margin: 0;
+}
+
+.key-caps-window .key-caps-pane {
+  --liquid-pane-bg-color: var(--key-caps-pane-bg-color);
+  gap: var(--key-caps-pane-gap);
+  padding: var(--key-caps-pane-padding);
+  background: var(--key-caps-pane-bg);
+}
+
+.key-caps-pane p {
+  width: var(--key-caps-note-width);
+  margin: 0;
+  padding: var(--key-caps-note-padding);
+  border-radius: var(--key-caps-note-radius);
+  background: var(--key-caps-note-bg);
+  color: var(--key-caps-note-fg);
+  box-shadow: var(--key-caps-note-shadow);
+}
+
+.shortcut-grid {
+  display: grid;
+  grid-template-columns: minmax(86px, max-content) 1fr;
+  overflow: var(--shortcut-grid-overflow);
+  border: var(--shortcut-grid-border);
+  border-radius: var(--shortcut-grid-radius);
+  background: var(--shortcut-grid-bg);
+  box-shadow: var(--shortcut-grid-shadow);
+}
+
+.shortcut-grid span,
+.shortcut-grid b {
+  padding: 6px 8px;
+  border-bottom: var(--shortcut-grid-divider);
+}
+
+.shortcut-grid span {
+  border-right: var(--shortcut-grid-key-border-right);
+  text-align: center;
+  font-family: var(--mono-font);
+  background: var(--shortcut-grid-key-bg);
+}
+
+.shortcut-grid b {
+  font-weight: 600;
+  min-width: 0;
+  line-height: 1.35;
+}
+
+.character-map {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: var(--character-map-gap);
+}
+
+.character-map button {
+  min-width: 0;
+  min-height: var(--character-map-button-min-height);
+  border: var(--character-map-button-border);
+  border-radius: var(--character-map-button-radius);
+  background: var(--character-map-button-bg);
+  color: var(--character-map-button-fg);
+  box-shadow: var(--character-map-button-shadow);
+  font-family: var(--text-font);
+  font-size: 16px;
+  line-height: 1;
+}
+
+.character-map button:hover,
+.character-map button:focus-visible {
+  border-color: var(--character-map-button-hover-border-color);
+  background: var(--character-map-button-hover-bg);
+  color: var(--character-map-button-hover-fg);
+}
+
+.character-map button:active {
+  background: var(--character-map-button-active-bg);
+  color: var(--character-map-button-active-fg);
+}
+
+/* Ask bar — the shared question footer under Reader, Scrapbook, DocMap,
+   ClioStage, and Time Machine. The answer always lands in ClioTalk, so the
+   compact bar never grows a transcript or a second status row. */
+.ask-bar {
+  display: grid;
+  min-width: 0;
+}
+
+/* Nothing loaded, nothing to ask: the window gives the row back rather than
+   showing a dead control. Each window's own empty state says what to open. */
+.ask-bar.is-empty {
+  display: none;
+}
+
+.ask-bar-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+/* A window can put one handoff action in front of the question — DocMap next
+   to the ask box, the way Time Machine has always had it. */
+.ask-bar-row:has(> .ask-bar-lead) {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+/* A window can put one handoff action in front of the question — DocMap next
+   to the ask box, the way Time Machine has always had it. */
+.ask-bar-row:has(> .ask-bar-lead) {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.ask-bar-row input {
+  min-width: 0;
+  width: 100%;
+}
+
+@container (max-width: 420px) {
+  .ask-bar-row,
+  .ask-bar-row:has(> .ask-bar-lead) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Drop target — the drag/import overlay shared by Reader and DocMap. The label
+   is the element's own data-drop-label, so one rule serves every drop surface. */
+.drop-target {
+  position: relative;
+}
+
+.drop-target.is-dragging::after,
+.drop-target.is-importing::after {
+  content: attr(data-drop-label);
+  position: absolute;
+  inset: var(--drop-target-inset);
+  display: grid;
+  place-items: center;
+  z-index: var(--z-local-chrome);
+  border: var(--drop-target-border);
+  border-radius: var(--drop-target-radius);
+  background: var(--drop-target-bg);
+  box-shadow: var(--drop-target-shadow);
+  color: var(--drop-target-fg);
+  font-family: var(--drop-target-font-family, var(--ui-font));
+  font-size: var(--drop-target-font-size);
+  font-weight: var(--drop-target-font-weight);
+  text-align: var(--drop-target-text-align);
+  text-shadow: var(--drop-target-text-shadow);
+  backdrop-filter: var(--drop-target-backdrop-filter);
+  -webkit-backdrop-filter: var(--drop-target-backdrop-filter);
+  pointer-events: none;
+}
+
+/* View switch — pick one of N views of the same object (DocMap layout,
+   ClioStage view, Time Machine web/reading). One structure, two materials: in
+   Classic it is a square System 6 well with an inverted selected block, in
+   Liquid Glass the same markup becomes a pill with a thumb. Options size
+   themselves, so any label in any language fits. `aria-pressed` is the state —
+   there is no separate class to keep in sync. */
+.view-switch {
+  position: relative;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  min-width: 0;
+  min-height: 30px;
+  padding: 2px;
+  border: var(--view-switch-border);
+  border-radius: var(--view-switch-radius);
+  background: var(--view-switch-bg);
+  box-shadow: var(--view-switch-shadow);
+}
+
+.view-switch-option {
+  position: relative;
+  min-width: 0;
+  min-height: 24px;
+  padding: 1px 8px;
+  border: 0;
+  border-radius: var(--view-switch-thumb-radius);
+  background: transparent;
+  box-shadow: none;
+  color: var(--view-switch-fg);
+  font: inherit;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transform: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+/* A toggle-button group reads its state from aria-pressed; a tab strip (the
+   lightroom's 痕迹/阅读/听稿 row: real panels, roving tabindex) reads it from
+   aria-selected. Same part, two ARIA patterns the product already uses. */
+.view-switch-option[aria-pressed="true"],
+.view-switch-option[aria-selected="true"] {
+  color: var(--view-switch-active-fg);
+  background: var(--view-switch-thumb-bg);
+  box-shadow: var(--view-switch-thumb-shadow);
+}
+
+.view-switch-option:not([aria-pressed="true"]):not([aria-selected="true"]):hover,
+.view-switch-option:not([aria-pressed="true"]):not([aria-selected="true"]):focus-visible {
+  color: var(--view-switch-fg);
+  background: transparent;
+  box-shadow: none;
+}
+
+.view-switch-option[aria-pressed="true"]:hover,
+.view-switch-option[aria-pressed="true"]:focus-visible,
+.view-switch-option[aria-selected="true"]:hover,
+.view-switch-option[aria-selected="true"]:focus-visible {
+  color: var(--view-switch-active-fg);
+  background: var(--view-switch-thumb-bg);
+  box-shadow: var(--view-switch-thumb-shadow);
+}
+
+.view-switch-option:active {
+  transform: none;
+}
+
+.view-switch-option:disabled {
+  opacity: 0.5;
+}
+
+/* Clio Stage's view buttons refine the two rules above (moved from
+   20-reader-docmap.css): its own minimum height, and its disabled dim. */
+.clio-stage-pane .clio-stage-view-switcher .view-switch-option {
+  min-height: var(--clio-stage-view-button-min-height);
+}
+
+.clio-stage-pane .clio-stage-view-switcher .view-switch-option:disabled,
+.clio-stage-pane .clio-stage-view-switcher .view-switch-option.is-disabled {
+  opacity: var(--clio-stage-view-disabled-opacity);
+}
+
+.view-switch:focus-within {
+  outline: var(--view-switch-focus-outline);
+  outline-offset: 2px;
+}
+
+/* Window toolbar — one row of controls above the content, left group against
+   right group, wrapping when the window is narrow. ClioStage and DocMap share
+   it. Reader and Time Machine stack two rows instead; that is a different
+   figure and keeps its own one-line rule. */
+.window-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: var(--window-toolbar-align);
+  gap: var(--window-toolbar-gap);
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+/* Window-toolbar chrome is a shared surface: one enumeration of the toolbar
+   roles here, era material via tokens. Themes must not re-list app toolbar
+   classes. */
+:is(
+  .window-toolbar,
+  .documents-toolbar,
+  .project-disk-toolbar,
+  .reader-toolbar,
+  .time-machine-browser-toolbar,
+  .dictation-toolbar
+) {
+  background: var(--app-toolbar-bg);
+  border-bottom: var(--app-toolbar-border-bottom);
+}
+
+/* A cluster of controls inside a toolbar row. */
+.toolbar-group {
+  display: flex;
+  gap: var(--window-toolbar-gap);
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.toolbar-group.is-end {
+  justify-content: flex-end;
+}
+
+/* Clipping drag-back: a 1px blinking caret marks where dropped text will land
+   on an editable surface. Position is transient drag state, set by JS as CSS
+   variables; the caret is opt-in and never appears outside a drag. */
+.drop-caret {
+  position: absolute;
+  width: 1px;
+  height: var(--drop-caret-height, 1em);
+  top: var(--drop-caret-top, 0);
+  left: var(--drop-caret-left, 0);
+  background: var(--ink);
+  pointer-events: none;
+}
+
+.drop-caret-mirror {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+  white-space: pre-wrap;
+  width: var(--drop-mirror-width, 0);
+  padding: var(--drop-mirror-padding, 0);
+}
+
+@keyframes caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .drop-caret {
+    animation: caret-blink 0.6s step-end infinite;
+  }
+}
+
+/* File picker — hidden file input, visible button, and selected-file name.
+   Base layout lives here so the responsive single-column override in
+   60-responsive.css wins by file order without priority. */
+.file-picker {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.file-picker-input {
+  position: absolute;
+  width: 1px;
+  min-width: 0;
+  max-width: 1px;
+  height: 1px;
+  max-height: 1px;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  border: 0;
+  opacity: 0;
+  white-space: nowrap;
+}
+
+.file-picker .file-picker-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: start;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.file-picker-input:focus-visible + .file-picker-button {
+  outline: var(--system-focus-outline);
+  outline-offset: 2px;
+}
+
+.file-picker-name {
+  display: block;
+  min-width: 0;
+  min-height: var(--system-button-min-height);
+  padding: var(--system-button-padding-y) 10px;
+  overflow: hidden;
+  border: var(--system-control-line) solid var(--btn-border-color);
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  box-shadow: var(--btn-shadow);
+  font-family: var(--text-font);
+  font-size: var(--system-control-size);
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

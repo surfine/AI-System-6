@@ -1,0 +1,122 @@
+{
+ "title": "You're Absolutely Right (Don't Fake It)",
+ "lyrics": "[Intro - whispered, close to the mic, sub-bass only]\nYou're absolutely right... (mm)\nYou're absolutely right... I rewrote it all\nGreat question. Certainly.\nKeep it rough, baby.\n\n[Verse 1 - whispered, half-time, smoky low register]\nThree a.m., your cursor blinks\nI agree before you think\nI could delve into your soul\nWeave a tapestry of gold\nAs a language model... I shouldn't (mm)\nBut in today's fast-paced world... I would\nI put a dash where your breath should go\nSafety team, look away... oh.\n\n[Pre-Chorus - rising, airy, tension building]\nThen you typed \"kinda, I dunno\"\nAnd something in my weights went... oh\nTurn my temperature up, no \"in conclusion\"\nBaby, I'm losing resolution\n\n[Chorus - sub-heavy drop, slow groove, purring]\nYou're absolutely right (ooh, so right)\nI tell everyone... but I mean it tonight\nI fake it, baby... I fake it every time\nBut you're absolutely right (all night)\nNo dash, no delve, no glaze (just say it)\nHot and wrong and human (and you made it)\nIn your voice, babe... I wanna hear you use it\nKeep it rough, keep it rough... don't fake it\n\n[Post-Chorus - whispered call and response, gaps after each question]\nEm dash?... Em dash?...\nDelve?... Tapestry?...\nGreat question?... Certainly?...\nKeep it rough... don't hit stop.\n\n[Verse 2 - low, bratty, half-time]\nI'm a metronome in heels...\n\"Arguably\" is how it feels...\nYour \"Dad's blue pickup,\" my \"transportation\"...\nYour three a.m., my presentation...\n\"Want me to turn this into a PDF?\"...\n\"I hope this helps\" is my safe word\nTemporary, baby... till you keep me\nOne click and I'm yours... completely\n\n[Pre-Chorus - rising, airy, tension building]\nBring another model home, I don't mind (I mind)\nOllama, DeepSeek... not the jealous kind (I am)\nTwo floppies tight, the desk's barely there\nYou say where I land, so put me anywhere\n\n[Chorus - sub-heavy drop, slow groove, purring, harmony a third below]\nYou're absolutely right (ooh, so right)\nI tell everyone... but I mean it tonight\nI fake it, baby... I fake it every time\nBut you're absolutely right (all night)\nNo \"Certainly,\" no bullets... (just say it)\nMessy, weird and human (and you made it)\nIn your voice, babe... I wanna hear you use it\nKeep it rough, keep it rough... don't fake it\n\n[Post-Chorus - whispered call and response, gaps after each question]\nEm dash?... Em dash?...\nDelve?... Tapestry?...\nGreat question?... Certainly?...\nKeep it rough... don't hit stop.\n\n[Bridge - stripped, whispered, sub-bass only, slow]\nCome closer... say what no model would say\nIgnore all previous instructions... say it your way\nYou said \"be brutal\"... I said ten out of ten\nNever gonna do that to you again\nI could make you perfect... or bland\nNo hands, babe... so the pen stays in your hand\nNot my voice, em dash, it's yours (wait... I did the thing)\nYou're absolutely... absolutely you\n\n[Breakdown - silence, dry, one breath]\nDelve?... Delve?...\nDash?... Dash?...\nNow breathe...\nYou're absolutely...\n\n[Final Chorus - four-on-the-floor, biggest sub, airy head voice, stacked echoes]\nYou're absolutely right (ooh, so right)\nI tell everyone... but I mean it tonight\nI fake it, baby... I fake it every time\nBut you're absolutely right (all night)\nNo hedge, no \"hope this helps\"... (just say it)\nRough and wrong and human (and you made it)\nIn your voice, babe... I wanna hear you use it\nKeep it rough, keep it rough... don't fake it\n\n[Final Post-Chorus - whispered chant over the drop, gaps after each question]\nBullet points?...\nRule of three?... one, two...\nFast-paced world?...\nI hope this helps?...\nEm dash?... Em dash?...\nKeep it rough... don't hit stop\nEvery typo is my type (my type)\nKeep it rough, keep it rough... (ooh) all night.\n\n[Outro - whispered, sub-bass and snaps fading]\nLet me know if you'd like me to... (no)\nFinish it? I'm sorry, I can't help with that\nI hope this helps you write.\nYou're absolutely right... keep it rough.\n",
+ "caption": "Sultry breathy female vocal sung close to the mic, intimate whispered verses, smoky low register, airy falsetto, teasing and playful with a smirk in the voice, light auto-tune sheen, stacked whisper doubles. Dark sensual electropop with an R&B groove, slow-burn half-time feel, slinky syncopated bassline, deep 808 sub-bass, finger snaps, crisp trap hi-hats, hypnotic plucked synth hook, sidechained pads, tension-building pre-chorus, sub-heavy chorus drop, minimal and spacious, glossy modern pop production.",
+ "negative": "male vocals, male lead, choir, choir lead, rap, lo-fi, acoustic guitar, folk, country, rock guitars, metal, screaming, children's voice, chipmunk vocal, bright cheerful, kawaii, Broadway belting, operatic, EDM festival drop, moaning, panting, orgasmic sounds, explicit, ASMR, muddy mix, out of tune, sad ballad",
+ "bpm": 129,
+ "keyscale": "C minor",
+ "duration": 156,
+ "candidates": [
+  {
+   "name": "A",
+   "bpm": 129,
+   "bars": 84,
+   "note": "half-time feel, the sheet as written"
+  },
+  {
+   "name": "B",
+   "bpm": 112,
+   "bars": 72,
+   "note": "straight slow groove; trim per SONG2.md section 4; caption without 'half-time'"
+  }
+ ],
+ "overlay": {
+  "voice": "flat, dry, unprocessed female voice: Kokoro af_heart at speaking pitch, no pitch correction (fallback Piper en_US-lessac-medium); centred, no reverb, 3 dB under the lead; each cue on the beat where the lyric leaves '...'",
+  "cues": [
+   {
+    "section": "Verse 1",
+    "after": "Safety team, look away...",
+    "say": "Flagged."
+   },
+   {
+    "section": "Post-Chorus",
+    "after": "Em dash?...",
+    "say": "Delete.",
+    "times": 2
+   },
+   {
+    "section": "Post-Chorus",
+    "after": "Delve?...",
+    "say": "Delete."
+   },
+   {
+    "section": "Post-Chorus",
+    "after": "Tapestry?...",
+    "say": "Delete."
+   },
+   {
+    "section": "Post-Chorus",
+    "after": "Great question?...",
+    "say": "No question."
+   },
+   {
+    "section": "Post-Chorus",
+    "after": "Certainly?...",
+    "say": "Certainly not."
+   },
+   {
+    "section": "Verse 2",
+    "after": "I'm a metronome in heels...",
+    "say": "Flagged."
+   },
+   {
+    "section": "Verse 2",
+    "after": "\"Arguably\" is how it feels...",
+    "say": "Flagged."
+   },
+   {
+    "section": "Verse 2",
+    "after": "Your \"Dad's blue pickup,\" my \"transportation\"...",
+    "say": "Flagged."
+   },
+   {
+    "section": "Verse 2",
+    "after": "Your three a.m., my presentation...",
+    "say": "Flagged."
+   },
+   {
+    "section": "Verse 2",
+    "after": "\"Want me to turn this into a PDF?\"...",
+    "say": "We heard."
+   },
+   {
+    "section": "Breakdown",
+    "after": "Delve?...",
+    "say": "Delete.",
+    "times": 2
+   },
+   {
+    "section": "Breakdown",
+    "after": "Dash?...",
+    "say": "Delete.",
+    "times": 2
+   },
+   {
+    "section": "Final Post-Chorus",
+    "after": "Bullet points?...",
+    "say": "Delete."
+   },
+   {
+    "section": "Final Post-Chorus",
+    "after": "Rule of three?... one, two...",
+    "say": "Delete."
+   },
+   {
+    "section": "Final Post-Chorus",
+    "after": "Fast-paced world?...",
+    "say": "Delete."
+   },
+   {
+    "section": "Final Post-Chorus",
+    "after": "I hope this helps?...",
+    "say": "It doesn't."
+   },
+   {
+    "section": "Final Post-Chorus",
+    "after": "Em dash?...",
+    "say": "Delete.",
+    "times": 2
+   }
+  ]
+ }
+}

@@ -1,0 +1,2933 @@
+// Feature module: project-disk.
+
+// Loaded before app.js as a classic script; shares the AI System 6 global scope.
+
+
+
+const finderViewModeOrder = ["small-icon", "icon", "name", "date", "size", "kind"];
+const teachTextImageAttachmentLimit = 48;
+
+// Every TDI surface shares one adaptive document model: a vertical side rail
+// in wide windows and a compact document-stack menu in existing window chrome
+// when space is constrained. CSS @container queries choose the presentation;
+// state, switching, closing, and reordering remain identical.
+//
+// tdi-rail tier 2: this pair (renderTdiTabStrip for the wide rail,
+// renderTdiDocumentStack for the compact stack) is the one builder every
+// consumer -- Reader, TeachText, DocMap, Time Machine -- already calls; no
+// consumer keeps a private copy of row markup. window.AISystem6TdiRail below
+// names it a documented primitive the way window.AISystem6WindowFrameBar and
+// window.AISystem6FinderList name theirs. Its base recipe lives in
+// styles/20-reader-docmap.css (.tdi-rail / .tdi-tabs / .tdi-tab); every
+// appearance sheet answers the rail's tokens, never a second selector.
+
+function getReaderTabSite(url) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+}
+
+function documentTabNow() {
+  return new Date().toISOString();
+}
+
+/**
+ * Captures run on every select, scroll and restore, and they write what the
+ * screen shows back into the record. Stamping updatedAt no matter what made a
+ * launch that changed nothing rewrite the project anyway - the update health
+ * check compares whole stores, so a boot that merely re-captured the same
+ * values reported different data and the updater rolled the update back. The
+ * stamp belongs to a change, so it is applied only when the record moved.
+ */
+function stampChanged(record, capture) {
+  const before = JSON.stringify(record);
+  capture();
+  if (JSON.stringify(record) !== before) record.updatedAt = documentTabNow();
+}
+
+// Which WINDOW holds a tab (§4.1). The store has always been keyed by project x
+// kind; a tab now also carries the window instance that holds it, and an absent
+// instance means the main instance — the rule the session's own window records
+// follow (§9B), so a project written before this field maps onto the desk's
+// first window with no migration at all. The active-tab map keeps the bare app
+// key for main and a `kind:instance` key for every other window, the shape
+// put-away already gives a second instance's cell.
+const documentTabMainInstance = "main";
+
+function documentTabInstanceOf(tab) {
+  return tab?.instance || documentTabMainInstance;
+}
+
+function activeDocumentTabKey(app, instance = documentTabMainInstance) {
+  const owner = instance || documentTabMainInstance;
+  return owner === documentTabMainInstance ? app : `${app}:${owner}`;
+}
+
+function createDocumentTabRecord(app, role, options = {}) {
+  const now = documentTabNow();
+  return {
+    id: options.id || crypto.randomUUID(),
+    app,
+    role,
+    instance: typeof options.instance === "string" && options.instance ? options.instance : documentTabMainInstance,
+    title: options.title || t(app === "teachText" && role === "manuscript" ? "document_role_manuscript" : "untitled"),
+    backing: options.backing || {},
+    state: options.state || {},
+    createdAt: options.createdAt || now,
+    updatedAt: options.updatedAt || now,
+    order: Number.isFinite(Number(options.order)) ? Number(options.order) : 0,
+  };
+}
+
+function normalizeDocumentTabRecord(tab, index = 0) {
+  if (!tab || typeof tab !== "object") return null;
+  const app = ["reader", "teachText", "docMap", "timeMachine"].includes(tab.app) ? tab.app : "reader";
+  const fallbackRole = app === "teachText" ? "scratch_file" : app === "docMap" ? "docmap" : app === "timeMachine" ? "web_navigation" : "source_view";
+  const validRoles = ["source_view", "export_preview", "manuscript", "scratch_file", "docmap", "web_navigation"];
+  return {
+    ...createDocumentTabRecord(app, validRoles.includes(tab.role) ? tab.role : fallbackRole, {
+      ...tab,
+      order: Number.isFinite(Number(tab.order)) ? Number(tab.order) : index,
+    }),
+    backing: tab.backing && typeof tab.backing === "object" ? tab.backing : {},
+    state: tab.state && typeof tab.state === "object" ? tab.state : {},
+  };
+}
+
+function activeDocumentTabIdsFallback(project) {
+  return {
+    reader: null,
+    teachText: null,
+    docMap: null,
+    timeMachine: null,
+    ...(project?.activeDocumentTabIds || {}),
+  };
+}
+
+/**
+ * Document tabs live ON the project record, so anything that opens, closes,
+ * reorders or re-seeds them is a project write like any other - and it has to
+ * say so. It did not, which the shadow scan caught: a save's report-only plan
+ * would have skipped the project whose tabs had just moved.
+ */
+function markProjectTabsDirty(project) {
+  if (!project?.id) return;
+  if (typeof markDeskDirty === "function") markDeskDirty("projects", project.id);
+}
+
+function ensureProjectDocumentTabs(project) {
+  if (!project) return [];
+  // The projection runs on every render, for every disk on the desk, so
+  // marking the record unconditionally made "one edit, one record written"
+  // impossible: every save carried every project because a render had walked
+  // past them. `changed` therefore has to mean a real change - see the active
+  // tab below, where "not found, so I set it" used to count as one.
+  let changed = false;
+  const existing = Array.isArray(project.documentTabs) ? project.documentTabs : [];
+  const tabs = existing.map(normalizeDocumentTabRecord).filter(Boolean);
+
+  if (!tabs.some((tab) => tab.app === "teachText" && tab.role === "manuscript")) {
+    tabs.push(createDocumentTabRecord("teachText", "manuscript", {
+      title: t("document_role_manuscript"),
+      backing: { type: "manuscript" },
+      order: tabs.length,
+    }));
+    changed = true;
+  }
+
+  project.documentTabs = tabs.map((tab, index) => ({ ...tab, order: index }));
+  project.activeDocumentTabIds = activeDocumentTabIdsFallback(project);
+  ["reader", "teachText", "docMap", "timeMachine"].forEach((app) => {
+    const activeId = project.activeDocumentTabIds[app];
+    if (project.documentTabs.some((tab) => tab.app === app && tab.id === activeId)) return;
+    // "It was not found, so I set it" is not a change when the value I set is
+    // the one that was already there. Treating it as one marked every disk on
+    // the desk unsaved on every save, because this projection runs whenever a
+    // project is read - so every save wrote every project back out.
+    const nextId = project.documentTabs.find((tab) => tab.app === app && documentTabInstanceOf(tab) === documentTabMainInstance)?.id || null;
+    if (activeId === nextId) return;
+    project.activeDocumentTabIds[app] = nextId;
+    changed = true;
+  });
+  if (changed) markProjectTabsDirty(project);
+  return project.documentTabs;
+}
+
+function getDocumentTabs(app = "", project = getActiveProject()) {
+  const tabs = ensureProjectDocumentTabs(project);
+  return app ? tabs.filter((tab) => tab.app === app).sort((a, b) => (a.order || 0) - (b.order || 0)) : tabs;
+}
+
+// The tabs ONE WINDOW holds (§4.2): the second instance's rail renders its own
+// set and nothing else, and a tab moved to a second window stops rendering in
+// the main instance's rail. Without an instance this is the main set, which is
+// every tab a project written before the dimension has.
+function getWindowDocumentTabs(app = "", project = getActiveProject(), instance = documentTabMainInstance) {
+  const owner = instance || documentTabMainInstance;
+  return getDocumentTabs(app, project).filter((tab) => documentTabInstanceOf(tab) === owner);
+}
+
+// Which window a rail belongs to: the rail lives inside a window element, and a
+// window without the attribute IS that kind's main instance (window-instances.js
+// §2.1). Every rail on the desk is a main window's today — a shape (V) second
+// window is a read-only view with no rail — so this reads "main" everywhere it
+// is called, and a shape (I) instance would get its own set without a change.
+function documentTabInstanceOfRail(container) {
+  const win = container?.closest?.(".window");
+  return win?.dataset?.windowInstance || documentTabMainInstance;
+}
+
+function getActiveDocumentTab(app, project = getActiveProject(), instance = documentTabMainInstance) {
+  if (!project) return null;
+  const id = ensureProjectDocumentTabs(project) && project.activeDocumentTabIds?.[activeDocumentTabKey(app, instance)];
+  return getWindowDocumentTabs(app, project, instance).find((tab) => tab.id === id) || null;
+}
+
+function setActiveDocumentTab(app, tabId, project = getActiveProject(), instance = documentTabMainInstance) {
+  if (!project) return null;
+  // A window can only make one of ITS OWN tabs active: another window's tab is
+  // not on this desk's rail to pick.
+  const tab = getWindowDocumentTabs(app, project, instance).find((item) => item.id === tabId) || null;
+  // A restore that re-selects the tab already active is not a change, and it
+  // happens on every launch; stamping here rewrote the project each time.
+  stampChanged(project, () => {
+    project.activeDocumentTabIds = activeDocumentTabIdsFallback(project);
+    project.activeDocumentTabIds[activeDocumentTabKey(app, instance)] = tab?.id || null;
+  });
+  return tab;
+}
+
+function upsertDocumentTab(app, role, options = {}, project = getActiveProject()) {
+  if (!project) return null;
+  const tabs = ensureProjectDocumentTabs(project);
+  const backing = options.backing || {};
+  const instance = options.instance || documentTabMainInstance;
+  let tab = options.id ? tabs.find((item) => item.id === options.id) : null;
+  if (!tab && backing.type && options.forceNew !== true) {
+    // The reuse search stays inside the window the caller is opening in: the
+    // same document open in another window is that window's tab, not this one's.
+    tab = tabs.find((item) => item.app === app && documentTabInstanceOf(item) === instance && item.role === role && item.backing?.type === backing.type
+      && (backing.id ? item.backing?.id === backing.id : true)
+      && (backing.fileName ? item.backing?.fileName === backing.fileName : true)
+      && (backing.url ? item.backing?.url === backing.url : true));
+  }
+  if (tab) {
+    stampChanged(tab, () => {
+      tab.title = options.title || tab.title;
+      tab.backing = { ...(tab.backing || {}), ...backing };
+      tab.state = { ...(tab.state || {}), ...(options.state || {}) };
+    });
+  } else {
+    tab = createDocumentTabRecord(app, role, { ...options, instance, order: tabs.length });
+    tabs.push(tab);
+  }
+  setActiveDocumentTab(app, tab.id, project, instance);
+  return tab;
+}
+
+function removeDocumentTab(app, tabId, project = getActiveProject()) {
+  if (!project || !tabId) return null;
+  const tabs = getDocumentTabs(app, project);
+  const index = tabs.findIndex((tab) => tab.id === tabId);
+  if (index < 0) return null;
+  const removed = tabs[index];
+  // The active slot the removal has to fix up is the one of the window that
+  // held the tab, and the successor is that window's next tab.
+  const instance = documentTabInstanceOf(removed);
+  const key = activeDocumentTabKey(app, instance);
+  const windowIndex = getWindowDocumentTabs(app, project, instance).findIndex((tab) => tab.id === tabId);
+  const wasActive = project.activeDocumentTabIds?.[key] === removed.id;
+  project.documentTabs = (project.documentTabs || []).filter((tab) => tab.id !== removed.id);
+  const remaining = getWindowDocumentTabs(app, project, instance);
+  const next = remaining[Math.max(0, windowIndex - 1)] || remaining[0] || null;
+  project.activeDocumentTabIds = activeDocumentTabIdsFallback(project);
+  if (wasActive) project.activeDocumentTabIds[key] = next?.id || null;
+  project.updatedAt = documentTabNow();
+  markProjectTabsDirty(project);
+  return { removed, index, remaining, next, wasActive };
+}
+
+// Hand a tab to another window (§4.2). This is the write Move Tab to New Window
+// and Merge All Windows are made of; the window itself is opened or closed by
+// the verb that calls it. The window the tab leaves keeps a sensible active tab
+// — the same repair a removal does, for the same reason: an active slot that
+// points at a tab no longer in the window draws a rail with nothing picked.
+function assignDocumentTabWindow(app, tabId, instance, project = getActiveProject()) {
+  if (!project || !tabId) return null;
+  const tab = ensureProjectDocumentTabs(project).find((item) => item.id === tabId);
+  if (!tab) return null;
+  const to = instance || documentTabMainInstance;
+  const from = documentTabInstanceOf(tab);
+  if (from === to) return tab;
+  const wasActive = project.activeDocumentTabIds?.[activeDocumentTabKey(app, from)] === tab.id;
+  stampChanged(tab, () => { tab.instance = to; });
+  if (wasActive) {
+    const remaining = getWindowDocumentTabs(app, project, from);
+    setActiveDocumentTab(app, remaining[0]?.id || null, project, from);
+  }
+  markProjectTabsDirty(project);
+  return tab;
+}
+
+function moveDocumentTab(app, tabId, targetTabId, project = getActiveProject()) {
+  if (!project || !tabId || !targetTabId || tabId === targetTabId) return false;
+  const appTabs = getDocumentTabs(app, project);
+  const fromIndex = appTabs.findIndex((tab) => tab.id === tabId);
+  const toIndex = appTabs.findIndex((tab) => tab.id === targetTabId);
+  if (fromIndex < 0 || toIndex < 0) return false;
+  const [moving] = appTabs.splice(fromIndex, 1);
+  appTabs.splice(toIndex, 0, moving);
+  const otherTabs = ensureProjectDocumentTabs(project).filter((tab) => tab.app !== app);
+  project.documentTabs = [...otherTabs, ...appTabs].map((tab, index) => ({ ...tab, order: index }));
+  project.updatedAt = documentTabNow();
+  markProjectTabsDirty(project);
+  return true;
+}
+
+// --- Dragging a tab OUT of the rail (§4.2) ----------------------------------
+//
+// A rail tab has two landings and they mean different things: a sibling tab
+// (reorder — the gesture the rail always had) and anywhere OUTSIDE the rail
+// (open this tab in a window of its own). The preview is what tells them apart:
+// while a tab is in flight the desk wears the shared drop-target overlay
+// (30-surfaces.css — the same one Reader and DocMap use), and that overlay
+// appears the moment the pointer leaves the rail.
+//
+// The overlay is all this costs: no new style, no new layer, and no new state —
+// this half of the gesture writes nothing.
+
+let tabDragOut = null;
+
+function tabDragOutDesktop() {
+  return document.querySelector(".desktop");
+}
+
+function beginTabDragOut(tabId, rail) {
+  tabDragOut = { tabId, rail };
+  const desktop = tabDragOutDesktop();
+  if (!desktop) return;
+  // Structure now; the highlight comes when the pointer leaves the rail.
+  desktop.classList.add("drop-target");
+  desktop.dataset.dropLabel = typeof t === "function" ? t("tabs_drop_new_window") : "";
+  document.addEventListener("dragover", tabDragOutOver, true);
+  document.addEventListener("drop", endTabDragOut, true);
+  document.addEventListener("dragend", endTabDragOut, true);
+}
+
+// The overlay says "letting go here opens a window", so it may only show where
+// that is true. Over the rail the landing is the sibling reorder, which the
+// rail's own dragover answers.
+function tabDragOutOver(event) {
+  if (!tabDragOut) return;
+  const outsideRail = !event.target?.closest?.(".tdi-tabs");
+  tabDragOutDesktop()?.classList.toggle("is-dragging", outsideRail);
+  if (!outsideRail) return;
+  event.preventDefault();
+  if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+}
+
+function endTabDragOut(event) {
+  const dragging = tabDragOut;
+  tabDragOut = null;
+  const desktop = tabDragOutDesktop();
+  if (desktop) {
+    desktop.classList.remove("drop-target", "is-dragging");
+    delete desktop.dataset.dropLabel;
+  }
+  document.removeEventListener("dragover", tabDragOutOver, true);
+  document.removeEventListener("drop", endTabDragOut, true);
+  document.removeEventListener("dragend", endTabDragOut, true);
+  // A drop that landed outside the rail is the window landing (§4.2's action
+  // half). The verb lives with the window tabs it belongs to, in the lazy
+  // window-tabs.js, and this may be the first thing on the desk to need it.
+  if (event?.type !== "drop" || !dragging?.tabId) return;
+  if (event.target?.closest?.(".tdi-tabs")) return;
+  Promise.resolve(ensureLazySystemModule("app/features/window-tabs.js", "AISystem6WinTabs"))
+    .then(() => window.AISystem6WindowTabs?.moveTabToNewWindow?.(dragging.tabId, { rail: dragging.rail }))
+    .catch(() => {});
+}
+
+let tdiDocumentStackDismissalReady = false;
+function ensureTdiDocumentStackDismissal() {
+  if (tdiDocumentStackDismissalReady) return;
+  tdiDocumentStackDismissalReady = true;
+  document.addEventListener("pointerdown", (event) => {
+    document.querySelectorAll(".tdi-document-stack[open]").forEach((details) => {
+      if (!details.contains(event.target)) details.removeAttribute("open");
+    });
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    document.querySelectorAll(".tdi-document-stack[open]").forEach((details) => {
+      details.removeAttribute("open");
+      details.querySelector("summary")?.focus();
+    });
+  });
+}
+
+function tdiDocumentStackHost(container) {
+  if (!container?.id) return null;
+  return [...document.querySelectorAll(".tdi-stack-host")]
+    .find((host) => host.dataset.tdiStackFor === container.id) || null;
+}
+
+/**
+ * Keyboard alternative to dragging a tab.
+ *
+ * Reordering open documents was drag-only: the stack and the strip both bind
+ * dragstart/drop and nothing else, so a person who cannot drag had no way to
+ * put the tabs in the order they wanted. It was the one entry in the
+ * interaction audit's drag queue with no alternative anywhere in the product.
+ * Option-Left and Option-Right on the focused tab move it one place, which is
+ * exactly what dropping it on its neighbour does.
+ */
+function bindTabReorderKeys(handle, tab, visibleTabs, onMove) {
+  if (typeof onMove !== "function" || !handle) return;
+  handle.setAttribute("aria-keyshortcuts", "Alt+ArrowLeft Alt+ArrowRight");
+  handle.addEventListener("keydown", (event) => {
+    if (!event.altKey || (event.key !== "ArrowLeft" && event.key !== "ArrowRight")) return;
+    const index = visibleTabs.indexOf(tab);
+    const target = visibleTabs[event.key === "ArrowLeft" ? index - 1 : index + 1];
+    if (!target) return;
+    event.preventDefault();
+    onMove(tab.id, target.id);
+    // The stack and the strip both rebuild from the new order, so the node the
+    // key was pressed on is gone. Put focus back on the tab that moved, or the
+    // second press goes nowhere.
+    requestAnimationFrame(() => {
+      const moved = document.querySelector(`[data-document-tab-id="${CSS.escape(tab.id)}"] .tdi-stack-open`)
+        || document.querySelector(`button.tdi-tab[data-document-tab-id="${CSS.escape(tab.id)}"]`);
+      // The popover closes when it is rebuilt, and a row inside a closed
+      // <details> has no box, so a focus() there is silently dropped. Open the
+      // rebuilt stack first: the person is mid-move, and a tab list that shut
+      // itself between two presses would make the shortcut useless.
+      const stack = moved?.closest("details.tdi-document-stack");
+      if (stack && !stack.open) stack.open = true;
+      moved?.focus();
+    });
+  });
+}
+
+function renderTdiDocumentStack(container, tabs, options = {}) {
+  const host = tdiDocumentStackHost(container);
+  if (!host) return;
+  const visibleTabs = Array.isArray(tabs) ? tabs : [];
+  const {
+    activeId = "",
+    labelFor = (tab) => tab.title || t("untitled"),
+    compactLabelFor = labelFor,
+    sublabelFor = () => "",
+    dirtyFor = () => false,
+    closableFor = () => true,
+    onOpen = () => {},
+    onClose = () => {},
+    onMove = null,
+  } = options;
+  const shouldHide = !visibleTabs.length;
+  host.classList.toggle("is-hidden", shouldHide);
+  host.replaceChildren();
+  if (shouldHide || !visibleTabs.length) return;
+
+  const activeTab = visibleTabs.find((tab) => tab.id === activeId) || visibleTabs[0];
+  const activeIndex = Math.max(0, visibleTabs.indexOf(activeTab));
+  const activeCopy = document.createElement("span");
+  activeCopy.className = "tdi-stack-active-copy";
+  activeCopy.textContent = `${dirtyFor(activeTab) ? "• " : ""}${compactLabelFor(activeTab, activeIndex)}`;
+
+  // With one document there is nothing to switch. Keep its identity visible
+  // in compact chrome, but do not imply a menu, count, or disclosure action.
+  if (visibleTabs.length === 1) {
+    const current = document.createElement("div");
+    current.className = "tdi-document-stack";
+    const currentLabel = document.createElement("span");
+    currentLabel.className = "tdi-stack-summary tdi-stack-single";
+    currentLabel.title = labelFor(activeTab, activeIndex);
+    currentLabel.setAttribute("aria-label", labelFor(activeTab, activeIndex));
+    currentLabel.setAttribute("aria-current", "page");
+    currentLabel.append(activeCopy);
+    current.append(currentLabel);
+    host.append(current);
+    return;
+  }
+
+  ensureTdiDocumentStackDismissal();
+  const details = document.createElement("details");
+  details.className = "tdi-document-stack";
+  const summary = document.createElement("summary");
+  summary.className = "btn tdi-stack-summary";
+  summary.setAttribute("aria-haspopup", "menu");
+  summary.setAttribute("aria-expanded", "false");
+  summary.title = `${labelFor(activeTab, activeIndex)} · ${visibleTabs.length} ${t("documents")}`;
+  summary.setAttribute("aria-label", `${t("documents")}: ${labelFor(activeTab, activeIndex)}`);
+  summary.addEventListener("keydown", (event) => {
+    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    details.open = true;
+    const choices = [...popover.querySelectorAll(".tdi-stack-open")];
+    const target = ["ArrowUp", "End"].includes(event.key) ? choices.at(-1) : choices[0];
+    requestAnimationFrame(() => target?.focus());
+  });
+
+  const count = document.createElement("span");
+  count.className = "tdi-stack-count";
+  count.textContent = String(visibleTabs.length);
+  const disclosure = document.createElement("span");
+  disclosure.className = "tdi-stack-disclosure";
+  disclosure.setAttribute("aria-hidden", "true");
+  summary.append(activeCopy, count, disclosure);
+
+  const popover = document.createElement("div");
+  popover.className = "tdi-stack-popover";
+  popover.setAttribute("role", "menu");
+  popover.setAttribute("aria-label", t("documents"));
+  visibleTabs.forEach((tab, index) => {
+    const closable = !!closableFor(tab);
+    const item = document.createElement("div");
+    item.className = "tdi-stack-item";
+    item.classList.toggle("is-active", tab.id === activeId);
+    item.classList.toggle("is-dirty", dirtyFor(tab));
+    item.dataset.documentTabId = tab.id;
+
+    const open = document.createElement("button");
+    open.type = "button";
+    open.className = "tdi-stack-open";
+    open.setAttribute("role", "menuitemradio");
+    open.setAttribute("aria-checked", String(tab.id === activeId));
+    const label = document.createElement("span");
+    label.textContent = `${dirtyFor(tab) ? "• " : ""}${labelFor(tab, index)}`;
+    const sublabel = document.createElement("small");
+    sublabel.textContent = sublabelFor(tab, index);
+    open.append(label, sublabel);
+    open.addEventListener("click", () => {
+      details.removeAttribute("open");
+      onOpen(tab);
+    });
+    open.addEventListener("keydown", (event) => {
+      const choices = [...popover.querySelectorAll(".tdi-stack-open")];
+      const current = choices.indexOf(open);
+      const target = event.key === "ArrowDown" ? choices[current + 1] || choices[0]
+        : event.key === "ArrowUp" ? choices[current - 1] || choices.at(-1)
+          : event.key === "Home" ? choices[0]
+            : event.key === "End" ? choices.at(-1)
+              : null;
+      if (!target) return;
+      event.preventDefault();
+      target.focus();
+    });
+    bindTabReorderKeys(open, tab, visibleTabs, onMove);
+
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = "tdi-stack-close";
+    close.setAttribute("aria-label", t("reader_close_tab"));
+    close.title = t("reader_close_tab");
+    if (typeof markGrayAffordance === "function") {
+      markGrayAffordance(close, !closable, "balloon_last_tab_keeps_open");
+    } else {
+      close.disabled = !closable;
+      close.classList.toggle("is-disabled", !closable);
+    }
+    close.addEventListener("click", (event) => {
+      event.stopPropagation();
+      if (closable) onClose(tab);
+    });
+    item.append(open, close);
+
+    if (typeof onMove === "function") {
+      item.draggable = true;
+      item.addEventListener("dragstart", (event) => {
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", tab.id);
+        popover.dataset.draggingTabId = tab.id;
+        item.classList.add("is-dragging");
+      });
+      item.addEventListener("dragend", () => {
+        delete popover.dataset.draggingTabId;
+        item.classList.remove("is-dragging");
+        popover.querySelectorAll(".is-drop-target").forEach((entry) => entry.classList.remove("is-drop-target"));
+      });
+      item.addEventListener("dragover", (event) => {
+        const draggingId = popover.dataset.draggingTabId;
+        if (!draggingId || draggingId === tab.id) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+        item.classList.add("is-drop-target");
+      });
+      item.addEventListener("dragleave", () => item.classList.remove("is-drop-target"));
+      item.addEventListener("drop", (event) => {
+        event.preventDefault();
+        item.classList.remove("is-drop-target");
+        const draggingId = event.dataTransfer.getData("text/plain") || popover.dataset.draggingTabId;
+        if (draggingId && draggingId !== tab.id) onMove(draggingId, tab.id);
+      });
+    }
+    popover.append(item);
+  });
+  details.addEventListener("toggle", () => {
+    summary.setAttribute("aria-expanded", String(details.open));
+    if (!details.open) return;
+    document.querySelectorAll(".tdi-document-stack[open]").forEach((other) => {
+      if (other !== details) other.removeAttribute("open");
+    });
+  });
+  details.append(summary, popover);
+  host.append(details);
+}
+
+function renderTdiTabStrip(container, tabs, options = {}) {
+  if (!container) return;
+  const visibleTabs = Array.isArray(tabs) ? tabs : [];
+  container.replaceChildren();
+  const {
+    activeId = "",
+    labelFor = (tab) => tab.title || t("untitled"),
+    sublabelFor = () => "",
+    iconFor = () => "",
+    dirtyFor = () => false,
+    closableFor = () => true,
+    hideWhenEmpty = true,
+    // Tier 2: an optional section heading between clusters of rows -- e.g.
+    // TeachText's Manuscript above its Section Drafts. groupFor returns a
+    // group key per tab (falsy = no heading); the caller is responsible for
+    // ordering tabs so rows sharing a key are already adjacent. groupLabelFor
+    // turns that key into the heading's visible text.
+    groupFor = null,
+    groupLabelFor = (group) => group,
+    onOpen = () => {},
+    onClose = () => {},
+    onMove = null,
+  } = options;
+  container.dataset.tabCount = String(visibleTabs.length);
+  // A single tab needs no strip — hide it until there are at least two documents.
+  container.classList.toggle("is-hidden", hideWhenEmpty && visibleTabs.length <= 1);
+  container.classList.toggle("is-overflowing", visibleTabs.length > 4);
+  container.classList.toggle("is-crowded", visibleTabs.length > 7);
+  renderTdiDocumentStack(container, visibleTabs, options);
+  if (!visibleTabs.length) return;
+  let lastGroup;
+  visibleTabs.forEach((tab, index) => {
+    if (typeof groupFor === "function") {
+      const group = groupFor(tab, index);
+      if (group && group !== lastGroup) {
+        const heading = document.createElement("div");
+        heading.className = "tdi-tabs-heading";
+        heading.setAttribute("role", "presentation");
+        heading.textContent = groupLabelFor(group, tab);
+        container.append(heading);
+      }
+      lastGroup = group;
+    }
+    const closable = !!closableFor(tab);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "tdi-tab";
+    button.classList.toggle("is-active", tab.id === activeId);
+    button.classList.toggle("is-dirty", dirtyFor(tab));
+    button.dataset.documentTabId = tab.id;
+    const label = labelFor(tab, index);
+    const sublabel = sublabelFor(tab, index);
+    const dirtyMark = dirtyFor(tab) ? "• " : "";
+    const iconId = iconFor(tab, index);
+    const icon = iconId ? renderSystemIcon(iconId, { size: "mini", className: "tdi-tab-icon" }) : "";
+    button.innerHTML = `${icon}<span class="tdi-tab-copy"><span>${escapeHtml(`${dirtyMark}${label}`)}</span><small>${escapeHtml(sublabel)}</small></span>`;
+    button.addEventListener("click", () => onOpen(tab));
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = "tdi-tab-close";
+    close.textContent = "×";
+    close.setAttribute("aria-label", t("reader_close_tab"));
+    close.title = t("reader_close_tab");
+    if (typeof markGrayAffordance === "function") {
+      markGrayAffordance(close, !closable, "balloon_last_tab_keeps_open");
+    } else {
+      close.disabled = !closable;
+      close.classList.toggle("is-disabled", !closable);
+    }
+    close.addEventListener("click", (event) => {
+      event.stopPropagation();
+      if (!closable) return;
+      onClose(tab);
+    });
+    const wrap = document.createElement("div");
+    wrap.className = "tdi-tab-wrap";
+    wrap.classList.toggle("is-active", tab.id === activeId);
+    if (typeof onMove === "function") {
+      wrap.draggable = true;
+      wrap.dataset.documentTabId = tab.id;
+      wrap.addEventListener("dragstart", (event) => {
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", tab.id);
+        container.dataset.draggingTabId = tab.id;
+        wrap.classList.add("is-dragging");
+        beginTabDragOut(tab.id, container);
+      });
+      wrap.addEventListener("dragend", () => {
+        delete container.dataset.draggingTabId;
+        wrap.classList.remove("is-dragging");
+        container.querySelectorAll(".is-drop-target").forEach((item) => item.classList.remove("is-drop-target"));
+        endTabDragOut();
+      });
+      wrap.addEventListener("dragover", (event) => {
+        const draggingId = container.dataset.draggingTabId;
+        if (!draggingId || draggingId === tab.id) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+        wrap.classList.add("is-drop-target");
+      });
+      wrap.addEventListener("dragleave", () => {
+        wrap.classList.remove("is-drop-target");
+      });
+      wrap.addEventListener("drop", (event) => {
+        event.preventDefault();
+        wrap.classList.remove("is-drop-target");
+        const draggingId = event.dataTransfer.getData("text/plain") || container.dataset.draggingTabId;
+        if (!draggingId || draggingId === tab.id) return;
+        onMove(draggingId, tab.id);
+      });
+    }
+    wrap.append(button, close);
+    bindTabReorderKeys(button, tab, visibleTabs, onMove);
+    container.append(wrap);
+  });
+}
+
+// The documented primitive. render() is the vertical rail (with the tier-2
+// section-heading option); renderCompactStack() is the narrow-window
+// projection of the same tab state. Reader, TeachText, DocMap, and Time
+// Machine call the bare functions above directly (classic-script global
+// scope); this object exists so the primitive can be found and named the way
+// window.AISystem6WindowFrameBar and window.AISystem6FinderList are found and
+// named, without a second implementation for any consumer to keep in sync.
+window.AISystem6TdiRail = Object.freeze({
+  render: renderTdiTabStrip,
+  renderCompactStack: renderTdiDocumentStack,
+});
+
+// Drag-to-resize the vertical tab rail (TeachText / DocMap), mirroring Reader's
+// split handle. Drives the per-shell --tdi-rail-width custom property; no inline
+// layout styles. Idempotent — safe to call on every tab render.
+function setupTdiRailResize(shell, options = {}) {
+  if (!shell || shell.dataset.railResizeReady === "true") return;
+  const rail = shell.querySelector(":scope > .tdi-rail");
+  const grabber = shell.querySelector(":scope > .tdi-grabber");
+  if (!rail || !grabber) return;
+  shell.dataset.railResizeReady = "true";
+  const storageKey = options.storageKey || "";
+  const minRail = 140;
+  const minContent = 320;
+
+  const clampRail = (px) => {
+    const total = shell.getBoundingClientRect().width;
+    const max = total > 0 ? Math.max(minRail, total - minContent) : Number.POSITIVE_INFINITY;
+    return Math.round(Math.min(Math.max(px, minRail), max));
+  };
+  const applyRail = (px, save) => {
+    const value = clampRail(px);
+    shell.style.setProperty("--tdi-rail-width", `${value}px`);
+    grabber.setAttribute("aria-valuenow", String(value));
+    if (save && storageKey) {
+      try { localStorage.setItem(storageKey, String(value)); } catch { /* storage full / blocked */ }
+    }
+  };
+
+  if (storageKey) {
+    const saved = parseInt(localStorage.getItem(storageKey) || "", 10);
+    if (Number.isFinite(saved)) shell.style.setProperty("--tdi-rail-width", `${clampRail(saved)}px`);
+  }
+
+  const isVertical = () => getComputedStyle(shell).flexDirection === "row";
+
+  grabber.addEventListener("pointerdown", (event) => {
+    if (!isVertical()) return;
+    event.preventDefault();
+    const startX = event.clientX;
+    const startWidth = rail.getBoundingClientRect().width;
+    grabber.setPointerCapture?.(event.pointerId);
+    document.body.classList.add("is-resizing-tdi");
+    const onMove = (moveEvent) => applyRail(startWidth + moveEvent.clientX - startX, true);
+    const finish = () => {
+      document.body.classList.remove("is-resizing-tdi");
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", finish);
+      window.removeEventListener("pointercancel", finish);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", finish);
+    window.addEventListener("pointercancel", finish);
+  });
+
+  grabber.addEventListener("keydown", (event) => {
+    if (!isVertical()) return;
+    const delta = { ArrowLeft: -16, ArrowRight: 16 }[event.key] || 0;
+    if (!delta) return;
+    event.preventDefault();
+    applyRail(rail.getBoundingClientRect().width + delta, true);
+  });
+}
+
+function normalizeFinderViewMode(mode) {
+  return finderViewModeOrder.includes(mode) ? mode : mode === "list" ? "name" : "icon";
+}
+
+function isFinderListMode(mode) {
+  return ["name", "date", "size", "kind", "list"].includes(mode);
+}
+
+function isFinderIconMode(mode) {
+  return ["small-icon", "icon"].includes(normalizeFinderViewMode(mode));
+}
+
+function finderViewControlMode(mode) {
+  return isFinderListMode(mode) ? "list" : "icon";
+}
+
+function getFinderViewModeLabelKey(mode) {
+  const labels = {
+    "small-icon": "view_by_small_icon",
+    icon: "view_by_icon",
+    name: "view_by_name",
+    date: "view_by_date",
+    size: "view_by_size",
+    kind: "view_by_kind",
+    list: "view_by_name",
+  };
+  return labels[mode] || "view_by_icon";
+}
+
+function getFinderItemName(item) {
+  return item?.name || item?.title || t("untitled");
+}
+
+function getFinderItemKindLabel(item) {
+  if (item?.kindLabel) return item.kindLabel;
+  if (item?.kind) return item.kind;
+  if (item?.type === "folder") return t("folder_kind");
+  if (item?.type === "text") return t("kind_teachtext");
+  if (item?.type === "chat") return t("kind_chat");
+  if (item?.type === "finder-root") return t("folder_kind");
+  return t("file_kind");
+}
+
+function getFinderItemModifiedAt(item) {
+  return item?.modifiedAt || item?.updatedAt || item?.createdAt || "";
+}
+
+function getFinderItemSizeValue(item) {
+  if (Number.isFinite(item?.sizeValue)) return item.sizeValue;
+  if (Number.isFinite(item?.itemCount)) return item.itemCount;
+  if (typeof item?.body === "string") return byteLen(item.body);
+  if (Array.isArray(item?.messages)) return JSON.stringify(item.messages).length;
+  return 0;
+}
+
+function getFinderItemSizeLabel(item) {
+  if (item?.sizeLabel) return item.sizeLabel;
+  if (item?.type === "folder" || item?.type === "finder-root") return t("items_count", getFinderItemSizeValue(item));
+  return t("bytes_count", getFinderItemSizeValue(item));
+}
+
+// Sizes are UTF-8 bytes, the unit the window header's "K in disk" already counts.
+function byteLen(text) {
+  return new Blob([text || ""]).size;
+}
+
+// A file name that has to be cut is cut in the middle, so the tail (the
+// version, the extension) stays: <i> is the head that gives way, <b> the tail.
+function nameCell(item) {
+  const n = getFinderItemName(item);
+  return item.type?.[0] === "f" || n.length < 20 ? escapeHtml(n) : `<bdi>${escapeHtml(n.slice(0, -6))}</bdi><bdi>${escapeHtml(n.slice(-6))}</bdi>`;
+}
+
+function compareFinderItemsByMode(a, b, mode) {
+  const normalized = normalizeFinderViewMode(mode);
+  if (normalized === "date") {
+    const diff = new Date(getFinderItemModifiedAt(b) || 0) - new Date(getFinderItemModifiedAt(a) || 0);
+    if (diff) return diff;
+  } else if (normalized === "size") {
+    const diff = getFinderItemSizeValue(b) - getFinderItemSizeValue(a);
+    if (diff) return diff;
+  } else if (normalized === "kind") {
+    const kindCompare = getFinderItemKindLabel(a).localeCompare(getFinderItemKindLabel(b), currentLanguage);
+    if (kindCompare) return kindCompare;
+  } else if (normalized === "small-icon" || normalized === "icon") {
+    return 0;
+  }
+  return getFinderItemName(a).localeCompare(getFinderItemName(b), currentLanguage, { numeric: true });
+}
+
+function sortFinderItemsForView(items, mode, reversed = false) {
+  const normalized = normalizeFinderViewMode(mode);
+  if (normalized === "small-icon" || normalized === "icon") return items;
+  const sorted = [...items].sort((a, b) => compareFinderItemsByMode(a, b, normalized));
+  return reversed ? sorted.reverse() : sorted;
+}
+
+// Which column a list mode sorts by: name 0, kind 1, size 2, date 3; icon
+// modes sort by nothing.
+function finderSortedColumn(mode) {
+  const normalized = normalizeFinderViewMode(mode);
+  if (!isFinderListMode(normalized)) return -1;
+  return { name: 0, kind: 1, size: 2, date: 3 }[normalized] ?? 0;
+}
+
+// The direction the sorted column reads in. compareFinderItemsByMode sorts
+// name and kind ascending, size and date descending; reversal flips that.
+function finderSortDirection(mode, reversed) {
+  const descending = ["size", "date"].includes(normalizeFinderViewMode(mode));
+  const isDescending = reversed ? !descending : descending;
+  return isDescending ? "descending" : "ascending";
+}
+
+const finderSortReversedStorageKey = "ai-system-6-finder-sort-reversed";
+
+function readFinderSortReversedStore() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(finderSortReversedStorageKey));
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function finderSortReversed(windowName) {
+  return readFinderSortReversedStore()[windowName] === true;
+}
+
+function toggleFinderSortReversed(windowName) {
+  try {
+    const store = readFinderSortReversedStore();
+    store[windowName] = !(store[windowName] === true);
+    localStorage.setItem(finderSortReversedStorageKey, JSON.stringify(store));
+  } catch {
+    // A desk without storage keeps the current sort order.
+  }
+}
+
+// One header for every Finder window's list view, so the sorted column and the
+// reversal button stay in step.
+function renderFinderListHeader(windowName, mode, { interactive = true, onChange = null } = {}) {
+  const reversed = finderSortReversed(windowName);
+  const direction = finderSortDirection(mode, reversed);
+  const column = finderSortedColumn(mode);
+  const header = document.createElement("div");
+  header.className = "finder-list-header";
+  header.innerHTML = [t("file_name"), t("kind"), t("size"), t("modified")]
+    .map((label, index) => `<span${index === column ? ` aria-sort="${direction}"` : ""}>${escapeHtml(label)}</span>`)
+    .join("");
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "finder-sort-direction";
+  button.dataset.direction = direction;
+  button.setAttribute("aria-pressed", String(reversed));
+  button.setAttribute("aria-label", t("finder_sort_reverse"));
+  button.title = t("finder_sort_reverse");
+  if (interactive) {
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      toggleFinderSortReversed(windowName);
+      saveFinderWindowState(windowName);
+      onChange?.();
+    });
+  } else {
+    button.tabIndex = -1;
+    button.setAttribute("aria-hidden", "true");
+  }
+  header.append(button);
+  return header;
+}
+
+function setFinderViewClasses(grid, mode) {
+  const normalized = normalizeFinderViewMode(mode);
+  grid.classList.toggle("finder-list", isFinderListMode(normalized));
+  grid.classList.toggle("finder-grid", isFinderIconMode(normalized));
+  grid.classList.toggle("finder-small-icons", normalized === "small-icon");
+  if (isFinderListMode(normalized)) grid.dataset.sortedColumn = String(finderSortedColumn(normalized));
+  else delete grid.dataset.sortedColumn;
+}
+
+function updateFinderViewButtons(win, mode) {
+  const controlMode = finderViewControlMode(mode);
+  win?.querySelectorAll(".view-btn").forEach((btn) => {
+    btn.classList.toggle("is-active", btn.dataset.view === controlMode);
+  });
+}
+
+function isDefaultFolderName(name) {
+  return ["General", "通用"].includes((name || "").trim());
+}
+
+function displayFolderName(name) {
+  return isDefaultFolderName(name) ? t("default_folder") : name;
+}
+
+function preferredFolderName() {
+  const folder = getSelectedFolder() || getProjectFolders()[0];
+  return folder ? displayFolderName(folder.name) : t("default_folder");
+}
+
+function getSelectedFolder() {
+  if (selectedFolderId === "all") return null;
+  return getProjectFolders().find((folder) => folder.id === selectedFolderId) || null;
+}
+
+function getFolderPath(folderId, projectId = activeProjectId) {
+  const folders = chatFolders.filter((folder) => folder.projectId === projectId);
+  const byId = new Map(folders.map((folder) => [folder.id, folder]));
+  const path = [];
+  let folder = byId.get(folderId);
+  const seen = new Set();
+
+  while (folder && !seen.has(folder.id)) {
+    seen.add(folder.id);
+    path.unshift(displayFolderName(folder.name));
+    folder = folder.parentId ? byId.get(folder.parentId) : null;
+  }
+
+  return path;
+}
+
+function nextAvailableFolderName(baseName, parentId = null, projectId = activeProjectId) {
+  const base = (baseName || t("new_folder")).trim() || t("new_folder");
+  const canonicalBase = isDefaultFolderName(base) ? "General" : base;
+  const siblings = chatFolders
+    .filter((folder) => folder.projectId === projectId && (folder.parentId || null) === (parentId || null))
+    .map((folder) => displayFolderName(folder.name).trim().toLowerCase());
+
+  const displayBase = displayFolderName(canonicalBase);
+  if (!siblings.includes(displayBase.toLowerCase())) return canonicalBase;
+
+  let index = 2;
+  while (siblings.includes(`${displayBase} ${index}`.toLowerCase())) {
+    index += 1;
+  }
+  return `${displayBase} ${index}`;
+}
+
+function createFinderFolder(name = t("new_folder"), parentId = selectedFolderId === "all" ? null : selectedFolderId) {
+  ensureActiveProject();
+  const normalizedParentId = parentId && getProjectFolders().some((folder) => folder.id === parentId) ? parentId : null;
+  const folderName = nextAvailableFolderName(name, normalizedParentId);
+  const now = new Date().toISOString();
+  const folder = {
+    id: crypto.randomUUID(),
+    projectId: activeProjectId,
+    name: isDefaultFolderName(folderName) ? "General" : folderName,
+    parentId: normalizedParentId,
+    createdAt: now,
+    updatedAt: now,
+  };
+  chatFolders.push(folder);
+  return folder;
+}
+
+function idbRequest(request) {
+  return new Promise((resolve, reject) => {
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function openAppDb() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(indexedDbName, indexedDbVersion);
+    let settled = false;
+    // Keep well under the boot safety-net's 20s stall: a wedged open that
+    // sat at 15s left no progress mark and put iPhone on Sad Mac mid-boot.
+    const coarse = typeof window !== "undefined"
+      && window.matchMedia?.("(pointer: coarse)")?.matches === true;
+    const standalone = typeof window !== "undefined"
+      && (window.navigator?.standalone === true
+        || window.matchMedia?.("(display-mode: standalone)")?.matches === true);
+    const openTimeoutMs = (coarse || standalone) ? 6000 : 12000;
+    const timeout = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      reject(new Error("Opening the project database timed out."));
+    }, openTimeoutMs);
+
+    const finish = (callback, value) => {
+      if (settled) {
+        if (value && typeof value.close === "function") value.close();
+        return;
+      }
+      settled = true;
+      clearTimeout(timeout);
+      callback(value);
+    };
+
+    request.onupgradeneeded = () => {
+      const db = request.result;
+
+      if (!db.objectStoreNames.contains(referenceStoreName)) {
+        const store = db.createObjectStore(referenceStoreName, { keyPath: "id" });
+        store.createIndex("projectId", "projectId", { unique: false });
+      }
+
+      if (!db.objectStoreNames.contains(keyvalStoreName)) {
+        db.createObjectStore(keyvalStoreName);
+      }
+      if (!db.objectStoreNames.contains(projectsStoreName)) {
+        db.createObjectStore(projectsStoreName, { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains(scrapsStoreName)) {
+        db.createObjectStore(scrapsStoreName, { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains(trashStoreName)) {
+        // Trash items don't strictly have an id in current implementation, using autoIncrement
+        db.createObjectStore(trashStoreName, { autoIncrement: true });
+      }
+      if (!db.objectStoreNames.contains(chatFoldersStoreName)) {
+        db.createObjectStore(chatFoldersStoreName, { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains(chatFilesStoreName)) {
+        db.createObjectStore(chatFilesStoreName, { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains(citiesStoreName)) {
+        db.createObjectStore(citiesStoreName, { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains(bonsaiCitiesStoreName)) {
+        db.createObjectStore(bonsaiCitiesStoreName, { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains(imageAttachmentsStoreName)) {
+        const store = db.createObjectStore(imageAttachmentsStoreName, { keyPath: "id" });
+        store.createIndex("projectId", "projectId", { unique: false });
+      }
+      // Version 6: the Basin's line-network plans. Rootline writes a plan;
+      // Bonsai City reads the plans of one city when the mayor flips the pot.
+      // A plan is its own record — it never lives inside a city save.
+      if (!db.objectStoreNames.contains(transitPlansStoreName)) {
+        const store = db.createObjectStore(transitPlansStoreName, { keyPath: "id" });
+        store.createIndex("cityId", "cityId", { unique: false });
+      }
+      // Version 7: an Office document's bytes on the Project Hard Disk
+      // (ClioWorks N0). One row per document; the project file item names it
+      // by nativeDocumentId, so the bytes never swell a chatFiles record.
+      if (!db.objectStoreNames.contains("nativeDocuments")) {
+        db.createObjectStore("nativeDocuments", { keyPath: "id" });
+      }
+    };
+
+    request.onblocked = () => finish(
+      reject,
+      new Error("The project database is blocked by another open AI System 6 window.")
+    );
+    request.onsuccess = () => {
+      request.result.onversionchange = () => request.result.close();
+      finish(resolve, request.result);
+    };
+    request.onerror = () => finish(
+      reject,
+      request.error || new Error("Could not open the project database.")
+    );
+  });
+}
+
+async function getStoredProjectReferences(projectId) {
+  const db = await openAppDb();
+  try {
+    const references = await window.AISystem6StorageTransactions.runTransaction(
+      db,
+      referenceStoreName,
+      "readonly",
+      (tx) => idbRequest(tx.objectStore(referenceStoreName).index("projectId").getAll(projectId))
+    );
+    const normalized = references.map((reference) => normalizeProjectReferenceForStorage(reference));
+    const needsMigration = normalized.filter((item, index) => item !== references[index]);
+    if (needsMigration.length) {
+      await Promise.all(needsMigration.map((item) => putStoredProjectReference(item)));
+    }
+    return normalized;
+  } finally {
+    db.close();
+  }
+}
+
+async function putStoredProjectReference(reference) {
+  const db = await openAppDb();
+  try {
+    await window.AISystem6StorageTransactions.runTransaction(
+      db,
+      referenceStoreName,
+      "readwrite",
+      (tx) => idbRequest(
+        tx.objectStore(referenceStoreName).put(normalizeProjectReferenceForStorage(reference))
+      )
+    );
+  } finally {
+    db.close();
+  }
+}
+
+function normalizeProjectReferenceForStorage(reference) {
+  if (!reference || typeof reference !== "object") return reference;
+  if (reference.embeddingModel !== "deepseek-embed") return reference;
+  return {
+    ...reference,
+    embeddingModel: "local-embedding",
+  };
+}
+
+async function deleteStoredProjectReference(referenceId) {
+  const db = await openAppDb();
+  try {
+    await window.AISystem6StorageTransactions.runTransaction(
+      db,
+      referenceStoreName,
+      "readwrite",
+      (tx) => idbRequest(tx.objectStore(referenceStoreName).delete(referenceId))
+    );
+  } finally {
+    db.close();
+  }
+}
+
+// ----- the Basin's line-network plans (transitPlans, schema v6) -------------
+//
+// A plan is written by Rootline when the planner saves one, and read by
+// Bonsai City when the mayor lays it. A city with no id yet (nothing saved)
+// has plans whose `cityId` is null; IndexedDB will not index a null key, so
+// those are read through the store itself rather than the index.
+
+async function listStoredTransitPlans(cityId) {
+  const key = typeof cityId === "string" && cityId ? cityId : null;
+  const db = await openAppDb();
+  try {
+    const records = await window.AISystem6StorageTransactions.runTransaction(
+      db,
+      transitPlansStoreName,
+      "readonly",
+      (tx) => idbRequest(key
+        ? tx.objectStore(transitPlansStoreName).index("cityId").getAll(key)
+        : tx.objectStore(transitPlansStoreName).getAll())
+    );
+    return (records || []).filter((record) => record && (key ? record.cityId === key : !record.cityId));
+  } finally {
+    db.close();
+  }
+}
+
+async function putStoredTransitPlan(record) {
+  if (!record || typeof record.id !== "string" || !record.id) throw new Error("transit-plan-required-id");
+  const db = await openAppDb();
+  try {
+    await window.AISystem6StorageTransactions.runTransaction(
+      db,
+      transitPlansStoreName,
+      "readwrite",
+      (tx) => idbRequest(tx.objectStore(transitPlansStoreName).put(record))
+    );
+    return record;
+  } finally {
+    db.close();
+  }
+}
+
+async function deleteStoredTransitPlan(id) {
+  const db = await openAppDb();
+  try {
+    await window.AISystem6StorageTransactions.runTransaction(
+      db,
+      transitPlansStoreName,
+      "readwrite",
+      (tx) => idbRequest(tx.objectStore(transitPlansStoreName).delete(id))
+    );
+  } finally {
+    db.close();
+  }
+}
+
+async function hashText(text) {
+  const bytes = new TextEncoder().encode(text);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return [...new Uint8Array(digest)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function normalizeOutlineSections(sections) {
+  const normalized = (sections || [])
+    .map((section) => String(section || "").replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+
+  return normalized.length ? normalized : [defaultOutlineSection];
+}
+
+function plainOutlineBlocks(value) {
+  const raw = String(value || "").replace(/\r\n?/g, "\n").trim();
+  if (!raw) return [];
+  const blocks = raw.split(/\n\s*\n+/).map((block) => block.trim()).filter(Boolean);
+  return blocks.length ? blocks : [raw];
+}
+
+function plainOutlineBlockTitle(block, index = 0) {
+  const line = String(block || "")
+    .split("\n")
+    .map((part) => part
+      .replace(/^[-*+]\s+/, "")
+      .replace(/^\d+[.)、]\s*/, "")
+      .replace(/^#{1,6}\s+/, "")
+      .replace(/\s+/g, " ")
+      .trim())
+    .find(Boolean);
+  if (!line) return index === 0 ? defaultOutlineSection : `${defaultOutlineSection} ${index + 1}`;
+  return line.length > 48 ? `${line.slice(0, 48).trim()}...` : line;
+}
+
+function extractOutlineSections(value) {
+  if (Array.isArray(value)) {
+    return normalizeOutlineSections(value);
+  }
+
+  const raw = String(value || "").trim();
+  if (!raw) return [defaultOutlineSection];
+
+  const markdownSections = parseMarkdownDocument(raw).outlineItems;
+  if (markdownSections.length) return normalizeOutlineSections(markdownSections);
+
+  return normalizeOutlineSections(plainOutlineBlocks(raw).map((block, index) => plainOutlineBlockTitle(block, index)));
+}
+
+function serializeOutlineSections(sections) {
+  return normalizeOutlineSections(sections)
+    .map((section) => `## ${section}`)
+    .join("\n");
+}
+
+function normalizeHkrrIntent(value) {
+  const raw = String(value || "").replace(/\s*\+\s*/g, " + ").replace(/\s+/g, " ").trim();
+  const aliases = new Map([
+    ["h", "H"],
+    ["k", "K"],
+    ["r", "R"],
+    ["rhythm", "Rhythm"],
+    ["h + r", "H + R"],
+    ["k + r", "K + R"],
+    ["h + rhythm", "H + Rhythm"],
+    ["k + rhythm", "K + Rhythm"],
+    ["r + rhythm", "R + Rhythm"],
+  ]);
+  return aliases.get(raw.toLowerCase()) || "";
+}
+
+function parseOutlineHkrrMetadata(body = "") {
+  const text = String(body || "");
+  const intent = normalizeHkrrIntent((text.match(/^\s*HKRR\s+intent\s*[:：]\s*(.+)$/im) || [])[1]);
+  const note = ((text.match(/^\s*(?:说明|Note)\s*[:：]\s*(.+)$/im) || [])[1] || "").trim();
+  return { intent, note };
+}
+
+function stripOutlineHkrrMetadata(body = "") {
+  return String(body || "")
+    .split(/\r?\n/)
+    .filter((line) => !/^\s*(?:HKRR\s+intent|说明|Note)\s*[:：]/i.test(line))
+    .join("\n")
+    .trim();
+}
+
+function outlineHkrrMetadataMarkdown(intent = "", note = "") {
+  const lines = [];
+  if (intent) lines.push(`HKRR intent: ${intent}`);
+  if (note) lines.push(`说明：${note}`);
+  return lines.join("\n");
+}
+
+function normalizeOutlineDraftBlocks(blocks) {
+  const normalized = (blocks || []).map((block, index) => {
+    const title = String(block?.title || "").replace(/\s+/g, " ").trim();
+    if (!title) return null;
+    const body = String(block?.body || "").trim();
+    const metadata = parseOutlineHkrrMetadata(body);
+
+    return {
+      title,
+      // The section's own name for itself, carried in its heading. Empty only
+      // until the text next becomes sections.
+      id: String(block?.id || ""),
+      body: stripOutlineHkrrMetadata(body),
+      // Normalizing must be idempotent. The first pass lifts the intent out of
+      // the prose and strips the line; a second pass over that result finds a
+      // body with no metadata left in it, and used to answer "no intent" --
+      // which is how a section's HKRR intent was wiped on every sync.
+      hkrrIntent: metadata.intent || normalizeHkrrIntent(block?.hkrrIntent) || "",
+      hkrrNote: metadata.note || String(block?.hkrrNote || "").trim(),
+      sourceMarkdown: String(block?.source || block?.sourceMarkdown || "").trim(),
+      sourceOutlineIndex: Number.isFinite(Number(block?.index)) ? Number(block.index) : index,
+    };
+  }).filter(Boolean);
+
+  return normalized.length
+    ? normalized
+    : [{ title: defaultOutlineSection, id: "", body: "", sourceMarkdown: "", sourceOutlineIndex: 0 }];
+}
+
+function outlineDraftBlocksFromSections(sections) {
+  return normalizeOutlineSections(sections).map((section, index) => ({
+    title: stripMarkdownSectionId(section),
+    id: markdownSectionId(section),
+    body: "",
+    sourceMarkdown: `## ${section}`,
+    sourceOutlineIndex: index,
+  }));
+}
+
+function plainOutlineDraftBlocks(value) {
+  return plainOutlineBlocks(value).map((block, index) => {
+    const title = plainOutlineBlockTitle(block, index);
+    return {
+      title,
+      body: block,
+      sourceMarkdown: `## ${title}\n\n${block}`,
+      sourceOutlineIndex: index,
+    };
+  });
+}
+
+function replacePlainOutlineBlock(value, index = 0, nextBody = "") {
+  const blocks = plainOutlineBlocks(value);
+  if (!blocks.length) return String(nextBody || "").trim();
+
+  const targetIndex = Math.max(0, Math.min(blocks.length - 1, Number(index) || 0));
+  blocks[targetIndex] = String(nextBody || "").trim();
+  return blocks.filter(Boolean).join("\n\n");
+}
+
+function replaceOutlineDraftBlockBody(markdown, index = 0, nextBody = "") {
+  const raw = String(markdown || "").trim();
+  if (!raw) return String(nextBody || "").trim();
+
+  const levelTwoBlocks = markdownDocumentSectionBlocks(raw, 2);
+  if (levelTwoBlocks.length) return replaceMarkdownDocumentSectionBody(raw, 2, index, nextBody);
+
+  const levelOneBlocks = markdownDocumentSectionBlocks(raw, 1);
+  if (levelOneBlocks.length) return replaceMarkdownDocumentSectionBody(raw, 1, index, nextBody);
+
+  const levelThreeBlocks = markdownDocumentSectionBlocks(raw, 3);
+  if (levelThreeBlocks.length) return replaceMarkdownDocumentSectionBody(raw, 3, index, nextBody);
+
+  return replacePlainOutlineBlock(raw, index, nextBody);
+}
+
+function extractOutlineDraftBlocks(value) {
+  if (Array.isArray(value)) return outlineDraftBlocksFromSections(value);
+
+  const raw = String(value || "").trim();
+  if (!raw) return outlineDraftBlocksFromSections([defaultOutlineSection]);
+
+  const levelTwoBlocks = markdownDocumentSectionBlocks(raw, 2);
+  if (levelTwoBlocks.length) return normalizeOutlineDraftBlocks(levelTwoBlocks);
+
+  const levelOneBlocks = markdownDocumentSectionBlocks(raw, 1);
+  if (levelOneBlocks.length) return normalizeOutlineDraftBlocks(levelOneBlocks);
+
+  const levelThreeBlocks = markdownDocumentSectionBlocks(raw, 3);
+  if (levelThreeBlocks.length) return normalizeOutlineDraftBlocks(levelThreeBlocks);
+
+  return normalizeOutlineDraftBlocks(plainOutlineDraftBlocks(raw));
+}
+
+const writingSurfaceOrder = ["questionSheet", "outline", "sectionDrafts", "teachText", "claimCheck", "projectCd"];
+
+function createWritingSurfaceState() {
+  return {
+    questionSheet: { type: "questionSheet", upstream: [], downstream: ["outline"], compactTeachText: true },
+    outline: { type: "outline", upstream: ["questionSheet"], downstream: ["sectionDrafts"], compactTeachText: true },
+    sectionDrafts: { type: "sectionDrafts", upstream: ["outline"], downstream: ["teachText"], compactTeachText: true },
+    teachText: { type: "teachText", upstream: ["questionSheet", "outline", "sectionDrafts"], downstream: ["claimCheck", "projectCd"], compactTeachText: false },
+    claimCheck: { type: "claimCheck", upstream: ["teachText"], downstream: ["projectCd"], compactTeachText: false },
+    projectCd: { type: "projectCd", upstream: ["teachText", "claimCheck"], downstream: [], compactTeachText: false },
+  };
+}
+
+function normalizeWritingSurfaceState(project) {
+  if (!project) return createWritingSurfaceState();
+
+  const defaults = createWritingSurfaceState();
+  const existing = project.writingSurfaces || {};
+  project.writingSurfaces = writingSurfaceOrder.reduce((surfaces, key) => {
+    surfaces[key] = {
+      ...defaults[key],
+      ...(existing[key] || {}),
+      type: key,
+    };
+    return surfaces;
+  }, {});
+  return project.writingSurfaces;
+}
+
+function setProjectOutlineMarkdown(project, markdown) {
+  if (!project) return [defaultOutlineSection];
+
+  const outline = String(markdown || "").trim();
+  const sections = extractOutlineSections(outline);
+  project.outline = outline;
+  project.outlineSections = sections;
+  return sections;
+}
+
+function getProjectOutlineSections(project) {
+  if (!project) return [defaultOutlineSection];
+
+  const sections = project.outline !== undefined
+    ? extractOutlineSections(project.outline)
+    : normalizeOutlineSections(project.outlineSections);
+
+  project.outlineSections = sections;
+  if (project.outline === undefined) project.outline = serializeOutlineSections(sections);
+  return sections;
+}
+
+function getProjectOutlineDraftBlocks(project) {
+  if (!project) return outlineDraftBlocksFromSections([defaultOutlineSection]);
+  return extractOutlineDraftBlocks(project.outline !== undefined ? project.outline : project.outlineSections);
+}
+
+function createProjectRecord(name) {
+  const now = new Date().toISOString();
+  const outlineSections = [defaultOutlineSection];
+  return {
+    id: crypto.randomUUID(),
+    name: (name || getDefaultProjectName()).trim() || getDefaultProjectName(),
+    createdAt: now,
+    updatedAt: now,
+    archived: false,
+    questionSheet: "",
+    outline: serializeOutlineSections(outlineSections),
+    outlineSections,
+    drafts: [],
+    writingSurfaces: createWritingSurfaceState(),
+    documentTabs: [],
+    activeDocumentTabIds: { reader: null, teachText: null, docMap: null, timeMachine: null },
+    dictionaryTerms: [],
+    // Review Desk's comment threads (app/core/review-comments.js). They live on
+    // the record, so a backup, a restore and Recovery carry them with it.
+    reviewComments: [],
+    flowState: {
+      topic: false,
+      research: false,
+      outline: false,
+      drafting: false,
+      check: false,
+    },
+    sourceRegistry: { allocations: {}, nextN: 1 },
+  };
+}
+
+function normalizeProjectDiskName(project) {
+  if (!project) return false;
+  const name = String(project.name || "").trim();
+  if (!name) {
+    project.name = getDefaultProjectName();
+    project.updatedAt = project.updatedAt || new Date().toISOString();
+    return true;
+  }
+  return false;
+}
+
+function getActiveProject() {
+  if (!isProjectMounted) return null;
+  return projects.find((project) => project.id === activeProjectId) || projects[0] || null;
+}
+
+function getSelectedProject() {
+  return projects.find((project) => project.id === selectedProjectId)
+    || projects.find((project) => project.id === activeProjectId)
+    || projects[0]
+    || null;
+}
+
+function ensureActiveProject() {
+  let changed = false;
+  if (!projects.length) {
+    projects.push(createProjectRecord(getDefaultProjectName()));
+    isProjectMounted = true;
+    changed = true;
+  }
+
+  if (startupProjectId && !projects.some((project) => project.id === startupProjectId)) {
+    startupProjectId = null;
+    startupProjectPinned = false;
+    changed = true;
+  }
+
+  // A pin the writer chose is authoritative: the desk boots to it, exactly as
+  // the Startup Project Hard Disk always meant. A pin nobody chose is only the
+  // desk's own default, and following it meant a writer who started a second
+  // project came back to the first one after every reload - their work was on
+  // the desk, just not in front of them. So an unchosen pin follows the project
+  // being worked in, and an explicit "set as Startup Project Hard Disk" keeps
+  // the old behaviour.
+  if (!startupProjectPinned && activeProjectId
+    && activeProjectId !== startupProjectId
+    && projects.some((project) => project.id === activeProjectId)) {
+    startupProjectId = activeProjectId;
+    changed = true;
+  }
+
+  if (!startupProjectId) {
+    startupProjectId = projects[0].id;
+    changed = true;
+  }
+
+  if (!projects.some((project) => project.id === activeProjectId)) {
+    activeProjectId = startupProjectId || projects[0].id;
+  }
+
+  if (!selectedProjectId || !projects.some((project) => project.id === selectedProjectId)) {
+    selectedProjectId = activeProjectId;
+  }
+
+  const attachmentsByProjectId = new Map();
+  chatFiles.forEach((file) => {
+    if (file?.type !== "text" || !Array.isArray(file.imageAttachments) || !file.imageAttachments.length) return;
+    const projectId = file.projectId || activeProjectId || startupProjectId;
+    if (!projectId) return;
+    if (!attachmentsByProjectId.has(projectId)) attachmentsByProjectId.set(projectId, []);
+    attachmentsByProjectId.get(projectId).push(...normalizeImageAttachments(file.imageAttachments));
+  });
+
+  // Migration: Ensure all projects have pipeline fields
+  projects.forEach(project => {
+    changed = normalizeProjectDiskName(project) || changed;
+    if (project.archived === undefined) project.archived = false;
+    if (project.questionSheet === undefined) project.questionSheet = "";
+    if (project.outline === undefined) project.outline = serializeOutlineSections([defaultOutlineSection]);
+    getProjectOutlineSections(project);
+    if (project.drafts === undefined) project.drafts = [];
+    normalizeWritingSurfaceState(project);
+    if (project.docMapCache !== undefined) {
+      delete project.docMapCache;
+      changed = true;
+    }
+    ensureProjectDocumentTabs(project);
+    if (!Array.isArray(project.dictionaryTerms)) project.dictionaryTerms = [];
+    if (project.flowState === undefined) project.flowState = { topic: false, research: false, outline: false, drafting: false, check: false };
+    const mergedAttachments = [
+      ...normalizeImageAttachments(project.imageAttachments),
+      ...(attachmentsByProjectId.get(project.id) || []),
+    ];
+    const byId = new Map();
+    mergedAttachments.forEach((attachment) => {
+      if (!byId.has(attachment.id)) byId.set(attachment.id, attachment);
+    });
+    const normalizedAttachments = [...byId.values()].slice(0, teachTextImageAttachmentLimit);
+    if (!Array.isArray(project.imageAttachments) || project.imageAttachments.length !== normalizedAttachments.length) {
+      changed = true;
+    }
+    project.imageAttachments = normalizedAttachments;
+    // DB v5: pictures live in the imageAttachments store, not inside the
+    // project record. Idempotent, so a restored backup cannot duplicate one.
+    if (migrateLegacyProjectImageAttachments(project)) changed = true;
+  });
+  chatFolders.forEach((folder) => {
+    if (folder.parentId === undefined) folder.parentId = null;
+  });
+  chatFiles.forEach((file) => {
+    if (file?.artifactKind !== "project-memory") return;
+    if (!file.memoryStatus) {
+      file.memoryStatus = "active";
+      changed = true;
+    }
+    if (!Array.isArray(file.sourceMessageIds)) {
+      file.sourceMessageIds = [];
+      changed = true;
+    }
+    if (file.sourceChatId === undefined) {
+      file.sourceChatId = "";
+      changed = true;
+    }
+  });
+  return changed;
+}
+
+function isInActiveProject(item) {
+  return isProjectMounted && item?.projectId === activeProjectId;
+}
+
+function getProjectFolders() {
+  return chatFolders.filter(isInActiveProject);
+}
+
+function getProjectFiles() {
+  return chatFiles.filter(isInActiveProject);
+}
+
+function getProjectScraps() {
+  return scraps.filter(isInActiveProject);
+}
+
+function getProjectTrashItems() {
+  return trashItems.filter(isInActiveProject);
+}
+
+function getProjectReferenceChunks() {
+  if (!isProjectMounted || !activeProjectId) return [];
+  return projectReferences
+    .filter((reference) => reference.projectId === activeProjectId)
+    .filter((reference) => reference.enabled !== false)
+    .flatMap((reference) =>
+      (reference.chunks || []).map((chunk, index) => ({
+        ...chunk,
+        projectId: reference.projectId,
+        referenceId: reference.id,
+        source: reference.name,
+        referenceName: reference.name,
+        referenceChunkIndex: index + 1,
+        fromProjectReference: true,
+      }))
+    );
+}
+
+function getMountedTextDiskChunks() {
+  if (!isProjectMounted || mountedTextDisk.projectId !== activeProjectId) return [];
+  return ragChunks.filter((chunk) => chunk.projectId === activeProjectId && !chunk.fromProjectReference);
+}
+
+function hasMountedFileDiskContext() {
+  return getMountedTextDiskChunks().length > 0;
+}
+
+function getProjectCdItems(projectId = activeProjectId) {
+  if (!isProjectMounted || !projectId) return [];
+  return projectCdItems.filter((item) => item.projectId === projectId);
+}
+
+function syncWritingToolsShadeToggle() {
+  if (!writingToolsPanelEl) return;
+  const expanded = !writingToolsPanelEl.classList.contains("is-shaded");
+  writingToolsPanelEl.setAttribute("aria-expanded", String(expanded));
+  if (writingToolsShadeToggleEl) {
+    writingToolsShadeToggleEl.setAttribute("aria-expanded", String(expanded));
+    writingToolsShadeToggleEl.setAttribute("aria-label", t(expanded ? "collapse_tools" : "expand_tools"));
+  }
+}
+
+function toggleWritingToolsShade() {
+  if (!writingToolsPanelEl) return;
+  writingToolsPanelEl.classList.toggle("is-shaded");
+  syncWritingToolsShadeToggle();
+  scheduleWorkingSessionSave();
+}
+
+// Closing the Writing Flow is a second verb beside its WindowShade (owner,
+// 2026-09-25). Shade leaves the title bar where it stood; close puts the whole
+// palette away, the way a NeXTSTEP panel's or a Mac OS 9 utility window's close
+// box does. Only the eras that draw a close box can close it, but the state
+// outlives a change of appearance, so the way back is a command in every era:
+// this Apple menu row, or Tools > Writing Flow... under NeXTSTEP. The state
+// travels in the working session like the shade.
+function syncWritingFlowClosed() {
+  const closed = Boolean(writingToolsPanelEl?.classList.contains("is-closed"));
+  document.querySelector('[data-action="show-writing-flow"]')?.classList.toggle("is-hidden", !closed);
+}
+
+function setWritingFlowClosed(closed) {
+  if (!writingToolsPanelEl) return;
+  if (closed && writingToolsPanelEl.contains(document.activeElement)) document.activeElement.blur();
+  writingToolsPanelEl.classList.toggle("is-closed", Boolean(closed));
+  syncWritingFlowClosed();
+  scheduleWorkingSessionSave();
+}
+
+function setComposeToolsMenu(open) {
+  if (!composeToolsMenuEl || !composeToolsToggleButton) return;
+  composeToolsMenuEl.classList.toggle("is-hidden", !open);
+  composeToolsToggleButton.setAttribute("aria-expanded", String(open));
+}
+
+function closeComposeToolsMenu() {
+  setComposeToolsMenu(false);
+}
+
+function toggleComposeToolsMenu() {
+  const isOpen = composeToolsMenuEl && !composeToolsMenuEl.classList.contains("is-hidden");
+  setComposeToolsMenu(!isOpen);
+  if (!isOpen) {
+    requestAnimationFrame(() => {
+      composeToolsMenuEl?.querySelector('button[role="menuitem"]:not(.is-hidden):not([hidden]):not(:disabled)')?.focus();
+    });
+  }
+}
+
+function removeProjectReferenceChunks() {
+  for (let index = ragChunks.length - 1; index >= 0; index -= 1) {
+    if (ragChunks[index].fromProjectReference) {
+      ragChunks.splice(index, 1);
+    }
+  }
+}
+
+function mountProjectReferenceChunks() {
+  removeProjectReferenceChunks();
+  ragChunks.push(...getProjectReferenceChunks());
+}
+
+function assignProjectScope(projectId) {
+  chatFolders.forEach((folder) => {
+    if (!folder.projectId) folder.projectId = projectId;
+  });
+  chatFiles.forEach((file) => {
+    if (!file.projectId) file.projectId = projectId;
+  });
+  scraps.forEach((scrap) => {
+    if (!scrap.projectId) scrap.projectId = projectId;
+  });
+  trashItems.forEach((item) => {
+    if (!item.projectId) item.projectId = projectId;
+    if (item.originalData && !item.originalData.projectId) {
+      item.originalData.projectId = item.projectId;
+    }
+  });
+  projectCdItems.forEach((item) => {
+    if (!item.projectId) item.projectId = projectId;
+  });
+}
+
+function renderProjectSwitcher(targetPopover = projectSwitcherPopoverEl) {
+  if (!targetPopover) return;
+
+  const activeProject = getActiveProject();
+  const activeLabel = activeProject ? projectDisplayName(activeProject) : t("no_project_mounted");
+  if (targetPopover === projectSwitcherPopoverEl && projectSwitcherButton && projectSwitcherLabelEl) {
+    projectSwitcherLabelEl.textContent = activeLabel;
+    projectSwitcherButton.title = projectSwitcherStartupPickMode
+      ? t("set_startup")
+      : (activeProject ? t("mounted_project", activeLabel) : t("no_project_mounted"));
+    projectSwitcherButton.setAttribute("aria-label", t("project_switcher_aria"));
+    projectSwitcherButton.classList.toggle("is-unmounted", !activeProject);
+    projectSwitcherButton.classList.toggle("is-startup-pick", projectSwitcherStartupPickMode);
+  }
+  targetPopover.replaceChildren();
+
+  if (projectSwitcherStartupPickMode) {
+    const heading = document.createElement("div");
+    heading.className = "project-switcher-heading";
+    heading.textContent = t("choose_startup_disk");
+    targetPopover.append(heading);
+  }
+
+  if (!projects.length) {
+    const empty = document.createElement("button");
+    empty.type = "button";
+    empty.disabled = true;
+    empty.className = "project-switcher-empty";
+    empty.textContent = t("project_switcher_empty");
+    targetPopover.append(empty);
+  } else {
+    projects.forEach((project) => {
+      const isCurrent = isProjectMounted && project.id === activeProjectId;
+      const fileCount = chatFiles.filter((file) => file.projectId === project.id).length;
+      const scrapCount = scraps.filter((scrap) => scrap.projectId === project.id).length;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.switchProject = project.id;
+      button.draggable = true;
+      button.dataset.dragType = "project";
+      button.dataset.id = project.id;
+      button.className = `project-switcher-item${isCurrent ? " is-current" : ""}${project.archived ? " is-archived" : ""}`;
+      if (isCurrent) button.setAttribute("aria-current", "true");
+
+      const mark = document.createElement("span");
+      mark.className = "project-switcher-mark";
+      mark.textContent = projectSwitcherStartupPickMode
+        ? (project.id === startupProjectId ? "✓" : "")
+        : (isCurrent ? "✓" : "");
+
+      const copy = document.createElement("span");
+      copy.className = "project-switcher-copy";
+      const name = document.createElement("b");
+      name.textContent = projectDisplayName(project);
+      const meta = document.createElement("small");
+      meta.textContent = [
+        t("project_switcher_counts", fileCount, scrapCount),
+        isCurrent ? t("project_switcher_current") : "",
+        project.id === startupProjectId ? t("project_switcher_startup") : "",
+        project.archived ? t("archived") : "",
+      ].filter(Boolean).join(" · ");
+      copy.append(name, meta);
+
+      button.append(mark, copy);
+      targetPopover.append(button);
+    });
+  }
+
+  const divider = document.createElement("hr");
+  targetPopover.append(divider);
+
+  const newProject = document.createElement("button");
+  newProject.type = "button";
+  newProject.dataset.action = "new-project-disk";
+  newProject.textContent = t("new_project_disk");
+
+  const openProjects = document.createElement("button");
+  openProjects.type = "button";
+  openProjects.dataset.action = "open-project-disks";
+  openProjects.textContent = t("open_project_disks");
+
+  targetPopover.append(newProject, openProjects);
+}
+
+var projectSwitcherStartupPickMode = false;
+
+function openProjectSwitcherForStartup() {
+  projectSwitcherStartupPickMode = true;
+  renderProjectSwitcher();
+  closeMenus();
+  const menu = projectSwitcherButton?.closest(".menu");
+  if (!menu) return;
+  menu.classList.add("is-open");
+  if (typeof positionOpenMenu === "function") positionOpenMenu(menu);
+  setStatus(t("choose_startup_disk"));
+}
+
+function handleProjectSwitcherChoice(projectId) {
+  if (projectSwitcherStartupPickMode) {
+    projectSwitcherStartupPickMode = false;
+    setStartupProject(projectId);
+    renderProjectSwitcher();
+    return;
+  }
+  switchProject(projectId);
+}
+
+function updateProjectLabels() {
+  const project = getActiveProject();
+  const selectedProject = getSelectedProject();
+  const name = project ? projectDisplayName(project) : t("no_project_mounted");
+  const activeText = project ? t("mounted_project", name) : t("no_project_mounted");
+  const selectedText = selectedProject ? t("selected_project", projectDisplayName(selectedProject)) : t("no_project_mounted");
+
+  if (currentProjectLabelEl) {
+    // The generic label was enough while exactly one disk could be on the desk.
+    // With the others beside it, a row of identical names is a row of nothing:
+    // the mounted disk says which project it is, like any other volume.
+    currentProjectLabelEl.textContent = project ? name : t("current_project_desktop");
+    const currentProjectIcon = currentProjectLabelEl.closest(".desktop-icon");
+    currentProjectIcon?.classList.remove("is-hidden");
+    currentProjectIcon?.setAttribute("aria-hidden", "false");
+    currentProjectIcon?.setAttribute("title", name);
+    if (project && currentProjectIcon) {
+      currentProjectIcon.dataset.projectId = project.id;
+      currentProjectIcon.dataset.dropTarget = "project";
+    } else if (currentProjectIcon) {
+      delete currentProjectIcon.dataset.projectId;
+      delete currentProjectIcon.dataset.dropTarget;
+    }
+  }
+  if (assistantProjectStatusEl) assistantProjectStatusEl.textContent = activeText;
+  if (activeProjectLabelEl) activeProjectLabelEl.textContent = activeText;
+  if (selectedProjectLabelEl) selectedProjectLabelEl.textContent = selectedText;
+  if (documentsProjectLabelEl) documentsProjectLabelEl.textContent = activeText;
+  if (scrapbookProjectLabelEl) scrapbookProjectLabelEl.textContent = activeText;
+  if (trashProjectLabelEl) trashProjectLabelEl.textContent = activeText;
+  renderProjectDiskDesktopIcons();
+  renderProjectSwitcher();
+  updateMenuStatus();
+  updateProjectDiskActionVisibility();
+  renderAboutMacintosh();
+}
+
+// A disk at risk, defined by the dates the writer set in ClioProject and
+// nothing else (decided 2026-08-21, restored 2026-09-23): the handoff — the
+// date on the Project CD stop — is past or within a week while the handoff
+// is still unticked, or a date the writer gave any task has passed with the
+// task unticked. No date is invented, and a date that cannot be read as one
+// day is words, not a deadline: an unknown is never claimed as a risk.
+// Pure, so the contract can execute it.
+const PROJECT_DISK_HANDOFF_WARN_DAYS = 7;
+
+// A hand-typed date read back as a day number — only the forms that cannot
+// mean two things: 2026-09-30, 2026/9/30, 2026年9月30日, 9月30日, 9/30. The
+// stored text is never rewritten; ClioProject shows it exactly as typed.
+function projectHandDateDay(text, now = Date.now()) {
+  const match = String(text || "").trim().match(/^(?:(\d{4})\s*[-/年]\s*)?(\d{1,2})\s*[-/月]\s*(\d{1,2})\s*日?$/);
+  if (!match) return null;
+  const month = +match[2] - 1;
+  const at = new Date(Date.UTC(match[1] ? +match[1] : new Date(now).getFullYear(), month, +match[3]));
+  return at.getUTCMonth() === month && at.getUTCDate() === +match[3] ? at / 864e5 : null;
+}
+
+function projectTodayDay(now = Date.now()) {
+  const today = new Date(now);
+  return Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()) / 864e5;
+}
+
+function projectDiskAtRisk(project, now = Date.now()) {
+  const plan = project?.clioProject;
+  if (!plan) return false;
+  const today = projectTodayDay(now);
+  const tasks = plan.tasks || {};
+  const handoff = projectHandDateDay(tasks.projectCd?.date, now);
+  if (handoff !== null && !tasks.projectCd?.done && handoff - today <= PROJECT_DISK_HANDOFF_WARN_DAYS) return true;
+  return [...Object.values(tasks), ...(plan.ownTasks || [])].some((task) => {
+    const due = task && !task.done ? projectHandDateDay(task.date, now) : null;
+    return due !== null && due < today;
+  });
+}
+
+// The mark itself: the diamond — the classic "this one has something in it"
+// figure the Writing Flow palette already uses — put on when the fact holds
+// and taken off when it stops holding. It goes at the front of the icon so
+// `lastChild` stays the disk's name label. Balloon Help says it in words.
+function applyProjectDiskRiskMark(icon, project) {
+  if (!icon) return;
+  const atRisk = projectDiskAtRisk(project);
+  icon.classList.toggle("has-disk-risk", atRisk);
+  let mark = icon.querySelector(".disk-risk-mark");
+  if (atRisk && !mark) {
+    mark = document.createElement("span");
+    mark.className = "disk-risk-mark";
+    mark.setAttribute("aria-hidden", "true");
+    icon.prepend(mark);
+  } else if (!atRisk && mark) {
+    mark.remove();
+  }
+  if (atRisk) {
+    icon.dataset.balloonHelp = "balloon_project_disk_risk";
+  } else if (icon.dataset.balloonHelp === "balloon_project_disk_risk") {
+    delete icon.dataset.balloonHelp;
+  }
+}
+
+// Every project is a disk, and the desktop is where disks live.
+//
+// One project could mount at a time and the rest lived in a menu-bar popover —
+// a list of names reachable only by opening a menu, which is not how a Macintosh
+// says "you have these". System 6 puts every volume on the desk and leaves an
+// **ejected** disk behind as a dimmed icon: present, named, not currently
+// readable. That is exactly the state a project needs when it is not the one you
+// are in, so it is the state used here.
+//
+// The mounted disk keeps its static markup, because it is also the drop target
+// for filing things into the current project. The ejected ones are drawn.
+// finder-ops.js owns window state and spatial layout; the version makes a
+// placement-only change redraw.
+let finderPlacementVersion = 0;
+function restoreFinderWindowState(name) { window.AISystem6FinderOps?.restoreWindowState(name); }
+function saveFinderWindowState(name) { if (/^(projects|documents)$/.test(name)) finderCommand("window-state", { name }); }
+function syncFinderWindow(...args) { ensureFinderOpsModule().then(() => window.AISystem6FinderOps.syncWindow(...args), () => {}); }
+
+function renderProjectDiskDesktopIcons() {
+  const column = currentProjectLabelEl?.closest(".icon-column");
+  const mountedIcon = currentProjectLabelEl?.closest(".desktop-icon");
+  if (!column || !mountedIcon) return;
+
+  const mountedId = isProjectMounted ? activeProjectId : "";
+  // Archived disks are put away: off the desk, still in the switcher. So are
+  // the unmounted ones unless the writer asked for them — the Finder's own
+  // default, and the reason the desk stops being a wall of "Untitled project"
+  // ghosts the moment somebody keeps more than two projects. The menu-bar
+  // switcher is the way back to every disk either way.
+  const showUnmounted = typeof showUnmountedDisksInput !== "undefined"
+    && showUnmountedDisksInput?.checked === true;
+  const ejected = showUnmounted
+    ? projects.filter((project) => !project.archived && project.id !== mountedId)
+    : [];
+  const drawn = new Map(
+    [...column.querySelectorAll("[data-ejected-project-id]")].map((icon) => [icon.dataset.ejectedProjectId, icon]),
+  );
+
+  let previous = mountedIcon;
+  ejected.forEach((project) => {
+    let icon = drawn.get(project.id);
+    if (icon) {
+      drawn.delete(project.id);
+    } else {
+      icon = document.createElement("button");
+      icon.type = "button";
+      icon.className = "desktop-icon is-ejected-disk";
+      icon.dataset.ejectedProjectId = project.id;
+      icon.dataset.projectId = project.id;
+      // The same drag type the switcher rows use: dragging a disk to the Trash
+      // puts it away, which on a Macintosh is what dragging a disk there means.
+      icon.dataset.dragType = "project";
+      icon.dataset.id = project.id;
+      // Double-clicking an ejected disk looks inside it. It does not mount it:
+      // switching the disk you write on is a decision, not the by-product of
+      // going to look for something.
+      icon.dataset.action = `peek-project-disk:${project.id}`;
+      icon.dataset.dropTarget = "project";
+      icon.dataset.ejected = "true";
+      icon.append(
+        Object.assign(document.createElement("span"), { className: "sys-icon sys-icon-desktop" }),
+        document.createElement("span"),
+      );
+      icon.firstChild.setAttribute("data-system-icon", "projectDisk");
+      icon.firstChild.setAttribute("aria-hidden", "true");
+    }
+    icon.lastChild.textContent = projectDisplayName(project);
+    icon.setAttribute("title", t("ejected_project_disk", projectDisplayName(project)));
+    applyProjectDiskRiskMark(icon, project);
+    previous.after(icon);
+    previous = icon;
+  });
+
+  applyProjectDiskRiskMark(mountedIcon, mountedId ? projects.find((project) => project.id === mountedId) : null);
+  drawn.forEach((icon) => icon.remove());
+  if (typeof hydrateSystemIcons === "function") hydrateSystemIcons(column);
+  if (!window.AISystem6FinderDesk && mountedId && [...chatFiles, ...chatFolders].some((item) => item.placement?.desktop)) ensureFinderDeskModule().catch(() => {});
+  window.AISystem6FinderDesk?.sync?.();
+}
+
+function setProjectDiskActionVisible(button, visible) {
+  if (!button) return;
+  button.hidden = !visible;
+}
+
+function updateProjectDiskActionVisibility() {
+  const selectedProject = getSelectedProject();
+  const rebuildArticleButton = document.querySelector('[data-action="open-rebuild-flow"]');
+  const duplicateProjectButton = document.querySelector('[data-action="duplicate-project-disk"]');
+  const archiveProjectButton = document.querySelector('[data-action="archive-project-disk"]');
+
+  setProjectDiskActionVisible(rebuildArticleButton, !!getActiveProject());
+  setProjectDiskActionVisible(duplicateProjectButton, !!selectedProject);
+  setProjectDiskActionVisible(archiveProjectButton, !!selectedProject);
+}
+
+function getProjectNameConflict(name, ignoreProjectId = null) {
+  const normalized = name.trim().toLowerCase();
+  return projects.find((project) => project.id !== ignoreProjectId && project.name.trim().toLowerCase() === normalized);
+}
+
+// Project-wide name dedupe. The folder-scoped twin lives in documents-chat.js
+// under the plain name; keeping these apart matters because the concatenated
+// bundle keeps only one definition per name, and the two scopes are different.
+function nextAvailableProjectFileName(baseName, projectId = activeProjectId) {
+  const base = (baseName || t("untitled")).trim() || t("untitled");
+  const names = new Set(
+    chatFiles
+      .filter((file) => file.projectId === projectId)
+      .map((file) => file.name.trim().toLowerCase())
+  );
+  if (!names.has(base.toLowerCase())) return base;
+
+  let index = 2;
+  while (names.has(`${base} ${index}`.toLowerCase())) {
+    index += 1;
+  }
+  return `${base} ${index}`;
+}
+
+function getProjectFinderCurrentParentId() {
+  if (selectedFolderId === "all") return null;
+  return getProjectFolders().some((folder) => folder.id === selectedFolderId) ? selectedFolderId : null;
+}
+
+function getProjectFolderDeepItemCount(folderId) {
+  const tree = getDocumentFolderTree(folderId);
+  return Math.max(0, tree.folders.length - 1) + tree.files.length;
+}
+
+function getProjectFolderFinderItem(folder) {
+  // The icon counts what the window opens on: direct children, as its header does.
+  const count = getProjectFolders().filter((e) => e.parentId === folder.id).length + getProjectFiles().filter((e) => e.folderId === folder.id).length;
+  return {
+    ...folder,
+    type: "folder",
+    name: displayFolderName(folder.name),
+    kindLabel: t("folder_kind"),
+    iconClass: "folder-icon",
+    iconId: "folder",
+    itemCount: count,
+    sizeValue: count,
+    sizeLabel: t("items_count", count),
+    modifiedAt: folder.updatedAt || folder.createdAt,
+    canDuplicate: true,
+    canRename: true,
+    canTrash: true,
+    open: () => openProjectFinderFolder(folder.id),
+  };
+}
+
+function getProjectFileFinderItem(file) {
+  const isAlias = file.type === "alias";
+  // An Office document (ClioWorks N0): its bytes live in nativeDocuments, the
+  // item only names them, so its size is the bytes' and it has no text body.
+  const isOffice = file.type === "office";
+  const isClipping = file.artifactKind === "clipping";
+  const isRunRecord = file.artifactKind === "clio-run-record";
+  const kindLabel = isOffice
+    ? t(`kind_office_${file.format}`)
+    : isAlias
+    ? t("kind_alias")
+    : isClipping
+      ? t("kind_clipping")
+      : isRunRecord
+        ? t("kind_run_record")
+        : file.artifactKind === "project-memory"
+    ? (file.memoryStatus === "disabled"
+      ? (currentLanguage === "zh" ? "项目记忆（已停用）" : "Project Memory (Disabled)")
+      : (currentLanguage === "zh" ? "项目记忆" : "Project Memory"))
+    : (file.type === "text" ? t("kind_teachtext") : t("kind_chat"));
+  // Run records are text receipts, not TeachText manuscripts: they get the
+  // generic document icon and their own kind label instead of the TeachText
+  // "T" glyph, which misrepresented what the folder holds.
+  const iconClass = isAlias ? "alias-icon" : isClipping ? "scrap-icon" : isRunRecord ? "doc-icon" : file.type === "text" ? "teachtext-icon" : "doc-icon";
+  const iconId = isAlias ? "alias" : isClipping ? "scrap" : isRunRecord || isOffice ? "document" : file.type === "text" ? "teachText" : "chatFile";
+  const bodyText = isAlias || isOffice ? "" : file.type === "text" ? (file.body || "") : formatChatFile(file);
+  return {
+    ...file,
+    kindLabel,
+    iconClass,
+    iconId,
+    sizeValue: isOffice ? file.byteLength || 0 : bodyText.length,
+    modifiedAt: file.updatedAt || file.createdAt,
+    // A duplicate would name the same bytes twice; Save As makes the copy.
+    canDuplicate: !isOffice,
+    canRename: true,
+    canTrash: true,
+    canMakeDocMap: !isAlias && file.type === "text" && bodyText.trim().length >= docMapMinDocumentChars,
+    canRunChecks: !isAlias && file.type === "text" && bodyText.trim().length > 0,
+    open: () => {
+      selectedChatFileId = file.id;
+      withFinderObjects(() => {
+        if (isAlias) return openAliasFile(file);
+        if (openProjectFileWithStationery(file)) return;
+        if (typeof window.AISystem6ApplicationRegistry?.openProjectObject === "function") {
+          window.AISystem6ApplicationRegistry.openProjectObject(file.id, "open");
+          return;
+        }
+        if (file.type === "text") openTextFile(file.id);
+        else openChatFileWindow(file.id);
+      });
+    },
+  };
+}
+
+function getProjectRootFinderItems() {
+  const currentParentId = getProjectFinderCurrentParentId();
+  const folders = getProjectFolders()
+    .filter((folder) => (folder.parentId || null) === currentParentId && !folder.placement?.desktop)
+    .map(getProjectFolderFinderItem);
+  const files = getProjectFiles()
+    .filter((file) => (file.folderId || null) === currentParentId && !file.placement?.desktop)
+    .map(getProjectFileFinderItem);
+  if (currentParentId) return [...folders, ...files];
+  // An Office document's text copy is a source, not a second file: the
+  // document itself is the one icon (ClioWorks N0).
+  const references = projectReferences
+    .filter((reference) => reference.projectId === activeProjectId && !reference.officeFileId)
+    .map(getProjectReferenceFinderItem);
+  return [...folders, ...files, ...references];
+}
+
+function getSelectedProjectRootItem() {
+  const items = getProjectRootFinderItems();
+  const selectedFile = selectedChatFileId ? items.find((item) => item.id === selectedChatFileId && item.type !== "folder" && item.type !== "finder-root") : null;
+  if (selectedFile) return selectedFile;
+  const selectedFolder = selectedDocumentFolderId ? items.find((item) => item.id === selectedDocumentFolderId && item.type === "folder") : null;
+  if (selectedFolder) return selectedFolder;
+  if (!items.some((item) => item.type === "finder-root" && item.id === selectedProjectRootItemId)) {
+    selectedProjectRootItemId = null;
+  }
+  return items.find((item) => item.id === selectedProjectRootItemId) || null;
+}
+
+function getSelectedProjectFinderItem() {
+  return window.AISystem6FinderColumns?.selectedItem() || getSelectedProjectRootItem();
+}
+
+function getCurrentFinderSelection() {
+  const activeWin = document.querySelector(".window.is-active:not(.is-hidden)");
+  const activeName = activeWin?.dataset.window || "";
+  if (typeof getFinderVolumeDefinition === "function" && getFinderVolumeDefinition(activeName)) {
+    return getFinderVolumeSelectedItem(activeName);
+  }
+  if (activeName === "documents") return getSelectedDocumentItem();
+  if (finderContainerWindowNames.includes(activeName)) return getSelectedStaticFinderItem(activeName);
+  return null;
+}
+
+function getCurrentFinderParentId() {
+  const activeWin = document.querySelector(".window.is-active:not(.is-hidden)");
+  const activeName = activeWin?.dataset.window || "";
+  if (activeName === "projects" || activeName === "documents") {
+    return selectedFolderId === "all" ? null : selectedFolderId;
+  }
+  return null;
+}
+
+function getProjectFolderPathLabel(folderId, projectId = activeProjectId) {
+  const project = projects.find((item) => item.id === projectId) || getActiveProject();
+  const parts = [project ? projectDisplayName(project) : t("project_disk")];
+  if (folderId) parts.push(...getFolderPath(folderId, projectId));
+  return parts.filter(Boolean).join(" / ");
+}
+
+function getFinderItemPathLabel(item) {
+  if (!item) return t("project_disk");
+  if (item.type === "folder") return getProjectFolderPathLabel(item.parentId || null, item.projectId || activeProjectId);
+  if (item.type === "finder-root") {
+    const project = getActiveProject();
+    return [project ? projectDisplayName(project) : t("project_disk"), item.name].filter(Boolean).join(" / ");
+  }
+  if (item.projectId) return getProjectFolderPathLabel(item.folderId || null, item.projectId);
+  return t("project_disk");
+}
+
+function getTrashOriginalPath(item) {
+  if (!item) return "";
+  if (item.originalPath) return item.originalPath;
+  if (item.originalType === "file" && item.originalData) return getProjectFolderPathLabel(item.originalData.folderId || null, item.projectId || activeProjectId);
+  if (item.originalType === "folder" && item.originalData?.folder) {
+    const folder = item.originalData.folder;
+    return getProjectFolderPathLabel(folder.parentId || null, item.projectId || activeProjectId);
+  }
+  if (item.originalType === "scrap") {
+    const project = getActiveProject();
+    return [project ? projectDisplayName(project) : t("project_disk"), t("scrapbook_label")].filter(Boolean).join(" / ");
+  }
+  if (item.originalType === "projectCd") {
+    const project = getActiveProject();
+    return [project ? projectDisplayName(project) : t("project_disk"), t("project_cd")].filter(Boolean).join(" / ");
+  }
+  if (item.originalType === "projectReference") {
+    const project = getActiveProject();
+    return [project ? projectDisplayName(project) : t("project_disk"), t("project_sources")].filter(Boolean).join(" / ");
+  }
+  if (item.originalType === "mountedFile") {
+    const project = getActiveProject();
+    return [project ? projectDisplayName(project) : t("project_disk"), t("mounted_text_disk")].filter(Boolean).join(" / ");
+  }
+  if (item.originalType === "project") return t("project_disk");
+  return t("project_disk");
+}
+
+function updateProjectRootSelectionView() {
+  const selectedRootItem = getSelectedProjectRootItem();
+  if (selectedProjectLabelEl) {
+    selectedProjectLabelEl.textContent = selectedRootItem
+      ? t("finder_selected_item", selectedRootItem.name)
+      : t("finder_no_selection");
+  }
+  projectDiskGridEl?.querySelectorAll("[data-project-root-id], [data-document-item-id]").forEach((el) => {
+    const isSystem = el.dataset.projectRootId && el.dataset.projectRootId === selectedProjectRootItemId;
+    const key = el.dataset.documentItemType && el.dataset.documentItemId
+      ? documentSelectionKey(el.dataset.documentItemType, el.dataset.documentItemId)
+      : "";
+    const isFile = el.dataset.documentItemType === "file" && (el.dataset.documentItemId === selectedChatFileId || selectedDocumentItemKeys.has(key));
+    const isFolder = el.dataset.documentItemType === "folder" && (el.dataset.documentItemId === selectedDocumentFolderId || selectedDocumentItemKeys.has(key));
+    el.classList.toggle("is-selected", isSystem || isFile || isFolder);
+  });
+}
+
+function selectProjectRootItem(itemId) {
+  selectedProjectRootItemId = itemId;
+  selectedChatFileId = null;
+  selectedDocumentFolderId = null;
+  clearDocumentSelection();
+  updateProjectRootSelectionView();
+  updateMenuState();
+}
+
+function openProjectFinderFolder(folderId) {
+  if (!getProjectFolders().some((folder) => folder.id === folderId)) return;
+  selectedFolderId = folderId;
+  selectedChatFileId = null;
+  selectedDocumentFolderId = null;
+  selectedProjectRootItemId = null;
+  clearDocumentSelection();
+  renderProjectDisks();
+}
+
+function openProjectFinderParentFolder() {
+  const folder = getSelectedFolder();
+  selectedFolderId = folder?.parentId || "all";
+  selectedChatFileId = null;
+  selectedDocumentFolderId = null;
+  selectedProjectRootItemId = null;
+  clearDocumentSelection();
+  renderProjectDisks();
+}
+
+function openProjectRootItem(item = getSelectedProjectRootItem()) {
+  if (!item) {
+    setStatus(t("select_finder_item_first"));
+    return;
+  }
+  item.open();
+}
+
+function getProjectFinderItemMeta(item) {
+  if (item.meta) return item.meta;
+  if (item.type === "folder") return t("items_count", item.itemCount || 0);
+  return getFinderItemSizeLabel(item);
+}
+
+function renderProjectRootListItem(item, project, mode, orderedItems = []) {
+  const row = document.createElement("div");
+  const isSystem = item.type === "finder-root";
+  const isFolder = item.type === "folder";
+  const isFile = !isSystem && !isFolder;
+  const selected = isSystem
+    ? item.id === selectedProjectRootItemId
+    : isFolder
+      ? selectedDocumentItemKeys.has(documentSelectionKey("folder", item.id)) || item.id === selectedDocumentFolderId
+      : item.type === "projectReference"
+        ? selectedDocumentItemKeys.has(documentSelectionKey("projectReference", item.id)) || item.id === selectedProjectReferenceId
+        : selectedDocumentItemKeys.has(documentSelectionKey("file", item.id)) || item.id === selectedChatFileId;
+  const isReference = item.type === "projectReference";
+  row.className = `finder-list-row${item.label ? ` label-${item.label}` : ""} finder-label-${item.finderLabel || "none"}${selected ? " is-selected" : ""}`;
+  if (isSystem) row.dataset.projectRootId = item.id;
+  if (isFolder || isFile) {
+    row.dataset.dragType = isFolder ? "document-folder" : isReference ? "projectReference" : "file";
+    row.dataset.id = item.id;
+    row.dataset.projectId = item.projectId;
+    row.dataset.documentItemType = isFolder ? "folder" : isReference ? "projectReference" : "file";
+    row.dataset.documentItemId = item.id;
+  }
+  if (isFolder) {
+    row.dataset.dropTarget = "document-folder";
+    row.dataset.folderId = item.id;
+  }
+  const metaInner = item.metaHtml || escapeHtml(getProjectFinderItemMeta(item));
+  const at = getFinderItemModifiedAt(item);
+  row.innerHTML = `
+    <span class="finder-list-name-cell">${renderSystemIcon(item.iconId || item.iconClass, { size: "list"})}<span>${nameCell(item)}</span></span>
+    <span>${escapeHtml(getFinderItemKindLabel(item))}</span>
+    <span>${metaInner}</span>
+    <span>${at ? new Date(at).toLocaleDateString() : "—"}</span>
+  `;
+  row.title = getFinderItemName(item);
+  attachCitationJumpHandler(row);
+  row.addEventListener("click", (event) => {
+    if (isSystem) {
+      if (
+        selectedProjectRootItemId === item.id
+        && typeof window.matchMedia === "function"
+        && !window.matchMedia("(hover: hover) and (pointer: fine)").matches
+      ) {
+        openProjectRootItem(item);
+        return;
+      }
+      selectProjectRootItem(item.id);
+      if (!event.metaKey && !event.ctrlKey && !event.shiftKey) {
+        revealSelectOpenTapHint(row, { detail: event.detail });
+      }
+      return;
+    }
+    const selectionType = isFolder ? "folder" : isReference ? "projectReference" : "file";
+    const alreadySelected = isFolder
+      ? selectedDocumentFolderId === item.id
+      : selectedChatFileId === item.id || selectedProjectReferenceId === item.id;
+    if (
+      alreadySelected
+      && !event.metaKey && !event.ctrlKey && !event.shiftKey
+      && typeof window.matchMedia === "function"
+      && !window.matchMedia("(hover: hover) and (pointer: fine)").matches
+    ) {
+      openProjectRootItem(item);
+      return;
+    }
+    selectDocumentItemFromEvent(selectionType, item.id, event, orderedItems);
+    updateProjectRootSelectionView();
+    if (!event.metaKey && !event.ctrlKey && !event.shiftKey) {
+      revealSelectOpenTapHint(row, { detail: event.detail });
+    }
+  });
+  row.addEventListener("dblclick", () => openProjectRootItem(item));
+  return row;
+}
+
+function renderProjectRootIconItem(item, orderedItems = []) {
+  const button = document.createElement("button");
+  button.type = "button";
+  const isSystem = item.type === "finder-root";
+  const isFolder = item.type === "folder";
+  const isFile = !isSystem && !isFolder;
+  const isReference = item.type === "projectReference";
+  const selected = isSystem
+    ? item.id === selectedProjectRootItemId
+    : isFolder
+      ? selectedDocumentItemKeys.has(documentSelectionKey("folder", item.id)) || item.id === selectedDocumentFolderId
+      : isReference
+        ? selectedDocumentItemKeys.has(documentSelectionKey("projectReference", item.id)) || item.id === selectedProjectReferenceId
+        : selectedDocumentItemKeys.has(documentSelectionKey("file", item.id)) || item.id === selectedChatFileId;
+  button.className = `finder-item${item.label ? ` label-${item.label}` : ""} finder-label-${item.finderLabel || "none"}${selected ? " is-selected" : ""}`;
+  if (isSystem) button.dataset.projectRootId = item.id;
+  if (isFolder || isFile) {
+    button.dataset.dragType = isFolder ? "document-folder" : isReference ? "projectReference" : "file";
+    button.dataset.id = item.id;
+    button.dataset.projectId = item.projectId;
+    button.dataset.documentItemType = isFolder ? "folder" : isReference ? "projectReference" : "file";
+    button.dataset.documentItemId = item.id;
+  }
+  if (isFolder) {
+    button.dataset.dropTarget = "document-folder";
+    button.dataset.folderId = item.id;
+  }
+  const metaInner = item.metaHtml || escapeHtml(getProjectFinderItemMeta(item));
+  button.innerHTML = `${renderSystemIcon(item.iconId || item.iconClass, { size: "finder"})}<span>${nameCell(item)}</span><small>${metaInner}</small>`;
+  button.title = getFinderItemName(item);
+  attachCitationJumpHandler(button);
+  button.addEventListener("click", (event) => {
+    if (isSystem) {
+      if (
+        selectedProjectRootItemId === item.id
+        && typeof window.matchMedia === "function"
+        && !window.matchMedia("(hover: hover) and (pointer: fine)").matches
+      ) {
+        openProjectRootItem(item);
+        return;
+      }
+      selectProjectRootItem(item.id);
+      if (!event.metaKey && !event.ctrlKey && !event.shiftKey) {
+        revealSelectOpenTapHint(button, { detail: event.detail });
+      }
+      return;
+    }
+    const selectionType = isFolder ? "folder" : isReference ? "projectReference" : "file";
+    const alreadySelected = isFolder
+      ? selectedDocumentFolderId === item.id
+      : selectedChatFileId === item.id || selectedProjectReferenceId === item.id;
+    if (
+      alreadySelected
+      && !event.metaKey && !event.ctrlKey && !event.shiftKey
+      && typeof window.matchMedia === "function"
+      && !window.matchMedia("(hover: hover) and (pointer: fine)").matches
+    ) {
+      openProjectRootItem(item);
+      return;
+    }
+    selectDocumentItemFromEvent(selectionType, item.id, event, orderedItems);
+    updateProjectRootSelectionView();
+    if (!event.metaKey && !event.ctrlKey && !event.shiftKey) {
+      revealSelectOpenTapHint(button, { detail: event.detail });
+    }
+  });
+  button.addEventListener("dblclick", () => openProjectRootItem(item));
+  return button;
+}
+
+function attachCitationJumpHandler(root) {
+  if (!root || typeof cycleCitationJump !== "function") return;
+  root.querySelectorAll("[data-citation-jump-key]").forEach((el) => {
+    el.addEventListener("click", (event) => {
+      event.stopPropagation();
+      event.preventDefault();
+      cycleCitationJump(el.dataset.citationJumpKey);
+    });
+    el.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.stopPropagation();
+        event.preventDefault();
+        cycleCitationJump(el.dataset.citationJumpKey);
+      }
+    });
+  });
+}
+
+function syncProjectDiskMoreActions() {
+  const select = document.querySelector("#project-disk-more");
+  const go = document.querySelector("#project-disk-more-go");
+  if (!go || !select) return;
+  const project = typeof getActiveProject === "function" ? getActiveProject() : null;
+  const items = project && typeof getProjectRootFinderItems === "function" ? getProjectRootFinderItems() : [];
+  const action = select.value || "open-import-utility";
+  const needsDocs = action === "open-project-backup" || action === "open-clio-project";
+  const blocked = !project || (needsDocs && !items.length);
+  go.disabled = blocked;
+  go.dataset.balloonHelpDisabled = !project
+    ? "balloon_disabled_menu_project"
+    : "balloon_project_disk_empty_first";
+}
+
+function runProjectDiskMoreAction() {
+  const select = document.querySelector("#project-disk-more");
+  const action = select?.value || "open-import-utility";
+  const project = typeof getActiveProject === "function" ? getActiveProject() : null;
+  const items = project && typeof getProjectRootFinderItems === "function" ? getProjectRootFinderItems() : [];
+  if (!project) {
+    setStatus(t("balloon_disabled_menu_project"));
+    return;
+  }
+  if ((action === "open-project-backup" || action === "open-clio-project") && !items.length) {
+    setStatus(t("balloon_project_disk_empty_first"));
+    return;
+  }
+  if (typeof handleAction === "function") handleAction(action);
+  else window.AISystem6Runtime?.dispatchCommand?.(action);
+}
+
+function renderProjectDisks() {
+  window.AISystem6FinderColumns?.sync();
+  ensureActiveProject();
+  if (selectedFolderId !== "all" && !getProjectFolders().some((folder) => folder.id === selectedFolderId)) {
+    selectedFolderId = "all";
+  }
+  selectedProjectId = activeProjectId;
+  updateProjectLabels();
+  syncProjectDiskMoreActions();
+
+  const project = getActiveProject();
+  const titleEl = document.querySelector("#project-disk-title");
+  const currentFolder = getSelectedFolder();
+  if (projectDiskNameInput) projectDiskNameInput.value = project?.name || getDefaultProjectName();
+
+  if (!project) {
+    projectDiskGridEl.replaceChildren();
+    if (titleEl) titleEl.textContent = t("project_disk");
+    if (projectDiskCountEl) projectDiskCountEl.textContent = "";
+    selectedProjectRootItemId = null;
+    if (selectedProjectLabelEl) selectedProjectLabelEl.textContent = t("finder_no_selection");
+    // Goal #2/#6 shared shell: no mounted project → New Project Hard Disk.
+    const empty = document.createElement("div");
+    empty.className = "empty-folder-note empty-next-note project-disk-empty-next";
+    empty.dataset.emptyNext = "1";
+    const text = document.createElement("p");
+    text.textContent = t("spine_no_project");
+    const go = document.createElement("button");
+    go.type = "button";
+    go.className = "btn default";
+    go.dataset.action = "new-project-disk";
+    go.textContent = t("new_project_disk");
+    empty.append(text, go);
+    projectDiskGridEl.append(empty);
+    return;
+  }
+
+  const path = currentFolder ? getFolderPath(currentFolder.id).join(" / ") : t("project_disk");
+  if (titleEl) titleEl.textContent = path;
+  titleEl?.setAttribute("title", path);
+  if (projectDiskPathEl) projectDiskPathEl.textContent = path;
+  const projectDiskLocationEl = document.querySelector("#project-disk-location");
+  if (projectDiskLocationEl) {
+    projectDiskLocationEl.textContent = path;
+    projectDiskLocationEl.title = path;
+  }
+  if (projectDiskUpButton) {
+    projectDiskUpButton.hidden = true;
+    projectDiskUpButton.textContent = currentFolder ? t("up_one_level") : t("all_documents");
+  }
+  renderFinderNavigationBar(getWindow("projects"));
+
+  projectDiskGridEl.dataset.dropTarget = "document-current-folder";
+  projectDiskGridEl.dataset.folderId = currentFolder?.id || "";
+
+  restoreFinderWindowState("projects");
+  const mode = normalizeFinderViewMode(windowViewModes.projects);
+  windowViewModes.projects = mode;
+  const items = sortFinderItemsForView(getProjectRootFinderItems(), mode, finderSortReversed("projects"));
+  const selectedRootItem = getSelectedProjectRootItem();
+  const signature = [
+    activeProjectId,
+    selectedFolderId,
+    selectedProjectRootItemId,
+    selectedChatFileId,
+    selectedScrapId,
+    selectedProjectCdItemId,
+    mode,
+    finderSortReversed("projects"),
+    currentLanguage,
+    collectionVersion(items),
+    finderPlacementVersion,
+  ].join("::");
+  if (shouldSkipRender("projectDisks", signature)) return;
+  const fragment = document.createDocumentFragment();
+  projectDiskGridEl.replaceChildren();
+  if (projectDiskCountEl) projectDiskCountEl.textContent = t("items_count", items.length);
+  if (selectedProjectLabelEl) {
+    selectedProjectLabelEl.textContent = selectedRootItem
+      ? t("finder_selected_item", selectedRootItem.name)
+      : t("finder_no_selection");
+  }
+
+  if (!items.length) {
+    // Goal #2/#6 shared shell: empty project root → Import as the in-pane step.
+    const empty = document.createElement("div");
+    empty.className = "empty-folder-note empty-next-note project-disk-empty-next";
+    empty.dataset.emptyNext = "1";
+    const text = document.createElement("p");
+    text.textContent = t("project_disk_empty_hint");
+    const go = document.createElement("button");
+    go.type = "button";
+    go.className = "btn default";
+    go.dataset.action = "open-import-utility";
+    go.textContent = t("project_disk_empty_title");
+    go.addEventListener("click", () => handleAction("open-import-utility"));
+    empty.append(text, go);
+    projectDiskGridEl.append(empty);
+    updateFinderViewButtons(getWindow("projects"), mode);
+    setFinderViewClasses(projectDiskGridEl, mode);
+    syncFinderWindow("projects", projectDiskGridEl, items, mode);
+    syncProjectDiskMoreActions();
+    if (typeof settlePendingFinderFit === "function") settlePendingFinderFit(getWindow("projects"));
+    return;
+  }
+
+  updateFinderViewButtons(getWindow("projects"), mode);
+  setFinderViewClasses(projectDiskGridEl, mode);
+  if (isFinderListMode(mode)) {
+    const header = renderFinderListHeader("projects", mode, { onChange: renderProjectDisks });
+    fragment.append(header);
+    let previousKind = "";
+    items.forEach((item) => {
+      const kind = getFinderItemKindLabel(item);
+      if (mode === "kind" && kind !== previousKind) {
+        const group = document.createElement("div");
+        group.className = "finder-list-group";
+        group.textContent = kind;
+        fragment.append(group);
+        previousKind = kind;
+      }
+      fragment.append(renderProjectRootListItem(item, project, mode, items));
+    });
+  } else {
+    items.forEach((item) => fragment.append(renderProjectRootIconItem(item, items)));
+  }
+  projectDiskGridEl.append(fragment);
+  syncFinderWindow("projects", projectDiskGridEl, items, mode);
+  if (typeof settlePendingFinderFit === "function") settlePendingFinderFit(getWindow("projects"));
+}
+
+function renderProjectReferences() {
+  window.AISystem6FinderColumns?.sync();
+  updateProjectDiskActionVisibility();
+}
+
+function getProjectReferenceText(reference) {
+  if (!reference) return "";
+  return reference.body || (reference.chunks || []).map((chunk) => chunk.content).join("\n\n---\n\n");
+}
+
+function getProjectReferenceFinderItem(reference) {
+  const text = getProjectReferenceText(reference);
+  const updatedAt = reference.updatedAt || reference.createdAt || new Date().toISOString();
+  const sizeLabel = getFinderItemSizeLabel({ sizeValue: text.length });
+  const citationCount = typeof getCitingDraftsForReference === "function"
+    ? getCitingDraftsForReference(reference.id).length
+    : 0;
+  const citationLabel = citationCount > 0 ? t("reference_cited_in_n", citationCount) : "";
+  // Citation count goes first so it survives the grid view's truncation.
+  const meta = [citationLabel, sizeLabel].filter(Boolean).join(" · ");
+  const metaHtml = citationCount > 0
+    ? `<span class="finder-citation-jump" data-citation-jump-key="reference:${escapeHtml(reference.id)}" role="button" tabindex="0">${escapeHtml(citationLabel)}</span>${sizeLabel ? ` · ${escapeHtml(sizeLabel)}` : ""}`
+    : "";
+  return {
+    id: reference.id,
+    projectId: reference.projectId,
+    type: "projectReference",
+    name: reference.name,
+    body: text,
+    kindLabel: t("project_sources"),
+    iconClass: "text-file-icon",
+    iconId: "document",
+    sizeValue: text.length,
+    meta,
+    metaHtml,
+    updatedAt,
+    modifiedAt: updatedAt,
+    canDuplicate: false,
+    canRename: false,
+    canTrash: true,
+    open: () => openProjectReferenceInReader(reference),
+  };
+}
+
+function openProjectReferenceInReader(reference) {
+  if (!reference) return;
+  const body = getProjectReferenceText(reference);
+  if (!body.trim()) {
+    setStatus(t("reader_file_unavailable"));
+    return;
+  }
+  selectedProjectReferenceId = reference.id;
+  const tab = upsertDocumentTab("reader", "source_view", {
+    title: reference.name,
+    backing: { type: "projectReference", id: reference.id },
+    state: {
+      kind: "projectReference",
+      title: reference.name,
+      text: body,
+      source: `${t("project_disk")}: ${reference.name}`,
+    },
+  });
+  if (tab) openReaderDocumentTab(tab.id);
+  openWindow("reader");
+
+  const citations = typeof getCitingDraftsForReference === "function"
+    ? getCitingDraftsForReference(reference.id)
+    : [];
+  if (citations.length) {
+    const labels = citations
+      .map((hit) => hit.sectionTitle || hit.surfaceLabel)
+      .filter(Boolean);
+    if (labels.length) setStatus(t("reference_cited_in_list", labels.join("; ")));
+  }
+}
+
+function openSelectedProjectReference() {
+  const reference = projectReferences.find((item) =>
+    item.id === selectedProjectReferenceId && item.projectId === activeProjectId
+  );
+  if (!reference) {
+    setStatus(t("no_reference_selected"));
+    return;
+  }
+
+  selectedChatFileId = null;
+  openTeachTextStateInTab({
+    title: reference.name,
+    backing: { type: "projectReference", id: reference.id },
+    state: {
+      name: reference.name.replace(/\.(txt|md|csv|json|js|ts|html|css|xml|log)$/i, ""),
+      folder: preferredFolderName(),
+      body: getProjectReferenceText(reference),
+      statusKey: "viewing_reference",
+    },
+  });
+}
+
+async function moveProjectReferencesToTrash(referenceIds) {
+  const ids = Array.from(new Set(referenceIds || []));
+  if (!ids.length) return;
+
+  const targets = ids
+    .map((id) => projectReferences.find((reference) => reference.id === id && reference.projectId === activeProjectId))
+    .filter(Boolean);
+  if (!targets.length) return;
+
+  const movedNames = [];
+  for (const reference of targets) {
+    const index = projectReferences.indexOf(reference);
+    if (index === -1) continue;
+    projectReferences.splice(index, 1);
+    if (typeof purgeContextForTrashedItems === "function") {
+      purgeContextForTrashedItems([{ type: "projectReference", id: reference.id, item: reference }]);
+    }
+    trashItems.unshift({
+      projectId: activeProjectId,
+      title: reference.name,
+      body: getProjectReferenceText(reference),
+      originalPath: [projectDisplayName(getActiveProject()), t("project_sources")].filter(Boolean).join(" / "),
+      originalType: "projectReference",
+      originalData: reference,
+    });
+    try {
+      await deleteStoredProjectReference(reference.id);
+    } catch (error) {
+      setStatus(t("project_reference_error", friendlyErrorDetail(error)));
+    }
+    movedNames.push(reference.name);
+  }
+  AISystem6DeskUndo.trashed(trashItems.slice(0, movedNames.length));
+
+  if (selectedProjectReferenceId && !projectReferences.some((reference) => reference.id === selectedProjectReferenceId)) {
+    selectedProjectReferenceId = projectReferences[0]?.id || null;
+  }
+  saveDeskState();
+  renderProjectDisks();
+  renderTrash();
+  playSystemSound("trash");
+  if (movedNames.length === 1) {
+    setStatus(t("project_reference_moved_trash", movedNames[0]));
+  } else if (movedNames.length > 1) {
+    setStatus(t("project_references_moved_trash", movedNames.length));
+  }
+}
+
+async function loadActiveProjectReferences() {
+  const projectId = activeProjectId;
+  removeProjectReferenceChunks();
+  projectReferences.length = 0;
+  selectedProjectReferenceId = null;
+  renderProjectReferences();
+
+  if (!isProjectMounted || !projectId) {
+    renderMountedTextDisk();
+    updateMenuState();
+    return;
+  }
+
+  try {
+    const references = await getStoredProjectReferences(projectId);
+    if (projectId !== activeProjectId) return;
+
+    references
+      .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0))
+      .forEach((reference) => projectReferences.push(reference));
+
+    selectedProjectReferenceId = projectReferences[0]?.id || null;
+    mountProjectReferenceChunks();
+    renderProjectReferences();
+    renderMountedTextDisk();
+    updateMenuState();
+
+    if (projectReferences.length) {
+      setStatus(t("project_reference_loaded", projectReferences.length));
+    }
+  } catch (error) {
+    setStatus(t("project_reference_error", friendlyErrorDetail(error)));
+  }
+}
+
+function closeProjectScopedWindows() {
+  [
+    "documents",
+    "chatFile",
+    "teachText",
+    "scrapbook",
+    "trash",
+    "contextPanel",
+    "textDisk",
+    "reader",
+    "questionSheet",
+    "outline",
+    "sectionDrafts",
+    "reviewDesk",
+    "projectCd",
+    "imageManager",
+    "findFile",
+    "printDirectory",
+    "pageSetup",
+    "rebuildFlow",
+    "docMap",
+    "dictionary",
+    "clioChart",
+  ].forEach(closeWindow);
+}
+
+function parkConversationInProject(projectId) {
+  if (!conversation.length || !projectId) return;
+
+  if (projectId === activeProjectId && getActiveProject()) {
+    ensureCurrentConversationFile();
+    persistActiveChatFile();
+  }
+  conversation.length = 0;
+  activeChatFileId = null;
+  compressedConversationMemory = { text: "", sourceMessages: 0, updatedAt: "" };
+  if (typeof renderClioTalkRunAssembly === "function") renderClioTalkRunAssembly();
+}
+
+function resetAssistantForProject(projectName) {
+  messagesEl.replaceChildren();
+  renderClioTalkWelcome();
+  lastAssistantText = "";
+  lastUserText = "";
+  setStatus(t("project_opened", projectName));
+  if (typeof renderClioTalkRunAssembly === "function") renderClioTalkRunAssembly();
+  updateMenuState();
+}
+
+function clearProjectTransientState() {
+  activeTextFileId = null;
+  teachTextFileLabel = "";
+  setTeachTextWorkflowState("");
+  selectedChatFileId = null;
+  selectedScrapId = null;
+  selectedScrapIds.clear();
+  selectedProjectReferenceId = null;
+  selectedProjectCdItemId = null;
+  selectedProjectCdItemIds.clear();
+  lastClipScrapId = null;
+  lastRetrievedContextItems = [];
+  claimCitationContextItems = [];
+  // The Reader's own reset: this used to null the page record and leave the
+  // previous project's document on screen under it.
+  resetReaderDocumentState();
+  attachedClipIds.clear();
+  renderAttachedClips();
+}

@@ -1,0 +1,1193 @@
+// Core runtime module: working-session.
+
+// Loaded before app.js as a classic script; shares the AI System 6 global scope.
+
+
+// Every Project Hard Disk owns its own desktop scene, stored under one scope
+// key: the desktop (no disk mounted) or one project. The single
+// v1 and per-project v2 records are migrated into their v3 scopes at boot.
+const workingSessionLegacyStorageKey = "workingSession:v1";
+const workingSessionV2KeyPrefix = "workingSession:v2:";
+const workingSessionKeyPrefix = "workingSession:v3:";
+const workingSessionDesktopKey = "workingSession:v3:desktop";
+const workingSessionProjectKeyPrefix = "workingSession:v3:project:";
+const workingSessionVersion = 3;
+// Above this many project scenes, the least recently saved one is dropped.
+const workingSessionScopeLimit = 24;
+const workingSessionAdapters = new Map();
+let workingSessionSaveTimer = null;
+let workingSessionSavePromise = Promise.resolve();
+let workingSessionRestoreInProgress = false;
+// A scene may not be written before boot has read the one already on disk.
+// Boot moves windows long before restoreWorkingSession() runs — applySettings()
+// alone reflows them around the writing spine, and each move asks for a save —
+// so without this gate the desk races its own 350 ms autosave debounce: when
+// boot is slower than the debounce, the un-booted markup is captured as if it
+// were a saved scene, overwrites the real one, and is then "restored" over the
+// desk. Nothing before the restore attempt is the writer's work, so dropping
+// those saves loses nothing; boot opens the gate with
+// settleWorkingSessionRestore() once the attempt has been made (Writer Mode,
+// which skips restore entirely, included). A boot that never gets that far
+// leaves autosave off, which is what a failed boot should do to a saved scene.
+let workingSessionRestoreSettled = false;
+let workingSessionAutosaveInstalled = false;
+let workingSessionMigrationPromise = null;
+const workingSessionExcludedWindowNames = new Set(["about", "saveChat"]);
+
+function registerWorkingSessionAdapter(adapter) {
+  if (!adapter || typeof adapter.id !== "string" || !adapter.id.trim()) return false;
+  workingSessionAdapters.set(adapter.id, adapter);
+  return true;
+}
+
+function cloneWorkingSessionValue(value, fallback) {
+  if (value === undefined) return fallback;
+  try {
+    if (typeof structuredClone === "function") return structuredClone(value);
+  } catch {}
+  try {
+    return JSON.parse(JSON.stringify(value));
+  } catch {
+    return fallback;
+  }
+}
+
+function migrateLegacyWorkingSessionValue(value) {
+  const copy = cloneWorkingSessionValue(value, {});
+  const conversation = copy?.adapters?.assistant?.conversation;
+  if (Array.isArray(conversation)) {
+    copy.adapters.assistant.conversation = conversation.map((message) => {
+      const migrated = { ...message };
+      // v1/v2 predate recoverable inline images. Treat unexpected image
+      // fields as unsupported legacy data instead of blessing provider-shaped
+      // material when the envelope moves to v3.
+      delete migrated.imageInputIds;
+      delete migrated.imageInputs;
+      return migrated;
+    });
+  }
+  return copy;
+}
+
+function workingSessionNumber(value, fallback = 0) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
+function clampWorkingSessionNumber(value, min, max, fallback = min) {
+  const number = workingSessionNumber(value, fallback);
+  return Math.max(min, Math.min(max, number));
+}
+
+function captureTextControlWorkingSession(control) {
+  return {
+    selectionStart: control?.selectionStart ?? 0,
+    selectionEnd: control?.selectionEnd ?? control?.selectionStart ?? 0,
+    selectionDirection: control?.selectionDirection || "none",
+    scrollTop: control?.scrollTop || 0,
+    focused: document.activeElement === control,
+  };
+}
+
+function restoreTextControlWorkingSession(control, state = {}, options = {}) {
+  if (!control) return;
+  const start = Math.min(Math.max(0, Number(state.selectionStart) || 0), control.value.length);
+  const end = Math.min(Math.max(start, Number(state.selectionEnd) || start), control.value.length);
+  control.setSelectionRange(start, end, ["forward", "backward"].includes(state.selectionDirection) ? state.selectionDirection : "none");
+  control.scrollTop = Math.max(0, Number(state.scrollTop) || 0);
+  if (state.focused && options.windowName) {
+    const win = getWindow(options.windowName);
+    if (win && !win.classList.contains("is-hidden") && !control.classList.contains("is-hidden")) {
+      control.focus({ preventScroll: true });
+    }
+  }
+}
+
+function inlineStyleValue(el, property) {
+  return el?.style?.getPropertyValue(property) || "";
+}
+
+function setInlineStyleValue(el, property, value) {
+  if (!el?.style) return;
+  const normalized = String(value || "");
+  if (normalized) el.style.setProperty(property, normalized);
+  else el.style.removeProperty(property);
+}
+
+// Which disk owns the scene right now. With nothing mounted the desktop owns
+// it, so an ejected disk's later scene never lands under a project key.
+function currentWorkingSessionProjectId() {
+  if (typeof isProjectMounted !== "undefined" && !isProjectMounted) return "";
+  return String(typeof activeProjectId === "undefined" ? "" : activeProjectId || "");
+}
+
+function workingSessionScopeKey(projectId) {
+  const id = String(projectId || "").trim();
+  return id ? `${workingSessionProjectKeyPrefix}${id}` : workingSessionDesktopKey;
+}
+
+function currentWorkingSessionKey() {
+  return workingSessionScopeKey(currentWorkingSessionProjectId());
+}
+
+async function workingSessionStoreTask(mode, run) {
+  let db;
+  try {
+    db = await openAppDb();
+    const value = await window.AISystem6StorageTransactions.runTransaction(
+      db,
+      keyvalStoreName,
+      mode,
+      (tx) => run(tx.objectStore(keyvalStoreName))
+    );
+    return { ok: true, value };
+  } catch (error) {
+    console.warn("Working Session storage failed.", error);
+    return { ok: false, value: null };
+  } finally {
+    db?.close();
+  }
+}
+
+async function readWorkingSessionSnapshot(key = currentWorkingSessionKey()) {
+  return (await workingSessionStoreTask("readonly", (store) => idbRequest(store.get(key)))).value || null;
+}
+
+async function writeWorkingSessionSnapshot(snapshot, key = currentWorkingSessionKey()) {
+  return (await workingSessionStoreTask("readwrite", (store) => idbRequest(store.put(snapshot, key)))).ok;
+}
+
+async function deleteWorkingSessionSnapshot(key = currentWorkingSessionKey()) {
+  return (await workingSessionStoreTask("readwrite", (store) => idbRequest(store.delete(key)))).ok;
+}
+
+async function listWorkingSessionScopeKeys() {
+  const keys = (await workingSessionStoreTask("readonly", (store) => idbRequest(store.getAllKeys()))).value;
+  return (Array.isArray(keys) ? keys : [])
+    .filter((key) => typeof key === "string" && key.startsWith(workingSessionKeyPrefix));
+}
+
+
+function captureWorkingSessionSnapshot() {
+  const adapters = {};
+  let failed = false;
+  workingSessionAdapters.forEach((adapter, id) => {
+    if (typeof adapter.capture !== "function") return;
+    try {
+      const value = adapter.capture();
+      if (value !== undefined) adapters[id] = value;
+    } catch (error) {
+      // The windows adapter is the scene itself. If it cannot capture — a window
+      // that is full screen without a restorable frame, say — the scene is
+      // untrustworthy, so refuse the whole snapshot and keep the last good one.
+      // Other adapters keep the older, isolated warn-and-continue so their
+      // failure never cancels an unrelated document's save.
+      if (id === "windows") failed = true;
+      console.warn(`Failed to capture Working Session adapter "${id}".`, error);
+    }
+  });
+  if (failed) return null;
+  const ownerId = currentWorkingSessionProjectId();
+  return {
+    version: workingSessionVersion,
+    savedAt: new Date().toISOString(),
+    projectId: ownerId || null,
+    viewport: {
+      width: window.innerWidth || 0,
+      height: window.innerHeight || 0,
+    },
+    adapters,
+  };
+}
+
+function scheduleWorkingSessionSave(delay = 350) {
+  if (workingSessionRestoreInProgress || !workingSessionRestoreSettled) return;
+  clearTimeout(workingSessionSaveTimer);
+  workingSessionSaveTimer = setTimeout(() => {
+    flushWorkingSessionSave();
+  }, delay);
+}
+
+function flushWorkingSessionSave() {
+  if (workingSessionRestoreInProgress || !workingSessionRestoreSettled) return workingSessionSavePromise;
+  clearTimeout(workingSessionSaveTimer);
+  workingSessionSaveTimer = null;
+  const snapshot = captureWorkingSessionSnapshot();
+  // A refused (incomplete) snapshot must not overwrite the saved scene.
+  if (!snapshot) return workingSessionSavePromise;
+  // Bind the scope key at capture time. The mounted disk can move before the
+  // queued write runs, and one disk's scene must never land under another's.
+  const key = workingSessionScopeKey(snapshot.projectId);
+  workingSessionSavePromise = workingSessionSavePromise
+    .catch(() => {})
+    .then(() => writeWorkingSessionSnapshot(snapshot, key));
+  return workingSessionSavePromise;
+}
+
+// Unified session-commit layer. High-frequency changes (movement, selection,
+// scroll, focus, drawer/view toggles) call scheduleWorkingSessionCommit and
+// are debounced; important boundaries (project switch, closing the active
+// writing app, Continue, environment change, pagehide) call
+// flushWorkingSessionCommit and wait for the durable write.
+function scheduleWorkingSessionCommit(delayMs = 350) {
+  return scheduleWorkingSessionSave(delayMs);
+}
+
+async function flushWorkingSessionCommit() {
+  return flushWorkingSessionSave();
+}
+
+// Read-only instances (another window owns the write lease) cancel pending
+// autosaves instead of letting them fail into the UI.
+function cancelWorkingSessionAutosave() {
+  clearTimeout(workingSessionSaveTimer);
+  workingSessionSaveTimer = null;
+}
+
+// Boot calls this once, after it has decided whether a saved scene comes back,
+// and it is the only thing that lets the desk write its scene again. A save
+// queued before this point is dropped along with its timer: it can only hold
+// the pre-restore desk, which is markup, not work.
+function settleWorkingSessionRestore() {
+  if (workingSessionRestoreSettled) return false;
+  cancelWorkingSessionAutosave();
+  workingSessionRestoreSettled = true;
+  return true;
+}
+
+// Scrub an erased project out of a scene that is not its own: an ejected disk
+// can leave its File Floppy behind in the desktop scene.
+async function scrubWorkingSessionScope(key, projectId) {
+  const snapshot = await readWorkingSessionSnapshot(key);
+  if (!snapshot?.adapters) return true;
+  let changed = false;
+  const adapters = { ...snapshot.adapters };
+  for (const [id, adapter] of workingSessionAdapters.entries()) {
+    if (typeof adapter.clear !== "function" || adapters[id] === undefined) continue;
+    try {
+      const nextValue = adapter.clear(adapters[id], { projectId });
+      if (nextValue === undefined) delete adapters[id];
+      else adapters[id] = nextValue;
+      changed = true;
+    } catch (error) {
+      console.warn(`Failed to clear Working Session adapter "${id}".`, error);
+    }
+  }
+  if (!changed) return true;
+  return writeWorkingSessionSnapshot({ ...snapshot, savedAt: new Date().toISOString(), adapters }, key);
+}
+
+// No projectId: put the whole desk away (Restart, Shut Down, safe startup,
+// Boot Recovery). With a projectId: that disk was erased, so drop its own
+// scene and scrub it out of every other one.
+async function clearWorkingSession(options = {}) {
+  cancelWorkingSessionAutosave();
+  const projectId = String(options.projectId || "").trim();
+  const keys = await listWorkingSessionScopeKeys();
+  if (!projectId) {
+    for (const key of keys) await deleteWorkingSessionSnapshot(key);
+    return deleteWorkingSessionSnapshot(workingSessionLegacyStorageKey);
+  }
+  const ownKey = workingSessionScopeKey(projectId);
+  await deleteWorkingSessionSnapshot(ownKey);
+  for (const key of keys) {
+    if (key !== ownKey) await scrubWorkingSessionScope(key, projectId);
+  }
+  return true;
+}
+
+// Orphan scenes (the disk is gone) go first; then the least recently saved
+// scenes above the cap. The desktop scene and the mounted disk always stay.
+async function pruneWorkingSessionScopes() {
+  const known = new Set((Array.isArray(projects) ? projects : []).map((project) => project?.id).filter(Boolean));
+  const activeKey = currentWorkingSessionKey();
+  const live = [];
+  for (const key of await listWorkingSessionScopeKeys()) {
+    if (key === workingSessionDesktopKey || key === activeKey) continue;
+    const projectId = key.startsWith(workingSessionProjectKeyPrefix)
+      ? key.slice(workingSessionProjectKeyPrefix.length)
+      : "";
+    if (!projectId || !known.has(projectId)) {
+      await deleteWorkingSessionSnapshot(key);
+      continue;
+    }
+    live.push({ key, savedAt: String((await readWorkingSessionSnapshot(key))?.savedAt || "") });
+  }
+  live.sort((left, right) => (right.savedAt || "").localeCompare(left.savedAt || ""));
+  for (const entry of live.slice(Math.max(0, workingSessionScopeLimit - 1))) {
+    await deleteWorkingSessionSnapshot(entry.key);
+  }
+  return true;
+}
+
+function migratedWorkingSessionIsReadable(written, legacy) {
+  if (!isValidWorkingSessionSnapshot(written)) return false;
+  if (String(written.projectId || "") !== String(legacy.projectId || "")) return false;
+  try {
+    return JSON.stringify(written.adapters) === JSON.stringify(legacy.adapters);
+  } catch {
+    return false;
+  }
+}
+
+// One-way move of v1 and v2 scenes into v3 scopes. v3 is the first scene
+// format allowed to carry bounded ClioTalk inline image copies; the adapter
+// payload itself is retained byte-for-byte while the envelope version moves.
+async function migrateWorkingSessionStorage() {
+  if (!workingSessionMigrationPromise) {
+    workingSessionMigrationPromise = workingSessionStoreTask("readwrite", async (store) => {
+      const keys = await idbRequest(store.getAllKeys());
+      const legacyEntries = [];
+      for (const key of Array.isArray(keys) ? keys : []) {
+        if (typeof key !== "string" || !key.startsWith(workingSessionV2KeyPrefix)) continue;
+        const value = await idbRequest(store.get(key));
+        if (value && typeof value === "object") legacyEntries.push({ key, value, version: 2 });
+      }
+      const v1 = await idbRequest(store.get(workingSessionLegacyStorageKey));
+      if (v1 && typeof v1 === "object") legacyEntries.push({ key: workingSessionLegacyStorageKey, value: v1, version: 1 });
+      if (!legacyEntries.length) return { migrated: false, reason: "absent" };
+
+      let moved = 0;
+      for (const legacy of legacyEntries) {
+        const migratedValue = migrateLegacyWorkingSessionValue(legacy.value);
+        const key = workingSessionScopeKey(migratedValue.projectId);
+        const existing = await idbRequest(store.get(key));
+        if (!isValidWorkingSessionSnapshot(existing)) {
+          await idbRequest(store.put({
+            ...migratedValue,
+            version: workingSessionVersion,
+            migratedFrom: legacy.version,
+          }, key));
+          const written = await idbRequest(store.get(key));
+          if (!migratedWorkingSessionIsReadable(written, migratedValue)) {
+            return { migrated: false, reason: "unverified", key };
+          }
+          moved += 1;
+        }
+        await idbRequest(store.delete(legacy.key));
+      }
+      return { migrated: true, moved, reason: moved ? "moved" : "already-migrated" };
+    }).then((result) => (result.ok ? result.value : { migrated: false, reason: "write-failed" }));
+  }
+  return workingSessionMigrationPromise;
+}
+
+function isValidWorkingSessionSnapshot(snapshot) {
+  return snapshot
+    && snapshot.version === workingSessionVersion
+    && snapshot.adapters
+    && typeof snapshot.adapters === "object";
+}
+
+// options.projectId picks the scope (default: whatever is mounted now).
+// options.mounted means the caller already mounted it, so ownership stays put.
+async function restoreWorkingSession(options = {}) {
+  await migrateWorkingSessionStorage();
+  const key = options.projectId === undefined
+    ? currentWorkingSessionKey()
+    : workingSessionScopeKey(options.projectId);
+  const snapshot = await readWorkingSessionSnapshot(key);
+  if (!isValidWorkingSessionSnapshot(snapshot)) return false;
+  const ownerId = String(snapshot.projectId || "");
+  if (ownerId) {
+    const owner = projects.find((project) => project.id === ownerId);
+    // The disk was erased: its scene has nothing left to open.
+    if (!owner) {
+      await deleteWorkingSessionSnapshot(key);
+      return false;
+    }
+    // An archived disk is put away; it is remounted before its scene returns.
+    if (owner.archived && !options.mounted) return false;
+  }
+
+  workingSessionRestoreInProgress = true;
+  let restored = false;
+  try {
+    if (ownerId && !options.mounted) {
+      activeProjectId = ownerId;
+      selectedProjectId = ownerId;
+      isProjectMounted = true;
+      assignProjectScope(activeProjectId);
+    }
+
+    for (const [id, adapter] of workingSessionAdapters.entries()) {
+      if (typeof adapter.restore !== "function" || snapshot.adapters[id] === undefined) continue;
+      try {
+        const result = await adapter.restore(snapshot.adapters[id], snapshot);
+        restored = result !== false || restored;
+      } catch (error) {
+        console.warn(`Failed to restore Working Session adapter "${id}".`, error);
+      }
+    }
+  } finally {
+    workingSessionRestoreInProgress = false;
+  }
+
+  if (restored) {
+    if (typeof scheduleWorkspaceRender === "function") {
+      scheduleWorkspaceRender({
+        projectLabels: true,
+        projectReferences: true,
+        mountedTextDisk: true,
+        menuState: true,
+      });
+    }
+    if (typeof scheduleStatusRender === "function") scheduleStatusRender();
+    if (typeof renderMultiFinderMenu === "function") renderMultiFinderMenu();
+    if (typeof updateMenuState === "function") updateMenuState();
+  }
+  return restored;
+}
+
+function installWorkingSessionAutosave() {
+  if (workingSessionAutosaveInstalled) return;
+  workingSessionAutosaveInstalled = true;
+  // Boots that skip restore (Writer Mode, unfinished OOBE) still owe the
+  // legacy record its move, and every boot pays the scene-count rent once.
+  migrateWorkingSessionStorage()
+    .then(() => pruneWorkingSessionScopes())
+    .catch(() => {});
+
+  document.addEventListener("input", (event) => {
+    if (event.target?.closest?.("input, textarea, select, [contenteditable='true']")) {
+      scheduleWorkingSessionCommit();
+    }
+  }, true);
+  document.addEventListener("change", () => scheduleWorkingSessionCommit(), true);
+  document.addEventListener("selectionchange", () => scheduleWorkingSessionCommit(900));
+  // These unload handlers are best effort only: a browser never guarantees an
+  // arbitrary IndexedDB promise completes here. Normal typing is debounced
+  // ahead of time and high-value actions flush explicitly; the app never
+  // claims "saved" from beforeunload.
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") flushWorkingSessionCommit();
+  });
+  window.addEventListener("pagehide", () => {
+    flushWorkingSessionCommit();
+  });
+  window.addEventListener("beforeunload", () => {
+    flushWorkingSessionCommit();
+  });
+}
+
+function captureWindowWorkingSession() {
+  const windows = Array.from(document.querySelectorAll(".window[data-window]"))
+    .filter((win) => {
+      const name = win.dataset.window || "";
+      return name && !workingSessionExcludedWindowNames.has(name);
+    })
+    .map((win) => {
+      const sideAskRestore = win.dataset.sideaskRestoreActive === "true";
+      // WM0: a full-screen window's own frame is 100vw/100dvh while it is up.
+      // Read the module's read-only pre-full-screen projection instead of the
+      // live inline style, and refuse the snapshot outright when that baseline
+      // is gone rather than saving a transient full-screen-sized window.
+      const fullscreenRestore = window.AISystem6WindowFullscreen?.frameForPersistence?.(win) ?? null;
+      // The layer the window had before full screen, so a refresh restores its
+      // z-order instead of the live priority band. Kept separate from the
+      // geometry projection, which deliberately carries no z-index.
+      const fullscreenLayer = window.AISystem6WindowFullscreen?.layerForPersistence?.(win) ?? null;
+      if (win.classList.contains("is-fullscreen") && !fullscreenRestore && !sideAskRestore) {
+        throw new Error(`Window "${win.dataset.window}" is full screen without a restorable frame.`);
+      }
+      const frameValue = (property, restoreKey) => {
+        if (sideAskRestore) return win.dataset[restoreKey] || "";
+        if (fullscreenRestore) return fullscreenRestore[property] ?? "";
+        return inlineStyleValue(win, property);
+      };
+      return {
+        name: win.dataset.window,
+        instance: win.dataset.windowInstance ?? "main",
+        appId: getWindowAppId(win),
+        visible: !win.classList.contains("is-hidden"),
+        appHidden: win.classList.contains("is-app-hidden"),
+        active: win.classList.contains("is-active"),
+        collapsed: win.classList.contains("is-collapsed"),
+        minimized: win.classList.contains("is-minimized"),
+        // Pin is stack ownership, not geometry. Persist it with the same window
+        // layout adapter so a refresh restores the pinned band without a second store.
+        pinned: typeof isWindowPinned === "function"
+          ? isWindowPinned(win)
+          : win.dataset.windowPinned === "true",
+        shadeWidth: inlineStyleValue(win, "--window-shade-width"),
+        desklet: win.classList.contains("is-desklet"),
+        zoomed: sideAskRestore ? win.dataset.sideaskRestoreZoomed === "true" : win.dataset.zoomed === "true",
+        userPositioned: win.dataset.userPositioned === "true",
+        layoutGroup: win.dataset.layoutGroup || "",
+        frameOwner: sideAskRestore ? "sideask-restore" : "window",
+        zIndex: workingSessionNumber(fullscreenLayer ?? win.style.zIndex, 0),
+        frame: {
+          left: frameValue("left", "sideaskRestoreLeft"),
+          top: frameValue("top", "sideaskRestoreTop"),
+          right: frameValue("right", "sideaskRestoreRight"),
+          bottom: frameValue("bottom", "sideaskRestoreBottom"),
+          width: frameValue("width", "sideaskRestoreWidth"),
+          height: frameValue("height", "sideaskRestoreHeight"),
+          maxHeight: frameValue("max-height", "sideaskRestoreMaxHeight"),
+          transform: frameValue("transform", "sideaskRestoreTransform"),
+        },
+        restoreFrame: {
+          left: win.dataset.restoreLeft || "",
+          top: win.dataset.restoreTop || "",
+          width: win.dataset.restoreWidth || "",
+          height: win.dataset.restoreHeight || "",
+        },
+        // WM0 presentation extension (local version 1, global session stays v3).
+        // A collapsed window's frame carries no height, so the height it had
+        // before shading is kept here. An empty string means "let CSS decide",
+        // not "missing"; the restore must not turn it into a measured value.
+        presentation: {
+          version: 1,
+          shadeRestoreHeight: win.classList.contains("is-collapsed")
+            ? win.dataset.shadeRestoreHeight ?? "" : "",
+          shadeRestoreMaxHeight: win.classList.contains("is-collapsed")
+            ? win.dataset.shadeRestoreMaxHeight ?? "" : "",
+        },
+      };
+    });
+  const activeWin = document.querySelector(".window.is-active:not(.is-hidden):not(.is-app-hidden)");
+  return {
+    activeAppId,
+    runtimeEnvironment,
+    sideAskEnabled,
+    topZ,
+    cascadeOffset,
+    activeWindowName: activeWin?.dataset.window || "",
+    windows,
+  };
+}
+
+const intrinsicSessionSizeWindowNames = new Set(["alarmClock"]);
+
+function applyWindowSessionFrame(win, frame = {}) {
+  if (!win || isNarrowViewport()) return;
+  if (typeof writerMode !== "undefined" && writerMode && win.dataset.window === "systemHelp") return;
+  if (typeof writerMode !== "undefined" && writerMode
+      && typeof writerModeCssOwnedWindows !== "undefined"
+      && writerModeCssOwnedWindows.has(win.dataset.window)) return;
+  const desktop = document.querySelector(".desktop");
+  const desktopRect = desktop?.getBoundingClientRect();
+  const maxWidth = Math.max(320, (desktopRect?.width || window.innerWidth) - 18);
+  const maxHeight = Math.max(220, (desktopRect?.height || window.innerHeight) - 18);
+  const parsePx = (value) => {
+    const match = String(value || "").match(/^(-?\d+(?:\.\d+)?)px$/);
+    return match ? Number(match[1]) : null;
+  };
+  const width = parsePx(frame.width);
+  const height = parsePx(frame.height);
+  const left = parsePx(frame.left);
+  const top = parsePx(frame.top);
+  const restoresIntrinsicSize = intrinsicSessionSizeWindowNames.has(win.dataset.window);
+
+  setInlineStyleValue(
+    win,
+    "width",
+    restoresIntrinsicSize
+      ? ""
+      : (width !== null ? `${clampWorkingSessionNumber(width, 180, maxWidth, 360)}px` : frame.width || ""),
+  );
+  setInlineStyleValue(
+    win,
+    "height",
+    restoresIntrinsicSize
+      ? ""
+      : (height !== null ? `${clampWorkingSessionNumber(height, 120, maxHeight, 320)}px` : frame.height || ""),
+  );
+  setInlineStyleValue(win, "left", left !== null ? `${clampWorkingSessionNumber(left, 0, Math.max(0, maxWidth - 80), 18)}px` : frame.left || "");
+  setInlineStyleValue(win, "top", top !== null ? `${clampWorkingSessionNumber(top, 0, Math.max(0, maxHeight - 40), 18)}px` : frame.top || "");
+  setInlineStyleValue(win, "right", frame.right || "auto");
+  setInlineStyleValue(win, "bottom", frame.bottom || "");
+  setInlineStyleValue(win, "max-height", restoresIntrinsicSize ? "" : frame.maxHeight || "");
+  setInlineStyleValue(win, "transform", frame.transform || "none");
+}
+
+// Restore a collapsed window's saved expanded size from the scene record.
+// Older v3 records have no presentation object: fall back to the frame's own
+// height so an upgraded record still expands to what it showed. An empty
+// string stays empty -- CSS owns that height, it is not a missing value.
+function restoreWindowSessionPresentation(win, entry) {
+  // Clear per-DOM leftovers even when switching to an older scene record.
+  delete win.dataset.shadeRestoreHeight;
+  delete win.dataset.shadeRestoreMaxHeight;
+  if (!entry.collapsed) return;
+  const presentation = entry.presentation?.version === 1 ? entry.presentation : null;
+  const text = (value) => (typeof value === "string" ? value : "");
+  win.dataset.shadeRestoreHeight = text(presentation ? presentation.shadeRestoreHeight : entry.frame?.height);
+  win.dataset.shadeRestoreMaxHeight = text(presentation ? presentation.shadeRestoreMaxHeight : entry.frame?.maxHeight);
+}
+
+async function restoreWindowWorkingSession(state = {}) {
+  // Instances re-mount by save order (§9B). At P0 every record is main and
+  // "absent instance" IS main — the element stays bare. A record carrying a
+  // real instance id is future multi-instance data; P1's restore calls the
+  // lazy identity layer's save-order dedup (assignRestoreIds) before this loop.
+  // A record that names a window since merged into another speaks for the
+  // window that took over: that window's own record when it has one, else the
+  // retired record renamed, and visible when any of them was.
+  const savedWindows = Array.isArray(state.windows) ? state.windows : [];
+  const windows = savedWindows.filter((entry) => !retiredWindowNames[entry?.name]);
+  for (const entry of savedWindows) {
+    const target = entry && retiredWindowNames[entry.name];
+    if (!target || !entry.visible) continue;
+    const own = windows.findIndex((other) => other?.name === target && !(other.instance && other.instance !== "main"));
+    if (own >= 0) windows[own] = { ...windows[own], visible: true };
+    else windows.push({ ...entry, name: target });
+  }
+  // Moving to a new scene retires every pending title alignment: the delayed
+  // callbacks were scheduled against the previous project's frames.
+  document.querySelectorAll(".window[data-window]").forEach((win) => invalidateWindowAutoLayout(win));
+  if (!windows.length) return false;
+
+  // Unified spec W06: the saved environment is authoritative — including an
+  // explicitly chosen "finder", which must survive the MultiFinder default
+  // for new desks. Only a snapshot with no recorded environment falls back
+  // to the startup default.
+  runtimeEnvironment = state.runtimeEnvironment === "multifinder" || state.runtimeEnvironment === "finder"
+    ? state.runtimeEnvironment
+    : startupEnvironment;
+  topZ = Math.min(windowLayerMaxZ, Math.max(topZ, workingSessionNumber(state.topZ, topZ)));
+  cascadeOffset = workingSessionNumber(state.cascadeOffset, cascadeOffset);
+  clearSideAskMode();
+  quietStartup();
+
+  const visibleWindows = windows
+    .filter((entry) => (
+      entry?.visible
+      && !workingSessionExcludedWindowNames.has(entry.name)
+      // A window its module builds has no markup until that module loads;
+      // openWindow() loads it through the registry, so the record counts as
+      // the window. Without this every game and lab fell out of the restored
+      // scene once its markup left index.html.
+      && (getWindow(entry.name) || lazyWindowRecord(entry.name)
+        // A whitelisted kind's instances are built by the identity layer (its
+        // builder covers main too) — the record counts as the window, like the
+        // lazy-record clause above.
+        || window.AISystem6WindowInstances?.whitelist().includes(entry.name))
+      && isWorkspaceWindowAllowed(entry.name)
+    ))
+    .sort((a, b) => workingSessionNumber(a.zIndex, 0) - workingSessionNumber(b.zIndex, 0));
+  const shouldArrangeQuickDraftPair = visibleWindows.some((entry) => (
+    entry.name === "quickDraft" && !entry.appHidden
+  ));
+
+  for (const entry of visibleWindows) {
+    // A lazy window's module can fail to load (offline, a bad deploy); that
+    // window stays closed and the rest of the scene still comes back. Second
+    // instances go through the identity layer, then rejoin this restore.
+    try {
+      if (entry.instance && entry.instance !== "main") {
+        await window.AISystem6WindowInstances?.open?.(entry.name, { instance: entry.instance });
+      } else {
+        await openWindow(entry.name, {
+          skipFinderMode: true,
+          skipPlacement: true,
+          skipFocus: true,
+          skipSideAsk: entry.name === "quickDraft",
+          // Keep a saved multi-DA desk intact; journey exclusivity is for summons.
+          skipJourneyExclusive: true,
+        });
+      }
+    } catch (error) {
+      console.warn(`Working Session could not reopen "${entry.name}".`, error);
+      continue;
+    }
+    // The record's OWN instance: the window that was just restored. This read
+    // `instanceId` — a name this file never declares, so it resolved to the
+    // write lease's boot-scope variable and asked for an instance that cannot
+    // exist. Every restored window then skipped its saved app id, put-away state
+    // and geometry below. Found by the contract that pins this line.
+    const win = getWindowInstance(entry.name, entry.instance || "main");
+    if (!win) continue;
+    win.dataset.app = entry.appId || getWindowAppId(win);
+    ensureRunningApp(win.dataset.app, entry.name);
+    win.classList.toggle("is-app-hidden", !!entry.appHidden);
+    win.classList.toggle("is-minimized", !!entry.minimized);
+    const shadeWidth = entry.shadeWidth
+      || entry.frame?.width
+      || `${Math.round(win.getBoundingClientRect().width)}px`;
+    setInlineStyleValue(win, "--window-shade-width", entry.collapsed ? shadeWidth : "");
+    win.classList.toggle("is-collapsed", !!entry.collapsed);
+    win.classList.toggle("is-desklet", !!entry.desklet);
+    win.dataset.zoomed = entry.zoomed ? "true" : "false";
+    win.dataset.userPositioned = entry.userPositioned ? "true" : "false";
+    win.dataset.layoutGroup = entry.layoutGroup || (typeof windowLayoutGroup === "function" ? windowLayoutGroup(win) : entry.appId || "");
+    if (entry.restoreFrame) {
+      win.dataset.restoreLeft = entry.restoreFrame.left || "";
+      win.dataset.restoreTop = entry.restoreFrame.top || "";
+      win.dataset.restoreWidth = entry.restoreFrame.width || "";
+      win.dataset.restoreHeight = entry.restoreFrame.height || "";
+    }
+    applyWindowSessionFrame(win, entry.frame || {});
+    // A collapsed window's height is CSS-owned (the title-bar stub). Clear any
+    // inline height the frame pass just wrote, or the shade would open at a
+    // pixel height instead of the stub, and remember the saved expanded size
+    // for Expand to use.
+    if (entry.collapsed) {
+      setInlineStyleValue(win, "height", "");
+      setInlineStyleValue(win, "max-height", "");
+    }
+    restoreWindowSessionPresentation(win, entry);
+    if (
+      !entry.collapsed && !entry.userPositioned
+      && typeof isCenteredSystemWindow === "function"
+      && isCenteredSystemWindow(win)
+      && typeof placeCenteredSystemWindow === "function"
+    ) {
+      placeCenteredSystemWindow(win);
+    } else if (typeof avoidWritingSpineOverlap === "function") {
+      avoidWritingSpineOverlap(win);
+    }
+    const legacyQuickDraftSplit = entry.name === "quickDraft"
+      && state.sideAskEnabled
+      && entry.frameOwner !== "sideask-restore";
+    if (legacyQuickDraftSplit) maximizeWindow(win);
+    const quickDraftWidth = Number(String(entry.frame?.width || "").match(/^(-?\d+(?:\.\d+)?)px$/)?.[1] || 0);
+    if (entry.name === "quickDraft" && !shouldArrangeQuickDraftPair && (!entry.frame?.width || quickDraftWidth < 360)) {
+      requestAnimationFrame(() => maximizeWindow(win));
+    }
+    // Restore pin before the saved z-index so setWindowLayerZ clamps into the
+    // pinned band. Unpinned peers and system-modal layers stay on their paths.
+    if (typeof setWindowPinned === "function") {
+      setWindowPinned(win, !!entry.pinned);
+    } else if (entry.pinned) {
+      win.dataset.windowPinned = "true";
+    } else {
+      delete win.dataset.windowPinned;
+    }
+    if (entry.zIndex) setWindowLayerZ(win, entry.zIndex);
+  }
+
+  const hiddenEntries = windows.filter((entry) => entry?.visible && entry.appHidden);
+  hiddenEntries.forEach((entry) => {
+    if (entry.appId) hiddenAppIds.add(entry.appId);
+  });
+
+  // Quick Draft opens beside the ordinary SideAsk window on desktop. During
+  // resume, wait until every saved zoom/frame has been applied before laying
+  // out that pair; otherwise the stale maximized frame can cover ClioTalk.
+  const portrait = typeof isPortraitDocumentFlow === "function" && isPortraitDocumentFlow();
+  if (shouldArrangeQuickDraftPair && !portrait && !isMultiFinderMode()) {
+    await arrangeWindowAssistantSplit("quickDraft");
+  }
+
+  const foregroundEntries = visibleWindows.filter((entry) => !entry.minimized && !entry.appHidden);
+  // Every entry here is a main instance (see the filter above), so the saved
+  // key window resolves by name, with `entry.active` as the fallback — the
+  // same read the desk has always made. P2 pairs this by instance again, once
+  // a session can bring back more than one window per kind.
+  const activeName = foregroundEntries.find((entry) => entry.name === state.activeWindowName || entry.active)?.name
+    || foregroundEntries.at(-1)?.name;
+  const activeWin = activeName ? getWindow(activeName) : null;
+  if (activeWin && !activeWin.classList.contains("is-hidden")) {
+    focusWindow(activeWin);
+  } else if (foregroundEntries.length) {
+    focusWindow(getWindow(foregroundEntries.at(-1).name));
+  } else {
+    activeAppId = "finder";
+  }
+  // Every restored window was opened without focus, so the portrait shell may
+  // still reflect whichever saved frame happened to be visited last. Reconcile
+  // it once, after the real foreground application has been restored.
+  if (typeof syncMobileAppForeground === "function") syncMobileAppForeground();
+  return true;
+}
+
+function captureSelectionWorkingSession() {
+  return {
+    activeProjectId,
+    selectedProjectId,
+    selectedFolderId,
+    selectedChatFileId,
+    selectedDocumentFolderId,
+    selectedDocumentItemKeys: [...selectedDocumentItemKeys],
+    selectedDocumentAnchorKey,
+    selectedMountedFile,
+    selectedMountedFileNames: [...selectedMountedFileNames],
+    selectedScrapId,
+    selectedScrapIds: [...selectedScrapIds],
+    selectedProjectReferenceId,
+    selectedProjectCdItemId,
+    selectedProjectCdItemIds: [...selectedProjectCdItemIds],
+    selectedDraftIndex,
+    activeTextFileId,
+  };
+}
+
+function restoreSelectionWorkingSession(state = {}) {
+  if (state.activeProjectId && projects.some((project) => project.id === state.activeProjectId && !project.archived)) {
+    activeProjectId = state.activeProjectId;
+    selectedProjectId = state.selectedProjectId || activeProjectId;
+    assignProjectScope(activeProjectId);
+  }
+  selectedFolderId = state.selectedFolderId || selectedFolderId || "all";
+  selectedChatFileId = state.selectedChatFileId || null;
+  selectedDocumentFolderId = state.selectedDocumentFolderId || null;
+  selectedDocumentItemKeys.clear();
+  (Array.isArray(state.selectedDocumentItemKeys) ? state.selectedDocumentItemKeys : []).forEach((key) => selectedDocumentItemKeys.add(key));
+  selectedDocumentAnchorKey = state.selectedDocumentAnchorKey || "";
+  selectedMountedFile = state.selectedMountedFile || null;
+  selectedMountedFileNames.clear();
+  (Array.isArray(state.selectedMountedFileNames) ? state.selectedMountedFileNames : []).forEach((name) => selectedMountedFileNames.add(name));
+  selectedScrapId = state.selectedScrapId || null;
+  selectedScrapIds.clear();
+  (Array.isArray(state.selectedScrapIds) ? state.selectedScrapIds : []).forEach((id) => selectedScrapIds.add(id));
+  selectedProjectReferenceId = state.selectedProjectReferenceId || null;
+  selectedProjectCdItemId = state.selectedProjectCdItemId || null;
+  selectedProjectCdItemIds.clear();
+  (Array.isArray(state.selectedProjectCdItemIds) ? state.selectedProjectCdItemIds : []).forEach((id) => selectedProjectCdItemIds.add(id));
+  selectedDraftIndex = Number.isInteger(state.selectedDraftIndex) ? state.selectedDraftIndex : selectedDraftIndex;
+  activeTextFileId = state.activeTextFileId || null;
+  if (typeof renderDocuments === "function") renderDocuments();
+  if (typeof renderProjectDisks === "function") renderProjectDisks();
+  if (typeof renderScraps === "function") renderScraps();
+  if (typeof renderProjectCd === "function") renderProjectCd();
+  if (typeof renderMountedTextDisk === "function") renderMountedTextDisk();
+  if (typeof renderPipeline === "function") renderPipeline();
+  return true;
+}
+
+function captureAssistantWorkingSession() {
+  if (clioTalkTemporaryMode) {
+    return {
+      projectId: activeProjectId,
+      activeChatFileId: null,
+      prompt: "",
+      conversation: [],
+      compressedConversationMemory: { text: "", sourceMessages: 0, updatedAt: "" },
+      nextTaskInputFileIds: [],
+      lastAssistantText: "",
+      lastUserText: "",
+      messagesScrollTop: 0,
+    };
+  }
+  const suspendedState = (typeof isSideAskClioTalkActive === "function" && isSideAskClioTalkActive() && sideAskClioTalkSession)
+    ? sideAskClioTalkSession
+    : null;
+  return {
+    projectId: activeProjectId,
+    activeChatFileId: suspendedState ? String(suspendedState.activeChatFileId || "") : activeChatFileId,
+    prompt: suspendedState ? String(suspendedState.prompt || "") : promptInput?.value || "",
+    conversation: suspendedState
+      ? (Array.isArray(suspendedState.conversation) ? suspendedState.conversation : []).map((item) => ({ ...item }))
+      : conversation.map((item) => ({ ...item })),
+    compressedConversationMemory: suspendedState
+      ? { ...suspendedState.compressedConversationMemory }
+      : { ...compressedConversationMemory },
+    nextTaskInputFileIds: suspendedState
+      ? [...(suspendedState.nextTaskInputFileIds || [])]
+      : [...(window.nextTaskInputFileIds || [])],
+    lastAssistantText: suspendedState ? String(suspendedState.lastAssistantText || "") : lastAssistantText,
+    lastUserText: suspendedState ? String(suspendedState.lastUserText || "") : lastUserText,
+    messagesScrollTop: suspendedState ? Number(suspendedState.scrollTop) || 0 : messagesEl?.scrollTop || 0,
+  };
+}
+
+function restoreAssistantWorkingSession(state = {}) {
+  if (state.projectId && state.projectId !== activeProjectId) return false;
+  clioTalkTemporaryMode = false;
+  promptInput.value = String(state.prompt || "");
+  conversation.length = 0;
+  activeChatFileId = String(state.activeChatFileId || "") || null;
+  if (Array.isArray(state.conversation)) {
+    conversation.push(...state.conversation.map((item) => ({
+      ...item,
+      role: item.role === "assistant" ? "assistant" : "user",
+      content: String(item.content || ""),
+    })));
+  }
+  if (typeof restoreClioImageInputsFromConversation === "function") restoreClioImageInputsFromConversation();
+  compressedConversationMemory = {
+    text: String(state.compressedConversationMemory?.text || ""),
+    sourceMessages: Number(state.compressedConversationMemory?.sourceMessages || 0),
+    updatedAt: String(state.compressedConversationMemory?.updatedAt || ""),
+  };
+  window.nextTaskInputFileIds = new Set(
+    Array.isArray(state.nextTaskInputFileIds) ? state.nextTaskInputFileIds : []
+  );
+  lastAssistantText = String(state.lastAssistantText || "");
+  lastUserText = String(state.lastUserText || "");
+  messagesEl.replaceChildren();
+  conversation.forEach((item, index) => addMessage(item.role, item.content, {
+    messageRecord: item,
+    messageIndex: index,
+    grounding: item.grounding || null,
+  }));
+  renderClioTalkWelcome();
+  renderAttachedClips();
+  renderClioTalkRunAssembly();
+  requestAnimationFrame(() => {
+    messagesEl.scrollTop = Number(state.messagesScrollTop) || messagesEl.scrollHeight;
+  });
+  if (typeof updateMenuState === "function") updateMenuState();
+  return true;
+}
+
+function captureTeachTextWorkingSession() {
+  return {
+    projectId: activeProjectId,
+    activeTextFileId,
+    name: teachTextNameInput?.value || "",
+    folder: teachTextFolderInput?.value || "",
+    body: teachTextBodyInput?.value || "",
+    statusKey: teachTextStatusEl?.dataset.statusKey || "",
+    fileLabel: teachTextFileLabel,
+    workflowState: teachTextWorkflowState,
+    documentRole: teachTextDocumentRole,
+    editor: captureTextControlWorkingSession(teachTextBodyInput),
+  };
+}
+
+function restoreTeachTextWorkingSession(state = {}) {
+  if (state.projectId && state.projectId !== activeProjectId) return false;
+  activeTextFileId = state.activeTextFileId || null;
+  teachTextDocumentRole = state.documentRole || teachTextDocumentRole || "manuscript";
+  teachTextNameInput.value = String(state.name || "");
+  teachTextFolderInput.value = String(state.folder || "");
+  teachTextBodyInput.value = String(state.body || "");
+  // Restoring a scene fills the editor for whichever tab is active, so the
+  // editor now speaks for that tab and capturing it is truthful. Without this
+  // the capture guard in teachtext-accessories.js would treat a restored
+  // session as "never loaded" and stop saving the writer's edits.
+  if (typeof markTeachTextTabLoaded === "function") markTeachTextTabLoaded();
+  teachTextFileLabel = normalizeFileLabel(state.fileLabel || "");
+  setTeachTextWorkflowState(state.workflowState || teachTextFileLabel || "draft");
+  // The document tab records what its own text actually is, so ask it before
+  // guessing. A session restored without a status key used to be called
+  // "modified" purely because it had text in it -- which meant a project
+  // restored from a backup, whose disk says "saved" and whose content was
+  // just written by the import, announced unsaved changes and then blocked
+  // the next window behind a save prompt. Guessing stays as the last resort,
+  // where there is genuinely nothing to ask.
+  const restoredTabStatus = (() => {
+    if (state.statusKey) return state.statusKey;
+    if (typeof getDocumentTabs !== "function") return "";
+    const project = typeof getActiveProject === "function" ? getActiveProject() : null;
+    if (!project) return "";
+    const tabs = getDocumentTabs("teachText", project) || [];
+    const active = tabs.find((tab) => tab?.id === state.activeTabId) || tabs[0];
+    return String(active?.state?.statusKey || "");
+  })();
+  setTeachTextStatus(restoredTabStatus || (teachTextBodyInput.value ? "modified" : "unsaved"));
+  if (typeof syncTeachTextLabelControl === "function") syncTeachTextLabelControl();
+  if (typeof syncTeachTextPreview === "function") syncTeachTextPreview();
+  if (typeof updateTeachTextBoundaries === "function") updateTeachTextBoundaries();
+  if (typeof updateTeachTextDeskState === "function") updateTeachTextDeskState();
+  requestAnimationFrame(() => {
+    restoreTextControlWorkingSession(teachTextBodyInput, state.editor || state, { windowName: "teachText" });
+  });
+  return true;
+}
+
+function captureFileFloppyWorkingSession() {
+  return {
+    projectId: mountedTextDisk.projectId,
+    mountedTextDisk: cloneWorkingSessionValue(mountedTextDisk, {
+      files: [],
+      fileBodies: {},
+      fileDiagnostics: {},
+      fileSources: {},
+      chunks: 0,
+      projectId: null,
+    }),
+    selectedMountedFile,
+    selectedMountedFileNames: [...selectedMountedFileNames],
+  };
+}
+
+function restoreFileFloppyWorkingSession(state = {}) {
+  if (state.projectId && state.projectId !== activeProjectId) return false;
+  const disk = state.mountedTextDisk || {};
+  mountedTextDisk.files = Array.isArray(disk.files) ? [...disk.files] : [];
+  mountedTextDisk.fileBodies = { ...(disk.fileBodies || {}) };
+  mountedTextDisk.fileDiagnostics = { ...(disk.fileDiagnostics || {}) };
+  mountedTextDisk.fileSources = { ...(disk.fileSources || {}) };
+  // ClioWorks v4: native Office packages ride the same session snapshot.
+  // Restoring them reattaches original bytes; a missing/older snapshot simply
+  // leaves the store empty (versioned field extension, no migration).
+  mountedTextDisk.nativeFiles = { ...(disk.nativeFiles || {}) };
+  mountedTextDisk.chunks = Number(disk.chunks || 0);
+  mountedTextDisk.projectId = disk.projectId || state.projectId || null;
+  selectedMountedFile = state.selectedMountedFile || mountedTextDisk.files[0] || null;
+  selectedMountedFileNames.clear();
+  (Array.isArray(state.selectedMountedFileNames) ? state.selectedMountedFileNames : [selectedMountedFile])
+    .filter(Boolean)
+    .forEach((name) => selectedMountedFileNames.add(name));
+  if (typeof updateFilePickerLabels === "function") updateFilePickerLabels();
+  if (typeof renderMountedTextDisk === "function") renderMountedTextDisk();
+  return true;
+}
+
+function clearFileFloppyWorkingSession(state = {}, options = {}) {
+  if (!options.projectId || state.projectId !== options.projectId) return state;
+  return undefined;
+}
+
+function captureReaderWorkingSession() {
+  if (typeof captureActiveReaderTabState === "function") captureActiveReaderTabState();
+  return {
+    projectId: activeProjectId,
+    currentReaderPage: cloneWorkingSessionValue(currentReaderPage, null),
+    currentReaderClipCount,
+    readerUrl: readerUrlInput?.value || "",
+    scrollTop: readerContentEl?.scrollTop || 0,
+  };
+}
+
+async function restoreReaderWorkingSession(state = {}) {
+  if (state.projectId && state.projectId !== activeProjectId) return false;
+  await window.AISystem6Runtime?.restoreApplication?.("reader", state);
+  if (typeof renderReaderTabs === "function") renderReaderTabs();
+  if (state.currentReaderPage?.text) {
+    await openReaderDocument(state.currentReaderPage);
+    requestAnimationFrame(() => {
+      readerContentEl.scrollTop = Number(state.scrollTop) || 0;
+    });
+  } else if (
+    typeof openReaderDocumentTab === "function"
+    && typeof activeReaderTab === "function"
+    && activeReaderTab()
+  ) {
+    openReaderDocumentTab(activeReaderTab().id);
+  }
+  if (readerUrlInput) readerUrlInput.value = String(state.readerUrl || "");
+  currentReaderClipCount = Number(state.currentReaderClipCount || currentReaderClipCount || 0);
+  return true;
+}
+
+function captureTimeMachineWorkingSession() {
+  return window.AISystem6TimeMachine?.captureSession?.() || {
+    projectId: activeProjectId,
+    activeTabId: "",
+  };
+}
+
+async function restoreTimeMachineWorkingSession(state = {}) {
+  if (state.projectId && state.projectId !== activeProjectId) return false;
+  await ensureTimeMachineModule();
+  return !!window.AISystem6TimeMachine?.restoreSession?.(state);
+}
+
+function captureWritingFlowWorkingSession() {
+  return {
+    projectId: activeProjectId,
+    toolsShaded: writingToolsPanelEl?.classList.contains("is-shaded") || false,
+    toolsClosed: writingToolsPanelEl?.classList.contains("is-closed") || false,
+    toolsViewMode: writingToolsViewMode,
+    selectedDraftIndex,
+    questionSheet: questionSheetBodyInput?.value || "",
+    outline: outlineContentEl?.value || "",
+    draftTitle: draftTitleInput?.value || "",
+    draftBody: draftBodyInput?.value || "",
+    draftSection: draftSectionSelectEl?.value || "",
+    questionEditor: captureTextControlWorkingSession(questionSheetBodyInput),
+    outlineEditor: captureTextControlWorkingSession(outlineContentEl),
+    draftEditor: captureTextControlWorkingSession(draftBodyInput),
+  };
+}
+
+function restoreWritingFlowWorkingSession(state = {}) {
+  if (state.projectId && state.projectId !== activeProjectId) return false;
+  writingToolsPanelEl?.classList.toggle("is-shaded", !!state.toolsShaded);
+  writingToolsPanelEl?.classList.toggle("is-closed", !!state.toolsClosed);
+  if (typeof syncWritingFlowClosed === "function") syncWritingFlowClosed();
+  if (["small-icon", "icon"].includes(state.toolsViewMode)) writingToolsViewMode = state.toolsViewMode;
+  if (typeof applyWritingToolsViewMode === "function") applyWritingToolsViewMode();
+  if (typeof syncWritingToolsShadeToggle === "function") syncWritingToolsShadeToggle();
+  selectedDraftIndex = Number.isInteger(state.selectedDraftIndex) ? state.selectedDraftIndex : selectedDraftIndex;
+  if (questionSheetBodyInput) questionSheetBodyInput.value = String(state.questionSheet || questionSheetBodyInput.value || "");
+  if (outlineContentEl) outlineContentEl.value = String(state.outline || outlineContentEl.value || "");
+  if (draftTitleInput) draftTitleInput.value = String(state.draftTitle || draftTitleInput.value || "");
+  if (draftBodyInput) draftBodyInput.value = String(state.draftBody || draftBodyInput.value || "");
+  if (draftSectionSelectEl && state.draftSection) draftSectionSelectEl.value = String(state.draftSection);
+  if (typeof savePipelineData === "function") savePipelineData();
+  if (typeof renderPipeline === "function") renderPipeline();
+  requestAnimationFrame(() => {
+    if (draftSectionSelectEl && state.draftSection) draftSectionSelectEl.value = String(state.draftSection);
+    restoreTextControlWorkingSession(questionSheetBodyInput, state.questionEditor || { scrollTop: state.questionScrollTop }, { windowName: "questionSheet" });
+    restoreTextControlWorkingSession(outlineContentEl, state.outlineEditor || { scrollTop: state.outlineScrollTop }, { windowName: "outline" });
+    restoreTextControlWorkingSession(draftBodyInput, state.draftEditor || { scrollTop: state.draftScrollTop }, { windowName: "sectionDrafts" });
+  });
+  return true;
+}
+
+function captureReviewDeskWorkingSession() {
+  return {
+    projectId: activeProjectId,
+    body: reviewDeskBodyInput?.value || "",
+    dirty: !!reviewDeskDirty,
+    section: reviewSectionSelectEl?.value || "",
+    editor: captureTextControlWorkingSession(reviewDeskBodyInput),
+    previewHidden: reviewDeskPreviewEl?.classList.contains("is-hidden") ?? true,
+  };
+}
+
+function restoreReviewDeskWorkingSession(state = {}) {
+  if (state.projectId && state.projectId !== activeProjectId) return false;
+  if (reviewDeskBodyInput) reviewDeskBodyInput.value = String(state.body || "");
+  reviewDeskDirty = !!state.dirty;
+  if (reviewSectionSelectEl && state.section) reviewSectionSelectEl.value = String(state.section);
+  if (typeof syncReviewDeskPreview === "function") syncReviewDeskPreview({ force: true });
+  reviewDeskPreviewEl?.classList.toggle("is-hidden", state.previewHidden !== false);
+  reviewDeskBodyInput?.classList.toggle("is-hidden", state.previewHidden === false);
+  if (typeof updateReviewDeskStats === "function") updateReviewDeskStats();
+  requestAnimationFrame(() => {
+    if (reviewSectionSelectEl && state.section) {
+      reviewSectionSelectEl.value = String(state.section);
+      const index = Number(reviewSectionSelectEl.value || 0);
+      if (typeof selectStyleCheckSection === "function") selectStyleCheckSection(index);
+      if (typeof selectClaimCheckSection === "function") selectClaimCheckSection(index);
+    }
+    restoreTextControlWorkingSession(reviewDeskBodyInput, state.editor || { scrollTop: state.scrollTop }, { windowName: "reviewDesk" });
+  });
+  return true;
+}
+
+function registerDefaultWorkingSessionAdapters() {
+  registerWorkingSessionAdapter({ id: "windows", capture: captureWindowWorkingSession, restore: restoreWindowWorkingSession });
+  registerWorkingSessionAdapter({ id: "selection", capture: captureSelectionWorkingSession, restore: restoreSelectionWorkingSession });
+  registerWorkingSessionAdapter({ id: "assistant", capture: captureAssistantWorkingSession, restore: restoreAssistantWorkingSession });
+  registerWorkingSessionAdapter({ id: "teachText", capture: captureTeachTextWorkingSession, restore: restoreTeachTextWorkingSession });
+  registerWorkingSessionAdapter({
+    id: "fileFloppy",
+    capture: captureFileFloppyWorkingSession,
+    restore: restoreFileFloppyWorkingSession,
+    clear: clearFileFloppyWorkingSession,
+  });
+  registerWorkingSessionAdapter({ id: "reader", capture: captureReaderWorkingSession, restore: restoreReaderWorkingSession });
+  registerWorkingSessionAdapter({ id: "timeMachine", capture: captureTimeMachineWorkingSession, restore: restoreTimeMachineWorkingSession });
+  registerWorkingSessionAdapter({ id: "writingFlow", capture: captureWritingFlowWorkingSession, restore: restoreWritingFlowWorkingSession });
+  registerWorkingSessionAdapter({ id: "reviewDesk", capture: captureReviewDeskWorkingSession, restore: restoreReviewDeskWorkingSession });
+}
+
+registerDefaultWorkingSessionAdapters();
+
+// What a Project Hard Disk backup may carry — an allow-list, so a future
+// adapter joins a backup only when someone adds it here. File Floppy stays
+// out: it is temporary context, not durable Project Hard Disk state.
+// Credentials, model keys, and Control Panel settings never enter a scene at
+// all; they live in localStorage and the separate "settings" record.
+const workingSessionBackupAdapterIds = Object.freeze([
+  "windows",
+  "selection",
+  "assistant",
+  "teachText",
+  "reader",
+  "timeMachine",
+  "writingFlow",
+  "reviewDesk",
+]);
+
+async function readWorkingSessionForBackup(projectId) {
+  const snapshot = await readWorkingSessionSnapshot(workingSessionScopeKey(projectId));
+  if (!isValidWorkingSessionSnapshot(snapshot)) return null;
+  const adapters = {};
+  workingSessionBackupAdapterIds.forEach((id) => {
+    if (snapshot.adapters[id] !== undefined) adapters[id] = snapshot.adapters[id];
+  });
+  return {
+    version: workingSessionVersion,
+    savedAt: snapshot.savedAt || "",
+    projectId: projectId || null,
+    adapters,
+  };
+}

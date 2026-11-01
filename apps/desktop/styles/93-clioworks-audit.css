@@ -1,0 +1,95 @@
+/* ClioWorks v4.2 (D42-02): the stage's current-page audit panel.
+ * Layout only: the panel borrows the host's .btn/materials; the audit column
+ * sits beside the stage room (288px baseline per the v4.2 geometry), collapses
+ * to a bottom sheet inside the stage's narrow container query. */
+
+.clio-stage-edit-shell:has(.clio-stage-audit-panel) {
+  grid-template-columns: 132px minmax(0, 1fr) 288px;
+}
+
+.clio-stage-audit-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  border-inline-start: 1px solid var(--window-frame, currentColor);
+  padding-inline: 10px;
+}
+
+.clio-stage-audit-panel h2 {
+  font-size: 1em;
+  margin: 6px 0 0;
+}
+
+.clio-stage-audit-status {
+  margin: 0;
+}
+
+.clio-stage-audit-status[data-audit-status="issues"] {
+  font-weight: 700;
+}
+
+.clio-stage-audit-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.clio-stage-audit-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid var(--window-frame, currentColor);
+}
+
+.clio-stage-audit-row-title {
+  font-weight: 700;
+}
+
+.clio-stage-audit-row-detail {
+  overflow-wrap: anywhere;
+}
+
+.clio-stage-audit-row-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* A live geometry preview: the candidate box arrives as custom properties
+ * (set by the audit module), and the class owns the layout. !important is
+ * required to override the placed block's own inline styles. */
+.clio-stage-audit-previewing {
+  position: absolute !important;
+  left: var(--cw-audit-x) !important;
+  top: var(--cw-audit-y) !important;
+  width: var(--cw-audit-w) !important;
+  margin: 0 !important;
+  max-width: none !important;
+  box-sizing: border-box !important;
+}
+
+.clio-stage-audit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: auto;
+  padding-block: 8px;
+}
+
+@container (max-width: 639px) {
+  .clio-stage-edit-shell:has(.clio-stage-audit-panel) {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) minmax(120px, 40%);
+  }
+
+  .clio-stage-audit-panel {
+    border-inline-start: none;
+    border-block-start: 1px solid var(--window-frame, currentColor);
+  }
+}

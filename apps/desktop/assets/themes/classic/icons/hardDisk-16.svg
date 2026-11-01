@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 32 32" fill="none" stroke="#000000" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" shape-rendering="geometricPrecision">
+  <style>
+    .classic-ink{fill:#000000;stroke:#000000;stroke-width:.25}
+    .classic-paper{fill:#ffffff;stroke:none}
+    .sys-icon-detail{display:none}
+  </style>
+  <g transform="translate(0 0)">
+    <path d="M1 18.5h30v9.5H1z" />
+    <circle class="classic-ink" cx="5" cy="23" r=".85" />
+  </g>
+</svg>

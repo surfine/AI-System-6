@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 32 32" fill="none" stroke="#000000" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" shape-rendering="geometricPrecision">
+  <style>
+    .classic-ink{fill:#000000;stroke:#000000;stroke-width:.25}
+    .classic-paper{fill:#ffffff;stroke:none}
+    .sys-icon-detail{display:none}
+  </style>
+  <g transform="translate(16 16) scale(1.1) translate(-16 -16)">
+    <path d="M5 6h22v20H5z" />
+    <path d="M8 16h3l2-6 3 12 3-10 2 7h3" />
+    <path d="M8 24c3-3 5-3 8 0s5 3 8 0" />
+  </g>
+</svg>

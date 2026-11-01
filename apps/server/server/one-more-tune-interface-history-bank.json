@@ -1,0 +1,1165 @@
+{
+  "schemaVersion": 1,
+  "bankRevision": "eaec2d8636591b1f33008ce848d23abb4f1a291c2686225f9c96f16e970beec3",
+  "createdOn": "2026-09-23",
+  "newQuestionCount": 16,
+  "domainIsProposed": true,
+  "runtimeIntegrated": false,
+  "quizEnabled": false,
+  "scopeNote": "两套外观的定向学习题，不冒充新增发布会原声或跨全年代日更库。",
+  "items": [
+    {
+      "id": "omt-ui-ns33-dock-dots",
+      "domain": "interface_history",
+      "topic": "interface_archaeology",
+      "variant": "text_scenario",
+      "subject": {
+        "system": "NeXTSTEP",
+        "version": "3.3",
+        "historicalYear": 1995
+      },
+      "knowledgeKind": "state_meaning",
+      "prompt": {
+        "zh": "NeXTSTEP 3.3 的 Dock 图标左下角出现三个小点，通常表示什么？",
+        "en": "What do three small dots at the lower left of a docked icon mean in NeXTSTEP 3.3?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "该应用尚未运行",
+          "en": "The application is not running"
+        },
+        {
+          "id": "b",
+          "zh": "该应用正在运行",
+          "en": "The application is running"
+        },
+        {
+          "id": "c",
+          "zh": "有窗口已被缩小",
+          "en": "A window has been miniaturized"
+        },
+        {
+          "id": "d",
+          "zh": "文稿有未保存修改",
+          "en": "A document has unsaved changes"
+        }
+      ],
+      "answerId": "a",
+      "explanation": {
+        "zh": "原指南用三个点标记尚未运行的 Dock 应用。",
+        "en": "The guide assigns the dots to docked applications that are not running."
+      },
+      "evidence": {
+        "referenceIds": [
+          "NS01"
+        ],
+        "locator": "Application Icons",
+        "method": "primary_document_text",
+        "mediaVersion": null
+      },
+      "sharedEvidenceGroupId": "ns33-dock-state",
+      "dependsOn": [],
+      "revealsQuestionIds": [],
+      "review": {
+        "textEvidenceChecked": true,
+        "independentSecondReview": false,
+        "optionsEditorChecked": true,
+        "audioAuditioned": false,
+        "imageAuditedForQuestion": false,
+        "runtimeIntegrated": false
+      },
+      "media": null,
+      "quizEnabled": false,
+      "editorStatus": "text_candidate_needs_integration_and_second_review",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "collectionId": "two-desktops-1995-2020",
+      "hostAppearancePolicy": "do_not_switch_before_answer",
+      "postAnswerAppearanceSuggestion": "nextstep",
+      "postAnswerSwitchRequiresConsent": true,
+      "postAnswerSwitchRequiresReleaseReady": true
+    },
+    {
+      "id": "omt-ui-ns33-find-focus",
+      "domain": "interface_history",
+      "topic": "interface_archaeology",
+      "variant": "text_scenario",
+      "subject": {
+        "system": "NeXTSTEP",
+        "version": "3.3",
+        "historicalYear": 1995
+      },
+      "knowledgeKind": "focus_model",
+      "prompt": {
+        "zh": "在 NeXTSTEP 3.3 的文本编辑器里打开 Find 面板并输入关键词，哪个窗口接收这次键盘输入？",
+        "en": "After you open Find and start typing in a NeXTSTEP 3.3 editor, which window receives that typing?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "原文稿窗口",
+          "en": "The document window"
+        },
+        {
+          "id": "b",
+          "zh": "Find 面板",
+          "en": "The Find panel"
+        },
+        {
+          "id": "c",
+          "zh": "Workspace 窗口",
+          "en": "The Workspace window"
+        },
+        {
+          "id": "d",
+          "zh": "最早打开的窗口",
+          "en": "The oldest window"
+        }
+      ],
+      "answerId": "b",
+      "explanation": {
+        "zh": "Find 是键盘窗口；原文稿仍可保留主窗口身份。",
+        "en": "Find is the key window; the document can remain the main window."
+      },
+      "evidence": {
+        "referenceIds": [
+          "NS02"
+        ],
+        "locator": "The Key Window / The Main Window",
+        "method": "primary_document_text",
+        "mediaVersion": null
+      },
+      "sharedEvidenceGroupId": "ns33-key-main",
+      "dependsOn": [],
+      "revealsQuestionIds": [],
+      "review": {
+        "textEvidenceChecked": true,
+        "independentSecondReview": false,
+        "optionsEditorChecked": true,
+        "audioAuditioned": false,
+        "imageAuditedForQuestion": false,
+        "runtimeIntegrated": false
+      },
+      "media": null,
+      "quizEnabled": false,
+      "editorStatus": "text_candidate_needs_integration_and_second_review",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "collectionId": "two-desktops-1995-2020",
+      "hostAppearancePolicy": "do_not_switch_before_answer",
+      "postAnswerAppearanceSuggestion": "nextstep",
+      "postAnswerSwitchRequiresConsent": true,
+      "postAnswerSwitchRequiresReleaseReady": true
+    },
+    {
+      "id": "omt-ui-ns33-dirty-close",
+      "domain": "interface_history",
+      "topic": "interface_archaeology",
+      "variant": "text_scenario",
+      "subject": {
+        "system": "NeXTSTEP",
+        "version": "3.3",
+        "historicalYear": 1995
+      },
+      "knowledgeKind": "unsaved_state",
+      "prompt": {
+        "zh": "NeXTSTEP 3.3 的文稿关闭按钮变成破开的样式，提示什么？",
+        "en": "What does a broken-looking document close button indicate in NeXTSTEP 3.3?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "鼠标正停在关闭按钮上",
+          "en": "The pointer is over the close button"
+        },
+        {
+          "id": "b",
+          "zh": "窗口当前不在前台",
+          "en": "The window is inactive"
+        },
+        {
+          "id": "c",
+          "zh": "关闭可能丢失尚未保存的工作",
+          "en": "Closing could lose unsaved work"
+        },
+        {
+          "id": "d",
+          "zh": "窗口不支持缩放",
+          "en": "The window cannot be resized"
+        }
+      ],
+      "answerId": "c",
+      "explanation": {
+        "zh": "这是未保存工作可能因关闭而丢失的提示。",
+        "en": "It warns that closing could discard unsaved work."
+      },
+      "evidence": {
+        "referenceIds": [
+          "NS02"
+        ],
+        "locator": "Window Behavior / broken close button",
+        "method": "primary_document_text",
+        "mediaVersion": null
+      },
+      "sharedEvidenceGroupId": "ns33-dirty-close",
+      "dependsOn": [],
+      "revealsQuestionIds": [],
+      "review": {
+        "textEvidenceChecked": true,
+        "independentSecondReview": false,
+        "optionsEditorChecked": true,
+        "audioAuditioned": false,
+        "imageAuditedForQuestion": false,
+        "runtimeIntegrated": false
+      },
+      "media": null,
+      "quizEnabled": false,
+      "editorStatus": "text_candidate_needs_integration_and_second_review",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "collectionId": "two-desktops-1995-2020",
+      "hostAppearancePolicy": "do_not_switch_before_answer",
+      "postAnswerAppearanceSuggestion": "nextstep",
+      "postAnswerSwitchRequiresConsent": true,
+      "postAnswerSwitchRequiresReleaseReady": true
+    },
+    {
+      "id": "omt-ui-ns33-restore",
+      "domain": "interface_history",
+      "topic": "interface_archaeology",
+      "variant": "text_scenario",
+      "subject": {
+        "system": "NeXTSTEP",
+        "version": "3.3",
+        "historicalYear": 1995
+      },
+      "knowledgeKind": "window_restore",
+      "prompt": {
+        "zh": "文稿已经缩成 NeXTSTEP 3.3 的窗口小图标。用鼠标怎样恢复原窗口？",
+        "en": "A NeXTSTEP 3.3 document has become a miniwindow. How do you restore it with the mouse?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "单击窗口小图标",
+          "en": "Single-click the miniwindow"
+        },
+        {
+          "id": "b",
+          "zh": "拖动窗口小图标",
+          "en": "Drag the miniwindow"
+        },
+        {
+          "id": "c",
+          "zh": "单击所属应用图标",
+          "en": "Single-click its application icon"
+        },
+        {
+          "id": "d",
+          "zh": "双击窗口小图标",
+          "en": "Double-click the miniwindow"
+        }
+      ],
+      "answerId": "d",
+      "explanation": {
+        "zh": "窗口小图标保留了恢复原窗口的入口。",
+        "en": "The miniwindow restores the original window."
+      },
+      "evidence": {
+        "referenceIds": [
+          "NS01",
+          "NS02"
+        ],
+        "locator": "Miniwindows / Miniaturizing",
+        "method": "primary_document_text",
+        "mediaVersion": null
+      },
+      "sharedEvidenceGroupId": "ns33-miniwindow",
+      "dependsOn": [],
+      "revealsQuestionIds": [],
+      "review": {
+        "textEvidenceChecked": true,
+        "independentSecondReview": false,
+        "optionsEditorChecked": true,
+        "audioAuditioned": false,
+        "imageAuditedForQuestion": false,
+        "runtimeIntegrated": false
+      },
+      "media": null,
+      "quizEnabled": false,
+      "editorStatus": "text_candidate_needs_integration_and_second_review",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "collectionId": "two-desktops-1995-2020",
+      "hostAppearancePolicy": "do_not_switch_before_answer",
+      "postAnswerAppearanceSuggestion": "nextstep",
+      "postAnswerSwitchRequiresConsent": true,
+      "postAnswerSwitchRequiresReleaseReady": true
+    },
+    {
+      "id": "omt-ui-ns33-tearoff",
+      "domain": "interface_history",
+      "topic": "interface_archaeology",
+      "variant": "text_scenario",
+      "subject": {
+        "system": "NeXTSTEP",
+        "version": "3.3",
+        "historicalYear": 1995
+      },
+      "knowledgeKind": "menu_lifecycle",
+      "prompt": {
+        "zh": "把 NeXTSTEP 3.3 的附属子菜单拖离上级菜单后，哪个控件会出现？",
+        "en": "What control appears when an attached submenu is torn off in NeXTSTEP 3.3?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "它自己的关闭按钮",
+          "en": "Its own close button"
+        },
+        {
+          "id": "b",
+          "zh": "窗口最小化按钮",
+          "en": "A miniaturize button"
+        },
+        {
+          "id": "c",
+          "zh": "底部窗口缩放条",
+          "en": "A bottom window resize bar"
+        },
+        {
+          "id": "d",
+          "zh": "文件路径栏",
+          "en": "A file path bar"
+        }
+      ],
+      "answerId": "a",
+      "explanation": {
+        "zh": "独立关闭按钮用于标识已经分离的子菜单。",
+        "en": "A close button marks the submenu as torn off."
+      },
+      "evidence": {
+        "referenceIds": [
+          "NS03"
+        ],
+        "locator": "Tearing Off a Submenu",
+        "method": "primary_document_text",
+        "mediaVersion": null
+      },
+      "sharedEvidenceGroupId": "ns33-tearoff",
+      "dependsOn": [],
+      "revealsQuestionIds": [],
+      "review": {
+        "textEvidenceChecked": true,
+        "independentSecondReview": false,
+        "optionsEditorChecked": true,
+        "audioAuditioned": false,
+        "imageAuditedForQuestion": false,
+        "runtimeIntegrated": false
+      },
+      "media": null,
+      "quizEnabled": false,
+      "editorStatus": "text_candidate_needs_integration_and_second_review",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "collectionId": "two-desktops-1995-2020",
+      "hostAppearancePolicy": "do_not_switch_before_answer",
+      "postAnswerAppearanceSuggestion": "nextstep",
+      "postAnswerSwitchRequiresConsent": true,
+      "postAnswerSwitchRequiresReleaseReady": true
+    },
+    {
+      "id": "omt-ui-ns33-return-mark",
+      "domain": "interface_history",
+      "topic": "interface_archaeology",
+      "variant": "text_scenario",
+      "subject": {
+        "system": "NeXTSTEP",
+        "version": "3.3",
+        "historicalYear": 1995
+      },
+      "knowledgeKind": "keyboard_affordance",
+      "prompt": {
+        "zh": "NeXTSTEP 3.3 面板中的动作按钮为何会暂时失去 Return 标记？",
+        "en": "Why can an action button temporarily lose its Return symbol in a NeXTSTEP 3.3 panel?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "鼠标移出了该按钮",
+          "en": "The pointer left the button"
+        },
+        {
+          "id": "b",
+          "zh": "该面板已不接收键盘输入",
+          "en": "The panel is no longer the key window"
+        },
+        {
+          "id": "c",
+          "zh": "文稿增加了修改",
+          "en": "The document gained an edit"
+        },
+        {
+          "id": "d",
+          "zh": "面板中的文本被选中",
+          "en": "Text inside the panel was selected"
+        }
+      ],
+      "answerId": "b",
+      "explanation": {
+        "zh": "Return 标记只应在按回车确实会选择该按钮时出现。",
+        "en": "The symbol should appear only when Return will choose that button."
+      },
+      "evidence": {
+        "referenceIds": [
+          "NS04"
+        ],
+        "locator": "Choosing the Button’s Image or Label",
+        "method": "primary_document_text",
+        "mediaVersion": null
+      },
+      "sharedEvidenceGroupId": "ns33-return-mark",
+      "dependsOn": [],
+      "revealsQuestionIds": [],
+      "review": {
+        "textEvidenceChecked": true,
+        "independentSecondReview": false,
+        "optionsEditorChecked": true,
+        "audioAuditioned": false,
+        "imageAuditedForQuestion": false,
+        "runtimeIntegrated": false
+      },
+      "media": null,
+      "quizEnabled": false,
+      "editorStatus": "text_candidate_needs_integration_and_second_review",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "collectionId": "two-desktops-1995-2020",
+      "hostAppearancePolicy": "do_not_switch_before_answer",
+      "postAnswerAppearanceSuggestion": "nextstep",
+      "postAnswerSwitchRequiresConsent": true,
+      "postAnswerSwitchRequiresReleaseReady": true
+    },
+    {
+      "id": "omt-ui-ns33-popup",
+      "domain": "interface_history",
+      "topic": "interface_archaeology",
+      "variant": "text_scenario",
+      "subject": {
+        "system": "NeXTSTEP",
+        "version": "3.3",
+        "historicalYear": 1995
+      },
+      "knowledgeKind": "choice_vs_action",
+      "prompt": {
+        "zh": "在 NeXTSTEP 3.3 中，把单位从 Inches 选成 Centimeters 后，按钮标题也跟着变化。这是哪类控件？",
+        "en": "In NeXTSTEP 3.3, selecting Centimeters instead of Inches changes the button label. Which control is this?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "执行动作的 pull-down list",
+          "en": "A pull-down list of actions"
+        },
+        {
+          "id": "b",
+          "zh": "分离出来的子菜单",
+          "en": "A torn-off submenu"
+        },
+        {
+          "id": "c",
+          "zh": "表示当前选择的 pop-up list",
+          "en": "A pop-up list showing the current selection"
+        },
+        {
+          "id": "d",
+          "zh": "一组直接显示的单选按钮",
+          "en": "A visible group of radio buttons"
+        }
+      ],
+      "answerId": "c",
+      "explanation": {
+        "zh": "Pop-up 显示选择状态；pull-down 的标题不随所执行动作改变。",
+        "en": "A pop-up reflects the selection; a pull-down keeps its action label."
+      },
+      "evidence": {
+        "referenceIds": [
+          "NS04"
+        ],
+        "locator": "Pop-Up Lists / Pull-Down Lists",
+        "method": "primary_document_text",
+        "mediaVersion": null
+      },
+      "sharedEvidenceGroupId": "ns33-popup-pulldown",
+      "dependsOn": [],
+      "revealsQuestionIds": [],
+      "review": {
+        "textEvidenceChecked": true,
+        "independentSecondReview": false,
+        "optionsEditorChecked": true,
+        "audioAuditioned": false,
+        "imageAuditedForQuestion": false,
+        "runtimeIntegrated": false
+      },
+      "media": null,
+      "quizEnabled": false,
+      "editorStatus": "text_candidate_needs_integration_and_second_review",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "collectionId": "two-desktops-1995-2020",
+      "hostAppearancePolicy": "do_not_switch_before_answer",
+      "postAnswerAppearanceSuggestion": "nextstep",
+      "postAnswerSwitchRequiresConsent": true,
+      "postAnswerSwitchRequiresReleaseReady": true
+    },
+    {
+      "id": "omt-ui-ns33-scrollbar",
+      "domain": "interface_history",
+      "topic": "interface_archaeology",
+      "variant": "text_scenario",
+      "subject": {
+        "system": "NeXTSTEP",
+        "version": "3.3",
+        "historicalYear": 1995
+      },
+      "knowledgeKind": "scrolling_behavior",
+      "prompt": {
+        "zh": "在 NeXTSTEP 3.3 滚动条的滑块之外点击轨道，并继续按住鼠标，可以怎样操作？",
+        "en": "In NeXTSTEP 3.3, what can you do after clicking the scrollbar track outside the knob and keeping the mouse pressed?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "持续按整页滚动，但不能接着拖动",
+          "en": "Keep paging, without continuing into a drag"
+        },
+        {
+          "id": "b",
+          "zh": "只滚动一行，然后等待再次点击",
+          "en": "Move one line and wait for another click"
+        },
+        {
+          "id": "c",
+          "zh": "只选中轨道，内容位置保持不变",
+          "en": "Select the track without moving the content"
+        },
+        {
+          "id": "d",
+          "zh": "先跳到该位置，再继续拖动微调",
+          "en": "Jump to that position, then drag to adjust"
+        }
+      ],
+      "answerId": "d",
+      "explanation": {
+        "zh": "轨道点击和继续拖动可以连成一次操作。",
+        "en": "The initial jump and subsequent drag can be one continuous action."
+      },
+      "evidence": {
+        "referenceIds": [
+          "NS04"
+        ],
+        "locator": "Scrollers / The Knob and Bar",
+        "method": "primary_document_text",
+        "mediaVersion": null
+      },
+      "sharedEvidenceGroupId": "ns33-scroll",
+      "dependsOn": [],
+      "revealsQuestionIds": [],
+      "review": {
+        "textEvidenceChecked": true,
+        "independentSecondReview": false,
+        "optionsEditorChecked": true,
+        "audioAuditioned": false,
+        "imageAuditedForQuestion": false,
+        "runtimeIntegrated": false
+      },
+      "media": null,
+      "quizEnabled": false,
+      "editorStatus": "text_candidate_needs_integration_and_second_review",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "collectionId": "two-desktops-1995-2020",
+      "hostAppearancePolicy": "do_not_switch_before_answer",
+      "postAnswerAppearanceSuggestion": "nextstep",
+      "postAnswerSwitchRequiresConsent": true,
+      "postAnswerSwitchRequiresReleaseReady": true
+    },
+    {
+      "id": "omt-ui-bs11-search",
+      "domain": "interface_history",
+      "topic": "interface_archaeology",
+      "variant": "text_scenario",
+      "subject": {
+        "system": "macOS Big Sur",
+        "version": "11",
+        "historicalYear": 2020
+      },
+      "knowledgeKind": "responsive_search",
+      "prompt": {
+        "zh": "Big Sur 的标准工具栏搜索框遇到较窄窗口时，可以如何保留搜索入口？",
+        "en": "How can a standard Big Sur toolbar preserve search when the window becomes narrow?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "收成按钮，点击后展开搜索框",
+          "en": "Collapse to a button that opens the search field"
+        },
+        {
+          "id": "b",
+          "zh": "只保留快捷键，没有可见入口",
+          "en": "Keep only a keyboard shortcut"
+        },
+        {
+          "id": "c",
+          "zh": "强制保持原宽度，截掉其他控件",
+          "en": "Keep its width and clip other controls"
+        },
+        {
+          "id": "d",
+          "zh": "等窗口重新变宽才允许搜索",
+          "en": "Allow search only after widening again"
+        }
+      ],
+      "answerId": "a",
+      "explanation": {
+        "zh": "官方工具栏搜索支持这种收缩和展开。",
+        "en": "The standard toolbar search item supports this collapse-and-expand behaviour."
+      },
+      "evidence": {
+        "referenceIds": [
+          "BS01"
+        ],
+        "locator": "NSSearchToolbarItem; official code anchor 11:32",
+        "method": "primary_document_text",
+        "mediaVersion": null
+      },
+      "sharedEvidenceGroupId": "bs11-toolbar-search",
+      "dependsOn": [],
+      "revealsQuestionIds": [],
+      "review": {
+        "textEvidenceChecked": true,
+        "independentSecondReview": false,
+        "optionsEditorChecked": true,
+        "audioAuditioned": false,
+        "imageAuditedForQuestion": false,
+        "runtimeIntegrated": false
+      },
+      "media": null,
+      "quizEnabled": false,
+      "editorStatus": "text_candidate_needs_integration_and_second_review",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "collectionId": "two-desktops-1995-2020",
+      "hostAppearancePolicy": "do_not_switch_before_answer",
+      "postAnswerAppearanceSuggestion": "big-sur",
+      "postAnswerSwitchRequiresConsent": true,
+      "postAnswerSwitchRequiresReleaseReady": true
+    },
+    {
+      "id": "omt-ui-bs11-sidebar",
+      "domain": "interface_history",
+      "topic": "interface_archaeology",
+      "variant": "text_scenario",
+      "subject": {
+        "system": "macOS Big Sur",
+        "version": "11",
+        "historicalYear": 2020
+      },
+      "knowledgeKind": "window_structure",
+      "prompt": {
+        "zh": "WWDC20 展示的新式 Mac 窗口中，侧栏延伸到哪里，成为明显的结构变化？",
+        "en": "In the new Mac window structure shown at WWDC20, how far does the sidebar extend?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "仅在工具栏下方显示",
+          "en": "Only below the toolbar"
+        },
+        {
+          "id": "b",
+          "zh": "延伸到窗口顶部",
+          "en": "Up to the top of the window"
+        },
+        {
+          "id": "c",
+          "zh": "固定放到内容区右侧",
+          "en": "Always at the right of the content"
+        },
+        {
+          "id": "d",
+          "zh": "固定放到窗口底部",
+          "en": "Always at the bottom of the window"
+        }
+      ],
+      "answerId": "b",
+      "explanation": {
+        "zh": "全高侧栏与工具栏共同组织窗口。",
+        "en": "The full-height sidebar participates in the window structure."
+      },
+      "evidence": {
+        "referenceIds": [
+          "BS01"
+        ],
+        "locator": "full-height sidebar",
+        "method": "primary_document_text",
+        "mediaVersion": null
+      },
+      "sharedEvidenceGroupId": "bs11-window-structure",
+      "dependsOn": [],
+      "revealsQuestionIds": [],
+      "review": {
+        "textEvidenceChecked": true,
+        "independentSecondReview": false,
+        "optionsEditorChecked": true,
+        "audioAuditioned": false,
+        "imageAuditedForQuestion": false,
+        "runtimeIntegrated": false
+      },
+      "media": null,
+      "quizEnabled": false,
+      "editorStatus": "text_candidate_needs_integration_and_second_review",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "collectionId": "two-desktops-1995-2020",
+      "hostAppearancePolicy": "do_not_switch_before_answer",
+      "postAnswerAppearanceSuggestion": "big-sur",
+      "postAnswerSwitchRequiresConsent": true,
+      "postAnswerSwitchRequiresReleaseReady": true
+    },
+    {
+      "id": "omt-ui-bs11-toolbar",
+      "domain": "interface_history",
+      "topic": "interface_archaeology",
+      "variant": "text_scenario",
+      "subject": {
+        "system": "macOS Big Sur",
+        "version": "11",
+        "historicalYear": 2020
+      },
+      "knowledgeKind": "layout_choice",
+      "prompt": {
+        "zh": "Big Sur 的窗口标题很长，工具栏也有较多项目。官方讲解仍建议考虑哪种布局？",
+        "en": "For a long window title and a heavily populated toolbar, which layout does the Big Sur session still recommend considering?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "unified 布局",
+          "en": "The unified layout"
+        },
+        {
+          "id": "b",
+          "zh": "unified compact 布局",
+          "en": "The unified compact layout"
+        },
+        {
+          "id": "c",
+          "zh": "expanded 布局",
+          "en": "The expanded layout"
+        },
+        {
+          "id": "d",
+          "zh": "preference 布局",
+          "en": "The preference layout"
+        }
+      ],
+      "answerId": "c",
+      "explanation": {
+        "zh": "Big Sur 保留多种工具栏结构，没有要求所有窗口一律同形。",
+        "en": "Big Sur offers multiple toolbar structures rather than one mandatory layout."
+      },
+      "evidence": {
+        "referenceIds": [
+          "BS01"
+        ],
+        "locator": "expanded toolbar style",
+        "method": "primary_document_text",
+        "mediaVersion": null
+      },
+      "sharedEvidenceGroupId": "bs11-toolbar-styles",
+      "dependsOn": [],
+      "revealsQuestionIds": [],
+      "review": {
+        "textEvidenceChecked": true,
+        "independentSecondReview": false,
+        "optionsEditorChecked": true,
+        "audioAuditioned": false,
+        "imageAuditedForQuestion": false,
+        "runtimeIntegrated": false
+      },
+      "media": null,
+      "quizEnabled": false,
+      "editorStatus": "text_candidate_needs_integration_and_second_review",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "collectionId": "two-desktops-1995-2020",
+      "hostAppearancePolicy": "do_not_switch_before_answer",
+      "postAnswerAppearanceSuggestion": "big-sur",
+      "postAnswerSwitchRequiresConsent": true,
+      "postAnswerSwitchRequiresReleaseReady": true
+    },
+    {
+      "id": "omt-ui-bs11-tint",
+      "domain": "interface_history",
+      "topic": "interface_archaeology",
+      "variant": "text_scenario",
+      "subject": {
+        "system": "macOS Big Sur",
+        "version": "11",
+        "historicalYear": 2020
+      },
+      "knowledgeKind": "wallpaper_tint",
+      "prompt": {
+        "zh": "512 Pixels 的 Big Sur 图库里，窗口带上了壁纸的颜色。作者说明保留了哪个设置？",
+        "en": "Which setting did the author retain when capturing wallpaper-coloured windows for the 512 Pixels Big Sur gallery?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "Night Shift 色温调整",
+          "en": "Night Shift colour-temperature adjustment"
+        },
+        {
+          "id": "b",
+          "zh": "增加对比度",
+          "en": "Increased contrast"
+        },
+        {
+          "id": "c",
+          "zh": "应用自定义强调色",
+          "en": "An app-specific accent colour"
+        },
+        {
+          "id": "d",
+          "zh": "默认开启的窗口壁纸染色",
+          "en": "The default wallpaper tinting of windows"
+        }
+      ],
+      "answerId": "d",
+      "explanation": {
+        "zh": "作者明确说截图保留了壁纸染色。",
+        "en": "The author explicitly retained wallpaper tinting for these captures."
+      },
+      "evidence": {
+        "referenceIds": [
+          "BS03"
+        ],
+        "locator": "wallpaper tinting paragraph",
+        "method": "primary_document_text",
+        "mediaVersion": null
+      },
+      "sharedEvidenceGroupId": "bs11-wallpaper-tint",
+      "dependsOn": [],
+      "revealsQuestionIds": [],
+      "review": {
+        "textEvidenceChecked": true,
+        "independentSecondReview": false,
+        "optionsEditorChecked": true,
+        "audioAuditioned": false,
+        "imageAuditedForQuestion": false,
+        "runtimeIntegrated": false
+      },
+      "media": null,
+      "quizEnabled": false,
+      "editorStatus": "text_candidate_needs_integration_and_second_review",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "collectionId": "two-desktops-1995-2020",
+      "hostAppearancePolicy": "do_not_switch_before_answer",
+      "postAnswerAppearanceSuggestion": "big-sur",
+      "postAnswerSwitchRequiresConsent": true,
+      "postAnswerSwitchRequiresReleaseReady": true
+    },
+    {
+      "id": "omt-ui-bs11-controlcenter",
+      "domain": "interface_history",
+      "topic": "interface_archaeology",
+      "variant": "text_scenario",
+      "subject": {
+        "system": "macOS Big Sur",
+        "version": "11",
+        "historicalYear": 2020
+      },
+      "knowledgeKind": "system_entry",
+      "prompt": {
+        "zh": "Big Sur 把勿扰、显示器和键盘亮度等快捷控制集中到菜单栏里的哪个入口？",
+        "en": "Which menu-bar feature groups controls such as Do Not Disturb, displays and keyboard brightness in Big Sur?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "Control Center",
+          "en": "Control Center"
+        },
+        {
+          "id": "b",
+          "zh": "Notification Center",
+          "en": "Notification Center"
+        },
+        {
+          "id": "c",
+          "zh": "Mission Control",
+          "en": "Mission Control"
+        },
+        {
+          "id": "d",
+          "zh": "System Preferences 的 General",
+          "en": "General in System Preferences"
+        }
+      ],
+      "answerId": "a",
+      "explanation": {
+        "zh": "发布说明把这些快捷控制归入 Control Center。",
+        "en": "The release description groups these controls in Control Center."
+      },
+      "evidence": {
+        "referenceIds": [
+          "BS02"
+        ],
+        "locator": "Refreshed Design: Focused and Familiar",
+        "method": "primary_document_text",
+        "mediaVersion": null
+      },
+      "sharedEvidenceGroupId": "bs11-controlcenter",
+      "dependsOn": [],
+      "revealsQuestionIds": [],
+      "review": {
+        "textEvidenceChecked": true,
+        "independentSecondReview": false,
+        "optionsEditorChecked": true,
+        "audioAuditioned": false,
+        "imageAuditedForQuestion": false,
+        "runtimeIntegrated": false
+      },
+      "media": null,
+      "quizEnabled": false,
+      "editorStatus": "text_candidate_needs_integration_and_second_review",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "collectionId": "two-desktops-1995-2020",
+      "hostAppearancePolicy": "do_not_switch_before_answer",
+      "postAnswerAppearanceSuggestion": "big-sur",
+      "postAnswerSwitchRequiresConsent": true,
+      "postAnswerSwitchRequiresReleaseReady": true
+    },
+    {
+      "id": "omt-ui-bs11-release",
+      "domain": "interface_history",
+      "topic": "interface_archaeology",
+      "variant": "text_scenario",
+      "subject": {
+        "system": "macOS Big Sur",
+        "version": "11",
+        "historicalYear": 2020
+      },
+      "knowledgeKind": "release_date",
+      "prompt": {
+        "zh": "Apple 题为 macOS Big Sur is here 的正式可用公告发布于哪一天？",
+        "en": "On which date was Apple’s availability announcement titled macOS Big Sur is here published?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "2020 年 6 月 22 日",
+          "en": "22 June 2020"
+        },
+        {
+          "id": "b",
+          "zh": "2020 年 11 月 12 日",
+          "en": "12 November 2020"
+        },
+        {
+          "id": "c",
+          "zh": "2021 年 6 月 7 日",
+          "en": "7 June 2021"
+        },
+        {
+          "id": "d",
+          "zh": "2019 年 10 月 7 日",
+          "en": "7 October 2019"
+        }
+      ],
+      "answerId": "b",
+      "explanation": {
+        "zh": "这里考的是正式可用公告日期，不是预告日期。",
+        "en": "This asks about the availability announcement, not the preview."
+      },
+      "evidence": {
+        "referenceIds": [
+          "BS02"
+        ],
+        "locator": "article date",
+        "method": "primary_document_text",
+        "mediaVersion": null
+      },
+      "sharedEvidenceGroupId": "bs11-availability",
+      "dependsOn": [],
+      "revealsQuestionIds": [],
+      "review": {
+        "textEvidenceChecked": true,
+        "independentSecondReview": false,
+        "optionsEditorChecked": true,
+        "audioAuditioned": false,
+        "imageAuditedForQuestion": false,
+        "runtimeIntegrated": false
+      },
+      "media": null,
+      "quizEnabled": false,
+      "editorStatus": "text_candidate_needs_integration_and_second_review",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "collectionId": "two-desktops-1995-2020",
+      "hostAppearancePolicy": "do_not_switch_before_answer",
+      "postAnswerAppearanceSuggestion": "big-sur",
+      "postAnswerSwitchRequiresConsent": true,
+      "postAnswerSwitchRequiresReleaseReady": true
+    },
+    {
+      "id": "omt-ui-bs11-tabpreview",
+      "domain": "interface_history",
+      "topic": "interface_archaeology",
+      "variant": "text_scenario",
+      "subject": {
+        "system": "macOS Big Sur",
+        "version": "11",
+        "historicalYear": 2020
+      },
+      "knowledgeKind": "safari_behavior",
+      "prompt": {
+        "zh": "Big Sur 的 Safari 中，把指针停在标签页上，可以出现什么信息？",
+        "en": "What can appear when you hover over a tab in Safari on Big Sur?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "自动进入阅读器模式",
+          "en": "Automatic entry into Reader mode"
+        },
+        {
+          "id": "b",
+          "zh": "自动打开隐私报告",
+          "en": "An automatically opened Privacy Report"
+        },
+        {
+          "id": "c",
+          "zh": "该标签页的页面预览",
+          "en": "A preview of that tab’s page"
+        },
+        {
+          "id": "d",
+          "zh": "全部历史记录的缩略图",
+          "en": "Thumbnails of all browsing history"
+        }
+      ],
+      "answerId": "c",
+      "explanation": {
+        "zh": "当年的 Safari 更新包含标签页悬停预览。",
+        "en": "The Safari update included tab-hover page previews."
+      },
+      "evidence": {
+        "referenceIds": [
+          "BS02"
+        ],
+        "locator": "Safari: Faster, More Personal, and More Private",
+        "method": "primary_document_text",
+        "mediaVersion": null
+      },
+      "sharedEvidenceGroupId": "bs11-safari-tab-preview",
+      "dependsOn": [],
+      "revealsQuestionIds": [],
+      "review": {
+        "textEvidenceChecked": true,
+        "independentSecondReview": false,
+        "optionsEditorChecked": true,
+        "audioAuditioned": false,
+        "imageAuditedForQuestion": false,
+        "runtimeIntegrated": false
+      },
+      "media": null,
+      "quizEnabled": false,
+      "editorStatus": "text_candidate_needs_integration_and_second_review",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "collectionId": "two-desktops-1995-2020",
+      "hostAppearancePolicy": "do_not_switch_before_answer",
+      "postAnswerAppearanceSuggestion": "big-sur",
+      "postAnswerSwitchRequiresConsent": true,
+      "postAnswerSwitchRequiresReleaseReady": true
+    },
+    {
+      "id": "omt-ui-bs11-tablestyle",
+      "domain": "interface_history",
+      "topic": "interface_archaeology",
+      "variant": "text_scenario",
+      "subject": {
+        "system": "macOS Big Sur",
+        "version": "11",
+        "historicalYear": 2020
+      },
+      "knowledgeKind": "list_style",
+      "prompt": {
+        "zh": "Big Sur 引入内缩选中行后，旧式铺满整行宽度的表格选中样式怎样了？",
+        "en": "After Big Sur introduced inset table selection, what happened to edge-to-edge full-width selection?"
+      },
+      "options": [
+        {
+          "id": "a",
+          "zh": "从 AppKit 的样式选项中移除",
+          "en": "It was removed from AppKit’s style options"
+        },
+        {
+          "id": "b",
+          "zh": "只能用于不可选择的表格",
+          "en": "It was limited to nonselectable tables"
+        },
+        {
+          "id": "c",
+          "zh": "只允许用于侧栏",
+          "en": "It was limited to sidebars"
+        },
+        {
+          "id": "d",
+          "zh": "仍作为 fullWidth 样式保留",
+          "en": "It remained available as the fullWidth style"
+        }
+      ],
+      "answerId": "d",
+      "explanation": {
+        "zh": "官方列出了 fullWidth、inset 和 sourceList 等不同用途的样式。",
+        "en": "The session distinguishes fullWidth, inset and sourceList uses."
+      },
+      "evidence": {
+        "referenceIds": [
+          "BS01"
+        ],
+        "locator": "NSTableView style",
+        "method": "primary_document_text",
+        "mediaVersion": null
+      },
+      "sharedEvidenceGroupId": "bs11-table-style",
+      "dependsOn": [],
+      "revealsQuestionIds": [],
+      "review": {
+        "textEvidenceChecked": true,
+        "independentSecondReview": false,
+        "optionsEditorChecked": true,
+        "audioAuditioned": false,
+        "imageAuditedForQuestion": false,
+        "runtimeIntegrated": false
+      },
+      "media": null,
+      "quizEnabled": false,
+      "editorStatus": "text_candidate_needs_integration_and_second_review",
+      "measuredDifficulty": null,
+      "discrimination": null,
+      "collectionId": "two-desktops-1995-2020",
+      "hostAppearancePolicy": "do_not_switch_before_answer",
+      "postAnswerAppearanceSuggestion": "big-sur",
+      "postAnswerSwitchRequiresConsent": true,
+      "postAnswerSwitchRequiresReleaseReady": true
+    }
+  ]
+}

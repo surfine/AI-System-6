@@ -1,0 +1,188 @@
+<!-- canonical-source: docs/design/APPEARANCE-QA.md -->
+<!-- source-sha256: 0746cc6ce8f7342c603fa6b8751a62921571ac72612e81645c653cd85696e90a -->
+
+英文版为准。本文档仅供人类参考。
+
+# 外观 QA 矩阵
+
+AI System 6 有八套正式外观。下表记录的是最初的六套；Big Sur（2026-09-22）与
+NeXTSTEP（2026-09-23 正式发布）由下文各自的小节覆盖，不靠表里的勾。
+
+| 表面 | Classic / System 6 | Platinum | Aqua | Snow Leopard | Yosemite | Liquid Glass |
+| --- | --- | --- | --- | --- | --- | --- |
+| 启动 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Start Here | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Finder | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Applications | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Project Hard Disk | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| File Floppy | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Draft Desk | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Writing Studio | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| TeachText | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Review Desk | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Clio | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Control Panel | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| 系统弹窗 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| 菜单栏 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| 手机布局 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+
+八套正式外观（注册表 `releaseReady: true`）在 Control Panel 的
+Appearance 选择器与 Special 菜单中开放。NeXTSTEP 于 2026-09-23 按作者决定加入，
+此前已记录它的工作流与边界门禁、59/59 图标和触摸目标。四套
+历史外观还须通过 `npm run audit:theme-lab:fidelity` 对已 pin 的 canonical
+reference 校验。该命令检查两个互不混淆的层级：来自记录运行的 `tolerances`
+（回归层），以及共享的 `FIDELITY_FLOOR`（与时代目标的绝对差距层）。每个
+specimen 在自己的 `floor` 台账中声明所处状态，因此一块 board 不可能一边远离
+reference、一边自称 canonical。详见
+[THEME-FAMILY-CONTRACT.zh-CN.md](THEME-FAMILY-CONTRACT.zh-CN.md) 第 9 节。
+
+当前 floor 状态（由已提交 manifest 推导，非估计）：
+
+| Board | specimen 数 | 达到 floor | 已记录差距 | reference 不可用 |
+| --- | --- | --- | --- | --- |
+| Platinum | 20 | 14 | 0 | 6（3 个照片缩略图裁片，加 3 个裁错对象的裁片） |
+| Platinum 1.25x | 6 | 6 | 0 | 0 |
+| Platinum 1.5x | 6 | 5 | 1（Trash 32 材质） | 0 |
+| Platinum 2x | 6 | 5 | 1（Trash 32） | 0 |
+| Aqua | 18 | 18 | 0 | 0 |
+| Snow Leopard | 19 | 19 | 0 | 0 |
+| Yosemite | 17 | 15 | 0 | 2（checkbox/radio 标记只有 clone 资产） |
+| Yosemite 2x | 4 | 3 | 0 | 1（checkbox 只有缩放后的 clone 资产） |
+
+`tests/features/appearance-qa-ledger.test.mjs` 从各 manifest 的
+`specimens[].floor.status` 推导这些计数，并要求中英文表格一致。Aqua 新增的三个
+specimen 覆盖完整标题栏灯组；Snow Leopard 新增的一个 specimen 覆盖其灯组。
+
+### 控件状态覆盖
+
+只要已 pin 的 canonical source 中带有该状态，每块 board 都 pin 一个 disabled 或
+focus 状态。其中两个 specimen 直接查出了真实的 painter 缺陷——这正是状态覆盖的
+目的：
+
+| 状态 | Platinum | Aqua | Snow Leopard | Yosemite |
+| --- | --- | --- | --- | --- |
+| disabled 按钮 | `button-disabled`（达到 floor） | `button-disabled`（达到 floor） | — | — |
+| disabled 列表行 | — | `list-row-disabled`（达到 floor） | — | — |
+| disabled 复选框 / 单选框 | — | — | `checkbox-disabled`、`radio-disabled`（达到 floor） | — |
+| focus ring | — | `search-field-focused`（达到 floor，完全一致） | `search-field-focused`（达到 floor） | `search-field-focused`（达到 floor） |
+
+Aqua 与 Snow Leopard 的 focus ring 本来就是对的——Aqua 对照原生 10.2 截图测得
+0/0/0。只是 Theme Lab 显示不出来：它的静息 search-field 规则特异性为 (0,2,1)，
+对 Snow Leopard 压过了共享的绘制式 focus 规则 (0,2,0)，对 Aqua 与其 focus 配方
+(0,2,1) 同级并靠文档顺序取胜。真实 `:focus` 从未受影响，因为时代的 `:focus`
+配方位于 (0,2,2)。修复方式是在 `apps/desktop/styles/66-theme-lab.css` 里加一条只作用于实验室
+的规则，仅提供 ring，因此各时代保留自己的 search-field 圆角、内边距与背景。
+
+尚未 pin 的状态缺口，以及各自的原因：
+
+- **Platinum 的 focus ring。** Mac OS 9 的聚焦边框在已缓存的 Sherlock 2 截图里，
+  但它不是已 pin 的 source。pin 它需要先确认 canonical URL，不能猜。
+- **Yosemite 的 disabled 状态。** 已 pin 的 10.10 source 中没有任何 disabled 控件。
+  要么 pin About This Mac 截图（其中禁用的缩放灯），要么 pin GTK 仿制资源的
+  insensitive 资产，证据层级与 Yosemite 其他控件 reference 相同。
+- **所有时代的 hover。** 没有任何已 pin 的静态截图包含指针 hover 状态。最接近的
+  时代等价物是菜单高亮，已由 `menu-selected` / `menu-selected-item` 覆盖。新增
+  hover specimen 需要新的证据来源和 harness 的 hover 步骤；凭空编造就是伪造
+  fidelity。
+
+### Yosemite 参照物审计（2026-08-17）
+
+Yosemite 每一处差距都回溯到了它实际比对的像素。有六个 specimen 指向的裁剪里
+根本没有它声称要测的控件——当时固定的三张来源（Finder 窗口、苹果菜单、
+System Preferences General 面板）里没有推按钮、文本框、对话框、非活动窗口
+和选中列表行。现在又从同一个 512 Pixels 图库固定了四张 10.10 截图，
+受影响的 specimen 已重新配准到真实控件：
+
+| Specimen | 旧参照 | 新参照 | 结果 |
+| --- | --- | --- | --- |
+| `textfield` | 空白窗口底 | Get Info 的「Add Tags」文本框 | 材质 36.7 → 0，**达到 floor** |
+| `button-default` | Appearance 弹出按钮蓝色块的一角 | Force Quit 默认按钮 | 材质 78.4 → 17.2，轮廓已精确 |
+| `inactive-titlebar` | **活动**状态的红黄灯 | Mail 的背景窗口 | 材质 66.4 → 12.3，轮廓已精确 |
+| `list-selected` | Finder 文件夹图标顶部 | Force Quit 选中行 | 暴露出真实画笔缺陷，已修：材质 91.8 → 10.2 |
+| `dialog` | 同一条空白 | Empty Trash 警告框主体 | 变成真实差距：fixture 警告框内容不同，轮廓差在版式 |
+| `menu-selected` | 裁剪比高亮行高 6pt | 同一张截图，重新配准 | 材质 45.5 → 6.2 |
+
+错误的参照物同时也造出了一个错误的 token。Yosemite 的
+`--theme-lab-list-selected-bg` 原为 `#97ddfd`，注释写着「从 10.10 原生 Finder
+截图测得」——但那张截图是图标视图、没有任何选中项，`#97ddfd` 是文件夹图标的
+标签页，正是旧裁剪覆盖的那些像素。10.10 的聚焦列表选中态是实心 `#116cd6`
+配白字，从 Force Quit 列表测得。token 已改为该值，fixture 读数 10.2。
+
+仍有两个没有有效证据：
+
+- `button-pressed`——按下态是瞬时状态，图库里的静态截图都拍不到。
+- `segmented-control`——参照是弹出按钮，当前侧是选中的单选框，两边测的是不同
+  控件。Finder 工具栏的视图模式组才是真正的 10.10 分段控件，等 fixture 侧改成
+  分段控件后可以用它作参照。
+
+另有三处属于配准或证据质量问题，不是画笔债务：`search-field` 拿原生 325pt、
+占位居中的搜索框中段，去比 150pt、占位左对齐的 fixture；`sidebar-active` 与
+`sidebar-inactive` 固定的是未选中的 Downloads 切片，fixture 显示的却是选中态；
+`checkbox-checked` 与 `radio-checked` 比的是 GTK 克隆字形，不是原生 10.10 美术。
+
+Yosemite 是当前公开的 fidelity 债务：它的大多数 specimen 未达到 floor，分成上表
+区分的两类——可量测差距，以及无法用 clone reference 证明原生 10.10 像素的标记
+比较。请读上表的计数，不要读这里：那张表由各 manifest 推导，而这句话曾在一个
+manifest 修订之后仍写着 19 个 specimen。
+它的窗口与控件 reference 已是 10.10 原生截图；只剩复选框、单选框和标题按钮
+字形仍在比 GTK 仿制资源。System 6 与
+Liquid Glass 没有历史截图 target，继续使用各自的设计契约加回归基线；不为它们
+伪造 fidelity board。
+Liquid Glass 正在通过现有主题 ID 与材质 token 重校到 macOS 27 Golden Gate；它
+不会新增主题或主题家族。
+`npm run audit:appearance-apps` 另行在六套外观下渲染
+`REPRESENTATIVE_WINDOWS` 当前列出的真实窗口，证明普通 App 与视觉特殊 App 都
+收到同一套系统 title bar painter；这个传播检查不与像素回归或历史 fidelity
+混为一谈。
+
+每个表面的 QA 标准：无裁切、无不清晰文字、无错误对比度、无坏焦点、无错误
+图标、无损坏的窗口边框。
+
+### 保真板与稳定板（2026-10-08）
+
+每个外观都有 Theme Lab 比对板，但不是每块板都在衡量历史。参考图是原生截图或 HIG 截图的样本，是保真检查；参考图是产品自己 Theme Lab 冻结图（来源 id 为 `authored.*`）的样本，是稳定检查，只证明产品没变。比对器现在会标出每个样本和每块板的类别：保真板（Aqua、Snow Leopard、Lion、Platinum、Yosemite），稳定板（System 6、System 7、Drawing Board、NeXTSTEP、Big Sur、Liquid Glass），混合板（Tiger）。有意的外观变更用 `node tooling/theme-lab-fidelity.mjs --theme <id> --refreeze-authored` 重冻稳定板参考图：只有一个样本使用的冻结图会换成比对器自己的截图，原生参考图从不改写。
+
+## Big Sur 新增外观（2026-09-22）
+
+第七套可选外观具有独立浅深色材质和跟随系统偏好。Big Sur 现有 59 个独立图标对象
+（原 56 项加 ClioPaint、ClioProject、One More Tune），已取代 Yosemite 别名。
+四档共 236 张 PNG：16/32 像素采用独立光学校正稿，64/128 像素来自 Image Gen 材质母稿。
+来源与交付记录见 [Big Sur 图标](BIG-SUR-ICONS.md)。`tests/visual/theme-lab/` 中的回归基线记录网页适配结果，
+不代表原生历史还原通过。设计参考 WWDC20 session 10104 和 512 Pixels macOS 11
+的 Light Blue、Finder Home 截图；原图比例和像素误差尚未校准，历史相似度未认证。
+产品保留左侧关闭、右侧缩放及现有窗口结构，也未重建各应用侧栏。最小化黄灯从不作装饰：
+一个时代只有连同自己的 Dock 一起才画黄灯（2026-09-25 起 Snow Leopard 首发），红、黄在左，
+Zoom 在右缘。
+
+本外观样式只在选用时加载（包括恢复已保存外观），由 Service Worker 留存供
+之后离线启动。七套正式外观保持原有颜色行为；新增默认表面参数保持其控制面板
+原有颜色不变。
+
+Theme Lab 截图工具现仅隐藏 `.window[data-window]` 管理窗口。原先隐藏全部
+`.window` 的做法误把嵌套窗口样本也藏掉。七套实验室基线按修正后的夹具重拍；
+这与 Classic／Liquid Applications 计算样式对照无变化是两组不同证据。
+共享现代家族输入框规则同时排除了 `.mde-input`：原先的不透明填色会盖住
+Yosemite 和 Big Sur 的文稿绘制层，现在两者都保持编辑层透明与字形对齐。
+
+NeXTSTEP 证据还覆盖原生式窗口按钮、key/main 标题状态、浮动与可分离菜单、右侧
+Dock、最小化窗口、列式 Finder/Shelf、滚动条、输入法切换、离线资源和跨外观／会话
+恢复。这套外观映射到的每个对象现在都有自己的 3.3 风格图标（59/59），Classic 图标回退
+已经取消。NeXTSTEP 没有 canonical 的 Theme Lab 基准板：`verify-nextstep-workflow` 及其
+边界配套是它的检测工具，`audit:theme-lab:fidelity` 通过并不说明它的情况。它的发布
+不提升此前历史相似度结论，也不代表所有图标族已获历史审核通过。
+
+## 十二套外观仪表（2026-10-04）
+
+注册表现有十二套可选用外观。可重复的产品检查分成「现已自动化」与「人工／延后」：
+
+| 仪表 | 锁定内容 | 闸门 |
+| --- | --- | --- |
+| `appearance-system` + `harvest-ux` 契约 | 注册表时间线、polishPending 诚实性、Theme Lab calm 钩子（`quiet-focus`／key-window／vibrancy／灰阶量测属性）、Drawing Board 素描资产接线 | `verify:quick -- --feature appearance-system`／`harvest-ux` |
+| `tooling/verify-appearance-app-coverage.mjs` | 每套外观对每个已注册窗口的计算样式；Retina 栅格底线；菜单栏模型；仅代表窗口截图 | `audit:appearance-apps`（按需） |
+| `tests/visual/theme-lab/<id>.png` | 十二套 Theme Lab 回归基线（网页适配，非原生保真） | `audit:theme-lab`（按需） |
+| Theme Lab Surfaces → 打磨对照板 | 现场 `measurePolishBoards()` 写入 `data-theme-lab-measure-*`（key-window 可区分性、vibrancy `backdrop-filter`、L0–L3 灰阶）；calm 选择是产品 UI | 人工／未来探针对 |
+
+**本轮延后（不要求）：** 十二套 × 每个窗口的完整截图 CI、canonical 历史保真
+（`audit:theme-lab:fidelity`，人工缓存）、以及剩余 docs／P5 `polishTodos`
+（System 7／Lion／Drawing Board）的清空。Theme Lab 会显示未完成的 polishTodos，
+但不会清空注册表。

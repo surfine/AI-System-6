@@ -1,0 +1,51 @@
+name: Feature proposal
+description: Propose a focused new capability or interaction
+title: "[Idea]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        AI System 6 favors visible objects and deliberate handoffs. Describe the user problem before the interface you imagine.
+  - type: textarea
+    id: problem
+    attributes:
+      label: User problem
+      description: What work is difficult today, for whom, and why?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed contract
+      description: Which object or application should own this, and what becomes visibly possible?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Include existing AI System 6 paths that nearly solve it.
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Likely scope
+      options:
+        - Existing application
+        - Shared desktop behavior
+        - New application or object
+        - Model or provider integration
+        - Appearance or accessibility
+        - Documentation or contributor experience
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and pull requests.
+          required: true
+        - label: The proposal keeps saving, publishing, and destructive actions explicit.
+          required: true

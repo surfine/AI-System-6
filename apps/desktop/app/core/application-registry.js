@@ -1,0 +1,853 @@
+// Application Registry — one place that decides which app handles which
+// object/intent.
+//
+// System semantics live here; the appearance system is never consulted and
+// no theme knowledge exists in this module. App-internal logic stays in the
+// target apps: registry handlers are thin adapters over existing entry
+// points (openTextFile, runClaimCheck, makeDocMapFromCurrentSource, ...).
+// The droplets keep their declared command contract; this registry only
+// owns the object -> app routing decision.
+
+// "develop" is 文字亮室's intent, and it is its own rather than a reuse: edit
+// belongs to TeachText, which is the default opener for a text object, and
+// review belongs to the Review Desk. A document is developed, not edited, when
+// the negative is left alone and the change is a stack of adjustments the
+// writer can switch off again.
+const applicationIntents = Object.freeze(["open", "read", "edit", "review", "develop", "map", "chart", "present", "attach", "export"]);
+const applicationsById = new Map();
+
+function normalizeApplicationIntent(intent) {
+  const value = String(intent || "").toLowerCase();
+  return applicationIntents.includes(value) ? value : "";
+}
+
+// The item kind is the routing key. A saved DocMap file is a "docmap" object,
+// not a plain TeachText document, so open routing never misplaces it.
+function applicationItemKind(item) {
+  if (!item) return "";
+  if (item.type === "chat") return "chat";
+  if (item.type === "alias") return "alias";
+  // A native OOXML package rides on the desk's native-binaries store, or (N0)
+  // lives on the Project Hard Disk as an "office" item: the kind is the file
+  // extension, never a text body guess.
+  if ((item.type === "nativeBinary" || item.type === "office") && typeof item.format === "string") return item.format.toLowerCase();
+  if (item.type === "text") {
+    if (item.clioDiagram) return "clio-diagram";
+    // A saved Cover Glass cover: the layer JSON rides on the document.
+    if (item.artifactKind === "cover" && item.cover) return "cover";
+    // A saved deck and a saved chart open in the applications that made them.
+    // Older files without the mark are recognised by what they are: a Marp
+    // front matter, or ClioChart's table document.
+    if (item.artifactKind === "slides" || /^---\s*\n[\s\S]{0,400}?^marp:\s*true\b/m.test(String(item.body || "").slice(0, 600))) return "slides";
+    if (item.artifactKind === "chart-table" || (item.source === "ClioChart" && /^\|.+\|\s*$/m.test(String(item.body || "")))) return "chart-table";
+    if (item.docMap || (typeof isExportedDocMapMarkdown === "function" && isExportedDocMapMarkdown(String(item.body || "")))) {
+      return "docmap";
+    }
+    return "text";
+  }
+  return String(item.type || item.artifactKind || "");
+}
+
+function registerApplication(descriptor) {
+  if (!descriptor || typeof descriptor.id !== "string" || !descriptor.id.trim()) {
+    throw new TypeError("Application id is required.");
+  }
+  if (applicationsById.has(descriptor.id)) {
+    throw new Error(`Application already registered: ${descriptor.id}`);
+  }
+  if (typeof descriptor.handler !== "function") {
+    throw new TypeError(`Application ${descriptor.id} requires a handler.`);
+  }
+  const intents = [...new Set((descriptor.acceptedIntents || []).map(normalizeApplicationIntent).filter(Boolean))];
+  const kinds = [...new Set((descriptor.acceptedItemKinds || []).map(String).filter(Boolean))];
+  const recordRuns = [...new Set((descriptor.recordsRuns || []).map(normalizeApplicationIntent).filter(Boolean))];
+  const record = Object.freeze({
+    id: descriptor.id,
+    labelKey: String(descriptor.labelKey || ""),
+    descriptionKey: String(descriptor.descriptionKey || ""),
+    windowName: String(descriptor.windowName || ""),
+    acceptedItemKinds: Object.freeze(kinds),
+    acceptedIntents: Object.freeze(intents),
+    defaultOpener: descriptor.defaultOpener === true,
+    recordsRuns: Object.freeze(recordRuns),
+    handler: descriptor.handler,
+  });
+  applicationsById.set(record.id, record);
+  return record;
+}
+
+function getApplication(appId) {
+  return applicationsById.get(String(appId || "")) || null;
+}
+
+
+function resolveApplicationForItem(item, intent = "open") {
+  const normalized = normalizeApplicationIntent(intent);
+  if (!normalized) return { ok: false, reason: "unknown-intent", appId: "" };
+  const kind = applicationItemKind(item);
+  if (!kind) return { ok: false, reason: "unknown-kind", appId: "" };
+  const candidates = [...applicationsById.values()].filter((app) =>
+    app.acceptedItemKinds.includes(kind) && app.acceptedIntents.includes(normalized)
+  );
+  if (!candidates.length) return { ok: false, reason: "no-handler", appId: "" };
+  const opener = normalized === "open" || normalized === "read"
+    ? candidates.find((app) => app.defaultOpener)
+    : null;
+  const chosen = opener || candidates[0];
+  return { ok: true, appId: chosen.id, app: chosen, reason: "" };
+}
+
+async function resolveDispatchItems(items = []) {
+  const files = [];
+  const seenTargetIds = new Set();
+  if (typeof ensureFinderObjectsModule === "function") await ensureFinderObjectsModule();
+  for (const item of items) {
+    if (!item) continue;
+    if (item.type !== "alias") {
+      if (!seenTargetIds.has(item.id)) {
+        seenTargetIds.add(item.id);
+        files.push(item);
+      }
+      continue;
+    }
+    const resolver = window.AISystem6FinderObjects?.resolveProjectFileForUse;
+    const resolution = typeof resolver === "function" ? resolver(item) : null;
+    if (!resolution || resolution.reason === "broken-alias") {
+      return { blocked: true, reason: "broken-alias", file: item, files: [] };
+    }
+    if (resolution.reason === "non-file-alias") {
+      return { blocked: true, reason: "non-file-alias", file: item, files: [] };
+    }
+    const target = resolution.target;
+    if (target && !seenTargetIds.has(target.id)) {
+      seenTargetIds.add(target.id);
+      files.push(target);
+    }
+  }
+  return { blocked: false, files };
+}
+
+async function recordDispatchFailure(appId, receiptId, activityHandle, { status, publicErrorReason, reason, result = null, error = null }) {
+  if (receiptId && typeof window.AISystem6RunReceipts?.finishReceipt === "function") {
+    try {
+      await window.AISystem6RunReceipts.finishReceipt(receiptId, {
+        status,
+        publicErrorReason,
+        outputObjectIds: Array.isArray(result?.outputObjectIds) ? result.outputObjectIds : [],
+        destination: String(result?.destination || ""),
+      });
+    } catch (receiptError) {
+      console.warn("Run receipt failure recording failed.", receiptError);
+    }
+  }
+  if (activityHandle && typeof window.AISystem6AssistantActivity?.endOperation === "function") {
+    try {
+      window.AISystem6AssistantActivity.endOperation(activityHandle, { ok: false, error });
+    } catch (activityError) {
+      console.warn("Assistant activity error recording failed.", activityError);
+    }
+  }
+  return { ok: false, appId, receiptId, reason, result, error };
+}
+
+function applicationDispatchStatus(reason) {
+  if (reason === "broken-alias") return t("alias_broken", "—");
+  if (reason === "non-file-alias") return t("application_dispatch_non_file");
+  if (reason === "cross-project") return t("application_dispatch_cross_project");
+  if (reason === "no-handler") return t("application_dispatch_no_handler");
+  if (reason === "unsupported-intent") return t("application_dispatch_unsupported_intent");
+  if (reason === "unsupported-kind") return t("application_dispatch_unsupported_kind");
+  if (reason === "no-items") return t("select_finder_item_first");
+  return "";
+}
+
+// Handler result contract: { ok, reason?, publicErrorReason?,
+// outputObjectIds?, affectedObjectIds?, destination? }. `ok:false` is a
+// normal business failure (empty input, failed attach, ...), not an
+// exception; it must produce an unsuccessful terminal path so receipts are
+// never marked completed and Assistant Activity never enters ready.
+async function dispatchApplicationIntent(appId, { intent, items = [], sourceAppId = "", projectId = "", options = {} } = {}) {
+  const normalized = normalizeApplicationIntent(intent);
+  if (!normalized) {
+    return { ok: false, reason: "unknown-intent", appId: "" };
+  }
+
+  const resolved = await resolveDispatchItems(Array.isArray(items) ? items : [items]);
+  if (resolved.blocked) {
+    const message = applicationDispatchStatus(resolved.reason);
+    if (message && typeof setStatus === "function") setStatus(message);
+    return { ok: false, reason: resolved.reason, appId: "" };
+  }
+  if (!resolved.files.length) {
+    if (typeof setStatus === "function") setStatus(applicationDispatchStatus("no-items"));
+    return { ok: false, reason: "no-items", appId: "" };
+  }
+
+  const targetProjectId = String(
+    projectId
+    || (typeof getActiveProject === "function" ? getActiveProject()?.id : "")
+    || activeProjectId
+    || ""
+  );
+  const foreign = resolved.files.find((file) =>
+    targetProjectId && String(file.projectId || "") && String(file.projectId) !== targetProjectId
+  );
+  if (foreign) {
+    if (typeof setStatus === "function") setStatus(applicationDispatchStatus("cross-project"));
+    return { ok: false, reason: "cross-project", appId: "" };
+  }
+
+  let app = appId ? getApplication(appId) : null;
+  if (!app) {
+    const resolution = resolveApplicationForItem(resolved.files[0], normalized);
+    app = resolution.ok ? resolution.app : null;
+  }
+  if (!app) {
+    if (typeof setStatus === "function") setStatus(applicationDispatchStatus("no-handler"));
+    return { ok: false, reason: "no-handler", appId: "" };
+  }
+
+  // Explicit appId cannot bypass descriptor capability; fail closed before
+  // the handler runs so no receipt is created on a mismatch.
+  if (!app.acceptedIntents.includes(normalized)) {
+    if (typeof setStatus === "function") setStatus(applicationDispatchStatus("unsupported-intent"));
+    return { ok: false, reason: "unsupported-intent", appId: app.id };
+  }
+  const unsupportedKind = resolved.files.find((file) => !app.acceptedItemKinds.includes(applicationItemKind(file)));
+  if (unsupportedKind) {
+    if (typeof setStatus === "function") setStatus(applicationDispatchStatus("unsupported-kind"));
+    return { ok: false, reason: "unsupported-kind", appId: app.id };
+  }
+
+  const shouldRecord = app.recordsRuns.includes(normalized);
+  let receiptId = "";
+  if (shouldRecord && typeof window.AISystem6RunReceipts?.createReceipt === "function") {
+    try {
+      const created = await window.AISystem6RunReceipts.createReceipt({
+        projectId: targetProjectId,
+        sourceAppId: sourceAppId || app.id,
+        intent: normalized,
+        inputObjectIds: resolved.files.map((file) => file.id),
+        sourceScope: options.sourceScope || null,
+        provider: options.provider || "",
+        model: options.model || "",
+        options: { labelKey: app.labelKey },
+        replayContract: {
+          appId: app.id,
+          intent: normalized,
+          inputObjectIds: resolved.files.map((file) => file.id),
+        },
+      });
+      if (created?.ok) receiptId = created.receiptId;
+    } catch (error) {
+      console.warn("Run receipt creation failed; dispatch continues.", error);
+    }
+  }
+
+  let activityHandle = null;
+  if (shouldRecord && typeof window.AISystem6AssistantActivity?.beginOperation === "function") {
+    try {
+      activityHandle = window.AISystem6AssistantActivity.beginOperation({
+        runId: receiptId || "",
+        projectId: targetProjectId,
+        ownerAppId: app.id,
+        windowName: app.windowName,
+        targetObjectId: resolved.files[0]?.id || "",
+        labelKey: app.labelKey || "",
+        cancellable: options.cancellable === true,
+      });
+    } catch (error) {
+      console.warn("Assistant activity begin failed; dispatch continues.", error);
+    }
+  }
+
+  try {
+    const result = await app.handler(resolved.files, {
+      intent: normalized,
+      sourceAppId,
+      projectId: targetProjectId,
+      options,
+      receiptId,
+    });
+    if (result?.ok === false) {
+      const publicErrorReason = String(result.publicErrorReason || "");
+      if (publicErrorReason && typeof setStatus === "function") setStatus(publicErrorReason);
+      return recordDispatchFailure(app.id, receiptId, activityHandle, {
+        status: "failed",
+        publicErrorReason,
+        reason: String(result.reason || "handler-rejected"),
+        result,
+      });
+    }
+    const outputObjectIds = Array.isArray(result?.outputObjectIds) ? result.outputObjectIds : [];
+    const affectedObjectIds = Array.isArray(result?.affectedObjectIds) ? result.affectedObjectIds : [];
+    const destination = String(result?.destination || "");
+    if (receiptId && typeof window.AISystem6RunReceipts?.finishReceipt === "function") {
+      try {
+        await window.AISystem6RunReceipts.finishReceipt(receiptId, {
+          status: "completed",
+          outputObjectIds,
+          affectedObjectIds,
+          destination,
+        });
+      } catch (error) {
+        console.warn("Run receipt finish failed.", error);
+      }
+    }
+    if (activityHandle && typeof window.AISystem6AssistantActivity?.endOperation === "function") {
+      try {
+        window.AISystem6AssistantActivity.endOperation(activityHandle, { ok: true });
+      } catch (error) {
+        console.warn("Assistant activity end failed.", error);
+      }
+    }
+    return { ok: true, appId: app.id, receiptId, result };
+  } catch (error) {
+    const cancelled = error?.name === "AbortError" || options?.signal?.aborted === true;
+    if (typeof setStatus === "function") {
+      setStatus(cancelled ? t("stopped") : friendlyErrorDetail(error));
+    }
+    return recordDispatchFailure(app.id, receiptId, activityHandle, {
+      status: cancelled ? "cancelled" : "failed",
+      publicErrorReason: cancelled ? "" : String(error?.message || error),
+      reason: cancelled ? "cancelled" : "handler-error",
+      error,
+    });
+  }
+}
+
+/**
+ * The object an entry names, resolved now.
+ *
+ * An id is a claim made by whoever drew the row; this is where it is checked
+ * again. A menu drawn a moment ago can name a file another window has since
+ * deleted, or one that belongs to a project the writer has left, and routing
+ * the open through one resolver is what keeps every entry - menu, toolbar,
+ * shortcut, double-click - answering the same way about the same id.
+ */
+function resolveProjectObject(itemOrId) {
+  if (itemOrId && typeof itemOrId === "object") return { ok: true, item: itemOrId, reason: "" };
+  const id = String(itemOrId || "");
+  if (!id) return { ok: false, item: null, reason: "no-items" };
+  if (typeof chatFiles === "undefined" || typeof isInActiveProject !== "function") {
+    return { ok: false, item: null, reason: "missing" };
+  }
+  const item = chatFiles.find((file) => file.id === id && isInActiveProject(file)) || null;
+  return item ? { ok: true, item, reason: "" } : { ok: false, item: null, reason: "missing" };
+}
+
+/**
+ * Could this intent be performed on this object right now?
+ *
+ * Cheap and side-effect free, so a menu can ask while drawing: it resolves the
+ * object and the application the way the dispatch would, and answers with the
+ * same reason the execution would report. Nothing is loaded and no model call
+ * is made - drawing a menu may not start work.
+ */
+function applicationObjectAvailability(itemOrId, intent = "open", appId = "") {
+  const resolved = resolveProjectObject(itemOrId);
+  if (!resolved.ok) return { available: false, reason: resolved.reason, appId: "" };
+  const normalized = normalizeApplicationIntent(intent);
+  if (!normalized) return { available: false, reason: "unknown-intent", appId: "" };
+  const target = appId ? getApplication(appId) : resolveApplicationForItem(resolved.item, normalized).app;
+  if (!target) return { available: false, reason: "no-handler", appId: "" };
+  if (!target.acceptedIntents.includes(normalized)) {
+    return { available: false, reason: "unsupported-intent", appId: target.id };
+  }
+  if (!target.acceptedItemKinds.includes(applicationItemKind(resolved.item))) {
+    return { available: false, reason: "unsupported-kind", appId: target.id };
+  }
+  return { available: true, reason: "", appId: target.id };
+}
+
+async function openProjectObject(itemOrId, intent = "open") {
+  const resolved = resolveProjectObject(itemOrId);
+  if (!resolved.ok) {
+    if (typeof setStatus === "function") setStatus(t("select_finder_item_first"));
+    return { ok: false, reason: resolved.reason };
+  }
+  return dispatchApplicationIntent("", { intent, items: [resolved.item], sourceAppId: "finder" });
+}
+
+// ---- First-phase registrations -------------------------------------------
+// These are thin adapters over existing entry points; the registry owns the
+// routing decision only. `recordsRuns` marks intents that produce a durable
+// Run Receipt (model-backed or artifact-transforming work); plain opens are
+// not logged so the Run Records folder stays quiet.
+
+registerApplication({
+  id: "teachText",
+  labelKey: "teachtext_label",
+  windowName: "teachText",
+  acceptedItemKinds: ["text"],
+  acceptedIntents: ["open", "read", "edit", "export"],
+  defaultOpener: true,
+  recordsRuns: ["export"],
+  handler: async (items, context) => {
+    const file = items[0];
+    if (!file) return { ok: false, reason: "missing" };
+    if (context.intent === "export") {
+      if (typeof downloadMarkdown !== "function") return { ok: false, reason: "no-handler" };
+      const downloaded = downloadMarkdown(String(file.body || ""), file.name);
+      if (!downloaded) return { ok: false, reason: "download-failed" };
+      // A download is not a Project durable object; the source document is
+      // only affected (read + exported), never produced by this run.
+      return { ok: true, affectedObjectIds: [file.id], destination: "download" };
+    }
+    if (typeof openTextFile === "function") openTextFile(file.id);
+    return { ok: true };
+  },
+});
+
+registerApplication({
+  id: "docMap",
+  labelKey: "docmap",
+  windowName: "docMap",
+  acceptedItemKinds: ["text", "docmap"],
+  acceptedIntents: ["open", "map"],
+  defaultOpener: true,
+  recordsRuns: ["map"],
+  handler: async (items, context) => {
+    const file = items[0];
+    if (!file) return { ok: false, reason: "missing" };
+    if (context.intent === "map") {
+      if (!String(file.body || "").trim()) {
+        return { ok: false, reason: "empty", publicErrorReason: t("docmap_no_text") };
+      }
+      if (typeof ensureDocMapModule === "function") await ensureDocMapModule();
+      if (typeof makeDocMapFromCurrentSource !== "function") {
+        return { ok: false, reason: "docmap-unavailable" };
+      }
+      const mapped = await makeDocMapFromCurrentSource({
+        text: file.body.trim(),
+        label: file.name,
+        scope: "documents",
+        meta: { fileId: file.id, fileType: file.type },
+        threshold: typeof docMapMinDocumentChars === "number" ? docMapMinDocumentChars : 1,
+      });
+      // Whether a map was drawn is the builder's answer, not this function's
+      // hope. Reporting "ok" regardless wrote a receipt saying the run
+      // completed for a request that never reached a model.
+      if (!mapped) return { ok: false, reason: "not-mapped" };
+      // DocMap renders a temporary UI map; it creates no durable Project
+      // file here, so nothing was produced. The source is the affected object.
+      return { ok: true, affectedObjectIds: [file.id] };
+    }
+    if (!window.AISystem6DocMapLoaded && typeof ensureDocMapModule === "function") {
+      await ensureDocMapModule();
+    }
+    if (typeof openSavedDocMapFile === "function" && openSavedDocMapFile(file)) {
+      return { ok: true };
+    }
+    return { ok: false, reason: "not-docmap" };
+  },
+});
+
+registerApplication({
+  id: "coverGlass",
+  // The window and its title belong to the module this opens; the registry
+  // only decides that a saved cover goes there.
+  acceptedItemKinds: ["cover"],
+  acceptedIntents: ["open"],
+  defaultOpener: true,
+  handler: async (items) => {
+    const file = items[0];
+    if (!file || !file.cover) return { ok: false, reason: "missing" };
+    if (typeof ensureCoverGlassModule === "function") await ensureCoverGlassModule();
+    return { ok: !!(await window.AISystem6CoverGlass?.openSavedCover?.(file)) };
+  },
+});
+
+registerApplication({
+  id: "clioWorksLedger",
+  labelKey: "clioworks_ledger_label",
+  // What this application opens, in the words Get Info and the Applications
+  // description use.
+  descriptionKey: "clio_chart_opens_formats",
+  // The workbook surface is the chart window the native host opens; there is
+  // no "clioWorks" window (the window-registry contract walks every literal
+  // windowName, and a named-but-unbuilt window hides from its instruments).
+  windowName: "clioChart",
+  acceptedItemKinds: ["xlsx"],
+  acceptedIntents: ["open", "read", "edit", "export"],
+  defaultOpener: true,
+  recordsRuns: ["edit", "export"],
+  handler: async (items, context) => {
+    const file = items[0];
+    if (!file) return { ok: false, reason: "missing" };
+    if (typeof ensureNativeBinariesModule !== "function" || typeof ensureClioWorksLedgerModule !== "function") {
+      return { ok: false, reason: "clioworks-unavailable" };
+    }
+    await ensureNativeBinariesModule();
+    await ensureClioWorksLedgerModule();
+    // Read → Reader's text projection (never the native bytes); edit/open → the workbook surface. The split lives in the lazy host.
+    return window.AISystem6ClioWorks.dispatchIntent(file, context);
+  },
+});
+
+// ClioWorks v4 (V4-01): Word and PowerPoint packages get the same read/edit
+// intent split as workbooks. Edit goes through the real Quire/Lectern adapters
+// (no upstream window substitute; the S11 editor screens arrive later); read
+// opens the text projection in Reader and never touches the native bytes.
+for (const [appId, labelKey, kind, windowName] of [
+  ["clioWorksQuire", "clioworks_quire_label", "docx", "clioWrite"],
+  ["clioWorksLectern", "clioworks_lectern_label", "pptx", "clioStage"],
+]) {
+  registerApplication({
+    id: appId,
+    labelKey,
+    // A presentation is edited inside ClioStage (S11 M2), a Word document in ClioWrite (S11 M3).
+    windowName,
+    acceptedItemKinds: [kind],
+    acceptedIntents: ["open", "read", "edit", "export"],
+    recordsRuns: ["edit", "export"],
+    handler: async (items, context) => {
+      const file = items[0];
+      if (!file) return { ok: false, reason: "missing" };
+      if (typeof ensureNativeBinariesModule !== "function" || typeof ensureClioWorksLedgerModule !== "function") {
+        return { ok: false, reason: "clioworks-unavailable" };
+      }
+      await ensureNativeBinariesModule();
+      await ensureClioWorksLedgerModule();
+      // The intent split (read → Reader, edit/open → the native surface) lives in the lazy host.
+      return window.AISystem6ClioWorks.dispatchIntent(file, context);
+    },
+  });
+}
+
+registerApplication({
+  id: "reviewDesk",
+  labelKey: "review_desk",
+  windowName: "reviewDesk",
+  acceptedItemKinds: ["text"],
+  acceptedIntents: ["open", "review"],
+  recordsRuns: ["review"],
+  handler: async (items, context) => {
+    const file = items[0];
+    if (!file) return { ok: false, reason: "missing" };
+    if (context.intent === "open") {
+      if (typeof window.AISystem6ReviewDesk?.openDocument === "function") {
+        const opened = await window.AISystem6ReviewDesk.openDocument({
+          documentId: file.id,
+          mode: context.options?.mode || "facts",
+        });
+        return { ok: opened !== false };
+      }
+      if (typeof openTextFile === "function") openTextFile(file.id);
+      if (typeof openWindow === "function") openWindow("reviewDesk");
+      return { ok: true };
+    }
+    if (typeof openTextFile === "function") openTextFile(file.id);
+    if (typeof openWindow === "function") openWindow("teachText");
+    if (typeof runClaimCheck !== "function") return { ok: false, reason: "no-handler" };
+    // Whether a report was produced is the checker's answer, not this
+    // function's hope — the same correction the map intent needed.
+    const checked = await runClaimCheck();
+    if (!checked) return { ok: false, reason: "not-checked" };
+    // Review Desk shows its results in the window; the manuscript is
+    // inspected (affected) but not produced by this run.
+    return { ok: true, affectedObjectIds: [file.id] };
+  },
+});
+
+registerApplication({
+  id: "clioChart",
+  labelKey: "clio_chart_label",
+  windowName: "clioChart",
+  acceptedItemKinds: ["text", "clio-diagram", "chart-table"],
+  acceptedIntents: ["chart", "open"],
+  recordsRuns: ["chart"],
+  handler: async (items, context) => {
+    const file = items[0];
+    if (!file || !String(file.body || "").trim()) return { ok: false, reason: "empty" };
+    if (typeof ensureClioChartModule === "function") await ensureClioChartModule();
+    if (applicationItemKind(file) === "chart-table") return { ok: !!window.AISystem6ClioChart?.openSavedTable?.(file) };
+    if (context?.intent === "open" || file.clioDiagram) {
+      return { ok: !!window.AISystem6ClioChart?.openSavedDiagram?.(file) };
+    }
+    const charted = await window.AISystem6ClioChart?.makeFromSource?.({
+      text: file.body.trim(),
+      label: file.name,
+      scope: "documents",
+      meta: { fileId: file.id, fileType: file.type },
+      threshold: typeof clioChartMinSourceChars === "number" ? clioChartMinSourceChars : 1,
+    });
+    if (!charted) return { ok: false, reason: "not-charted" };
+    // The chart stays temporary until the writer saves it, so this run made
+    // nothing durable; the document was read.
+    return { ok: true, affectedObjectIds: [file.id] };
+  },
+});
+
+registerApplication({
+  id: "clioStage",
+  labelKey: "clio_stage_label",
+  windowName: "clioStage",
+  acceptedItemKinds: ["text", "docmap", "slides"],
+  acceptedIntents: ["present", "open"],
+  recordsRuns: ["present"],
+  handler: async (items) => {
+    const file = items[0];
+    if (!file || !String(file.body || "").trim()) return { ok: false, reason: "empty" };
+    // A saved deck opens as itself; only other text is drafted into a deck.
+    if (applicationItemKind(file) === "slides") {
+      if (typeof ensureClioStageModule === "function") await ensureClioStageModule();
+      return { ok: !!(await window.AISystem6ClioStage?.openFile?.(file)) };
+    }
+    if (typeof ensureSlidesExportModule === "function") await ensureSlidesExportModule();
+    let deck = null;
+    if (typeof generateMarpMarkdownAndOpenClioStage === "function") {
+      deck = await generateMarpMarkdownAndOpenClioStage({
+        markdown: file.body,
+        title: file.name,
+        folder: typeof preferredFolderName === "function" ? preferredFolderName() : "",
+      });
+    }
+    if (!deck) return { ok: false, reason: "present-failed" };
+    // The deck opens as a temporary draft in ClioStage; saving it is the
+    // writer's own step and writes its own document. This run read the source.
+    return { ok: true, affectedObjectIds: [file.id] };
+  },
+});
+
+registerApplication({
+  id: "lightroom",
+  labelKey: "lightroom_title",
+  windowName: "lightroom",
+  acceptedItemKinds: ["text"],
+  acceptedIntents: ["develop"],
+  // Opening the darkroom produces nothing on its own: it reads a document and
+  // shows what earlier passes did to it. Develop, the action that writes, keeps
+  // its own receipt where it happens.
+  recordsRuns: [],
+  handler: async (items) => {
+    const file = items[0];
+    if (!file) return { ok: false, reason: "missing" };
+    const runtime = window.AISystem6QuickDraft;
+    if (typeof runtime?.developDocument !== "function") return { ok: false, reason: "no-handler" };
+    const opened = await runtime.developDocument(file.id);
+    if (!opened) return { ok: false, reason: "develop-failed" };
+    return { ok: true, affectedObjectIds: [file.id], destination: "lightroom" };
+  },
+});
+
+registerApplication({
+  id: "projectCd",
+  labelKey: "project_cd",
+  windowName: "projectCd",
+  acceptedItemKinds: ["text"],
+  acceptedIntents: ["attach"],
+  recordsRuns: ["attach"],
+  handler: async (items) => {
+    const file = items[0];
+    if (!file || !String(file.body || "").trim()) return { ok: false, reason: "empty" };
+    if (typeof addProjectCdItem === "function") {
+      const item = await addProjectCdItem(file.body, file.name, {
+        sourceDocumentId: file.id,
+        sourceKind: "markdown",
+      });
+      if (!item) return { ok: false, reason: "attach-failed" };
+      if (typeof openWindow === "function") openWindow("projectCd");
+      return { ok: true, outputObjectIds: [item.id], destination: "projectCd" };
+    }
+    return { ok: false, reason: "no-handler" };
+  },
+});
+
+registerApplication({
+  id: "clioTalk",
+  labelKey: "assistant_label",
+  windowName: "assistant",
+  acceptedItemKinds: ["chat"],
+  acceptedIntents: ["open", "read", "edit", "attach"],
+  defaultOpener: true,
+  recordsRuns: [],
+  handler: async (items) => {
+    const file = items[0];
+    if (!file) return { ok: false, reason: "missing" };
+    if (typeof openChatFileWindow === "function") openChatFileWindow(file.id);
+    return { ok: true };
+  },
+});
+
+// ---- Application lifecycle -----------------------------------------------
+// Optional. An application that registers no lifecycle behaves exactly as it
+// did before: the desktop only calls hooks an app declared.
+//
+//   onSuspend()  save recoverable state, stop the continuing cost
+//   onResume()   bring the running app back; never re-initialize it
+//   onDispose()  release everything
+//
+// The registry owns the state machine and the error boundary, and reads no
+// DOM: the caller decides which applications are in the foreground and hands
+// that set in. The same contract therefore covers a hidden window, a hidden
+// MultiFinder app, and a backgrounded Home Screen App.
+
+const applicationLifecycles = new Map();
+
+function registerApplicationLifecycle(appId, handlers = {}) {
+  const id = String(appId || "").trim();
+  if (!id) throw new TypeError("Application lifecycle requires an app id.");
+  // W05: the vendored lane contract is lazy; ask for it now and upgrade this
+  // record (and any earlier lane-less ones) when it arrives. Until then the
+  // legacy hook path below keeps working — the upgrade is behavior-preserving.
+  if (!window.ClioWorksUnifiedContracts && typeof ensureUnifiedSpecContractsModule === "function") {
+    ensureUnifiedSpecContractsModule()
+      .then(() => upgradeLifecycleLanes())
+      .catch(() => {});
+  }
+  const hook = (name) => (typeof handlers[name] === "function" ? handlers[name] : null);
+  // ClioWorks unified spec (W05): each application instance carries its own
+  // lifecycle lane (the vendored reference contract createLifecycleLane).
+  // One lane per app means a slow suspend never blocks another application's
+  // transitions, and a fast suspend→resume flip during one hook's await
+  // converges: after the hook settles, the lane re-reads the LATEST desired
+  // state and continues toward it, instead of the stale transition winning.
+  const lane = window.ClioWorksUnifiedContracts?.createLifecycleLane
+    ? window.ClioWorksUnifiedContracts.createLifecycleLane({
+        suspend: async () => { await hook("onSuspend")?.({ appId: id, reason: pendingReasons.get(id) || "" }); },
+        resume: async () => { await hook("onResume")?.({ appId: id, reason: pendingReasons.get(id) || "" }); },
+        dispose: async () => { await hook("onDispose")?.({ appId: id, reason: pendingReasons.get(id) || "" }); },
+      }, "active")
+    : null;
+  const record = {
+    id,
+    state: "active",
+    lane,
+    onSuspend: hook("onSuspend"),
+    onResume: hook("onResume"),
+    onDispose: hook("onDispose"),
+  };
+  applicationLifecycles.set(id, record);
+  return () => {
+    if (applicationLifecycles.get(id) === record) applicationLifecycles.delete(id);
+  };
+}
+
+// The reason a drive was requested with, consumed by whichever hook run the
+// lane performs for it (a queued drive overwrites it — the last request's
+// reason is what the settling hook should see).
+const pendingReasons = new Map();
+
+/** Attach lanes to records registered before the lazy contract arrived.
+ * Behavior-preserving: a record already driving through runApplicationLifecycle
+ * Hook switches to the lane mid-flight safely, because both paths converge on
+ * the same hooks and the lane starts from the record's CURRENT state. */
+function upgradeLifecycleLanes() {
+  const contract = window.ClioWorksUnifiedContracts;
+  if (!contract?.createLifecycleLane) return;
+  for (const record of applicationLifecycles.values()) {
+    if (record.lane) continue;
+    record.lane = contract.createLifecycleLane({
+      suspend: async () => { await record.onSuspend?.({ appId: record.id, reason: pendingReasons.get(record.id) || "" }); },
+      resume: async () => { await record.onResume?.({ appId: record.id, reason: pendingReasons.get(record.id) || "" }); },
+      dispose: async () => { await record.onDispose?.({ appId: record.id, reason: pendingReasons.get(record.id) || "" }); },
+    }, record.state === "active" ? "active" : record.state === "suspended" ? "suspended" : "disposed");
+  }
+}
+
+/** Drive one app's lane toward the desired state. Returns the lane's promise
+ * when the vendored contract is available, so failures stay per-app. */
+async function driveLifecycleLane(record, nextState, reason) {
+  pendingReasons.set(record.id, String(reason || ""));
+  if (record.lane) {
+    try {
+      await record.lane.setDesired(nextState);
+      // The lane may have converged through MORE than one transition (a
+      // suspend→resume flip while the first hook was in flight), so the
+      // record's settled state is whatever the lane actually reached.
+      record.state = record.lane.snapshot().actual;
+      return true;
+    } catch (error) {
+      // The lane rejects all current waiters on a hook failure; the record's
+      // state stays at the last settled value and future transitions retry.
+      console.warn(`Application ${record.id} transition to ${nextState} failed.`, error);
+      record.state = record.lane.snapshot().actual;
+      return false;
+    }
+  }
+  return runApplicationLifecycleHook(record, nextState === "suspended" ? "onSuspend" : nextState === "active" ? "onResume" : "onDispose", nextState, reason);
+}
+
+function getApplicationLifecycleState(appId) {
+  return applicationLifecycles.get(String(appId || ""))?.state || "";
+}
+
+// A throwing hook must not wedge the app: the state still advances, so an app
+// whose suspend half-failed can still be resumed instead of staying dark.
+async function runApplicationLifecycleHook(record, hookName, nextState, reason) {
+  const handler = record[hookName];
+  record.state = nextState;
+  if (!handler) return true;
+  try {
+    await handler({ appId: record.id, reason: String(reason || "") });
+    return true;
+  } catch (error) {
+    console.warn(`Application ${record.id} ${hookName} failed.`, error);
+    return false;
+  }
+}
+
+async function suspendApplication(appId, reason = "") {
+  const record = applicationLifecycles.get(String(appId || ""));
+  if (!record || record.state === "disposed") return false;
+  // A settled no-op stays free: suspending an already-suspended (and not
+  // mid-transition) app runs nothing. Mid-flight (lane running) requests go
+  // through — the lane converges them (W05).
+  if (record.state === "suspended" && !(record.lane && record.lane.snapshot().running)) return false;
+  return driveLifecycleLane(record, "suspended", reason);
+}
+
+async function resumeApplication(appId, reason = "") {
+  const record = applicationLifecycles.get(String(appId || ""));
+  if (!record || record.state === "disposed") return false;
+  if (record.state === "active" && !(record.lane && record.lane.snapshot().running)) return false;
+  return driveLifecycleLane(record, "active", reason);
+}
+
+// Total release. Nothing resumes a disposed app; its next attach registers the
+// lifecycle again, and that is what makes it active.
+async function disposeApplication(appId, reason = "") {
+  const record = applicationLifecycles.get(String(appId || ""));
+  if (!record || record.state === "disposed") return false;
+  return driveLifecycleLane(record, "disposed", reason);
+}
+
+async function syncApplicationLifecycle({ foregroundAppIds = [], documentHidden = false, reason = "" } = {}) {
+  const foreground = foregroundAppIds instanceof Set ? foregroundAppIds : new Set(foregroundAppIds);
+  const pending = [];
+  for (const record of applicationLifecycles.values()) {
+    if (record.state === "disposed") continue;
+    const shouldRun = !documentHidden && foreground.has(record.id);
+    if (shouldRun && record.state === "suspended") {
+      pending.push(resumeApplication(record.id, reason || "foreground"));
+    } else if (!shouldRun && record.state === "active") {
+      pending.push(suspendApplication(record.id, reason || "background"));
+    }
+  }
+  return Promise.all(pending);
+}
+
+window.AISystem6ApplicationRegistry = Object.freeze({
+  intents: applicationIntents,
+  registerApplication,
+  getApplication,
+  // The registry reads by id and registers by id; this enumerator is what
+  // surfaces that must list every application (the guest bridge's
+  // list_desk_applications) read instead of hard-coding the ids.
+  applications: () => [...applicationsById.values()],
+  resolveApplicationForItem,
+  dispatchApplicationIntent,
+  resolveProjectObject,
+  applicationObjectAvailability,
+  openProjectObject,
+  itemKind: applicationItemKind,
+  applicationsForItemKind: (kind) => [...applicationsById.values()].filter((a) => a.acceptedItemKinds.includes(kind) && a.acceptedIntents.includes("open")),
+  registerApplicationLifecycle,
+  upgradeLifecycleLanes,
+  getApplicationLifecycleState,
+  suspendApplication,
+  resumeApplication,
+  disposeApplication,
+  syncApplicationLifecycle,
+});

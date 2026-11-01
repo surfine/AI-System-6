@@ -1,0 +1,846 @@
+#!/usr/bin/env node
+// Appearance snapshot — a pixel net over the promised part of the matrix.
+//
+// tests/visual-snapshot.mjs checks computed token values in 2 themes at 1
+// viewport. That catches token drift and nothing else: the two appearance
+// defects found by eye on 2026-08-21 (Aqua's pop-up button drawn as a 4px
+// rect among 999px capsules, and a fifth control bursting the 375px button
+// row) both pass it. This tool captures the real pixels for the cells named
+// in tests/appearance-snapshot-manifest.mjs and compares them.
+//
+// Pixels are compared in the browser: Chromium already decodes PNG, so the
+// diff needs no image dependency.
+//
+// This net no longer renders the four middle eras in the controls tier: after
+// the geometry drain their layout lives only in ratcheted sheet declarations
+// and token tables, so tooling/appearance-token-check.mjs holds them as
+// computed deltas against Classic instead of eight more screenshot cells.
+//
+// Usage:
+//   node tooling/appearance-snapshot.mjs --capture           # write baseline
+//   node tooling/appearance-snapshot.mjs --noise             # capture twice, report drift
+//   node tooling/appearance-snapshot.mjs --verify            # compare to baseline
+
+import { createHash } from "node:crypto";
+import { mkdirSync, readFileSync, writeFileSync, existsSync, rmSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
+import { availableParallelism } from "node:os";
+import { startAppServer, stopProcess } from "./lib/app-preview-server.mjs";
+import { assertReferenceAssets } from "./lib/reference-assets.mjs";
+import { retryShootability } from "./lib/appearance-retry.mjs";
+import { windowInterfaceRegistry } from "./interface-guidelines-contract.mjs";
+import { snapshotCells } from "../tests/appearance-snapshot-manifest.mjs";
+
+import { stubLocalModels } from "./lib/stub-local-models.mjs";
+const root = dirname(dirname(fileURLToPath(import.meta.url)));
+const require = createRequire(import.meta.url);
+const { chromium } = require("playwright");
+
+const BASELINE_DIR = join(root, "internal/evidence/drafts/appearance-baseline");
+const INDEX_PATH = join(root, "tests/appearance-snapshot.json");
+// A frozen wall clock keeps rendered dates out of the diff; it still advances
+// so code that measures elapsed time does not stall.
+const FROZEN_EPOCH = Date.UTC(2026, 7, 21, 9, 0, 0);
+// Liquid Glass rasterizes backdrop-filter through the GPU, which lands a few
+// units off between runs — measured at up to 6 across the matrix. Anything at
+// or under this is not a change; anything above it is a real one.
+const PIXEL_TOLERANCE = 8;
+// ...and a floor on how many pixels have to clear it. The GPU noise tail puts
+// the odd single pixel a few units out; a regression anyone can see moves a
+// whole edge, a glyph, or a fill — dozens of pixels at minimum.
+const MIN_CHANGED_PIXELS = 8;
+
+// Measured on 2026-09-18, and worth knowing before chasing a red run: on this
+// machine three cells are not reproducible run to run at all. `--noise` — which
+// captures the same bytes twice and compares them with no baseline involved —
+// reports showcase-platinum 2708 px (0.2580%), showcase-aqua 3102 px (0.2955%)
+// and games-classic-desktop-micropolis 261 px (0.3107%), and a follow-up verify
+// flags the same three with the same magnitudes. The drift is a horizontal
+// shift of the menu bar's right cluster by a few pixels in the two showcase
+// cells, and the game's palette column in the third: rasterization, not source.
+// Two real state leaks were fixed the same day and are pinned below — the
+// MultiFinder switcher and the MarkItDown availability line — but a machine
+// that cannot draw the same menu bar twice will still disagree with a baseline
+// it wrote an hour earlier. Fixing that is a rasterization question, not a
+// tolerance question.
+
+// Each cell owns a browser context, so the pool is bounded the way the feature
+// runner bounds its VMs. AI_SYSTEM6_SNAPSHOT_JOBS overrides it; 1 makes the run
+// serial, which is the fallback if a machine ever shows parallel-only drift.
+function resolveConcurrency() {
+  const requested = Number(process.env.AI_SYSTEM6_SNAPSHOT_JOBS);
+  if (Number.isFinite(requested) && requested >= 1) return Math.floor(requested);
+  return Math.max(1, Math.min(4, availableParallelism()));
+}
+const CONCURRENCY = resolveConcurrency();
+
+// Appearances that paint backdrop-filter cannot be captured concurrently. Two
+// contexts blurring at once starve each other's rasterization, and the same
+// build came back 74% different between runs — with the GPU disabled as well,
+// so this is not a driver knob. Yosemite is in the Liquid Glass family and
+// carries the same overlay. Everything else has no blur and parallelizes.
+const BLUR_THEMES = new Set(["liquid-glass", "yosemite"]);
+
+function parseArgs(argv) {
+  const options = { mode: "capture", out: BASELINE_DIR, only: null };
+  for (let index = 0; index < argv.length; index += 1) {
+    const flag = argv[index];
+    if (flag === "--capture") options.mode = "capture";
+    else if (flag === "--noise") options.mode = "noise";
+    else if (flag === "--verify") options.mode = "verify";
+    else if (flag === "--out") options.out = join(root, argv[++index]);
+    else if (flag === "--only") options.only = argv[++index];
+  }
+  return options;
+}
+
+const DETERMINISM = `
+  (() => {
+    const base = ${FROZEN_EPOCH};
+    const origin = performance.now();
+    const RealDate = Date;
+    const now = () => base + Math.round(performance.now() - origin);
+    class FrozenDate extends RealDate {
+      constructor(...args) { super(...(args.length ? args : [now()])); }
+      static now() { return now(); }
+    }
+    globalThis.Date = FrozenDate;
+    // Randomness is PINNED, not seeded. A seeded stream is not enough: section
+    // ids ride crypto, and any other consumer drawing on a timer shifts the
+    // stream, so the same heading came out {#b00f2d} in one run and {#2864b3}
+    // in the next purely because the machine was busier. These return a value
+    // that does not depend on how many times they have been called, which makes
+    // a heading anchor a function of the document rather than of the schedule.
+    Math.random = () => 0.4242424242424242;
+    if (globalThis.crypto) {
+      globalThis.crypto.getRandomValues = (array) => {
+        for (let index = 0; index < array.length; index += 1) array[index] = (index * 37 + 11) & 0xff;
+        return array;
+      };
+      globalThis.crypto.randomUUID = () => "a7f3c1d2-4b5e-4f60-a891-0c2d3e4f5a6b";
+    }
+  })();
+`;
+
+async function newPage(browser, cell) {
+  const context = await browser.newContext({
+    viewport: { width: cell.width, height: cell.height },
+    deviceScaleFactor: 1,
+    colorScheme: "light",
+    reducedMotion: "reduce",
+    hasTouch: cell.width < 768,
+    isMobile: cell.width < 768,
+  });
+  // The showcase desktop includes the live model-status menu and ClioTalk
+  // empty state. Letting those pixels depend on whether LM Studio happens to
+  // be running made the same commit alternate between two 17k-30k pixel
+  // layouts. A visual baseline must own its service state, so every cell sees
+  // the same explicit offline provider instead of probing developer software.
+  await stubLocalModels(context);
+  await context.addInitScript(DETERMINISM);
+  await context.addInitScript((themeId) => {
+    localStorage.setItem("ai-system-6-theme", themeId);
+    localStorage.removeItem("ai-system-6-liquid-glass");
+  }, cell.theme);
+  const page = await context.newPage();
+  return { context, page };
+}
+
+async function settle(page, themeId, profile) {
+  // A capture that never becomes ready used to report only "Timeout 20000ms
+  // exceeded", which names neither what the page was waiting for nor what state
+  // it was stuck in. From the mark-optics lane's stash: keep the same wait, and
+  // on timeout say what the desk thought it was doing.
+  try {
+    await page.waitForFunction(() => ["ready", "error"].includes(document.body.dataset.appReady), null, { timeout: 20000 });
+  } catch (error) {
+    const timeoutState = await page.evaluate(() => ({
+      appReady: document.body.dataset.appReady || "",
+      bootStatus: document.querySelector("#boot-status")?.textContent || "",
+      bootHidden: document.querySelector("#boot-screen")?.hidden === true,
+    }));
+    throw new Error(`${error.message}; desk state: ${JSON.stringify(timeoutState)}`);
+  }
+  // The route windows do not exist in the desktop profile — that is the
+  // profile contract, not a defect. Working-tier cells need the writing one.
+  if (profile === "writing") {
+    await page.evaluate(async () => {
+      if (typeof activateWorkspaceProfile === "function") {
+        await activateWorkspaceProfile("writing", { persist: false, announce: false });
+      }
+    });
+    await page.waitForTimeout(150);
+  }
+  await page.evaluate((theme) => {
+    window.AISystem6Theme?.applyTheme(theme, {
+      experimental: true,
+      persist: false,
+      announce: false,
+      modernFontPreference: false,
+    });
+    for (const dialog of document.querySelectorAll("dialog[open]")) dialog.close();
+    const noMotion = document.createElement("style");
+    noMotion.id = "appearance-snapshot-no-motion";
+    noMotion.textContent =
+      "*, *::before, *::after { animation: none !important; transition: none !important; caret-color: transparent !important; }";
+    document.head.append(noMotion);
+  }, themeId);
+  await page.evaluate(() => document.fonts?.ready);
+  // The chooser carries a live line about the guest bridge, which connects to
+  // whatever loopback session this machine happens to have: the same commit
+  // photographed "listening on this Mac" in one run and "not connected (this
+  // Mac only)" in the next, and the controls-classic-chooser cell drifted 4428
+  // pixels between them (measured 2026-09-15). A baseline owns its service
+  // state, so the line is painted with the shipped offline copy — the same way
+  // the showcase pins the clock and the Finder mode.
+  await page.evaluate(() => {
+    const bridge = document.getElementById("chooser-guest-bridge");
+    if (bridge && typeof t === "function") bridge.textContent = t("guest_bridge_offline");
+  });
+  // Liquid Glass pulls a lazy stylesheet, and until it lands the layout is a
+  // different one — the Outline came out 540px wide in one run and 563px (540
+  // plus a scrollbar) in the next. Wait for every link to actually own a sheet
+  // rather than for a number of milliseconds.
+  await page.waitForFunction(() => {
+    const links = [...document.querySelectorAll('link[rel="stylesheet"]')];
+    return links.every((link) => {
+      try { return Boolean(link.sheet); } catch { return true; }
+    });
+  }, null, { timeout: 15000 }).catch(() => {});
+  // The menu bar's right cluster fills in after first paint too.
+  await page.waitForLoadState("networkidle").catch(() => {});
+  await page.waitForTimeout(600);
+}
+
+/**
+ * Wait until the surface stops changing, then shoot once.
+ *
+ * What has to settle is asynchronous CONTENT — the menu bar's right cluster and
+ * any lazy appearance stylesheet land after first paint, and a cell shot before
+ * them holds a different state than the same cell shot after. Pixels are the
+ * wrong thing to wait on: Liquid Glass carries a few units of rasterization
+ * noise, so consecutive frames are never byte-identical and a shoot-until-equal
+ * loop burns its whole budget on every Liquid Glass cell and then times out.
+ *
+ * Geometry, text length and node count settle exactly when the content does,
+ * they cost one evaluate instead of one screenshot, and they converge.
+ */
+async function settleSurface(page, selector, samples = 12) {
+  let previous = "";
+  let stableSamples = 0;
+  for (let attempt = 0; attempt < samples; attempt += 1) {
+    const signature = await page.evaluate((sel) => {
+      const root = sel ? document.querySelector(sel) : document.body;
+      if (!root) return "missing";
+      const box = root.getBoundingClientRect();
+      const menu = document.querySelector(".menu-bar, [data-menu-bar], #menu-bar");
+      return [
+        Math.round(box.width), Math.round(box.height),
+        Math.round(box.x), Math.round(box.y),
+        root.textContent?.length || 0,
+        root.querySelectorAll("*").length,
+        menu?.textContent?.length || 0,
+      ].join("/");
+    }, selector);
+    if (signature === previous) {
+      stableSamples += 1;
+      // A route can report the same geometry once before its deferred
+      // content paint lands (notably the phone Outline after the writing
+      // profile handoff). Require three consecutive matches so the first
+      // stable-looking frame is not mistaken for the settled surface.
+      if (stableSamples >= 3) return true;
+    } else {
+      stableSamples = 0;
+    }
+    previous = signature;
+    await page.waitForTimeout(250);
+  }
+  return false;
+}
+
+/**
+ * Wait until every picture the surface paints from its stylesheet has decoded.
+ *
+ * The classic checkmark and the radio dot are CSS background images, not
+ * elements, and an image that has not decoded yet is invisible to the
+ * signature `settleSurface` watches: the box is the same size with the mark in
+ * it or without it, and the node count does not change either. Measured
+ * 2026-09-15 — the controls-classic cell came back with the marks in one run
+ * and without them in the next, on the same bytes, which is a verdict about the
+ * image decoder rather than about the product.
+ *
+ * The scan reads the computed `background-image` of the surface and its
+ * descendants, decodes each URL (served from the same cache the page already
+ * filled), and then waits two frames so the paint that carries them has
+ * happened before the shutter.
+ */
+async function settleImages(page, selector) {
+  await page.evaluate(async (sel) => {
+    const root = sel ? document.querySelector(sel) : document.body;
+    if (!root) return;
+    const urls = new Set();
+    for (const element of [root, ...root.querySelectorAll("*")]) {
+      const background = getComputedStyle(element).backgroundImage;
+      for (const match of background.matchAll(/url\(["']?(.+?)["']?\)/g)) urls.add(match[1]);
+    }
+    await Promise.all([...urls].map((url) => {
+      const image = new Image();
+      image.src = url;
+      return image.decode().catch(() => {});
+    }));
+    await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
+  }, selector);
+}
+
+/**
+ * The lines on these windows that a live probe writes, painted with the copies
+ * the interface ships.
+ *
+ * Both are service state, not interface: whether a guest bridge is listening on
+ * this Mac, and whether this machine's MarkItDown adapter works — the second
+ * even carries the absolute path it was found at. A baseline that holds either
+ * one can only ever agree with the machine that wrote it: the 2026-09-18
+ * baseline photographed "available" beside that machine's own home path, and a
+ * later run of the same bytes photographed "unavailable: Command failed",
+ * moving 12% of the chooser cell's pixels. So both are painted as the shipped
+ * offline sentences,
+ * and painted late — the MarkItDown status arrives from its own fetch, after the
+ * earlier pins, so pinning it before the shot is the only pinning that holds.
+ */
+async function pinLiveStatusLines(page) {
+  await page.evaluate(() => {
+    if (typeof t !== "function") return;
+    const bridge = document.getElementById("chooser-guest-bridge");
+    if (bridge) bridge.textContent = t("guest_bridge_offline");
+    const importer = document.getElementById("importer-status");
+    if (importer) {
+      importer.textContent = t("importer_status_unavailable");
+      importer.dataset.state = "unavailable";
+    }
+    // And the switcher again, here, because it is drawn by the same code that
+    // draws the app menu: a re-render during the settle waits puts it back
+    // after the pin that ran with the scene setup. Single-task mode is this
+    // cell's promise; this is the pin that runs closest to the shutter.
+    document.getElementById("multifinder-button")?.classList.add("is-hidden");
+    document.querySelector(".multifinder-menu")?.classList.add("is-hidden");
+  });
+}
+
+async function captureCell(page, cell, outDir) {
+  const file = join(outDir, `${cell.id}.png`);
+  if (cell.target === "desktop") {
+    // The showcase promises ClioTalk in the foreground, not whichever
+    // asynchronous boot task last repainted the menu bar. Pin Finder
+    // single-task mode and the ClioTalk menu owner before waiting for pixels;
+    // otherwise Liquid Glass alternates between a ClioTalk app menu and a
+    // transient MultiFinder switcher with no source-byte change.
+    await page.evaluate(async (epoch) => {
+      if (typeof setFinderEnvironment === "function") {
+        await setFinderEnvironment("finder", { persistStartup: false, announce: false });
+      }
+      document.querySelector('[data-workspace-capability="studio"]')?.classList.add("is-hidden");
+      for (const win of document.querySelectorAll(".window")) {
+        const clioTalk = win.dataset.window === "assistant";
+        win.classList.toggle("is-hidden", !clioTalk);
+        win.classList.toggle("is-active", clioTalk);
+      }
+      if (typeof renderAppMenuBar === "function") renderAppMenuBar("clioTalk");
+      document.querySelector(".multifinder-menu")?.classList.add("is-hidden");
+      // The right end of the bar is a second, later reader of the same mode: the
+      // switcher button is drawn whenever the desk is in MultiFinder mode, and
+      // boot's own asynchronous work can put it back after the pin above. The
+      // 2026-09-18 baseline photographed it (a black block at the far right)
+      // while two runs of the same bytes did not, and one showcase cell drifted
+      // 2644 pixels for it. Single-task mode is what this cell promises, so the
+      // switcher is hidden explicitly rather than raced for.
+      document.getElementById("multifinder-button")?.classList.add("is-hidden");
+      // The menu clock shows FROZEN_EPOCH plus real elapsed time, so a page
+      // that lives across a minute boundary displays a different minute. A
+      // baseline cannot depend on how long the capture happened to take —
+      // render the clock at the frozen epoch explicitly.
+      if (typeof renderSystemClock === "function") {
+        renderSystemClock(new Date(epoch));
+      }
+      // The era promise is desktop + Dock / NeXT column + a front window.
+      // OS X Dock starts off ("需要时再打开"); the showcase turns it on so
+      // Jaguar's plate, the glass shelf and NeXT's 64px column are in frame.
+      const theme = window.AISystem6Theme;
+      if (theme?.getCurrentTheme?.() === "nextstep" || theme?.hasCapability?.("dock") === true) {
+        window.AISystem6WindowMinimize?.setDockVisible?.(true);
+        window.AISystem6WindowMinimize?.setMinimizeEnabled?.(true);
+        window.AISystem6DeskDock?.sync?.();
+        window.AISystem6NextstepDock?.sync?.();
+      }
+    }, FROZEN_EPOCH);
+    await page.waitForFunction(() => {
+      const id = window.AISystem6Theme?.getCurrentTheme?.();
+      if (id === "nextstep") return !!document.querySelector(".nextstep-dock");
+      if (window.AISystem6Theme?.hasCapability?.("dock")) return !!document.querySelector(".desk-dock");
+      return !document.querySelector(".desk-dock") && !document.querySelector(".nextstep-dock");
+    }, null, { timeout: 10000 }).catch(() => {});
+    await page.waitForFunction(() => {
+      const clioTalk = document.querySelector('.window[data-window="assistant"]');
+      return clioTalk
+        && !clioTalk.textContent?.includes("Getting Clio ready")
+        && !clioTalk.textContent?.includes("正在准备");
+    }, null, { timeout: 10000 });
+    await settleSurface(page, null);
+    // The desktop icons are pictures too, and a menu bar drawn from decoded
+    // ones is not a menu bar drawn from missing ones. Same reason as the window
+    // path below: geometry says nothing about whether an image has decoded.
+    await settleImages(page, null);
+    // Last thing before the shot: the two lines on this scene that a live probe
+    // writes. The MarkItDown status lands after the pins in settle() — its fetch
+    // resolves whenever the endpoint answers — so pinning it earlier is pinning
+    // it before the thing that overwrites it. Everything here is a claim about
+    // the shipped interface, not about this machine's adapter.
+    await pinLiveStatusLines(page);
+    await page.screenshot({ path: file, animations: "disabled", timeout: 30000 });
+  } else {
+    const contract = windowInterfaceRegistry[cell.target];
+    // Open through the app's own path, then hide the siblings. Toggling
+    // is-hidden by hand leaves windows the profile or the mobile flow still
+    // keeps off screen, and Playwright then waits for a stable element forever.
+    const measure = (id) => {
+      const target = document.querySelector(`.window[data-window="${id}"]`);
+      if (!target) return { ok: false, why: "not registered" };
+      const mobilePage = target.classList.contains("is-mobile-app-page");
+      if (!mobilePage) {
+        // On the desktop flow the siblings are cascaded behind; hide them so
+        // the cell shows one window. The portrait flow already shows only one.
+        for (const win of document.querySelectorAll(".window")) {
+          if (win === target) continue;
+          win.classList.add("is-hidden");
+          win.classList.remove("is-active");
+        }
+        target.classList.remove("is-hidden");
+        target.classList.add("is-active");
+      }
+      const box = target.getBoundingClientRect();
+      if (box.width < 2 || box.height < 2) return { ok: false, why: `zero box ${Math.round(box.width)}x${Math.round(box.height)}` };
+      if (getComputedStyle(target).visibility === "hidden") return { ok: false, why: "visibility hidden" };
+      return { ok: true };
+    };
+
+    // Each step is its own evaluate with the waiting done on this side: an
+    // in-page promise that outlives its task gets garbage collected mid-run.
+    // The whole sequence retries, not just the measurement — when the portrait
+    // handover drops a window it has to be opened again, not re-measured.
+    let mounted = { ok: false, why: "not attempted" };
+    for (let attempt = 0; attempt < 3 && !mounted.ok; attempt += 1) {
+      await page.evaluate(async ({ id, ensure }) => {
+        if (!document.querySelector(`.window[data-window="${id}"]`)
+          && ensure === "loadLazyWindowModule" && typeof loadLazyWindowModule === "function") {
+          await loadLazyWindowModule(id);
+        }
+      }, { id: cell.target, ensure: contract?.ensure });
+      // Clear the other route windows BEFORE opening the target. openWindow
+      // runs arrangeActiveWritingWorkspace, which pairs the target with any
+      // route window that happens to be open — so whether the Outline came out
+      // solo (563px) or paired with TeachText (892px) depended on boot timing,
+      // and the cell drifted between two legitimate layouts. Hiding afterwards
+      // was too late: the frame had already been written.
+      await page.evaluate((id) => {
+        for (const win of document.querySelectorAll(".window")) {
+          if (win.dataset.window === id) continue;
+          win.classList.add("is-hidden");
+          win.classList.remove("is-active");
+        }
+      }, cell.target);
+      // The portrait flow holds one app in the foreground. Opening the next
+      // route window on top of the previous one leaves the newcomer unlaid-out,
+      // so each cell starts from the home surface.
+      const portrait = await page.evaluate(() => {
+        if (typeof isPortraitDocumentFlow !== "function" || !isPortraitDocumentFlow()) return false;
+        if (typeof mobileHomeToDesktop === "function") mobileHomeToDesktop();
+        return true;
+      });
+      if (portrait) await page.waitForTimeout(250 * (attempt + 1));
+      await page.evaluate((id) => {
+        if (typeof openWindow === "function") openWindow(id);
+      }, cell.target);
+      // How long the foreground handover takes is not a number worth guessing
+      // — poll for the laid-out box. Chasing it with fixed delays only moved
+      // the failures between widths.
+      await page.waitForFunction((id) => {
+        const target = document.querySelector(`.window[data-window="${id}"]`);
+        if (!target) return false;
+        const box = target.getBoundingClientRect();
+        return box.width > 2 && box.height > 2;
+      }, cell.target, { timeout: 6000 }).catch(() => {});
+      mounted = await page.evaluate(measure, cell.target);
+    }
+    if (!mounted.ok) return { id: cell.id, tier: cell.tier, missing: true, why: mounted.why };
+    await page.waitForTimeout(80);
+    // Liquid Glass rasterizes blur for every frame, and four contexts doing that
+    // at once push a single element screenshot past a short deadline. The budget
+    // is generous and retried rather than tuned: a cell dropped under load is
+    // indistinguishable from a real failure in the report, which is worse than
+    // being slow.
+    const selector = `.window[data-window="${cell.target}"]`;
+    await settleSurface(page, selector);
+    // The marks a control paints are pictures; the geometry that says the
+    // surface has settled says nothing about whether they have decoded yet.
+    await settleImages(page, selector);
+    // Games: open on a fixed seed, paused, so the palette column and gauge
+    // bar are stable across runs (the map itself is not the pixel promise).
+    if (cell.game) {
+      await page.evaluate(({ target }) => {
+        if (target === "micropolis" && typeof window.AISystem6Micropolis?.generateSeededMap === "function") {
+          window.AISystem6Micropolis.generateSeededMap(12345);
+        }
+      }, { target: cell.target });
+      await page.waitForTimeout(300);
+    }
+    // A phone or tablet route window is position:fixed and fills the screen.
+    // An element screenshot scrolls its target into view first, and that
+    // ceremony never finishes on a fixed element: Playwright reported "element
+    // is not visible" against a window measuring a real 375x788, thirteen cells
+    // burned the full 30s deadline, and the pixel net spent more time waiting
+    // for windows it never photographed than photographing the other twenty.
+    //
+    // A clip screenshot of the same rectangle is the same pixels — an element
+    // screenshot IS a page screenshot cut to the element's box — and it returns
+    // in about 30ms. The clip path is taken only when the box lies inside the
+    // viewport, because a taller element needs the scrolling that the locator
+    // does. Losing the locator's own stability wait costs nothing: settleSurface
+    // above already held the surface still, and motion is off.
+    const frame = await page.evaluate((sel) => {
+      const element = document.querySelector(sel);
+      if (!element) return null;
+      const box = element.getBoundingClientRect();
+      return {
+        x: box.x, y: box.y, width: box.width, height: box.height,
+        insideViewport: box.x >= 0 && box.y >= 0
+          && box.right <= window.innerWidth && box.bottom <= window.innerHeight,
+      };
+    }, selector);
+    // The games clip is the window's top-left corner at the manifest's size --
+    // the palette column and the gauge under it. Anchored at the frame origin,
+    // never offset by it.
+    const gameClip = cell.game && cell.clip
+      ? { x: Math.round(frame.x), y: Math.round(frame.y), width: cell.clip.width, height: cell.clip.height ?? Math.round(frame.height) }
+      : null;
+    await pinLiveStatusLines(page);
+    try {
+      if (gameClip) {
+        await page.screenshot({
+          path: file,
+          animations: "disabled",
+          timeout: 30000,
+          clip: { x: gameClip.x, y: gameClip.y, width: gameClip.width, height: gameClip.height },
+        });
+      } else if (frame?.insideViewport) {
+        await page.screenshot({
+          path: file,
+          animations: "disabled",
+          timeout: 30000,
+          clip: {
+            x: Math.round(frame.x), y: Math.round(frame.y),
+            width: Math.round(frame.width), height: Math.round(frame.height),
+          },
+        });
+      } else {
+        await page.locator(selector).screenshot({ path: file, animations: "disabled", timeout: 30000 });
+      }
+    } catch (error) {
+      // The name alone ("TimeoutError") sent a reader to write a probe script to
+      // learn what timed out. The first line of the message says it.
+      const detail = String(error.message || "").split("\n")[0].trim();
+      return { id: cell.id, tier: cell.tier, missing: true, why: `screenshot: ${error.name}${detail ? ` — ${detail}` : ""}` };
+    }
+  }
+  const buffer = readFileSync(file);
+  return { id: cell.id, tier: cell.tier, sha256: createHash("sha256").update(buffer).digest("hex"), bytes: buffer.length };
+}
+
+/** Compare two PNGs in the page: returns changed-pixel count and ratio. */
+async function diffPng(page, aPath, bPath) {
+  const a = readFileSync(aPath).toString("base64");
+  const b = readFileSync(bPath).toString("base64");
+  return page.evaluate(async ([left, right, tolerance]) => {
+    const load = (data) => new Promise((done, fail) => {
+      const image = new Image();
+      image.onload = () => done(image);
+      image.onerror = fail;
+      image.src = `data:image/png;base64,${data}`;
+    });
+    const [one, two] = await Promise.all([load(left), load(right)]);
+    if (one.width !== two.width || one.height !== two.height) {
+      return { sizeMismatch: true, a: [one.width, one.height], b: [two.width, two.height] };
+    }
+    const draw = (image) => {
+      const canvas = new OffscreenCanvas(image.width, image.height);
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      context.drawImage(image, 0, 0);
+      return context.getImageData(0, 0, image.width, image.height).data;
+    };
+    const first = draw(one);
+    const second = draw(two);
+    let changed = 0;
+    let soft = 0;
+    let maxDelta = 0;
+    for (let index = 0; index < first.length; index += 4) {
+      const delta = Math.abs(first[index] - second[index])
+        + Math.abs(first[index + 1] - second[index + 1])
+        + Math.abs(first[index + 2] - second[index + 2])
+        + Math.abs(first[index + 3] - second[index + 3]);
+      if (delta === 0) continue;
+      if (delta <= tolerance) { soft += 1; continue; }
+      changed += 1;
+      if (delta > maxDelta) maxDelta = delta;
+    }
+    const total = first.length / 4;
+    return { changed, soft, total, ratio: changed / total, maxDelta };
+  }, [a, b, PIXEL_TOLERANCE]);
+}
+
+async function captureMatrix(browser, serverUrl, cells, outDir) {
+  mkdirSync(outDir, { recursive: true });
+  // One fresh page per cell. Grouping cells by (theme, width) was twice as fast
+  // and wrong: opening the route windows in sequence left state behind, and
+  // Review Desk came out 540x620 in one run and 563x733 in the next. A cell that
+  // depends on which cell ran before it cannot be a baseline.
+  //
+  // Independent cells parallelize for free. Results are written back by index so
+  // the report keeps manifest order whatever order the pool finishes in.
+  const results = new Array(cells.length);
+  const misses = [];
+  const parallelQueue = [];
+  const serialQueue = [];
+  cells.forEach((cell, index) => {
+    (BLUR_THEMES.has(cell.theme) ? serialQueue : parallelQueue).push(index);
+  });
+
+  async function pick(queue) {
+    while (queue.length) {
+      const index = queue.shift();
+      const cell = cells[index];
+      const { context, page } = await newPage(browser, cell);
+      const errors = [];
+      page.on("pageerror", (error) => errors.push(error.message));
+      try {
+        await page.goto(serverUrl, { waitUntil: "domcontentloaded" });
+        await settle(page, cell.theme, cell.tier === "working" ? "writing" : "desktop");
+        const record = await captureCell(page, cell, outDir);
+        record.pageErrors = errors.length;
+        results[index] = record;
+        if (record.missing) misses.push(`${cell.id} (${record.why})`);
+        process.stdout.write(record.missing ? "!" : ".");
+      } catch (error) {
+        results[index] = { id: cell.id, tier: cell.tier, missing: true, why: error.name };
+        misses.push(`${cell.id} (${error.name})`);
+        process.stdout.write("!");
+      } finally {
+        await context.close();
+      }
+    }
+  }
+
+  await Promise.all(
+    Array.from({ length: Math.min(CONCURRENCY, parallelQueue.length) || 1 }, () => pick(parallelQueue))
+  );
+  await pick(serialQueue);
+  process.stdout.write("\n");
+  if (misses.length) console.log(`  did not mount: ${misses.join("; ")}`);
+  return results;
+}
+
+const options = parseArgs(process.argv.slice(2));
+assertReferenceAssets("Appearance snapshot", root);
+let cells = snapshotCells();
+if (options.only) cells = cells.filter((cell) => cell.id.includes(options.only));
+
+let server;
+let browser;
+let failed = false;
+try {
+  server = await startAppServer(root);
+  // Software rasterization, deliberately. Liquid Glass paints backdrop-filter on
+  // every surface; on the shared GPU process four concurrent contexts starve
+  // each other, so a cell came back 74% different between two runs of the same
+  // build and others never finished a frame. SwiftShader is slower per cell and
+  // exactly reproducible, which is the only property a baseline can be built on.
+  browser = await chromium.launch({
+    headless: true,
+    args: [
+      "--no-sandbox",
+      "--force-color-profile=srgb",
+      "--disable-gpu",
+      "--disable-gpu-compositing",
+      "--disable-lcd-text",
+      "--font-render-hinting=none",
+      // No --deterministic-mode: from Chromium 151 it stops
+      // requestAnimationFrame, so every wait and screenshot timed out. Two
+      // captures without it agree in all 37 cells (tolerance 8).
+    ],
+  });
+
+  if (options.mode === "noise") {
+    const runA = join(root, "internal/evidence/drafts/appearance-noise/run-a");
+    const runB = join(root, "internal/evidence/drafts/appearance-noise/run-b");
+    rmSync(join(root, "internal/evidence/drafts/appearance-noise"), { recursive: true, force: true });
+    console.log(`Capturing ${cells.length} cells, twice.`);
+    const first = await captureMatrix(browser, server.url, cells, runA);
+    const second = await captureMatrix(browser, server.url, cells, runB);
+    const page = await browser.newPage();
+    const rows = [];
+    for (const cell of cells) {
+      const a = first.find((r) => r.id === cell.id);
+      const b = second.find((r) => r.id === cell.id);
+      if (a?.missing || b?.missing) { rows.push({ id: cell.id, note: a?.why || b?.why || "did not mount" }); continue; }
+      if (a.sha256 === b.sha256) { rows.push({ id: cell.id, ratio: 0, changed: 0, soft: 0 }); continue; }
+      const diff = await diffPng(page, join(runA, `${cell.id}.png`), join(runB, `${cell.id}.png`));
+      rows.push({ id: cell.id, ...diff });
+    }
+    await page.close();
+    const stable = rows.filter((row) => row.changed === 0 && !row.note && !row.sizeMismatch).length;
+    const softOnly = rows.filter((row) => row.changed === 0 && row.soft > 0).length;
+    const missing = rows.filter((row) => row.note).length;
+    console.log(`\n=== Noise report: same build, two runs ===`);
+    console.log(`stable (within tolerance ${PIXEL_TOLERANCE}): ${stable}/${rows.length}   of which sub-threshold noise: ${softOnly}   missing: ${missing}`);
+    for (const row of rows) {
+      if (row.note) console.log(`  ~ ${row.id.padEnd(44)} ${row.note}`);
+      // A size mismatch has no changed-pixel count, and the first version of
+      // this report tested for one — so the loudest possible result, the same
+      // cell coming out a different shape twice, printed nothing at all.
+      else if (row.sizeMismatch) {
+        console.log(`  ! ${row.id.padEnd(44)} size ${row.a.join("x")} -> ${row.b.join("x")}`);
+      } else if (row.changed) {
+        const pct = (row.ratio * 100).toFixed(4);
+        console.log(`  ! ${row.id.padEnd(44)} ${row.changed} px (${pct}%) maxDelta ${row.maxDelta}`);
+      }
+    }
+    writeFileSync(join(root, "internal/evidence/drafts/appearance-noise/report.json"), `${JSON.stringify(rows, null, 2)}\n`);
+  } else if (options.mode === "capture") {
+    const results = await captureMatrix(browser, server.url, cells, options.out);
+    // A filtered capture refreshes only the cells it shot; it must not drop the
+    // rest of the baseline out of the index.
+    const index = options.only && existsSync(INDEX_PATH) ? JSON.parse(readFileSync(INDEX_PATH, "utf8")) : {};
+    for (const record of results) index[record.id] = record.missing ? { missing: true } : { sha256: record.sha256, bytes: record.bytes };
+    writeFileSync(INDEX_PATH, `${JSON.stringify(index, null, 2)}\n`);
+    const missing = results.filter((r) => r.missing).map((r) => r.id);
+    console.log(`Captured ${results.length - missing.length}/${results.length} cells -> ${options.out.replace(`${root}/`, "")}`);
+    if (missing.length) console.log(`Did not mount: ${missing.join(", ")}`);
+  } else {
+    if (!existsSync(INDEX_PATH)) {
+      // The baseline is machine-local by design, so a fresh clone has none. Say
+      // what to run instead of throwing a stack at a release.
+      console.error(
+        "Appearance snapshot: no baseline on this machine.\n"
+          + "  Capture one from a tree you trust, then re-run:\n"
+          + "    npm run snapshot:appearance"
+      );
+      process.exit(1);
+    }
+    const baseline = JSON.parse(readFileSync(INDEX_PATH, "utf8"));
+    const current = join(root, "internal/evidence/drafts/appearance-current");
+    rmSync(current, { recursive: true, force: true });
+    const results = await captureMatrix(browser, server.url, cells, current);
+    const page = await browser.newPage();
+    const cellById = new Map(cells.map((cell) => [cell.id, cell]));
+    const retryDir = join(root, "internal/evidence/drafts/appearance-retry");
+    let softDrift = 0;
+    let unstableRecovered = 0;
+    let unstable = 0;
+    // A cell with no baseline entry is not a cell that matched. Count what was
+    // actually compared, so the closing line cannot report cells it skipped as
+    // cells it held. A cell id changes whenever a window, a width or an era is
+    // renamed, and every renamed cell lands here at once.
+    let compared = 0;
+    const newCells = [];
+    for (const record of results) {
+      const known = baseline[record.id];
+      if (!known) { console.log(`  + ${record.id} (new cell)`); newCells.push(record.id); continue; }
+      compared += 1;
+      if (record.missing) {
+        console.log(`  ! ${record.id} did not mount (${record.why})`);
+        failed = true;
+        continue;
+      }
+      // Byte equality is the fast path, not the verdict: Liquid Glass
+      // rasterizes 1-2 units off between runs, so a changed hash still has to
+      // clear the measured tolerance before it counts as drift.
+      if (known.sha256 === record.sha256) continue;
+      const basePng = join(BASELINE_DIR, `${record.id}.png`);
+      if (!existsSync(basePng)) {
+        console.log(`  ! ${record.id} drifted (no baseline image to compare)`);
+        failed = true;
+        continue;
+      }
+      const diff = await diffPng(page, basePng, join(current, `${record.id}.png`));
+      if (diff.sizeMismatch) {
+        console.log(`  ! ${record.id} drifted size ${diff.a.join("x")} -> ${diff.b.join("x")}`);
+        failed = true;
+        continue;
+      }
+      if (diff.changed < MIN_CHANGED_PIXELS) {
+        softDrift += 1;
+        continue;
+      }
+      // Before calling it drift, ask whether this cell can be photographed the
+      // same way twice. One cell once reported 2,708 px with maxDelta 671 and
+      // then passed four runs in a row: the numbers were the capture's, not the
+      // product's. Shoot the cell again — a second context, the same tree — and
+      // compare the two fresh shots with each other.
+      rmSync(retryDir, { recursive: true, force: true });
+      const [again] = await captureMatrix(browser, server.url, [cellById.get(record.id)], retryDir);
+      // A failed retry has no comparable PNG. Fail this cell and keep the matrix running.
+      const retryShot = retryShootability(again, existsSync(join(retryDir, `${record.id}.png`)));
+      if (!retryShot.ok) {
+        console.log(`  ! ${record.id} drifted and could not be re-shot to confirm: ${retryShot.reason}`);
+        failed = true;
+        continue;
+      }
+      const selfDiff = await diffPng(page, join(current, `${record.id}.png`), join(retryDir, `${record.id}.png`));
+      const selfUnstable = !selfDiff || selfDiff.sizeMismatch || selfDiff.changed >= MIN_CHANGED_PIXELS;
+      if (selfUnstable) {
+        // Two shots of the same tree disagree, so the earlier one cannot be
+        // held against anything. If this one agrees with the baseline, the cell
+        // held and the first shot was the outlier; otherwise the measurement
+        // itself is the finding, and it says so.
+        const againstBaseline = await diffPng(page, basePng, join(retryDir, `${record.id}.png`));
+        if (!againstBaseline.sizeMismatch && againstBaseline.changed < MIN_CHANGED_PIXELS) {
+          unstableRecovered += 1;
+          console.log(`  ~ ${record.id} passed on a second capture (the first shot was the outlier)`);
+          continue;
+        }
+        unstable += 1;
+        console.log(
+          `  ! ${record.id} is an unstable capture: two shots of the same tree differ by `
+            + `${selfDiff ? `${selfDiff.changed} px` : "a size change"}, and the second still differs from the baseline by `
+            + `${againstBaseline.sizeMismatch ? "a size change" : `${againstBaseline.changed} px`}`,
+        );
+        failed = true;
+        continue;
+      }
+      console.log(
+        `  ! ${record.id} drifted ${diff.changed} px (${(diff.ratio * 100).toFixed(4)}%) maxDelta ${diff.maxDelta}`
+          + ` — two captures of this cell agree, so the change is in the tree`,
+      );
+      failed = true;
+    }
+    await page.close();
+    if (!compared) {
+      // Every cell was new, so the net photographed the app and held it
+      // against nothing. That is the shape of a pass certificate over an
+      // unchecked tree.
+      console.error(
+        `Appearance snapshot: 0 of ${results.length} cells had a baseline entry, so nothing was verified.\n`
+          + "  Re-capture the baseline for this tree: npm run snapshot:appearance",
+      );
+      failed = true;
+    }
+    console.log(failed
+      ? "Appearance snapshot: DRIFT"
+      : `Appearance snapshot: ${compared} cells match (${softDrift} within tolerance ${PIXEL_TOLERANCE}`
+        + `${unstableRecovered ? `, ${unstableRecovered} passed on a second capture` : ""}`
+        + `${newCells.length ? `, ${newCells.length} new and unverified: ${newCells.join(", ")}` : ""})`);
+  }
+} finally {
+  if (browser) await browser.close();
+  if (server) await stopProcess(server.child);
+}
+process.exit(failed ? 1 : 0);

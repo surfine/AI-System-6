@@ -1,0 +1,211 @@
+{
+  "schemaVersion": 1,
+  "canonicalSource": "docs/design/CLASSIC_PLATINUM_FIDELITY.md",
+  "$comment": "Machine-readable Classic/Platinum fidelity contract. verify-design validates this file and its live semantic-role tokens. Numerical ranges and proposed token-name patterns remain reference material; they never require an unused token or override CLAUDE.md's current product decisions.",
+  "enforcement": {
+    "owner": "tooling/verify-design.mjs",
+    "requiredLiveRoleTokens": [
+      { "name": "--system-control-line", "minOccurrences": 2 },
+      { "name": "--control-radius", "minOccurrences": 2 },
+      { "name": "--system-menu-height", "minOccurrences": 2 },
+      { "name": "--details-bar-bg", "minOccurrences": 2 },
+      { "name": "--details-bar-border", "minOccurrences": 2 },
+      { "name": "--system-primary-divider", "minOccurrences": 2 },
+      { "name": "--system-secondary-divider", "minOccurrences": 2 },
+      { "name": "--selection-bg", "minOccurrences": 2 },
+      { "name": "--selection-fg", "minOccurrences": 2 },
+      { "name": "--btn-bg", "minOccurrences": 2 },
+      { "name": "--field-bg", "minOccurrences": 2 },
+      { "name": "--field-border", "minOccurrences": 2 },
+      { "name": "--window-bg", "minOccurrences": 2 },
+      { "name": "--window-border", "minOccurrences": 2 },
+      { "name": "--toolbar-bg", "minOccurrences": 2 },
+      { "name": "--toolbar-border", "minOccurrences": 2 },
+      { "name": "--sidebar-bg", "minOccurrences": 2 }
+    ],
+    "referenceOnlySections": [
+      "finePointer",
+      "coarsePointer",
+      "touchTarget",
+      "geometryTokens",
+      "windowPaddingTokens",
+      "mobile.viewports"
+    ],
+    "rule": "A proposed token becomes enforceable only after a real component consumes it. verify-design must not create or require declarations merely to satisfy this contract."
+  },
+  "principles": {
+    "productFirst": true,
+    "museumMode": false,
+    "smoothClassicSvg": true,
+    "iconAssetsFrozen": true,
+    "noPixelMode": true,
+    "noImageGen": true,
+    "noWholeUiScale": true,
+    "chromeRealMachineFirst": true
+  },
+  "finePointer": {
+    "menuBar": { "min": 22, "max": 24, "unit": "px" },
+    "classicTitlebar": { "min": 20, "max": 24, "unit": "px" },
+    "platinumTitlebar": { "min": 21, "max": 25, "unit": "px" },
+    "buttonVisibleHeight": { "min": 24, "max": 30, "unit": "px" },
+    "fieldVisibleHeight": { "min": 28, "max": 32, "unit": "px" },
+    "scrollbarVisibleWidth": { "min": 16, "max": 18, "unit": "px" },
+    "note": "Compact and visible on mouse/trackpad; must not read as a generic modern web page."
+  },
+  "coarsePointer": {
+    "menuBar": { "min": 32, "max": 38, "unit": "px" },
+    "classicTitlebar": { "min": 30, "max": 36, "unit": "px" },
+    "platinumTitlebar": { "min": 30, "max": 36, "unit": "px" },
+    "buttonVisibleHeight": { "min": 36, "max": 44, "unit": "px" },
+    "fieldVisibleHeight": { "min": 40, "max": 46, "unit": "px" },
+    "scrollbarVisibleWidth": { "min": 20, "max": 26, "unit": "px" },
+    "note": "Visible controls may grow; do not rely on invisible hit layers alone."
+  },
+  "touchTarget": {
+    "minHitSize": 44,
+    "unit": "px",
+    "referenceOnly": true,
+    "rule": "This is historical planning guidance, not a blanket size gate. Current visible and hit geometry follows CLAUDE.md and the owning component's tested responsive contract; never add an unused token or an oversized invisible layer just to satisfy this number."
+  },
+  "geometryTokens": {
+    "referenceOnly": true,
+    "visualSize": "--*-visual-size",
+    "hitSize": "--*-hit-size",
+    "layoutSlot": "--*-layout-slot",
+    "opticalOffset": "--*-optical-offset-x|--*-optical-offset-y",
+    "rule": "Visual size, hit size, and layout slot may differ but must use distinct tokens; a large slot must not push a centered title away without reason."
+  },
+  "windowPaddingTokens": [
+    "--window-pane-padding",
+    "--window-pane-gap",
+    "--window-toolbar-padding",
+    "--window-status-padding",
+    "--content-reading-padding-x",
+    "--content-reading-padding-y",
+    "--touch-safe-inset"
+  ],
+  "classic": {
+    "palette": ["#000000", "#ffffff", "neutral grays for antialiasing/disabled/shadow/hierarchy"],
+    "material": "smooth monochrome SVG, no pixel mode, no low-res bitmap fallback",
+    "shellLanguage": "title-bar striping, 1px window border, button outline, scroll track, selection inversion",
+    "forbidden": [
+      "blur",
+      "backdrop-filter",
+      "soft drop shadow",
+      "glow outline",
+      "hover lift",
+      "soft gradient",
+      "glass",
+      "modern card",
+      "decorative animation"
+    ],
+    "typography": {
+      "fontSynthesis": "none",
+      "latin": "Chicago/Geneva roles preserved",
+      "chinese": "baseline, line-height, weight, and vertical padding corrected per-script without inflating all chrome"
+    },
+    "svg": "no non-uniform scaling, cropping, or blur filter at 16/32/desktop sizes"
+  },
+  "platinum": {
+    "palette": {
+      "highlight": "#ffffff",
+      "face": "#dddddd",
+      "raisedMid": "#cccccc",
+      "shadow": "#999999",
+      "darkShadow": "#777777",
+      "ink": "#000000",
+      "accent": "#333399",
+      "selectionMuted": "#ccccff"
+    },
+    "bevel": {
+      "blurRadius": 0,
+      "raised": "top/left light, bottom/right dark",
+      "sunken": "top/left dark, bottom/right light",
+      "pressed": "inverted bevel plus 1px optical content shift, no outer-size change or relayout"
+    },
+    "decoupledRoles": {
+      "accent": "menu/list selection, keyboard focus",
+      "selectionMuted": "inactive-window or weak selection",
+      "scrollbarThumb": "light blue-purple #9999ff, a dedicated token decoupled from selection; intentional Mac OS 9 default, not a user-facing setting",
+      "desktopPattern": "azul tile retained as a Mac OS 9 scheme; never drives control color",
+      "focusRing": "independent token, may relate to selection color"
+    },
+    "menu": {
+      "panel": "gray raised surface, 1px black border, hard shadow",
+      "shortcuts": "right-aligned column",
+      "separator": "sunken channel, not a web <hr>",
+      "defaultButton": "clear outer ring, not a modern blue primary button"
+    }
+  },
+  "states": {
+    "priority": [
+      "disabled",
+      "loading",
+      "selected",
+      "pressed",
+      "focus-visible",
+      "hover-preview",
+      "default"
+    ],
+    "rules": {
+      "hover": "push buttons never change geometry, lift, or enter pressed on hover",
+      "pressed": "entered only via pointerdown/Space/Enter or equivalent activation",
+      "touch": "pressed feedback appears immediately on touchstart and releases on touchend/cancel",
+      "stuckState": "no stuck pressed state after rotation, window switch, or pointercancel",
+      "focus": "focus-visible is independent of hover and drawn on real control bounds",
+      "selectedFocus": "selected and focus may be visible simultaneously",
+      "disabled": "full geometry preserved, expressed via contrast/pattern/existing recipe"
+    }
+  },
+  "mobile": {
+    "viewports": [
+      { "width": 390, "height": 844, "dpr": 3, "pointer": "coarse" },
+      { "width": 844, "height": 390, "dpr": 3, "pointer": "coarse" },
+      { "width": 820, "height": 1180, "dpr": 2, "pointer": "coarse" },
+      { "width": 1180, "height": 820, "dpr": 2, "pointer": "coarse" }
+    ],
+    "allowed": [
+      "window near-fullscreen",
+      "multi-column to single-task view",
+      "secondary commands into Commands...",
+      "TDI vertical rail to compact stack",
+      "taller title bar and controls",
+      "bottom actions wrap or pin to safe inset"
+    ],
+    "forbidden": [
+      "collapse every app into an untitled web page",
+      "remove status-bar operation results",
+      "icons without understandable labels",
+      "close/save/send/back hidden behind hover",
+      "reload or clear unsaved state on rotation",
+      "global zoom or transform:scale() desktop scaling"
+    ],
+    "safetyAreas": ["iOS standalone/home-screen safe area", "soft keyboard open/close", "rotation preserving state"]
+  },
+  "forbiddenEffects": {
+    "backdropFilter": true,
+    "blurRadiusGtZeroOnChromeShadow": true,
+    "unfoundedSemiTransparentSoftShadow": true,
+    "transformScaleForUiOrControlAdaptation": true,
+    "unnecessaryLayoutTransition": true,
+    "hardcodedThemeColorWithoutToken": true,
+    "appLevelBodyDataThemeSelector": "only app-specific misuse is flagged; the sanctioned html/body[data-theme] theme blocks are exempt",
+    "hoverChangingButtonGeometry": true,
+    "coarseHitRegressionAgainstOwnedContract": true,
+    "unsafeAreaBottomFixedActionWithoutInset": true,
+    "iconOnlyButtonWithoutAriaLabel": true,
+    "hoverOnlyCriticalAction": true,
+    "rotationReloadOrStateLoss": true,
+    "oversizeChromeRadius": true,
+    "appReimplementsBevelRecipe": true,
+    "svgNonUniformScaleFilterOrCrop": true
+  },
+  "allowedExceptions": [
+    "long-form reading and editing areas",
+    "charts, WebGL, media, and creative labs",
+    "Balloon Help",
+    "legitimate accessibility focus",
+    "existing Liquid Glass theme",
+    "modern content exceptions written into the fidelity doc"
+  ]
+}

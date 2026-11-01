@@ -1,0 +1,2238 @@
+// Feature module: Time Machine.
+//
+// A restricted browser that can keep navigating the live web or resolve each
+// clicked URL near one historical date. Remote scripts never enter the desktop:
+// the server sanitizes HTML and this client renders it in an opaque sandbox.
+
+var currentTimeMachinePage = null;
+var currentTimeMachineRequest = null;
+var currentTimeMachineView = "web";
+var currentTimeMachineClipCount = 0;
+var timeMachineLaunchPrepared = false;
+var timeMachineCalendarRequest = null;
+var timeMachineCalendarUrl = "";
+var timeMachineCalendarTimeline = null;
+var timeMachineCalendarDaysByYear = Object.create(null);
+var timeMachineCalendarDisplayDate = null;
+
+const timeMachineWindowEl = document.querySelector('[data-window="timeMachine"]');
+const timeMachineTitleEl = document.querySelector("#time-machine-title");
+const timeMachineBackButton = document.querySelector("#time-machine-back");
+const timeMachineForwardButton = document.querySelector("#time-machine-forward");
+const timeMachineStopButton = document.querySelector("#time-machine-stop");
+const timeMachineSourceSwitchButton = document.querySelector("#time-machine-source-switch");
+const timeMachineSourceLabelEl = document.querySelector("#time-machine-source-label");
+const timeMachineWebViewButton = document.querySelector("#time-machine-web-view");
+const timeMachineReaderViewButton = document.querySelector("#time-machine-reader-view");
+const timeMachineEnabledInput = document.querySelector("#time-machine-enabled");
+const timeMachineDateInput = document.querySelector("#time-machine-date");
+const timeMachineDateRangeEl = document.querySelector("#time-machine-date-range");
+const timeMachineDateCountEl = document.querySelector("#time-machine-date-count");
+const timeMachineDateControlEl = document.querySelector(".time-machine-date-control");
+const timeMachineCalendarButton = document.querySelector("#time-machine-calendar-button");
+const timeMachineDatePopover = document.querySelector("#time-machine-date-popover");
+const timeMachineCalendarStatusEl = document.querySelector("#time-machine-calendar-status");
+const timeMachineYearStripEl = document.querySelector("#time-machine-year-strip");
+const timeMachineCalendarPreviousButton = document.querySelector("#time-machine-calendar-previous");
+const timeMachineCalendarNextButton = document.querySelector("#time-machine-calendar-next");
+const timeMachineCalendarMonthEl = document.querySelector("#time-machine-calendar-month");
+const timeMachineCalendarWeekdaysEl = document.querySelector("#time-machine-calendar-weekdays");
+const timeMachineCalendarGridEl = document.querySelector("#time-machine-calendar-grid");
+const timeMachineProviderInput = document.querySelector("#time-machine-provider");
+const timeMachineTimeBandEl = document.querySelector("#time-machine-address-form");
+const timeMachineAddressForm = document.querySelector("#time-machine-address-form");
+const timeMachineAddressInput = document.querySelector("#time-machine-address");
+const timeMachineTabsEl = document.querySelector("#time-machine-tabs");
+const timeMachineFrameEl = document.querySelector("#time-machine-frame");
+// #time-machine-frame is sandboxed to an opaque origin, so the parent can't
+// read its contentDocument to know when a navigation actually finished
+// painting — /api/time-machine/render owns an independent document response
+// (normally served from the server's short-lived /browse result cache).
+// data-frame-ready is the only
+// externally observable "is the page actually up yet" signal (used by the
+// promo recording script).
+timeMachineFrameEl?.addEventListener("load", () => {
+  timeMachineFrameEl.dataset.frameReady = "true";
+});
+const timeMachineReaderEl = document.querySelector("#time-machine-reader");
+const timeMachineHomeEl = document.querySelector("#time-machine-home");
+const timeMachineLoadingEl = document.querySelector("#time-machine-loading");
+const timeMachineDocMapButton = document.querySelector("#time-machine-docmap");
+const timeMachineAskForm = document.querySelector("#time-machine-ask-form");
+const timeMachineQuestionInput = document.querySelector("#time-machine-question");
+const timeMachineProvenanceEl = document.querySelector("#time-machine-provenance");
+let timeMachineReceiptTimer = 0;
+const timeMachineSaveWaybackLink = document.querySelector("#time-machine-save-wayback");
+const timeMachineSaveArchiveIsLink = document.querySelector("#time-machine-save-archive-is");
+
+// A grey Time Machine control tells the writer which end of the visit it is at,
+// or that there is nothing to load yet. One reason per control, shared with the
+// desk's grey-affordance tap.
+function timeMachineMarkGray(control, blocked, reasonKey) {
+  if (!control) return;
+  if (typeof markGrayAffordance === "function") {
+    markGrayAffordance(control, blocked, reasonKey);
+    return;
+  }
+  control.disabled = Boolean(blocked);
+  if (blocked && reasonKey) control.dataset.balloonHelpDisabled = reasonKey;
+  else delete control.dataset.balloonHelpDisabled;
+}
+
+function timeMachineToday() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function timeMachineNormalizeAddress(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  const candidate = /^[a-z][a-z0-9+.-]*:/i.test(raw) ? raw : `https://${raw}`;
+  const parsed = new URL(candidate);
+  if (!["http:", "https:"].includes(parsed.protocol)) throw new Error(t("time_machine_invalid_url"));
+  parsed.hash = "";
+  return parsed.href;
+}
+
+function timeMachineUnwrapArchiveUrl(value) {
+  let parsed;
+  try {
+    parsed = new URL(value);
+  } catch {
+    return value;
+  }
+  if (parsed.hostname.toLowerCase() !== "web.archive.org") return parsed.href;
+  const match = parsed.pathname.match(/^\/web\/\d+(?:[a-z_]+)?\/(https?:\/\/.+)$/i);
+  if (match) {
+    try {
+      return new URL(`${match[1]}${parsed.search}`).href;
+    } catch {
+      return parsed.href;
+    }
+  }
+  const originalUrl = currentTimeMachinePage?.url || activeTimeMachineTab()?.state?.address || "";
+  if (originalUrl) {
+    try {
+      return new URL(`${parsed.pathname}${parsed.search}`, originalUrl).href;
+    } catch {
+      return parsed.href;
+    }
+  }
+  return parsed.href;
+}
+
+function timeMachineCanonicalProvider(value) {
+  const raw = String(value || "").trim().toLowerCase();
+  if (raw === "wayback" || raw === "web.archive.org") return "wayback";
+  if (raw === "archive-is" || raw === "archive-today") return "archive-is";
+  let hostname = raw;
+  try {
+    hostname = new URL(/^[a-z][a-z0-9+.-]*:/i.test(raw) ? raw : `https://${raw}`).hostname.toLowerCase();
+  } catch {
+    hostname = raw;
+  }
+  return ["archive.today", "archive.is", "archive.ph", "archive.vn", "archive.fo", "archive.li", "archive.md"].includes(hostname)
+    ? "archive-is"
+    : "";
+}
+
+function timeMachineWaybackCapturedAt(value) {
+  let timestamp = "";
+  try {
+    timestamp = new URL(value).pathname.match(/^\/web\/(\d{14})/i)?.[1] || "";
+  } catch {
+    timestamp = "";
+  }
+  if (!timestamp) return "";
+  const iso = `${timestamp.slice(0, 4)}-${timestamp.slice(4, 6)}-${timestamp.slice(6, 8)}T${timestamp.slice(8, 10)}:${timestamp.slice(10, 12)}:${timestamp.slice(12, 14)}.000Z`;
+  return Number.isNaN(Date.parse(iso)) ? "" : iso;
+}
+
+function timeMachineProviderLabel(provider) {
+  const canonical = timeMachineCanonicalProvider(provider);
+  if (canonical === "wayback") return "Wayback";
+  if (canonical === "archive-is") return "archive.today";
+  return t("automatic");
+}
+
+function timeMachineEffectiveProvider() {
+  const actual = timeMachineCanonicalProvider(currentTimeMachinePage?.archive?.provider);
+  if (actual) return actual;
+  const tabPreference = timeMachineCanonicalProvider(activeTimeMachineTab()?.state?.providerPreference);
+  if (tabPreference) return tabPreference;
+  return timeMachineCanonicalProvider(timeMachineProviderInput?.value) || "wayback";
+}
+
+function timeMachineUpdateSourceSwitch(provider = "") {
+  if (!timeMachineSourceSwitchButton || !timeMachineSourceLabelEl) return;
+  const current = timeMachineCanonicalProvider(provider) || timeMachineEffectiveProvider();
+  const next = current === "wayback" ? "archive-is" : "wayback";
+  timeMachineSourceLabelEl.textContent = timeMachineProviderLabel(current);
+  const switchLabel = t("time_machine_switch_to_source", timeMachineProviderLabel(next));
+  timeMachineSourceSwitchButton.setAttribute("aria-label", switchLabel);
+  timeMachineSourceSwitchButton.title = switchLabel;
+  timeMachineMarkGray(
+    timeMachineSourceSwitchButton,
+    !timeMachineEnabledInput?.checked || !timeMachineAddressInput?.value?.trim(),
+    "time_machine_switch_source",
+  );
+}
+
+function timeMachineCalendarLocale() {
+  return currentLanguage === "zh" ? "zh-CN" : "en-US";
+}
+
+function timeMachineCalendarDate(value) {
+  const match = String(value || "").match(/^(\d{4})-(\d{2})(?:-(\d{2}))?/);
+  if (!match) return null;
+  const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3] || 1)));
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function timeMachineCalendarDateKey(year, month, day) {
+  return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function timeMachineCalendarDateLabel(value) {
+  const date = timeMachineCalendarDate(String(value || "").slice(0, 10));
+  if (!date) return "";
+  return new Intl.DateTimeFormat(timeMachineCalendarLocale(), {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  }).format(date);
+}
+
+function timeMachineCalendarAddress() {
+  try {
+    return timeMachineNormalizeAddress(timeMachineAddressInput?.value || "");
+  } catch {
+    return "";
+  }
+}
+
+function timeMachineCalendarTimelineMatchesAddress() {
+  return !!timeMachineCalendarTimeline && timeMachineCalendarUrl === timeMachineCalendarAddress();
+}
+
+function timeMachineRenderCalendarSummary() {
+  if (!timeMachineDateRangeEl || !timeMachineDateCountEl) return;
+  const address = timeMachineCalendarAddress();
+  const timeline = timeMachineCalendarTimelineMatchesAddress() ? timeMachineCalendarTimeline : null;
+  if (!address) {
+    timeMachineDateRangeEl.textContent = t("time_machine_calendar_enter_url");
+    timeMachineDateCountEl.textContent = "";
+    return;
+  }
+  if (!timeline?.firstCapturedAt || !timeline?.lastCapturedAt) {
+    timeMachineDateRangeEl.textContent = t("time_machine_calendar_open_to_query");
+    timeMachineDateCountEl.textContent = "";
+    return;
+  }
+  timeMachineDateRangeEl.textContent = t(
+    "time_machine_date_range_actual",
+    timeMachineCalendarDateLabel(timeline.firstCapturedAt),
+    timeMachineCalendarDateLabel(timeline.lastCapturedAt)
+  );
+  timeMachineDateCountEl.textContent = t(
+    "time_machine_saved_times",
+    new Intl.NumberFormat(timeMachineCalendarLocale()).format(timeline.totalCaptures || 0)
+  );
+}
+
+function timeMachineUpdateDateRange() {
+  if (!timeMachineDateInput) return;
+  timeMachineDateInput.max = timeMachineToday();
+  const timeline = timeMachineCalendarTimelineMatchesAddress() ? timeMachineCalendarTimeline : null;
+  if (timeline?.firstCapturedAt) {
+    timeMachineDateInput.min = timeline.firstCapturedAt.slice(0, 10);
+  } else {
+    timeMachineDateInput.removeAttribute("min");
+  }
+  if (timeline?.lastCapturedAt) {
+    timeMachineDateInput.max = [timeMachineToday(), timeline.lastCapturedAt.slice(0, 10)].sort()[0];
+  }
+  timeMachineRenderCalendarSummary();
+}
+
+function timeMachineSetCalendarStatus(message = "", kind = "") {
+  if (!timeMachineCalendarStatusEl) return;
+  timeMachineCalendarStatusEl.textContent = message;
+  timeMachineCalendarStatusEl.dataset.kind = kind;
+  timeMachineCalendarStatusEl.hidden = !message;
+}
+
+function timeMachineRenderCalendarWeekdays() {
+  if (!timeMachineCalendarWeekdaysEl) return;
+  timeMachineCalendarWeekdaysEl.replaceChildren();
+  const formatter = new Intl.DateTimeFormat(timeMachineCalendarLocale(), {
+    weekday: "short",
+    timeZone: "UTC",
+  });
+  for (let day = 7; day < 14; day += 1) {
+    const label = document.createElement("span");
+    label.textContent = formatter.format(new Date(Date.UTC(2024, 0, day)));
+    timeMachineCalendarWeekdaysEl.append(label);
+  }
+}
+
+function timeMachineRenderYearStrip() {
+  if (!timeMachineYearStripEl) return;
+  timeMachineYearStripEl.replaceChildren();
+  const years = timeMachineCalendarTimelineMatchesAddress()
+    ? timeMachineCalendarTimeline?.years || []
+    : [];
+  if (!years.length) {
+    timeMachineYearStripEl.hidden = true;
+    return;
+  }
+  timeMachineYearStripEl.hidden = false;
+  const activeYear = timeMachineCalendarDisplayDate?.getUTCFullYear();
+  const maxCount = Math.max(...years.map((entry) => entry.count || 0), 1);
+  years.forEach((entry, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "time-machine-year";
+    if (entry.year === activeYear) button.classList.add("is-selected");
+    if (index === 0 || index === years.length - 1 || entry.year % 5 === 0) {
+      button.classList.add("is-labeled");
+    }
+    button.dataset.year = String(entry.year);
+    button.style.setProperty(
+      "--capture-intensity",
+      `${Math.round(Math.max(0.06, entry.count / maxCount) * 100)}%`
+    );
+    button.setAttribute("role", "option");
+    button.setAttribute("aria-selected", String(entry.year === activeYear));
+    button.setAttribute("aria-label", t("time_machine_year_captures", entry.year, entry.count));
+    button.title = t("time_machine_year_captures", entry.year, entry.count);
+    const bar = document.createElement("span");
+    bar.className = "time-machine-year-bar";
+    const label = document.createElement("span");
+    label.className = "time-machine-year-label";
+    label.textContent = String(entry.year);
+    button.append(bar, label);
+    button.addEventListener("click", () => {
+      const months = entry.months?.length ? entry.months : Array(12).fill(0);
+      const busiest = months.indexOf(Math.max(...months));
+      timeMachineCalendarDisplayDate = new Date(Date.UTC(entry.year, Math.max(0, busiest), 1));
+      timeMachineLoadArchiveCalendar(entry.year);
+    });
+    timeMachineYearStripEl.append(button);
+  });
+}
+
+function timeMachineCalendarDayData(year, date) {
+  return (timeMachineCalendarDaysByYear[String(year)] || []).find((entry) => entry.date === date) || null;
+}
+
+function timeMachineChooseCalendarDate(date, dayData = null) {
+  if (!timeMachineDateInput) return;
+  timeMachineDateInput.value = date;
+  captureActiveTimeMachineTabState();
+  timeMachineSetDatePopover(false);
+  const address = timeMachineCalendarAddress();
+  if (!timeMachineEnabledInput?.checked || !address) return;
+  if (dayData?.timestamp) {
+    const timestamp = String(dayData.timestamp);
+    const capturedAt = timeMachineWaybackCapturedAt(`https://web.archive.org/web/${timestamp}/${address}`);
+    timeMachineNavigate(address, {
+      capture: {
+        provider: "wayback",
+        originalUrl: address,
+        snapshotUrl: `https://web.archive.org/web/${timestamp}/${address}`,
+        browseUrl: `https://web.archive.org/web/${timestamp}id_/${address}`,
+        capturedAt,
+      },
+    });
+    return;
+  }
+  timeMachineNavigate(address);
+}
+
+function timeMachineRenderMonthCalendar() {
+  if (!timeMachineCalendarGridEl || !timeMachineCalendarMonthEl) return;
+  const displayDate = timeMachineCalendarDisplayDate
+    || timeMachineCalendarDate(timeMachineDateInput?.value)
+    || timeMachineCalendarDate(timeMachineToday());
+  if (!displayDate) return;
+  timeMachineCalendarDisplayDate = displayDate;
+  const year = displayDate.getUTCFullYear();
+  const month = displayDate.getUTCMonth();
+  timeMachineCalendarMonthEl.textContent = new Intl.DateTimeFormat(timeMachineCalendarLocale(), {
+    year: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  }).format(displayDate);
+  timeMachineCalendarGridEl.replaceChildren();
+  const firstWeekday = new Date(Date.UTC(year, month, 1)).getUTCDay();
+  const dayCount = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  const monthDays = (timeMachineCalendarDaysByYear[String(year)] || [])
+    .filter((entry) => Number(entry.date.slice(5, 7)) === month + 1);
+  const maxCount = Math.max(...monthDays.map((entry) => entry.count || 0), 1);
+  const timeline = timeMachineCalendarTimelineMatchesAddress() ? timeMachineCalendarTimeline : null;
+  const firstAvailable = String(timeline?.firstCapturedAt || "").slice(0, 10);
+  const lastAvailable = String(timeline?.lastCapturedAt || "").slice(0, 10);
+  for (let index = 0; index < firstWeekday; index += 1) {
+    const blank = document.createElement("span");
+    blank.className = "time-machine-calendar-blank";
+    blank.setAttribute("aria-hidden", "true");
+    timeMachineCalendarGridEl.append(blank);
+  }
+  for (let day = 1; day <= dayCount; day += 1) {
+    const date = timeMachineCalendarDateKey(year, month, day);
+    const dayData = timeMachineCalendarDayData(year, date);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "time-machine-calendar-day";
+    button.dataset.date = date;
+    if (date === timeMachineDateInput?.value) button.classList.add("is-selected");
+    if (dayData) {
+      button.classList.add("has-captures");
+      button.dataset.density = String(Math.max(1, Math.ceil((dayData.count / maxCount) * 4)));
+    }
+    const outsideRange = !timeline
+      || (firstAvailable && date < firstAvailable)
+      || (lastAvailable && date > lastAvailable)
+      || date > timeMachineToday();
+    timeMachineMarkGray(button, outsideRange, "balloon_time_machine_day_outside");
+    const number = document.createElement("span");
+    number.textContent = String(day);
+    button.append(number);
+    if (dayData) {
+      const count = document.createElement("small");
+      count.textContent = String(dayData.count);
+      button.append(count);
+    }
+    const accessibleLabel = dayData
+      ? t("time_machine_day_captures", timeMachineCalendarDateLabel(date), dayData.count)
+      : t("time_machine_day_nearest", timeMachineCalendarDateLabel(date));
+    button.setAttribute("aria-label", accessibleLabel);
+    button.title = accessibleLabel;
+    button.addEventListener("click", () => timeMachineChooseCalendarDate(date, dayData));
+    timeMachineCalendarGridEl.append(button);
+  }
+  const occupied = firstWeekday + dayCount;
+  const trailing = (7 - (occupied % 7)) % 7;
+  for (let index = 0; index < trailing; index += 1) {
+    const blank = document.createElement("span");
+    blank.className = "time-machine-calendar-blank";
+    blank.setAttribute("aria-hidden", "true");
+    timeMachineCalendarGridEl.append(blank);
+  }
+  if (timeMachineCalendarPreviousButton) {
+    timeMachineMarkGray(
+      timeMachineCalendarPreviousButton,
+      !timeline || !!(firstAvailable
+        && timeMachineCalendarDateKey(year, month, 1) <= firstAvailable.slice(0, 8) + "01"),
+      "balloon_time_machine_calendar",
+    );
+  }
+  if (timeMachineCalendarNextButton) {
+    timeMachineMarkGray(
+      timeMachineCalendarNextButton,
+      !timeline || !!(lastAvailable
+        && timeMachineCalendarDateKey(year, month, 1) >= lastAvailable.slice(0, 8) + "01"),
+      "balloon_time_machine_calendar",
+    );
+  }
+}
+
+function timeMachineRenderArchiveCalendar() {
+  timeMachineRenderCalendarSummary();
+  timeMachineRenderCalendarWeekdays();
+  timeMachineRenderYearStrip();
+  timeMachineRenderMonthCalendar();
+}
+
+async function timeMachineLoadArchiveCalendar(year = 0) {
+  const address = timeMachineCalendarAddress();
+  if (!address) {
+    timeMachineCalendarUrl = "";
+    timeMachineCalendarTimeline = null;
+    timeMachineCalendarDaysByYear = Object.create(null);
+    timeMachineSetCalendarStatus("");
+    timeMachineRenderArchiveCalendar();
+    return false;
+  }
+  const selectedDate = timeMachineCalendarDisplayDate
+    || timeMachineCalendarDate(timeMachineDateInput?.value)
+    || timeMachineCalendarDate(timeMachineToday());
+  const selectedYear = Number(year || selectedDate?.getUTCFullYear() || new Date().getUTCFullYear());
+  if (timeMachineCalendarUrl !== address) {
+    timeMachineCalendarRequest?.abort();
+    timeMachineCalendarUrl = address;
+    timeMachineCalendarTimeline = null;
+    timeMachineCalendarDaysByYear = Object.create(null);
+  }
+  if (timeMachineCalendarTimeline && timeMachineCalendarDaysByYear[String(selectedYear)]) {
+    timeMachineRenderArchiveCalendar();
+    return true;
+  }
+  timeMachineCalendarRequest?.abort();
+  const controller = new AbortController();
+  timeMachineCalendarRequest = controller;
+  timeMachineSetCalendarStatus(t("time_machine_calendar_loading"));
+  try {
+    const params = new URLSearchParams({ url: address, year: String(selectedYear) });
+    const result = await timeMachineFetchJson("calendar", params, controller.signal);
+    if (controller.signal.aborted) return false;
+    if (result.timeline) timeMachineCalendarTimeline = result.timeline;
+    timeMachineCalendarDaysByYear[String(selectedYear)] = result.days || [];
+    const first = String(timeMachineCalendarTimeline?.firstCapturedAt || "").slice(0, 10);
+    const last = String(timeMachineCalendarTimeline?.lastCapturedAt || "").slice(0, 10);
+    const selectedKey = timeMachineDateInput?.value || "";
+    if (first && last && (!selectedKey || selectedKey < first || selectedKey > last)) {
+      timeMachineCalendarDisplayDate = timeMachineCalendarDate(last);
+    }
+    timeMachineUpdateDateRange();
+    timeMachineSetCalendarStatus(
+      result.timelineError || result.calendarError ? t("time_machine_calendar_partial") : ""
+    );
+    timeMachineRenderArchiveCalendar();
+    return true;
+  } catch (error) {
+    if (error?.name === "AbortError") return false;
+    timeMachineSetCalendarStatus(t("time_machine_calendar_error"), "error");
+    timeMachineRenderArchiveCalendar();
+    return false;
+  } finally {
+    if (timeMachineCalendarRequest === controller) timeMachineCalendarRequest = null;
+  }
+}
+
+function timeMachineShiftCalendarMonth(delta) {
+  const current = timeMachineCalendarDisplayDate
+    || timeMachineCalendarDate(timeMachineDateInput?.value)
+    || timeMachineCalendarDate(timeMachineToday());
+  if (!current) return;
+  timeMachineCalendarDisplayDate = new Date(Date.UTC(
+    current.getUTCFullYear(),
+    current.getUTCMonth() + delta,
+    1
+  ));
+  timeMachineLoadArchiveCalendar(timeMachineCalendarDisplayDate.getUTCFullYear());
+}
+
+function timeMachineSetDatePopover(open) {
+  if (!timeMachineDatePopover || !timeMachineCalendarButton) return;
+  const visible = !!open;
+  timeMachineDatePopover.hidden = !visible;
+  timeMachineCalendarButton.setAttribute("aria-expanded", String(visible));
+  if (visible) {
+    timeMachineCalendarDisplayDate = timeMachineCalendarDate(timeMachineDateInput?.value)
+      || timeMachineCalendarDate(timeMachineToday());
+    timeMachineRenderArchiveCalendar();
+    timeMachineLoadArchiveCalendar();
+    timeMachineCalendarPreviousButton?.focus();
+  } else {
+    timeMachineCalendarRequest?.abort();
+  }
+}
+
+function timeMachineCapturedDayLabel(value) {
+  if (!value) return t("time_machine_unknown_date");
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return t("time_machine_unknown_date");
+  return parsed.toLocaleDateString();
+}
+
+function timeMachineCapturedLabel(value) {
+  if (!value) return t("time_machine_unknown_date");
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return t("time_machine_unknown_date");
+  return parsed.toLocaleString();
+}
+
+function timeMachineUpdateWindowTitle(page = null, archive = null, targetDate = "", live = false) {
+  if (!timeMachineTitleEl) return;
+  const appTitle = t("time_machine");
+  const pageTitle = page?.title || page?.reader?.title || "";
+  const timeContext = archive ? timeMachineCapturedDayLabel(archive.capturedAt) : targetDate;
+  const documentContext = [timeContext, pageTitle].filter(Boolean).join(" · ");
+  timeMachineTitleEl.dataset.i18n = "time_machine";
+  timeMachineTitleEl.textContent = appTitle;
+  timeMachineTitleEl.title = documentContext ? `${appTitle} — ${documentContext}` : appTitle;
+}
+
+function activeTimeMachineTab(project = getActiveProject()) {
+  return typeof getActiveDocumentTab === "function" ? getActiveDocumentTab("timeMachine", project) : null;
+}
+
+function getTimeMachineTabs(project = getActiveProject()) {
+  return typeof getDocumentTabs === "function" ? getDocumentTabs("timeMachine", project) : [];
+}
+
+function createTimeMachineTab(options = {}) {
+  const project = getActiveProject();
+  if (!project) return null;
+  const tab = upsertDocumentTab("timeMachine", "web_navigation", {
+    title: options.title || t("time_machine_new_tab"),
+    backing: {
+      type: "webNavigation",
+      id: crypto.randomUUID(),
+      url: options.url || "",
+    },
+    state: {
+      address: options.url || "",
+      archiveEnabled: !!options.archiveEnabled,
+      targetDate: options.targetDate || "",
+      providerPreference: options.providerPreference || timeMachineProviderInput?.value || "auto",
+      history: [],
+      historyIndex: -1,
+      viewMode: "web",
+      page: null,
+    },
+    forceNew: true,
+  }, project);
+  renderTimeMachineTabs(project);
+  saveDeskState();
+  return tab;
+}
+
+function captureActiveTimeMachineTabState() {
+  const tab = activeTimeMachineTab();
+  if (!tab) return;
+  const previousState = tab.state || {};
+  stampChanged(tab, () => {
+    tab.title = currentTimeMachinePage?.title || tab.title || t("time_machine_new_tab");
+    tab.backing = {
+      ...(tab.backing || {}),
+      type: "webNavigation",
+      url: timeMachineAddressInput?.value || previousState.address || "",
+    };
+    tab.state = {
+      ...previousState,
+      address: timeMachineAddressInput?.value || "",
+      archiveEnabled: !!timeMachineEnabledInput?.checked,
+      targetDate: timeMachineDateInput?.value || "",
+      providerPreference: timeMachineProviderInput?.value || "auto",
+      viewMode: currentTimeMachineView,
+      page: currentTimeMachinePage ? {
+        title: currentTimeMachinePage.title || "",
+        url: currentTimeMachinePage.url || "",
+        fetchedUrl: currentTimeMachinePage.fetchedUrl || "",
+        reader: currentTimeMachinePage.reader || null,
+        retrievedAt: currentTimeMachinePage.retrievedAt || "",
+        archive: currentTimeMachinePage.archive || null,
+        engine: currentTimeMachinePage.engine || "",
+      } : null,
+      readerScrollTop: timeMachineReaderEl?.scrollTop || 0,
+    };
+  });
+}
+
+function renderTimeMachineTabs(project = getActiveProject()) {
+  if (!timeMachineTabsEl) return;
+  // The rail shows the window it sits in (§4.2): a tab moved to another window
+  // belongs to that window and stops rendering here.
+  const instance = documentTabInstanceOfRail(timeMachineTabsEl);
+  const tabs = getWindowDocumentTabs("timeMachine", project, instance);
+  renderTdiTabStrip(timeMachineTabsEl, tabs, {
+    activeId: project?.activeDocumentTabIds?.[activeDocumentTabKey("timeMachine", instance)],
+    labelFor: (tab, index) => `${index + 1}. ${tab.title || t("time_machine_new_tab")}`,
+    compactLabelFor: (tab) => tab.title || t("time_machine_new_tab"),
+    iconFor: () => "timeMachine",
+    sublabelFor: (tab) => {
+      const state = tab.state || {};
+      if (state.archiveEnabled) return `${timeMachineProviderLabel(state.page?.archive?.provider || state.providerPreference)} · ${state.targetDate || t("time_machine_past")}`;
+      try {
+        return new URL(state.address || tab.backing?.url || "").hostname.replace(/^www\./, "");
+      } catch {
+        return t("time_machine_live");
+      }
+    },
+    closableFor: () => tabs.length > 1,
+    onOpen: (tab) => openTimeMachineTab(tab.id),
+    onClose: (tab) => closeTimeMachineTab(tab.id),
+    onMove: (tabId, targetTabId) => {
+      if (!moveDocumentTab("timeMachine", tabId, targetTabId, project)) return;
+      renderTimeMachineTabs(project);
+      saveDeskState();
+    },
+  });
+  setupTdiRailResize(timeMachineTabsEl.closest(".tdi-shell"), { storageKey: "aiSystem6.tdiRail.timeMachine" });
+}
+
+function closeTimeMachineTab(tabId) {
+  const project = getActiveProject();
+  captureActiveTimeMachineTabState();
+  const result = removeDocumentTab("timeMachine", tabId, project);
+  if (!result) return false;
+  TimeMachineEngines.close(tabId);
+  renderTimeMachineTabs(project);
+  if (result.wasActive && result.next) openTimeMachineTab(result.next.id);
+  if (result.wasActive && !result.next) timeMachineShowHome();
+  saveDeskState();
+  // Closing the only tab lands back on the home panel, which is what the
+  // window was already showing when that tab held nothing: the command
+  // removed a real tab and looked like it had done nothing. Say what closed.
+  timeMachineSetStatus(t("time_machine_tab_closed"));
+  return true;
+}
+
+function timeMachineApplyTabControls(tab) {
+  const state = tab?.state || {};
+  timeMachineAddressInput.value = state.address || tab?.backing?.url || "";
+  timeMachineEnabledInput.checked = !!state.archiveEnabled;
+  timeMachineDateInput.value = state.targetDate || "";
+  currentTimeMachineView = state.viewMode === "reader" ? "reader" : "web";
+  timeMachineTimeBandEl.classList.toggle("is-active", !!state.archiveEnabled);
+  timeMachineUpdateDateRange();
+  timeMachineUpdateSourceSwitch(state.providerPreference);
+}
+
+async function openTimeMachineTab(tabId) {
+  const project = getActiveProject();
+  const next = getTimeMachineTabs(project).find((tab) => tab.id === tabId);
+  if (!next) return false;
+  if (activeTimeMachineTab(project)?.id !== tabId) captureActiveTimeMachineTabState();
+  setActiveDocumentTab("timeMachine", tabId, project);
+  timeMachineApplyTabControls(next);
+  currentTimeMachinePage = null;
+  renderTimeMachineTabs(project);
+  if (next.state?.page?.engine && TimeMachineEngines.has(tabId)) {
+    timeMachineRestoreLive(next);
+    return true;
+  }
+  const address = next.state?.address || next.backing?.url || "";
+  if (address) {
+    await timeMachineNavigate(address, {
+      fromHistory: true,
+      restoreState: next.state,
+    });
+  } else {
+    timeMachineShowHome();
+  }
+  return true;
+}
+
+function timeMachineHistoryState() {
+  const tab = activeTimeMachineTab();
+  if (!tab) return { history: [], historyIndex: -1 };
+  if (!Array.isArray(tab.state.history)) tab.state.history = [];
+  if (!Number.isInteger(tab.state.historyIndex)) tab.state.historyIndex = tab.state.history.length - 1;
+  return tab.state;
+}
+
+function timeMachinePushHistory(entry) {
+  const state = timeMachineHistoryState();
+  state.history = state.history.slice(0, state.historyIndex + 1);
+  state.history.push(entry);
+  if (state.history.length > 80) state.history.shift();
+  state.historyIndex = state.history.length - 1;
+}
+
+function timeMachineUpdateNavigationButtons() {
+  if (timeMachineEngineActive()) {
+    const live = TimeMachineEngines.state(activeTimeMachineTab()?.id || "") || {};
+    timeMachineMarkGray(timeMachineBackButton, !live.canGoBack, "balloon_time_machine_back");
+    timeMachineMarkGray(timeMachineForwardButton, !live.canGoForward, "balloon_time_machine_forward");
+    timeMachineMarkGray(timeMachineStopButton, !live.loading, "balloon_time_machine_stop");
+    return;
+  }
+  const state = timeMachineHistoryState();
+  timeMachineMarkGray(timeMachineBackButton, state.historyIndex <= 0, "balloon_time_machine_back");
+  timeMachineMarkGray(
+    timeMachineForwardButton,
+    state.historyIndex < 0 || state.historyIndex >= state.history.length - 1,
+    "balloon_time_machine_forward",
+  );
+  timeMachineMarkGray(timeMachineStopButton, !currentTimeMachineRequest, "balloon_time_machine_stop");
+}
+
+function timeMachineSetLoading(active, message = "") {
+  if (timeMachineLoadingEl) {
+    timeMachineLoadingEl.hidden = !active;
+    if (message) timeMachineLoadingEl.textContent = message;
+  }
+  timeMachineMarkGray(timeMachineStopButton, !active, "balloon_time_machine_stop");
+  if (active) document.body.classList.add("is-busy");
+  else document.body.classList.remove("is-busy");
+}
+
+// Time Machine's receipts belong in Time Machine. They still go through
+// setStatus so the desktop notification pipeline sees them, but the window
+// says them itself rather than relying on ClioTalk's details bar being open.
+function timeMachineSetStatus(message, options = {}) {
+  if (!message) return;
+  // "Ready" is the absence of news: no receipt, just the provenance the slot
+  // normally shows. This used to be passed on to the desk as the word itself,
+  // which worked only because the status line hid any message that matched the
+  // translated "Ready" — so the desk is told to clear instead.
+  const idle = String(message).trim() === String(t("ready") || "").trim();
+  if (timeMachineProvenanceEl) {
+    window.clearTimeout(timeMachineReceiptTimer);
+    if (idle) {
+      renderTimeMachineProvenance();
+    } else {
+      timeMachineProvenanceEl.textContent = message;
+      timeMachineProvenanceEl.classList.add("is-receipt");
+      timeMachineProvenanceEl.classList.toggle("is-error", options.error === true);
+      timeMachineReceiptTimer = window.setTimeout(renderTimeMachineProvenance, 6000);
+    }
+  }
+  // A failure is a notification, not just a line that scrolls past. Saying so
+  // explicitly beats setStatus sniffing the wording for "failed" / "无法".
+  if (idle) {
+    if (typeof clearStatus === "function") clearStatus();
+  } else if (typeof setStatus === "function") {
+    setStatus(message, options.error === true ? { notify: true } : {});
+  }
+}
+
+// Which snapshot is on screen. Lives in the navigation row's former spacer, so
+// the web view no longer hides what year it is showing.
+function renderTimeMachineProvenance() {
+  if (!timeMachineProvenanceEl) return;
+  window.clearTimeout(timeMachineReceiptTimer);
+  timeMachineProvenanceEl.classList.remove("is-receipt", "is-error");
+  const page = currentTimeMachinePage;
+  if (!page) {
+    timeMachineProvenanceEl.textContent = "";
+    return;
+  }
+  // Division of labour with the title bar, which already reads
+  // "<capture date> · <page title>": the title says when and what, this says
+  // which archive it came from — the one thing the title cannot carry.
+  timeMachineProvenanceEl.textContent = page.archive
+    ? timeMachineProviderLabel(page.archive.provider)
+    : page.engine === "web"
+      ? t("time_machine_live_relayed")
+      : page.engine === "native"
+        ? t("time_machine_live")
+        : t("time_machine_live_snapshot");
+}
+
+function timeMachineSetReaderActions(enabled) {
+  // Clip, Clip + Translate and Send to Manuscript are MENU commands here, not
+  // buttons on the page: those three ids appear nowhere in the markup, so the
+  // handles they were read into were always null. The menu-state painter owns
+  // their availability. Only the reader-view button is a real control.
+  timeMachineMarkGray(timeMachineReaderViewButton, !enabled, "balloon_time_machine_reader_view");
+  syncDocMapEntryButton(timeMachineDocMapButton, enabled ? timeMachineDocMapReadiness() : { state: "empty", ready: false });
+  // The ask bar's own input and button are owned by describeTimeMachineAskScope
+  // so all five ask bars gate on the same rule.
+  refreshAskBar("timeMachine");
+  renderTimeMachineProvenance();
+}
+
+function timeMachineShowHome() {
+  currentTimeMachinePage = null;
+  currentTimeMachineView = "web";
+  TimeMachineEngines.hide();
+  timeMachineUpdateWindowTitle();
+  if (timeMachineHomeEl) {
+    timeMachineHomeEl.hidden = false;
+    const copy = timeMachineHomeEl.querySelector(".time-machine-home-copy");
+    if (copy) {
+      copy.querySelector("h3").textContent = t("time_machine_home_title");
+      copy.querySelector("p").textContent = t("time_machine_home_body");
+    }
+  }
+  if (timeMachineFrameEl) {
+    timeMachineFrameEl.removeAttribute("src");
+    timeMachineFrameEl.srcdoc = "";
+    delete timeMachineFrameEl.dataset.frameReady;
+    timeMachineFrameEl.classList.remove("is-hidden");
+  }
+  timeMachineReaderEl?.classList.add("is-hidden");
+  timeMachineSetReaderActions(false);
+  timeMachineSetStatus(t("ready"));
+  timeMachineUpdateDateRange();
+  timeMachineUpdateSourceSwitch();
+  timeMachineSyncViewButtons();
+  timeMachineUpdateNavigationButtons();
+}
+
+/**
+ * The frame loads through /api/time-machine/render rather than being handed
+ * an assembled srcdoc string, because a srcdoc document inherits the app's
+ * own (stricter) global CSP on top of any it declares, so an <img> allowance
+ * meant for archived pages never actually took effect — see
+ * apps/server/server/time-machine.js's renderTimeMachineFrameDocument for the shell
+ * this endpoint wraps the page in.
+ */
+function timeMachineFrameRenderUrl(page) {
+  return window.AISystem6Capabilities.requestService("timeMachine.renderUrl", {
+    url: page?.url || "",
+    fetchedUrl: page?.fetchedUrl || "",
+  });
+}
+
+function timeMachineRenderReader() {
+  const reader = currentTimeMachinePage?.reader;
+  timeMachineReaderEl.replaceChildren();
+  if (!reader?.text?.trim()) {
+    // Goal #2/#6: Reading View with no extractable text still offers Web View
+    // in-pane so the empty note is not a dead end beside grey chrome.
+    const empty = document.createElement("div");
+    empty.className = "empty-folder-note empty-next-note time-machine-reader-empty";
+    const text = document.createElement("p");
+    text.textContent = t("time_machine_reader_unavailable");
+    const webView = document.createElement("button");
+    webView.type = "button";
+    webView.className = "btn default";
+    webView.dataset.action = "time-machine-web-view";
+    webView.textContent = t("web_view");
+    empty.append(text, webView);
+    timeMachineReaderEl.append(empty);
+    return;
+  }
+  const title = document.createElement("h1");
+  title.textContent = reader.title || currentTimeMachinePage.title || t("time_machine");
+  const meta = document.createElement("div");
+  meta.className = "time-machine-reader-meta";
+  const archive = currentTimeMachinePage.archive;
+  meta.textContent = archive
+    ? `${timeMachineProviderLabel(archive.provider)} · ${timeMachineCapturedLabel(archive.capturedAt)} · ${currentTimeMachinePage.url}`
+    : currentTimeMachinePage.url;
+  const body = document.createElement("div");
+  body.className = "reader-body-content";
+  body.innerHTML = markdownToSystemHtml(reader.text);
+  const partial = reader.completeness === "partial";
+  if (partial) {
+    const warning = document.createElement("p");
+    warning.className = "hint control-status";
+    warning.setAttribute("role", "status");
+    warning.textContent = t("time_machine_reader_partial");
+    timeMachineReaderEl.append(title, meta, warning, body);
+    return;
+  }
+  timeMachineReaderEl.append(title, meta, body);
+}
+
+// The Time Machine second window's view (§3.1, shape (V)): a READ-ONLY
+// snapshot of the tab that is open on the desk — its address, target date,
+// archive, the page's reading text, and the trail of visits in that tab. The
+// main window's own renderer cannot be reused: timeMachineRenderReader writes
+// #time-machine-reader and reads the single currentTimeMachinePage, and every
+// control above it is wired to one set of module-scope elements, so a second
+// caller would repaint the browser that is already on the desk.
+//
+// The view is a snapshot: it reads the tab once, when the window opens, and
+// never re-reads it. It carries no [data-action], no input and no element id,
+// so the desk-wide action delegate and the write-lease freeze leave it alone —
+// the single interactive affordance is the title bar's own Close / Zoom /
+// WindowShade, wired with the instance id.
+function renderTimeMachineReadOnly(container) {
+  if (!container) return false;
+  const state = activeTimeMachineTab()?.state || null;
+  const page = state?.page || currentTimeMachinePage || null;
+  const reader = page?.reader || null;
+  const article = document.createElement("article");
+  article.className = "time-machine-reader";
+  const heading = document.createElement("h1");
+  heading.textContent = reader?.title || page?.title || state?.address || t("time_machine");
+  const meta = document.createElement("div");
+  meta.className = "time-machine-reader-meta";
+  meta.textContent = timeMachineReadOnlyMeta(state, page);
+  article.append(heading, meta);
+  const text = String(reader?.text || "").trim();
+  if (text) {
+    const body = document.createElement("div");
+    body.className = "reader-body-content";
+    body.innerHTML = markdownToSystemHtml(text);
+    article.append(body);
+    if (reader.completeness === "partial") {
+      const partial = document.createElement("p");
+      partial.className = "hint control-status";
+      partial.textContent = t("time_machine_reader_partial");
+      article.append(partial);
+    }
+  } else {
+    // The main window's Reading View offers Web View beside this note; a view
+    // with no action surface offers the sentence alone.
+    const empty = document.createElement("p");
+    empty.className = "empty-folder-note";
+    empty.textContent = t("time_machine_home_body");
+    article.append(empty);
+  }
+  // The trail is what makes this a view of the HISTORY rather than a copy of
+  // one page: where this tab has been, and which stop the page above is.
+  const history = Array.isArray(state?.history) ? state.history : [];
+  if (history.length) {
+    const trailTitle = document.createElement("h2");
+    trailTitle.textContent = t("time_machine_history");
+    const trail = document.createElement("ol");
+    history.forEach((entry, index) => {
+      const item = document.createElement("li");
+      item.textContent = [String(entry?.targetDate || ""), String(entry?.url || "")].filter(Boolean).join(" · ");
+      if (index === state.historyIndex) item.setAttribute("aria-current", "true");
+      trail.append(item);
+    });
+    article.append(trailTitle, trail);
+  }
+  container.append(article);
+  return true;
+}
+
+// The view's provenance line, in the main window's own Reading View vocabulary
+// — the two label helpers below are the ones timeMachineRenderReader uses.
+function timeMachineReadOnlyMeta(state, page) {
+  const parts = [];
+  const address = state?.address || page?.url || "";
+  if (address) parts.push(address);
+  if (state?.targetDate) parts.push(`${t("time_machine_target_date")}: ${state.targetDate}`);
+  const archive = page?.archive;
+  if (archive?.provider) parts.push(timeMachineProviderLabel(archive.provider));
+  if (archive?.capturedAt) parts.push(timeMachineCapturedLabel(archive.capturedAt));
+  return parts.join(" · ");
+}
+
+function timeMachineSyncViewButtons() {
+  const reading = currentTimeMachineView === "reader";
+  const live = timeMachineEngineActive();
+  timeMachineFrameEl?.classList.toggle("is-hidden", reading || live);
+  if (live && !reading) TimeMachineEngines.show(activeTimeMachineTab()?.id || "");
+  else TimeMachineEngines.hide();
+  timeMachineReaderEl?.classList.toggle("is-hidden", !reading);
+  timeMachineWebViewButton?.setAttribute("aria-pressed", reading ? "false" : "true");
+  timeMachineReaderViewButton?.setAttribute("aria-pressed", reading ? "true" : "false");
+}
+
+function showTimeMachineWebView() {
+  currentTimeMachineView = "web";
+  timeMachineSyncViewButtons();
+  captureActiveTimeMachineTabState();
+  saveDeskState();
+}
+
+async function showTimeMachineReaderView() {
+  if (timeMachineEngineActive() && !currentTimeMachinePage?.reader?.text) {
+    timeMachineSetStatus(t("time_machine_reading_page"));
+    await timeMachineExtractLiveReader(activeTimeMachineTab()?.id || "");
+  }
+  if (!currentTimeMachinePage?.reader?.text) {
+    timeMachineSetStatus(t("time_machine_reader_unavailable"), { error: true });
+    return;
+  }
+  currentTimeMachineView = "reader";
+  timeMachineRenderReader();
+  timeMachineSyncViewButtons();
+  captureActiveTimeMachineTabState();
+  saveDeskState();
+}
+
+async function timeMachineApplyPage(page, archive = null, restoreState = null) {
+  TimeMachineEngines.hide();
+  currentTimeMachinePage = {
+    ...page,
+    archive,
+    kind: archive ? "archiveSnapshot" : "web",
+  };
+  currentTimeMachineClipCount = 0;
+  timeMachineUpdateWindowTitle(page, archive);
+  timeMachineAddressInput.value = page.url || timeMachineAddressInput.value;
+  timeMachineHomeEl.hidden = true;
+  // A present-but-empty srcdoc attribute still wins over src per spec, so
+  // the frame would keep rendering blank about:srcdoc — must fully remove
+  // the attribute, not just clear its value.
+  timeMachineFrameEl.removeAttribute("srcdoc");
+  delete timeMachineFrameEl.dataset.frameReady;
+  timeMachineFrameEl.src = await timeMachineFrameRenderUrl(currentTimeMachinePage);
+  timeMachineRenderReader();
+  currentTimeMachineView = restoreState?.viewMode === "reader" && page.reader?.text ? "reader" : currentTimeMachineView;
+  timeMachineSyncViewButtons();
+  timeMachineSetReaderActions(!!page.reader?.text);
+  timeMachineUpdateSourceSwitch(archive?.provider || "");
+  const tab = activeTimeMachineTab();
+  if (tab) {
+    tab.title = page.title || page.url || t("time_machine_new_tab");
+    tab.backing.url = page.url || "";
+  }
+  renderTimeMachineTabs();
+  captureActiveTimeMachineTabState();
+  saveDeskState();
+  if (restoreState?.readerScrollTop) {
+    requestAnimationFrame(() => {
+      timeMachineReaderEl.scrollTop = Number(restoreState.readerScrollTop) || 0;
+    });
+  }
+}
+
+async function timeMachineFetchJson(route, params, signal) {
+  const response = await window.AISystem6Capabilities.requestService("timeMachine.remote", {
+    route,
+    params,
+    signal,
+  });
+  const text = await response.text();
+  let payload = null;
+  try {
+    payload = JSON.parse(text);
+  } catch {
+    payload = null;
+  }
+  if (!response.ok) throw new Error(serviceErrorDetail(response.status, text));
+  // A 200 carrying something other than JSON is a gateway page standing in for
+  // this app's API, not an answer from it.
+  if (!payload) throw new Error(serviceErrorDetail(response.status, text));
+  return payload;
+}
+
+async function timeMachineNavigate(value, options = {}) {
+  let originalUrl;
+  try {
+    originalUrl = timeMachineNormalizeAddress(timeMachineUnwrapArchiveUrl(value));
+  } catch {
+    timeMachineSetStatus(t("time_machine_invalid_url"), { error: true });
+    return false;
+  }
+  let tab = activeTimeMachineTab();
+  if (!tab) tab = createTimeMachineTab({ url: originalUrl });
+  if (!tab) {
+    timeMachineSetStatus(t("no_project_mounted"), { error: true });
+    return false;
+  }
+
+  const archiveEnabled = options.capture ? true : !!timeMachineEnabledInput.checked;
+  const targetDate = options.capture?.capturedAt?.slice?.(0, 10) || timeMachineDateInput.value || "";
+  const providerPreference = options.capture?.provider
+    || options.providerPreference
+    || timeMachineProviderInput?.value
+    || "auto";
+  if (archiveEnabled && !targetDate && !options.capture) {
+    timeMachineDateInput.value = timeMachineToday();
+  }
+  tab.state.address = originalUrl;
+  tab.state.archiveEnabled = archiveEnabled;
+  tab.state.targetDate = timeMachineDateInput.value || targetDate;
+  tab.state.providerPreference = providerPreference;
+  timeMachineAddressInput.value = originalUrl;
+  timeMachineTimeBandEl.classList.toggle("is-active", archiveEnabled);
+  timeMachineUpdateDateRange();
+  timeMachineUpdateSourceSwitch(providerPreference);
+  timeMachineUpdateWindowTitle(null, null, archiveEnabled ? tab.state.targetDate : "", !archiveEnabled);
+  if (!options.fromHistory) {
+    timeMachinePushHistory({
+      url: originalUrl,
+      archiveEnabled,
+      targetDate: tab.state.targetDate,
+      providerPreference,
+      capture: options.capture || null,
+    });
+  }
+  timeMachineUpdateNavigationButtons();
+
+  currentTimeMachineRequest?.abort();
+  const controller = new AbortController();
+  currentTimeMachineRequest = controller;
+  timeMachineSetLoading(true, archiveEnabled ? t("time_machine_finding_capture") : t("time_machine_loading_live"));
+  timeMachineSetStatus(archiveEnabled ? t("time_machine_finding_capture") : t("time_machine_loading_live"));
+  try {
+    let capture = options.capture || null;
+    let captureCandidates = capture ? [capture] : [];
+    let providerStatus = "";
+    if (archiveEnabled && !capture) {
+      const params = new URLSearchParams({
+        url: originalUrl,
+        date: tab.state.targetDate,
+        provider: providerPreference,
+      });
+      const captureResult = await timeMachineFetchJson("captures", params, controller.signal);
+      timeMachineUpdateDateRange();
+      capture = captureResult.closest || null;
+      const seenProviders = new Set();
+      captureCandidates = [capture, ...(captureResult.captures || [])].filter((candidate) => {
+        const provider = timeMachineCanonicalProvider(candidate?.provider);
+        if (!candidate?.snapshotUrl || !provider || seenProviders.has(provider)) return false;
+        seenProviders.add(provider);
+        return true;
+      });
+      providerStatus = Object.entries(captureResult.providers || {})
+        .map(([provider, state]) => `${timeMachineProviderLabel(provider)}: ${state.status === "ready" ? state.count : t(`time_machine_provider_${state.status}`)}`)
+        .join(" · ");
+      if (!capture) {
+        const details = Object.values(captureResult.providers || {}).map((state) => state.detail).filter(Boolean);
+        throw new Error(details[0] || t("time_machine_no_capture"));
+      }
+    }
+    // A live engine draws the page itself, scripts and all. The snapshot below
+    // is what every deployment without one (and any page an engine refuses)
+    // still gets.
+    const liveTarget = archiveEnabled ? (capture?.browseUrl || capture?.snapshotUrl || "") : originalUrl;
+    if (liveTarget && !options.snapshotOnly) {
+      try {
+        if (await timeMachineOpenLive(tab, { url: originalUrl, fetchedUrl: liveTarget }, archiveEnabled ? capture : null, options.restoreState || null)) {
+          if (controller.signal.aborted) return false;
+          timeMachineSetStatus(
+            archiveEnabled ? t("time_machine_browsing_past") : t("time_machine_browsing_live"),
+            providerStatus || (capture ? timeMachineProviderLabel(capture.provider) : "")
+          );
+          return true;
+        }
+      } catch (error) {
+        if (error?.name === "AbortError") throw error;
+        TimeMachineEngines.demote("open-failed");
+      }
+    }
+    let page = null;
+    let browseError = null;
+    let partialFallback = null;
+    let pageFallback = null;
+    const browseCandidates = archiveEnabled ? captureCandidates : [null];
+    for (const candidate of browseCandidates) {
+      try {
+        const browseTarget = candidate?.browseUrl || candidate?.snapshotUrl || originalUrl;
+        const browseParams = new URLSearchParams({ url: browseTarget, original: originalUrl });
+        page = await timeMachineFetchJson("browse", browseParams, controller.signal);
+        let resolvedCapture = candidate;
+        const replayCapturedAt = timeMachineCanonicalProvider(candidate?.provider) === "wayback"
+          ? timeMachineWaybackCapturedAt(page?.fetchedUrl)
+          : "";
+        if (replayCapturedAt) resolvedCapture = { ...candidate, capturedAt: replayCapturedAt };
+        if (archiveEnabled && page?.reader?.completeness !== "complete") {
+          const fallback = { page, capture: resolvedCapture };
+          if (page?.reader?.completeness === "partial") partialFallback ||= fallback;
+          else pageFallback ||= fallback;
+          page = null;
+          continue;
+        }
+        capture = resolvedCapture;
+        break;
+      } catch (error) {
+        if (error?.name === "AbortError") throw error;
+        browseError = error;
+      }
+    }
+    if (!page && (partialFallback || pageFallback)) {
+      const fallback = partialFallback || pageFallback;
+      page = fallback.page;
+      capture = fallback.capture;
+    }
+    if (!page) throw browseError || new Error(t("time_machine_no_capture"));
+    if (controller.signal.aborted) return false;
+    await timeMachineApplyPage(page, capture, options.restoreState || null);
+    timeMachineSetStatus(
+      page.reader?.completeness === "partial"
+        ? t("time_machine_reader_partial_status")
+        : archiveEnabled ? t("time_machine_browsing_past") : t("time_machine_browsing_live"),
+      providerStatus || (capture ? timeMachineProviderLabel(capture.provider) : "")
+    );
+    return true;
+  } catch (error) {
+    if (error?.name === "AbortError") return false;
+    currentTimeMachinePage = null;
+    TimeMachineEngines.hide();
+    timeMachineFrameEl.removeAttribute("src");
+    timeMachineFrameEl.srcdoc = "";
+    delete timeMachineFrameEl.dataset.frameReady;
+    timeMachineReaderEl.replaceChildren();
+    timeMachineReaderEl.classList.add("is-hidden");
+    timeMachineFrameEl.classList.remove("is-hidden");
+    timeMachineSetReaderActions(false);
+    timeMachineHomeEl.hidden = false;
+    const copy = timeMachineHomeEl.querySelector(".time-machine-home-copy");
+    if (copy) {
+      copy.querySelector("h3").textContent = t("time_machine_could_not_open");
+      copy.querySelector("p").textContent = friendlyErrorDetail(error);
+    }
+    timeMachineSetStatus(t("time_machine_could_not_open"));
+    timeMachineSetStatus(t("time_machine_error", friendlyErrorDetail(error)), { error: true });
+    return false;
+  } finally {
+    // A superseded request (address/date/checkbox changes each fire their
+    // own navigate) must not clear the loading flag for the request that
+    // replaced it — otherwise the UI reports "done loading" while the real,
+    // still-in-flight navigation is the one actually filling the frame.
+    if (currentTimeMachineRequest === controller) {
+      currentTimeMachineRequest = null;
+      timeMachineSetLoading(false);
+    }
+    timeMachineUpdateNavigationButtons();
+  }
+}
+
+function prepareTimeMachineBlankLaunch() {
+  if (timeMachineLaunchPrepared) return activeTimeMachineTab();
+  const project = getActiveProject();
+  if (!project) return null;
+  let blank = getTimeMachineTabs(project).find((tab) => {
+    const address = tab.state?.address || tab.backing?.url || "";
+    return !String(address).trim();
+  });
+  if (!blank) blank = createTimeMachineTab();
+  if (!blank) return null;
+  setActiveDocumentTab("timeMachine", blank.id, project);
+  blank.title = t("time_machine_new_tab");
+  blank.backing.url = "";
+  blank.state = {
+    ...(blank.state || {}),
+    address: "",
+    archiveEnabled: false,
+    targetDate: "",
+    providerPreference: timeMachineProviderInput?.value || "auto",
+    history: [],
+    historyIndex: -1,
+    viewMode: "web",
+    page: null,
+  };
+  timeMachineApplyTabControls(blank);
+  timeMachineAddressInput.value = "";
+  timeMachineShowHome();
+  renderTimeMachineTabs(project);
+  timeMachineLaunchPrepared = true;
+  saveDeskState();
+  return blank;
+}
+
+function openTimeMachineWindow() {
+  const project = getActiveProject();
+  const firstLaunch = !timeMachineLaunchPrepared;
+  let active = firstLaunch ? prepareTimeMachineBlankLaunch() : activeTimeMachineTab(project);
+  if (!active) active = createTimeMachineTab();
+  renderTimeMachineTabs(project);
+  openWindow("timeMachine");
+  if (active && !firstLaunch) {
+    timeMachineApplyTabControls(active);
+    if (active.state?.address && !currentTimeMachinePage) {
+      openTimeMachineTab(active.id);
+    } else if (!active.state?.address) {
+      timeMachineShowHome();
+    }
+  }
+  timeMachineAddressInput?.focus();
+}
+
+function newTimeMachineTab() {
+  captureActiveTimeMachineTabState();
+  const tab = createTimeMachineTab();
+  if (tab) openTimeMachineTab(tab.id);
+  timeMachineAddressInput?.focus();
+}
+
+function stopTimeMachineNavigation() {
+  if (timeMachineEngineActive()) TimeMachineEngines.command(activeTimeMachineTab()?.id || "", "stop");
+  currentTimeMachineRequest?.abort();
+  currentTimeMachineRequest = null;
+  timeMachineSetLoading(false);
+  timeMachineSetStatus(t("time_machine_stopped"));
+  timeMachineUpdateNavigationButtons();
+}
+
+function refreshTimeMachinePage() {
+  if (timeMachineEngineActive()) {
+    TimeMachineEngines.command(activeTimeMachineTab()?.id || "", "reload");
+    return;
+  }
+  const address = timeMachineAddressInput?.value || activeTimeMachineTab()?.state?.address || "";
+  if (address) timeMachineNavigate(address, { fromHistory: true });
+}
+
+function switchTimeMachineSource() {
+  const address = timeMachineAddressInput?.value?.trim() || "";
+  if (!timeMachineEnabledInput?.checked || !address) return false;
+  const current = timeMachineEffectiveProvider();
+  const next = current === "wayback" ? "archive-is" : "wayback";
+  const state = timeMachineHistoryState();
+  if (state.historyIndex >= 0 && state.history[state.historyIndex]) {
+    state.history[state.historyIndex].providerPreference = next;
+    state.history[state.historyIndex].capture = null;
+  }
+  if (activeTimeMachineTab()) activeTimeMachineTab().state.providerPreference = next;
+  timeMachineUpdateSourceSwitch(next);
+  timeMachineNavigate(address, { fromHistory: true, providerPreference: next });
+  return true;
+}
+
+function goBackTimeMachine() {
+  if (timeMachineEngineActive()) {
+    TimeMachineEngines.command(activeTimeMachineTab()?.id || "", "back");
+    return;
+  }
+  const state = timeMachineHistoryState();
+  if (state.historyIndex <= 0) return;
+  state.historyIndex -= 1;
+  const entry = state.history[state.historyIndex];
+  timeMachineEnabledInput.checked = !!entry.archiveEnabled;
+  timeMachineDateInput.value = entry.targetDate || "";
+  timeMachineNavigate(entry.url, {
+    fromHistory: true,
+    capture: entry.capture || null,
+    providerPreference: entry.providerPreference || "auto",
+  });
+}
+
+function goForwardTimeMachine() {
+  if (timeMachineEngineActive()) {
+    TimeMachineEngines.command(activeTimeMachineTab()?.id || "", "forward");
+    return;
+  }
+  const state = timeMachineHistoryState();
+  if (state.historyIndex >= state.history.length - 1) return;
+  state.historyIndex += 1;
+  const entry = state.history[state.historyIndex];
+  timeMachineEnabledInput.checked = !!entry.archiveEnabled;
+  timeMachineDateInput.value = entry.targetDate || "";
+  timeMachineNavigate(entry.url, {
+    fromHistory: true,
+    capture: entry.capture || null,
+    providerPreference: entry.providerPreference || "auto",
+  });
+}
+
+function toggleTimeMachineArchiveMode() {
+  timeMachineEnabledInput.checked = !timeMachineEnabledInput.checked;
+  timeMachineHandleModeChange();
+}
+
+function timeMachineHandleModeChange() {
+  const enabled = !!timeMachineEnabledInput.checked;
+  timeMachineTimeBandEl.classList.toggle("is-active", enabled);
+  if (enabled && !timeMachineDateInput.value) timeMachineDateInput.value = timeMachineToday();
+  captureActiveTimeMachineTabState();
+  timeMachineUpdateDateRange();
+  timeMachineUpdateSourceSwitch();
+  const address = timeMachineAddressInput.value.trim();
+  if (address) timeMachineNavigate(address);
+}
+
+function timeMachineHandleDateChange() {
+  timeMachineCalendarDisplayDate = timeMachineCalendarDate(timeMachineDateInput?.value);
+  captureActiveTimeMachineTabState();
+  timeMachineUpdateDateRange();
+  if (timeMachineDatePopover && !timeMachineDatePopover.hidden) {
+    timeMachineLoadArchiveCalendar(timeMachineCalendarDisplayDate?.getUTCFullYear());
+  }
+  if (timeMachineEnabledInput.checked && timeMachineAddressInput.value.trim()) {
+    timeMachineNavigate(timeMachineAddressInput.value);
+  }
+}
+
+// A selection inside the reader view narrows the question to that passage (see
+// askTimeMachineSource); otherwise the whole readable page goes.
+function describeTimeMachineAskScope() {
+  const page = currentTimeMachinePage;
+  if (!page?.reader?.text) return { ready: false };
+  const selection = timeMachineReaderSelection().text;
+  return {
+    ready: true,
+    object: page.reader.title || page.title || t("time_machine"),
+    range: selection ? t("ask_scope_selection") : t("ask_scope_whole_page"),
+  };
+}
+
+function timeMachineReaderSelection() {
+  if (timeMachineEngineActive() && currentTimeMachineView === "web") {
+    const live = TimeMachineEngines.selection(activeTimeMachineTab()?.id || "");
+    const text = String(live?.text || "").trim();
+    return { selection: null, text, live: text ? live : null };
+  }
+  const selection = window.getSelection();
+  if (!selection?.rangeCount || currentTimeMachineView !== "reader") return { selection: null, text: "" };
+  const anchor = selection.anchorNode?.nodeType === Node.ELEMENT_NODE ? selection.anchorNode : selection.anchorNode?.parentElement;
+  const focus = selection.focusNode?.nodeType === Node.ELEMENT_NODE ? selection.focusNode : selection.focusNode?.parentElement;
+  if (!anchor || !focus || !timeMachineReaderEl.contains(anchor) || !timeMachineReaderEl.contains(focus)) {
+    return { selection: null, text: "" };
+  }
+  return { selection, text: selection.toString().trim() };
+}
+
+function timeMachineSelectionContext(selection, text, radius = 220) {
+  const fullText = (timeMachineReaderEl.querySelector(".reader-body-content")?.innerText || currentTimeMachinePage?.reader?.text || "")
+    .replace(/\s+/g, " ").trim();
+  const normalized = String(text || "").replace(/\s+/g, " ").trim();
+  const index = fullText.indexOf(normalized);
+  if (!selection || index < 0) return { before: "", selected: text, after: "", text };
+  const before = fullText.slice(Math.max(0, index - radius), index).trim();
+  const after = fullText.slice(index + normalized.length, index + normalized.length + radius).trim();
+  return { before, selected: text, after, text: [before, text, after].filter(Boolean).join(" ") };
+}
+
+function timeMachineSourceContract(context, selectedText, capturedAt) {
+  const page = currentTimeMachinePage;
+  const archive = page?.archive;
+  return {
+    type: "reader-clip",
+    readerKind: archive ? "archiveSnapshot" : "web",
+    sourceKind: archive ? "archive_snapshot" : "web",
+    title: page?.reader?.title || page?.title || t("time_machine"),
+    sourceTitle: page?.reader?.title || page?.title || t("time_machine"),
+    url: archive?.snapshotUrl || page?.url || "",
+    originalUrl: page?.url || "",
+    snapshotUrl: archive?.snapshotUrl || "",
+    archiveProvider: archive?.provider || "",
+    readerCompleteness: page?.reader?.completeness || "unavailable",
+    targetDate: timeMachineDateInput.value || "",
+    snapshotTimestamp: archive?.capturedAt || "",
+    site: (() => {
+      try {
+        return new URL(page?.url || "").hostname.replace(/^www\./, "");
+      } catch {
+        return "";
+      }
+    })(),
+    author: page?.reader?.author || "",
+    date: page?.reader?.date || "",
+    capturedAt,
+    retrievedAt: page?.retrievedAt || capturedAt,
+    nearbyContext: context,
+    selectedText,
+  };
+}
+
+function timeMachinePreservationDestination(provider, url) {
+  if (provider === "wayback") return `https://web.archive.org/save/${url}`;
+  if (provider === "archive-is") return `https://archive.is/?run=1&url=${encodeURIComponent(url)}`;
+  return "";
+}
+
+function preserveCurrentTimeMachinePage(provider) {
+  const page = currentTimeMachinePage;
+  if (!page?.url) {
+    timeMachineSetStatus(t("time_machine_preserve_no_page"), { error: true });
+    return false;
+  }
+  if (page.archive || timeMachineEnabledInput?.checked) {
+    timeMachineSetStatus(t("time_machine_preserve_live_only"), { error: true });
+    return false;
+  }
+  const destination = timeMachinePreservationDestination(provider, page.url);
+  const link = provider === "wayback" ? timeMachineSaveWaybackLink : timeMachineSaveArchiveIsLink;
+  if (!destination || !link) return false;
+
+  const requestedAt = new Date().toISOString();
+  const providerLabel = timeMachineProviderLabel(provider);
+  const title = page.reader?.title || page.title || page.url;
+  let site = "";
+  try {
+    site = new URL(page.url).hostname.replace(/^www\./, "");
+  } catch {
+    site = "";
+  }
+  const scrap = createScrap(
+    t("time_machine_preservation_record_title", title),
+    [
+      t("time_machine_preservation_record_body"),
+      "",
+      `Source: ${title}`,
+      site ? `Site: ${site}` : "",
+      `URL: ${page.url}`,
+      `Archive provider: ${providerLabel}`,
+      `Requested at: ${requestedAt}`,
+      `Save page: ${destination}`,
+    ].filter(Boolean).join("\n"),
+    {
+      source: {
+        type: "time-machine-preservation",
+        readerKind: "web",
+        sourceKind: "web_archive_request",
+        title,
+        sourceTitle: title,
+        url: page.url,
+        site,
+        archiveProvider: provider,
+        preservationUrl: destination,
+        requestedAt,
+      },
+      sourceTitle: title,
+      sourceKind: "web_archive_request",
+      capturedAt: requestedAt,
+      reveal: false,
+    }
+  );
+  if (scrap) {
+    scrap.tags = [...new Set(["time-machine", "preservation-request", provider, ...(scrap.tags || [])])];
+    saveDeskState();
+    renderScraps();
+  }
+
+  link.href = destination;
+  link.click();
+  timeMachineSetStatus(t("time_machine_preserve_opened", providerLabel));
+  return true;
+}
+
+function createTimeMachineClip(text, translatedText = "", translationMeta = {}) {
+  const { selection, live } = timeMachineReaderSelection();
+  // A selection in the live page arrives with the words around it, read by
+  // the page itself; Reading View works them out from its own text.
+  const context = live
+    ? {
+      before: String(live.before || "").replace(/\s+/g, " ").trim(),
+      selected: text,
+      after: String(live.after || "").replace(/\s+/g, " ").trim(),
+      text: [live.before, text, live.after].map((part) => String(part || "").replace(/\s+/g, " ").trim()).filter(Boolean).join(" "),
+    }
+    : timeMachineSelectionContext(selection, text);
+  const capturedAt = new Date().toISOString();
+  const source = timeMachineSourceContract(context, text, capturedAt);
+  const archiveRows = source.archiveProvider ? [
+    `Archive provider: ${source.archiveProvider}`,
+    `Snapshot: ${source.snapshotUrl}`,
+    `Snapshot time: ${source.snapshotTimestamp || "unknown"}`,
+    `Target date: ${source.targetDate || "unknown"}`,
+    source.readerCompleteness === "partial" ? "Readable text: preview only" : "",
+  ] : [];
+  const body = text;
+  const scrap = createScrap(`Clip: ${text.slice(0, 20)}...`, body, {
+    source,
+    selectedText: text,
+    sourceTitle: source.title,
+    sourceKind: source.sourceKind,
+    nearbyContext: context,
+    capturedAt,
+    translatedText,
+    translationLanguage: translationMeta.language || "",
+    translationCreatedAt: translationMeta.createdAt || "",
+    translationSource: translatedText ? "Time Machine" : "",
+    translationModel: translationMeta.model || "",
+    context,
+  });
+  if (!scrap) return null;
+  scrap.tags = [...new Set([
+    "reader-clip",
+    source.archiveProvider ? "archive-snapshot" : "web",
+    source.archiveProvider || "",
+    translatedText ? "translation" : "",
+    ...(scrap.tags || []),
+  ].filter(Boolean))];
+  currentTimeMachineClipCount += 1;
+  saveDeskState();
+  renderScraps();
+  updateFlowGuideChecklist({ render: false });
+  timeMachineSetStatus(t("time_machine_clips_count", currentTimeMachineClipCount));
+  return scrap;
+}
+
+function clipTimeMachineSelection() {
+  const { text } = timeMachineReaderSelection();
+  if (!text) {
+    timeMachineSetStatus(t("select_text_first"));
+    return;
+  }
+  // [lane-honesty] createTimeMachineClip's only failure mode is "no project
+  // mounted" (via createScrap), which already shows that status and returns
+  // null. Don't clobber it with a false "clipped" claim.
+  if (createTimeMachineClip(text)) timeMachineSetStatus(t("reader_clipped"));
+}
+
+async function clipTimeMachineSelectionWithTranslation() {
+  const { text } = timeMachineReaderSelection();
+  if (!text) {
+    timeMachineSetStatus(t("select_text_first"));
+    return;
+  }
+  const language = getTranslationTargetForUi(text);
+  if (!language) {
+    timeMachineSetStatus(t("reader_clip_no_translation_needed"));
+    return;
+  }
+  try {
+    document.body.classList.add("is-busy");
+    const createdAt = new Date().toISOString();
+    const model = currentTranslationModel();
+    const translatedText = await translateTextWithLocalModel(text, language, {
+      preserveMarkdown: false,
+      title: currentTimeMachinePage?.title || t("time_machine"),
+    });
+    // [lane-honesty] Same guard as clipTimeMachineSelection above.
+    if (createTimeMachineClip(text, translatedText, { language, createdAt, model })) {
+      timeMachineSetStatus(t("reader_bilingual_clipped"));
+    }
+  } catch (error) {
+    timeMachineSetStatus(t("translation_failed", error.message), { error: true });
+  } finally {
+    document.body.classList.remove("is-busy");
+  }
+}
+
+// The loaded page as a DocMap source. DocMap's own entry points (the desktop
+// icon, the Special menu, a keyboard shortcut) reach for this too, because by
+// the time they run the Time Machine window is no longer the active one.
+function timeMachineDocMapCandidates() {
+  const selection = timeMachineReaderSelection().text;
+  const pageText = currentTimeMachinePage?.reader?.text || "";
+  const base = {
+    label: currentTimeMachinePage?.reader?.title || currentTimeMachinePage?.title || t("time_machine"),
+    scope: "timeMachine",
+    meta: {
+      url: currentTimeMachinePage?.url || "",
+      snapshotUrl: currentTimeMachinePage?.archive?.snapshotUrl || "",
+      archiveProvider: currentTimeMachinePage?.archive?.provider || "",
+      readerCompleteness: currentTimeMachinePage?.reader?.completeness || "unavailable",
+    },
+  };
+  const selectionSource = selection ? docMapSourceWithRange({
+    ...base,
+    text: selection,
+    threshold: docMapMinSelectionChars,
+  }, "selection", { sourceChars: pageText.trim().length || selection.length }) : null;
+  const wholeSource = pageText.trim() ? docMapSourceWithRange({
+    ...base,
+    text: pageText,
+    threshold: docMapMinDocumentChars,
+  }) : null;
+  return { selectionSource, wholeSource };
+}
+
+function timeMachineDocMapReadiness(rangeMode = "auto") {
+  const { selectionSource, wholeSource } = timeMachineDocMapCandidates();
+  return chooseDocMapSourceCandidate(selectionSource, wholeSource, rangeMode);
+}
+
+function timeMachineDocMapSource(rangeMode = "auto") {
+  return timeMachineDocMapReadiness(rangeMode).source;
+}
+
+function makeTimeMachineDocMap(rangeMode = "auto") {
+  const readiness = timeMachineDocMapReadiness(rangeMode);
+  const source = readiness.source || { text: "", scope: "timeMachine" };
+  return withDocMap(() => makeDocMapFromCurrentSource(source, { rangeMode, readiness }));
+}
+
+async function askTimeMachineSource() {
+  const page = currentTimeMachinePage;
+  if (!page?.reader?.text) return;
+  const question = timeMachineQuestionInput?.value?.trim() || "";
+  if (!question) {
+    timeMachineQuestionInput?.focus();
+    return;
+  }
+  const selection = timeMachineReaderSelection().text;
+  const source = selection || page.reader.text;
+  const archiveLine = page.archive
+    ? `${timeMachineProviderLabel(page.archive.provider)} · ${timeMachineCapturedLabel(page.archive.capturedAt)} · ${page.archive.snapshotUrl}`
+    : t("time_machine_live");
+  const completenessLine = page.reader.completeness === "partial"
+    ? t("time_machine_reader_partial_source")
+    : "";
+  const prompt = currentLanguage === "zh"
+    ? [
+      "你正在回答时光机中的网页来源。请区分网页原文、你的推断、以及仍需核对的事实。",
+      `问题：${question.trim()}`,
+      `网页：${page.reader.title || page.title}`,
+      `来源：${archiveLine}`,
+      ...(completenessLine ? [completenessLine] : []),
+      "",
+      clipContextContent(source, selection ? 6000 : 12000),
+    ].join("\n")
+    : [
+      "Answer about the Time Machine web source. Separate source text, inference, and facts that still need checking.",
+      `Question: ${question.trim()}`,
+      `Page: ${page.reader.title || page.title}`,
+      `Source: ${archiveLine}`,
+      ...(completenessLine ? [completenessLine] : []),
+      "",
+      clipContextContent(source, selection ? 6000 : 12000),
+    ].join("\n");
+  // Pair the page with ClioTalk the way Reader, Scrapbook, DocMap, and
+  // ClioStage do, so the answer arrives in a SideAsk session beside its source.
+  const paired = typeof arrangeWindowAssistantSplit === "function"
+    ? await arrangeWindowAssistantSplit("timeMachine")
+    : (await openWindow("assistant"), true);
+  if (!paired) return;
+  if (timeMachineQuestionInput) timeMachineQuestionInput.value = "";
+  markAskBarSent("timeMachine");
+  timeMachineSetStatus(t("time_machine_question_sent"));
+  await submitUserText(prompt, {
+    displayText: `${t("time_machine")}: ${question.trim()}`,
+    skipContext: true,
+    taskKind: "reader",
+  });
+}
+
+function sendTimeMachineCopyToManuscript() {
+  const selection = timeMachineReaderSelection().text;
+  const text = selection || currentTimeMachinePage?.reader?.text || "";
+  if (!text.trim()) return;
+  insertIntoTeachText(text, {
+    title: currentTimeMachinePage?.reader?.title || currentTimeMachinePage?.title || t("time_machine"),
+    plain: true,
+  });
+  timeMachineSetStatus(t(selection ? "reader_selection_sent_manuscript" : "reader_copy_sent_manuscript"));
+}
+
+function openTimeMachineSnapshotSource(source = {}) {
+  openTimeMachineWindow();
+  timeMachineEnabledInput.checked = true;
+  timeMachineTimeBandEl.classList.add("is-active");
+  timeMachineDateInput.value = String(source.snapshotTimestamp || source.targetDate || "").slice(0, 10) || timeMachineToday();
+  return timeMachineNavigate(source.originalUrl || source.url, {
+    capture: source.snapshotUrl ? {
+      provider: source.archiveProvider || "wayback",
+      originalUrl: source.originalUrl || "",
+      snapshotUrl: source.snapshotUrl,
+      browseUrl: source.snapshotUrl,
+      capturedAt: source.snapshotTimestamp || "",
+    } : null,
+  });
+}
+
+function timeMachineHandleFrameMessage(event) {
+  if (!timeMachineFrameEl || event.source !== timeMachineFrameEl.contentWindow) return;
+  const message = event.data;
+  if (!message || message.channel !== "ai-system-6-time-machine") return;
+  if (message.type === "navigate" && message.url) {
+    timeMachineNavigate(message.url);
+    return;
+  }
+  if (message.type === "blocked") {
+    timeMachineSetStatus(t("time_machine_blocked_form"), { error: true });
+  }
+}
+
+timeMachineAddressForm?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  timeMachineNavigate(timeMachineAddressInput.value);
+});
+timeMachineAskForm?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  askTimeMachineSource();
+});
+registerAskBarSource("timeMachine", describeTimeMachineAskScope);
+timeMachineEnabledInput?.addEventListener("change", timeMachineHandleModeChange);
+timeMachineDateInput?.addEventListener("change", timeMachineHandleDateChange);
+timeMachineCalendarButton?.addEventListener("click", (event) => {
+  event.stopPropagation();
+  timeMachineSetDatePopover(timeMachineDatePopover?.hidden !== false);
+});
+timeMachineCalendarPreviousButton?.addEventListener("click", (event) => {
+  event.stopPropagation();
+  timeMachineShiftCalendarMonth(-1);
+});
+timeMachineCalendarNextButton?.addEventListener("click", (event) => {
+  event.stopPropagation();
+  timeMachineShiftCalendarMonth(1);
+});
+document.addEventListener("pointerdown", (event) => {
+  if (!timeMachineDatePopover || timeMachineDatePopover.hidden) return;
+  if (!timeMachineDateControlEl?.contains(event.target)) timeMachineSetDatePopover(false);
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && timeMachineDatePopover && !timeMachineDatePopover.hidden) {
+    timeMachineSetDatePopover(false);
+    timeMachineCalendarButton?.focus();
+  }
+});
+timeMachineProviderInput?.addEventListener("change", () => {
+  captureActiveTimeMachineTabState();
+  saveDeskState();
+  timeMachineUpdateSourceSwitch();
+  if (timeMachineEnabledInput.checked && timeMachineAddressInput.value.trim()) {
+    timeMachineNavigate(timeMachineAddressInput.value);
+  }
+});
+window.addEventListener("message", timeMachineHandleFrameMessage);
+
+// --- Live engines --------------------------------------------------------
+//
+// time-machine-engine.js draws a page with its scripts running (the Mac's
+// WebKit or the browse origin). The functions here are what the window does
+// with what an engine reports; nothing an engine reports is treated as more
+// than the page's own data.
+
+function timeMachineEngineActive() {
+  return !!currentTimeMachinePage?.engine && TimeMachineEngines.kind() !== "snapshot";
+}
+
+function timeMachineDisplayAddress(url) {
+  try {
+    return timeMachineUnwrapArchiveUrl(url);
+  } catch {
+    return url;
+  }
+}
+
+async function timeMachineOpenLive(tab, page, archive = null, restoreState = null) {
+  const engine = await TimeMachineEngines.detect();
+  if (engine.kind === "snapshot") return false;
+  currentTimeMachinePage = {
+    url: page.url,
+    title: restoreState?.page?.title || "",
+    fetchedUrl: page.fetchedUrl || page.url,
+    retrievedAt: new Date().toISOString(),
+    reader: null,
+    archive,
+    kind: archive ? "archiveSnapshot" : "web",
+    engine: engine.kind,
+  };
+  currentTimeMachineClipCount = 0;
+  timeMachineHomeEl.hidden = true;
+  timeMachineFrameEl.removeAttribute("srcdoc");
+  timeMachineFrameEl.removeAttribute("src");
+  delete timeMachineFrameEl.dataset.frameReady;
+  timeMachineReaderEl.replaceChildren();
+  currentTimeMachineView = "web";
+  await TimeMachineEngines.open(tab.id, page.fetchedUrl || page.url);
+  timeMachineSyncViewButtons();
+  timeMachineSetReaderActions(false);
+  timeMachineUpdateSourceSwitch(archive?.provider || "");
+  timeMachineUpdateWindowTitle(currentTimeMachinePage, archive);
+  tab.title = currentTimeMachinePage.title || page.url || t("time_machine_new_tab");
+  tab.backing.url = page.url || "";
+  renderTimeMachineTabs();
+  captureActiveTimeMachineTabState();
+  saveDeskState();
+  return true;
+}
+
+function timeMachineRestoreLive(tab) {
+  const saved = tab.state.page;
+  currentTimeMachinePage = { ...saved, engine: TimeMachineEngines.kind() };
+  currentTimeMachineView = tab.state.viewMode === "reader" && saved.reader?.text ? "reader" : "web";
+  timeMachineHomeEl.hidden = true;
+  timeMachineAddressInput.value = saved.url || tab.state.address || "";
+  timeMachineRenderReader();
+  timeMachineSyncViewButtons();
+  timeMachineSetReaderActions(!!saved.reader?.text);
+  timeMachineUpdateWindowTitle(currentTimeMachinePage, saved.archive || null);
+  timeMachineUpdateNavigationButtons();
+  renderTimeMachineProvenance();
+}
+
+let timeMachineLiveReaderTimer = 0;
+function scheduleTimeMachineLiveReader(tabId) {
+  window.clearTimeout(timeMachineLiveReaderTimer);
+  timeMachineLiveReaderTimer = window.setTimeout(() => timeMachineExtractLiveReader(tabId), 700);
+}
+
+// The readable text of the page as it is on screen, scripts run. Reading
+// View, DocMap, Ask and Send to Manuscript all read this.
+async function timeMachineExtractLiveReader(tabId) {
+  if (!tabId || activeTimeMachineTab()?.id !== tabId || !timeMachineEngineActive()) return false;
+  const page = currentTimeMachinePage;
+  try {
+    const dom = await TimeMachineEngines.readDocument(tabId);
+    if (!dom?.html || currentTimeMachinePage !== page) return false;
+    const response = await window.AISystem6Capabilities.requestService("reader.extract", {
+      url: timeMachineDisplayAddress(String(dom.url || page.url)),
+      html: String(dom.html),
+    });
+    const payload = await response.json().catch(() => null);
+    if (currentTimeMachinePage !== page) return false;
+    if (!response.ok || !payload?.text) {
+      page.reader = null;
+      timeMachineSetReaderActions(false);
+      return false;
+    }
+    page.reader = {
+      title: String(payload.title || page.title || ""),
+      text: String(payload.text || ""),
+      author: String(payload.author || ""),
+      date: String(payload.date || ""),
+      completeness: page.archive ? "complete" : String(payload.completeness || "complete"),
+    };
+    timeMachineSetReaderActions(true);
+    if (currentTimeMachineView === "reader") timeMachineRenderReader();
+    captureActiveTimeMachineTabState();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+TimeMachineEngines.hooks.onState = (tabId, state) => {
+  const tabs = getTimeMachineTabs();
+  const owner = tabs.find((candidate) => candidate.id === tabId);
+  if (!owner) return;
+  const address = timeMachineDisplayAddress(state.url || owner.state?.address || "");
+  const active = activeTimeMachineTab()?.id === tabId;
+  const changed = (owner.state?.address || "") !== address;
+  owner.title = state.title || owner.title;
+  owner.backing = { ...(owner.backing || {}), type: "webNavigation", url: address };
+  owner.state = { ...(owner.state || {}), address };
+  if (active && timeMachineEngineActive()) {
+    const page = currentTimeMachinePage;
+    if (page.url !== address) {
+      page.reader = null;
+      timeMachineSetReaderActions(false);
+    }
+    page.url = address;
+    page.fetchedUrl = state.url || page.fetchedUrl;
+    page.title = state.title || page.title;
+    if (page.archive) {
+      const capturedAt = timeMachineWaybackCapturedAt(state.url);
+      if (capturedAt) page.archive = { ...page.archive, capturedAt, snapshotUrl: state.url };
+    }
+    if (document.activeElement !== timeMachineAddressInput) timeMachineAddressInput.value = address;
+    timeMachineUpdateWindowTitle(page, page.archive || null);
+    timeMachineUpdateNavigationButtons();
+    if (!state.loading && !page.reader) scheduleTimeMachineLiveReader(tabId);
+  }
+  renderTimeMachineTabs();
+  if (changed && !state.loading) {
+    if (active) captureActiveTimeMachineTabState();
+    saveDeskState();
+  }
+};
+
+TimeMachineEngines.hooks.onSelection = () => {
+  refreshAskBar("timeMachine");
+};
+
+TimeMachineEngines.hooks.onLoadFailed = (tabId, detail) => {
+  if (activeTimeMachineTab()?.id !== tabId) return;
+  timeMachineSetStatus(t("time_machine_error", detail.message || t("time_machine_could_not_open")), { error: true });
+};
+
+TimeMachineEngines.hooks.onOpen = (url) => {
+  captureActiveTimeMachineTabState();
+  const tab = createTimeMachineTab({ url });
+  if (tab) openTimeMachineTab(tab.id);
+};
+
+TimeMachineEngines.hooks.onKey = (key, shift) => {
+  if (key === "l") {
+    timeMachineAddressInput?.focus();
+    timeMachineAddressInput?.select();
+  } else if (key === "t") newTimeMachineTab();
+  else if (key === "w") runTimeMachineMenuCommand("close-tab");
+  else if (key === "[") goBackTimeMachine();
+  else if (key === "]") goForwardTimeMachine();
+  else if (key === "r" && !shift) refreshTimeMachinePage();
+};
+
+TimeMachineEngines.hooks.onFocus = () => {
+  if (timeMachineWindowEl && !timeMachineWindowEl.classList.contains("is-active") && typeof focusWindow === "function") {
+    focusWindow(timeMachineWindowEl);
+  }
+};
+
+TimeMachineEngines.hooks.onUnavailable = (tabId) => {
+  // The engine could not start (no service worker here); the same address
+  // opens as a snapshot, and stays a snapshot for the rest of this visit.
+  if (activeTimeMachineTab()?.id !== tabId) return;
+  const address = timeMachineAddressInput?.value || "";
+  currentTimeMachinePage = null;
+  if (address) timeMachineNavigate(address, { fromHistory: true });
+};
+
+function openTimeMachinePageInBrowser() {
+  const page = currentTimeMachinePage;
+  const url = page?.archive?.snapshotUrl || page?.url || "";
+  if (!/^https?:\/\//i.test(url)) return false;
+  // Only this command leaves Time Machine, and only because the writer chose
+  // it from the menu: a link the page itself follows stays in the window.
+  const link = document.createElement("a");
+  link.href = url;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  link.click();
+  return true;
+}
+
+async function clearTimeMachineBrowsingData() {
+  const answer = await showSystemModal(t("time_machine_clear_confirm"), "confirm", {
+    confirmKey: "time_machine_clear_browsing_data_button",
+    defaultAction: "cancel",
+    danger: true,
+  });
+  if (answer !== "yes") return false;
+  const ok = await TimeMachineEngines.clearData().catch(() => false);
+  timeMachineSetStatus(ok ? t("time_machine_cleared") : t("time_machine_clear_failed"), { error: !ok });
+  const address = timeMachineAddressInput?.value || "";
+  if (ok && address && timeMachineEngineActive()) timeMachineNavigate(address, { fromHistory: true });
+  return ok;
+}
+
+function setTimeMachineAdBlocking(enabled) {
+  TimeMachineEngines.setAdblock(enabled);
+  timeMachineSetStatus(t(enabled ? "time_machine_ads_blocked" : "time_machine_ads_allowed"));
+  if (timeMachineEngineActive()) refreshTimeMachinePage();
+  return true;
+}
+
+function attachTimeMachineWindow() {
+  const project = getActiveProject();
+  const active = activeTimeMachineTab(project) || prepareTimeMachineBlankLaunch();
+  renderTimeMachineTabs(project);
+  if (active) timeMachineApplyTabControls(active);
+  timeMachineUpdateNavigationButtons();
+  timeMachineUpdateSourceSwitch();
+}
+
+function runTimeMachineMenuCommand(command) {
+  if (command === "open") return openTimeMachineWindow();
+  if (command === "new-tab") return newTimeMachineTab();
+  if (command === "close-tab") {
+    const tab = activeTimeMachineTab();
+    return tab ? closeTimeMachineTab(tab.id) : false;
+  }
+  if (command === "back") return goBackTimeMachine();
+  if (command === "forward") return goForwardTimeMachine();
+  if (command === "stop") return stopTimeMachineNavigation();
+  if (command === "refresh") return refreshTimeMachinePage();
+  if (command === "switch-source") return switchTimeMachineSource();
+  if (command === "toggle") return toggleTimeMachineArchiveMode();
+  if (command === "web-view") return showTimeMachineWebView();
+  if (command === "reader-view") return showTimeMachineReaderView();
+  if (command === "preserve-wayback") return preserveCurrentTimeMachinePage("wayback");
+  if (command === "preserve-archive-is") return preserveCurrentTimeMachinePage("archive-is");
+  if (command === "clip") return clipTimeMachineSelection();
+  if (command === "clip-translate") return clipTimeMachineSelectionWithTranslation();
+  if (command === "docmap") return makeTimeMachineDocMap();
+  if (command === "docmap-selection") return makeTimeMachineDocMap("selection");
+  if (command === "docmap-source") return makeTimeMachineDocMap("source");
+  if (command === "ask") return askTimeMachineSource();
+  if (command === "send-manuscript") return sendTimeMachineCopyToManuscript();
+  if (command === "open-in-browser") return openTimeMachinePageInBrowser();
+  if (command === "clear-data") return clearTimeMachineBrowsingData();
+  if (command === "block-ads") return setTimeMachineAdBlocking(true);
+  if (command === "allow-ads") return setTimeMachineAdBlocking(false);
+}
+
+// What the Navigate and Edit menus are allowed to offer right now.
+//
+// Every condition here is the same one the command itself already checks before
+// refusing, so the menu greys instead of accepting a click and answering with a
+// status line. Only this module knows the state, and it is lazy, so
+// getActionAvailability() reads it through the public API and treats an
+// unloaded Time Machine as "nothing available".
+function timeMachineMenuState() {
+  const tab = activeTimeMachineTab();
+  const history = timeMachineHistoryState();
+  const address = String(timeMachineAddressInput?.value || tab?.state?.address || "").trim();
+  const readerText = String(currentTimeMachinePage?.reader?.text || "").trim();
+  const selectionText = timeMachineReaderSelection().text;
+  const archiveMode = !!timeMachineEnabledInput?.checked;
+  return {
+    hasTab: !!tab,
+    canGoBack: history.historyIndex > 0,
+    canGoForward: history.historyIndex >= 0 && history.historyIndex < history.history.length - 1,
+    canStop: !!currentTimeMachineRequest,
+    canRefresh: !!address,
+    canSwitchSource: archiveMode && !!address,
+    canShowWebView: currentTimeMachineView !== "web",
+    canShowReaderView: currentTimeMachineView !== "reader" && !!readerText,
+    // Preservation submits a live page to an archive. An address you are
+    // already reading out of an archive has nothing to preserve.
+    canPreserve: !!currentTimeMachinePage?.url && !currentTimeMachinePage?.archive && !archiveMode,
+    hasSelection: !!selectionText,
+    hasReaderText: !!readerText,
+    canSendManuscript: !!(selectionText || readerText),
+    canOpenInBrowser: !!currentTimeMachinePage?.url,
+    liveEngine: TimeMachineEngines.kind() !== "snapshot",
+    blockingAds: TimeMachineEngines.adblockEnabled(),
+  };
+}
+
+function captureTimeMachineSession() {
+  captureActiveTimeMachineTabState();
+  return {
+    projectId: activeProjectId,
+    activeTabId: activeTimeMachineTab()?.id || "",
+  };
+}
+
+function restoreTimeMachineSession() {
+  return prepareTimeMachineBlankLaunch();
+}
+
+window.AISystem6TimeMachine = Object.freeze({
+  attach: attachTimeMachineWindow,
+  captureSession: captureTimeMachineSession,
+  restoreSession: restoreTimeMachineSession,
+  runMenuCommand: runTimeMachineMenuCommand,
+  openSnapshot: openTimeMachineSnapshotSource,
+  docMapSource: timeMachineDocMapSource,
+  docMapReadiness: timeMachineDocMapReadiness,
+  menuState: timeMachineMenuState,
+  setStatus: timeMachineSetStatus,
+});
+
+// The second window's read-only view (§3.1 shape (V)). Its own name, not the
+// browser's: the lazy builder in time-machine-instances.js renders through
+// this, and nothing else may.
+window.AISystem6TimeMachineView = Object.freeze({ render: renderTimeMachineReadOnly });
+
+const TIME_MACHINE_COMMAND_NAMES = [
+  "time-machine-new-tab",
+  "time-machine-close-tab",
+  "time-machine-back",
+  "time-machine-forward",
+  "time-machine-stop",
+  "time-machine-refresh",
+  "time-machine-switch-source",
+  "time-machine-toggle",
+  "time-machine-web-view",
+  "time-machine-reader-view",
+  "time-machine-preserve-wayback",
+  "time-machine-preserve-archive-is",
+  "time-machine-clip",
+  "time-machine-clip-translate",
+  "time-machine-docmap",
+  "time-machine-docmap-selection",
+  "time-machine-docmap-source",
+  "time-machine-ask",
+  "time-machine-send-manuscript",
+  "time-machine-open-in-browser",
+  "time-machine-clear-data",
+  "time-machine-block-ads",
+  "time-machine-allow-ads",
+];
+
+function timeMachineCommandAvailable(action) {
+  if (action === "open-time-machine") return true;
+  const activeWindow = document.querySelector(".window.is-active");
+  if (activeWindow?.dataset.window !== "timeMachine") return false;
+  const menu = timeMachineMenuState();
+  const readiness = timeMachineDocMapReadiness();
+  switch (action) {
+    case "time-machine-new-tab":
+    case "time-machine-close-tab":
+      return !!menu.hasTab;
+    case "time-machine-back":
+      return !!menu.canGoBack;
+    case "time-machine-forward":
+      return !!menu.canGoForward;
+    case "time-machine-stop":
+      return !!menu.canStop;
+    case "time-machine-refresh":
+      return !!menu.canRefresh;
+    case "time-machine-switch-source":
+      return !!menu.canSwitchSource;
+    case "time-machine-toggle":
+      return true;
+    case "time-machine-web-view":
+      return !!menu.canShowWebView;
+    case "time-machine-reader-view":
+      return !!menu.canShowReaderView;
+    case "time-machine-preserve-wayback":
+    case "time-machine-preserve-archive-is":
+      return !!menu.canPreserve;
+    case "time-machine-clip":
+    case "time-machine-clip-translate":
+      return !!menu.hasSelection;
+    case "time-machine-docmap":
+      return !!readiness?.ready;
+    case "time-machine-docmap-selection":
+      return !!readiness?.selectionReady;
+    case "time-machine-docmap-source":
+      return !!readiness?.wholeReady;
+    case "time-machine-ask":
+      return !!menu.hasReaderText;
+    case "time-machine-send-manuscript":
+      return !!menu.canSendManuscript;
+    case "time-machine-open-in-browser":
+      return !!menu.canOpenInBrowser;
+    case "time-machine-clear-data":
+      return !!menu.liveEngine;
+    case "time-machine-block-ads":
+      return !!menu.liveEngine && !menu.blockingAds;
+    case "time-machine-allow-ads":
+      return !!menu.liveEngine && !!menu.blockingAds;
+    default:
+      return false;
+  }
+}
+
+window.AISystem6Runtime?.registerApplication({
+  id: "timeMachine",
+  windowName: "timeMachine",
+  mount: attachTimeMachineWindow,
+  restore: attachTimeMachineWindow,
+  commands: Object.fromEntries(
+    ["open-time-machine", ...TIME_MACHINE_COMMAND_NAMES].map((action) => {
+      const handler = action === "open-time-machine"
+        ? () => openTimeMachineWindow()
+        : () => runTimeMachineMenuCommand(action.slice("time-machine-".length));
+      return [action, {
+        handler,
+        isAvailable: () => timeMachineCommandAvailable(action),
+      }];
+    })
+  ),
+});
+window.AISystem6TimeMachineLoaded = true;

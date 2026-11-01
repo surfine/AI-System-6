@@ -1,0 +1,3644 @@
+/* ClioTalk shell (app/features/cliotalk-shell.js): the Clio main interface in
+   the Liquid Glass and Classic appearances. Yosemite and Big Sur wear the
+   glass skin and answer its palette through the --cl-*-era hooks on the glass
+   block below (unset = Liquid Glass's own value), set in their era files. Source of the values:
+   internal/design-proposals/2026-10-30-clio-main-ui (clio.css, Spec.dc.html,
+   Classic.dc.html).
+   Lazy sheet. The tokens sit on .clio-shell, not :root, because the boot
+   floppy has no bytes for a foundation block; the names are --cl-* so they
+   cannot meet the product's own --clio-* tokens.
+
+   Spec rules kept here: type ladder 12 / 14 / 16 / 24 only, 1px lines, at most
+   one shadow per surface, opaque fills, no middle-dot separators. Motion
+   follows the Spec table: a press scales to 0.97 in 150ms, a popup grows from
+   its button in 160ms, the output panel slides in from the right in 220ms
+   and out in 160ms, hover shows only with a mouse, and keyboard actions
+   (⌘N, ⌘K, ⌘\, Esc) never animate.
+
+   The layout answers to .clio-shell[data-skin], an attribute the module keeps
+   in step with the appearance: "glass" for Liquid Glass, "classic" for
+   Classic. Outside them the wrapper is display: contents, so the window lays
+   out as it did before, and the sidebar, greeting, empty-state note, model
+   menu, output panel and the replies' Open buttons stay hidden. So do the
+   phone's parts (the conversation's head, the task strip, the sheet's
+   handle and scrim), which only a phone held upright shows; see "Phone".
+
+   ClioCode (app/features/code.js) is built on the same shell: its window
+   (.clio-code-window) wears these skins, sidebar rows, task cards, panel
+   head and buttons (.cc-bar marks its button rows), so every rule here that
+   names the shell names both windows. Its own parts (the diff, the
+   checkpoint timeline) are in 99-cliotalk-agent.css. */
+
+.clio-shell,
+.clio-main {
+  display: contents;
+}
+
+.clio-sidebar,
+.clio-work,
+.clio-greeting,
+.clio-empty-note,
+.clio-model-menu,
+.clio-panel,
+.cl-thread-head,
+.cl-strip,
+.cl-scrim,
+.cl-sheet-handle {
+  display: none;
+}
+
+.assistant-window .clio-shell:not([data-skin]) .clio-open-output {
+  display: none;
+}
+
+/* A task's cards sit in the thread in every appearance (the progress panel
+   needs a skin): stacked, its options one to a line, its buttons in a row.
+   Without a skin a card is a plain ruled box. */
+:is(.assistant-window, .clio-code-window) .clio-task {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: min(100%, var(--clio-transcript-width));
+  margin: 0 auto 14px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-task :is(.cl-card, .cl-options) {
+  display: flex;
+  flex-direction: column;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-task .cl-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-task .cl-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.assistant-window .clio-shell:not([data-skin]) .cl-card {
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--ink);
+}
+
+.assistant-window .clio-main.has-task .clio-welcome {
+  display: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] {
+  --cl-ink: var(--cl-era-ink, #16171a);
+  --cl-ink-2: var(--cl-era-ink-2, #4f535a);
+  --cl-ink-3: var(--cl-era-ink-3, #666b73);
+  --cl-line: var(--cl-era-line, #e4e6e9);
+  --cl-line-strong: var(--cl-era-line-strong, #cfd3d8);
+  --cl-window: var(--cl-era-window, #ffffff);
+  --cl-sidebar: var(--cl-era-sidebar, #f3f5f7);
+  --cl-raised: var(--cl-era-raised, #f6f7f9);
+  --cl-hover: var(--cl-era-hover, #eaedf0);
+  --cl-selected: var(--cl-era-selected, #e2e5e9);
+  --cl-accent: var(--cl-era-accent, #0a5ccc);
+  --cl-accent-ink: var(--cl-era-accent-ink, #ffffff);
+  --cl-off: var(--cl-era-off, #c5ccd6);
+  --cl-warn-bg: var(--cl-era-warn-bg, #fff6e5);
+  --cl-warn-line: var(--cl-era-warn-line, #e3b45a);
+  --cl-check-line: var(--cl-era-check-line, #a9aeb5);
+  --cl-r-sm: var(--cl-era-r-sm, 8px);
+  --cl-r-md: var(--cl-era-r-md, 12px);
+  --cl-r-lg: var(--cl-era-r-lg, var(--cl-era-r-md, 16px));
+  --cl-ease: cubic-bezier(0.23, 1, 0.32, 1);
+  --cl-font-doc: "Songti SC", "STSong", "SimSun", serif;
+  --clio-transcript-width: 720px;
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  container: clio-shell / inline-size;
+  background: var(--cl-window);
+  color: var(--cl-ink);
+  font-size: 14px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The sidebar needs 720px of the shell. An era whose frame keeps a scroll
+   lane (--cl-era-window-min, set in its appearance sheet) opens a lane wider. */
+.assistant-window:has(> .clio-shell[data-skin="glass"]) {
+  min-width: var(--cl-era-window-min, 380px);
+}
+
+/* Yosemite: 10.10's greys, grey source-list selection, #116cd6 accent and 5/6px
+   radii. Kept here, not in the era file, because the era file rides the boot
+   floppy and this sheet does not; the rest keeps Liquid Glass's values. */
+body[data-lineage~="yosemite"] :is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] {
+  --cl-era-line: rgba(0, 0, 0, 0.12);
+  --cl-era-window: #fff;
+  --cl-era-sidebar: #ececec;
+  --cl-era-raised: #f5f5f5;
+  --cl-era-hover: rgba(0, 0, 0, 0.05);
+  --cl-era-selected: #cecece;
+  --cl-era-accent: var(--selection-bg);
+  --cl-era-r-sm: 5px;
+  --cl-era-r-md: 6px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-main {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Sidebar --------------------------------------------------------------- */
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-sidebar {
+  box-sizing: border-box;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 2px;
+  width: 264px;
+  padding: 10px 8px;
+  overflow: auto;
+  border-right: 1px solid var(--cl-line);
+  background: var(--cl-sidebar);
+}
+
+/* Below this width the conversation keeps the room; New Chat (⌘N) and the
+   Recent menu entries still reach everything the sidebar does. The window opens
+   720px wide; an era that frames it with a 1px border (Yosemite, Big Sur) leaves
+   the shell 718px, so the line sits at 699px, not at the window's own width. */
+@container clio-shell (max-width: 699px) {
+  :is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-sidebar {
+    display: none;
+  }
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-sidebar .cl-side-row,
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-sidebar .cl-recent {
+  box-sizing: border-box;
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--cl-r-sm);
+  background: transparent;
+  box-shadow: none;
+  color: var(--cl-ink);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: left;
+  white-space: nowrap;
+  cursor: default;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-sidebar .cl-side-row {
+  height: 32px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-sidebar .cl-recent {
+  height: 30px;
+  overflow: hidden;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-sidebar .cl-recent-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-sidebar .cl-recent.is-sel,
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-sidebar .cl-side-row:is([aria-expanded="true"], [aria-current="page"]) {
+  background: var(--cl-selected);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-sidebar .cl-side-row:disabled {
+  color: var(--cl-ink-3);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-sidebar .cl-ico {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--cl-ink-2);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-sidebar .cl-key {
+  margin-left: auto;
+  color: var(--cl-ink-3);
+  font-size: 12px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-sidebar .cl-side-label {
+  padding: 14px 10px 4px;
+  color: var(--cl-ink-3);
+  font-size: 12px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-sidebar .cl-recent-list {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-sidebar .cl-recent-empty {
+  padding: 6px 10px;
+  color: var(--cl-ink-3);
+  font-size: 12px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-sidebar .cl-search {
+  padding: 2px 0 4px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-sidebar .cl-search[hidden] {
+  display: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-sidebar .cl-search input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--cl-line-strong);
+  border-radius: var(--cl-r-sm);
+  background: var(--cl-window);
+  box-shadow: none;
+  color: var(--cl-ink);
+  font: inherit;
+  font-size: 14px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-sidebar .cl-search input:focus-visible {
+  outline: 0;
+  border-color: var(--cl-accent);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-sidebar :is(.cl-side-row, .cl-recent):focus-visible {
+  outline: 1px solid var(--cl-accent);
+  outline-offset: -1px;
+}
+
+/* Hover shows only with a mouse; the first tap on touch is a selection. */
+@media (hover: hover) and (pointer: fine) {
+  :is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-sidebar :is(.cl-side-row, .cl-recent):hover:not(:disabled):not(.is-sel) {
+    background: var(--cl-hover);
+  }
+}
+
+/* Details bar ------------------------------------------------------------ */
+
+/* The window's own bar (chat file, Agent, Connect AI), moved into the top of
+   the conversation column: one quiet 32px row, its contents to the right. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .assistant-details-bar {
+  --clio-file-chip-bg: transparent;
+  --clio-file-chip-border: 1px solid transparent;
+  --clio-file-chip-disabled-border: 1px solid transparent;
+  --clio-file-chip-radius: var(--cl-r-sm);
+  box-sizing: border-box;
+  justify-content: flex-end;
+  gap: 8px;
+  min-height: 32px;
+  padding: 0 16px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--cl-ink-3);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .assistant-details-bar .btn {
+  --btn-hover-bg: var(--cl-hover);
+  --btn-hover-shadow: none;
+  min-width: 0;
+  height: 24px;
+  min-height: 24px;
+  padding: 0 10px;
+  border: 1px solid var(--cl-era-btn-border, var(--cl-line));
+  border-radius: var(--cl-era-btn-radius, var(--cl-r-sm));
+  background: var(--cl-era-btn-bg, var(--cl-window));
+  box-shadow: var(--cl-era-btn-shadow, none);
+  color: var(--cl-ink-2);
+  font: inherit;
+  line-height: 1;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .assistant-details-bar .btn[aria-pressed="true"] {
+  background: var(--cl-selected);
+  color: var(--cl-ink);
+}
+
+/* The file's name and where it lives, on one line. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .assistant-details-bar .clio-chat-file-link {
+  grid-template-columns: auto minmax(0, max-content) minmax(0, 1fr);
+  column-gap: 6px;
+  min-height: 24px;
+  max-width: min(60%, 48ch);
+  padding: 0 6px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .assistant-details-bar .clio-chat-file-mark {
+  grid-row: auto;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .assistant-details-bar .clio-chat-file-link > small {
+  font-size: 12px;
+  opacity: 1;
+}
+
+/* Conversation column and empty state ------------------------------------ */
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .messages-stage {
+  flex: 1;
+  min-height: 0;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .messages {
+  padding: 28px 32px 8px;
+  background: var(--cl-window);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-main .clio-greeting {
+  display: none;
+  margin: 0;
+  color: var(--cl-ink);
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: 0;
+  text-align: center;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-main.is-empty {
+  align-items: center;
+  justify-content: center;
+  padding: 0 32px 40px;
+}
+
+/* The bar stays at the top of the column without moving the centred page. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-main.is-empty .assistant-details-bar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-main.is-empty .clio-greeting {
+  display: block;
+  margin-bottom: 22px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-main.is-empty .messages-stage {
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: 720px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-main.is-empty .messages {
+  min-height: 0;
+  padding: 0;
+  overflow: visible;
+}
+
+/* A ready model needs no welcome card: the greeting is the whole empty page.
+   The card stays for the states that say something (no model connected,
+   temporary chat, SideAsk), drawn as one quiet line of copy. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-main.is-empty .clio-welcome:has(.clio-welcome-actions) {
+  display: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-main.is-empty .clio-welcome {
+  display: block;
+  min-height: 0;
+  padding: 0 0 22px;
+  background: none;
+  box-shadow: none;
+  color: var(--cl-ink-2);
+  font-size: 14px;
+  text-align: center;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-main.is-empty .clio-welcome :is(.clio-welcome-icon, .speaker) {
+  display: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-main.is-empty .clio-welcome .message-content {
+  max-width: none;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Its lead line is copy, not a second heading under the greeting. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-main.is-empty .clio-welcome .message-content strong {
+  margin: 0;
+  color: var(--cl-ink);
+  font: inherit;
+}
+
+/* No model: the greeting, the composer and one line under it with the
+   window's Connect AI action. The details bar's own Connect AI waits until
+   the conversation has started. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-main.needs-model :is(.messages-stage, #clio-connect-ai) {
+  display: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-main.needs-model .clio-empty-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0 4px;
+  margin: 12px 0 0;
+  color: var(--cl-ink-2);
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-empty-note .btn {
+  --btn-hover-bg: var(--cl-hover);
+  --btn-hover-shadow: none;
+  min-width: 0;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--cl-r-sm);
+  background: transparent;
+  box-shadow: none;
+  color: var(--cl-accent);
+  font: inherit;
+}
+
+/* Composer --------------------------------------------------------------- */
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .composer {
+  box-sizing: border-box;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-self: center;
+  width: calc(100% - 64px);
+  max-width: 720px;
+  margin: 8px 0 18px;
+  padding: 0;
+  border: 1px solid var(--cl-line-strong);
+  border-radius: var(--cl-r-lg);
+  background: var(--cl-window);
+  box-shadow: 0 2px 8px rgba(16, 17, 20, 0.06);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .composer:focus-within {
+  border-color: var(--cl-ink-3);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-main.is-empty .composer {
+  width: 100%;
+  margin: 0;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .composer textarea {
+  box-sizing: border-box;
+  min-height: 52px;
+  padding: 14px 16px 6px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--cl-ink);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .composer textarea::placeholder {
+  color: var(--cl-ink-3);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .composer-action-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 6px 8px 8px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .composer-key-hint {
+  display: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .composer .composer-icon-button,
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .composer .clio-entry-loadout,
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .composer .clio-model-button {
+  box-sizing: border-box;
+  height: 32px;
+  min-height: 32px;
+  margin: 0;
+  border: 1px solid var(--cl-line);
+  border-radius: var(--cl-r-sm);
+  background: var(--cl-window);
+  box-shadow: none;
+  color: var(--cl-ink-2);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .composer .composer-icon-button {
+  width: 32px;
+  min-width: 32px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .composer .composer-plus-glyph {
+  width: 16px;
+  height: 16px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .composer .composer-plus-glyph::before {
+  width: 16px;
+  height: 1.5px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .composer .composer-plus-glyph::after {
+  width: 1.5px;
+  height: 16px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .composer .composer-file-button[aria-expanded="true"] {
+  border-color: var(--cl-line-strong);
+  background: var(--cl-hover);
+  color: var(--cl-ink);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .composer .composer-file-button[aria-expanded="true"] .composer-plus-glyph::before,
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .composer .composer-file-button[aria-expanded="true"] .composer-plus-glyph::after {
+  background: currentColor;
+}
+
+/* The context readout is the "卷宗" pill: present only while the message
+   carries something, empty otherwise. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .composer .clio-entry-loadout {
+  max-width: 240px;
+  padding: 0 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .composer .clio-entry-loadout:empty {
+  display: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .composer .clio-entry-loadout:disabled {
+  opacity: 1;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .composer .assistant-meter {
+  margin-left: auto;
+  color: var(--cl-ink-3);
+  font-size: 12px;
+}
+
+/* Model menu: the menu bar's own content, shown from the composer. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-model-menu {
+  position: relative;
+  display: block;
+  flex: 0 1 auto;
+  min-width: 0;
+  margin-left: auto;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .composer .clio-model-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 240px;
+  padding: 0 10px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-model-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-model-button .cl-chev-down {
+  flex: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-model-popover {
+  top: auto;
+  right: 0;
+  bottom: calc(100% + 6px);
+  left: auto;
+  transform-origin: bottom right;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-model-menu.is-open .clio-model-popover {
+  animation: clio-shell-pop 160ms var(--cl-ease);
+}
+
+@keyframes clio-shell-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Send: blue, grey while the field is empty. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .composer .composer-submit-button {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  min-height: 32px;
+  margin-left: 0;
+  border: 0;
+  border-radius: var(--cl-r-sm);
+  background: var(--cl-accent);
+  box-shadow: none;
+  color: var(--cl-accent-ink);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .composer .composer-submit-button:disabled {
+  background: var(--cl-off);
+  color: var(--cl-accent-ink);
+  opacity: 1;
+  --btn-disabled-opacity: 1;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .composer .composer-submit-button.is-stop {
+  background: var(--cl-ink);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .composer .composer-send-glyph {
+  width: 16px;
+  height: 16px;
+}
+
+/* Press feedback: it heard you. Nothing else on these controls moves. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] :is(.composer .composer-icon-button, .composer .clio-model-button, .composer .composer-submit-button, .clio-sidebar .cl-side-row, .clio-sidebar .cl-recent) {
+  transition: transform 150ms var(--cl-ease);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] :is(.composer .composer-icon-button, .composer .clio-model-button, .composer .composer-submit-button, .clio-sidebar .cl-side-row, .clio-sidebar .cl-recent):active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] :is(.composer .composer-icon-button, .composer .clio-model-button, .composer .composer-submit-button, .clio-sidebar .cl-side-row, .clio-sidebar .cl-recent) {
+    transition: none;
+  }
+
+  :is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-model-menu.is-open .clio-model-popover {
+    animation: none;
+  }
+}
+
+/* Narrow windows (a phone held upright has its own layout, under "Phone"):
+   keep the composer inside the pane with the gutters it has. */
+@container clio-shell (max-width: 519px) {
+  :is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .composer {
+    width: calc(100% - 24px);
+  }
+
+  :is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-main.is-empty {
+    padding-inline: 12px;
+  }
+
+  :is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .messages {
+    padding-inline: 12px;
+  }
+}
+
+/* Output panel ----------------------------------------------------------- */
+
+/* Thread.dc.html's right pane: 440px beside the conversation, which narrows
+   to 640px; a 44px head (name, status word, 预览 / 原文, close); the reply in
+   the document face; its three verbs under a 1px rule. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].has-panel {
+  --clio-transcript-width: 640px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].has-panel .composer {
+  max-width: 640px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-panel {
+  box-sizing: border-box;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  width: 440px;
+  max-width: 100%;
+  min-height: 0;
+  border-left: 1px solid var(--cl-line);
+  background: var(--cl-window);
+  color: var(--cl-ink);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-panel-head {
+  box-sizing: border-box;
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--cl-line);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] :is(.cl-panel-name, .cl-panel-status) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-panel-status {
+  color: var(--cl-ink-3);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+/* With ‹ Progress and the tabs in the head, the document's name gives way
+   (it keeps its title); the status word stays whole. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .clio-panel:not(.is-progress) .cl-panel-status {
+  flex-shrink: 0;
+  max-width: 40%;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cl-tabs {
+  display: inline-flex;
+  flex: none;
+  margin-left: auto;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-tabs {
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--cl-r-sm);
+  background: var(--cl-raised);
+}
+
+/* Plain glass buttons take their ink from --liquid-action-ink (the theme's
+   readability guard), so the panel sets the token rather than the colour. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-panel-head .btn {
+  --btn-hover-bg: var(--cl-hover);
+  --btn-hover-fg: var(--cl-ink);
+  --btn-hover-shadow: none;
+  --btn-active-bg: var(--cl-selected);
+  --btn-active-fg: var(--cl-ink);
+  --btn-active-shadow: none;
+  --liquid-action-ink: var(--cl-ink-2);
+  box-sizing: border-box;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--cl-ink-2);
+  font: inherit;
+  font-weight: 400;
+  line-height: 1;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-panel-head .cl-tab {
+  height: 26px;
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-panel-head .cl-tab[aria-pressed="true"] {
+  --btn-hover-bg: var(--cl-window);
+  --btn-hover-shadow: 0 1px 2px rgba(16, 17, 20, 0.1);
+  --btn-active-bg: var(--cl-window);
+  --btn-active-shadow: 0 1px 2px rgba(16, 17, 20, 0.1);
+  --liquid-action-ink: var(--cl-ink);
+  background: var(--cl-window);
+  box-shadow: 0 1px 2px rgba(16, 17, 20, 0.1);
+  color: var(--cl-ink);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-panel-head .cl-panel-close {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  border-radius: var(--cl-r-sm);
+}
+
+/* ‹ 进度 leads the head while a task's document is shown: back to the
+   progress it came from. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-panel-head .cl-panel-back {
+  gap: 2px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 8px 0 4px;
+  border-radius: var(--cl-r-sm);
+  font-size: 14px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] :is(.cl-panel-close, .cl-panel-back) .cl-ico {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
+/* The progress head has no tabs; its close box keeps the far end. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .clio-panel.is-progress .cl-panel-close {
+  margin-left: auto;
+}
+
+/* The reply as a document: Songti for the text, the UI face for its
+   headings (16px for the title, 14px for the rest), mono for code. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cl-panel-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-panel-body {
+  padding: 20px 24px;
+  font-family: var(--cl-font-doc);
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-panel-body:focus-visible {
+  outline: 1px solid var(--cl-accent);
+  outline-offset: -1px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cl-panel-doc > :first-child {
+  margin-top: 0;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cl-panel-doc > :last-child {
+  margin-bottom: 0;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cl-panel-doc :is(ul, ol) {
+  padding-left: 1.5em;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cl-panel-doc blockquote {
+  margin-inline: 0;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cl-panel-doc table {
+  border-collapse: collapse;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cl-panel-doc img {
+  max-width: 100%;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cl-panel-source {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-panel-doc :is(p, ul, ol, blockquote, pre, table) {
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-panel-doc :is(h1, h2, h3, h4, h5, h6) {
+  margin: 0 0 4px;
+  color: var(--cl-ink);
+  font-family: var(--modern-sans-font);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-panel-doc h1 {
+  margin-bottom: 12px;
+  font-size: 16px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-panel-doc blockquote {
+  padding-left: 12px;
+  border-left: 1px solid var(--cl-line-strong);
+  color: var(--cl-ink-2);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-panel-doc a {
+  color: var(--cl-accent);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] :is(.cl-panel-doc code, .cl-panel-source) {
+  font-family: var(--modern-mono-font);
+  font-size: 14px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-panel-doc pre {
+  padding: 10px 12px;
+  overflow: auto;
+  border-radius: var(--cl-r-sm);
+  background: var(--cl-raised);
+  line-height: 1.6;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-panel-doc table {
+  font-family: var(--modern-sans-font);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-panel-doc :is(th, td) {
+  padding: 4px 8px;
+  border: 1px solid var(--cl-line);
+  text-align: left;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-panel-source {
+  line-height: 1.7;
+}
+
+/* 放到项目硬盘 is the primary (ink), 记到问题单 plain, 不要 quiet at the end.
+   A task card's buttons are the same three kinds. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cl-panel-foot {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cl-panel-foot .cl-panel-discard {
+  margin-left: auto;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-panel-foot {
+  /* The window's 28px grow box sits in the bottom-right corner, over the
+     end of this row: 不要 stops short of it. */
+  padding: 12px 28px 12px 14px;
+  border-top: 1px solid var(--cl-line);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] :is(.cl-panel-foot, .clio-task, .cc-bar) .btn {
+  --btn-hover-bg: var(--cl-hover);
+  --btn-hover-fg: var(--cl-ink);
+  --btn-hover-shadow: none;
+  --btn-active-bg: var(--cl-selected);
+  --btn-active-fg: var(--cl-ink);
+  --btn-active-shadow: none;
+  --liquid-action-ink: var(--cl-ink);
+  box-sizing: border-box;
+  min-width: 0;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--cl-era-btn-border, var(--cl-line-strong));
+  border-radius: var(--cl-era-btn-radius, var(--cl-r-sm));
+  background: var(--cl-era-btn-bg, var(--cl-window));
+  box-shadow: var(--cl-era-btn-shadow, none);
+  color: var(--cl-ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] :is(.cl-panel-foot, .clio-task, .cc-bar) .btn.default {
+  --btn-default-hover-bg: var(--cl-era-default-bg, var(--cl-ink));
+  --btn-default-hover-fg: var(--cl-era-default-fg, var(--cl-accent-ink));
+  --btn-default-active-bg: var(--cl-era-default-bg, var(--cl-ink));
+  --btn-default-active-fg: var(--cl-era-default-fg, var(--cl-accent-ink));
+  border-color: var(--cl-era-default-border, var(--cl-ink));
+  background: var(--cl-era-default-bg, var(--cl-ink));
+  color: var(--cl-era-default-fg, var(--cl-accent-ink));
+  box-shadow: var(--cl-era-default-shadow, none);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] :is(.cl-panel-foot, .clio-task, .cc-bar) :is(.cl-panel-discard, .cl-quiet) {
+  --liquid-action-ink: var(--cl-ink-2);
+  border-color: transparent;
+  background: transparent;
+  color: var(--cl-ink-2);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] :is(.cl-panel-foot, .clio-task, .cc-bar) .btn:disabled {
+  border-color: var(--cl-line);
+  background: var(--cl-window);
+  color: var(--cl-ink-3);
+}
+
+/* Shown by a click in a fluid era it slides in from the right and a click
+   slides it back, as transitions, so a second click turns it around from
+   where it is. ⌘\ and Esc show and hide it at once (no .is-fluid), and so do
+   the eras and readers that keep still. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-panel.is-fluid {
+  transition: transform 180ms var(--cl-ease), opacity 180ms var(--cl-ease);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-panel.is-fluid.is-closing {
+  opacity: 0;
+  transform: translateX(var(--cl-panel-shift, 16px));
+}
+
+/* Tasks ------------------------------------------------------------------ */
+
+/* Work.dc.html: the plan, the questions and the asks for permission are
+   cards in the thread, 8px apart; a card that waits on the writer is pale
+   amber. A card arrives (opacity and scale 0.98 from its top edge, 200ms)
+   and nothing on it moves after. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-task {
+  gap: 8px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-card {
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--cl-line-strong);
+  border-radius: var(--cl-r-md);
+  background: var(--cl-window);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-card.is-ask {
+  border-color: var(--cl-warn-line);
+  background: var(--cl-warn-bg);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-task :is(.cl-card-title, .cl-card-body, .cl-plan-steps, .cl-card-answer, .cl-card-note, .cl-task-status) {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-task .cl-card-title {
+  color: var(--cl-ink);
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-task :is(.cl-card-body, .cl-plan-steps, .cl-card-answer, .cl-task-status) {
+  color: var(--cl-ink-2);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-task .cl-plan-steps {
+  padding-left: 1.5em;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-task .cl-card-note {
+  color: var(--cl-ink-3);
+  font-size: 12px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-task .cl-options {
+  gap: 6px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-task .cl-option {
+  font-size: 14px;
+}
+
+/* What the task says as it hands its work over reads as Clio's reply. */
+/* Review.dc.html: under the summary, 它说交了 beside 实际改了 in one ruled
+   box split down the middle; when the desk's count disagrees with the
+   summary's, the box takes the warning line and says so under it. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cl-deliver {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cl-reckon {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] :is(.cl-reckon-cell, .cl-reckon-text) {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] :is(.cl-reckon-flag, .cl-task-error) {
+  margin: 0;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-reckon {
+  overflow: hidden;
+  border: 1px solid var(--cl-line);
+  border-radius: var(--cl-r-md);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-reckon-cell {
+  padding: 10px 12px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-reckon-cell + .cl-reckon-cell {
+  border-left: 1px solid var(--cl-line);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-reckon-head {
+  color: var(--cl-ink-3);
+  font-size: 12px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-reckon-text {
+  color: var(--cl-ink);
+  white-space: pre-wrap;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-reckon.is-mismatch {
+  border-color: var(--cl-warn-line);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-reckon.is-mismatch .cl-reckon-cell + .cl-reckon-cell {
+  border-left-color: var(--cl-warn-line);
+  background: var(--cl-warn-bg);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] :is(.cl-reckon-flag, .cl-task-error) {
+  color: var(--cl-ink-2);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-reckon-flag::before {
+  content: "\2260\00a0";
+}
+
+/* Follow-ups queued while a turn runs: a ruled list under the running turn,
+   each with its Remove button. */
+:is(.assistant-window, .clio-code-window) .clio-task .cl-task-queue {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 8px 10px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-task .cl-task-queue[hidden],
+:is(.assistant-window, .clio-code-window) .clio-task .cl-task-queue :is(.cl-task-queue-h, .cl-task-queue-list, .cl-task-queue-note)[hidden] {
+  display: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-task :is(.cl-task-queue-h, .cl-task-queue-note) {
+  margin: 0;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-task .cl-task-queue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-task .cl-task-queue-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-task .cl-task-queue-text {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-task-queue {
+  border: 1px dashed var(--ink);
+  background: var(--paper);
+  font-family: var(--ui-font);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-task-queue {
+  border: 1px solid var(--cl-line);
+  border-radius: var(--cl-r-md);
+  color: var(--cl-ink-2);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-task-queue-h {
+  color: var(--cl-ink-3);
+  font-size: 12px;
+}
+
+/* A follow-up the writer sent mid-task: their own bubble, at the right. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-task-prompt {
+  align-self: flex-end;
+  max-width: 80%;
+  margin: 8px 0;
+  padding: 10px 14px;
+  border-radius: var(--cl-r-lg);
+  background: var(--cl-selected);
+  color: var(--cl-ink);
+  font-size: 16px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-card.is-arriving {
+  animation: clio-card-in 200ms var(--cl-ease);
+  transform-origin: top center;
+}
+
+@keyframes clio-card-in {
+  from {
+    opacity: 0;
+    transform: scale(var(--cl-card-scale, 0.98));
+  }
+}
+
+/* While a task runs, Send is Stop: the board's 10px square, corners eased. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .composer .composer-stop-glyph {
+  border-radius: 2px;
+}
+
+/* Progress: the same right-hand pane, 360px on the raised fill under a white
+   head; it leaves the sidebar whole. Steps (the current one bold, its ring
+   blue), what the task made (a row opens it), what it may touch, and its
+   tokens and cost along the foot. A step done fills its circle in 160ms. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cl-progress-sec {
+  display: flex;
+  flex-direction: column;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] :is(.cl-progress-h, .cl-progress-empty) {
+  margin: 0;
+  font: inherit;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cl-checklist {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] :is(.cl-check, .cl-progress-row) {
+  display: flex;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cl-box {
+  box-sizing: border-box;
+  flex: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cl-progress-list {
+  display: flex;
+  flex-direction: column;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cl-progress-row {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cl-progress-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cl-progress-args {
+  max-height: 12em;
+  margin: 0;
+  overflow: auto;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cl-progress-value {
+  flex: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cl-output {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cl-progress-foot {
+  display: flex;
+  flex: none;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-panel.is-progress {
+  width: 360px;
+  background: var(--cl-raised);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-panel.is-progress .cl-panel-head {
+  background: var(--cl-window);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-panel.is-progress .cl-panel-body {
+  padding: 0;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-progress-sec {
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--cl-line);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-progress-sec:last-child {
+  border-bottom: 0;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-progress-h {
+  font-weight: 600;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-checklist {
+  gap: 2px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-check {
+  align-items: flex-start;
+  gap: 10px;
+  padding: 6px 0;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-check[data-status="next"] {
+  color: var(--cl-ink-3);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-check[data-status="now"] {
+  font-weight: 600;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-box {
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  border: 1px solid var(--cl-check-line);
+  border-radius: 50%;
+  transition: background-color 160ms var(--cl-ease), border-color 160ms var(--cl-ease), box-shadow 160ms var(--cl-ease);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-check[data-status="done"] .cl-box {
+  border-color: var(--cl-ink);
+  background: var(--cl-ink);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-check[data-status="now"] .cl-box {
+  border-color: var(--cl-accent);
+  background: var(--cl-accent);
+  box-shadow: inset 0 0 0 4px var(--cl-window);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] :is(.cl-progress-value, .cl-progress-empty) {
+  color: var(--cl-ink-3);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-output {
+  margin: 0 -8px;
+  padding: 6px 8px;
+  border-radius: var(--cl-r-sm);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-output:focus-visible {
+  outline: 1px solid var(--cl-accent);
+  outline-offset: -1px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  :is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-output:hover {
+    background: var(--cl-hover);
+  }
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-progress-foot {
+  /* Clear of the window's grow box, as the output panel's foot is. */
+  padding: 12px 28px 12px 16px;
+  border-top: 1px solid var(--cl-line);
+  color: var(--cl-ink-3);
+  font-size: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-task {
+    --cl-card-scale: 1;
+  }
+
+  :is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-box {
+    transition: none;
+  }
+}
+
+/* Document --------------------------------------------------------------- */
+
+/* Review.dc.html: a ClioWrite document ClioTalk revised. In the thread a file
+   card (its kind, its name, what waits in it, 在 ClioWrite 打开); in the
+   panel, 620px, the text with its revisions drawn in it (struck out,
+   underlined) and a 250px column of revision cards on the raised fill. An
+   errand card is ruled in grey with 收下 in ink; a voice card is ruled in
+   ink with 退回 in ink. Nothing here moves but the panel itself. */
+.assistant-window .cl-file {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(100%, var(--clio-transcript-width));
+  margin: 0 auto 14px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-task .cl-file {
+  width: 100%;
+  margin: 0;
+}
+
+.assistant-window .cl-file-main {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.assistant-window :is(.cl-file-text, .cl-rev-card) {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.assistant-window :is(.cl-file-name, .cl-file-sub) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cl-doc {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 250px;
+  min-height: 100%;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] :is(.cl-doc-h, .cl-doc-p, .cl-rev-note, .cl-doc-note) {
+  margin: 0;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cl-doc-text del {
+  text-decoration: line-through;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cl-doc-text ins {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cl-doc-batch {
+  margin-left: auto;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cl-doc-cards {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cl-doc-cards .cl-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cl-doc-cards .cl-doc-open {
+  align-self: flex-start;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-file {
+  padding: 10px 12px;
+  border: 1px solid var(--cl-line);
+  border-radius: var(--cl-r-md);
+  background: var(--cl-window);
+}
+
+/* The card's own face is a plain button: no frame, ring or fill of its own. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cl-file-main {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-file-tile {
+  box-sizing: border-box;
+  display: flex;
+  flex: none;
+  align-items: flex-end;
+  justify-content: center;
+  width: 40px;
+  height: 44px;
+  padding-bottom: 3px;
+  border: 1px solid var(--cl-line-strong);
+  border-radius: 2px;
+  background: var(--cl-raised);
+  color: var(--cl-ink-2);
+  font-size: 12px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-file-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] :is(.cl-file-sub, .cl-rev-note, .cl-doc-note) {
+  color: var(--cl-ink-3);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] :is(.cl-file-main, .cl-file .btn, .cl-doc-cards .btn, .cl-doc-batch):focus-visible {
+  outline: 1px solid var(--cl-accent);
+  outline-offset: 1px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-panel.is-doc {
+  width: 620px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-panel.is-doc .cl-panel-body {
+  padding: 0;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-doc-text {
+  padding: 22px 26px;
+  border-right: 1px solid var(--cl-line);
+  font-size: 16px;
+  line-height: 1.9;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-doc-h {
+  margin-bottom: 8px;
+  font-family: var(--modern-sans-font);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-doc-p {
+  margin-bottom: 10px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-doc-text del {
+  color: var(--cl-ink-3);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-doc-cards {
+  gap: 10px;
+  padding: 12px;
+  background: var(--cl-raised);
+  font-family: var(--modern-sans-font);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-rev-card {
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--cl-line-strong);
+  border-radius: var(--cl-r-md);
+  background: var(--cl-window);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-rev-card.is-voice {
+  border-color: var(--cl-ink);
+}
+
+/* The panel's and the card's buttons: 28px, 12px type; the default in ink. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] :is(.cl-file, .cl-doc-cards) .btn,
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-panel-head .cl-doc-batch {
+  --btn-hover-bg: var(--cl-hover);
+  --btn-hover-fg: var(--cl-ink);
+  --btn-hover-shadow: none;
+  --btn-active-bg: var(--cl-selected);
+  --btn-active-fg: var(--cl-ink);
+  --btn-active-shadow: none;
+  --liquid-action-ink: var(--cl-ink);
+  box-sizing: border-box;
+  flex: none;
+  min-width: 0;
+  height: 28px;
+  min-height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--cl-era-btn-border, var(--cl-line-strong));
+  border-radius: var(--cl-era-btn-radius, var(--cl-r-sm));
+  background: var(--cl-era-btn-bg, var(--cl-window));
+  box-shadow: var(--cl-era-btn-shadow, none);
+  color: var(--cl-ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-file .btn {
+  height: 32px;
+  min-height: 32px;
+  padding: 0 14px;
+  font-size: 14px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cl-doc-cards .btn.default {
+  --btn-default-hover-bg: var(--cl-era-default-bg, var(--cl-ink));
+  --btn-default-hover-fg: var(--cl-era-default-fg, var(--cl-accent-ink));
+  --btn-default-active-bg: var(--cl-era-default-bg, var(--cl-ink));
+  --btn-default-active-fg: var(--cl-era-default-fg, var(--cl-accent-ink));
+  border-color: var(--cl-era-default-border, var(--cl-ink));
+  background: var(--cl-era-default-bg, var(--cl-ink));
+  color: var(--cl-era-default-fg, var(--cl-accent-ink));
+  box-shadow: var(--cl-era-default-shadow, none);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] :is(.cl-file, .cl-doc-cards) .btn:disabled {
+  border-color: var(--cl-line);
+  color: var(--cl-ink-3);
+}
+
+/* Classic ---------------------------------------------------------------- */
+
+/* Classic.dc.html: the same regions in ink on paper. 1px black rules, a
+   white sidebar whose selection is reversed, Chicago (--ui-font) for the
+   chrome and Geneva (--text-font) for what is written, and the desk's own
+   controls: .btn, the default button's ring, the pop-up button. No rounded
+   panes and no shadow but the ones those controls already draw. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] {
+  --clio-transcript-width: 600px;
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  container: clio-shell / inline-size;
+  /* NeXTSTEP's vertical scroller runs down the window's left edge; it sets
+     the lane, every other appearance leaves it 0. */
+  padding-left: var(--window-frame-lane-start, 0px);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--ui-font);
+  font-size: 12px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-main {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-sidebar {
+  box-sizing: border-box;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  width: 208px;
+  padding: 6px 0;
+  overflow: auto;
+  border-right: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-sidebar :is(.cl-side-row, .cl-recent) {
+  box-sizing: border-box;
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 3px 12px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink);
+  font: inherit;
+  line-height: 18px;
+  text-align: left;
+  white-space: nowrap;
+  cursor: default;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-sidebar .cl-recent-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-sidebar .cl-ico {
+  display: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-sidebar .cl-key {
+  margin-left: auto;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-sidebar :is(.cl-recent.is-sel, .cl-side-row[aria-expanded="true"], .cl-side-row[aria-current="page"]) {
+  background: var(--selection-bg, var(--ink));
+  color: var(--selection-fg, var(--paper));
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-sidebar .cl-side-row:disabled {
+  color: var(--system-disabled-fg, var(--shade-dark));
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-sidebar :is(.cl-side-row, .cl-recent):focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: -2px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-sidebar .cl-side-label {
+  margin-top: 6px;
+  padding: 10px 12px 3px;
+  border-top: 1px solid var(--shade-dark);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-sidebar .cl-recent-list {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-sidebar .cl-recent-empty {
+  padding: 3px 12px;
+  color: var(--shade-dark);
+  font-family: var(--text-font);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-sidebar .cl-search {
+  padding: 2px 12px 4px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-sidebar .cl-search input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 22px;
+  padding: 0 4px;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  box-shadow: none;
+  color: var(--ink);
+  font-family: var(--text-font);
+  font-size: 12px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-sidebar .cl-search input:focus-visible {
+  outline: var(--control-focus-outline);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .assistant-details-bar {
+  border-bottom: 1px solid var(--ink);
+  font-size: 12px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .messages {
+  padding: 18px 24px 8px;
+  background: var(--paper);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .message-content {
+  font-family: var(--text-font);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* Empty state: the greeting over the composer, as in Liquid Glass. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-main.is-empty {
+  align-items: center;
+  justify-content: center;
+  padding: 0 24px 40px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-main.is-empty .assistant-details-bar {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-main.is-empty .clio-greeting {
+  display: block;
+  margin: 0 0 16px;
+  font-family: var(--ui-font);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+  text-align: center;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-main.is-empty .messages-stage {
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: 600px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-main.is-empty .messages {
+  min-height: 0;
+  padding: 0;
+  overflow: visible;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-main.is-empty .clio-welcome:has(.clio-welcome-actions) {
+  display: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-main.is-empty .clio-welcome {
+  display: block;
+  min-height: 0;
+  padding: 0 0 16px;
+  background: none;
+  box-shadow: none;
+  text-align: center;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-main.is-empty .clio-welcome :is(.clio-welcome-icon, .speaker) {
+  display: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-main.is-empty .clio-welcome .message-content {
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-main.is-empty .clio-welcome .message-content strong {
+  margin: 0;
+  font: inherit;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-main.needs-model :is(.messages-stage, #clio-connect-ai) {
+  display: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-main.needs-model .clio-empty-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 10px;
+  margin: 12px 0 0;
+  font-family: var(--text-font);
+  font-size: 12px;
+  line-height: 18px;
+  text-align: center;
+}
+
+/* Composer: a ruled field, its tools under a grey line. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .composer {
+  box-sizing: border-box;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-self: center;
+  width: calc(100% - 48px);
+  max-width: 600px;
+  margin: 8px 0 14px;
+  padding: 0;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  box-shadow: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-main.is-empty .composer {
+  width: 100%;
+  margin: 0;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .composer textarea {
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink);
+  font-family: var(--text-font);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .composer-action-row {
+  gap: 6px;
+  min-height: 0;
+  margin: 0;
+  padding: 6px 8px;
+  border-top: 1px solid var(--shade-dark);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .composer-key-hint {
+  display: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] :is(.composer, .clio-empty-note) .btn,
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .composer .clio-entry-loadout {
+  font-size: 12px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .composer .composer-icon-button {
+  width: 32px;
+  min-width: 32px;
+  height: var(--system-button-min-height);
+  min-height: var(--system-button-min-height);
+}
+
+/* Send is the default button: the ring says Return sends. Disabled, its ink
+   dims; the button itself stays. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .composer .composer-submit-button {
+  margin-left: 0;
+  border-color: var(--ink);
+  background: var(--btn-default-bg);
+  color: var(--btn-default-fg);
+  box-shadow: var(--btn-default-shadow);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .composer .composer-submit-button:disabled {
+  color: var(--system-disabled-fg, var(--shade-dark));
+  opacity: 1;
+  --btn-disabled-opacity: 1;
+}
+
+/* The model menu is the desk's pop-up button (the module adds
+   .system-select-button in Classic); its menu opens upward, at once. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-model-menu {
+  position: relative;
+  display: block;
+  flex: 0 1 auto;
+  min-width: 0;
+  height: auto;
+  margin-left: auto;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .composer .clio-model-button {
+  width: auto;
+  max-width: 220px;
+  font-size: 12px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-model-popover {
+  top: auto;
+  right: 0;
+  bottom: calc(100% + 4px);
+  left: auto;
+}
+
+/* The pop-up button draws its own arrow; the Liquid Glass chevron would be a
+   second one beside it. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-model-button .cl-chev-down {
+  display: none;
+}
+
+/* Output panel: the same pane in ink. A 1px rule beside the conversation and
+   under the head, Geneva for the reply, Chicago for the chrome, and the
+   desk's own buttons: the shown view reversed, 放到项目硬盘 the default
+   button. Classic draws no slide; the panel is there or it is not. The
+   window's scroll bars run down its right edge and along its foot; the
+   panel stops at them (the frame's own transparent reserve), as the
+   composer does, so the bars never cover its close box or its buttons. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-panel {
+  box-sizing: border-box;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  width: 440px;
+  max-width: 100%;
+  min-height: 0;
+  border-left: 1px solid var(--ink);
+  border-right: var(--window-frame-reserve) solid transparent;
+  border-bottom: var(--window-frame-reserve) solid transparent;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-panel-head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--ink);
+  line-height: 18px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-tabs {
+  gap: 4px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] :is(.cl-panel-head, .cl-panel-foot, .clio-task, .cc-bar) .btn {
+  min-width: 0;
+  min-height: 22px;
+  padding: 1px 10px;
+  font-size: 12px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-tab[aria-pressed="true"] {
+  --btn-hover-bg: var(--ink);
+  --btn-hover-fg: var(--paper);
+  background: var(--selection-bg, var(--ink));
+  color: var(--selection-fg, var(--paper));
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-panel-head .cl-panel-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 4px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-panel-body {
+  padding: 10px 12px;
+  font-family: var(--text-font);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-panel-doc :is(p, ul, ol, blockquote, pre, table) {
+  margin-top: 0;
+  margin-bottom: 8px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-panel-doc :is(h1, h2, h3, h4, h5, h6) {
+  margin: 0 0 4px;
+  font-family: var(--ui-font);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-panel-doc blockquote {
+  padding-left: 10px;
+  border-left: 1px solid var(--ink);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] :is(.cl-panel-doc code, .cl-panel-source) {
+  font-family: var(--mono-font);
+  font-size: 12px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-panel-doc pre {
+  padding: 6px 8px;
+  overflow: auto;
+  border: 1px solid var(--ink);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-panel-doc :is(th, td) {
+  padding: 2px 6px;
+  border: 1px solid var(--ink);
+  text-align: left;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-panel-foot {
+  padding: 8px 10px;
+  border-top: 1px solid var(--ink);
+}
+
+/* The back button is a plain push button; the chevron is Liquid Glass's. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-panel-back .cl-ico {
+  display: none;
+}
+
+/* Tasks in Classic: the plan is a note with a 2px black shadow; a card that
+   waits on the writer is the modal dialog's double frame (there is no amber
+   to use), its default button last, at the right, as a dialog's is. Geneva
+   for what is written, Chicago for titles and buttons. Nothing animates. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-task {
+  gap: 12px;
+  font-family: var(--text-font);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-card {
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-card.is-ask {
+  padding: 14px 16px;
+  box-shadow: inset 0 0 0 2px var(--paper), inset 0 0 0 4px var(--ink);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-task :is(.cl-card-title, .cl-card-body, .cl-plan-steps, .cl-card-answer, .cl-card-note, .cl-task-status) {
+  margin: 0;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-task :is(.cl-card-title, .cl-actions) {
+  font-family: var(--ui-font);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-task .cl-plan-steps {
+  padding-left: 1.5em;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-task .cl-card-note {
+  font-size: 12px;
+}
+
+/* 它说交了／实际改了 in Classic: a 1px ruled box in ink; a disagreement is
+   the dialog's double frame and a line under it. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-reckon {
+  border: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-reckon-cell {
+  padding: 6px 10px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-reckon-cell + .cl-reckon-cell {
+  border-left: 1px solid var(--ink);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] :is(.cl-reckon-head, .cl-reckon-flag) {
+  font-family: var(--ui-font);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-reckon.is-mismatch {
+  box-shadow: inset 0 0 0 2px var(--paper), inset 0 0 0 3px var(--ink);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-reckon-flag::before {
+  content: "\2260\00a0";
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-task-prompt {
+  align-self: flex-end;
+  max-width: 80%;
+  margin: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  white-space: pre-wrap;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-card.is-ask .cl-actions {
+  flex-direction: row-reverse;
+  justify-content: flex-start;
+}
+
+/* Progress in Classic: 300px, sections under grey rules, the current step
+   reversed, a step done crossed as System 6 checks a box, the tokens and
+   cost along a ruled foot. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-panel.is-progress {
+  width: 300px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-panel.is-progress .cl-panel-body {
+  padding: 0;
+  font-family: var(--ui-font);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-progress-sec {
+  gap: 4px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--shade-dark);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-progress-sec:last-child {
+  border-bottom: 0;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] :is(.cl-checklist, .cl-progress-row, .cl-progress-empty) {
+  font-family: var(--text-font);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-progress-empty {
+  color: var(--shade-dark);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-check {
+  align-items: center;
+  gap: 8px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-box {
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-check[data-status="done"] .cl-box {
+  background: var(--paper) var(--choice-checkmark-image) center / 12px 12px no-repeat;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-check[data-status="now"] .cl-box {
+  background: var(--ink);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-check[data-status="now"] .cl-check-text {
+  padding: 0 2px;
+  background: var(--selection-bg, var(--ink));
+  color: var(--selection-fg, var(--paper));
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-output:focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: -2px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-progress-foot {
+  padding: 4px 10px;
+  border-top: 1px solid var(--ink);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+/* The document in Classic: the same two columns in ink. Geneva for the
+   text, Chicago for the cards' titles and buttons; an errand card is a 1px
+   ruled box, a voice card the modal dialog's double frame (it asks the
+   writer to decide), each with the desk's default button. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-file {
+  padding: 8px 10px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-file-tile {
+  box-sizing: border-box;
+  display: flex;
+  flex: none;
+  align-items: flex-end;
+  justify-content: center;
+  width: 44px;
+  height: 40px;
+  padding-bottom: 2px;
+  border: 1px solid var(--ink);
+  font-family: var(--ui-font);
+  font-size: 12px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-file-name {
+  font-family: var(--ui-font);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] :is(.cl-file-sub, .cl-rev-note, .cl-doc-note) {
+  font-family: var(--text-font);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] :is(.cl-file, .cl-doc-cards) .btn {
+  min-width: 0;
+  min-height: 22px;
+  padding: 1px 10px;
+  font-size: 12px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-file-main:focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: 2px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-panel.is-doc {
+  width: 620px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-panel.is-doc .cl-panel-body {
+  padding: 0;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-doc-text {
+  padding: 12px 14px;
+  border-right: 1px solid var(--ink);
+  font-size: 14px;
+  line-height: 24px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-doc-h {
+  margin-bottom: 6px;
+  font-family: var(--ui-font);
+  font-size: 12px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-doc-p {
+  margin-bottom: 8px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-doc-cards {
+  gap: 10px;
+  padding: 10px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-rev-card {
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid var(--ink);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-rev-card.is-voice {
+  padding: 10px;
+  box-shadow: inset 0 0 0 2px var(--paper), inset 0 0 0 3px var(--ink);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] :is(.cl-rev-title, .cl-doc-cards .cl-actions) {
+  font-family: var(--ui-font);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+/* Below this width the conversation keeps the room, as in Liquid Glass. */
+@container clio-shell (max-width: 599px) {
+  :is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-sidebar {
+    display: none;
+  }
+
+  :is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .composer {
+    width: calc(100% - 24px);
+  }
+}
+
+/* Rail and narrow windows (both skins) ----------------------------------- */
+
+/* While the panel is open the sidebar is a 56px rail: New Chat and Search as
+   icons, named by their labels. Search widens it again, since its field
+   needs the room; closing the panel restores the rest. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-rail .clio-sidebar {
+  width: 56px;
+  align-items: center;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-rail .clio-sidebar > :not(.cl-rail),
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-rail .clio-sidebar .cl-rail > :not(.cl-ico) {
+  display: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-rail .clio-sidebar .cl-side-row {
+  justify-content: center;
+  width: 32px;
+  padding: 0;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"].is-rail .clio-sidebar .cl-side-row {
+  height: 24px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"].is-rail .clio-sidebar .cl-ico {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+/* Below this width the rail, a 560px conversation and the panel no longer
+   fit side by side: the panel lies over the conversation's right side
+   instead, with the one shadow a floating surface carries in Liquid Glass. */
+@container clio-shell (max-width: 1055px) {
+  /* The conversation keeps its own layers (the Classic model button rides
+     above the composer) under the panel; the window's grow box and scroll
+     bars stay above both. */
+  :is(.assistant-window, .clio-code-window) .clio-shell[data-skin].has-panel .clio-main {
+    isolation: isolate;
+  }
+
+  :is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .clio-panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+  }
+
+  :is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-panel {
+    box-shadow: 0 8px 24px rgba(16, 17, 20, 0.12);
+  }
+}
+
+/* Phone (both skins) ----------------------------------------------------- */
+
+/* Phone.dc.html. Held upright, the window shows one layer at a time (the
+   module sets .is-phone and names the layer in data-layer): the sidebar as
+   the list page, or the conversation under a 44px head, its composer pinned
+   at the foot with the task's strip above it. Rows, buttons and options are
+   44px or taller, and fields take 16px text so the phone does not zoom. The
+   panel is a bottom sheet over the conversation: it rises in 400ms and drops
+   in 280ms on the drawer curve, follows a finger on its handle or head, and
+   Esc or ⌘\ puts it away at once. Held sideways, or on a tablet, nothing
+   here applies and the window keeps its three columns. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone {
+  --cl-sheet-ease: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone[data-layer="list"] .clio-main,
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone[data-layer="thread"] .clio-sidebar {
+  display: none;
+}
+
+/* The list: search first, then New Chat, Projects, ClioWork and the recent
+   conversations, the full width of the window. No ClioCode (code is not
+   written on a phone), no Search row (the field is always there) and no
+   key equivalents. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone[data-layer="list"] .clio-sidebar {
+  display: flex;
+  flex: 1;
+  gap: 0;
+  width: auto;
+  padding: 0 0 var(--safe-area-bottom, 0px);
+  border-right: 0;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].is-phone .clio-sidebar {
+  background: var(--cl-window);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .clio-sidebar :is(.cl-code, .cl-key, .cl-side-row[aria-expanded]) {
+  display: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .clio-sidebar :is(.cl-side-row, .cl-recent) {
+  gap: 12px;
+  height: auto;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 0;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].is-phone .clio-sidebar :is(.cl-side-row, .cl-recent) {
+  font-size: 16px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .clio-sidebar .cl-search {
+  order: -1;
+  padding: 8px 16px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .clio-sidebar .cl-search input {
+  height: 44px;
+  padding: 0 12px;
+  font-size: 16px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].is-phone .clio-sidebar .cl-search input {
+  border-color: var(--cl-raised);
+  border-radius: var(--cl-r-md);
+  background: var(--cl-raised);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].is-phone .clio-sidebar .cl-search input:focus-visible {
+  border-color: var(--cl-accent);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .clio-sidebar .cl-side-label {
+  padding: 14px 16px 4px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .clio-sidebar .cl-recent-empty {
+  padding: 6px 16px;
+}
+
+/* The conversation: its head (back to the list, its name, the task's
+   progress), the transcript, the strip and the composer. The column keeps
+   its layers under the sheet and its foot above the home indicator. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .clio-main {
+  isolation: isolate;
+  padding: 0 0 var(--safe-area-bottom, 0px);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .cl-thread-head {
+  box-sizing: border-box;
+  display: grid;
+  flex: none;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  height: 44px;
+  padding: 0 6px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .cl-thread-head .btn {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .cl-thread-progress {
+  grid-column: 3;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .cl-thread-head .cl-ico {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .cl-thread-title {
+  grid-column: 2;
+  min-width: 0;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].is-phone .cl-thread-head {
+  border-bottom: 1px solid var(--cl-line);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].is-phone .cl-thread-head .btn {
+  --btn-hover-bg: var(--cl-hover);
+  --btn-hover-shadow: none;
+  --btn-active-bg: var(--cl-selected);
+  --btn-active-shadow: none;
+  --liquid-action-ink: var(--cl-ink-2);
+  border-radius: var(--cl-r-sm);
+  color: var(--cl-ink-2);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].is-phone .cl-thread-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"].is-phone .cl-thread-head {
+  border-bottom: 1px solid var(--ink);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"].is-phone .cl-thread-head .btn {
+  --btn-hover-bg: transparent;
+  --btn-active-bg: var(--ink);
+  --btn-active-fg: var(--paper);
+  border-radius: 0;
+  color: var(--ink);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"].is-phone .cl-thread-head .btn:active {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* The bar keeps its place under the head; the empty page centres the
+   greeting in what is left and keeps the composer at the foot. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .clio-main .assistant-details-bar {
+  position: static;
+  padding: 0 12px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .clio-main.is-empty {
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .clio-main.is-empty .clio-greeting {
+  margin: auto 16px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .messages {
+  padding: 16px 16px 8px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .clio-main .composer {
+  width: calc(100% - 24px);
+  max-width: none;
+  margin: 8px 0;
+}
+
+/* The strip: what the task is doing, in one line over the composer. A tap,
+   or a swipe up, opens the progress sheet. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .cl-strip {
+  box-sizing: border-box;
+  display: flex;
+  flex: none;
+  align-items: center;
+  align-self: center;
+  gap: 8px;
+  width: calc(100% - 24px);
+  min-height: 44px;
+  margin: 8px 0 0;
+  padding: 0 12px;
+  box-shadow: none;
+  font: inherit;
+  text-align: left;
+  touch-action: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .cl-strip-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .cl-strip .cl-ico {
+  width: 12px;
+  height: 12px;
+  flex: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .cl-strip .cl-box {
+  width: 12px;
+  height: 12px;
+  margin: 0;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].is-phone .cl-strip {
+  border: 0;
+  border-radius: 10px;
+  background: var(--cl-raised);
+  color: var(--cl-ink);
+  font-size: 14px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].is-phone .cl-strip[data-status="now"] .cl-box {
+  border-color: var(--cl-accent);
+  background: var(--cl-accent);
+  box-shadow: inset 0 0 0 3px var(--cl-raised);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].is-phone .cl-strip[data-status="done"] .cl-box {
+  border-color: var(--cl-ink);
+  background: var(--cl-ink);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"].is-phone .cl-strip {
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"].is-phone .cl-strip[data-status="now"] .cl-box {
+  background: var(--ink);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"].is-phone .cl-strip[data-status="done"] .cl-box {
+  background: var(--paper) var(--choice-checkmark-image) center / 12px 12px no-repeat;
+}
+
+/* Composer: every control 44px. In Liquid Glass it is one rounded row (the
+   field, +, the model, Send as a 36px disc); Classic keeps its ruled field
+   with the tools under it. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .composer-action-row {
+  flex-wrap: nowrap;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .composer :is(.composer-icon-button, .composer-submit-button) {
+  flex: none;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .composer :is(.clio-model-button, .clio-entry-loadout) {
+  height: 44px;
+  min-height: 44px;
+  max-width: 112px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .composer textarea {
+  min-height: 44px;
+  font-size: 16px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].is-phone .composer {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0 2px;
+  border-radius: 23px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].is-phone .composer > .attached-clips {
+  flex: 1 0 100%;
+}
+
+/* The field reaches the row's rounded end, where the desk's square frosted
+   field would show past the curve; the row is the only glass. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].is-phone .composer textarea {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 11px 4px 11px 16px;
+  line-height: 22px;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].is-phone .composer-action-row {
+  display: contents;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].is-phone .composer :is(.composer-icon-button:not([aria-expanded="true"], .composer-submit-button), .clio-model-button, .clio-entry-loadout) {
+  border-color: transparent;
+  background: transparent;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].is-phone .composer .clio-model-button {
+  padding: 0 6px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].is-phone .composer .composer-submit-button {
+  padding: 4px;
+  border-radius: 50%;
+  background-clip: content-box;
+}
+
+/* Tasks: the whole row of an option is its target, and a card's buttons
+   share the row. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .clio-task .cl-option {
+  min-height: 44px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone :is(.cl-panel-foot, .clio-task, .cc-bar) .btn {
+  height: 44px;
+  min-height: 44px;
+  padding: 0 16px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .clio-task .cl-actions .btn {
+  flex: 1 1 auto;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].is-phone .clio-task :is(.cl-card-title, .cl-option),
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].is-phone :is(.cl-panel-foot, .clio-task, .cc-bar) .btn {
+  font-size: 16px;
+}
+
+/* The sheet: from 18px under the window's head to its foot, over a scrim
+   that a tap puts away. --cl-sheet-drag is the finger's pull. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .clio-panel {
+  position: absolute;
+  top: 18px;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: auto;
+  max-width: none;
+  padding-bottom: var(--safe-area-bottom, 0px);
+  overflow: hidden;
+  border-left: 0;
+  transform: translateY(var(--cl-sheet-drag, 0px));
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone.has-panel .cl-scrim {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone :is(.cl-sheet-handle, .cl-panel-head) {
+  touch-action: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .cl-sheet-handle {
+  display: flex;
+  flex: none;
+  justify-content: center;
+  padding: 8px 0 2px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .cl-sheet-handle::before {
+  content: "";
+  width: 36px;
+  height: 5px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .cl-panel-head {
+  height: auto;
+  padding: 4px 6px 8px 16px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .cl-panel-head .btn {
+  height: 44px;
+  min-height: 44px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .cl-panel-head .cl-panel-close {
+  width: 44px;
+  min-width: 44px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .cl-panel-body {
+  overscroll-behavior: contain;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .cl-check {
+  align-items: center;
+  min-height: 36px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .cl-output {
+  align-items: center;
+  min-height: 44px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone :is(.cl-panel-foot, .cl-progress-foot) {
+  padding: 10px 12px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].is-phone .clio-panel {
+  border-radius: var(--cl-r-lg) var(--cl-r-lg) 0 0;
+  background: var(--cl-window);
+  box-shadow: 0 -8px 24px rgba(16, 17, 20, 0.12);
+  transition: transform 400ms var(--cl-sheet-ease);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .clio-panel.is-dragging {
+  transition: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].is-phone.has-panel .cl-scrim {
+  background: rgba(16, 17, 20, 0.24);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].is-phone .cl-sheet-handle::before {
+  border-radius: 3px;
+  background: var(--cl-line-strong);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].is-phone .cl-panel-name {
+  font-size: 16px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].is-phone .cl-panel-status {
+  font-size: 14px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].is-phone .cl-panel-head .cl-tab {
+  height: 40px;
+  min-height: 40px;
+  padding: 0 14px;
+  font-size: 14px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].is-phone .cl-panel-head .cl-panel-back {
+  font-size: 16px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].is-phone .cl-panel-body {
+  padding: 16px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].is-phone :is(.cl-checklist, .cl-progress-list) {
+  font-size: 16px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].is-phone .cl-check .cl-box {
+  margin-top: 0;
+}
+
+/* Classic dims nothing, so its sheet starts under the conversation's head
+   rather than cutting through it; the head's rule is the sheet's edge. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"].is-phone .clio-panel {
+  top: 44px;
+  border: 0;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"].is-phone .cl-sheet-handle::before {
+  background: var(--shade-dark);
+}
+
+/* The document on the phone: one column, the text over its cards, every
+   button 44px. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .cl-doc {
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 0;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .cl-doc-text {
+  border-right: 0;
+}
+
+/* The head keeps the file's name whole; whose document it is goes. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .clio-panel.is-doc .cl-panel-status {
+  display: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone :is(.cl-doc-cards .btn, .cl-panel-head .cl-doc-batch) {
+  height: 44px;
+  min-height: 44px;
+  padding: 0 14px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].is-phone .cl-doc-text {
+  padding: 4px 16px 16px;
+  border-bottom: 1px solid var(--cl-line);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].is-phone :is(.cl-doc-cards, .cl-doc-cards .btn, .cl-panel-head .cl-doc-batch) {
+  font-size: 14px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"].is-phone .cl-doc-text {
+  border-bottom: 1px solid var(--ink);
+}
+
+/* It rises from the foot and drops back there, the scrim fading with it;
+   a click on the strip or a button does that, a key does not (the module
+   adds no class). Classic draws neither. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].is-phone .clio-panel.is-opening {
+  animation: clio-sheet-in 400ms var(--cl-sheet-ease);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].is-phone .clio-panel.is-closing {
+  animation: clio-sheet-out 280ms var(--cl-sheet-ease) forwards;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].is-phone:has(> .clio-panel.is-opening) .cl-scrim {
+  animation: clio-scrim-in 400ms var(--cl-sheet-ease);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"].is-phone:has(> .clio-panel.is-closing) .cl-scrim {
+  animation: clio-scrim-out 280ms var(--cl-sheet-ease) forwards;
+}
+
+@keyframes clio-sheet-in {
+  from {
+    opacity: var(--cl-sheet-fade, 1);
+    transform: translateY(var(--cl-sheet-shift, 100%));
+  }
+}
+
+@keyframes clio-sheet-out {
+  to {
+    opacity: var(--cl-sheet-fade, 1);
+    transform: translateY(var(--cl-sheet-shift, 100%));
+  }
+}
+
+@keyframes clio-scrim-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes clio-scrim-out {
+  to {
+    opacity: 0;
+  }
+}
+
+/* Reduced motion: the sheet fades in place and settles at once. */
+@media (prefers-reduced-motion: reduce) {
+  :is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone {
+    --cl-sheet-shift: 0px;
+    --cl-sheet-fade: 0;
+  }
+
+  :is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .clio-panel {
+    transition: none;
+  }
+}
+
+/* ClioWork --------------------------------------------------------------- */
+
+/* The document studio: the main column's other page (data-page="work"; on
+   the phone the layer of that name). A head with the page's name and the
+   project's count, the job in hand, the project's Office documents as one
+   ruled list (tick to lend, Open for the app), and a composer pinned at the
+   foot: what is lent, the field, three suggestions, 交给 Clio. The column
+   is as wide as the conversation's transcript would be, plus room for the
+   list's columns. Nothing on the page moves; the rows only change fill. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin][data-page="work"]:not(.is-phone) .clio-main,
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone[data-layer="work"] :is(.clio-sidebar, .clio-main) {
+  display: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin][data-page="work"]:not(.is-phone) .clio-work,
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone[data-layer="work"] .clio-work {
+  --cw-width: 880px;
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* While ClioWork is up, its row is the selection, not the conversation. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin][data-page="work"] .clio-sidebar .cl-recent.is-sel {
+  background: transparent;
+  color: inherit;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cw-head,
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cw-scroll > *,
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cw-composer {
+  box-sizing: border-box;
+  width: min(100% - 48px, var(--cw-width));
+  margin-right: auto;
+  margin-left: auto;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cw-head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 0 8px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cw-back {
+  display: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cw-titles {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] :is(.cw-title, .cw-lead, .cw-empty-body) {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] :is(.cw-count, .cw-doc-name, .cw-doc-sub, .cw-chip-name) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cw-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding-bottom: 16px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cw-lead {
+  padding-bottom: 16px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cw-job {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] :is(.cw-job-text, .cw-doc-text) {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cw-list {
+  display: flex;
+  flex-direction: column;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cw-doc {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 0 12px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cw-doc + .cw-doc {
+  border-top: 1px solid var(--cw-rule);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cw-doc-main {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 8px 0;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cw-pick {
+  flex: none;
+  margin: 0;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cl-file-tile.cw-tile {
+  width: 36px;
+  height: 40px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cw-doc-state {
+  flex: none;
+  white-space: nowrap;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cw-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cw-composer {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cw-picks,
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cw-suggest {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cw-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 240px;
+  min-width: 0;
+  margin: 0;
+  font: inherit;
+  cursor: default;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cw-chip .cl-ico {
+  width: 10px;
+  height: 10px;
+  flex: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cw-prompt {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+  font: inherit;
+  resize: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cw-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cw-note {
+  flex: 1;
+  min-width: 0;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] .cw-error {
+  margin: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--cw-warn-line);
+  background: var(--cw-warn-bg);
+  font-size: 12px;
+}
+
+/* Liquid Glass: the list and the composer are the conversation's surfaces,
+   a white card ruled in grey; a ticked row takes the selection fill, a
+   state is a word in the accent, and 交给 Clio is the blue Send. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-work {
+  --cw-rule: var(--cl-line);
+  --cw-warn-line: var(--cl-warn-line);
+  --cw-warn-bg: var(--cl-warn-bg);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cw-error {
+  border-radius: var(--cl-r-sm);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cw-title {
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] :is(.cw-count, .cw-doc-sub, .cw-note, .cw-picks-hint, .cw-limit, .cw-job-label, .cw-job-docs, .cw-empty-body, .cw-picks-label) {
+  color: var(--cl-ink-3);
+  font-size: 12px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cw-empty-body {
+  max-width: 420px;
+  font-size: 14px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cw-lead {
+  color: var(--cl-ink-2);
+  font-size: 14px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] :is(.cw-list, .cw-job) {
+  border: 1px solid var(--cl-line);
+  border-radius: var(--cl-r-md);
+  background: var(--cl-window);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cw-list {
+  overflow: hidden;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cw-job {
+  padding: 12px 14px;
+  background: var(--cl-raised);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] :is(.cw-job-title, .cw-doc-name, .cw-empty-title) {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cw-empty-title {
+  font-size: 16px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cw-job-state {
+  color: var(--cl-accent);
+  font-size: 12px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cw-doc.is-picked {
+  background: var(--cl-selected);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cw-pick {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--cl-accent);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cw-doc-state {
+  color: var(--cl-accent);
+  font-size: 12px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cw-composer {
+  padding: 10px 12px;
+  border: 1px solid var(--cl-line-strong);
+  border-radius: var(--cl-r-lg);
+  background: var(--cl-window);
+  box-shadow: 0 2px 10px rgba(22, 23, 26, 0.06);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cw-prompt {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cw-chip {
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--cl-line);
+  border-radius: var(--cl-r-sm);
+  background: var(--cl-raised);
+  color: var(--cl-ink);
+  font-size: 12px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cw-chip-kind {
+  color: var(--cl-ink-3);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-work .btn {
+  --btn-hover-bg: var(--cl-hover);
+  --btn-hover-fg: var(--cl-ink);
+  --btn-hover-shadow: none;
+  --btn-active-bg: var(--cl-selected);
+  --btn-active-fg: var(--cl-ink);
+  --btn-active-shadow: none;
+  --liquid-action-ink: var(--cl-ink);
+  box-sizing: border-box;
+  flex: none;
+  min-width: 0;
+  height: 28px;
+  min-height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--cl-line-strong);
+  border-radius: var(--cl-r-sm);
+  background: var(--cl-window);
+  box-shadow: none;
+  color: var(--cl-ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-work .cw-suggestion {
+  border-color: var(--cl-line);
+  border-radius: 14px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-work .btn.cw-start {
+  --btn-default-hover-bg: var(--cl-accent);
+  --btn-default-hover-fg: var(--cl-accent-ink);
+  --btn-default-active-bg: var(--cl-accent);
+  --btn-default-active-fg: var(--cl-accent-ink);
+  height: 32px;
+  min-height: 32px;
+  padding: 0 16px;
+  border-color: var(--cl-accent);
+  border-radius: 16px;
+  background: var(--cl-accent);
+  color: var(--cl-accent-ink);
+  font-size: 14px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-work .btn:disabled {
+  border-color: var(--cl-line);
+  background: var(--cl-window);
+  color: var(--cl-ink-3);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-work .btn.cw-start:disabled {
+  border-color: var(--cl-off);
+  background: var(--cl-off);
+  color: var(--cl-accent-ink);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-work :is(.btn, .cw-chip, .cw-pick):focus-visible {
+  outline: 1px solid var(--cl-accent);
+  outline-offset: 1px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .clio-work .btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  :is(.assistant-window, .clio-code-window) .clio-shell[data-skin="glass"] .cw-doc:hover:not(.is-picked) {
+    background: var(--cl-raised);
+  }
+}
+
+/* Classic: the list is a ruled box in ink, a ticked row reversed as the
+   Finder selects, the composer the conversation's ruled field, the desk's
+   own push buttons and check boxes, 交给 Clio the default button. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-work {
+  --cw-width: 760px;
+  --cw-rule: var(--ink);
+  --cw-warn-line: var(--ink);
+  --cw-warn-bg: var(--paper);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cw-head {
+  padding-top: 16px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cw-title {
+  font-family: var(--ui-font);
+  font-size: 16px;
+  font-weight: 400;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] :is(.cw-lead, .cw-count, .cw-doc-sub, .cw-note, .cw-picks-hint, .cw-limit, .cw-job-docs, .cw-empty-body, .cw-prompt) {
+  font-family: var(--text-font);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] :is(.cw-list, .cw-job, .cw-composer) {
+  border: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cw-job {
+  padding: 8px 10px;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cw-doc {
+  min-height: 48px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cw-doc.is-picked {
+  background: var(--selection-bg, var(--ink));
+  color: var(--selection-fg, var(--paper));
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cw-doc.is-picked .cl-file-tile {
+  border-color: var(--paper);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cl-file-tile.cw-tile {
+  width: 32px;
+  height: 36px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cw-doc-state {
+  padding: 0 6px;
+  border: 1px solid currentColor;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cw-composer {
+  padding: 8px 10px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .cw-chip {
+  padding: 0 6px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-work .btn {
+  min-width: 0;
+  min-height: 22px;
+  padding: 1px 10px;
+  font-size: 12px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin="classic"] .clio-work :is(.cw-chip, .cw-doc-main):focus-within {
+  outline: var(--control-focus-outline);
+  outline-offset: -2px;
+}
+
+/* Phone: the page is a layer under a 44px head (back to the list, the
+   page's name in the middle), the list edge to edge, rows and buttons 44px,
+   the field 16px so the phone does not zoom, the composer at the foot. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .clio-work {
+  --cw-width: 100%;
+  padding-bottom: var(--safe-area-bottom, 0px);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone :is(.cw-head, .cw-scroll > *, .cw-composer) {
+  width: 100%;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .cw-head {
+  min-height: 44px;
+  padding: 0 6px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .cw-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .cw-back .cl-ico {
+  width: 18px;
+  height: 18px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .cw-title {
+  font-size: 16px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone :is(.cw-lead, .cw-job, .cw-empty) {
+  box-sizing: border-box;
+  padding-right: 16px;
+  padding-left: 16px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .cw-job {
+  width: calc(100% - 32px);
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .cw-list {
+  border-right: 0;
+  border-left: 0;
+  border-radius: 0;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .cw-doc {
+  min-height: 60px;
+  padding: 0 16px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .clio-work .btn {
+  min-height: 44px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .cw-composer {
+  margin-bottom: 0;
+  padding: 10px 16px;
+  border-right: 0;
+  border-bottom: 0;
+  border-left: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .cw-prompt {
+  font-size: 16px;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .cw-note {
+  display: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .cw-start {
+  margin-left: auto;
+}
+
+/* The suggestions keep to one line and scroll sideways, so the list keeps
+   the room. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .cw-suggest {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin].is-phone .cw-suggestion {
+  white-space: nowrap;
+}
+
+/* Hidden parts ----------------------------------------------------------- */
+
+/* Last, so [hidden] wins over the display each part is given above. */
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] :is(.clio-panel, .cl-panel-foot, .cl-panel-back, .cl-tabs, .cl-doc-batch, .cl-progress-sec, .cl-progress-foot)[hidden],
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] :is(.cl-strip, .cl-thread-head .btn)[hidden],
+:is(.assistant-window, .clio-code-window) .clio-shell[data-skin] :is(.cw-job, .cw-doc-state, .cw-error)[hidden],
+:is(.assistant-window, .clio-code-window) .clio-task .cl-actions[hidden] {
+  display: none;
+}

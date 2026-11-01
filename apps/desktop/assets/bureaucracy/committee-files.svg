@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900" role="img" aria-labelledby="title desc">
+  <title id="title">Original committee files scene</title>
+  <desc id="desc">A generic civil servant nearly hidden behind official files in a fictional committee room.</desc>
+  <defs>
+    <linearGradient id="room" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4a4639"/>
+      <stop offset="1" stop-color="#1d1b17"/>
+    </linearGradient>
+    <filter id="grain">
+      <feTurbulence type="fractalNoise" baseFrequency="0.76" numOctaves="2" stitchTiles="stitch"/>
+      <feComponentTransfer>
+        <feFuncA type="table" tableValues="0 0.08"/>
+      </feComponentTransfer>
+    </filter>
+  </defs>
+  <rect width="1200" height="900" fill="#11100e"/>
+  <rect x="60" y="52" width="1080" height="796" rx="18" fill="url(#room)"/>
+  <path d="M132 116h936M132 216h936M132 316h936" stroke="#80745b" stroke-width="5" opacity="0.25"/>
+  <rect x="138" y="94" width="250" height="178" fill="#24231e" stroke="#6a573a" stroke-width="9"/>
+  <path d="M174 138h170M174 178h128M174 218h156" stroke="#b59a66" stroke-width="10" opacity="0.7"/>
+  <rect x="812" y="94" width="210" height="178" fill="#202923" stroke="#584934" stroke-width="9"/>
+  <path d="M848 140h132M848 180h98M848 220h122" stroke="#9db3a8" stroke-width="10" opacity="0.72"/>
+
+  <rect x="172" y="560" width="856" height="202" rx="10" fill="#3a2a1f" stroke="#18120d" stroke-width="9"/>
+  <rect x="238" y="508" width="214" height="110" fill="#d4c5aa" stroke="#2a2118" stroke-width="7"/>
+  <path d="M272 544h142M272 578h104" stroke="#8d7e64" stroke-width="9"/>
+  <rect x="458" y="472" width="226" height="146" fill="#b98f55" stroke="#2a2118" stroke-width="7"/>
+  <path d="M493 512h140M493 550h112" stroke="#5c442d" stroke-width="9"/>
+  <rect x="704" y="520" width="250" height="98" fill="#d6cfbd" stroke="#2a2118" stroke-width="7"/>
+  <path d="M738 554h164M738 586h124" stroke="#7b705e" stroke-width="9"/>
+
+  <ellipse cx="608" cy="440" rx="124" ry="34" fill="#111" opacity="0.34"/>
+  <path d="M506 615c21-128 70-190 150-188 74 17 121 80 139 188z" fill="#17191a"/>
+  <path d="M570 610l45-166h48l61 166z" fill="#ddd4c4"/>
+  <path d="M615 454l49 2 28 78-54 73-48-74z" fill="#2d4a4e"/>
+  <circle cx="646" cy="366" r="70" fill="#bfa07e"/>
+  <path d="M576 358c26-72 86-94 154-42-3-54-38-86-94-85-54 6-78 49-60 127z" fill="#6e6659"/>
+  <path d="M616 378h27M667 378h27" stroke="#29241e" stroke-width="8" stroke-linecap="round"/>
+  <path d="M626 414c31 16 62 15 94-5" stroke="#4b3023" stroke-width="7" stroke-linecap="round" fill="none"/>
+
+  <rect x="312" y="392" width="210" height="110" fill="#e3d8c2" stroke="#2a2118" stroke-width="7"/>
+  <path d="M345 430h130M345 464h94" stroke="#89795f" stroke-width="9"/>
+  <rect x="722" y="384" width="190" height="118" fill="#c9b177" stroke="#2a2118" stroke-width="7"/>
+  <path d="M752 422h118M752 458h90" stroke="#6a5130" stroke-width="9"/>
+  <circle cx="967" cy="632" r="28" fill="#f0e2c4"/>
+  <path d="M986 632c38-8 38 42 0 32" fill="none" stroke="#f0e2c4" stroke-width="9"/>
+  <rect width="1200" height="900" filter="url(#grain)"/>
+  <rect width="1200" height="900" fill="none" stroke="#080808" stroke-width="28" opacity="0.24"/>
+</svg>

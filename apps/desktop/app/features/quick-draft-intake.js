@@ -1,0 +1,1089 @@
+// 钟点稿 / Quick Draft — material intake.
+//
+// Everything that brings material in and organizes it: pasted sources, vent /
+// treehole entries, chat screenshots and recordings, File Floppy mounting,
+// strategy signals, the source map, and the read-only material summary shown
+// beside the editor. Pure text helpers stay data-only; the rendering helpers
+// only write to the Quick Draft window's own DOM.
+
+let selectedQuickDraftSourceId = "";
+
+// The one shootable-visual classifier (可拍画面). The intake strategy signals
+// and the listen shot list both read THIS pattern — a second copy would be a
+// second classifier, and the two would drift.
+const QUICK_DRAFT_SHOOTABLE_PATTERN = /(能拍|录屏|画面|展示|演示)/;
+
+function intakeSnapshot(record = activeProjectQuickDraft({ create: false })?.record) {
+  return normalizeQuickDraftWorkspace(record?.workspace, record).intake;
+}
+
+function strategySnapshot(record = activeProjectQuickDraft({ create: false })?.record) {
+  return normalizeQuickDraftWorkspace(record?.workspace, record).strategy;
+}
+
+function humanAnchorSnapshot(record = activeProjectQuickDraft({ create: false })?.record) {
+  const workspace = normalizeQuickDraftWorkspace(record?.workspace, record);
+  return darkroomOf(record).negative || darkroomOf(record).versions?.[0]?.body || "";
+}
+
+function textExcerpt(text = "", limit = 240) {
+  const value = String(text || "").replace(/\s+/g, " ").trim();
+  return value.length > limit ? `${value.slice(0, limit)}...` : value;
+}
+
+function dumpEntries(intake = intakeSnapshot()) {
+  return [];
+}
+
+/** @param {any} intake */
+function nonDumpVentEntries(intake = intakeSnapshot()) {
+  return (intake.ventLog || []).filter((entry) => entry.sourceKind !== "quick-draft-dump");
+}
+
+function listSlot(el, items, emptyText, renderItem) {
+  if (!el) return;
+  el.replaceChildren();
+  if (!items.length) {
+    el.textContent = emptyText;
+    el.classList.add("is-empty");
+    return;
+  }
+  el.classList.remove("is-empty");
+  const list = document.createElement("ul");
+  items.forEach((item, index) => {
+    const li = document.createElement("li");
+    li.textContent = renderItem(item, index);
+    list.append(li);
+  });
+  el.append(list);
+}
+
+function renderStanceCandidates(items = []) {
+  if (!refs.stanceCandidates) return;
+  refs.stanceCandidates.replaceChildren();
+  if (!items.length) {
+    refs.stanceCandidates.textContent = t("quick_draft_stance_empty");
+    refs.stanceCandidates.classList.add("is-empty");
+    return;
+  }
+  refs.stanceCandidates.classList.remove("is-empty");
+  const label = document.createElement("strong");
+  label.className = "quick-draft-result-label";
+  label.textContent = t("quick_draft_talk_points");
+  const row = document.createElement("div");
+  row.className = "quick-draft-chip-row";
+  items.forEach((item, index) => {
+    const button = document.createElement("button");
+    button.className = "btn mini-btn quick-draft-suggestion-chip";
+    button.type = "button";
+    button.dataset.quickDraftStanceIndex = String(index);
+    button.textContent = textExcerpt(item, 42);
+    row.append(button);
+  });
+  refs.stanceCandidates.append(label);
+  refs.stanceCandidates.append(row);
+}
+
+function renderIntake(record = activeProjectQuickDraft({ create: false })?.record || blankQuickDraft()) {
+  const intake = normalizeQuickDraftRecord(record).workspace.intake;
+  const dumps = darkroomOf(record).versions || [];
+  listSlot(
+    refs.ventLog,
+    nonDumpVentEntries(intake),
+    t("quick_draft_vent_empty"),
+    (entry) => textExcerpt(entry.text)
+  );
+  listSlot(
+    refs.dump,
+    dumps,
+    t("quick_draft_dump_empty"),
+    (entry) => textExcerpt(entry.body, 320)
+  );
+  if (refs.restoreDumpButton) refs.restoreDumpButton.disabled = !dumps.length;
+  listSlot(
+    refs.chatMaterials,
+    intake.chatMaterials,
+    t("quick_draft_chat_empty"),
+    (entry) => `${entry.name} · ${entry.platform}: ${textExcerpt(entry.text)}`
+  );
+  renderStanceCandidates(intake.stanceCandidates);
+  const hasStanceCandidate = intake.stanceCandidates.some((item) => String(item || "").trim());
+  if (refs.stanceCandidates) refs.stanceCandidates.hidden = !hasStanceCandidate;
+  if (refs.adoptImpressionButton) {
+    refs.adoptImpressionButton.hidden = !hasStanceCandidate;
+    refs.adoptImpressionButton.disabled = !hasStanceCandidate;
+  }
+  markdownSlot(refs.outlineSeed, intake.outlineSeed || "");
+}
+
+function hasStrategyReport(record = normalizeQuickDraftRecord()) {
+  return hasStrategyReportValue(normalizeQuickDraftRecord(record).workspace.strategy);
+}
+
+function hasStrategyReportValue(strategyReport = {}) {
+  return Boolean(
+    String(strategyReport.editorial || "").trim()
+    || String(strategyReport.materialLedger || "").trim()
+    || String(strategyReport.adoptionTable || "").trim()
+  );
+}
+
+function renderStrategyReport(record = activeProjectQuickDraft({ create: false })?.record || blankQuickDraft()) {
+  const strategy = normalizeQuickDraftRecord(record).workspace.strategy;
+  markdownSlot(refs.editorialStrategy, strategy.editorial || "");
+  markdownSlot(refs.materialLedger, strategy.materialLedger || "");
+  markdownSlot(refs.adoptionTable, strategy.adoptionTable || "");
+}
+
+function setPostDraftChipsVisible(visible) {
+  document.querySelectorAll("[data-quick-draft-after-draft]").forEach((button) => {
+    /** @type {HTMLElement} */ (button).hidden = !visible;
+  });
+}
+
+function renderClassifySummaries(record = activeProjectQuickDraft({ create: false })?.record || blankQuickDraft()) {
+  const setup = normalizeQuickDraftRecord(record).workspace.intake.setup;
+  markdownSlot(refs.officialSummary, setup.officialMaterials || "");
+  markdownSlot(refs.unavailableSummary, setup.unavailableNotes || "");
+  markdownSlot(refs.audienceSummary, setup.audienceConcerns || "");
+}
+
+function inlineStatusText(text = "", max = 48) {
+  const value = String(text || "").replace(/\s+/g, " ").trim();
+  return value.length > max ? `${value.slice(0, max - 1)}...` : value;
+}
+
+function renderDecisionStatuses(record = activeProjectQuickDraft({ create: false })?.record || blankQuickDraft()) {
+  const workspace = normalizeQuickDraftRecord(record).workspace;
+  const setup = workspace.intake.setup;
+  const firstImpression = inlineStatusText(setup.firstImpression);
+  if (refs.firstImpressionStatus) {
+    refs.firstImpressionStatus.textContent = firstImpression
+      ? t("quick_draft_first_impression_set", firstImpression)
+      : t("quick_draft_first_impression_unset");
+    refs.firstImpressionStatus.classList.toggle("is-missing", !firstImpression);
+  }
+  const handsOnNotes = inlineStatusText(setup.handsOnNotes);
+  if (refs.handsOnStatus) {
+    refs.handsOnStatus.textContent = handsOnNotes
+      ? t("quick_draft_hands_on_set", handsOnNotes)
+      : t("quick_draft_hands_on_unset");
+    refs.handsOnStatus.classList.toggle("is-missing", !handsOnNotes);
+  }
+  const hasHandsOnChoice = Boolean(
+    handsOnNotes
+    || String(workspace.intake.annotations?.firsthand || "").trim()
+    || isHandsOnReviewFormat(setup.scenario)
+  );
+  if (refs.handsOnCard) {
+    refs.handsOnCard.hidden = false;
+    refs.handsOnCard.classList.toggle("has-hands-on-choice", hasHandsOnChoice);
+  }
+}
+
+function appendUniqueMarkdownLine(text = "", line = "") {
+  const value = String(text || "").trim();
+  const next = String(line || "").trim();
+  if (!next) return value;
+  const lines = value.split(/\r?\n/).map((item) => item.trim()).filter(Boolean);
+  if (lines.includes(next)) return value;
+  return [...lines, next].join("\n").trim();
+}
+
+function appendAdoptionRow(table = "", row = []) {
+  const cells = row.map((cell) => String(cell || "").replace(/\|/g, "/").trim());
+  if (!cells.some(Boolean)) return String(table || "").trim();
+  const next = `| ${cells.join(" | ")} |`;
+  const value = String(table || "").trim();
+  const base = value || "| 策略/素材 | 稿子处理 | 状态 |\n|---|---|---|";
+  if (base.split(/\r?\n/).map((line) => line.trim()).includes(next)) return base;
+  return `${base}\n${next}`;
+}
+
+function inferStrategySignals(text = "") {
+  const value = String(text || "").trim();
+  if (!value) return { editorial: [], materialLedger: [], adoptionRows: [] };
+  const excerpt = textExcerpt(value, 180);
+  const signals = { editorial: [], materialLedger: [], adoptionRows: [] };
+  const addEditorial = (label, detail = excerpt) => signals.editorial.push(`- ${label}：${detail}`);
+  const addMaterial = (label, status = "聊天/ClioTalk 捕捉") => signals.materialLedger.push(`- ${label}：[聊天建议] [待确认] ${status}；原话：${excerpt}`);
+  const addRow = (item, handling, status = "待检查") => signals.adoptionRows.push([item, handling, status]);
+  const presetSignals = window.AISystem6DraftDeskPresets?.inferStrategySignals?.(
+    activeDraftDeskPreset(),
+    value,
+    excerpt
+  ) || {};
+  signals.editorial.push(...(presetSignals.editorial || []));
+  signals.materialLedger.push(...(presetSignals.materialLedger || []));
+  signals.adoptionRows.push(...(presetSignals.adoptionRows || []));
+
+  const deadline = value.match(/(?:deadline|ddl|截稿|截止|交稿|出来|发出|发布)?\s*(\d{1,2})\s*(?:点|:|：)(?:\d{1,2})?/i);
+  if (deadline && /(deadline|ddl|截稿|截止|交稿|出来|发出|发布|\d{1,2}\s*(?:点|:|：))/i.test(value)) {
+    addEditorial("deadline/时间压力", deadline[0].trim());
+  }
+  if (/(先别|别|不要|不讲|少讲|降权|一笔带过).*(AI|Siri|人工智能)|(?:AI|Siri|人工智能).*(先别|别|不要|不讲|少讲|降权|一笔带过)/i.test(value)) {
+    addEditorial("降权", "AI/Siri 先降权，不作为主线");
+    addRow("AI/Siri 降权", "只一笔带过或放入不好展示/待核边界", "待检查");
+  }
+  if (/(设计|视觉|美学).*(不敢|不好乱|别乱|说不准|不下结论)/.test(value)) {
+    addEditorial("作者边界", "设计类只说可观察变化，不下大结论");
+    addRow("设计类不好乱说", "改成可观察变化和画面描述", "待检查");
+  }
+  if (/(官方|发布会|官网|资料)/.test(value)) addMaterial("官方资料", "适合放入快速扫功能段，不能替代亲测");
+  if (/(亲测|我试了|我看到了|实测|上手)/.test(value)) addMaterial("亲测体验", "优先进入可拍展示段");
+  if (QUICK_DRAFT_SHOOTABLE_PATTERN.test(value)) addMaterial("可拍画面", "优先映射成口播镜头");
+  if (/(没测|未测|不能测|不好展示|不能展示|待核|不确定)/.test(value)) {
+    addMaterial("未测/不好展示", "标边界、降权或删除");
+    addRow("未测功能", "标边界或删除，不能写成亲测结论", "待处理");
+  }
+  return signals;
+}
+
+function mergeStrategySignals(strategyReport = {}, signals = {}) {
+  const next = normalizeStrategy(strategyReport);
+  (signals.editorial || []).forEach((line) => {
+    next.editorial = appendUniqueMarkdownLine(next.editorial, line);
+  });
+  (signals.materialLedger || []).forEach((line) => {
+    next.materialLedger = appendUniqueMarkdownLine(next.materialLedger, line);
+  });
+  (signals.adoptionRows || []).forEach((row) => {
+    next.adoptionTable = appendAdoptionRow(next.adoptionTable, row);
+  });
+  return next;
+}
+
+function hasStrategySignals(signals = {}) {
+  return Boolean(
+    signals.editorial?.length
+    || signals.materialLedger?.length
+    || signals.adoptionRows?.length
+  );
+}
+
+function mountedSourceRecords() {
+  if (!mountedTextDisk || mountedTextDisk.projectId !== activeProjectId) return [];
+  return mountedTextDisk.files
+    .map((name, index) => {
+      const text = String(mountedTextDisk.fileBodies[name] || "").trim();
+      if (!text) return null;
+      return {
+        id: `M${index + 1}`,
+        label: name,
+        text: text.length > 12000 ? `${text.slice(0, 12000)}\n\n[...]` : text,
+      };
+    })
+    .filter(Boolean);
+}
+
+function intakeSourceRecords() {
+  const intake = intakeSnapshot();
+  const records = [];
+  const ventEntries = nonDumpVentEntries(intake);
+  if (ventEntries.length) {
+    records.push({
+      id: "V1",
+      label: t("quick_draft_vent_source_label"),
+      text: ventEntries
+        .map((entry, index) => `${index + 1}. ${entry.text}`)
+        .join("\n")
+        .slice(0, 12000),
+    });
+  }
+  intake.chatMaterials.forEach((item, index) => {
+    records.push({
+      id: `C${index + 1}`,
+      label: `${t("quick_draft_chat_source_label")} / ${item.name}`,
+      text: String(item.text || "").slice(0, 12000),
+      sourceKind: item.sourceKind,
+      platform: item.platform,
+    });
+  });
+  if (intake.outlineSeed.trim()) {
+    records.push({
+      id: "G1",
+      label: t("quick_draft_outline_seed"),
+      text: intake.outlineSeed.slice(0, 12000),
+    });
+  }
+  return records;
+}
+
+function sourceRecordsFromForm() {
+  const sources = [];
+  if (isLaunchDayFormat()) {
+    const firstDay = firstDaySnapshot();
+    const pasted = String(refs.sources?.value || "").trim();
+    if (pasted) {
+      sources.push({
+        id: "P1",
+        label: currentLanguage === "zh" ? "素材" : "Material",
+        text: pasted.length > 12000 ? `${pasted.slice(0, 12000)}\n\n[...]` : pasted,
+      });
+    }
+    [
+      { id: "H1", label: t("quick_draft_first_day_annotated_hands_on"), text: firstDay.handsOnNotes },
+      { id: "A1", label: t("quick_draft_audience_concerns"), text: firstDay.audienceConcerns },
+      { id: "O1", label: t("quick_draft_first_day_annotated_official"), text: firstDay.officialMaterials },
+      { id: "N1", label: t("quick_draft_first_day_annotated_followup"), text: firstDay.unavailableNotes },
+      { id: "I1", label: t("quick_draft_first_impression"), text: firstDay.firstImpression },
+    ].forEach((source) => {
+      const text = String(source.text || "").trim();
+      if (text) sources.push({ ...source, text: text.length > 12000 ? `${text.slice(0, 12000)}\n\n[...]` : text });
+    });
+    sources.push(...intakeSourceRecords());
+    sources.push(...mountedSourceRecords());
+    return sources;
+  }
+  const pasted = String(refs.sources?.value || "").trim();
+  if (pasted) {
+    sources.push({
+      id: "P1",
+      label: currentLanguage === "zh" ? "粘贴资料" : "Pasted sources",
+      text: pasted.length > 12000 ? `${pasted.slice(0, 12000)}\n\n[...]` : pasted,
+    });
+  }
+  sources.push(...mountedSourceRecords());
+  return sources;
+}
+
+function formatQuickDraftSourcesForMingming(sources = []) {
+  return sources
+    .map((source, index) => {
+      const id = source.id || `S${index + 1}`;
+      const label = source.label || id;
+      const text = String(source.text || "").trim();
+      return text ? `[${id}] ${label}\n${text}` : "";
+    })
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+function updateSourceCount() {
+  const count = sourceRecordsFromForm().length;
+  const label = t("quick_draft_source_count", count);
+  if (refs.sourceCount) refs.sourceCount.textContent = label;
+  if (refs.sourceSummary) refs.sourceSummary.textContent = label;
+}
+
+// The shelf holds material as objects, one row each: what it is called, how
+// big it is, and whether the body actually cites it. "Cited" is only claimed
+// when the body carries the source tag the draft route asks the model to use;
+// absence is silence, never a "not cited" verdict.
+function materialRowMeta(item, body = "") {
+  const size = String(item.text || "").trim().length;
+  const parts = [];
+  if (size) parts.push(t("quick_draft_material_size", size.toLocaleString()));
+  const tag = String(item.id || "").trim();
+  if (tag && body.includes(`[${tag}]`)) parts.push(t("quick_draft_material_cited"));
+  return parts.join(" · ");
+}
+
+function renderSourceMap(record = normalizeQuickDraftRecord(), sources = sourceRecordsFromForm()) {
+  if (!refs.sourceMap) return;
+  refs.sourceMap.replaceChildren();
+  const byId = new Map(sources.map((source) => [String(source.id || ""), source]));
+  const map = Array.isArray(record.sourceMap) && record.sourceMap.length
+    ? record.sourceMap.map((item) => ({ ...byId.get(String(item.id || "")), ...item }))
+    : sources;
+  const body = String(refs.draft?.value || record.workspace?.body || "");
+  refs.sourceMap.closest(".draft-desk-shelf")?.classList.toggle("is-empty", !map.length);
+
+  if (refs.shelfTitle) {
+    refs.shelfTitle.textContent = map.length
+      ? t("quick_draft_materials_count", map.length)
+      : t("quick_draft_materials_label");
+  }
+
+  if (!map.length) {
+    const empty = document.createElement("p");
+    empty.className = "draft-desk-source-empty";
+    empty.textContent = t("quick_draft_material_empty");
+    refs.sourceMap.append(empty);
+    return;
+  }
+
+  map.forEach((item) => {
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "draft-desk-material-row";
+    row.dataset.quickDraftSourceId = String(item.id || "");
+    row.classList.toggle("is-selected", row.dataset.quickDraftSourceId === selectedQuickDraftSourceId);
+    row.setAttribute("aria-pressed", row.dataset.quickDraftSourceId === selectedQuickDraftSourceId ? "true" : "false");
+    const icon = document.createElement("span");
+    icon.className = "draft-desk-material-icon";
+    icon.setAttribute("aria-hidden", "true");
+    row.append(icon);
+    const text = document.createElement("span");
+    text.className = "draft-desk-material-copy";
+    const name = document.createElement("b");
+    name.textContent = item.label || item.id || "S";
+    text.append(name);
+    const meta = materialRowMeta(item, body);
+    if (meta) {
+      const small = document.createElement("small");
+      small.textContent = meta;
+      text.append(small);
+    }
+    row.append(text);
+    refs.sourceMap.append(row);
+  });
+}
+
+function hasEvidence(record) {
+  return Boolean(
+    String(record.brief?.support || "").trim()
+    || String(record.brief?.counter || "").trim()
+    || String(record.brief?.uncertainty || "").trim()
+    || String(record.risks || "").trim()
+    || (Array.isArray(record.sourceMap) && record.sourceMap.length)
+  );
+}
+
+function hasOrganizedCards(record = normalizeQuickDraftRecord()) {
+  const source = normalizeQuickDraftRecord(record);
+  const setup = source.workspace.intake.setup;
+  const intake = source.workspace.intake;
+  return Boolean(
+    hasEvidence(source)
+    || hasStrategyReport(source)
+    || String(setup.officialMaterials || "").trim()
+    || String(setup.unavailableNotes || "").trim()
+    || String(setup.audienceConcerns || "").trim()
+    || String(intake.outlineSeed || "").trim()
+  );
+}
+
+function quickDraftCitationRange(body = "", sourceId = "") {
+  const text = String(body || "");
+  const tag = `[${String(sourceId || "").trim()}]`;
+  const tagIndex = tag.length > 2 ? text.indexOf(tag) : -1;
+  if (tagIndex < 0) return null;
+  const previousBreak = text.lastIndexOf("\n\n", tagIndex);
+  const nextBreak = text.indexOf("\n\n", tagIndex + tag.length);
+  return {
+    start: previousBreak < 0 ? 0 : previousBreak + 2,
+    end: nextBreak < 0 ? text.length : nextBreak,
+  };
+}
+
+function selectQuickDraftMaterial(sourceId = "") {
+  const next = selectedQuickDraftSourceId === sourceId ? "" : String(sourceId || "");
+  selectedQuickDraftSourceId = next;
+  refs.sourceMap?.querySelectorAll("[data-quick-draft-source-id]").forEach((row) => {
+    const selected = row.dataset.quickDraftSourceId === next;
+    row.classList.toggle("is-selected", selected);
+    row.setAttribute("aria-pressed", selected ? "true" : "false");
+  });
+
+  const editor = refs.draft?.closest(".teachtext-editor-container");
+  if (!next || !refs.draft) {
+    editor?.classList.remove("is-selected");
+    return false;
+  }
+  const range = quickDraftCitationRange(refs.draft.value, next);
+  if (!range) {
+    editor?.classList.remove("is-selected");
+    return false;
+  }
+  closeQuickDraftDrawer({ restoreFocus: false });
+  applyQuickDraftPaperSurface();
+  leaveQuickDraftPreview();
+  requestAnimationFrame(() => {
+    refs.draft.focus();
+    refs.draft.setSelectionRange(range.start, range.end);
+    refs.draft.dispatchEvent(new Event("select", { bubbles: true }));
+  });
+  return true;
+}
+
+async function useMountedSources() {
+  const count = mountedSourceRecords().length;
+  const committed = await commitQuickDraft({});
+  if (!committed.ok) {
+    setQuickDraftStatus(t("quick_draft_save_failed"));
+    return false;
+  }
+  updateSourceCount();
+  setQuickDraftStatus(t("quick_draft_mounted_added", count));
+  return true;
+}
+
+function stableId(prefix = "item") {
+  return typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+    ? crypto.randomUUID()
+    : `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function inferChatPlatform(name = "", text = "") {
+  const value = `${name}\n${text}`.toLowerCase();
+  if (/telegram|tg\b/.test(value)) return "Telegram";
+  if (/imessage|messages|facetime/.test(value)) return "iMessage";
+  if (/wechat|微信|朋友圈/.test(value)) return "WeChat";
+  if (/\bqq\b|腾讯qq|群聊/.test(value)) return "QQ";
+  return "generic-chat";
+}
+
+function cleanChatScreenshotText(text = "") {
+  return String(text || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => {
+      if (!line) return false;
+      if (/^(发送|send|message|type a message|输入消息)$/i.test(line)) return false;
+      if (/^\d{1,2}:\d{2}$/.test(line)) return false;
+      return true;
+    })
+    .join("\n")
+    .trim();
+}
+
+function chatTextFingerprint(text = "") {
+  return cleanChatScreenshotText(text)
+    .replace(/\b\d{1,2}:\d{2}(?::\d{2})?\b/g, "")
+    .replace(/\s+/g, "")
+    .toLowerCase();
+}
+
+function isChatRecordingFile(file) {
+  const name = String(file?.name || "").toLowerCase();
+  const type = String(file?.type || "").toLowerCase();
+  return type.startsWith("video/") || /\.(mp4|m4v|mov|webm)$/i.test(name);
+}
+
+/** @returns {Promise<void>} */
+function seekVideo(video, time) {
+  return new Promise((resolve, reject) => {
+    const done = () => {
+      cleanup();
+      resolve();
+    };
+    const fail = () => {
+      cleanup();
+      reject(new Error("Could not seek this chat recording."));
+    };
+    const cleanup = () => {
+      video.removeEventListener("seeked", done);
+      video.removeEventListener("error", fail);
+    };
+    video.addEventListener("seeked", done, { once: true });
+    video.addEventListener("error", fail, { once: true });
+    video.currentTime = Math.max(0, time);
+  });
+}
+
+function canvasToPngBlob(canvas) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error("Could not render a chat recording frame."));
+    }, "image/png");
+  });
+}
+
+function frameTimeLabel(seconds = 0) {
+  const value = Math.max(0, Math.round(Number(seconds) || 0));
+  const minutes = Math.floor(value / 60);
+  const rest = String(value % 60).padStart(2, "0");
+  return `${minutes}m${rest}s`;
+}
+
+async function extractChatRecordingFrames(file) {
+  if (typeof document === "undefined" || typeof URL === "undefined") {
+    throw new Error("Chat recording frame extraction needs the browser runtime.");
+  }
+  const url = URL.createObjectURL(file);
+  const video = document.createElement("video");
+  video.muted = true;
+  video.playsInline = true;
+  video.preload = "metadata";
+  video.src = url;
+
+  try {
+    await new Promise((resolve, reject) => {
+      video.addEventListener("loadedmetadata", resolve, { once: true });
+      video.addEventListener("error", () => reject(new Error("Could not read this chat recording.")), { once: true });
+    });
+    const duration = Number.isFinite(video.duration) ? Math.max(0, video.duration) : 0;
+    const width = Number(video.videoWidth || 0);
+    const height = Number(video.videoHeight || 0);
+    if (!duration || !width || !height) {
+      throw new Error("This chat recording has no readable video track.");
+    }
+
+    const interval = duration > 120 ? 2 : 1.25;
+    const maxFrames = 90;
+    const times = [];
+    for (let time = Math.min(0.4, duration); time < duration; time += interval) {
+      times.push(Math.min(time, Math.max(0, duration - 0.1)));
+      if (times.length >= maxFrames) break;
+    }
+    if (!times.length) times.push(0);
+
+    const longEdge = Math.max(width, height);
+    const scale = Math.min(1, 1600 / Math.max(longEdge, 1));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(width * scale));
+    canvas.height = Math.max(1, Math.round(height * scale));
+    const context = canvas.getContext("2d", { alpha: false });
+    if (!context) throw new Error("Could not prepare a canvas for chat recording frames.");
+
+    const frames = [];
+    for (const time of times) {
+      await seekVideo(video, time);
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const blob = await canvasToPngBlob(canvas);
+      const safeName = String(file.name || "chat-recording").replace(/\.[^.]+$/, "");
+      frames.push(new File([blob], `${safeName}-${frameTimeLabel(time)}.png`, {
+        type: "image/png",
+        lastModified: file.lastModified || Date.now(),
+      }));
+    }
+    return frames;
+  } finally {
+    video.removeAttribute("src");
+    video.load();
+    URL.revokeObjectURL(url);
+  }
+}
+
+function chatMaterialBlock(item = {}) {
+  const name = String(item.name || t("quick_draft_chat_source_label")).trim();
+  const text = cleanChatScreenshotText(item.text || "");
+  return text ? `【${t("quick_draft_chat_source_label")}：${name}】\n${text}` : "";
+}
+
+function appendBlocksToSources(blocks = []) {
+  if (!refs.sources) return false;
+  const existing = String(refs.sources.value || "").trim();
+  const seen = new Set(
+    existing
+      .split(/\n{2,}/)
+      .map(chatTextFingerprint)
+      .filter(Boolean)
+  );
+  const nextBlocks = [];
+  blocks.forEach((block) => {
+    const text = String(block || "").trim();
+    const fingerprint = chatTextFingerprint(text);
+    if (!text || !fingerprint || seen.has(fingerprint)) return;
+    seen.add(fingerprint);
+    nextBlocks.push(text);
+  });
+  if (!nextBlocks.length) return false;
+  refs.sources.value = [existing, ...nextBlocks].filter(Boolean).join("\n\n").trim();
+  refs.sources.dispatchEvent(new Event("input", { bubbles: true }));
+  refs.sources.scrollTop = refs.sources.scrollHeight;
+  return true;
+}
+
+function appendChatMaterialsToSources(items = []) {
+  return appendBlocksToSources(items.map(chatMaterialBlock));
+}
+
+function ventLogMaterialBlock(entries = []) {
+  const lines = entries
+    .map((entry) => String(entry?.text || "").trim())
+    .filter(Boolean)
+    .map((text) => `- ${text}`);
+  if (!lines.length) return "";
+  const stamp = new Date().toLocaleTimeString(currentLanguage === "zh" ? "zh-CN" : "en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  return `【${t("quick_draft_vent_material_label")}：${stamp}】\n${lines.join("\n")}`;
+}
+
+function flushVentLogToSources(intake = intakeSnapshot()) {
+  const entries = nonDumpVentEntries(intake);
+  return entries.length ? appendBlocksToSources([ventLogMaterialBlock(entries)]) : false;
+}
+
+async function captureVentText(text = "", options = {}) {
+  collectRefs();
+  const value = String(text || "").trim();
+  if (!value) return false;
+  const slot = activeProjectQuickDraft();
+  if (!slot) {
+    setQuickDraftStatus(t("quick_draft_no_project"));
+    return false;
+  }
+  const intake = intakeSnapshot(slot.record);
+  const entry = normalizeVentEntry({
+    id: stableId("vent"),
+    text: value,
+    createdAt: new Date().toISOString(),
+    sourceKind: options.sourceKind || "clioTalk-vent",
+  }, intake.ventLog.length);
+  const nextIntake = normalizeIntake({
+    ...intake,
+    ventLog: [...intake.ventLog, entry],
+  });
+  const signals = inferStrategySignals(value);
+  const strategyCaptured = hasStrategySignals(signals);
+  const workspacePatch = strategyCaptured
+    ? { intake: nextIntake, strategy: mergeStrategySignals(strategySnapshot(slot.record), signals) }
+    : { intake: nextIntake };
+  const committed = await commitQuickDraft({ workspace: workspacePatch });
+  if (!committed.ok) {
+    setQuickDraftStatus(t("quick_draft_save_failed"));
+    return false;
+  }
+  const saved = committed.record;
+  renderIntake(saved);
+  renderStrategyReport(saved);
+  updateSourceCount();
+  const count = nonDumpVentEntries(nextIntake).length;
+  syncQuickDraftAiAvailability();
+  if (typeof updateMenuState === "function") updateMenuState();
+  setQuickDraftStatus(t(strategyCaptured ? "quick_draft_strategy_captured" : "quick_draft_vent_captured", count));
+  return { captured: true, strategyCaptured, count };
+}
+
+async function setVentMode(enabled = true, options = {}) {
+  collectRefs();
+  const slot = activeProjectQuickDraft();
+  if (!slot) {
+    setQuickDraftStatus(t("quick_draft_no_project"));
+    return false;
+  }
+  if (refs.format && !isLaunchDayFormat(refs.format.value)) refs.format.value = FIRST_DAY_FORMAT;
+  syncQuickDraftTemplateUi();
+  const intake = intakeSnapshot(slot.record);
+  const count = nonDumpVentEntries(intake).length;
+  const shouldFlush = enabled !== true && options.flushToSources !== false;
+  const transferred = shouldFlush ? flushVentLogToSources(intake) : false;
+  const nextIntake = normalizeIntake({
+    ...intake,
+    setup: {
+      ...intake.setup,
+      scenario: normalizeScenario(refs.format?.value || intake.setup?.scenario || FIRST_DAY_FORMAT),
+    },
+    ventMode: enabled === true,
+    ventLog: enabled === true ? intake.ventLog : [],
+  });
+  const committed = await commitQuickDraft({ workspace: { intake: nextIntake } });
+  if (!committed.ok) {
+    setQuickDraftStatus(t("quick_draft_save_failed"));
+    return false;
+  }
+  const saved = committed.record;
+  renderIntake(saved);
+  updateSourceCount();
+  syncQuickDraftAiAvailability();
+  if (typeof updateMenuState === "function") updateMenuState();
+  setQuickDraftStatus(t(nextIntake.ventMode ? "quick_draft_vent_mode_on" : "quick_draft_vent_mode_off", count));
+  return { active: nextIntake.ventMode, count, transferred };
+}
+
+async function clearVentLog(options = {}) {
+  collectRefs();
+  const slot = activeProjectQuickDraft({ create: false });
+  if (!slot?.record?.workspace?.intake) return { cleared: false, count: 0 };
+  const intake = intakeSnapshot(slot.record);
+  const count = nonDumpVentEntries(intake).length;
+  const wasActive = intake.ventMode === true;
+  if (!count && !wasActive) return { cleared: false, count: 0 };
+  const nextIntake = normalizeIntake({
+    ...intake,
+    ventMode: false,
+    ventLog: [],
+  });
+  const committed = await commitQuickDraft({ workspace: { intake: nextIntake } });
+  if (!committed.ok) {
+    setQuickDraftStatus(t("quick_draft_save_failed"));
+    return { cleared: false, count };
+  }
+  const saved = committed.record;
+  renderIntake(saved);
+  updateSourceCount();
+  syncQuickDraftAiAvailability();
+  if (typeof updateMenuState === "function") updateMenuState();
+  if (!options.silent) setQuickDraftStatus(t("quick_draft_vent_cleared", count));
+  return { cleared: true, count };
+}
+
+function ventEntryCount() {
+  return nonDumpVentEntries(intakeSnapshot()).length;
+}
+
+function isVentIntakeActive() {
+  const workspace = activeProjectQuickDraft({ create: false })?.record.workspace;
+  return isLaunchDayFormat(workspace?.intake?.setup?.scenario) && workspace?.intake?.ventMode === true;
+}
+
+/**
+ * Keep an imported picture, so it survives the save and can be shown to a
+ * vision model later. The attachment goes into the shared store and the record
+ * that follows carries only its id. Video frames and non-images return null.
+ *
+ * @param {File} file
+ * @returns {Promise<any | null>}
+ */
+async function quickDraftMaterialPreview(file) {
+  if (typeof buildImageAttachments !== "function") return null;
+  if (!imageFilesFromList([file]).length) return null;
+  try {
+    const [built] = await buildImageAttachments([file], {
+      projectId: activeProjectId,
+      surface: "quickDraft",
+      limit: 1,
+      maxEdge: 1280,
+    });
+    if (!built) return null;
+    // The picture goes into the shared store, the way every other surface keeps
+    // one, and the material carries only its id. It used to be inlined as
+    // base64 on the workspace record: those records then grew without bound and
+    // the picture was invisible to anything that reads the store.
+    saveImageAttachments([built]);
+    return built;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The picture a chat material points at, wherever it lives. New materials carry
+ * an id into the shared store; ones imported before that carry the bytes
+ * inline, and those keep working — a writer's older draft does not lose its
+ * photograph because the storage moved.
+ *
+ * @param {Record<string, any>} material
+ * @returns {string}
+ */
+function quickDraftMaterialPictureUrl(material) {
+  const stored = typeof imageAttachmentById === "function"
+    ? imageAttachmentById(material?.imageAttachmentId)
+    : null;
+  if (stored && typeof imageAttachmentVisionDataUrl === "function") {
+    return imageAttachmentVisionDataUrl(stored) || "";
+  }
+  return String(material?.previewDataUrl || "");
+}
+
+/**
+ * Chat materials with their pictures materialized, for the moment they leave
+ * the browser. The id is a client-side handle, so a model request has to carry
+ * the bytes; they are resolved here rather than kept on the record.
+ *
+ * @param {any[]} materials
+ * @returns {any[]}
+ */
+function quickDraftMaterialsForModel(materials) {
+  return (Array.isArray(materials) ? materials : []).map((material) => {
+    const previewDataUrl = quickDraftMaterialPictureUrl(material);
+    return previewDataUrl ? { ...material, previewDataUrl } : material;
+  });
+}
+
+async function returnFromWalk() {
+  collectRefs();
+  const text = await showInputDialog({
+    title: t("quick_draft_walk_title"),
+    message: t("quick_draft_walk_message"),
+    placeholder: t("quick_draft_walk_placeholder"),
+    multiline: true,
+  });
+  if (text == null || !text.trim()) return false;
+  const { parseWalkEnvelope, findSpokenMarks, walkMaterialText, walkFileName } = window.AISystem6WalkTranscript;
+  const { meta, body } = parseWalkEnvelope(text);
+  if (!body) {
+    setQuickDraftStatus(t("quick_draft_walk_empty"));
+    return false;
+  }
+  const marks = findSpokenMarks(body);
+  const confirmed = await showSystemModal(t("quick_draft_walk_confirm",
+    meta || t("quick_draft_walk_undated"), body.length.toLocaleString(), marks.length),
+  "confirm", { confirmKey: "quick_draft_walk_confirm_button" });
+  if (confirmed !== "yes") return false;
+  try {
+    const file = new File([walkMaterialText({ body, marks, labels: {
+      marksHeading: t("quick_draft_walk_marks_heading"),
+      transcriptHeading: t("quick_draft_walk_transcript_heading"),
+    } })], walkFileName({ meta, now: new Date(), prefix: t("quick_draft_walk_file_prefix") }), { type: "text/plain" });
+    const result = await insertFilesIntoFileFloppy([file], { source: "quickDraft", openAfter: "" });
+    if (result && result.mountedFileNames?.length) {
+      if (typeof renderSourceMap === "function") renderSourceMap(normalizeQuickDraftRecord(activeProjectQuickDraft({ create: false })?.record));
+      if (typeof updateSourceCount === "function") updateSourceCount();
+      setQuickDraftStatus(t("quick_draft_walk_done", result.mountedFileNames[0], marks.length));
+      return true;
+    }
+  } catch (error) {
+    console.warn("[Quick Draft] Walk import failed", error);
+  }
+  setQuickDraftStatus(t("quick_draft_walk_failed"));
+  return false;
+}
+
+async function importChatScreenshots() {
+  if (!getActiveProject()) {
+    setQuickDraftStatus(t("quick_draft_no_project"));
+    openWindow("projects");
+    return false;
+  }
+  if (typeof openTransientFilePicker !== "function" || typeof extractFileText !== "function") {
+    setQuickDraftStatus(t("quick_draft_chat_import_unavailable"));
+    return false;
+  }
+  openTransientFilePicker({
+    accept: ".bmp,.jpg,.jpeg,.png,.webp,.heic,.heif,.mp4,.m4v,.mov,.webm,image/*,video/mp4,video/*",
+    multiple: true,
+    async onSelect(files) {
+      const selected = Array.from(files || []).filter(Boolean);
+      if (!selected.length) return;
+      setBusy(true);
+      setQuickDraftStatus(t("quick_draft_chat_importing"));
+      try {
+        const imported = [];
+        const slot = activeProjectQuickDraft();
+        const intake = intakeSnapshot(slot?.record);
+        const seen = new Set(
+          intake.chatMaterials
+            .map((item) => chatTextFingerprint(item.text))
+            .filter(Boolean)
+        );
+        for (const file of selected) {
+          const frameFiles = isChatRecordingFile(file)
+            ? await extractChatRecordingFrames(file)
+            : [file];
+          for (const frame of frameFiles) {
+            // Keep the picture, not only the words in it. A product photo has
+            // no text at all, and used to be dropped here; the vision model can
+            // read the thing itself.
+            const picture = await quickDraftMaterialPreview(frame);
+            let text = "";
+            try {
+              const extracted = await extractFileText(frame);
+              text = cleanChatScreenshotText(extracted.text || "");
+            } catch (error) {
+              if (!picture) throw error;
+            }
+            if (!text && !picture) continue;
+            const fingerprint = text ? chatTextFingerprint(text) : "";
+            if (text && (!fingerprint || seen.has(fingerprint))) continue;
+            if (fingerprint) seen.add(fingerprint);
+            imported.push(normalizeChatMaterial({
+              id: stableId("chat"),
+              name: frame.name || file.name || `chat-${imported.length + 1}`,
+              text,
+              // The id, not the bytes. The picture itself is in the shared
+              // store; see quickDraftMaterialPreview above.
+              imageAttachmentId: picture?.id || "",
+              platform: inferChatPlatform(file.name, text),
+              sourceKind: isChatRecordingFile(file) ? "chat-recording-frame" : "chat-screenshot",
+              createdAt: new Date().toISOString(),
+            }, imported.length));
+          }
+        }
+        if (!imported.length) {
+          setQuickDraftStatus(t("quick_draft_chat_import_empty"));
+          return;
+        }
+        const nextIntake = normalizeIntake({
+          ...intake,
+          chatMaterials: [...intake.chatMaterials, ...imported],
+        });
+        appendChatMaterialsToSources(imported);
+        const committed = await commitQuickDraft({ workspace: { intake: nextIntake } });
+        if (!committed.ok) {
+          setQuickDraftStatus(t("quick_draft_save_failed"));
+          return;
+        }
+        const saved = committed.record;
+        renderIntake(saved);
+        updateSourceCount();
+        setQuickDraftStatus(t("quick_draft_chat_imported", imported.length));
+      } catch (error) {
+        setQuickDraftStatus(t("quick_draft_failed", quickDraftFailureMessage(error)));
+      } finally {
+        setBusy(false);
+      }
+    },
+  });
+  return true;
+}
+
+function firstStanceCandidate(index = -1) {
+  const intake = intakeSnapshot();
+  const candidates = intake.stanceCandidates.filter((item) => String(item || "").trim());
+  const candidate = index >= 0 ? candidates[index] : candidates[0];
+  return String(candidate || "")
+    .replace(/^\s*[-*•\d.、]+\s*/, "")
+    .trim();
+}
+
+async function adoptFirstImpression(index = -1) {
+  const candidate = firstStanceCandidate(Number(index));
+  if (!candidate) {
+    setQuickDraftStatus(t("quick_draft_no_stance_candidate"));
+    return false;
+  }
+  const record = activeProjectQuickDraft({ create: false })?.record;
+  const setup = quickDraftSetupSnapshot(record);
+  if (refs.format && !isLaunchDayFormat(refs.format.value)) refs.format.value = FIRST_DAY_FORMAT;
+  syncQuickDraftTemplateUi();
+  const committed = await commitQuickDraft({
+    workspace: {
+      intake: {
+        ...normalizeQuickDraftRecord(record).workspace.intake,
+        setup: { ...setup, firstImpression: candidate },
+      },
+    },
+  });
+  if (!committed.ok) {
+    setQuickDraftStatus(t("quick_draft_save_failed"));
+    return false;
+  }
+  renderDecisionStatuses(committed.record);
+  setQuickDraftStatus(t("quick_draft_adopted_impression"));
+  return true;
+}
+
+async function confirmHandsOnFromAnnotations() {
+  const annotations = currentAnnotations();
+  const candidate = String(annotations.firsthand || "").trim();
+  if (!candidate) {
+    setQuickDraftStatus(t("quick_draft_no_hands_on_candidate"));
+    return false;
+  }
+  refs.handsOn.value = refs.handsOn.value
+    ? `${refs.handsOn.value.trim()}\n${candidate}`.trim()
+    : candidate;
+  const committed = await commitQuickDraft({});
+  if (!committed.ok) {
+    setQuickDraftStatus(t("quick_draft_save_failed"));
+    return false;
+  }
+  renderDecisionStatuses(committed.record);
+  setQuickDraftStatus(t("quick_draft_hands_on_confirmed"));
+  return true;
+}
+
+window.AISystem6QuickDraftIntake = Object.freeze({
+  adoptFirstImpression,
+  appendChatMaterialsToSources,
+  captureVentText,
+  clearVentLog,
+  confirmHandsOnFromAnnotations,
+  dumpEntries,
+  flushVentLogToSources,
+  formatQuickDraftSourcesForMingming,
+  humanAnchorSnapshot,
+  importChatScreenshots,
+  intakeSnapshot,
+  isVentIntakeActive,
+  mountedSourceRecords,
+  nonDumpVentEntries,
+  renderClassifySummaries,
+  renderDecisionStatuses,
+  renderIntake,
+  renderSourceMap,
+  renderStanceCandidates,
+  renderStrategyReport,
+  setVentMode,
+  sourceRecordsFromForm,
+  strategySnapshot,
+  updateSourceCount,
+  useMountedSources,
+  ventEntryCount,
+});

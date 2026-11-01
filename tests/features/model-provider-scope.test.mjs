@@ -1,0 +1,59 @@
+// AI System 6 keeps model QA focused on the providers we can actually
+// afford and tune: Gemma/Qwen locally, DeepSeek in the cloud. This is
+// a product-wide model boundary for writing, translation, RAG, and
+// vision interactions, while the compatibility plumbing stays open.
+
+import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
+
+const test = createFeatureTest("model-provider-scope");
+
+const serverChat = read("apps/server/server/chat.js");
+const clientChat = read("app/core/chat-messages.js");
+const cloudModel = read("app/features/cloud-model.js");
+const serverCloud = read("apps/server/server/cloud.js");
+const cloudRoute = read("apps/server/server/routes/cloud-chat.js");
+const localVision = read("apps/server/server/vision.js");
+
+test.assertIncludes(serverChat, "function isQwen35ModelName", "local first-class support includes Qwen 3.5 / 3.6 detection on the server");
+test.assertIncludes(clientChat, "function isQwen35ModelName", "local first-class support includes Qwen 3.5 / 3.6 detection in the browser");
+const { isQwen35ModelName } = (await import("node:module")).createRequire(import.meta.url)("../../apps/server/server/chat.js");
+for (const name of ["qwen3.5-4b-mlx", "Qwen3.6-27B", "qwen3.8-27b-uncensored-mlx", "ternary-bonsai-27b-mlx", "prism-ml/Bonsai-27B-mlx-1bit"]) {
+  test.assert(isQwen35ModelName(name), `${name} runs on the Qwen task profile (thinking off, Qwen sampling, task budgets)`);
+}
+for (const name of ["qwen2.5-7b", "qwen3-8b", "gemma-4-e4b-it", "deepseek-flash"]) {
+  test.assert(!isQwen35ModelName(name), `${name} is not mistaken for the Qwen 3.5+ family`);
+}
+test.assertIncludes(serverChat, "function tuneQwen35ChatPayload", "Qwen has a dedicated local payload tuner");
+test.assertIncludes(serverChat, "function isGemma4ModelName", "local first-class support includes Gemma 4 detection on the server");
+test.assertIncludes(clientChat, "function isGemma4ModelName", "local first-class support includes Gemma 4 detection in the browser");
+test.assertIncludes(serverChat, "function tuneGemma4ChatPayload", "Gemma has a dedicated local payload tuner");
+test.assertIncludes(serverChat, "first-class model QA targets are Gemma and\n// Qwen locally, plus DeepSeek in the cloud", "server chat documents the app-wide first-class model boundary");
+test.assertIncludes(serverChat, "underlying chat payload OpenAI-compatible", "local chat keeps the OpenAI-compatible escape hatch");
+test.assertIncludes(serverChat, "const finalPayload = tuneGemma4ChatPayload(tuneQwen35ChatPayload(basePayload));", "local routing layers only the Gemma and Qwen family-specific tuners");
+test.assertIncludes(serverChat, "function tuneLocalNoThinkingPayload", "non-first-class local models still receive a conservative generic compatibility pass");
+test.assertIncludes(serverChat, "stripInternalFields: !isQwen35ModelName(payload?.model) && !isGemma4ModelName(payload?.model)", "Gemma/Qwen keep family metadata for first-class tuning while other local models remain best-effort");
+
+test.assertIncludes(localVision, "same model boundary as the rest of AI System 6", "local vision explicitly follows the app-wide model boundary");
+test.assertIncludes(localVision, "\"qwen3.5-4b-mlx\"", "Qwen 3.5 4B MLX stays in the local endpoint validation set");
+test.assertIncludes(localVision, "\"gemma-4-e4b-it\"", "Gemma 4 E4B IT stays in the local endpoint validation set");
+test.assertIncludes(localVision, "getLoadedLmStudioModelInfo()?.model", "vision tries the user's currently loaded local model before fallbacks");
+test.assertIncludes(localVision, "process.env.AI_SYSTEM6_VISION_MODEL", "vision remains operator-extensible without code edits");
+test.assertIncludes(localVision, "tuneLmStudioChatPayload(enforceMarkdownOnlyChatPayload", "vision goes through the shared local chat tuning path");
+test.assertIncludes(localVision, "type: \"image_url\"", "vision preserves an OpenAI-compatible image-content payload");
+
+test.assertIncludes(cloudModel, "DeepSeek is the first-class cloud provider", "cloud UI documents DeepSeek as the first-class cloud route");
+test.assertMatches(cloudModel, /const PROVIDER_BASE_URLS = \{\n    deepseek: DEEPSEEK_BASE_URL,\n(?:    \/\/[^\n]*\n)*    "claude-subscription": "subscription-cli:\/\/claude",\n    "codex-subscription": "subscription-cli:\/\/codex",\n    anthropic: "https:" \+ String\.fromCharCode\(47, 47\) \+ "api\.anthropic\.com",\n  \};/, "cloud UI's built-in providers are DeepSeek, the local subscription CLIs, and Anthropic's API (the writer's 2026-10-24 decision), nothing else that bills a provider API");
+test.assertIncludes(cloudModel, "const BUILTIN_PROVIDER_MODELS = {\n    deepseek: [", "cloud model picker exposes DeepSeek as the built-in cloud model family");
+test.assertNotIncludes(cloudModel, "openai:", "cloud UI does not promote OpenAI as a built-in paid provider");
+test.assertIncludes(cloudModel, "data.by_provider?.[provider] || data.models", "Anthropic's model list comes from the server's own registry, never DeepSeek's");
+test.assertNotIncludes(cloudModel, "anthropic: [", "the page keeps no second copy of the Anthropic model list");
+test.assertIncludes(serverCloud, "DEEPSEEK_CLOUD_MODELS", "server cloud registry is the DeepSeek model registry");
+test.assertIncludes(serverCloud, "DeepSeek is the first-class cloud QA target", "server cloud helpers document DeepSeek as the cloud QA target");
+test.assertIncludes(serverCloud, "compatible endpoint as a best-effort escape hatch", "server cloud helpers retain OpenAI-compatible provider openness");
+test.assertIncludes(serverCloud, 'id: DEEPSEEK_FLASH_MODEL_ID', "server cloud registry includes the current DeepSeek Flash id");
+test.assertIncludes(serverCloud, "deepseek-v4-pro", "server cloud registry includes DeepSeek v4 Pro");
+test.assertIncludes(cloudRoute, "await resolveCloudTarget(requestedTargetBaseUrl)", "cloud route resolves and pins the trusted endpoint before provider access");
+test.assertIncludes(cloudRoute, "isDeepSeekCloudModelId", "cloud chat route has DeepSeek-specific compatibility handling");
+test.assertIncludes(cloudRoute, "payload.thinking = policy.thinking", "DeepSeek v4 cloud route decides thinking server-side by task type");
+
+test.finish();

@@ -1,0 +1,732 @@
+// Feature module: findpath.
+
+// Lazy classic script; shares the AI System 6 global scope. Loaded through
+// ensureFindPathModule() when the Searcher or Find File window opens.
+// getSearchProviderLabel and updateSearchProviderLabels live in
+// selection-services.js instead, because startup refreshes the selection
+// popover label before this module exists.
+
+
+// True after the writer has asked Searcher at least once this session. Idle
+// empty copy must not pretend a scan already finished.
+let findPathHasSearched = false;
+
+function markFindPathSearched() {
+  findPathHasSearched = true;
+}
+
+function searchProviderLabel(provider) {
+  if (provider === "bing") return t("search_bing");
+  if (provider === "duckduckgo") return t("search_duckduckgo");
+  if (provider === "deepseek") return t("search_deepseek");
+  return t("search_auto");
+}
+
+function getActiveSearchProviderLabel() {
+  const provider = searchProviderInput?.value || "auto";
+  if (provider === "auto") return getSearchProviderLabel();
+  return searchProviderLabel(provider);
+}
+
+async function fetchMoreResults() {
+  const query = findPathQueryInput.value.trim();
+  if (!query) return;
+  if (searchProviderInput?.value === "deepseek") return;
+  // An MCP server answers one call with everything it has; there is no
+  // second page to ask for.
+  if (String(searchProviderInput?.value || "").startsWith("mcp:")) return;
+
+  const currentCount = findPathResults.length;
+  const targetCount = getFindPathResultLimit();
+  const existingUrls = new Set(findPathResults.map(r => r.url));
+  const uniqueResults = [];
+  let nextStart = currentCount;
+  const moreButton = findPathResultsEl.querySelector(".find-path-more-btn");
+  const originalLabel = moreButton?.textContent || "";
+
+  try {
+    if (moreButton) {
+      moreButton.disabled = true;
+      moreButton.textContent = "...";
+    }
+
+    for (let attempt = 0; attempt < 4 && uniqueResults.length < targetCount; attempt += 1) {
+      const results = await searchFindPath(query, nextStart);
+      if (!results.length) break;
+
+      for (const result of results) {
+        if (!result.url || existingUrls.has(result.url)) continue;
+        existingUrls.add(result.url);
+        uniqueResults.push(result);
+        if (uniqueResults.length >= targetCount) break;
+      }
+
+      nextStart += getFindPathResultLimit();
+    }
+
+    if (uniqueResults.length > 0) {
+      findPathResults.push(...uniqueResults);
+      renderFindPathResults();
+      const newItems = findPathResultsEl.querySelectorAll(".find-path-result");
+      newItems[currentCount]?.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else if (moreButton) {
+      moreButton.disabled = false;
+      moreButton.textContent = originalLabel;
+    }
+  } catch (error) {
+    if (moreButton) {
+      moreButton.disabled = false;
+      moreButton.textContent = originalLabel;
+    }
+    setStatus(t("find_path_error", friendlyErrorDetail(error)));
+  }
+}
+
+function focusFindPathQuery() {
+  findPathQueryInput?.focus?.();
+  findPathQueryInput?.select?.();
+}
+
+function renderFindPathResults() {
+  wireFindPathResults();
+  updateFindPathStatusBar();
+  findPathResultsEl?.classList.remove("is-hidden");
+  const scrollPos = findPathResultsEl.scrollTop;
+  findPathResultsEl.replaceChildren();
+  const deepSeekProvider = searchProviderInput?.value === "deepseek";
+
+  renderWebAnswerSummary(deepSeekProvider);
+
+  if (!findPathResults.length) {
+    if (deepSeekProvider && findPathWebAnswer?.answer) {
+      renderFindPathNotice(t("search_answer_no_sources"));
+    } else if (!findPathHasSearched) {
+      // Goal #2/#6: idle Searcher still needs a tappable next step in the
+      // empty pane — the query row is easy to miss once the eye lands here.
+      // Not "Search": the query row already has that button, and two buttons
+      // with one name read as two different searches (2026-10-09 audit).
+      renderFindPathEmptyNext(t("searcher_idle_empty"), {
+        label: t("type_a_query"),
+        onClick: focusFindPathQuery,
+      });
+    } else {
+      renderFindPathEmptyNext(t("no_find_path_results"), {
+        label: t("searcher_try_another"),
+        onClick: focusFindPathQuery,
+      });
+    }
+    synthesizeFindPathButton.hidden = true;
+    syncFindPathActions();
+    return;
+  }
+
+  synthesizeFindPathButton.hidden = deepSeekProvider;
+
+  // Era result-table header (Sherlock idiom). The header is always in the
+  // DOM; only the Platinum / Aqua / Snow Leopard appearance CSS shows it.
+  // Rows carry all the same text, so screen readers can skip the header.
+  const resultsHeader = document.createElement("div");
+  resultsHeader.className = "find-path-results-header";
+  resultsHeader.setAttribute("aria-hidden", "true");
+  resultsHeader.innerHTML = `
+    <span>${escapeHtml(t("searcher_column_name"))}</span>
+    <span class="find-path-header-relevance">${escapeHtml(t("searcher_column_relevance"))}</span>
+    <span>${escapeHtml(t("searcher_column_site"))}</span>
+  `;
+  findPathResultsEl.append(resultsHeader);
+
+  findPathResults.forEach((result, index) => {
+    const resultText = `${result.title || ""}\n${result.snippet || ""}`.trim();
+    const targetLanguage = getTranslationTargetForUi(resultText);
+    const hasTranslation = !!result.translation?.trim();
+    const item = document.createElement("div");
+    item.className = `find-path-result${index === selectedFindPathIndex ? " is-selected" : ""}`;
+    item.tabIndex = 0;
+    item.role = "button";
+    item.title = t("searcher_open_link_hint");
+    // Rank-mapped relevance bar (Sherlock idiom): the value is the result's
+    // rank order, not a score. Only Platinum / Aqua appearance CSS draws it.
+    item.style.setProperty("--find-path-relevance", `${Math.max(12, 96 - index * 7)}%`);
+    item.innerHTML = `
+      <strong>${escapeHtml(result.title)}</strong>
+      <span class="find-path-result-relevance" aria-hidden="true"></span>
+      <span>${escapeHtml(result.site || result.url)}</span>
+      <p>${escapeHtml(result.snippet || "")}</p>
+      ${targetLanguage || hasTranslation ? `
+        <div class="find-path-result-actions">
+          ${targetLanguage && !hasTranslation ? `<button class="btn mini-btn" type="button" data-find-path-translate="${index}">${escapeHtml(t("translate_result"))}</button>` : ""}
+        </div>
+      ` : ""}
+      ${hasTranslation ? `<div class="find-path-translation"><b>${escapeHtml(formatTranslationMeta(result.translationLanguage, result.translationCreatedAt, "Searcher", result.translationModel))}</b><p>${escapeHtml(result.translation)}</p></div>` : ""}
+    `;
+    item.setAttribute("aria-pressed", index === selectedFindPathIndex ? "true" : "false");
+    item.dataset.findPathIndex = String(index);
+    findPathResultsEl.append(item);
+  });
+
+  if (!deepSeekProvider) {
+    // Add the localized pagination button at the end of the list.
+    const moreButton = document.createElement("button");
+    moreButton.type = "button";
+    moreButton.className = "find-path-more-btn";
+    moreButton.textContent = t("searcher_more_results");
+    moreButton.addEventListener("click", fetchMoreResults);
+    findPathResultsEl.append(moreButton);
+  }
+
+  findPathResultsEl.scrollTop = scrollPos;
+  syncFindPathActions();
+}
+
+// Selecting a result marks its row; it no longer rebuilds the list, which
+// used to throw away the focused row and with it any keyboard navigation.
+function selectFindPathResult(index, { focus = false } = {}) {
+  if (!findPathResults[index]) return;
+  selectedFindPathIndex = index;
+  findPathResultsEl.querySelectorAll(".find-path-result").forEach((row) => {
+    const selected = Number(row.dataset.findPathIndex) === index;
+    row.classList.toggle("is-selected", selected);
+    row.setAttribute("aria-pressed", selected ? "true" : "false");
+    if (selected && focus) {
+      row.focus({ preventScroll: true });
+      row.scrollIntoView({ block: "nearest" });
+    }
+  });
+  syncFindPathActions();
+}
+
+// A result goes to Reader, the one surface that opens a source on this desk.
+// Double-click used to hand it to a raw browser tab instead.
+function openSelectedFindPathInReader() {
+  window.AISystem6Runtime?.dispatchCommand?.("open-selected-in-reader");
+}
+
+// Goal #2: idle / zero-hit Searcher marks data-empty so narrow CSS can stack
+// grey handoff chrome instead of packing Send+Reader side-by-side.
+function syncFindPathEmptyMarker() {
+  const win = typeof getWindow === "function"
+    ? getWindow("findPath")
+    : document.querySelector('[data-window="findPath"]');
+  if (!win) return;
+  const empty = !findPathHasSearched || !findPathResults.length;
+  if (empty) win.setAttribute("data-empty", "");
+  else win.removeAttribute("data-empty");
+}
+
+// The handoff verbs act on the selected result; with none selected they are
+// unavailable, and Balloon Help says why, instead of answering a click with a
+// status line.
+function syncFindPathActions() {
+  const hasResult = !!getSelectedFindPath();
+  const pane = findPathResultsEl?.closest(".find-path-pane");
+  if (!pane) return;
+  // One reason per state: empty search vs results present but none picked.
+  const why = !findPathHasSearched || !findPathResults.length
+    ? "balloon_searcher_needs_search"
+    : "balloon_searcher_needs_result";
+  pane.querySelectorAll('[data-action="open-selected-in-reader"], [data-action="clip-selected-find-path"], [data-action="find-path-to-floppy"], [data-action="copy-search-result-markdown"], [data-action="insert-search-result"]').forEach((button) => {
+    button.disabled = !hasResult;
+    button.classList.toggle("is-disabled", !hasResult);
+    button.dataset.balloonHelpDisabled = why;
+    button.dataset.grayAffordance = hasResult ? "0" : "1";
+  });
+  const menu = pane.querySelector(".find-path-send-menu");
+  if (menu) {
+    menu.classList.toggle("is-disabled", !hasResult);
+    const summary = menu.querySelector(":scope > summary");
+    if (summary) {
+      summary.classList.toggle("is-disabled", !hasResult);
+      summary.dataset.balloonHelpDisabled = why;
+    }
+    if (!hasResult) menu.open = false;
+  }
+  syncFindPathEmptyMarker();
+}
+
+function wireFindPathResults() {
+  if (!findPathResultsEl || findPathResultsEl.dataset.wired) return;
+  findPathResultsEl.dataset.wired = "true";
+  const rowIndex = (event) => {
+    const row = event.target.closest(".find-path-result");
+    return row ? Number(row.dataset.findPathIndex) : -1;
+  };
+  findPathResultsEl.addEventListener("click", (event) => {
+    if (event.target.closest("[data-find-path-translate]")) return;
+    const index = rowIndex(event);
+    if (index < 0) return;
+    if (
+      index === selectedFindPathIndex
+      && typeof window.matchMedia === "function"
+      && !window.matchMedia("(hover: hover) and (pointer: fine)").matches
+    ) {
+      openSelectedFindPathInReader();
+      return;
+    }
+    selectFindPathResult(index);
+    const row = event.target.closest(".find-path-result");
+    if (row) revealSelectOpenTapHint(row, { detail: event.detail });
+  });
+  findPathResultsEl.addEventListener("dblclick", (event) => {
+    const index = rowIndex(event);
+    if (index < 0) return;
+    selectFindPathResult(index);
+    openSelectedFindPathInReader();
+  });
+  findPathResultsEl.addEventListener("keydown", (event) => {
+    const index = rowIndex(event);
+    if (index < 0 || event.target.closest("button")) return;
+    const last = findPathResults.length - 1;
+    const next = { ArrowDown: index + 1, ArrowUp: index - 1, Home: 0, End: last }[event.key];
+    if (next !== undefined) {
+      event.preventDefault();
+      selectFindPathResult(Math.max(0, Math.min(last, next)), { focus: true });
+    } else if (event.key === " ") {
+      event.preventDefault();
+      selectFindPathResult(index);
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      selectFindPathResult(index);
+      openSelectedFindPathInReader();
+    }
+  });
+}
+
+// DeepSeek provider state: one server-side Responses API call returns the
+// cited answer plus the raw search results; both stay temporary until the
+// user opens a source in Reader.
+let findPathWebAnswer = null;
+// The text of a search that stopped before its final envelope. Kept beside the
+// finished answer so the summary surface can say which of the two it is
+// showing: a partial reply is not an answer, and it is not nothing either.
+let findPathIncompleteAnswer = "";
+
+/**
+ * Show the synthesized online answer above the results list. Keeps the
+ * existing .find-path-summary surface so no new styling is needed; the
+ * disclaimer makes it explicit that the answer is model output, not evidence.
+ *
+ * @param {boolean} deepSeekProvider
+ */
+function renderWebAnswerSummary(deepSeekProvider) {
+  const answer = deepSeekProvider ? findPathWebAnswer?.answer : "";
+  if (!answer && deepSeekProvider && findPathIncompleteAnswer) {
+    renderWebSearchIncomplete(findPathIncompleteAnswer);
+    return;
+  }
+  if (!answer) {
+    findPathSummaryEl.classList.add("is-hidden");
+    findPathSummaryEl.replaceChildren();
+    return;
+  }
+  findPathSummaryEl.classList.remove("is-hidden");
+  findPathSummaryEl.replaceChildren();
+  const label = document.createElement("div");
+  label.className = "hint";
+  label.textContent = t("search_answer_label");
+  const body = document.createElement("div");
+  body.textContent = answer;
+  const note = document.createElement("div");
+  note.className = "hint";
+  note.setAttribute("data-evidence", "0");
+  note.textContent = t("search_answer_note");
+  findPathSummaryEl.append(label, body, note);
+  findPathSummaryEl.scrollTop = 0;
+}
+
+/**
+ * Live preview while the web-search answer streams: label plus accumulated
+ * text, replaced by the final summary (with citations) when the stream ends.
+ *
+ * @param {string} text
+ */
+function renderWebSearchStreamingText(text) {
+  findPathSummaryEl.classList.remove("is-hidden");
+  findPathSummaryEl.replaceChildren();
+  const label = document.createElement("div");
+  label.className = "hint";
+  label.textContent = t("search_answer_label");
+  const body = document.createElement("div");
+  body.textContent = text;
+  findPathSummaryEl.append(label, body);
+  findPathSummaryEl.scrollTop = 0;
+}
+
+/**
+ * The text a stopped search did receive, kept on screen but labelled for what
+ * it is. The reply never reached its final envelope, so there are no sources
+ * yet - unknown, not absent - and nothing here may read as a finished answer.
+ *
+ * @param {string} text
+ */
+function renderWebSearchIncomplete(text) {
+  const body = String(text || "").trim();
+  if (!body) return;
+  findPathSummaryEl.classList.remove("is-hidden");
+  findPathSummaryEl.replaceChildren();
+  const label = document.createElement("div");
+  label.className = "hint";
+  label.textContent = t("search_answer_incomplete_label");
+  const content = document.createElement("div");
+  content.textContent = body;
+  const note = document.createElement("div");
+  note.className = "hint";
+  note.textContent = t("search_answer_incomplete_note");
+  findPathSummaryEl.append(label, content, note);
+  findPathSummaryEl.scrollTop = 0;
+}
+
+/**
+ * Run Searcher's DeepSeek online-answer provider. The server calls the
+ * Responses API web_search tool once and returns the cited answer plus the
+ * search results; this function keeps the answer in module state and returns
+ * the results so the ordinary result-list rendering can continue to own them.
+ *
+ * @param {string} query
+ * @returns {Promise<Array<{ title: string, url: string, snippet: string, site: string }>>}
+ */
+async function runWebAnswerSearch(query) {
+  findPathWebAnswer = null;
+  findPathIncompleteAnswer = "";
+  const response = await window.AISystem6Capabilities.requestService("search.remote", {
+    path: "/api/search/answer",
+    init: {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        q: query,
+        mode: "answer",
+        stream: true,
+        ...cloudCredentialTransportFields(),
+      }),
+    },
+  });
+  if (!response.ok) {
+    throw new Error(await response.text());
+  }
+  let result = null;
+  try {
+    result = await readWebSearchStream(response, {
+      onDelta: (text) => renderWebSearchStreamingText(text),
+    });
+  } catch (error) {
+    const code = String(error?.code || "");
+    if (code !== "web_search_incomplete" && code !== "web_search_invalid_event") throw error;
+    // The partial text stays visible, under the honest label: the summary is
+    // drawn from this on the repaint the failure triggers, so the clear that
+    // repaint performs cannot wipe it. The failure still travels, so the
+    // results pane and the status bar report a search that did not finish
+    // instead of an answer that did.
+    findPathIncompleteAnswer = String(error?.partialContent || "").trim();
+    const stopped = new Error(t(
+      code === "web_search_invalid_event" ? "search_answer_broken_event" : "search_answer_incomplete_note"
+    ));
+    stopped.code = code;
+    stopped.partialContent = String(error?.partialContent || "");
+    throw stopped;
+  }
+  findPathWebAnswer = {
+    answer: String(result.answer || ""),
+    citations: Array.isArray(result.citations) ? result.citations : [],
+    results: webSearchCitationsToResults(result.citations),
+  };
+  renderWebAnswerSummary(true);
+  return findPathWebAnswer.results;
+}
+
+/**
+ * Derive a bare site label from a citation URL for the results list.
+ *
+ * @param {string} url
+ * @returns {string}
+ */
+function webSearchSiteFromUrl(url) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Turn web-search citations into ordinary Searcher result items, so the
+ * existing selection / Open in Reader / Clip / Copy / Insert actions keep
+ * working in DeepSeek mode (the Responses API returns no raw result list).
+ *
+ * @param {Array<{ url?: string, title?: string }>} [citations]
+ * @returns {Array<{ title: string, url: string, snippet: string, site: string }>}
+ */
+function webSearchCitationsToResults(citations) {
+  return (Array.isArray(citations) ? citations : [])
+    .filter((citation) => citation && citation.url)
+    .map((citation) => ({
+      title: String(citation.title || citation.url),
+      url: String(citation.url),
+      snippet: "",
+      site: webSearchSiteFromUrl(citation.url),
+    }));
+}
+
+function renderFindPathNotice(message, tone = "") {
+  const note = document.createElement("div");
+  note.className = `empty-folder-note find-path-notice${tone ? ` is-${tone}` : ""}`;
+  note.textContent = message;
+  findPathResultsEl.append(note);
+}
+
+function renderFindPathEmptyNext(message, action) {
+  const note = document.createElement("div");
+  note.className = "empty-folder-note find-path-notice empty-next-note";
+  const text = document.createElement("p");
+  text.textContent = message;
+  note.append(text);
+  if (action?.label && typeof action.onClick === "function") {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "btn default";
+    button.textContent = action.label;
+    button.addEventListener("click", action.onClick);
+    note.append(button);
+  }
+  findPathResultsEl.append(note);
+}
+
+function normalizeFindPathErrorMessage(error) {
+  const raw = String(error?.message || error || "").trim();
+  const provider = getActiveSearchProviderLabel();
+  if (!raw) return t("searcher_connection_failed", provider);
+  try {
+    const payload = JSON.parse(raw);
+    return normalizeFindPathErrorMessage(payload.detail || payload.error);
+  } catch {
+    if (/fetch failed|cannot reach|cannot resolve|network|dns|firewall|tls/i.test(raw)) {
+      return t("searcher_connection_failed", provider);
+    }
+    // Anything else that still reads as a raw transport/error-code string
+    // (rather than an already-human message) gets the same replacement
+    // every other model-calling surface uses, so Searcher never shows a
+    // bare code either.
+    return friendlyErrorDetail(raw);
+  }
+}
+
+async function translateFindPathResult(index) {
+  const result = findPathResults[index];
+  if (!result) return;
+
+  const content = [
+    result.title,
+    result.site ? `Source: ${result.site}` : "",
+    result.snippet || "",
+  ].filter(Boolean).join("\n");
+  const targetLanguage = getTranslationTargetForUi(content);
+  if (!targetLanguage) return;
+
+  const translateButton = findPathResultsEl.querySelector(`[data-find-path-translate="${index}"]`);
+  const originalLabel = translateButton?.textContent || "";
+  if (translateButton) {
+    translateButton.disabled = true;
+    translateButton.textContent = t("translating_selection");
+  }
+  setStatus(t("translating_selection"));
+
+  try {
+    result.translation = await translateTextWithLocalModel(content, targetLanguage, {
+      preserveMarkdown: false,
+      title: result.title,
+    });
+    result.translationLanguage = targetLanguage;
+    result.translationCreatedAt = new Date().toISOString();
+    result.translationSource = "Searcher";
+    result.translationModel = currentTranslationModel();
+    renderFindPathResults();
+    setStatus(t("result_translated"));
+  } catch (error) {
+    setStatus(t("translation_failed", friendlyErrorDetail(error)));
+  } finally {
+    if (translateButton) {
+      translateButton.disabled = false;
+      translateButton.textContent = originalLabel;
+    }
+  }
+}
+
+async function synthesizeFindPath() {
+  if (findPathResults.length === 0) return;
+
+  const originalLabel = synthesizeFindPathButton.textContent;
+  synthesizeFindPathButton.textContent = "...";
+  synthesizeFindPathButton.disabled = true;
+
+  try {
+    const context = findPathResults.map((r, i) => `[${i+1}] ${r.title}: ${r.snippet}`).join("\n\n");
+    const query = findPathQueryInput.value.trim();
+
+    const prompt = `请根据下面关于“${query}”的搜索结果，生成一段简洁、可靠的研究摘要（3-4 句）。聚焦核心含义和事实，不要编造搜索结果中没有的信息。使用与搜索结果一致的语言；如果主要是中文，使用自然简体中文。
+
+Search Results:
+${context}`;
+
+    const response = await fetchModelPayload({
+      model: getLocalModelRequestName(),
+      messages: withMarkdownModelMessages([{ role: "user", content: prompt }]),
+      temperature: 0.7,
+      max_tokens: 500,
+    }, getLongTaskSignal());
+
+    if (!response.ok) throw new Error(serviceErrorDetail(response.status, await response.text()));
+    const data = await response.json();
+    const summary = data?.choices?.[0]?.message?.content?.trim();
+
+    if (summary) {
+      findPathSummaryEl.textContent = summary;
+      findPathSummaryEl.classList.remove("is-hidden");
+      findPathSummaryEl.scrollTop = 0;
+    }
+  } catch (error) {
+    console.error("Searcher synthesis failed", error);
+    setStatus(t("find_path_error", friendlyErrorDetail(error)));
+  } finally {
+    synthesizeFindPathButton.textContent = originalLabel;
+    synthesizeFindPathButton.disabled = false;
+  }
+}
+
+function getSelectedFindPath() {
+  if (selectedFindPathIndex === null) return null;
+  return findPathResults[selectedFindPathIndex] || null;
+}
+
+function formatFindPathMarkdown(result) {
+  return [
+    `### ${result.title}`,
+    "",
+    result.site ? `Source: ${result.site}` : "",
+    result.snippet || "",
+    result.translation ? `\n${t("translation_label")}:\n${result.translation}` : "",
+    result.url || "",
+  ].filter(Boolean).join("\n");
+}
+
+function insertFindPathIntoTeachText() {
+  const result = getSelectedFindPath();
+  if (!result) {
+    setStatus(t("select_find_path_first"));
+    return;
+  }
+
+  insertIntoTeachText(formatFindPathMarkdown(result), {
+    source: "Searcher",
+    title: result.title || t("find_path"),
+    url: result.url || "",
+  });
+}
+
+function copySelectedFindPath() {
+  const result = getSelectedFindPath();
+  if (!result) {
+    setStatus(t("select_find_path_first"));
+    return;
+  }
+
+  copyMarkdown(formatFindPathMarkdown(result));
+}
+
+function clipSelectedFindPath() {
+  const result = getSelectedFindPath();
+  if (!result) {
+    setStatus(t("select_find_path_first"));
+    return;
+  }
+
+  const body = [
+    result.title,
+    "",
+    result.snippet || "",
+    result.translation ? `${t("translation_label")}:\n${result.translation}` : "",
+    "",
+    "---",
+    result.site ? `Source: ${result.site}` : "",
+    result.url ? `URL: ${result.url}` : "",
+    findPathQueryInput.value.trim() ? `Query: ${findPathQueryInput.value.trim()}` : "",
+    `Time: ${new Date().toLocaleString()}`,
+  ].filter(Boolean).join("\n");
+  const scrap = createScrap(`Search: ${result.title.slice(0, 36)}`, body, {
+    translatedText: result.translation || "",
+    translationLanguage: result.translationLanguage || "",
+    translationCreatedAt: result.translationCreatedAt || "",
+    translationSource: result.translationSource || (result.translation ? "Searcher" : ""),
+    translationModel: result.translationModel || "",
+  });
+  if (scrap) {
+    scrap.tags = ["search-result", "web"];
+    renderScraps();
+    saveDeskState();
+    setStatus(t("find_path_clipped"));
+  }
+}
+
+// Anything a search result carries can be put on the File Floppy, the desk's
+// one shelf for temporary material. This is the only landing place for what an
+// external MCP server answers, and it works for web results too.
+async function putFindPathOnFileFloppy() {
+  const result = getSelectedFindPath();
+  if (!result) {
+    setStatus(t("select_find_path_first"));
+    return;
+  }
+  await ensureMcpServersModule();
+  const name = `${(result.title || t("find_path")).slice(0, 60)}.md`;
+  const outcome = await window.AISystem6McpServers.putOnFileFloppy(name, formatFindPathMarkdown(result), {
+    source: result.site ? `search:${result.site}` : "search",
+  });
+  setStatus(outcome.ok
+    ? t("find_path_on_floppy", outcome.mountedFileNames[0])
+    : t("find_path_floppy_failed", outcome.reason));
+}
+
+async function searchFindPath(query, start = 0) {
+  const limit = getFindPathResultLimit();
+  const provider = searchProviderInput?.value || "auto";
+  // An external MCP server the writer added in Chooser is one more provider
+  // here: same results list, same buttons, its own transport.
+  if (provider.startsWith("mcp:")) {
+    await ensureMcpServersModule();
+    const serverName = window.AISystem6McpServers.serverNameFromProvider(provider);
+    if (findPathProviderEl) findPathProviderEl.textContent = serverName;
+    return window.AISystem6McpServers.searchWithServer(serverName, query, limit);
+  }
+  const response = await window.AISystem6Capabilities.requestService("search.remote", {
+    query,
+    limit,
+    start,
+    provider,
+  });
+
+  if (!response.ok) {
+    throw new Error(serviceErrorDetail(response.status, await response.text()));
+  }
+
+  const data = await response.json();
+  if (findPathProviderEl && data.actualProvider && data.actualProvider !== provider) {
+    findPathProviderEl.textContent = searchProviderLabel(data.actualProvider);
+  }
+  return data.results || [];
+}
+
+function getFindPathResultLimit() {
+  return Math.min(Math.max(Number(findPathLimitInput?.value || 5), 3), 8);
+}
+
+function updateFindPathStatusBar() {
+  if (findPathProviderEl) {
+    findPathProviderEl.textContent = getSearchProviderLabel();
+  }
+  if (findPathCountEl) {
+    findPathCountEl.textContent = searchProviderInput?.value === "deepseek"
+      ? t("search_source_count", findPathResults.length)
+      : t("search_result_count", findPathResults.length);
+  }
+}
+
+window.AISystem6Runtime?.registerApplication({id:"findPath",windowName:"findPath",commands:{"open-find-path":{handler:async()=>{const selection=teachTextBodyInput.value.slice(teachTextBodyInput.selectionStart||0,teachTextBodyInput.selectionEnd||0).trim();if(selection&&!findPathQueryInput.value.trim())findPathQueryInput.value=selection;await openWindow("findPath");renderFindPathResults();findPathQueryInput.focus()},isAvailable:()=>!0}}});
+window.AISystem6FindPathLoaded = true;

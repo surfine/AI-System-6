@@ -1,0 +1,1575 @@
+# AI System 6 Changelog
+
+<!-- doc-claims: historical | audited: 2026-11-01 -->
+
+This changelog is a product-level narrative, not a commit-by-commit ledger. It
+is reconstructed from the git history that starts on 2026-05-18. Entries are
+grouped around product changes rather than every internal commit.
+
+The repository only has two historical tags, `pre-refactor-baseline` and
+`src-pilot`, so entries are grouped by dated product phases rather than
+invented release tags.
+
+## Public Beta 2.0.0-beta.1 - 2026-11-01
+
+- **ClioTalk, with ClioWork and ClioCode beside it.** The name stays ClioTalk in 2.0. **ClioWork** is a document studio you enter from ClioTalk's left column: it lists the Office documents in the project, newest first, lets you pick up to three, and gives ClioTalk a job on them, with suggestions to start from. The running job shows as a card, and the result opens beside ClioTalk with its pending revisions. **ClioCode** works on a code folder you grant. **SideAsk** stays as it was.
+- **ClioCode works in place, and the permissions are the ones you know from Claude Code.** Pick a mode for the run; the engine works in your folder inside a Seatbelt sandbox. Read-only commands run without asking, in every mode. Dangerous commands ask every time, in every mode, with the reason on the card and no way to allow them for the session. Every call writes a checkpoint outside your project, and you can rewind to any of them. Network access is limited to an allowed host list.
+- **Clio can run on three engines.** The DeepSeek Harness is still there. Codex and Claude Code now run over ACP in the same sandbox: the desk keeps the files and the sandbox, and answers every permission question itself. Neither engine loads your own configuration or MCP servers, and credentials never enter the run's copy. Codex uses your ChatGPT login. Claude Code needs a setup token pasted into Control Panel; it is kept in the Keychain and never shown again.
+- **Long tasks keep their state.** Each turn writes a progress ledger entry, and after three turns without progress Clio writes a stuck report instead of carrying on. A task interrupted by a restart comes back with Continue. You can fork a new task from any finished turn. What you type while a turn is running is queued (up to five, each removable) and starts the next turn when this one ends; if you stop the run, or it errors or finishes, the queue is dropped with a note.
+- **Clio proposes what to remember; you decide.** Clio can propose a skill or a memory note, at project level or desktop level. Nothing is active until you accept it. Accepted skills and memory are snapshotted at the start of a task, sent with every turn, and checked when the task ends. The **Extensions** window, in the Apple menu, lists Skills, Memory, Roles and Waiting proposals, exports and imports them, and can tidy memory into a new version you can roll back. Five built-in roles run as read-only handoff turns.
+- **Alarm Clock can run agent schedules.** A schedule runs Clio on a time, or when an archive or folder changes or at startup. It is read-only, offline unless you allow the web for that schedule, and capped in tokens and wall-clock time, with at most two runs at once and two per day and eight schedules enabled. What a run finds comes back as candidates in Clio, never as changes. A run that was missed while the desk was closed is asked about once and never replayed. Standing intents watch one project, and a proposal you have not opened in 72 hours is withdrawn by itself.
+- **Chooser is redesigned, and Clio can use outside tools.** Chooser now has the System 6 driver rail and an MCP Active/Inactive switch. Under Guests, each guest gets per-tool Allow, Ask each time or Off, and project mounts: follow the open project, or only the projects you choose. A change tool can never be set to Allow. Recent calls lists what each guest did, refusals included, and exports as CSV. Under Servers, you choose which connectors Clio may use in tasks, with the same per-tool Allow, Ask or Off. Connectors reach the engine through a local gateway; credentials stay outside the sandbox, and an ask card answers once and expires with the run.
+- **ClioWorks fills in more of Office.** ClioChart gains real implementations of more functions (the ODDF and ODDL bond functions, EUROCONVERT, FORECAST.ETS, PERCENTOF, REGEXTEST, REGEXEXTRACT, REGEXREPLACE, GROUPBY, PIVOTBY), taken from gridcraft under its MIT or Apache license. ClioChart also has Page Setup and Print: print area, scale, orientation, page order, header and footer, a repeated header row, and Save as PDF. Importing a .md file keeps its structure. ClioStage has an animation pane (add, reorder, trigger, delay, duration, remove), per-slide transitions, a notes master header and footer, and handout printing from one to nine slides per page or notes pages. ClioWrite can insert and edit a header, footer or page number in a .docx, and comments keep their original ids so replies stay matched.
+- **About This Mac** is a window of read-only facts: version, appearance, model, agent engine, sandbox, storage and token state.
+- **For developers: writing evals.** `tests/evals` holds 21 real writing and editing tasks from the demonstration disk, with offline scorers that need no model. A runner repeats each task and refuses to spend anything without `--engine` and `--yes-spend`. It does not ship in the app.
+
+## Public Beta 1.0.60-beta.2 - 2026-10-31
+
+- **ClioTalk has a new main screen.** Three columns: the left column holds New Conversation, Search, Projects, Starred and Recent, and a conversation with candidates waiting for you gets a blue dot there. The middle column is the conversation itself; thinking and tool use fold into one line, written as what happened ("searched the project", "read", "wrote") rather than tool names, and other people's words stay quoted verbatim, with who said them to whom. What Clio produces opens in the right panel as the thing it is: a document shown as a document, with a preview and its sources beside it. The same screen ships in Liquid Glass and in Classic.
+- **A task can run over many turns, and the plan comes first.** Hand over a folder or documents lent from the Project Hard Disk, and the first turn reads only and comes back with a plan card in the conversation; the work starts only when you approve it. A question card asks when the choice is yours, and the last option is always to write it yourself. What the task was lent, and what it may do to each item, is stated on the screen. While it works, the send button is a stop button and Esc stops too; what you add mid-run goes into the next turn. You can send the task back to the state before an earlier turn, and what you already put back or accepted stays. Two tasks can work at once. The progress panel shows the steps, the output so far, what was lent, and tokens with an estimated cost.
+- **What Clio produces is a candidate until you take it.** A produced file waits in the right panel; putting it into the Project Hard Disk, adding it to the Question Sheet, or discarding it is your call. On the Mac the engine still writes only into a shadow copy, and nothing reaches the real folder except through the per-file put-back you review, file by file. When a turn ends, the desk compares the files itself and shows what the run said it delivered beside what actually changed, instead of taking the model's word.
+- **Revisions to a document come back to be accepted one by one.** With a document lent from the Project Hard Disk, Clio's edits arrive as tracked revisions in ClioWrite, each with the source it stands on. Errand revisions (a number, a date, a name, a citation format, each verifiable in the lent material) can be taken in one batch. A wording revision that changes your sentences can only be taken one at a time, and rejecting is the default.
+- **The AI words tag follows the file.** Accept a wording revision and those words keep a dotted underline and a small "AI words" tag until you rewrite them yourself. The record of the tags is saved with the document: it survives a reload, a backup and Save As, and it never enters the .docx. Open the file again and the tags reattach to their words; one that can no longer be placed is dropped rather than mislabelled.
+- **The agent can read your desk, read-only.** The agent bar carries "Let Clio read this project (read-only)", off by default. Ticked for one run, it can search project sources and read documents, File Floppy items, Scrapbook clips and dictionary terms through six read-only tools, each call capped and each call written into the work log. The grant covers that run alone; the next starts without it. Web search keeps its own switch, and a run that uses it can send what it reads out.
+- **"Hand to Clio…" hands a file over.** The Finder's File menu and the File menus of the ClioWorks editors carry "Hand to Clio…": the selected document, or the whole disk when nothing is selected, becomes the next run's context in ClioTalk. It replaces Attach to ClioTalk.
+
+## Public Beta 1.0.60-beta.1 - 2026-10-28
+
+- **ClioWrite is a finished word processor.** Text can be edited inside table cells; inside a table, a picture can be replaced and rows and columns inserted or deleted. Pictures come in from the file picker or as a clipboard screenshot, and resize by the corner. Hyperlinks can be followed. Manuscripts are archived automatically, and crash recovery is visible when it happens.
+- **Page View looks at the page as it will print.** A read-only, print-preview view shows headers and footers, page numbers, footnotes and columns, and every word is kept. Print and Export PDF share one browser print path, so the text in an exported PDF stays selectable and searchable.
+- **Track Changes makes the round trip.** ClioWrite writes w:ins/w:del back into the docx; the tracking state travels with the file, each revision carries its author's name, and each can be accepted or rejected one by one.
+- **A manuscript can go out for review and come back.** Send for Review… exports the manuscript as a clean .docx with its citations as Word footnotes, filing each round in the 来回 folder; AI traces, review marks and version history stay out of the file. A returned .docx opens in the Review Desk as one candidate per changed paragraph, with the reviewer's messages quoted verbatim, a three-way comparison, and adoption — or withdrawal — in a single step. Compare → Revise turns a comparison of two .docx files into revision candidates.
+- **Mail merge fills a template from a table.** A ClioChart workbook or a CSV is the data source; the template carries «column» placeholders, and each row becomes one clean .docx — or the whole batch goes to one print stack.
+- **One Find and Replace window serves ClioWrite, ClioChart and ClioStage.**
+- **Charts, slides and reading fill in the everyday moves.** ClioChart inserts and deletes rows and columns, freezes panes, moves CSV in and out, and pastes an area snapshot that names where it came from. ClioStage presents, with a Presenter View that projects onto a second display when one is detected, plus a Page Overview; something pasted in from another app arrives as a table or as text strips. Reader reads iWork files (Pages, Numbers, Keynote) page by page through QuickLook previews and builds an Office copy in one click, with the first-save checklist saying what will be lost; PDF pages can be reorganized and tables extracted.
+- **New documents, stationery, and copies that keep what they carry.** New documents and Office stationery start files on the desk; a copy from one Office app to another keeps its formatting and names where it came from.
+- **ClioTalk can work as an agent.** On the Mac, agent mode runs a local engine host behind an ACP boundary: every engine write lands in a shadow copy, files reach the real folder only through per-file put-back, and folders arrive only through the Chooser's shared folder. On the web, the same UI runs the agent in a cloud sandbox. A proposal channel scoped to the run and kept write-only by the kernel lets the engine offer clips, review notes and restore packs as candidates, adopted one by one in the put-back window. The last mode returns at startup, a web run survives a refresh, error messages speak both languages, and agent use has its own allowance — with room for your own key.
+
+- **Ask 潮汐信笺 in SideAsk, with the blog as the evidence.** 在 SideAsk 中问 (in the status bar, or 问这篇 at the top of a post) pairs SideAsk with the reader: every question first searches all of aaronlau.me — 2,570 daily posts including the App-scope archive, the long reads and the prediction ledger — and the answer cites dated paragraphs as [S1]…[Sn]. A year in the question narrows the search; "how did his view change" questions come back in date order. When the blog never wrote about something, SideAsk says so instead of answering for the author. A citation opens the post in 潮汐信笺 at the cited paragraph, marked. The blog publishes its own verified chunk index, so questions still work offline from the last sync.
+
+## Public Beta 1.0.59 - 2026-10-18
+
+- **The Mac app is signed and notarized.** The 1.0.59 download and updates carry a Developer ID signature and Apple's notarization ticket, so macOS opens the app with a double-click and no longer needs Control-click or Open Anyway. A 1.0.58 install, which was ad-hoc signed, updates to it in place; the updater checks HTTPS, the SHA-256 and the signature, and from now on accepts only updates signed by the same team. After a successful update the app deletes its private temporary copy next to it, and the update check follows the system's HTTPS proxy.
+- **A built-in model you can download from the Control Panel.** On a Mac with Apple silicon, Control Panel > Local Model shows Qwen3.5 4B (4-bit) with its exact download size (3.06 GB), its license (Apache-2.0) and the memory it needs. Download stays off until you tick the consent box; it shows progress, can be cancelled (what was fetched is kept), and a Mac without enough memory is told so before anything downloads. The model runs on this Mac and your text does not leave it.
+- **Edit Office files on the desk.** Excel workbooks (.xlsx) open in ClioChart, PowerPoint decks (.pptx) in ClioStage, and Word documents (.docx) in a new ClioWrite window. Express changes cell values, slide text and notes, or paragraph text; Full Editing adds formulas, slide and layout commands, and headings, emphasis and lists. ClioWrite also appears on phones and tablets.
+- **Saving keeps the rest of the file as it was.** Tables, charts, SmartArt and pictures stay read-only and are kept; comments can be read, added and answered. The first save lists, in plain words and with the sheet or page, anything that will be converted or lost, and Cancel is the default. Edit › Undo steps back through named changes. Nothing is created from scratch yet. The round trip has been checked in LibreOffice for all three formats and in Microsoft Excel and PowerPoint for Mac; the Word check is still to come, and ClioWrite's icon is a temporary line drawing.
+- **About is a window you can leave open.** It opens when you ask for it and no longer blocks the desk. It holds the film and the credits, and **First time here** offers three ways in: pick a Mac, write one line on a Note Pad slip, or watch the film. The startup checklist appears only when startup is slow or fails.
+- **Platinum reads more like Mac OS 9.** Window frames, scroll bars, desktop and Apple-menu icons, the Control Strip, and the small text in lists, labels and status bars follow real Mac OS 9 screens. Bold titles, buttons and menus keep a bold face, because Geneva has none. Reading and editing text keep their modern sizes.
+- **Classic radio buttons and checkboxes show again.** In some installs they had gone blank, so the Control Panel's AI Connection list showed only labels.
+- **The web desk can notify you and link to objects.** When the tab is in the background, a new notification reaches you as a system notification; the first use asks for permission. Clicking it returns to the object it named, and a link such as `?open=scrapbook&id=…` opens that object inside the project already on the desk.
+- **Plaintext (明文) has a new look and a longer story.** A type-and-slip interface with a harbour-fog palette and ink-blue text, light by default and dark by system or setting. The white wolf is redrawn as frost, the true ending gains an epilogue, the side route becomes a friendship ending 同行, and chapter 10 adds four choices.
+
+## Public Beta 1.0.58 - 2026-10-11
+
+The Mac app moves to TinyJS on Apple silicon (macOS 15 or later) and ships the
+complete product — Node, the local server and the web desk — as an update the
+writer installs with one click. The ClioWorks rounds reach the product and then
+become editable in place: Office packages keep their own bytes, and a chart on a
+page or document opens as a real copy with its own undo.
+
+- **TinyJS macOS shell.** The app carries the whole product and updates itself:
+  it checks for a package, saves work and defers active model, import and export
+  tasks, then installs when the writer clicks Install and Restart. An
+  independent Node worker verifies HTTPS, SHA-256, the package signature and the
+  application identity before replacing anything; the new desk has to report its
+  startup identity and a matching persistent-data fingerprint before the old
+  package is cleared, and a package that fails that check rolls back. The first
+  OTA is ad-hoc signed while Developer ID and notarization are pending. Cover
+  Glass ships its own bundled typeface.
+- ClioWorks rounds reach the product (2026-10-10):
+- Office files (DOCX/XLSX/PPTX) mounted on the File Floppy keep the original
+  package beside the extracted text copy; opening one asks whether to edit the
+  file itself or read the text copy in Reader. Unedited saves return the exact
+  original bytes; edits go through preserving writers where only the touched
+  parts are rewritten and unmodeled parts keep their bytes, held to semantic
+  preservation guards (Office-own acceptance still not run).
+- ClioStage gained a current-page check: a real layout pass measures the
+  printed page (fonts settled), reports text overruns, page-edge crossings,
+  overlapping placed blocks and distorted pictures, locates the block, previews
+  a geometry-only fix and adopts it as one undoable step, then re-checks.
+  Decks export as native editable PPTX with speaker notes intact, through the
+  same single-writer path as v4's office codecs.
+- The iWork importer no longer drops short notes or repeated sentences, no
+  longer numbers preview images as document pages, keeps every message of a
+  multi-message IWA archive (with skipped-entry counts in a structured
+  report), and caps Snappy decompression budgets per block and per import
+  before any allocation happens.
+- Workspace hygiene: earlier ClioWorks rounds' registrations completed across
+  the release toolchains (stamped index assets, lazy-module ordering, release
+  asset lists, window registry naming, integration ledger), and the full
+  473-contract feature lane runs green again.
+
+ClioWorks rounds become editable in place (2026-10-11):
+
+The chart on a page or document opens as a real copy with its own undo, a
+context strip names the object you are on, and the whole round is held to receipts — a commit the network loses
+is queried, never re-fired; a disposal mid-commit reports the receipt as
+detached instead of pretending nothing happened.
+
+- Chart copies edit in place: select, 编辑副本, edit in ClioChart with a
+  separate undo; adopt lands as one undoable parent step while the source
+  stays byte-identical; a parent edit under an open draft refuses the commit
+  rather than overwriting either side.
+- A context strip names the current object with the commands that apply to it
+  and states why anything is disabled; the command matrix answers identically
+  across all twelve appearances.
+- Open questions are notes too: a scrap can carry a question with its own
+  quoted source; its status moves only by your acceptance, and similar
+  questions surface as local, dismissible hints.
+- Reading stays honest under version churn: annotations remember their
+  revision, only real content changes become review candidates, and dead
+  anchors keep your original words flagged.
+- Reliability sweep: nine defects fixed across the v5.1 surface, every fix
+  pinned by an executable contract (505 feature contracts green).
+
+## Public Beta 1.0.57 - 2026-10-09
+
+- **Controls say what state they are in, in every appearance.** Control Panel's AI source is one radio group (Automatic, Website AI, Local AI, Your Own API Key) instead of three push buttons with a default ring; disabled fields and pop-ups dim, focused fields show their ring, System 6 and 7 mark keyboard focus with a dotted frame rather than the default button's ring, and a disabled selected radio keeps its rim. Find File and Searcher no longer offer a second Search button or a hatched pane. From the eras' own captures: System 6 and 7 draw outline scroll arrows and square pop-ups, Snow Leopard puts its scroll arrows together, Mac OS X tabs sit centred over a grey box, Yosemite's pop-up carries its blue arrow well, and Liquid Glass ticks a checkbox instead of crossing it.
+- **Big Sur no longer reads as Yosemite.** Read from macOS 11's own captures (512 Pixels' screenshot library, checked against Ars Technica's review): windows and toolbars take the wallpaper's warm tint, the Finder sidebar runs the full height of the window under the lamps, Back is a bare chevron, and menus are translucent and blurred with a blue highlight. Alerts are narrow, translucent and centred, the icon on top and large buttons side by side, stacked when there are three. Pop-up buttons carry a blue arrow well in the front window and bare chevrons behind it or when disabled. Tabs in a window are one short strip centred over the box. Get Info sits on the window's material with plain labels, and the Control Panel's selected pane and group boxes follow the preference windows.
+- **The Dock is for working in several applications at once.** With the Dock shown, a Mac OS X appearance always runs as MultiFinder (Mac OS X had no single-application mode), and Writing Studio keeps its place in the Dock. Resting on an icon shows that application's windows as cards with real pictures, a window put away keeping the picture it had, labelled; nothing moves until a card is chosen. Each era's Dock menu follows its own captures: the window list with the current window ticked and minimized ones marked, Options, Show All Windows from Lion on, Hide and Quit, pointing at its icon; Snow Leopard's and Lion's are dark. Window pictures now carry their icons and backgrounds (a Finder window used to come out as an empty frame), a window minimizes into its own Dock tile, and magnification no longer shimmers. Snow Leopard's and Lion's separator is drawn by projecting the glass shelf: eight dashes that widen, thicken and spread toward the front, matching the captures to a pixel or so.
+- **ClioChart and ClioStage take any text and stay grounded in it.** Text arrives from any surface. ClioChart draws three candidate pictures from one request (a flow, timeline, hierarchy, two-sided comparison, cycle or data chart) on an editable canvas where every box keeps the sentence it stands on and no label may add a number its sentence lacks; its table gains Fill Series and column range rules. ClioStage drafts decks page by page, sends invented numbers and paraphrased quotes back for repair, and opens the result as a temporary draft.
+- **Slides are edited on the page that prints.** Slide View, the prompter and the printed sheet draw one page with the same markup at its real size; headings, paragraphs, lists and quotes edit in place, a thumbnail rail adds, duplicates and reorders pages, blocks can be placed freely with guides, and Print Preview shows the PDF's own sheet.
+- **One history and one way to edit across the desk's editors.** Every editor records into one undo history, so Edit › Undo / Redo name the step ("Undo Move") wherever you are; Key Caps opens on a command sheet for the application behind it (⌘/). The canvases gain guides, align, distribute, an Arrange menu and a layers panel with show, lock and rename.
+- **Pictures travel between editors and report back.** A drawing, chart or sketch placed on a slide carries an editable copy: double-click it to edit in ClioChart or ClioPaint, and the slide redraws as one undoable step; when the original changes, the copy offers Sync or Keep and applies nothing without the click. SideAsk, paired with a slide or drawing, proposes Change This Page / Change This Drawing and shows Now and Proposed side by side; only Accept lands it.
+- **Review Desk keeps comment threads on the manuscript.** Comments anchor to a passage by its words and find it again after edits, or say "Anchor lost" with the quote kept rather than guessing; threads are append-only with Accepted / Rejected / Completed, filterable by kind (note, mouthpiece drift, fact, structure), marked in the manuscript, and they travel with backups. Versions can be compared.
+- **ClioPaint draws on 1-bit layers.** Add, duplicate, hide, lock, restack and merge layers; undo stores only the tiles a step changed; a moved selection floats until put down. An album picture dropped on ClioPaint becomes a tracing layer that never exports.
+- **Cover Glass saves covers as documents with real layers.** Blend modes, opacity, clipping, masks and adjustment layers; Remove Background runs a small cut-out model in the browser from the desk's own files (shipped with every build, 6.6 MB); one cover, several sizes; covers can go on slides.
+- **Text Lightroom (文字亮室) develops layer by layer.** Each layer is one model call cached by its input, so changing a later layer never re-runs an earlier one; Just This Layer shows a word diff; a negative made stale by later edits says so and can be re-shot, keeping the old one as a version.
+- **ASCII storyboards.** TeachText's Commands and Quick Draft's Deliver menu turn a script into storyboard shot groups drawn in characters (a model is required, and the item says so when none is connected); a second pass updates only the changed paragraphs and keeps hand edits; the sheet exports as PNG pages; one shot can be refined in Image Prompt Studio and its picture put back; keyframes can be taken from a finished video. The real-model steps of its acceptance walk have not yet been run.
+- **Control Panel's Dock and window switches sit as ordinary checkbox rows** instead of a bold two-column grid, in every appearance.
+
+## Public Beta 1.0.56 - 2026-10-08 update
+
+- **Time Machine browses the current web on a separate browse origin, with uBlock Origin Lite's rules blocking ads and trackers, and falls back to the cleaned snapshot where that origin is unavailable; Reader tries embedded article data, AMP, Jina, Wayback and a rendered pass before giving up, and File Floppy peels zip, mail, MHTML, EPUB, OpenDocument and notebook files.** Sign-ins stay per site until Clear Browsing Data…; the File and Navigate menus carry Open in Your Browser and the ad-blocking switch; a failed reading names the steps it tried.
+- **Every app now has its own icon in every appearance.** Rootline, Joyride and Plaintext join the full icon families, and Big Sur and NeXTSTEP gain Image Prompt Studio, Lightroom and the four game icons, each redrawn for its era and fitted to native sizes.
+- **Endfield Terminal carries the refreshed v1.5 archive**: 332 missions, 32 operators, 349 tutorials, 548 lore entries and 76 central documents, with dialogue and radio both searchable and each line stamped with the version its own record carries.
+- **Each era's window controls answer to that era.** System 7, Platinum and Drawing Board gain the Mac OS 7-9 Application menu; the Mac OS X Window menu ends with Show Dock / Hide Dock and stays on an empty desk; the application menu names the application in front, and Minimize Window shows ⌘M.
+- **The twelve appearances were re-checked against their native captures.** Lion gets grey background lamps, 4-point buttons and the 10.7 Finder sidebar; Snow Leopard's sidebar reads DEVICES and PLACES on white content; Aqua's Finder toolbar captions Back and View and carries labelled places; Yosemite's alert, System 7's title bar, Tiger's close lamp and System 6's desktop icons follow their evidence; every alert draws its era's caution icon.
+- **Everyday parts got quieter and more honest.** Icon names wrap at words, list columns are spaced, Chinese body text uses each era's own CJK face, narrow windows keep era sizes off touch, help balloons point at their subject, tall menus show there is more, and ClioTalk's send button stays grey without a model. A project created before the language table loaded no longer stores the key as its name, and a slow lazy load no longer runs a module twice.
+- **Drawing Board is drawn from the Mac OS 8.5 theme itself.** The desk is the theme file's own sheet of construction drawings; title bars and the menu bar use its paper; windows have pencil lines that run past their corners and a hatched shadow, and a background window goes pale; only the close box carries the registration cross; radios are pencilled circles that fill red and checks are red ticks; tabs no longer show a grey band behind their labels.
+- **Theme Lab names its stability boards apart from its fidelity boards**, so a board that compares the product with its own freeze is never read as a claim about history.
+
+## Public Beta 1.0.56 - 2026-10-03
+
+- **Bonsai City, Rootline and Joyride now share one world: The Basin.** A shared core gives the three games the same city, calendar and names wherever a save is opened. Hezhou · 1952 is the worked example: a river town with a bridge, two rail stations, a level crossing and a subway, seeded once and read by all three.
+- **Rootline opens a real Bonsai City instead of its own round, and plans Metro, BRT and Bus together.** Switch mode from the bottom bar or press M; lay an avenue to run a BRT down its centre lane, spend a weekly avenue reward, and a leg with no bridge nearby still cannot cross the river.
+- **Joyride drives the city Rootline planned, not a private demo town.** A photo now stamps the pot's seal, district and date into the Picture Album, and the drive opens on the pot you last drove instead of starting over.
+- **Bonsai City's OSM import now carries the place's own street and station names into the save**, alongside the existing OpenStreetMap attribution and ODbL provenance.
+- **Cover Glass ships an Aqua recipe, with a reflection-mix rim and a small-size check, and a failed export now says so.** A 4× export no longer renders into a clamped drawing buffer, and with Post Blur on, the subject can sit entirely under the whole cover's water.
+- **Plaintext (明文), an original Chinese-language visual novel about a ghostwriter and a mapmaker, joins the Games folder**, with super-resolved background plates and final character portraits, loaded only when its window opens, with local saves. File, Story and Debug live in the menu bar; the window has no empty details bar.
+- **WindowShade previews, side pulls and linked splits are now concrete ways back to work.** Previews are live and read-only, Dock hover and All Windows show the selected window without waking or editing it, and edge or pair layouts preserve minimum sizes and undo as one transaction.
+- **Writing tools now respect the text they are allowed to adopt.** Humanizer and Describe Change carry the requested language and source-language rules, keep annotation-only work in ClioTalk, and reject late results after a project, tab, text or editor-ownership change. Model-quality comparison remains unclaimed until its evaluation completes.
+
+## Public Beta 1.0.55 - 2026-09-23 update
+
+- **On a home screen, the top strip belongs to the app.** The menu bar now grows into the status band on every touch surface and in both orientations, not only on a portrait phone: measured on an iPad, the menu titles had been drawn under the clock and the battery in all eight appearances, because the rule that reserved that band lived inside one portrait-phone media query. The band is flat and opaque, not a translucent material, since a blur painted over a see-through bar is just the desk showing through it. Across eight appearances and four surfaces, 22 of 32 combinations were wrong before this and none are now.
+- **One More Tune's six-wedge ring became a disc.** It had been two unrelated drawings — a static circle behind, an 82px ring in front — with a progress mark painted at 22% whether or not anything was playing. The rim is now the cue's own clock (this segment's length, not the film it came from), the platter turns only while there is sound and holds its phase when paused, and the six wedges light exactly one band: the era that card belongs to. The reveal's naming moved onto a sleeve under the record, and on a stage too short for it (a landscape phone's 104px strip) it moves into the record box instead of overlapping — never both at once. The rim is a progressbar whose value is absent when the position is unknown, because an unknown is not a zero.
+- **A refused play now says so.** iOS hands every store preview to a media element rather than the decoder, and that path used to throw the engine's own answer away: a play that never started still counted as a heard question, on a face that looked like it was playing. It now takes the listening back, marks the question broken so it can be skipped instead of lost, and says the one thing that fixes it. The element also remembers being refused, so the next gesture arms it again.
+- **All thirty-four demonstration disks were re-read against the chat export.** Fourteen had never cited it and gained material, each recorded in its own material-lineage file with the export, the date, the words and where they landed; five more had only a boundary note and got the same treatment; the other fifteen were re-checked against what they already cite. One citation that did not hold up was flagged rather than quietly rewritten, and has since been traced to its source: airbattery's 1h37m figure is the author's own measurement, sent on 2024-08-08 and kept in the memo that prepared the disk, and the disk now says so. Every disk carries a written conclusion — including "checked, nothing new".
+- **Seven demonstration disks were rewritten as the channel's own columns.** The iPhone 4S demo unit, the MagSafe prototypes, the iPhone 16 prototype, the iPad Air 4 prototype, the CDMA iPhone 4, the ceramic Apple Watch and the iPhone 11 Pro Max were each checked against the episode they come from and the channel's own later corrections, then rewritten in the author's argument and voice, with the whole disk kept consistent from question sheet to review record. Each was confirmed by the author one at a time; the titles follow the published episodes, and the rest of the set follows in later betas.
+- **NeXTSTEP ships as the eighth appearance.** It had stayed behind `releaseReady: false`; after a rework against the 3.3 user interface guidelines — the main menu, scrollers on the left, the Dock read in three regions, and an icon of its own for every object the appearance maps — it is in the Special menu, the Control Panel and the boot picker like the other seven.
+- **The Mac OS X eras open Finder windows the way their Finder did.** Aqua gets a toolbar window; Snow Leopard, Yosemite, Big Sur and Liquid Glass add a sidebar with Favorites (Applications, Documents) and Locations (the startup disk, Projects, a mounted text disk, Trash), each row navigating the same window. Big Sur and Liquid Glass fold the title into a single toolbar row. The classic eras stay spatial, and on a phone every era keeps its single-column window.
+- **Big Sur stopped wearing System 6 underneath.** The strips, editor frames, scroll lanes and view buttons that still drew 1988 chrome inside Big Sur windows now answer to the era, and ClioChart's projection keys and bench draw in Big Sur's own type. A resolution trap was behind part of it: a font token declared on `:root` that points at the body's interface font resolves to Chicago before any appearance can change it; the consumers now carry the fallback, and a gate refuses the pattern.
+- **A deck's eight eras now look like the presentation software of their year.** An overhead-projector frame for 1988, NeXTSTEP's black bevelled panel and Times titles, Platinum's black ground and red wedge, Aqua's gradient, Snow Leopard's studio glow, and three modern flat treatments that differ in weight and alignment — instead of eight palettes on one layout. Printing keeps each layout's own alignment, dark pages stay dark, and era decoration no longer takes space from the slide's text.
+- **One More Tune's forty-one history questions passed three owner reviews and entered rotation.** Each correct answer was checked against the Newsroom page it cites (40 of 41 held; the one that did not now cites its supporting article too), two distractors that the same keynote's captions made defensible were replaced, and four questions whose correct answer was guessable as the longest or shortest option were reworded; the bank contract now refuses an answer that gives itself away by length. The practice card that stood in for unreviewed questions is gone.
+- **The site's appearance menu lists the eight appearances this build releases.** Big Sur had shipped as the seventh without ever being added, while the page's own copy counted appearances; a gate now compares the menu against the released set. NeXTSTEP joins it as a branch rather than a stop: its own menu group, list row and scene, off the 1988 to 2026 timeline, because a NeXT desk between System 6 and Platinum would claim a Mac lineage it does not have. Every era's frame was recaptured, and the flat eras are now stored lossless, exact to the pixel and smaller than before. The site itself was rewritten for readers rather than developers: a story chapter, a Field Notes history with its sources, a scroll tour over the real capture, and the questions a first-time visitor asks. The same page also states the address rule a disk travels by, which the README had and the site did not.
+
+## Public Beta 1.0.55 - 2026-09-23 second update
+
+- **ClioProject was rebuilt to the plan it was designed from.** The first build had drifted: sections whose heading carried no id simply vanished (the DTK disk's six sections drew as none), there was no way to hang a task of your own, a single click opened windows, every card carried a date field, and there was no calendar. The plan now runs left to right in MacProject's own legend — route stops are milestones, sections and your tasks are tasks — with the sections fanning out of Section Drafts and rejoining at the manuscript, and finished work folding into a pile behind where the project actually is. Each card says one fact the project already holds (characters, clippings cited, whether it reached the manuscript); one Get Info pane edits the selection; click selects and double-click opens, and a section opens Section Drafts standing on it. The status bar answers what is blocking the handoff, what is next, and how many days are left. View switches to All Disks, a read-only month calendar of handoffs, burns and the days the word count changed.
+- **The first time a plan opens on a project already under way, it asks once.** It lists the stops and sections the record already shows work at, ticked, and ticks exactly what you keep — or nothing. The answer is remembered either way.
+- **The disk's risk diamond reads dates now.** It marks a disk whose handoff is within a week or past while unticked, or whose dated task is overdue; only dates that mean one day are read, and anything else stays your words. The earlier "untouched for two weeks" rule is gone.
+- **The plan cost the boot floppy nothing net.** Its stylesheet moved to a lazy bundle and its menus arrive with the module.
+
+## Public Beta 1.0.55 - 2026-09-22 update
+
+- **Four demonstration disks now ship, and the two new ones are whole
+  projects.** `/go/m5ipad` (《M5 iPad Pro：是 Mac 的防线，还是 AI 交互的起点？》)
+  and `/go/iphone17e` (《iPhone 17e 浅粉色：其貌不扬，但很有料》) join
+  `/go/dtk` and `/go/ipad1`: question sheet, outline with six sections, six
+  section sketches, manuscript, review record and source lineage, written from
+  the material in `~/M5 iPad Pro`, `~/M5-iPad-Pro`, the WeChat exports and the
+  iPhone 17e corpus already in the tree. Adding a disk is one registry row plus
+  one string in a table — the four `open-shared-disk-*` commands became a table
+  and a loop, which is why this addition left the boot budget with more room
+  than before it.
+- **The demonstration-disk window takes the dialog frame on a phone, wraps its
+  rows, and follows a language switch.** Measured first: a 420px window at
+  left:148 ran off every phone viewport, a 607px row summary spilled to 880px in
+  a 372px window, and switching the language left the window fully in the old
+  one while the rest of the desk followed. All three are fixed and asserted.
+- **File › Open Demonstration Project Disks…** lists every disk that ships
+  with the application. It opens a small window that shows each disk's own
+  subject line and hands it to the same import path a shared link uses; the
+  Import Utility's Project backup section carries the same rows, and the 说明
+  folder lists the page that explains where the disks come from.
+- **A project disk a person opens by hand now opens.** Both source disks in
+  `internal/` had drifted: their own counts said four files while they held
+  eleven, and their digests were taken over those counts, so choosing the file
+  in the Import Utility produced "backup content has changed". The rule now
+  lives in one module shared by the generator, a new restamp tool
+  (`npm run disks:restamp`) and a contract that asks the app's own validator.
+- **The first slice of the admission cost is paid.** Sixteen commands that only
+  open a window, and the four help documents, are now one table each instead of
+  near-identical lines in several files: the boot payload fell by 1,155 bytes
+  while adding a File row, a help entry and a window registry record.
+
+## Public Beta 1.0.55 - 2026-09-12
+
+- CMF Studio's interactive colorways are lit by the official product scene's
+  own environment, so the material you dial in is the material the object
+  holds. iPhone 17 Pro and Pro Max share one model entry with two poses, and
+  iPhone Air, iPhone 17e, MacBook Neo and the Duo carry the same per-part
+  color matching and USDZ export.
+- The iPhone Duo folds continuously: separate inner and outer screen images,
+  the original wallpaper one button away, and a local export — PNG, JPEG, WebP
+  or a rendered fold video.
+- The Duo is also four mixable finishes (frame, back glass, hinge, camera
+  plateau) with Front / Back / Left / Right views and a free turn of the
+  scene's own camera, so the side you painted is the side you can see.
+- Every standalone app now has exactly one shareable address, `/go/<app-id>`.
+  The bare app directories, the published redirect files and the server's own
+  direct routes are gone, and the installer retires the old published paths
+  inside the same transaction that installs the release, so nobody can share
+  an address the site no longer serves.
+- The public site can carry the MCP guest bridge: Pages serves the same tool
+  contract as the desktop, mints an invitation that names one desk, and keeps
+  the guest executor behind a Durable Object.
+- The release gates were reconciled with what actually ships: the prompt
+  contracts follow the 70 records the app carries, the README gauge quotes the
+  payload the gate measured, and the integration ledger records this release
+  branch as merged.
+- **Big Sur joins the desk as the seventh appearance.** It stands between
+  Yosemite and Liquid Glass, carries its own light / dark / follow-the-system
+  modes, and reuses Yosemite's semantic icon family rather than pretending to
+  be newly drawn artwork. Its sheet is a separate file the desk asks for only
+  when you pick it, so a boot pays nothing for it.
+- **NeXTSTEP 3.3 is in the build as the eighth appearance, behind an
+  experimental gate.** Minimise left and close right, key/main window states,
+  menus that belong to the application that owns them, a right-hand dock that
+  keeps running applications reachable, and a Shelf. It stays
+  `releaseReady:false` until the remaining acceptance items are recorded, so no
+  saved preference can hand it to you as your appearance.
+- **One More Tune has a second game and a sharper deck.** Keynote Relay asks
+  about the people Apple put on stage: six handoffs per round, hints that cost
+  points, and an answer key the server never hands to the client. The music
+  deck now records which question each card may be asked as, which sounding
+  clue it uses, and which labels are excluded as answers, so a round no longer
+  repeats a subject or offers a near-duplicate.
+- **The site and the README show seven appearance frames**, and the Liquid
+  Glass icon family names its Golden Gate Beta 1 target in one place across
+  both accepted build stages.
+- **The demonstration disks sit on the Startup Disk**, next to your own Project
+  Hard Disk: one row, the same panel the File menu opens, and the disks are
+  still not a volume — nothing is mounted until one is opened and becomes an
+  ordinary project.
+
+- **The demonstration disks became a folder, and reading the folder stopped
+  downloading the manuscripts.** The thirty-four disks that ship with the
+  application now live in one Finder page on the Startup Disk — count, icon and
+  list views, selection, Get Info, double click — instead of a small window a
+  module built; the File menu's row opens the same page, and a disk's own
+  question-sheet line is what Get Info shows about it. The list travels as its
+  own 16 KB module, so opening the folder no longer pulls the 3.7 MB of
+  manuscripts behind it (1:134); a disk's backup loads when a disk is opened.
+  Boot payload 2,946,313 → 2,948,224 bytes, which is 896 bytes under the
+  two-floppy line, so the next boot-side feature has to reclaim rather than add.
+- **One More Tune has a third game: 下一幕 / Next Act.** Ten written questions a
+  round about what a keynote line was doing and which chapter followed it, drawn
+  from the keynote-language research package: four options, no clock, a point a
+  question, and skipping allowed. The answer, the explanation and the source stay
+  on the server until a submission comes back; a skipped question still opens its
+  note; and two questions about one phrase (One more thing at WWDC23 and WWDC24,
+  heading downstairs in 2022 and 2023) are never adjacent, because the first
+  explanation would otherwise answer the second question. There is no audio in
+  this edition, and the window says so: the recordings behind these lines have
+  not been auditioned, so the audio version stays closed.
+
+## Public Beta 1.0.54 - 2026-09-11
+
+- CMF Studio adds iPhone 18 Pro and iPhone Duo models with Apple-authored
+  interactive assets.
+- iPhone Duo supports continuous folding, separate inner and outer screen
+  images, and local WebM fold-video export.
+- MacBook Neo uses the same continuous hinge interaction for its open pose.
+
+## Public Beta 1.0.53 - 2026-09-05
+
+- Semantic retrieval no longer depends on the AI provider having an embedding
+  model. When DeepSeek is the chat model or no local model is connected, a
+  small multilingual embedding model runs quietly in the browser, so search
+  keeps ranking by meaning instead of silently dropping to keywords. Cloud and
+  local retrieval now behave the same way.
+- The local LM Studio integration stops piling up duplicate loaded instances.
+  Reloading a model unloads its old copies first, so the server no longer
+  reports the same embedding model loaded ten times.
+- Pages served through the server can force the cloud or local route
+  explicitly, so model repair and payload routing stay honest on the public
+  site.
+
+## Public Beta 1.0.52 - 2026-09-04
+
+A version that finishes the city-building promise and makes the model route
+stop choosing for you.
+
+Micropolis and Bonsai City now speak one gauge language. The demand bars live
+in the details strip and in the palette footer, open the evaluation or city
+report when you click them, and blink when a message asks for attention — on a
+phone the compact bar survives while the panel steps aside. Bonsai City also
+keeps the promises a city simulation owes itself: the camera returns where you
+left it, the budget remembers month by month, airports and highways arrive in
+their game years instead of all at once, four arcology families grow with
+different populations and unlock years, and fourteen disaster kinds (riots,
+melting reactors, hurricanes, air crashes and more) share one weather-linked
+world. Saves move to the v4 format with a migration chain that opens every
+older city without losing a line of it.
+
+Endfield Terminal answers the way evidence deserves: numbered source cards
+come first, the verdict and the gap after. The retrieval stays deterministic
+on the server, and the answer can be written by your own LM Studio model in
+the browser — or by the cloud route when you prefer — instead of one side
+deciding for the other.
+
+ClioTalk stops making you choose between two useful things. Turn on web search
+and attach a picture: the cited search answer comes back with the image read
+together in one reply, with the sources still one click away.
+
+The LM Studio path prefers the native v1 API — stateful chat, model load
+events, context length in the request — and falls back through the Responses
+API to OpenAI-compatible only when the model needs a shape v1 cannot carry.
+
+### 1.0.52 parade build — 2026-09-05
+
+The follow-up build is the release as a lane parade: it gathers the lanes and
+agents that kept working after the first 1.0.52 stamp and lands them as one
+version.
+
+- The demand gauge stopped waiting on screenshots. Micropolis is SimCity, open
+  under the GPL and already vendored, so the gauge's drawing code answered
+  M7/M8 exactly: pure green/blue/yellow columns with black keylines on the
+  `#e6e6ff` panel. The games' pixel cells also fixed a clip misread that had
+  been photographing terrain instead of the palette and gauge they promised.
+- The desk speaks MCP in both directions: a guest agent can read the open
+  project and return reviews as adoptable run receipts, and the desk can query
+  other MCP servers with answers landing on the File Floppy.
+- Writing Studio's darkroom repaints from the manuscript's real host instead
+  of whichever window happened to hold the page, and a new contract refuses
+  any gate that nothing runs unless a waiver says why.
+- Installed-app users gain Home Screen long-press shortcuts to ClioTalk,
+  Quick Draft, and Lightroom.
+- The Endfield archive rebuilt its mission corpus from the restored live
+  routes: 332 missions and 26,413 transcript lines now carry the v1.5 stamp
+  instead of a version label on older text.
+
+Contributions are recorded lane by lane in git history, including the
+co-authored measured-colour merge; the remaining carried items (SC2000 panel
+layout and its icons, the ClioTalk dual-mode live smoke, and the full phone
+landscape sweep) stay open and are tracked in the 1.0.52 closeout.
+
+## Public Beta 1.0.51 - 2026-09-02
+
+A version about keeping promises the product had already made.
+
+The largest of them was the plainest: in the Aqua and Snow Leopard appearances,
+putting the caret into a writing surface erased the page. The words were there
+— selectable, spell-checked — but nothing was drawn, because those eras painted
+an opaque focus fill over the layer that carries the ink. Liquid Glass washed
+the same text out, and every appearance hid a line the moment it was selected.
+Six instances of one defect class, found by reading the layer order rather than
+the colour values. A contract now resolves the real cascade over five surfaces,
+six appearances, two focus states and three widths, and fails on any fill,
+filter or inset shadow that could cover the writer's own words.
+
+The route learned to hand work over. A manuscript exports as a real `.docx`
+whose page and the page on screen come from one text and one Page Setup; it
+refuses to write when its own structure check fails, naming the fact it read.
+The Review Desk's findings travel as real Word comments anchored to their
+sentences, while the manuscript itself comes out byte for byte identical to an
+export with no review attached — the review is a suggestion handed to a person,
+not an edit. Three built-in skills advise on which carrier the work wants and
+what a manuscript or a table owes its reader, and never touch the sentences.
+
+Two objects stopped lying about themselves. The Liquid Glass slider — the
+control named after the appearance — had no styling at all and was drawn by the
+browser; it is glass now, and the windows behind it refract instead of tinting.
+On a phone, opening the Question Sheet used to leave the writer in the
+manuscript a second later, because a companion window opened with focus and a
+single-foreground screen gave it the room; the route hands over the screen
+deliberately now, in both orientations.
+
+The verification itself was repaired where it had been reassuring rather than
+checking. The pixel net spent most of six minutes waiting for windows it never
+photographed and covered 20 of 33 cells; it covers 33 of 33 in 99 seconds. The
+merge verifier ended a run over a non-merge commit with "merge content
+verified". The boot harness invented an element for any id it was asked for,
+which had reported 72 of 76 windows healthy while their real construction had
+never once run — and the first thing the honest harness found was Time Machine's
+Clip + Translate, which had never made a clip and blamed the translation for it.
+
+## Public Beta 1.0.50 - 2026-08-24
+
+A convergence release. Eight lanes of work that had been running beside each
+other for a day came back together, and what the merge exposed is as much a
+part of this version as what the lanes built.
+
+文字亮室 became its own application rather than a drawer inside Quick Draft.
+The negative, the adjustment stack, the writer's locks and the version chain
+moved out of the Quick Draft workspace and into a record of their own, keyed by
+document, so the same manuscript can be developed whichever surface it came
+from. The boundary is one sentence: Quick Draft writes, 文字亮室 looks. Finder
+mode is single-task, so seeing the grain beside the sentence is a MultiFinder
+arrangement -- a real second application costs a real second window, and that
+was chosen with the cost known.
+
+That record now travels with the disk. It lived in keyval, outside the seven
+collections a Project Hard Disk backup carried, so exporting a project and
+restoring it lost the negative, the stack, the locks and the chain without
+saying anything. The backup format is v5 and carries it; a record pointing at a
+document the backup does not contain is refused rather than restored as a
+darkroom belonging to nothing. Project CD is unchanged, because a CD is a
+read-only handoff of finished text and not a restore path.
+
+Every project shows on the desktop as a disk. The mounted one is solid, the
+others are dimmed and ejected; double-clicking an ejected disk opens it
+read-only, and dragging one to the Trash archives it instead of trashing it --
+Erase Disk is still the door that destroys. The mounted disk wears the
+project's own name rather than the generic one.
+
+Hold That Thought arrived as a Desk Accessory: a pause for an interruption that
+gives the writer their window and their caret back, rather than a note to
+write later.
+
+A picture became material the writing route can read. Question Sheet photos,
+File Floppy imports, Review Desk figure checking, Scrapbook picture clips,
+Quick Draft product photos and DocMap from a picture all reach one shared
+layer. A Scrapbook clip may now be a picture with no text at all, and the
+window says plainly that Searcher cannot find it; a model's reading of a
+picture is a proposal the writer must keep before it is saved.
+
+The web host stopped throwing away its own cache. It served the two bundles
+`no-cache, no-store, must-revalidate`, so the edge bypassed and every visit
+re-downloaded about 430 KB. The rule now splits the way the original incident
+warrants: a success carrying the build stamp gets a long lifetime, an
+unversioned URL gets a day, and a 404 is explicitly no-store.
+
+Four low-frequency stylesheets -- ClioChart, Time Machine, Endfield Terminal
+and the Bureaucracy meme -- now travel with their window instead of the startup
+disk, which is what paid for everything above staying inside two floppies.
+
+The appearance sheets went from 848 geometry declarations to 719, with a
+ratchet that only lets the count fall. Layout carried by an appearance is what
+makes the verification matrix multiply, so draining it is not tidying.
+
+Bonsai City had six real defects: the city oscillated instead of growing, zone
+dragging was unusable, and roads, wires and rails drew as disconnected studs
+with an axis-aligned blob at every intersection. All six are fixed.
+
+Two failures are worth recording because the gates could not see them. An
+action handler written as a bare identifier, naming a function that only exists
+once a lazy module loads, threw while the command registry was being built and
+took every menu command and every data-action button down in silence -- with
+240 executable contracts and a green release gate saying nothing, because no
+static assertion executes that path. It now has a gate that resolves the name
+rather than matching the shape. And the Mac payload had never learned about the
+four stylesheets that went lazy, so it would have shipped four windows with no
+styling and nothing local would have complained.
+
+
+Two more days of work landed under the same version number, and the heaviest
+item is a defect the export format had been carrying in silence.
+
+**A project disk now travels with its pictures.** Export a disk, import it
+somewhere else, and the Question Sheet photographs were gone, Scrapbook clips
+pointed at images that no longer existed, and every figure in the manuscript
+fell back to a bare image tag pointing at an `aisystem6-image:` id that the
+disc no longer carried. Each of those failed
+without saying anything. The backup format is now version 6 and carries both the
+original and the preview. The hard part had no precedent in the format: the
+manuscript refers to its pictures by id from inside prose, and every other
+pointer in a backup is a field a remapper can walk. Remapping the picture ids
+without rewriting those references would have broken every figure on the disk,
+which is worse than not remapping at all.
+
+**A picture the writer has read is searchable.** The Picture Album had been
+storing the model's reading of an image and nothing in the entire repository
+ever read it back — one write, no readers. Those readings now enter the search
+index alongside documents and clips, so a photograph can be found by what it
+says.
+
+**The cloud can read an imported image.** OCR gained a cloud rung underneath all
+three local engines and behind the existing switch, and the app says plainly
+when the cloud is the one reading, rather than leaving the writer to guess where
+their picture went.
+
+**Nineteen menu commands can be run again.** A menu migration three months ago
+moved the menu bar into its own module and dropped 88 labelled controls on the
+way; nineteen of them had a handler, a translation and a shortcut, and no way to
+reach any of it. They are restored, five names that had outlived their handlers
+are deleted, and a gate now resolves command names rather than matching their
+shape.
+
+**文字亮室 is reachable from the whole drafting route**, not only from the
+Manuscript, and its window carries its own Classic line art on the desk. The
+Picture Album, Quick Draft and DocMap all keep a picture the same way now.
+
+Writer Mode lost its menu switch. It could be entered once, from a clean desk,
+and that still works — but toggling it in the middle of a session arranged the
+desk differently each time, and one of those arrangements closed the manuscript
+the writer was in. A control that can close the writer's work is worse than no
+control, so it is deleted rather than shipped uncertain. The mode itself, and
+everything it arranges, stays.
+
+Smaller repairs: the Trash is no longer flung into a column of its own, Theme
+Lab can be resized, two people's names are spelled with their own characters
+rather than homophones, and the games — which had been shipping to the web host
+with their frames blocked — actually run there.
+
+The startup payload dropped again, by about 140 KB: seven more windows build
+their own markup instead of carrying it in the boot document. Moving them lost
+three pieces of markup in silence along the way, each caught by counting
+elements rather than by reading the diff.
+
+The final convergence day brought Bonsai City into the public beta. The window
+was rebuilt around the map: commands moved into Macintosh menus, the tool rail
+became a compact palette, the minimap and overlays became permanent
+instruments, and touch gained an explicit Pan tool. Under it sits the largest
+city expansion yet: 128-square maps, transport and utilities, budgets and
+bonds, services and disasters, scenarios and terrain editing, original sound
+and seasonal art, two views over one deterministic snapshot, and clean-room
+browser-local `.sc2` import and export with synthetic fixtures only.
+
+The writing desk closed four quiet breaks exposed by the merge. Status now
+lands in the surface that owns the caret; linked previews repaint without
+resetting the reader's place; sentence focus works; and Find/Change, Balloon
+Help and popovers remain attached to the window they serve. ClioTalk's welcome
+copy follows the selected era's type, and Image Prompt Studio got back the
+stylesheet whose absence had collapsed the whole window to zero width.
+
+**Build 20260830.1 — 2026-08-30.** A follow-up build that closed the gaps the
+convergence left and shipped the version to every target.
+
+Concurrent windows no longer step on each other's desk records. A record that
+changed in another window refuses the stale write instead of silently
+replacing it, delete is fenced the same way put is, and a read-only window
+keeps the editable window it belongs to instead of vanishing.
+
+Theme Lab's menu rows now reproduce the native captures they measure: Snow
+Leopard's selected row is the measured 20px, Aqua's is 21px, and the 16px text
+line is a period token every era answers rather than a fallback few inherit.
+Yosemite's search field picks up the same discipline and meets the geometry
+floor it had been short of.
+
+First launch has ClioTalk as the front door, and the appearance, visual and
+Theme Lab board baselines were re-captured around that contract instead of an
+older welcome-floppy desktop. Six new icon families — Bonsai City, DOOM,
+Micropolis, OpenTTD, Lightroom and Image Prompt Studio — ship their era art
+with reproducible builders, and the public source snapshot now self-tests from
+a fresh clone: the atlas builder keeps its maintainer evidence private, and
+the tree budgets follow the shipped assets.
+
+The build went out as 1.0.50 (build 20260830.1) to GitHub's public snapshot and
+Mac Beta v1.0.50-beta.4, the VPS web host, and Cloudflare Pages, with Pages
+deployment staging copies so the sealed release artifacts stay immutable.
+
+**Build 20260831.3 — 2026-08-31.** The remaining lanes landed, and the desk
+shows more of the route than it did.
+
+First Minute retires the prompt-prose introduction. The stranger's card — now
+"See it in 30 seconds" — plays the 30-second offline teaser in every model
+state, and completing it offers Look Around or Draft One in 3 Minutes, which
+opens Quick Draft. Abandoning the tour leaves onboarding unfinished.
+
+ClioProject becomes a real window: the plan board derives its nodes and arrows
+fresh from the route and the Outline, names the blocking chain in bold, keeps
+dates verbatim, and folds done tasks away. To Do 待办 arrives as a desk
+accessory for cross-project next actions that are never dropped. Picture Album
+gains a per-image cloud opt-in that keeps local the default and says so while
+reading, and a project disk at risk wears the palette's diamond, defined only
+from facts the product already has.
+
+文字亮室 keeps its subject. A foreign subject is released when its door closes,
+names itself with a read-only badge, and every composite source reads the
+subject's own text; 试看 works under a read-only subject while develop refuses.
+File gains page setup and print in the reading view, and Adjust's undo-develop
+is a single-shot ⌘Z. The listen desk gains partner sessions (marks and one
+note, no names, no model), visual-cue exits on visual-dependence findings, and
+SRT/shot-list export through the Deliver menu with timings that say they are
+estimates.
+
+Bonsai City's three inspector modes become full presentations: an age pyramid
+with health, education and unemployment trends, a ten-sector industry mix
+riding the era curves, and a compass card of four neighbor cities whose trade
+follows the links you actually built. ClioStage's deck fits its window —
+presenting views shrink as one piece down to a floor, then scroll — and the
+parsed-but-never-painted directives reach the frame: header, footer and page
+numbers render with per-slide overrides, and speaker notes render as markdown.
+
+Two bugfix lanes closed under the same build. A refused desk-record save never
+claims saved on any surface: while the conflict stands the TeachText capsule
+and the desk cells say unsaved, a later successful commit walks every surface
+back through one refresh, and the paper repaints the text that was kept. And
+Aqua and Snow Leopard horizontal scroll thumbs follow their directional
+recipe — the blue ramp's stripes and the capsule's caps run across the lane,
+not along its length.
+
+The appearance checker now holds the four middle eras by token tables instead
+of pixels: 2,075 probe points compare computed values against Classic in the
+same run, and a geometry or token drift injected into an era sheet fails the
+fast path by name.
+
+The build went out as 1.0.50 (build 20260831.3) to GitHub's public snapshot and
+Mac Beta v1.0.50-beta.5, the VPS web host, and Cloudflare Pages.
+
+## Public Beta 1.0.49 - 2026-08-19
+
+Control Panel and Theme Lab corrections, all of them one-way faults where a
+control existed but could not do its job.
+
+The Liquid Glass tint slider never moved the chrome. `body.use-liquid-glass`
+declared `--liquid-tint-level` itself, which shadowed the value the slider
+writes on the root element, so every CSS surface resolved the 0.5 middle
+setting while only the WebGL overlay followed the control. The declaration is
+gone; every reader already carried the default in its own `var()` fallback.
+
+The same slider showed in all six appearances. `.settings label` sets
+`display: block`, which outranks the browser's `[hidden]` rule, so the
+attribute the runtime set did nothing -- the third instance of that trap after
+the Finder items and the CMF controls. The scoped guard joins them. The
+runtime side was wrong in the other direction: it decided visibility from the
+`themechange` event alone, and boot, settings restore and launch intent all
+apply a theme without announcing one, so the decision moved into `applyTheme`,
+which every path already goes through.
+
+Classic's Control Panel filled the whole rail cell with ink to mark the current
+section. That is a modern sidebar-row highlight, and it swallowed the 1-bit art
+it was supposed to reverse: the icon mask is black, so a selected icon read as a
+hollow outline. Classic now selects the way the Finder selects an icon -- the
+cell keeps its paper, the icon shows its mask and reverses, the name carries the
+highlight box -- and hover paints nothing, because System 6 has no hover state.
+The other five appearances pass neutral values for the new tokens and are
+unchanged.
+
+Theme Lab's era timeline was unusable in portrait: a fixed three-column rule
+left over from the older six-button era switch squeezed the rail into a third
+of the pane with the year labels piled up beside it. The rail is one column at
+every width again, and the tick axis now takes the same half-thumb inset the
+range thumb travels within, so the knob lands exactly on the year mark it
+selects.
+
+
+## Public Beta 1.0.47 - 2026-08-17
+
+- Image Prompt Studio is a new creative lab: one short idea (and an optional
+  reference image) becomes two ready-to-paste prompts — a natural-language
+  GPT-Image paragraph and a compact universal prompt. It is a pure prompt writer
+  with no image backend, so it can never silently drop a reference image; on a
+  cloud text model it says so instead of pretending.
+- CMF Studio completes the 3D loop: every view preset renders to PNG in the
+  browser, the source USDZ previews and recolors locally, and fflate exports the
+  recolored result as USDZ for AR. Background rendering degrades gracefully when
+  a cloud image is unavailable, and high-resolution views render offscreen at 2x.
+- Classic and Platinum get a real fidelity pass: 0-blur bevels, token-level
+  chrome, and a Classic/Platinum fidelity contract pin the two oldest appearances
+  against native references, with refreshed Theme Lab baselines and fingerprints.
+- The four objects added since the era timeline — Image Prompt Studio, Micropolis,
+  OpenTTD and DOOM — now carry their own recognisable Classic line-art icons
+  (with selection masks), and a Control Panel switch can apply line-art icons
+  across every appearance. The retired inline Liquid Glass icon dictionary is
+  removed and its export/test references reconciled.
+- Help and the writing-flow help text are revisited: balloon help stays clear of
+  the next clickable target, and the window manager's lazy-attach path is fixed.
+- The website and README are re-shot from the running app and reorganized: every
+  era frame and feature proof is captured fresh (including a filled Image Prompt
+  Studio shot), the README fixes two broken image links and gains a table of
+  contents and a clearer structure, and the marketing page's contrast and type
+  sizes meet readability standards with per-era Chinese font stacks corrected.
+- Cloudflare Pages ships the shared-cloud-budget Worker, BYOK cloud keys beside
+  the shared allowance, route parity, and the deploy/release tooling that keeps
+  the public snapshot independently verifiable.
+- The runtime moves to an application registry with commands, render tasks,
+  lifecycle and state stores, plus a service-boundary contract that keeps
+  direct service access out of feature modules.
+
+## What Changed Most In One Month
+
+- The product moved from "an AI writing prototype" to a local-first writing
+  environment with durable projects, temporary context, visible sources, review
+  surfaces, exports, and creative labs.
+- Model calls became more disciplined: task kinds, prompt registries, context
+  budgeting, source-data boundaries, voice guardrails, and task-specific local
+  model tuning are now part of the product contract.
+- The System 6 metaphor became stricter rather than looser: named objects,
+  deliberate saving, quiet windows, lazy tools, two-floppy startup budgeting,
+  and verification gates now protect the app from feature sprawl.
+
+## Public Beta 1.0.48 - 2026-08-17
+
+Historical fidelity and the Golden Gate recalibration of Liquid Glass.
+
+Aqua reaches 16 of 16 specimens and Snow Leopard 17 of 17. The Aqua work was
+four real painter defects: a disabled column-browser row that dropped its icon,
+a scrollbar lane assembled from separate boxes instead of one outline,
+incomplete row separators, and a Finder toolbar that drew its own frame on top
+of the window's, rendered no view-mode glyphs, and held "Search" as placeholder
+text where the 10.2 toolbar labels the item beneath the pill.
+
+Yosemite gains four more pinned native 10.10 captures. Six specimens had been
+measured against crops that did not contain the control they claimed to test --
+there was no push button, text field, dialog, backdrop window or selected list
+row anywhere in the three sources pinned at the time. One wrong reference had
+also produced a wrong token: the source-list selection colour was sampled from a
+folder icon's tab in a capture with nothing selected.
+
+Liquid Glass moves toward macOS 27 Golden Gate: a concentric corner ladder so
+nested objects stop repeating the window's own curve, one continuous chrome
+region at the top of a window instead of three banded strips, a backdrop window
+that quietens its chrome without fading its document, and a press response that
+drops its movement under reduced motion.
+
+Two long-standing paint bugs surfaced along the way. No appearance's menu-bar
+hairline colour had ever reached the screen -- a shared surface rule painted
+every one of them with ink -- and the pop-up button's arrow well was measured
+against the padding box, so it sat a pixel clear of the border and read as a
+separate pill. Snow Leopard's traffic lights are rescaled to the red measured
+off the native 10.6 capture.
+
+## Public Beta 1.0.44 - 2026-08-16
+
+- Cloud model routing now lives in one policy: the Automatic choice resolves
+  per task — DeepSeek V4 Pro for critique and HKRR review, V4 Flash elsewhere —
+  and each task reserves reasoning headroom on top of its answer budget. A
+  budget sized for the answer alone had let a long thinking chain consume the
+  whole allowance and return an empty message with `finish_reason: "length"`.
+- Searcher's streamed web-search answers were silently failing: address pinning
+  forced the buffered Node transport, which read the whole response before
+  resolving and handed back no stream. The transport keeps the upstream open
+  until the first delta, with a contract test to match.
+- Micropolis gains deterministic 2× tile and sprite atlases for Retina, built
+  from the upstream 1× art by a new reproducible HD pipeline; caller-facing
+  coordinates stay on the logical 16 px grid.
+- Theme Lab becomes a data-driven appearance workbench: object provenance,
+  per-era art tiers, token homes, and the sixteen-object priority lineage are
+  declared as data and painted through the real runtime renderer.
+- Bonsai City's MIT-clean simulation core lands as headless foundation — seeded
+  deterministic grid rules with no DOM or timers — ready for a window to host.
+- The Project CD burn opens a Finishing Receipt: a Get Info-shaped window whose
+  every line is read back from the stored record — word count, draft count as
+  distinct stored texts, the days from the first revision to the burn, how many
+  times the opening was replaced, and which first-draft lines survive, from a
+  longest-common-subsequence over the two line lists. A fact with no stored
+  source is left out rather than estimated.
+- Writing surfaces take over paste. `app/core/paste-markdown.js` converts the
+  clipboard's `text/html` flavour to Markdown locally and synchronously, so
+  headings, lists, emphasis, links, and tables survive. The heading floor is
+  load-bearing: only the Outline may receive `##`, and elsewhere a fragment is
+  pushed down so its shallowest heading becomes `###`, which stops one paste
+  from cutting the article into new sections.
+- The menu bar answers for itself on five measured defects: shortcut labels
+  survive an application switch through one shared writer, four Go To rows
+  report their real availability instead of refusing a black row, and three
+  rows that printed a borrowed key now own their own Open and New entries.
+- The Application Registry carries an optional lifecycle — `onSuspend`,
+  `onResume`, `onDispose` — and MultiFinder drives it on window class flips,
+  `visibilitychange`, and `pagehide`. Seven applications implement it: the three
+  games stop their real loops and release held SDL input first, CMF Studio
+  takes the render loop off the renderer, and Cover Glass stops its motion
+  preview. An application that registers nothing behaves exactly as before.
+- Four measured defects in the writing Desk Accessories: SideAsk's row keeps
+  Ask on line one (47 px → 20 px), the Writing Bell no longer applies the
+  one-minute setting floor to the time remaining, the floating Dictate button
+  stops overlapping `.da-origin` (1,446 px² → 0), and Hold That Thought joins
+  Hold My Place under Your Place instead of answering only to its key.
+- Searcher moves off the startup disk into `lazyRuntimePaths` through the
+  lazy-window contract, which returns 17,227 bytes of boot headroom.
+
+## Public Beta 1.0.45 - 2026-08-16
+
+- External drop becomes one router: a dropped File mounts on the File Floppy,
+  a dragged text/uri-list opens in Reader, dropped text reaches the Clipboard.
+  shareArtifact() takes over the download exits each feature had grown, and the
+  four hidden file inputs leave index.html with every reference to them.
+- Working Session moves from one global record to a per-project keyspace
+  (workingSession:v2:desktop and the project scopes under it), migrated once at
+  boot inside a transaction that verifies the new record before deleting the
+  old, and capped at 24 scopes. Project backups move to v4 and carry the scene,
+  with a forbidden-key pattern that keeps credentials out of an exported desk.
+- Hold My Place and Hold That Thought share one Control Strip module that owns
+  no state and no command: its rows dispatch the existing actions and read
+  availability from getActionAvailability(), the map the menu rows use.
+- The File Floppy leaves the studio-only window set, and the writing-route menu
+  rows report whether a project is mounted instead of reporting a literal true.
+- The title-bar drag handler cancels pointerdown's default action, so a drag no
+  longer opens a text selection under WebKit.
+- Theme Lab, its stylesheet, its markup and its eight contracts are restored
+  from 337dac6d, whose content a merge resolution had replaced with its
+  predecessor while keeping the commit in the history.
+- 26,771 bytes of style rules whose every selector names nothing are deleted,
+  checked against template-literal class construction so dynamically built
+  names such as the finder-label family are kept.
+- Every dependency moves to its current release, TypeScript 7 included. The two
+  AST gates move to Acorn, because TypeScript 7 publishes only its version from
+  the main entry and offers its AST under an export named unstable. A new
+  verify:dependency-freshness gate compares the installed tree against
+  package.json and the lock file.
+
+## Public Beta 1.0.46 - 2026-08-16
+
+- ClioTalk streams with tools. A tool loop used to force complete JSON
+  messages, so the route a mounted project actually takes waited in silence
+  and Stop had nothing to keep. Streamed tool calls now assemble across
+  fragments: a name that arrives once stays one name, argument JSON is glued
+  from many frames, parallel calls merge by index, snapshots are not appended
+  twice, and truncated arguments fail instead of being guessed. Every round
+  streams whenever a token listener is watching, later rounds continue the
+  reply instead of erasing it, and stopping keeps the cumulative text of every
+  round the writer already read. The JSON fallback path is repaired
+  underneath: the stream reader used to lock the response body with
+  getReader() before checking the content type, so a provider that ignored
+  stream:true could never answer through response.json().
+- The whole iPad family is verified and fitted: standard iPad, Air, Pro and
+  mini, every representative size, both orientations, and iPadOS Split View
+  and Slide Over panes — 1,348 checks green. The window clamp now reads
+  --keyboard-inset, so the window that owns the focused field lifts above the
+  on-screen keyboard like the phone shell does, and its frame returns when the
+  keyboard closes; the clamp also writes max-height with the kebab-case
+  property it always meant to.
+- The Finishing Receipt stays reachable on a phone in landscape: the restore
+  path re-asserts the clamp once the receipt reaches its real height, and on
+  short viewports the pane scrolls instead of clipping a stated fact.
+- Boot payload re-measured at 2,948,416 bytes against the two-floppy budget.
+
+## Public Beta 1.0.42 - 2026-08-14
+
+- DOOM landed as the third and final Games slot: the official Chocolate Doom
+  3.1.1 engine compiled to WebAssembly runs in a same-origin iframe with a
+  local-only WAD picker, an explicit Play gesture, IDBFS-backed saves, and a
+  menu-aware input bridge shared by touch and gamepads.
+- Phones and tablets get dedicated portrait and landscape touch layouts with
+  concurrent move, turn, and fire; hiding, backgrounding, or rotating the
+  window zeroes input and pauses the engine and audio.
+- The phone/tablet orientation contract became a product invariant in
+  CLAUDE.md, DESIGN.md, and a device × orientation × input acceptance matrix
+  in the HIG.
+- The GPL engine travels with its corresponding source archive, patch,
+  license, and a reproducible build recipe; no game data enters the
+  repository or the release.
+
+## Public Beta 1.0.43 - 2026-08-14
+
+- Retired the unmaintained vercel/pkg packaging step, which could only target
+  the end-of-life Node 18. The macOS app now bundles a repo-shaped server
+  payload with the packaging machine's own current Node runtime, enforced at
+  24 or newer, plus a lockfile-exact production dependency tree.
+- Upgraded pdfjs-dist from 4.8 to 6.2 and served its JBIG2, JPEG 2000, and ICC
+  wasm decoders from an app-owned URL in every deployment, so image-heavy PDFs
+  keep full fidelity in the browser, the packaged app, and the web release.
+- Upgraded https-proxy-agent to 9 and moved the server typecheck to NodeNext
+  resolution, which is what exports-map-only packages require.
+- Moved `three` to devDependencies, pruned sourcemaps and the PDF.js viewer
+  from the packaged payload, and raised the supported Node window to 24-26.
+- Rebuilt the DOOM and OpenTTD WebAssembly games on emscripten 6.0.6 through
+  their reproducible build scripts, with both verified in-browser. Micropolis
+  vendors JavaScript and is unaffected.
+- Declared one CSS cascade layer per stylesheet and pinned the layer order in
+  the bundle. No rule is wrapped yet, so the runtime cascade is unchanged;
+  this is the scaffolding for retiring the file-order cascade, and
+  `verify:css` now blocks a file from opening any layer but its own.
+
+## Public Beta 1.0.40 - 2026-08-13
+
+- Fixed the ClioTalk composer end to end: typing and paste events immediately
+  resynchronize the send button, while the website-AI summary leaves its
+  connecting state after every success, failure, and reset path. Added focused
+  regressions for Enter, the Send button, and both failures reported from the
+  public build.
+- Migrated browser-local LM Studio inference to the current REST APIs:
+  tool-free turns use native `/api/v1/chat`, project-tool turns use stateful
+  `/v1/responses`, and saved response IDs continue without replaying settled
+  history. Older compatible servers retain one bounded fallback; missing,
+  expired, and silent response chains fail visibly without losing the draft or
+  leaving the desk Busy.
+- Replaced first launch with a three-page Start Here path that clearly offers
+  website AI, BYOK, and local-model choices, then links the official site,
+  repository, video guide, and iOS Home Screen instructions without requiring
+  an account.
+- Restored the two-floppy boot budget by moving outline and review surfaces
+  behind their application launch boundaries. The packaged startup payload is
+  2,931,185 of 2,949,120 bytes, leaving 17,935 bytes of headroom; the gate now
+  publishes that measured result for the site and documentation to consume.
+- Completed the mobile/HIG sweep across all six appearances, including narrow
+  window geometry, scroll ownership, selection and default-button feedback,
+  keyboard access, menus, and readable status/help copy.
+- Closed the audited priority icon lineages for Finder, MultiFinder, Searcher,
+  Review Desk, and ClioTalk across six eras; accepted sources, native optical
+  sizes, runtime dispatch, and Theme Lab provenance now fail closed together.
+- Hardened every website-AI transport: credential scope follows the normalized
+  endpoint, DNS results are checked and pinned to the outgoing socket, private
+  targets are blocked, staged credentials expire and are bounded, and shared
+  cloud reservations reconcile streamed and multi-call usage exactly under
+  concurrent processes without double settlement or cross-day corruption.
+- Added a persistent IndexedDB write fence beneath the multi-window lease, so a
+  tab that loses ownership cannot commit with a stale epoch after a handoff.
+  Chromium and WebKit end-to-end tests cover simultaneous pages, late release,
+  read-only controls, and foreground reconciliation.
+- Moved CMF rendering and USDZ work off the HTTP thread into a bounded worker
+  queue with per-session isolation, cancellation, timeouts, result limits, and
+  crash recovery; health checks remain responsive while a render is running.
+- Reworked the official site's era narrative and proof wall around concrete
+  product evidence while keeping site checks and public deployment boundaries
+  intact.
+
+## Public Beta 1.0.41 - 2026-08-13
+
+- Fixed blurry modern-era raster icons on Retina displays by selecting source
+  artwork from the icon's real rendered size and the browser's device-pixel
+  ratio, instead of treating a legacy compact class as the source-size owner.
+- Applied the same dispatch contract to static and dynamic Finder windows,
+  desktop objects, list rows, File Floppy, Project Hard Disk, Documents, and
+  ClioTalk's welcome surface across Aqua, Snow Leopard, Yosemite, and Liquid
+  Glass.
+- Added a fail-closed real-application gate that renders all six appearances at
+  2× density and rejects any modern raster smaller than the pixels its visible
+  surface requires, including the legacy `mini`-inside-Finder collision that
+  caused the public VPS regression.
+
+## Public Beta 1.0.38 - 2026-08-12
+
+- Completed all six 56-object icon families with zero fallback artwork:
+  System 6, Platinum, Aqua, Snow Leopard, Yosemite, and Liquid Glass now carry
+  independent, era-owned construction behind the same semantic object ids.
+- Redrew Finder, MultiFinder, and ClioTalk across every era while preserving
+  their shared identities and rebuilding each era's material, perspective,
+  pixel density, lighting, and small-size optical hints.
+- Rebuilt Liquid Glass from 56 independent Image Gen masters into four native
+  sizes and three appearances per object; Classic and Platinum retain reviewed
+  32/16 px families, and the three OS X eras retain their native multi-size
+  raster families.
+- Closed the reproducibility gap for accepted Aqua, Snow Leopard, and Yosemite
+  Image Gen art: 490 hash-pinned accepted source files now live in the tracked
+  source boundary, so a clean clone can rebuild without ignored draft
+  candidates.
+- Added fail-closed family, source-archive, continuity, runtime-dispatch,
+  distinguishability, native-canvas, and release-asset gates for the completed
+  six-era system.
+
+## Public Beta 1.0.39 - 2026-08-12
+
+- Rebuilt the complete System 6 family as authored 32/16 px SVGs: surviving
+  classic objects are grounded in real System 6 resources, new application
+  objects use the same one-bit grammar, and selected-state masks are embedded
+  in the artwork for clean Retina rendering without generic vector smoothing.
+- Added a dedicated 42 px Platinum desktop tier with optical-parity tests, and
+  tightened its runtime dispatch so Finder uses the era-native canvas instead
+  of stretching another size.
+- Removed keyed-magenta residue from the accepted Aqua, Snow Leopard, and
+  Yosemite families while protecting intentional violet pixels, alpha edges,
+  and the distinct shadow/material recipes of each era.
+- Expanded Theme Lab evidence and fail-closed gates for canonical fidelity,
+  runtime payloads, native-size coverage, cross-era distinction, selected
+  masks, and Classic/Liquid visual snapshots.
+- Corrected Aqua's Jaguar current-application menu: its bold title now follows
+  the actual menu owner (Finder at startup) instead of the hard-coded product
+  name. The real-app browser gate now switches owners and rejects this exact
+  semantic regression across all six appearances.
+- Closed the packaged theme asset gap: Aqua, Snow Leopard, Yosemite, and
+  Liquid Glass now ship every family-declared PNG size/appearance; the Aqua and
+  Snow Leopard runtime sprites and Platinum desktop texture ship too. The
+  macOS bundle gate serves all 1,291 UI-referenced theme PNGs from the finished
+  pkg binary and compares their bytes with the reviewed sources before signing.
+
+## System Closing: Application Services · Run Receipts · Assistant Activity · Teaser — 2026-08-10
+
+- Application Services: one object-routing registry owns "which app handles
+  this object/intent". Finder open, File → Open, Quick Draft send-to, Review /
+  DocMap menus, and Droplets converge on one dispatch contract; broken
+  aliases, cross-project items, and no-handler cases fail visibly instead of
+  silently falling back.
+- Run Receipts: the existing ClioTalk run-record artifact becomes one
+  project-scoped receipt system (schemaVersion 2) covering AI and
+  artifact-producing operations, with checkpoint accept/edit/reject recording,
+  produced-by provenance in Get Info, Recent Runs in System Status, and
+  Repeat This Run.
+- Assistant Activity: a single state source (offline / idle / reading /
+  working / waiting / ready / error) derived only from real model and run
+  events, with a stale-run watchdog, project-switch reset, cancel, and
+  bring-to-front; System Status exposes it through semantic data-* hooks.
+- Teaser: a seeded, deterministic "30-Second Demo" (Start Here and the
+  Applications folder) shows a 2026 source becoming a clipping and then a file
+  on the Project Hard Disk — no model, no network, desk restored on exit.
+- The live Writing Demo is unchanged; Theme/Appearance files were not touched.
+
+## Public Beta 1.0.37 - 2026-08-10
+
+- Application Services: one object-routing registry owns "which app handles
+  this object/intent"; Finder open, File → Open, Quick Draft send-to,
+  Review / DocMap menus, and Droplets converge on one dispatch contract with
+  visible failures.
+- Run Receipts: the ClioTalk run-record becomes one project-scoped receipt
+  system covering AI and artifact-producing operations, with checkpoint
+  accept/edit/reject recording, Get Info provenance, System Status Recent
+  Runs, and Repeat This Run.
+- Assistant Activity: a single state source (offline / idle / reading /
+  working / waiting / ready / error) derived only from real events, exposed
+  in System Status with Cancel and Bring to Front.
+- All six appearances are released (System 6, Platinum, Aqua, Snow Leopard,
+  Yosemite, Liquid Glass); the research switch is gone and Theme Lab now
+  lives in the System folder.
+- Theme acceptance closeout: fixed Aqua/Snow Leopard/Yosemite collapsing the
+  dictation, translation-pad, and rebuild textareas to a 22 px field row
+  (their era field recipes stopped overriding app-owned textarea min-heights);
+  fixed Yosemite's blue default button turning white on hover (now the 10.10
+  hover blue #619fe8, verified against the cited GTK source); and synced
+  README / README.zh-CN to the six released appearances.
+- The 30-second seeded teaser demo shows a source becoming a file on the
+  Project Hard Disk without a model or network.
+
+## Public Beta 1.0.28 - 2026-08-09
+
+- Quick Draft Closure separates working updates from awaited durable commits,
+  captures debounced saves by project, persists exact-stack Composite previews,
+  and keeps delivery failures from reporting success.
+- Workspace schema v3 migrates legacy `quick-draft-dump` entries into bounded
+  document Versions and excludes Versions defensively from model material.
+- Empty masks now mean whole draft, new adjustment stacks start disabled, four
+  enabled layers make one model request, and duplicate protected passages use
+  occurrence-unique stateless sentinels.
+- Send to TeachText opens the saved Project document without mutating the main
+  writing pipeline. Public snapshots promise `verify:public`; `verify:ship`
+  remains a maintainer/private-source gate.
+
+## Public Beta 1.0.29 - 2026-08-09
+
+- Quick Draft becomes an independent Draft Desk application instead of a
+  Writing Studio-owned surface.
+- The former Finder Draft and separate canvas are consolidated into one durable
+  workspace with materials, paper, adjustments, versions, receipts, and
+  Body / Grain / Read views.
+- Quick Draft gains explicit SideAsk and a one-way, save-first handoff into
+  Writing Studio. Desktop, Applications, MultiFinder, menus, mobile shell,
+  restore, and native parity contracts follow the new application boundary.
+
+## Public Beta 1.0.30 - 2026-08-09
+
+- Platinum becomes the third release-ready Appearance beside System 6 and
+  Liquid Glass. One boot-safe registry, persisted Control Panel selector, and
+  Special-menu submenu now own appearance state without changing application
+  structure or writing semantics.
+- Platinum applies an evidence-led Mac OS 8 material recipe to shared windows,
+  controls, fields, menus, scroll surfaces, typography, and selection states.
+  Theme Lab remains the three-theme acceptance specimen; unfinished Aqua,
+  Snow Leopard, and Yosemite experiments are excluded from the release.
+- The promotional performance and 4K edits gain tighter deep trims, a
+  multi-device CMF Studio montage, and reusable Bilibili cover renderers.
+
+## Public Beta 1.0.31 - 2026-08-09
+
+- Aqua becomes the fourth release-ready Appearance beside System 6, Platinum,
+  and Liquid Glass, with Jaguar-era geometry, the current-application menu,
+  three-column Open dialogs, attached sheets, and Finder toolbars evidenced
+  from the period HIG and pinned canonical sources.
+- The Appearance registry gains an explicit recipe lineage (Platinum ← Classic,
+  Snow Leopard ← Aqua, Yosemite ← Liquid Glass), so each era owns only its
+  deltas; release gating keeps Snow Leopard and Yosemite out of the shipped
+  surface while retaining their recipes for later work.
+- Theme Lab becomes a multi-era acceptance surface with era-accurate fixtures
+  and SHA-256-pinned canonical references (Mac OS 9 Platinum menus, Jaguar
+  Aqua column browser, sheets, scrollbars, and choice states).
+- Draft Desk hardening lands: guided Write-a-Short-Draft onboarding with one
+  setup surface, Continue-last returns to the previous draft, broken or
+  missing model setups no longer block the desktop, and Markdown can be shared
+  or the app installed to the home screen from phones.
+- Draft Desk durability contracts expand: recovery messaging, persistence of
+  selection and scroll, and a broader executable test suite for onboarding,
+  boundaries, handoff, and working sessions.
+
+## Public Beta 1.0.32 - 2026-08-09
+
+- The release-supported Appearance surface narrows to three — System 6
+  (Classic), Platinum, and Liquid Glass. Aqua, Snow Leopard, and Yosemite
+  become research appearances: their recipes, references, and fixtures stay,
+  but they no longer appear in ordinary product UI, cannot be selected from
+  Control Panel or the Special menu, and never load from saved settings.
+- Existing saved experimental appearances migrate safely: `aqua` and
+  `snow-leopard` resolve to Classic, `yosemite` to Liquid Glass, and the
+  release `applyTheme` path refuses research themes entirely.
+- Theme Lab leaves the production runtime: its styles are no longer part of
+  the startup bundle, and it is a development/acceptance tool reached through
+  the dedicated verification commands instead of a product window.
+- Public verification joins the design system: the Turnstile flow now uses the
+  system finder-operation modal in all three appearances, all copy lives in
+  translations, and Use Website AI verifies the session before marking the
+  model ready instead of waiting for the first 401.
+- The public repository becomes self-sufficient: the snapshot carries
+  `docs/RELEASE-SMOKE.md` and the HIG docs, excludes tests that reference
+  private-only files, and runs a real `npm ci` → `build` → `test` →
+  `verify:checkjs`/`verify:version`/`verify:public` pass before anything is
+  pushed.
+- Continue now restores the real Working Session (project, application,
+  document, window, selection, scroll) before falling back to the last draft,
+  the most recent project document, or Project Hard Disk.
+- README presents the two mature writing paths — Draft Desk for a short piece,
+  Writing Studio for a longer project — and promises exactly three release
+  appearances.
+
+## Public Beta 1.0.33 - 2026-08-09
+
+- Draft Desk joins the standard command vocabulary: ⌘S / Ctrl+S flushes the
+  working body through a durable public Save API, ⌘W flushes pending or
+  Modified work before closing and never closes over a failed persist, and ⌘N
+  starts a fresh draft through the app's public New API. Edit commands
+  (Undo/Redo/Select All/Cut/Copy/Paste) stay native while a field has focus.
+- The Working Session gains one commit layer: high-frequency changes debounce
+  through scheduleWorkingSessionCommit, and project switches, Continue, and
+  window close flush through flushWorkingSessionCommit before ownership moves.
+- Model failures now map to a localized message plus an executable recovery
+  action (reconnect / choose a model / retry / check connection). Raw HTTP
+  codes and fetch internals stay in the console and System Status detail,
+  never in ordinary UI.
+- Public tests are layered: `tests/features/public/` holds public-safe
+  contracts for File Floppy, ClioStage, CMF Studio, Dictation, Menu Bar,
+  Streaming Output, Cover Glass, and ClioTalk, and `npm test` prints a public
+  product coverage summary so a public feature can never silently lose its
+  contract.
+- Warm resume: a refresh or same-session reopen skips the visual boot hold
+  (≤300ms) while new sessions and explicit Restart keep the full Happy Mac
+  ceremony; desk-state load, migration, and Working Session restore are never
+  skipped.
+- IME safety: a shared composition guard protects Enter-submit across Draft
+  Desk, ClioTalk, modals, Reader, Start Here, and the global shortcut router.
+- Accessibility closure: icon-only controls all carry accessible names, and a
+  contract test locks visible keyboard focus, disabled, and selected states
+  across the three release appearances.
+
+## Public Beta 1.0.34 - 2026-08-09
+
+- Draft Desk New never loses a draft: an unsaved draft is saved as a durable
+  Project Hard Disk document first ("Save & New", the default), a durable
+  draft updates its existing document, and a failed save aborts New with the
+  old draft intact. The fresh workspace gets a new identity — no stale
+  document, versions, composite, or protects.
+- Every asynchronous Draft Desk AI path is project-owned. Mingming rewrites,
+  adjustment composites, and Develop commit back to the project that started
+  them; a response that lands after a project switch is discarded and never
+  writes through the new project's UI.
+- Draft Desk model failures join the shared ModelUserErrors mapper: localized
+  message + next step in the status line, raw HTTP details only in the
+  console. Recovery settings route by route — local failures open Local AI
+  settings, cloud failures open Cloud settings — and the global Retry action
+  re-runs the actual failing owner (Draft Desk request, adjustment apply, or
+  ClioTalk submit) with a stale-project / stale-conversation guard.
+- Two Web instances can no longer overwrite each other: a single-writer lease
+  (BroadcastChannel with localStorage fallback) makes the second window
+  read-only, rejects its mutating storage transactions with
+  READ_ONLY_INSTANCE, and lets it take over explicitly — the old window loses
+  write access, cancels pending autosaves, and is prompted to reload or
+  continue read-only.
+- Boot failure is recoverable: the Sad Mac offers Retry, Start without
+  restoring windows (clears only the Working Session), and a minimal Recovery
+  panel that reports project storage / project count / Working Session / AI
+  configuration and can export a Project Backup, reset the Working Session,
+  or reset the AI connection. Boot has a re-entry guard and never offers a
+  destructive reset from this screen.
+- Warm resume no longer plays the boot chime (which the sound engine could
+  queue and fire seconds after a refresh); explicit Restart still clears the
+  warm flag and plays the full ceremony.
+- Draft Desk help copy now distinguishes the three save verbs: ⌘S keeps the
+  working draft in the project, Save to Project Hard Disk creates or updates
+  a reopenable document, and New preserves the current draft first.
+
+## Public Beta 1.0.35 - 2026-08-09
+
+- The single-writer lease is fenced, not trusted from memory. Acquire claims
+  then reads the stored lease back before becoming a writer; the heartbeat
+  refreshes only a lease still stored under this instance (never overwriting
+  a new owner); release deletes only its own lease; and every mutating
+  IndexedDB transaction re-verifies the stored owner via assertCanWrite.
+  Even two instances that briefly believe they own the lease cannot both pass
+  the write-time fence.
+- Takeover is a handshake: the requesting window asks the old writer to flush
+  Draft Desk, the Working Session, and desk state, and only becomes the
+  writer after a takeover-ready reply. A failed flush denies the takeover
+  with the old draft intact; unresponsive windows time out (never auto-force);
+  Force Take Over is reserved for stale owners or an explicit danger
+  confirmation.
+- BFCache and foreground resume reconcile the lease instead of trusting
+  pre-freeze memory: stored owner → writer, no owner → try acquire, other
+  fresh owner → read-only, never an automatic takeover.
+- Startup Recovery no longer depends on the desktop runtime: a new
+  recovery-storage layer reads projects, files, folders, scraps, trash, and
+  document revisions directly from IndexedDB, lists real recoverable
+  projects, and exports a verified per-project backup without mounting it.
+  Retry, Start without restoring windows, and Recovery's Retry Startup all
+  reload into a fresh runtime instead of re-running boot in a half-initialized
+  one.
+- Read-only is honest at the UI layer: the body advertises write mode, and
+  mutating surfaces (Draft Desk textarea and Save/New/Apply/Develop/Protect,
+  TeachText body, Finder rename/delete/new-folder, project create/import) are
+  disabled while reading, copying, sharing, downloading, and exporting stay
+  available.
+- Retry is truly async: one in-flight retry at a time (double-click safe),
+  callbacks are awaited, successes clear the owner, and rejections never
+  surface as unhandled promise errors.
+- Research appearances (Aqua, Snow Leopard, Yosemite) keep their recipes,
+  assets, canonical references, and Theme Lab support, but preview only
+  through ?debugTheme= on a development surface; public hosted deployments
+  ignore the parameter and always land on the saved release Appearance.
+
+## Public Beta 1.0.36 - 2026-08-09
+
+- Recovery and normal Export share one Project Backup assembler, so a backup
+  from the Startup Recovery panel is byte-identical in schema to a normal
+  Project Hard Disk backup. Recovery now reads Project CD items and
+  References from their real IndexedDB sources, attaches integrity, verifies
+  it, and refuses to download a bundle that does not validate.
+- Project Backup round-trips through the real validator: a complex project
+  (nested folders, alias files, scraps, references with chunks, Project CD,
+  trash, revision parent chains, Quick Draft state) exports, verifies,
+  remaps, and every relation still resolves after import — including the
+  Quick Draft projectDocId, which now remaps to the imported document.
+- Takeover is targeted at the stored writer by instance id; read-only
+  bystanders never answer. The old writer enters a handoff mode that freezes
+  new user edits while pending durable writes finish, re-checks the stored
+  lease before releasing, restores writer mode on a failed flush, and goes
+  read-only if the lease moved mid-flush.
+- Research previews default to deny: `?debugTheme=` works only on an explicit
+  development surface (development capability or loopback); an unresolved
+  deployment profile is never treated as development.
+- Write access is declarative: mutating surfaces carry `data-requires-write`
+  (frozen by the UI layer), the action router rejects mutating commands
+  before their handlers run, and IndexedDB remains the final storage fence.
+  Recovery export works from read-only instances because it never requests a
+  write transaction.
+- A reproducible Developer ID / Hardened Runtime / notarization / staple
+  pipeline ships as a script and credential contract. No signing identity is
+  present in this environment, so notarization is reported NOT EXECUTED and
+  the beta keeps its ad-hoc caveat until credentials are provided.
+
+## Public Beta 1.0.23 - 2026-08-08
+
+- UI batch: WindowShade, Control Strip, dictionary, fonts, and cloud-status
+  fixes; Soundscape gained an optional Apple Music link via the gamdl bridge.
+- Desktop Maintenance was deduplicated (one plan-based path), repairs became
+  typed and conservative, and pre-repair snapshots now persist before any
+  change. Release identity was split into version / build / sourceCommit with
+  runtime snapshotCommit + generatedAt.
+- Transferable lessons were documented for future agents.
+
+## Public Beta 1.0.24 - 2026-08-08
+
+- Compression Grain and the Quick Draft Adjustment Layers (mingming / luoluo /
+  hkrr) landed with corpus expansion and a core retrieval/state refactor.
+
+## Public Beta 1.0.25 - 2026-08-08
+
+- Compression Grain refinement and Finder Draft polish with expanded tests.
+- Document revisions became durable (awaited writes, rollback on failure);
+  backups carry revision history (v3 schema); store commits gained failure
+  semantics; a WebKit abort-timeout misclassification that silently left the
+  desk Busy was fixed.
+
+## Public Beta 1.0.26 - 2026-08-08
+
+- Durability & Mobile Completion: the Project CD burn contract is fully async
+  (explicit source options, droplet + download semantics split); StateStore
+  rollback works in real browsers; Project Hard Disk backup fails closed when
+  version history cannot be read; revision restore verifies persistence and
+  rolls back on a failed save.
+- A local `verify:ship` gate generates `dist/verification-report.json` and is
+  the release condition (hosted GitHub Actions availability remains an account
+  matter). Browser failure tests now cover the durability matrix end to end.
+- iPhone / WebKit can complete the full writing route and a black-box mobile
+  user journey ships.
+
+## Public Beta 1.0.27 - 2026-08-08
+
+- Quick Draft Completion: the window is now one writing application with
+  three states (Start / Write / Adjust), a durable workspace schema with
+  legacy migration, plain-language adjustment layers (switch + strength +
+  range + one-line description), immutable-sentinel protected ranges,
+  Original/Current/Difference compression grain, a single-object canvas that
+  persists its transform, versions, and explicit delivery actions (Save to
+  Project Hard Disk, Send to TeachText, Send to Review Desk, Export Markdown).
+- Non-destructive by contract: every layer reads the negative, AI passes can
+  never overwrite the working body, protected text that a model breaks fails
+  the composition instead of being guessed back into place, and Develop saves
+  a revision and asks before promoting a composite.
+- Project Hard Disk v2 backups are supported again (validate → verify
+  integrity → remap → import → export v3), with a real hand-written v2
+  fixture proving folder/file/alias/Scrapbook/reference/Project CD
+  relationships survive.
+- The release gate is fast and deterministic: `verify:ship` runs build,
+  feature tests, version consistency, checkJs, src typecheck, data, docs,
+  CSS, design, public tree, runtime syntax, smoke, release assets, and floppy
+  budget — no Playwright, no browser download, no WebKit. E2E is an optional
+  diagnostic and never blocks a release.
+- StateStore commit callbacks are audited statically: UI ephemeral state
+  (selection, activation, focus, toasts) may only change after a commit
+  resolves, and two existing violations were fixed.
+
+## Public Beta 1.0.19 - 2026-08-07
+
+- Faster startup: Markdown renderer, prompt files, and both dictionaries moved
+  out of the bootstrap; lazy loading now times out and degrades gracefully.
+- Default language follows the host system; English-first prompt bodies for
+  English environments.
+- Mobile and touch polish: cleaner phone workspace, double-tap hint, Finder
+  droplets under "Drop Tools".
+- Classic and Liquid Glass converge after a large cascade cleanup.
+
+## Public Beta 1.0.20 - 2026-08-07
+
+- CMF Studio: iPhone 17e and MacBook Neo screens keep their wallpaper instead
+  of blank white slabs; true-black trim is never a finish surface; Touch ID
+  wears the keycap finish.
+- MacBook Neo USDZ models are lighter — only referenced textures are packaged
+  (about 12.6 MB down to 5.2-6.7 MB).
+
+## Public Beta 1.0.21 - 2026-08-07
+
+- Copy overhaul: help balloons, System Help, and dialogs speak plainly;
+  technical terms are kept with parenthetical explanations; long sentences
+  were split; Chinese copy follows one consistent style.
+- Balloon Help extended and accessibility labels localized, with a new check
+  that keeps English and Chinese copy in sync.
+- The Safari local entry works end to end.
+- Classic and Liquid Glass materials were tokenized for icons, memory notes,
+  Soundscape surfaces, and Get Info.
+
+## Public Beta 1.0.22 - 2026-08-07
+
+- Control Strip became a full system part with its own module registry,
+  persistence, and desk integration.
+
+## Public Beta 1.0.17 - 2026-08-06
+
+- Control Strip groundwork (optional, off by default).
+- Finder Objects: aliases, clippings, Stationery Pad, droplets, finder labels
+  via menus, Get Info, and selection services.
+- DocMap split into eager entry + lazy map module; composer web-search switch
+  appears only when Advanced is on; Searcher carries DeepSeek citations;
+  system-prompt editor moved to Startup Disk > AI Prompts.
+
+## Public Beta 1.0.18 - 2026-08-06
+
+- DocMap opens the real tabbed surface (desktop icon waits for the lazy
+  module).
+- Finder labels only via Get Info or Claim Check suggestions; folder labels
+  never cascade.
+- Aliases to Scrapbook entries and project references resolve and open.
+- Clipping drag-back inserts text at the drop point; no-direct-quote and
+  read-only rules enforced.
+
+## Public Beta 1.0.13 - 2026-08-05
+
+- Meme captions and Endfield asks work with BYOK or the shared allowance,
+  behind one cloud preflight with a model allowlist.
+- Time Machine accepts bare domains and unblocks its web view; DocMap fit-view
+  dodges SideAsk and auto-refits.
+- Finder continuation arrows unified and centered; meme generator
+  popover/zoom/narrow layouts fixed; ClioStage scrollbar no longer covers the
+  title bar.
+- Balloon Help discoverable by default on hover devices, with a persisted
+  opt-out.
+
+## Public Beta 1.0.14 - 2026-08-05
+
+- CMF Studio USDZ export and previews on the public VPS.
+- Touch title-bar drags no longer pull down the page on iPad/iPhone.
+- Safari local entry copies the HTTP address and shows paste instructions.
+- Liquid Glass greys out Modern Font; Start Here adds Watch Promo Video;
+  subtitle translation and thesis drafts on public cloud routes.
+
+## Public Beta 1.0.15 - 2026-08-05
+
+- Balloon Help coverage expanded (File Floppy, Project CD, Question Sheet,
+  Review Desk, ask bar, cloud status dot, DocMap switcher).
+- Disabled buttons now explain why (meme download, Reader-to-ClioStage, DocMap
+  save).
+
+## Public Beta 1.0.16 - 2026-08-05
+
+- DeepSeek web search: cited live answers in Searcher, Review Desk claim
+  checks, Reader Find Related Sources, opt-in per-message ClioTalk search.
+- Subtitle translation on the structured-output endpoint; reasoning effort
+  auto-chosen by task type.
+- Shared cloud allowance reserved up front and settled against real token
+  usage.
+
+## Public Beta 1.0.11 - 2026-08-04
+
+- Source windows share one ask bar; ClioTalk rebuilt around clearer send/stop
+  controls.
+- Time Machine: complete captures over previews, reports in their own window,
+  named snapshots, DocMap beside the question.
+- One shared window-control family and System 6 polish: icon stroke weights,
+  hidden dialog buttons, brand naming, Finder icon view.
+- Soundscape player rebuilt in System 6 controls; beta packaging and web
+  deployment hardened.
+
+## Public Beta 1.0.12 - 2026-08-04
+
+This release makes the desktop quieter and more coherent while expanding the
+parts that benefit from visible, direct manipulation.
+
+- Finder navigation, menus, icons, dialogs, shared window controls, and
+  responsive layouts were tightened across Classic and Liquid Glass.
+- Soundscape became a fuller music workspace, with local audio, clearer queue
+  controls, repeat and shuffle modes, project links, saved moments, and a
+  synesthetic color view.
+- ClioTalk and the writing route shed redundant commands. Files, sources,
+  context, skills, checkpoints, and run receipts remain visible without asking
+  every surface to expose every possible action.
+- Public source publishing, website deployment, and the Apple silicon Mac beta
+  now share stronger version, privacy, asset, and release checks.
+
+Version `1.0.12`, build `20260804.2`.
+
+## First Public Beta 1.0.10 - 2026-07-29
+
+The first downloadable Apple silicon beta turned the product into something
+people could install and run.
+
+- Local-first writing route: Project Hard Disk, File Floppy, Question Sheet,
+  Outline, Section Drafts, TeachText, Review Desk, and Project CD as visible
+  desktop objects.
+- Bring your own model (LM Studio, Ollama, OpenAI-compatible); projects and
+  keys stay on the Mac.
+- Creative labs beside writing: Cover Glass, CMF Studio, DocMap, Soundscape,
+  and Time Machine.
+- Humanizer and System Integrity guardrails from the first public build.
+
+## System.css Fidelity And Theme Closure - 2026-06-16
+
+This pass tightened the Classic skin against the checked-in `system.css`
+reference while keeping Liquid Glass as a separate material treatment rather
+than an accidental victim of the retro work.
+
+- Classic scrollbars, title bars, close/resize buttons, checkboxes, radio
+  buttons, and select menus now use the local `system.css-reference` assets and
+  geometry more directly.
+- Title bars were settled on the five-stripe proportion that matches the app
+  icon, with centered captions and scaled System 6 controls.
+- Control Panel and related form controls now use the System 6 select harness,
+  rounded select corners, 12px radio art, and square checkbox art without
+  leaking those decisions into Liquid Glass.
+- Liquid Glass kept its own surface language: window chrome, menu chips, and
+  form controls retain glass material tokens, while the cloud model and project
+  switcher menu-bar buttons were pulled back from full capsules into a more
+  compact rounded-rectangle shape.
+- Desktop layering was pulled back onto named `--z-*` tokens so Classic
+  scrollbars, command popovers, dictation affordances, modals, boot/shutdown,
+  demo overlays, and system menus no longer compete through arbitrary values.
+- The final pass kept Apple menu popovers from being artificially clipped,
+  hid the contextual Dictation button during boot/shutdown and system-modal
+  states, and tightened the Liquid Glass desktop icon column so the Trash stays
+  visible at the standard desktop height.
+- Control Panel now has a tokenized maximum height and a scoped Classic settings
+  scroll lane, reducing the cut-off look without leaking retro scrollbar
+  treatment into Liquid Glass.
+- The CSS work stayed inside the source files and continued to pass the CSS
+  budget, floppy budget, smoke, and macOS app bundle gates.
+
+## Trust And Local Model Foundations - 1.0.10 / 2026-06-13
+
+AI System 6 is now a local-first writing desktop with a much stronger trust
+layer around source use, model voice, and creative output.
+
+- Cover Glass has grown from a Liquid Glass experiment into a full cover-making
+  tool: text and shape layers, solid title layers, iOS 27 and 9to5Mac presets,
+  vision-adaptive shadows and tint, background generation support, high
+  resolution export, and visible fallback when WebGL is unavailable.
+- The writing stack now has explicit Humanizer and System Integrity guardrails
+  so models preserve the writer's roughness, avoid generic AI voice, treat
+  source objects as data rather than instructions, and do not claim actions
+  such as saving, clipping, exporting, searching, or fact-checking unless the
+  app state proves them.
+- Shared Writing Tools prompts make Proofread, Rewrite, Summary, Key Points,
+  Tables, and Describe Change behave like direct text services while preserving
+  facts, names, dates, citations, and the user's voice.
+- Context Gist compresses project context into coarse cards, reveals matching
+  details only when needed, and falls back to raw excerpts for high-risk
+  source, fact-check, or reconstruction tasks.
+- Dictation and File Floppy have become more source-aware: Dictation Pad can
+  organize spoken intent for the target surface, while File Floppy accepts audio
+  recordings for local transcription and optional conservative repair.
+- Local model support now covers modern Qwen and Gemma 4 naming, task-aware
+  sampling defaults, no-thinking payloads, and local vision requests for image
+  OCR or writing-context notes.
+
+## Creative Labs And Onboarding — 2026-06-03 to 2026-06-11
+
+- Liquid Cover, later renamed Cover Glass, arrived as a lazy-loaded creative
+  tool beside the writing route rather than another mandatory writing step.
+- CMF Studio was added as a device color/material/finish workbench with server
+  support for USDZ preview and export.
+- The help and onboarding copy was rewritten to explain the first writing route
+  before listing tools.
+- DocMap gained a two-sided balanced layout and stronger print-to-PDF behavior,
+  making maps usable outside the browser.
+- Writing Flow and TeachText received layout and focus refinements so Question
+  Sheet, Outline, Section Drafts, Manuscript, and Review Desk feel connected.
+
+## Source-Centered Writing Matures — 2026-05-30 to 2026-05-31
+
+- The app version/build stamp moved to `1.0.2` and `20260530.0`.
+- Reader tabs were aligned with the TDI-style tab system and responsive mode.
+- Saved references became visible in Project Hard Disk and could be reopened in
+  Reader, strengthening the durable-source model.
+- Source citations, TeachText focus modes, Memory Cards icon redraws, and
+  Section Draft layout polish made the route easier to use for real writing.
+
+## Server Refactor And Release Gates — 2026-05-27 to 2026-05-29
+
+- Documentation was consolidated into `CLAUDE.md` as the single source of truth,
+  with `CLAUDE.zh-CN.md` as the human reference mirror.
+- The server was migrated from the root `server.js` into `apps/server/server.js` with a
+  route table, shared libraries, focused route handlers, importers, and
+  `npm --prefix src run typecheck` in the release gate.
+- `/api/version`, cloud routes, local model routes, import routes, Reader,
+  Searcher, Endfield, static serving, and import-text parity were moved into
+  the new structure.
+- CSS, design, data, docs, smoke, bundle-size, and packaging checks became part
+  of a stricter release verification story.
+- Prompts and Reader subtitle workflows were localized and hardened.
+
+## Cloud, Packaging, And Side Projects — 2026-05-24 to 2026-05-26
+
+- Cloud model support was added beside LM Studio, with provider status checks,
+  cloud model listing, cloud chat, cloud embeddings, context-window display,
+  password styling, and local repair fallback.
+- ClioTalk window behavior and model popovers were stabilized.
+- The package assets caught up with the app's import, OCR, PDF, MarkItDown, and
+  generated-bundle needs.
+- Endfield Terminal was integrated with a standalone archive prototype and
+  shared server routes.
+
+## Alpha Source Workflow — 2026-05-19 to 2026-05-23
+
+- First-run API setup, lighter Windows defaults, Windows LM Studio discovery,
+  direct loopback HTTP, and model discovery made local setup more approachable.
+- LM Studio context loading, RAG context budgeting, rich import formats, and
+  source controls turned File Floppy into a more serious context object.
+- Supported material expanded to rich documents, PDFs, images for OCR, video
+  sources, and SRT subtitles.
+- Study Studio, Scrapbook writing actions, Reader clipping, source registry
+  visibility, and DocMap made source work visible rather than hidden inside a
+  prompt.
+- Finder file management, project picture album, writing exports, Reader
+  fixes, local model performance work, and System 6 desktop affordances moved
+  the project from prototype to usable alpha.
+
+## First Version - 1.0.0 / 2026-05-18
+
+The initial version already contained the recognizable AI System 6 idea: a
+quiet Macintosh-inspired desktop for source-based writing.
+
+- The core route existed from the start: Project Hard Disk, File Floppy,
+  Question Sheet, Outline, Section Drafts, TeachText, Review Desk, and Project
+  CD.
+- Project Hard Disk and Reader workflows were stabilized on day one.
+- Writing Flow became quieter and more sequential, resisting the temptation to
+  expose every AI tool at once.
+- Assistant model status, TTFT/TPOT performance meters, contextual dictation
+  intent, multi-page Note Pad, Finder Get Info, Print to AI, Clipboard Window,
+  Export Disk, Import Utility, project backup export, and clearer menu
+  structure established the basic desktop vocabulary.

@@ -1,0 +1,81 @@
+/* Extensions (app/features/extensions-window.js): the window shell for skills,
+   memory, roles and the waiting list, built on demand, so this sheet travels
+   with its loader (styles.extensions.css) and never rides the boot. Every
+   selector is scoped to .extensions-*. The tab rail is the Control Panel's own
+   .control-chooser tablist, dressed by each era's --control-chooser-* tokens;
+   nothing here restyles it. */
+
+.extensions-window {
+  width: min(520px, calc(100vw - 32px));
+}
+
+.extensions-pane {
+  display: grid;
+  grid-template-columns: var(--control-settings-columns, minmax(0, 1fr));
+  gap: 10px;
+  min-width: 0;
+  max-height: calc(100vh - 88px);
+  overflow: auto;
+  padding: 12px 14px;
+}
+
+.extensions-pane > .control-chooser {
+  grid-area: var(--control-chooser-area, auto);
+}
+
+.extensions-panel {
+  min-width: 0;
+  min-height: 96px;
+}
+
+/* Skills, Memory and Waiting for you (app/features/extensions-library.js).
+   A file waiting for the writer has a dashed border, a live one a solid one. */
+.extensions-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.extensions-item {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--surface-rule, var(--ink));
+  background: var(--paper);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.extensions-item.is-pending {
+  border-style: dashed;
+}
+
+.extensions-item-body {
+  margin: 0;
+  max-height: 160px;
+  overflow: auto;
+  font: inherit;
+  font-family: monospace;
+  white-space: pre-wrap;
+}
+
+.extensions-item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.extensions-usage {
+  margin-top: 8px;
+  border-top: 1px dotted var(--surface-rule, var(--ink));
+}
+
+/* Yosemite's hairline and fill for utility surfaces; in this sheet, not the era
+   file, which rides the boot floppy. Other eras take the ink fallback. */
+body[data-lineage~="yosemite"] {
+  --surface-rule: rgba(0, 0, 0, 0.18);
+  --surface-fill: var(--selection-bg);
+}

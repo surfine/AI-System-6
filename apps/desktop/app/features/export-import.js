@@ -1,0 +1,1912 @@
+// Feature module: export-import.
+
+// Loaded before app.js as a classic script; shares the AI System 6 global scope.
+
+function compactStatusDetail(detail) {
+  return String(detail || "").replace(/\s+/g, " ").trim().slice(0, 160);
+}
+
+
+function getChatFileTitle() {
+  const firstUserMessage = conversation.find((item) => item.role === "user")?.content;
+  if (!firstUserMessage) {
+    // "Chat" is the object name and stays untranslated, as it does in "Chat
+    // file" everywhere else; the clock is not, and an empty locale list gave the
+    // Chinese desktop a browser-supplied "04:12 AM".
+    const clock = new Date().toLocaleTimeString(currentLanguage === "zh" ? "zh-CN" : "en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    return `Chat ${clock}`;
+  }
+
+  return firstUserMessage.replace(/\s+/g, " ").slice(0, 42);
+}
+
+function formatChatFile(file) {
+  // An Office document has no messages (and no text body to show).
+  return (file.messages || []).map((item) => `${item.role}: ${item.content}`).join("\n\n");
+}
+
+function formatChatFileMarkdown(file) {
+  return [
+    `# ${file.name}`,
+    "",
+    `- Chat ID: ${file.id}`,
+    `- Parent Chat ID: ${file.parentChatId || "root"}`,
+    `- Fork Message ID: ${file.forkMessageId || "none"}`,
+    `- Generation: ${Number(file.generation || 0)}`,
+    "",
+    ...file.messages.flatMap((item) => [
+      `## ${item.role === "user" ? t("you") : t("assistant")}`,
+      "",
+      item.content,
+      "",
+    ]),
+  ].join("\n").trim();
+}
+
+function sanitizeFilename(name) {
+  const cleaned = (name || "Untitled").replace(/[\\/:*?"<>|]+/g, "-").replace(/\s+/g, " ").trim();
+  return cleaned || "Untitled";
+}
+
+async function copyMarkdown(markdown) {
+  try {
+    await navigator.clipboard.writeText(markdown);
+    setClipboard(markdown, t("copy_markdown"));
+    setStatus(t("copied_markdown"));
+  } catch {
+    const helper = document.createElement("textarea");
+    helper.value = markdown;
+    helper.setAttribute("readonly", "");
+    helper.className = "visually-hidden";
+    document.body.append(helper);
+    helper.select();
+    const copied = document.execCommand("copy");
+    helper.remove();
+
+    if (!copied) {
+      setStatus(t("copy_failed"));
+      return;
+    }
+
+    setClipboard(markdown, t("copy_markdown"));
+    setStatus(t("copied_markdown"));
+  }
+}
+
+/**
+ * Download Markdown only — this never writes to the Project CD. Burning is a
+ * separate, awaited operation (burnMarkdownToProjectCd / the Export to
+ * Project CD action) so a download can never claim a CD write that did not
+ * happen.
+ */
+function saveMarkdownArtifact(markdown, name) {
+  return window.AISystem6WebPlatform.saveArtifact({
+    text: String(markdown || ""),
+    fileName: `${sanitizeFilename(name)}.md`,
+    mimeType: "text/markdown;charset=utf-8",
+  });
+}
+
+function downloadMarkdown(markdown, name) {
+  // [lane-honesty] saveArtifact returns false when it could not build a file
+  // (e.g. empty content) — the status must not claim "downloaded" over that.
+  // The answer is returned as well, because a caller that records a run has to
+  // report what happened rather than that it asked.
+  const saved = saveMarkdownArtifact(markdown, name);
+  setStatus(saved ? t("downloaded_markdown_only") : t("markdown_download_failed"));
+  return saved;
+}
+
+/**
+ * Burn Markdown to the Project CD. The pre-burn document revision is
+ * persisted first; a failed revision write aborts the burn and nothing is
+ * written. Returns the new Project CD item, or null when the burn failed.
+ */
+async function burnMarkdownToProjectCd(markdown, name, options = {}) {
+  return addProjectCdItem(markdown, name, options);
+}
+
+/**
+ * Compatibility helper for flows whose menu item historically meant both
+ * "download" and "write to Project CD". The burn happens FIRST and must
+ * succeed; only then is the file downloaded and the combined success status
+ * shown. A failed burn reports the failure and produces no download.
+ */
+async function downloadMarkdownAndBurnToProjectCd(markdown, name, options = {}) {
+  const item = await addProjectCdItem(markdown, name, options);
+  if (!item) return false;
+  // [lane-honesty] The burn already landed; if the download step itself
+  // fails, say so distinctly rather than claiming a download that did not
+  // happen.
+  const saved = saveMarkdownArtifact(markdown, name);
+  setStatus(saved ? t("downloaded_markdown_exported", item.title) : t("burned_markdown_download_failed", item.title));
+  return saved;
+}
+
+function downloadPlainMarkdown(markdown, name, statusKey = "downloaded_plain_markdown") {
+  const saved = saveMarkdownArtifact(markdown, name);
+  setStatus(saved ? t(statusKey) : t("markdown_download_failed"));
+}
+
+function projectCdItemArtifact(item) {
+  const type = item?.format || "text/markdown";
+  const title = item?.title || "Project CD Item.md";
+  return {
+    text: item?.body || "",
+    fileName: sanitizeFilename(title).replace(/\.md$/i, type === "text/html" ? ".html" : ".md"),
+    mimeType: `${type};charset=utf-8`,
+  };
+}
+
+function downloadProjectCdItem(item) {
+  if (!item) return;
+  // [lane-honesty] Same guard as the other download helpers above.
+  const saved = window.AISystem6WebPlatform.saveArtifact(projectCdItemArtifact(item));
+  if (!saved) {
+    setStatus(t("markdown_download_failed"));
+    return;
+  }
+  setStatus((item.format || "text/markdown") === "text/html" ? t("downloaded_html_file") : t("downloaded_plain_markdown"));
+}
+
+function downloadJsonFile(data, name) {
+  return window.AISystem6WebPlatform.saveArtifact({
+    text: JSON.stringify(data, null, 2),
+    fileName: `${sanitizeFilename(name)}.json`,
+    mimeType: "application/json;charset=utf-8",
+  });
+}
+
+function countMarkdownWords(text) {
+  const source = String(text || "");
+  const cjk = source.match(/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu)?.length || 0;
+  const latin = source
+    .replace(/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu, " ")
+    .match(/[\p{L}\p{N}]+/gu)?.length || 0;
+  return cjk + latin;
+}
+
+/** Raised when a backup's required data cannot be read completely. */
+class ProjectBackupError extends Error {
+  constructor(message) {
+    super(message);
+    this.code = "BACKUP_READ_FAILED";
+    this.name = "ProjectBackupError";
+  }
+}
+
+async function runProjectBackupExport(name, args) {
+  const finish = window.AISystem6TinyShell?.beginFileActivity();
+  try {
+    if (!window.AISystem6ProjectBackupExportData) await ensureProjectBackupExportData();
+    return await window.AISystem6ProjectBackupExportData[name](...args);
+  } finally { finish?.(); }
+}
+async function buildProjectDiskExport(...args) { return runProjectBackupExport("buildProjectDiskExport", args); }
+async function collectProjectDocumentRevisions(...args) { return runProjectBackupExport("collectProjectDocumentRevisions", args); }
+async function collectProjectDarkroomRecords(...args) { return runProjectBackupExport("collectProjectDarkroomRecords", args); }
+async function readyProjectDiskBackup(...args) { return runProjectBackupExport("readyProjectDiskBackup", args); }
+async function exportActiveProjectDisk(...args) { return runProjectBackupExport("exportActiveProjectDisk", args); }
+async function shareActiveProjectDisk(...args) { return runProjectBackupExport("shareActiveProjectDisk", args); }
+
+function openProjectBackupPanel() {
+  openWindow("importUtility");
+  const backupSection = document.querySelector(".backup-preview-section");
+  if (backupSection) {
+    backupSection.open = true;
+    // The rows, not the backups: choosing a backup file is when the ready-made
+    // disks are worth showing, and that list is ~20 KB rather than 3.7 MB.
+    ensureSharedProjectDisksIndexModule?.();
+  }
+  projectBackupFileButton?.focus();
+}
+
+function projectCdItemReviewRecorded(item) {
+  return item?.metadata?.reviewDeskComplete === true || item?.metadata?.workflowState === "final";
+}
+
+// Exporting an item whose review never reached the desk is not a loss: the
+// manuscript stays where it is and the Project CD stays editable. The note is
+// worth keeping, so it rides the notification list instead of stopping the
+// export the writer just asked for.
+function noteProjectCdExportReviewState(item) {
+  if (!item) return;
+  if (item.sourceKind !== "markdown" || projectCdItemReviewRecorded(item)) return;
+  pushSystemNotification(t("project_cd_review_reminder", item.title), { state: "running" });
+}
+
+async function downloadSelectedProjectCdItem() {
+  const item = getSelectedProjectCdItem();
+  if (!item) {
+    setStatus(t("select_find_path_first"));
+    return false;
+  }
+  noteProjectCdExportReviewState(item);
+  downloadProjectCdItem(item);
+  return true;
+}
+
+function copySelectedProjectCdMarkdown() {
+  const item = getSelectedProjectCdItem();
+  if (!item) {
+    setStatus(t("select_find_path_first"));
+    return false;
+  }
+  copyMarkdown(item.body || "");
+  return true;
+}
+
+async function shareSelectedProjectCdMarkdown() {
+  const item = getSelectedProjectCdItem();
+  if (!item) {
+    setStatus(t("select_find_path_first"));
+    return false;
+  }
+  try {
+    // The Project CD holds Markdown and HTML; both leave through the one
+    // artifact exit, which shares the real file when the platform can.
+    const result = await window.AISystem6WebPlatform.shareArtifact({
+      title: item.title || t("project_cd"),
+      ...projectCdItemArtifact(item),
+      fallback: "text",
+    });
+    if (result.shared) setStatus(t("share_markdown_done"), { notify: false });
+    return result.shared;
+  } catch (error) {
+    console.warn("Project CD share failed.", error);
+    setStatus(t("share_markdown_failed"));
+    return false;
+  }
+}
+
+async function printSelectedProjectCdItem() {
+  const item = getSelectedProjectCdItem();
+  if (!item) {
+    setStatus(t("select_find_path_first"));
+    return false;
+  }
+  noteProjectCdExportReviewState(item);
+  return printSelectedProjectCdPdf();
+}
+
+async function addProjectCdItem(markdown, name, options = {}) {
+  const mountedProject = getActiveProject();
+  if (!mountedProject) {
+    setStatus(t("no_project_mounted"));
+    return null;
+  }
+
+  // Everything this burn needs is named now, before anything is awaited: the
+  // project it belongs to, the document it protects, and the CD item it means
+  // to replace. The burn waits for the pre-burn version history - a real write
+  // with a real delay - and the desk is free to move under it while it waits.
+  const projectId = String(mountedProject.id);
+  const title = `${sanitizeFilename(name)}.md`;
+  // The full record is assembled ONCE from the explicit options; callers must
+  // not patch sourceDocumentId etc. onto the result afterwards.
+  const sourceDocumentId = String(options.sourceDocumentId ?? activeTextFileId ?? "");
+  const sourceKind = String(options.sourceKind || "markdown");
+  // The overwrite is a request against ONE record as it stood when the request
+  // was made — its id, its name, and the content the writer meant to replace.
+  // An id alone is not enough: the record can be edited while this burn waits,
+  // and a file name alone is not enough: that name can be taken by a different
+  // file in the meantime. Neither is an array position, which another burn can
+  // move out from under this one. All three are captured now and re-checked
+  // inside the commit queue, where the draft is the desk as it really is.
+  const targetAtRequest = projectCdItems.find(
+    (entry) => String(entry?.projectId) === projectId && entry?.title === title
+  ) || null;
+  const requestedId = String(targetAtRequest?.id || "");
+  const requestedBody = String(targetAtRequest?.body ?? "");
+  const now = new Date().toISOString();
+  const item = {
+    id: requestedId || crypto.randomUUID(),
+    projectId,
+    title,
+    format: String(options.format || "text/markdown"),
+    body: markdown,
+    sourceDocumentId,
+    sourceKind,
+    claimCheckId: String(options.claimCheckId || ""),
+    burnedAt: now,
+    updatedAt: now,
+    languageMode: /Bilingual/i.test(String(name || "")) ? "bilingual" : "original",
+    metadata: {
+      sourceName: name,
+      wordCount: countMarkdownWords(markdown),
+      workflowState: typeof teachTextWorkflowState === "string" ? teachTextWorkflowState : "",
+      reviewDeskComplete: typeof teachTextWorkflowState === "string" && teachTextWorkflowState === "final",
+    },
+  };
+
+  // The burn overwrites the CD deliverable; protect the source first. If the
+  // revision cannot be persisted, nothing is burned.
+  if (typeof createDocumentRevision === "function") {
+    try {
+      await createDocumentRevision({
+        projectId,
+        documentId: sourceDocumentId || activeTextFileId || "",
+        body: markdown,
+        origin: "system",
+        operation: "project-cd",
+      });
+    } catch (error) {
+      setStatus(currentLanguage === "zh"
+        ? "无法保存烧录前的版本历史，未写入项目光盘。"
+        : "Could not save the pre-burn version history; nothing was written to the Project CD.");
+      return null;
+    }
+  }
+
+  /** @type {any} */
+  let stored = null;
+  let refused = "";
+  await window.AISystem6StateStores?.projects.commit((draft) => {
+    options.validateBeforeCommit?.();
+    if (!draft.projects.some((project) => String(project?.id) === projectId)) {
+      // The project this burn belonged to is gone. Writing its CD item anyway
+      // would file a deliverable under a disk the writer no longer has.
+      refused = t("no_project_mounted");
+      return;
+    }
+    const holdsName = draft.projectCdItems.find(
+      (entry) => String(entry?.projectId) === projectId && entry?.title === title
+    ) || null;
+
+    if (requestedId) {
+      // The burn named one file. It is that file only while it is still the same
+      // record — same project, same name, same body — and still the one holding
+      // the name. A name is not an identity, and an id whose body changed is a
+      // different deliverable than the writer chose; either way the burn is
+      // cancelled rather than written onto something it never named.
+      const target = draft.projectCdItems.find((entry) => String(entry?.id) === requestedId) || null;
+      if (
+        !target
+        || String(target.projectId) !== projectId
+        || String(target.title || "") !== title
+        || String(target.body ?? "") !== requestedBody
+        || (holdsName && holdsName !== target)
+      ) {
+        refused = t("project_cd_burn_conflict");
+        return;
+      }
+      stored = { ...item, id: target.id, burnedAt: target.burnedAt || item.burnedAt };
+      draft.projectCdItems.splice(draft.projectCdItems.indexOf(target), 1);
+    } else {
+      // Nothing held this name when the burn started. A file that holds it now
+      // arrived while the burn waited: a conflict, not an invitation to write.
+      if (holdsName) {
+        refused = t("project_cd_burn_conflict");
+        return;
+      }
+      // The reserved id may only be used while nothing has taken it.
+      const reservedIsFree = !draft.projectCdItems.some((entry) => entry?.id === item.id);
+      stored = reservedIsFree ? item : { ...item, id: crypto.randomUUID() };
+    }
+    draft.projectCdItems.unshift(stored);
+    options.updateDraft?.(draft, stored);
+  });
+  if (refused || !stored) {
+    // A refusal is not a burn: the caller must not report one, and the caller
+    // that also downloads checks this null before it does. The version history
+    // already written stands; the CD still holds what it held.
+    setStatus(refused || t("no_project_mounted"));
+    return null;
+  }
+  selectedProjectCdItemId = stored.id;
+  selectedProjectCdItemIds.clear();
+  selectedProjectCdItemIds.add(stored.id);
+  renderProjectCd();
+  return stored;
+}
+
+function activeTeachTextCanBurn() {
+  if (typeof activeTeachTextAllows === "function" && activeTeachTextAllows("projectCdExport")) return true;
+  // The drafts-to-review transition lands on the FINALIZED manuscript. On a
+  // phone the tab/role bookkeeping can lag behind the workflow state, so a
+  // Final workflow with a non-empty body is still the burn source — the
+  // export must not be locked out of the very surface the route just opened.
+  return typeof teachTextWorkflowState !== "undefined"
+    && teachTextWorkflowState === "final"
+    && String(teachTextBodyInput?.value || "").trim().length > 0;
+}
+
+function projectCdBurnIsAvailable() {
+  if (!getActiveProject()) return false;
+  const body = String(teachTextBodyInput?.value || "").trim();
+  if (!body) return false;
+  const isSlidesMarkdown = typeof readerHasMarpFrontmatter === "function"
+    && readerHasMarpFrontmatter(body);
+  const isManuscript = activeTeachTextCanBurn();
+  return isManuscript || isSlidesMarkdown;
+}
+
+function syncProjectCdBurnActionVisibility(visibleItems = getProjectCdItems()) {
+  if (!spineBurnProjectCdButtonEl) return;
+  const burned = visibleItems.length > 0;
+  const ready = !burned && projectCdBurnIsAvailable();
+  // Grey stop: the writer is told to mark the manuscript final first, not told
+  // the piece is ready. The hover copy above describes ready/burned; the
+  // one-tap reason is the locked sentence only while the stop is actually grey.
+  const stopBlocked = !burned && !ready;
+  if (typeof markGrayAffordance === "function") {
+    markGrayAffordance(spineBurnProjectCdButtonEl, stopBlocked, "balloon_project_cd_stop_locked");
+  } else {
+    spineBurnProjectCdButtonEl.disabled = stopBlocked;
+    if (stopBlocked) spineBurnProjectCdButtonEl.dataset.balloonHelpDisabled = "balloon_project_cd_stop_locked";
+    else delete spineBurnProjectCdButtonEl.dataset.balloonHelpDisabled;
+  }
+  spineBurnProjectCdButtonEl.dataset.action = burned ? "open-project-cd" : "export-teachtext-project-cd";
+  spineBurnProjectCdButtonEl.dataset.balloonHelp = burned
+    ? "balloon_project_cd_stop_burned"
+    : "balloon_project_cd_stop_ready";
+  const label = spineBurnProjectCdButtonEl.querySelector("#spine-project-cd-label");
+  if (label) {
+    // The stop carries the object name; only the ready state shows the verb.
+    // dataset.i18n moves with the text so a language switch keeps the state.
+    const labelKey = ready ? "burn_project_cd" : "project_cd";
+    label.dataset.i18n = labelKey;
+    label.textContent = t(labelKey);
+  }
+}
+
+function renderProjectCd() {
+  if (!projectCdGridEl) return;
+  const visibleItems = getProjectCdItems();
+  const hasVisibleItems = visibleItems.length > 0;
+  if (desktopProjectCdEl) desktopProjectCdEl.hidden = !hasVisibleItems;
+  syncProjectCdBurnActionVisibility(visibleItems);
+  desktopProjectCdEl?.setAttribute("aria-hidden", String(!hasVisibleItems));
+  desktopProjectCdEl?.setAttribute("title", t("project_cd_items_count", visibleItems.length));
+  const visibleIds = new Set(visibleItems.map((item) => item.id));
+  Array.from(selectedProjectCdItemIds).forEach((id) => {
+    if (!visibleIds.has(id)) selectedProjectCdItemIds.delete(id);
+  });
+  if (!visibleItems.some((item) => item.id === selectedProjectCdItemId)) {
+    selectedProjectCdItemId = visibleItems[0]?.id || null;
+  }
+  if (selectedProjectCdItemId && !selectedProjectCdItemIds.size) selectedProjectCdItemIds.add(selectedProjectCdItemId);
+  syncProjectCdSelectionControls(visibleItems);
+  projectCdCountEl.textContent = t("project_cd_items_count", visibleItems.length);
+  projectCdGridEl.replaceChildren();
+
+  if (!visibleItems.length) {
+    // Goal #2/#6: blank Project CD is a next-step object (like Project Hard
+    // Disk empty → Add…), not a dead note. TeachText is where a burn starts.
+    const empty = document.createElement("button");
+    empty.type = "button";
+    empty.className = "finder-empty-object project-empty-object export-empty-note";
+    empty.innerHTML = `
+      <span class="mini-icon export-empty-icon"></span>
+      <b>${escapeHtml(t("export_empty_title"))}</b>
+      <small>${escapeHtml(t("export_empty_body"))}</small>
+    `;
+    empty.addEventListener("click", () => handleAction("open-teachtext"));
+    projectCdGridEl.append(empty);
+    return;
+  }
+
+  visibleItems.forEach((item) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.draggable = true;
+    button.dataset.dragType = "project-cd-item";
+    button.dataset.id = item.id;
+    button.dataset.projectId = item.projectId || activeProjectId || "";
+    button.dataset.projectCdItemId = item.id;
+    button.className = `finder-item export-item${selectedProjectCdItemIds.has(item.id) ? " is-selected" : ""}`;
+    const updatedAt = new Date(item.updatedAt || item.burnedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const bytes = new Blob([item.body || ""]).size;
+    button.title = t("project_cd_open_hint");
+    button.innerHTML = `
+      <span class="mini-icon doc-icon"></span>
+      <span>${escapeHtml(item.title)}</span>
+      <small>${escapeHtml(t("export_item_meta", updatedAt, bytes))}</small>
+    `;
+    button.addEventListener("click", (event) => {
+      const alreadySelected = selectedProjectCdItemId === item.id
+        && selectedProjectCdItemIds.has(item.id);
+      if (
+        alreadySelected
+        && !event.metaKey && !event.ctrlKey && !event.shiftKey
+        && typeof window.matchMedia === "function"
+        && !window.matchMedia("(hover: hover) and (pointer: fine)").matches
+      ) {
+        openProjectCdItemInReader(item);
+        return;
+      }
+      if (event.shiftKey && selectedProjectCdItemId) {
+        const anchorIndex = visibleItems.findIndex((entry) => entry.id === selectedProjectCdItemId);
+        const itemIndex = visibleItems.findIndex((entry) => entry.id === item.id);
+        selectedProjectCdItemIds.clear();
+        if (anchorIndex >= 0 && itemIndex >= 0) {
+          const start = Math.min(anchorIndex, itemIndex);
+          const end = Math.max(anchorIndex, itemIndex);
+          visibleItems.slice(start, end + 1).forEach((entry) => selectedProjectCdItemIds.add(entry.id));
+        } else {
+          selectedProjectCdItemIds.add(item.id);
+        }
+      } else if (event.metaKey || event.ctrlKey) {
+        if (selectedProjectCdItemIds.has(item.id) && selectedProjectCdItemIds.size > 1) {
+          selectedProjectCdItemIds.delete(item.id);
+        } else {
+          selectedProjectCdItemIds.add(item.id);
+        }
+      } else {
+        selectedProjectCdItemIds.clear();
+        selectedProjectCdItemIds.add(item.id);
+      }
+      selectedProjectCdItemId = selectedProjectCdItemIds.has(item.id) ? item.id : selectedProjectCdItemIds.values().next().value || null;
+      syncProjectCdSelectionControls(visibleItems);
+      if (!event.metaKey && !event.ctrlKey && !event.shiftKey) {
+        revealSelectOpenTapHint(button, { detail: event.detail });
+      }
+    });
+    button.addEventListener("dblclick", () => openProjectCdItemInReader(item));
+    projectCdGridEl.append(button);
+  });
+}
+
+function syncProjectCdSelectionControls(visibleItems = getProjectCdItems()) {
+  const hasSelectedItem = !!selectedProjectCdItemId;
+  [
+    downloadProjectCdButton,
+    printProjectCdPdfButton,
+    document.querySelector("[data-action='copy-project-cd-markdown']"),
+    document.querySelector("[data-action='share-project-cd-markdown']"),
+  ].forEach((button) => {
+    if (!button) return;
+    const blocked = !hasSelectedItem;
+    if (typeof markGrayAffordance === "function") {
+      markGrayAffordance(button, blocked, "balloon_project_cd_select_first");
+    } else {
+      button.disabled = blocked;
+      if (blocked) button.dataset.balloonHelpDisabled = "balloon_project_cd_select_first";
+      else delete button.dataset.balloonHelpDisabled;
+    }
+    button.classList.toggle("is-disabled", blocked);
+  });
+  if (clearProjectCdButton) {
+    const blocked = visibleItems.length === 0;
+    if (typeof markGrayAffordance === "function") {
+      markGrayAffordance(clearProjectCdButton, blocked, "balloon_project_cd_nothing_to_clear");
+    } else {
+      clearProjectCdButton.disabled = blocked;
+      if (blocked) clearProjectCdButton.dataset.balloonHelpDisabled = "balloon_project_cd_nothing_to_clear";
+      else delete clearProjectCdButton.dataset.balloonHelpDisabled;
+    }
+    clearProjectCdButton.classList.toggle("is-disabled", blocked);
+  }
+  projectCdGridEl?.querySelectorAll("[data-project-cd-item-id]").forEach((button) => {
+    button.classList.toggle("is-selected", selectedProjectCdItemIds.has(button.dataset.projectCdItemId));
+  });
+  syncProjectCdSlidesHtmlButton();
+  updateMenuState();
+}
+
+function createProjectCdReaderDocumentTab(item) {
+  if (!item) return null;
+  return upsertDocumentTab("reader", "export_preview", {
+    title: item.title || "Project CD Item.md",
+    backing: { type: "projectCd", id: item.id },
+    state: {
+      kind: "projectCd",
+      title: item.title || "Project CD Item.md",
+      text: item.body || "",
+      source: t("project_cd"),
+      fileName: item.title || "",
+    },
+  });
+}
+
+function openProjectCdItemInReader(item) {
+  if (!item?.body?.trim()) return;
+  const tab = createProjectCdReaderDocumentTab(item);
+  if (tab && typeof openReaderDocumentTab === "function") {
+    openReaderDocumentTab(tab.id);
+  } else {
+    openReaderDocument({
+      kind: "projectCd",
+      title: item.title || "Project CD Item.md",
+      text: item.body || "",
+      source: t("project_cd"),
+      fileName: item.title || "",
+    });
+  }
+  openWindow("reader");
+}
+
+function getSelectedProjectCdItems() {
+  const visibleItems = getProjectCdItems();
+  if (!selectedProjectCdItemIds.size && selectedProjectCdItemId) selectedProjectCdItemIds.add(selectedProjectCdItemId);
+  const selected = visibleItems.filter((item) => selectedProjectCdItemIds.has(item.id));
+  return selected.length ? selected : visibleItems.filter((item) => item.id === selectedProjectCdItemId);
+}
+
+function selectedProjectCdItemIsSlidesMarkdown() {
+  const item = getSelectedProjectCdItem();
+  return !!item && item.format !== "text/html" && typeof readerHasMarpFrontmatter === "function" && readerHasMarpFrontmatter(item.body || "");
+}
+
+function syncProjectCdSlidesHtmlButton() {
+  const row = document.querySelector(".project-cd-pane > .button-row");
+  if (!row) return;
+  let openButton = document.querySelector("#open-project-cd-clio-stage");
+  if (!openButton) {
+    openButton = document.createElement("button");
+    openButton.className = "btn";
+    openButton.type = "button";
+    openButton.id = "open-project-cd-clio-stage";
+    openButton.textContent = t("open_in_clio_stage");
+    openButton.addEventListener("click", openSelectedProjectCdInClioStage);
+    row.insertBefore(openButton, clearProjectCdButton || null);
+  }
+  const enabled = selectedProjectCdItemIsSlidesMarkdown();
+  openButton.hidden = !enabled;
+  openButton.disabled = !enabled;
+}
+
+async function openSelectedProjectCdInClioStage() {
+  const item = getSelectedProjectCdItem();
+  if (!item || !selectedProjectCdItemIsSlidesMarkdown()) return;
+  await openClioStageApp({
+    title: item.title || "slides.md",
+    markdown: item.body || "",
+    sourceKind: "projectCd",
+    sourceItemId: item.id,
+  });
+}
+
+function getSelectedProjectCdItem() {
+  const visibleItems = getProjectCdItems();
+  return visibleItems.find((item) => item.id === selectedProjectCdItemId) || visibleItems[0] || null;
+}
+
+function attachSelectedProjectCdToAssistantContext() {
+  const item = getSelectedProjectCdItem();
+  const body = String(item?.body || "").trim();
+  if (!item || !body) {
+    setStatus(t("select_find_path_first"));
+    return null;
+  }
+
+  let scrap = scraps.find((entry) =>
+    entry.projectId === activeProjectId
+    && entry.source?.type === "project-cd"
+    && entry.source?.projectCdItemId === item.id
+  );
+  if (!scrap) {
+    scrap = createScrap(`Project CD Context: ${item.title || t("project_cd")}`, [
+      `Project CD item: ${item.title || t("project_cd")}`,
+      "",
+      body,
+      "",
+      "---",
+      `Source: ${t("project_cd")}`,
+      `Project CD item id: ${item.id || ""}`,
+      `Time: ${new Date().toLocaleString()}`,
+    ].join("\n"), {
+      reveal: false,
+      source: {
+        type: "project-cd",
+        title: item.title || t("project_cd"),
+        projectCdItemId: item.id || "",
+      },
+    });
+    if (scrap) {
+      scrap.tags = [...new Set(["project-cd", "final-manuscript", ...(scrap.tags || [])])];
+      renderScraps();
+      saveDeskState();
+    }
+  }
+  if (!scrap) return null;
+
+  attachedClipIds.add(scrap.id);
+  renderAttachedClips();
+  openWindow("assistant");
+  return scrap;
+}
+
+function moveProjectCdItemsToTrash(ids = []) {
+  const idSet = new Set(ids.filter(Boolean));
+  if (!idSet.size && selectedProjectCdItemId) idSet.add(selectedProjectCdItemId);
+  const moved = [];
+  for (let index = projectCdItems.length - 1; index >= 0; index -= 1) {
+    const item = projectCdItems[index];
+    if (!isInActiveProject(item) || !idSet.has(item.id)) continue;
+    projectCdItems.splice(index, 1);
+    moved.unshift(item);
+    trashItems.unshift({
+      id: crypto.randomUUID(),
+      projectId: activeProjectId,
+      title: item.title,
+      body: item.body || "",
+      deletedAt: new Date().toISOString(),
+      originalType: "projectCd",
+      originalData: structuredClone(item),
+      originalPath: [projectDisplayName(getActiveProject()), t("project_cd")].filter(Boolean).join(" / "),
+    });
+  }
+  AISystem6DeskUndo.trashed(trashItems.slice(0, moved.length));
+  selectedProjectCdItemIds.clear();
+  selectedProjectCdItemId = getProjectCdItems()[0]?.id || null;
+  if (selectedProjectCdItemId) selectedProjectCdItemIds.add(selectedProjectCdItemId);
+  purgeContextForTrashedItems(moved.map((item) => ({ type: "projectCd", id: item.id, item })));
+  renderProjectCd();
+  renderTrash();
+  saveDeskState();
+  if (moved.length) {
+    playSystemSound("trash");
+    setStatus(t("project_cd_trashed", moved.length));
+  }
+}
+
+function clearProjectCd() {
+  for (let index = projectCdItems.length - 1; index >= 0; index -= 1) {
+    if (isInActiveProject(projectCdItems[index])) {
+      projectCdItems.splice(index, 1);
+    }
+  }
+  selectedProjectCdItemId = null;
+  selectedProjectCdItemIds.clear();
+  renderProjectCd();
+  setStatus(t("project_cd_cleared"));
+  saveDeskState();
+}
+
+async function refreshImporterStatus() {
+  if (!importerStatusEl) return;
+  importerStatusEl.classList.remove("is-hidden");
+  importerStatusEl.textContent = t("importer_status_checking");
+  importerStatusEl.dataset.state = "checking";
+
+  try {
+    const capabilities = await getDeploymentCapabilities();
+    if (capabilities.public_deployment) {
+      importerStatusEl.textContent = t("importer_status_browser");
+      importerStatusEl.dataset.state = "ready";
+      importerStatusEl.title = t("importer_status_browser_detail");
+      if (ocrEngineInput) {
+        ocrEngineInput.value = "paddle";
+        ocrEngineInput.disabled = true;
+        refreshSystemSelectControl(ocrEngineInput);
+      }
+      if (importerModeInput) {
+        importerModeInput.value = "builtin";
+        importerModeInput.disabled = true;
+        refreshSystemSelectControl(importerModeInput);
+      }
+      return;
+    }
+    if (!window.AISystem6Capabilities?.capabilityAvailable?.("importer.remote")) {
+      importerStatusEl.textContent = t("importer_status_browser");
+      importerStatusEl.dataset.state = "ready";
+      importerStatusEl.title = t("importer_status_browser_detail");
+      if (ocrEngineInput) {
+        ocrEngineInput.value = "paddle";
+        ocrEngineInput.disabled = true;
+        refreshSystemSelectControl(ocrEngineInput);
+      }
+      if (importerModeInput) {
+        importerModeInput.value = "builtin";
+        importerModeInput.disabled = true;
+        refreshSystemSelectControl(importerModeInput);
+      }
+      return;
+    }
+    const response = await window.AISystem6Capabilities.requestService("importer.remote", {
+      path: "/api/importer-status",
+    });
+    const status = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(status.detail || response.statusText);
+
+    if (status.markitdown) {
+      importerStatusEl.textContent = t("importer_status_ready", status.python || "python3");
+      importerStatusEl.dataset.state = "ready";
+    } else if (status.enabled === false) {
+      importerStatusEl.textContent = t("importer_status_disabled");
+      importerStatusEl.dataset.state = "disabled";
+    } else {
+      const detail = compactStatusDetail(status.detail);
+      importerStatusEl.textContent = detail
+        ? t("importer_status_unavailable_detail", detail)
+        : t("importer_status_unavailable");
+      importerStatusEl.dataset.state = "unavailable";
+      importerStatusEl.title = [
+        status.detail || "",
+        status.python ? `Python: ${status.python}` : "",
+      ].filter(Boolean).join("\n");
+    }
+  } catch (error) {
+    const detail = compactStatusDetail(error.message || String(error));
+    importerStatusEl.textContent = detail
+      ? t("importer_status_unavailable_detail", detail)
+      : t("importer_status_unavailable");
+    importerStatusEl.dataset.state = "unavailable";
+    importerStatusEl.title = error.message || String(error);
+  }
+}
+
+function isSupportedImportFile(file) {
+  return /\.(txt|text|srt|rtf|md|mdx|markdown|mdown|mkd|mkdn|csv|tsv|json|js|ts|htm|html|xhtml|webarchive|css|xml|log|pdf|docx|doc|pages|numbers|key|epub|pptx|xlsx|odt|ods|odp|ipynb|zip|gz|eml|mbox|mht|mhtml|svg|bmp|jpe?g|png|webp|heic|heif|gif|tiff?)$/i.test(file.name || "")
+    || isAudioImportFile(file);
+}
+
+function isPlainTextImportFile(file) {
+  return /\.(txt|text|srt|md|mdx|markdown|mdown|mkd|mkdn|csv|tsv|json|js|ts|htm|html|xhtml|css|xml|log)$/i.test(file.name || "");
+}
+
+function isAudioImportFile(file) {
+  return /\.(aac|aif|aiff|amr|caf|flac|m4a|mp3|oga|ogg|opus|wav|webm)$/i.test(file.name || "")
+    || /^audio\//i.test(file.type || "");
+}
+
+function importTranscriptionLanguage() {
+  return currentLanguage === "zh" ? "zh-CN" : "en-US";
+}
+
+const importPayloadMaxRawBytes = 60 * 1024 * 1024;
+const pdfJsBrowserPath = "/app/vendor/pdf.min.js";
+const pdfJsWorkerPath = "/app/vendor/pdf.worker.min.js";
+let pdfJsBrowserPromise = null;
+
+async function getDeploymentCapabilities() {
+  if (window.AISystem6PublicAccess?.getCapabilities) {
+    return window.AISystem6PublicAccess.getCapabilities();
+  }
+  return {
+    deployment_profile: "local",
+    public_deployment: false,
+    features: {},
+  };
+}
+
+function stripLeadingBom(value) {
+  return String(value || "").replace(/^\uFEFF/, "");
+}
+
+function decodeUtf16BEBytes(bytes) {
+  const chars = [];
+  const length = bytes.length - (bytes.length % 2);
+  for (let index = 0; index < length; index += 2) {
+    chars.push(String.fromCharCode((bytes[index] << 8) | bytes[index + 1]));
+  }
+  return chars.join("");
+}
+
+function decodeBytesWithLabel(bytes, label, options = {}) {
+  try {
+    return new TextDecoder(label, options).decode(bytes);
+  } catch {
+    if (label === "utf-16be") return decodeUtf16BEBytes(bytes);
+    if (label === "utf-16le") {
+      const even = bytes.length - (bytes.length % 2);
+      let text = "";
+      for (let index = 0; index < even; index += 2) {
+        text += String.fromCharCode(bytes[index] | (bytes[index + 1] << 8));
+      }
+      return text;
+    }
+    return "";
+  }
+}
+
+function decodePlainTextArrayBuffer(buffer) {
+  const bytes = new Uint8Array(buffer);
+  if (bytes.length >= 3 && bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf) {
+    return stripLeadingBom(decodeBytesWithLabel(bytes.subarray(3), "utf-8"));
+  }
+  if (bytes.length >= 2 && bytes[0] === 0xff && bytes[1] === 0xfe) {
+    return stripLeadingBom(decodeBytesWithLabel(bytes.subarray(2), "utf-16le"));
+  }
+  if (bytes.length >= 2 && bytes[0] === 0xfe && bytes[1] === 0xff) {
+    return stripLeadingBom(decodeBytesWithLabel(bytes.subarray(2), "utf-16be"));
+  }
+
+  try {
+    return stripLeadingBom(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+  } catch {
+    const gb18030 = decodeBytesWithLabel(bytes, "gb18030");
+    return stripLeadingBom(gb18030 || new TextDecoder("utf-8").decode(bytes));
+  }
+}
+
+function arrayBufferToBase64(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  const batchSize = 0x8000;
+  for (let index = 0; index < bytes.length; index += batchSize) {
+    binary += String.fromCharCode(...bytes.subarray(index, index + batchSize));
+  }
+  return btoa(binary);
+}
+
+function fileDiskAbortError() {
+  const error = new Error("File Floppy insertion was canceled.");
+  error.name = "AbortError";
+  return error;
+}
+
+function throwIfAborted(signal) {
+  if (signal?.aborted) throw fileDiskAbortError();
+}
+
+// Browser-vendor scripts (PaddleOCR, PDF.js) load through their own small
+// loader on purpose: they are node_modules copies served at app/vendor/*
+// URLs, so they must NOT go through the shared system lazy loader (which adds
+// the build cache-buster). The name deliberately differs from the canonical
+// loadClassicScriptOnce in app/core/config.js so the concatenated bundle keeps
+// exactly one definition of that shared loader.
+function loadBrowserVendorScriptOnce(src) {
+  const existing = document.querySelector(`script[data-ai-system6-src="${CSS.escape(src)}"]`);
+  if (existing) {
+    return existing.dataset.loaded === "true"
+      ? Promise.resolve()
+      : new Promise((resolve, reject) => {
+        existing.addEventListener("load", resolve, { once: true });
+        existing.addEventListener("error", () => reject(new Error(`Could not load ${src}.`)), { once: true });
+      });
+  }
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = src;
+    script.async = true;
+    script.dataset.aiSystem6Src = src;
+    script.addEventListener("load", () => {
+      script.dataset.loaded = "true";
+      resolve();
+    }, { once: true });
+    script.addEventListener("error", () => reject(new Error(`Could not load ${src}.`)), { once: true });
+    document.head.append(script);
+  });
+}
+
+// wasm decoders, packed CJK cmaps and standard fonts: fetched one file at a time.
+function pdfJsDocumentOptions(data) {
+  return {
+    data,
+    wasmUrl: "/app/vendor/pdfjs-wasm/",
+    cMapUrl: "/app/vendor/pdfjs-cmaps/",
+    cMapPacked: true,
+    standardFontDataUrl: "/app/vendor/pdfjs-standard-fonts/",
+  };
+}
+
+async function getBrowserPdfJs() {
+  if (!pdfJsBrowserPromise) {
+    pdfJsBrowserPromise = import(pdfJsBrowserPath)
+      .then((pdfjs) => {
+        if (!pdfjs || typeof pdfjs.getDocument !== "function") {
+          throw new Error("PDF.js did not expose its browser PDF API.");
+        }
+        pdfjs.GlobalWorkerOptions.workerSrc = pdfJsWorkerPath;
+        return pdfjs;
+      });
+  }
+  return pdfJsBrowserPromise;
+}
+
+async function buildImportFilePayload(file, options = {}) {
+  const signal = options.signal;
+  throwIfAborted(signal);
+
+  if ((file.size || 0) > importPayloadMaxRawBytes) {
+    throw new Error("This file is too large for direct import. Split it or import a smaller file.");
+  }
+
+  // The canvas normalizer rides the lazy import-extractors module with the
+  // OCR readers (app/features/file-import-extractors.js); ensure it before
+  // reading its gates.
+  await ensureFileImportExtractors();
+  if (window.AISystem6FileImportExtractors.canBrowserNormalizeImageFile(file)) {
+    try {
+      throwIfAborted(signal);
+      const pngBuffer = await window.AISystem6FileImportExtractors.convertImageFileToPngArrayBuffer(file);
+      throwIfAborted(signal);
+      return {
+        name: file.name,
+        type: "image/png",
+        model_execution: "client",
+        importerMode: importerModeInput?.value || "auto",
+        ocrEngine: ocrEngineInput?.value || "auto",
+        data: arrayBufferToBase64(pngBuffer),
+      };
+    } catch {
+      // Server-side native conversion or vision OCR can still try the original file.
+    }
+  }
+
+  throwIfAborted(signal);
+  const fileBuffer = await file.arrayBuffer();
+  throwIfAborted(signal);
+  return {
+    name: file.name,
+    type: file.type,
+    model_execution: "client",
+    language: isAudioImportFile(file) ? importTranscriptionLanguage() : undefined,
+    importerMode: importerModeInput?.value || "auto",
+    ocrEngine: ocrEngineInput?.value || "auto",
+    data: arrayBufferToBase64(fileBuffer),
+  };
+}
+
+async function repairImportedTextWithLocalModel(text, file, signal) {
+  if (!localLmStudioConnectionEnabled || !String(text || "").trim()) return text;
+  const source = String(text).trim();
+  const chunkSize = 12000;
+  const repaired = [];
+  for (let offset = 0; offset < source.length; offset += chunkSize) {
+    const chunk = source.slice(offset, offset + chunkSize);
+    const result = await sendLocalModelTask({
+      payload: {
+        model: getLocalModelRequestName(),
+        messages: window.AISystem6ModelTaskRuntime.buildImportRepairMessages(chunk, file?.name, activeProjectId),
+        temperature: 0.1,
+        max_tokens: 2600,
+        stream: false,
+        ai_system6_task_kind: "import-text-repair",
+      },
+      signal,
+      taskKind: "import-text-repair",
+      streamPreference: "json",
+    });
+    repaired.push(window.AISystem6ModelTaskRuntime.cleanModelOutput(result.text || chunk));
+  }
+  return repaired.join("\n\n").trim() || source;
+}
+
+// Second reading for a picture the browser could not transcribe.
+//
+// PaddleOCR runs in the browser and never sends the file anywhere, so it stays
+// first. When it finds nothing readable, the cloud vision model can still say
+// what is in the picture — but that is a different act: OCR transcribes, a
+// vision model describes. The copy says so, and it says the image leaves the
+// browser, because on the public web it does.
+async function extractImageTextWithCloudVision(file, options = {}) {
+  throwIfAborted(options.signal);
+  const prepared = await prepareClioImageInline(file, { detail: "original" });
+  throwIfAborted(options.signal);
+  if (typeof ensureClioProviderResolver === "function") {
+    await ensureClioProviderResolver().catch(() => {});
+  }
+  if (!(typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudCredentialReady())) {
+    await window.AISystem6ClioProvider?.resolve?.({ reason: "vision-import" });
+  }
+  throwIfAborted(options.signal);
+  const result = await sendLocalModelTask({
+    payload: {
+      model: getLocalModelRequestName(),
+      messages: window.AISystem6ModelTaskRuntime.buildVisionMessages({
+        projectId: activeProjectId,
+        mode: "ocr",
+        name: file.name || "",
+        dataUrl: prepared.inlineDataUrl,
+        detail: "original",
+      }),
+      temperature: 0.2,
+      max_tokens: 1400,
+      stream: false,
+      ai_system6_task_kind: "extract-vision-ocr",
+    },
+    signal: options.signal,
+    taskKind: "extract-vision-ocr",
+    streamPreference: "json",
+  });
+  const text = String(result?.text || "").trim();
+  if (!text) throw new Error(t("import_vision_failed"));
+  return text;
+}
+
+async function extractFileText(file, options = {}) {
+  const signal = options.signal;
+  throwIfAborted(signal);
+  const capabilities = await getDeploymentCapabilities();
+
+  if ((file.size || 0) > importPayloadMaxRawBytes) {
+    throw new Error("This file is too large for direct import. Split it or import a smaller file.");
+  }
+
+  // A saved web page is read for its article, not kept as tag soup: the
+  // server's Reader extractor takes the HTML (text in, text out, on the
+  // public site too). If it finds no article, the file's text is kept as is.
+  if (/\.(htm|html|xhtml)$/i.test(file.name || "")) {
+    const html = decodePlainTextArrayBuffer(await file.arrayBuffer());
+    throwIfAborted(signal);
+    try {
+      const response = await window.AISystem6Capabilities.requestService("reader.extract", { url: "", html, signal });
+      const article = response.ok ? await response.json() : null;
+      if (article?.text) {
+        const heading = article.title ? `# ${article.title}\n\n` : "";
+        return { text: heading + article.text, subtitleTranslations: null, videoTranscript: null };
+      }
+    } catch (error) {
+      if (error?.name === "AbortError") throw error;
+    }
+    return { text: html, subtitleTranslations: null, videoTranscript: null };
+  }
+
+  if (isPlainTextImportFile(file)) {
+    const buffer = await file.arrayBuffer();
+    throwIfAborted(signal);
+    const text = decodePlainTextArrayBuffer(buffer);
+    if (/\.srt$/i.test(file.name || "")) {
+      await ensureVideoTranscriptModule();
+      throwIfAborted(signal);
+      const videoTranscript = window.AISystem6VideoTranscript?.buildVideoTranscriptSource?.(text, file.name) || null;
+      return {
+        text: videoTranscript?.text || text,
+        subtitleTranslations: null,
+        videoTranscript,
+      };
+    }
+    return { text, subtitleTranslations: null, videoTranscript: null };
+  }
+
+  if (capabilities.public_deployment && /\.pdf$/i.test(file.name || "")) {
+    await ensureFileImportExtractors();
+    const text = await window.AISystem6FileImportExtractors.extractPdfTextInBrowser(file, { signal });
+    return { text, subtitleTranslations: null, videoTranscript: null };
+  }
+
+  const browserPaddleRequired =
+    capabilities.public_deployment || ocrEngineInput?.value === "paddle";
+  if (browserPaddleRequired) await ensureFileImportExtractors();
+  const extractors = window.AISystem6FileImportExtractors;
+  if (browserPaddleRequired && extractors.isBrowserPaddleOcrFile(file)) {
+    if (extractors.isImageImportFile(file)) {
+      let text = "";
+      try {
+        text = await extractors.extractImageTextWithBrowserPaddle(file, { signal });
+      } catch (paddleError) {
+        throwIfAborted(signal);
+        if (!capabilities.features?.cloud_vision) throw paddleError;
+        if (importStatusEl) importStatusEl.textContent = t("import_vision_reading", file.name);
+        text = await extractImageTextWithCloudVision(file, { signal });
+        if (importStatusEl) importStatusEl.textContent = t("import_vision_described", file.name);
+      }
+      return { text, subtitleTranslations: null, videoTranscript: null };
+    }
+    const text = capabilities.public_deployment
+      ? (() => { throw new Error(t("public_import_unsupported", file.name)); })()
+      : await extractors.extractRenderedPagesWithBrowserPaddle(file, { signal });
+    return { text, subtitleTranslations: null, videoTranscript: null };
+  }
+
+  if (capabilities.public_deployment) {
+    throw new Error(t("public_import_unsupported", file.name));
+  }
+
+  const payload = await buildImportFilePayload(file, { signal });
+  const isCloud = typeof cloudConfig !== "undefined" && cloudConfig?.active && cloudCredentialReady();
+  if (isCloud) {
+    payload._cloud_active = true;
+    Object.assign(payload, cloudCredentialTransportFields());
+    payload._cloud_base_url = cloudConfig.baseUrl;
+    payload._cloud_model = cloudConfig.model;
+  }
+  throwIfAborted(signal);
+  const response = await window.AISystem6Capabilities.requestService("artifact.import.text", {
+    init: {
+      method: "POST",
+      signal,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    },
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.detail || data.error || response.statusText);
+  }
+  let extractedText = data.text || "";
+  if (data.modelPostprocessRequired && !isCloud) {
+    extractedText = await repairImportedTextWithLocalModel(extractedText, file, signal);
+  }
+  // Local OCR runs three engines deep before an image can reach the cloud, and
+  // it only can when the writer's own cloud switch is on. Say so anyway: the
+  // rule against claiming work that never happened reads the same in reverse,
+  // and a picture that went to a third party in silence is the worse half.
+  if (data.ocrReadBy === "cloud-vision") {
+    setStatus(t("import_read_by_cloud_vision", file?.name || ""));
+  }
+  return {
+    text: extractedText,
+    subtitleTranslations: data.subtitleTranslations || null,
+    videoTranscript: data.videoTranscript || null,
+  };
+}
+
+async function previewImportFiles() {
+  const finishNativeActivity = typeof window !== "undefined" ? window.AISystem6TinyShell?.beginFileActivity() : null;
+  try {
+
+  const files = Array.from(selectedImportFiles || []);
+  importCandidates.splice(0, importCandidates.length);
+  importPreviewEl.replaceChildren();
+
+  if (!files.length) {
+    paintImportEmptyNext();
+    importStatusEl.textContent = t("import_ready");
+    return;
+  }
+
+  let ready = 0;
+  let skipped = 0;
+  for (const file of files) {
+    const supported = isSupportedImportFile(file);
+    const record = {
+      id: crypto.randomUUID(),
+      name: file.name,
+      supported,
+      size: file.size || 0,
+      body: "",
+      subtitleTranslations: null,
+      videoTranscript: null,
+    };
+
+    if (supported) {
+      try {
+        const extracted = await extractFileText(file);
+        record.body = extracted.text || "";
+        record.subtitleTranslations = extracted.subtitleTranslations || null;
+        record.videoTranscript = extracted.videoTranscript || null;
+        record.supported = !!record.body.trim();
+        if (record.supported) {
+          ready += 1;
+        } else {
+          skipped += 1;
+        }
+      } catch (error) {
+        record.supported = false;
+        record.body = error.message;
+        skipped += 1;
+      }
+    } else {
+      skipped += 1;
+    }
+    importCandidates.push(record);
+  }
+
+  importStatusEl.textContent = t("import_preview_status", ready, skipped);
+  renderImportPreview();
+
+  } finally { finishNativeActivity?.(); }
+}
+
+function syncImportEmptyChrome(isEmpty) {
+  const win = typeof getWindow === "function"
+    ? getWindow("importUtility")
+    : document.querySelector('[data-window="importUtility"]');
+  if (isEmpty) win?.setAttribute("data-empty", "");
+  else win?.removeAttribute("data-empty");
+}
+
+function paintImportEmptyNext() {
+  importPreviewEl.replaceChildren();
+  syncImportEmptyChrome(true);
+  const empty = document.createElement("div");
+  empty.className = "empty-folder-note empty-next-note import-empty-next";
+  empty.dataset.emptyNext = "1";
+  const cue = document.createElement("p");
+  cue.dataset.i18n = "import_empty";
+  cue.textContent = t("import_empty");
+  const go = document.createElement("button");
+  go.type = "button";
+  go.className = "btn default";
+  go.dataset.i18n = "select_files_button";
+  go.textContent = t("select_files_button");
+  go.addEventListener("click", () => importFilesButton?.click());
+  empty.append(cue, go);
+  importPreviewEl.append(empty);
+}
+
+function renderImportPreview() {
+  importPreviewEl.replaceChildren();
+  const readyCount = importCandidates.filter((item) => item.supported).length;
+  if (importDocumentsButton) {
+    importDocumentsButton.disabled = readyCount === 0;
+    importDocumentsButton.dataset.balloonHelpDisabled = "balloon_import_needs_files";
+  }
+  if (!importCandidates.length) {
+    paintImportEmptyNext();
+    return;
+  }
+  syncImportEmptyChrome(false);
+
+  importCandidates.forEach((item) => {
+    const row = document.createElement("div");
+    row.className = `import-row${item.supported ? "" : " is-unsupported"}`;
+    row.innerHTML = `
+      <span class="mini-icon ${item.supported ? "doc-icon" : "trash-icon"}"></span>
+      <span>${escapeHtml(item.name)}</span>
+      <small>${item.supported ? escapeHtml(t("import_supported")) : escapeHtml(t("import_unsupported"))} · ${item.size} bytes</small>
+    `;
+    importPreviewEl.append(row);
+  });
+}
+
+function backupArrayCount(bundle, key) {
+  return Array.isArray(bundle?.[key]) ? bundle[key].length : 0;
+}
+
+function renderBackupPreview(bundle, fileName = "", validation = null) {
+  if (!projectBackupPreviewEl) return;
+  projectBackupPreviewEl.replaceChildren();
+  previewedProjectBackup = null;
+  if (importProjectBackupButton) {
+    importProjectBackupButton.disabled = true;
+    importProjectBackupButton.dataset.balloonHelpDisabled = "balloon_import_backup_needs_file";
+  }
+
+  if (
+    !bundle
+    || bundle.format !== "ai-system-6-project-disk"
+    || validation?.valid === false
+  ) {
+    const empty = document.createElement("div");
+    empty.className = "empty-folder-note";
+    empty.textContent = bundle ? t("backup_preview_invalid") : t("backup_preview_empty");
+    projectBackupPreviewEl.append(empty);
+    return;
+  }
+
+  const rows = [
+    [t("backup_project_name"), bundle.project?.name || fileName || t("untitled_project")],
+    [t("backup_format"), `${bundle.format} v${bundle.formatVersion || 1}`],
+    [t("backup_exported_at"), bundle.exportedAt ? new Date(bundle.exportedAt).toLocaleString() : "--"],
+    [t("storage_version"), String(bundle.storageVersion || "--")],
+    [t("backup_counts"), [
+      `${t("documents")}: ${backupArrayCount(bundle, "files")}`,
+      `${t("scrapbook")}: ${backupArrayCount(bundle, "scraps")}`,
+      `${t("trash")}: ${backupArrayCount(bundle, "trash")}`,
+      `${t("project_cd")}: ${backupArrayCount(bundle, "projectCdItems")}`,
+      `${t("references")}: ${backupArrayCount(bundle, "references")}`,
+    ].join(" · ")],
+  ];
+
+  rows.forEach(([label, value]) => {
+    const row = document.createElement("div");
+    row.className = "import-row backup-preview-row";
+    row.innerHTML = `
+      <span class="mini-icon project-disk-icon"></span>
+      <span>${escapeHtml(label)}</span>
+      <small>${escapeHtml(value)}</small>
+    `;
+    projectBackupPreviewEl.append(row);
+  });
+
+  previewedProjectBackup = bundle;
+  if (importProjectBackupButton) importProjectBackupButton.disabled = false;
+}
+
+async function remapProjectDiskBackup(bundle) {
+  if (typeof ensureProjectDiskBackupModule === "function") await ensureProjectDiskBackupModule();
+  return window.AISystem6ProjectDiskBackup.remapBackup(bundle, {
+    projectName(name) {
+      // The disk keeps its own name; the suffix marks a copy only when the desk already has that name.
+      const base = name || t("untitled_project");
+      return getProjectNameConflict(base) ? uniqueProjectName(`${base}${t("project_name_restored_suffix")}`) : base;
+    },
+  });
+}
+
+async function commitImportedProjectAtomically(imported) {
+  imported.trash.forEach((item) => {
+    if (item._storageId === undefined || item._storageId === null || item._storageId === "") {
+      item._storageId = crypto.randomUUID();
+    }
+  });
+  const db = await openAppDb();
+  try {
+    const importedProjectCdItems = [
+      ...imported.projectCdItems,
+      ...projectCdItems,
+    ];
+    const importedSettings = {
+      ...settingsSnapshotPayload(),
+      activeProjectId: imported.project.id,
+      // loadDeskState() re-asserts activeProjectId = startupProjectId on every
+      // boot whenever that project still exists (the "resume into the project
+      // you started up with" contract for MultiFinder-style startup). Without
+      // also updating startupProjectId here, the settings snapshot above still
+      // carries the PRE-import value, so the very next boot silently switched
+      // back to the old project -- the freshly restored/created one stayed on
+      // disk but was never seen again until the user re-selected it by hand.
+      startupProjectId: imported.project.id,
+      startupProjectPinned: true,
+      projectMounted: true,
+      projectCdItems: importedProjectCdItems,
+    };
+    const storeNames = [
+      projectsStoreName,
+      scrapsStoreName,
+      trashStoreName,
+      chatFoldersStoreName,
+      chatFilesStoreName,
+      referenceStoreName,
+      imageAttachmentsStoreName,
+      "nativeDocuments",
+      keyvalStoreName,
+    ];
+    await window.AISystem6StorageTransactions.runTransaction(
+      db,
+      storeNames,
+      "readwrite",
+      async (tx) => {
+        const writes = [];
+        const putAll = (storeName, items, normalize = (item) => item) => {
+          const store = tx.objectStore(storeName);
+          items.forEach((item) => writes.push(idbRequest(store.put(normalize(item)))));
+        };
+        putAll(projectsStoreName, [imported.project]);
+        putAll(scrapsStoreName, imported.scraps);
+        // Pictures land in the same transaction as the manuscripts that cite
+        // them: a disk that restored its figures but not its pictures would
+        // show raw `![](aisystem6-image:...)` markdown and look corrupt.
+        putAll(imageAttachmentsStoreName, imported.imageAttachments || []);
+        // An Office document's bytes land with the item that names them.
+        putAll("nativeDocuments", imported.nativeDocuments || []);
+        const trashStore = tx.objectStore(trashStoreName);
+        imported.trash.forEach((item) => {
+          writes.push(idbRequest(trashStore.put(item, item._storageId)));
+        });
+        putAll(chatFoldersStoreName, imported.folders);
+        putAll(chatFilesStoreName, imported.files);
+        putAll(referenceStoreName, imported.references, normalizeProjectReferenceForStorage);
+        const settingsStore = tx.objectStore(keyvalStoreName);
+        writes.push(idbRequest(settingsStore.put(importedSettings, "settings")));
+        writes.push(idbRequest(settingsStore.put(storageVersion, "storageVersion")));
+        // A v4 backup can carry the disk's desktop scene. It lands under the
+        // imported project's own scope key, in the same transaction as its
+        // files, so the desk and the data can never disagree.
+        if (imported.workingSession) {
+          writes.push(idbRequest(settingsStore.put(
+            imported.workingSession,
+            workingSessionScopeKey(imported.project.id)
+          )));
+        }
+        const revisionsByDocument = new Map();
+        (imported.documentRevisions || []).forEach((revision) => {
+          if (!revision?.id || !revision.documentId) return;
+          const key = `documentRevisions:${String(revision.projectId || imported.project.id)}:${String(revision.documentId)}`;
+          if (!revisionsByDocument.has(key)) revisionsByDocument.set(key, []);
+          revisionsByDocument.get(key).push(revision);
+        });
+        for (const [key, items] of revisionsByDocument) {
+          writes.push((async () => {
+            // Merge with any revisions the import already created (e.g. the
+            // backup-import markers) instead of replacing them.
+            const existing = await idbRequest(settingsStore.get(key));
+            const merged = Array.isArray(existing) ? [...existing, ...items] : items;
+            return idbRequest(settingsStore.put(merged, key));
+          })());
+        }
+        // A v5 backup carries the darkroom of every developed document. One
+        // record per document, so it is a put and not a merge — and the
+        // documentId is already remapped to the imported file, which is why
+        // this lands in the same transaction as the files themselves.
+        (imported.darkroomRecords || []).forEach((record) => {
+          if (!record?.documentId) return;
+          const { projectId: _projectId, documentId, ...stored } = record;
+          writes.push(idbRequest(settingsStore.put(
+            stored,
+            `darkroom:${String(imported.project.id)}:${String(documentId)}`
+          )));
+        });
+        await Promise.all(writes);
+      }
+    );
+    // This transaction wrote settings and every affected collection directly,
+    // outside the desk bookkeeping saveDeskState compares against, so the
+    // records it wrote have to become the base the next save tests itself
+    // against -- otherwise that save reads its own prior write as a foreign
+    // edit and refuses, permanently. The body is lazy; a restore is the only
+    // thing that needs it.
+    if (typeof ensureLazySystemModule === "function") {
+      await ensureLazySystemModule("app/core/persistence-adopt-bases.js", "AISystem6AdoptImportedDeskBasesLoaded").catch(() => {});
+    }
+    window.AISystem6AdoptImportedDeskBases?.({ imported, settings: importedSettings });
+    return importedSettings;
+  } finally {
+    db.close();
+  }
+}
+
+async function importProjectBackupAsNewProject(backup = previewedProjectBackup) {
+  const finishNativeActivity = typeof window !== "undefined" ? window.AISystem6TinyShell?.beginFileActivity() : null;
+  try {
+
+  if (typeof ensureProjectDiskBackupModule === "function") await ensureProjectDiskBackupModule();
+  const backupTools = window.AISystem6ProjectDiskBackup;
+  const validation = backupTools.validateBackup(backup);
+  const integrity = validation.valid
+    ? await backupTools.verifyIntegrity(backup)
+    : { valid: false };
+  if (!backup || !validation.valid || !integrity.valid) {
+    setStatus(t("backup_import_invalid"));
+    return;
+  }
+
+  setControlLoading(importProjectBackupButton, true, t("backup_importing"));
+  try {
+    const imported = await remapProjectDiskBackup(backup);
+    // Protect the imported documents' version history BEFORE any mutation:
+    // if a revision cannot be persisted, the import aborts cleanly instead
+    // of importing content with no recovery point.
+    if (typeof createDocumentRevision === "function") {
+      for (const file of imported.files.filter((entry) => entry?.type === "text")) {
+        await createDocumentRevision({
+          projectId: imported.project.id,
+          documentId: file.id,
+          body: file.body,
+          origin: "system",
+          operation: "backup-import",
+        });
+      }
+    }
+    if (typeof migrateMachineClipBodies === "function") migrateMachineClipBodies(imported.scraps);
+    const committedSettings = await commitImportedProjectAtomically(imported);
+
+    projects.unshift(imported.project);
+    chatFolders.unshift(...imported.folders);
+    chatFiles.unshift(...imported.files);
+    imageAttachments.unshift(...(imported.imageAttachments || []));
+    scraps.unshift(...imported.scraps);
+    trashItems.unshift(...imported.trash);
+    projectCdItems.unshift(...imported.projectCdItems);
+
+    isProjectMounted = true;
+    activeProjectId = imported.project.id;
+    // The commit above already wrote startupProjectId to disk, but the
+    // saveDeskState() below recomputes its settings snapshot from the live
+    // globals and would overwrite that value with the old project's id.
+    startupProjectId = imported.project.id;
+    // A restored disk is the desk's new home: pin it, so a reload lands there.
+    startupProjectPinned = true;
+    selectedProjectId = imported.project.id;
+    selectedFolderId = "all";
+    clearProjectTransientState();
+    closeProjectScopedWindows();
+    scheduleWorkspaceRender({ projectReferences: true, mountedTextDisk: true, menuState: true });
+    openWindow("projects");
+    resetAssistantForProject(imported.project.name);
+    await loadActiveProjectReferences();
+    // A v4 backup restores the desk too, not just the files. A scene that
+    // cannot be replayed is never allowed to fail the committed import.
+    if (imported.workingSession) {
+      await restoreWorkingSession({ projectId: imported.project.id, mounted: true }).catch(() => false);
+    }
+    // commitImportedProjectAtomically wrote settings and every affected
+    // collection directly, bypassing the desk-plan dirty-tracking the save
+    // below uses to tell "another window changed this" apart from "we just
+    // changed this ourselves". Without resyncing the bases here, saveDeskState
+    // compared its fresh settings snapshot against an undefined base, saw the
+    // import's own write as a foreign edit, and refused with a standing
+    // "changed in another window" conflict -- which also left the freshly
+    // imported document showing whatever the previous project held, since the
+    // refusal aborted before scheduleDesktopMaintenance ran. Priming both
+    // caches to what was actually just committed makes the save below see its
+    // own prior write as the base, so it proceeds as an ordinary update.
+    storageSnapshotCache.clear();
+    if (committedSettings) storageSnapshotCache.set("settings", JSON.stringify(committedSettings));
+    if (typeof deskCollectionDefinitions === "function" && typeof deskCollectionPlan === "function") {
+      deskCollectionDefinitions().forEach((definition) => {
+        storageRecordFingerprintCache.set(definition.key, deskCollectionPlan(definition).current);
+      });
+    }
+    const saved = await saveDeskState();
+    if (!saved) throw new Error("Imported project committed, but the active workspace state could not be saved.");
+    scheduleDesktopMaintenance("import");
+    setStatus(t("backup_imported_project", imported.project.name));
+  } catch (error) {
+    console.error("Project Hard Disk import failed:", error);
+    setStatus(t("backup_import_invalid"));
+  } finally {
+    setControlLoading(importProjectBackupButton, false);
+  }
+
+  } finally { finishNativeActivity?.(); }
+}
+
+// A shared launch link mounts a whole Project Hard Disk and then stops on the
+// manuscript: the reason such a link is shared is the finished text, not the
+// desk it was written on. The disk arrives through the ordinary import path,
+// so it becomes a project of the visitor's own -- nothing they already have is
+// touched, and what they receive is theirs to keep, rename or throw away.
+//
+// Following the same link twice must not leave two copies of one project, so
+// the route remembers the id it created and a later visit mounts that instead.
+const sharedProjectDiskMountKey = "aiSystem6SharedDisk:";
+
+function rememberedSharedProjectDiskId(route) {
+  try {
+    return localStorage.getItem(sharedProjectDiskMountKey + route) || "";
+  } catch {
+    return "";
+  }
+}
+
+async function openSharedProjectDisk(route) {
+  const remembered = rememberedSharedProjectDiskId(route);
+  const existing = remembered ? projects.find((project) => project.id === remembered) : null;
+  if (existing) {
+    if (activeProjectId !== existing.id) {
+      mountProject(existing);
+      closeProjectScopedWindows();
+      scheduleWorkspaceRender({ projectReferences: true, mountedTextDisk: true, menuState: true });
+      await loadActiveProjectReferences();
+      await saveDeskState();
+    }
+    await handleAction("open-teachtext-manuscript");
+    showSharedDiskManuscriptAsReading();
+    return;
+  }
+
+  await ensureSharedProjectDiskModule(route);
+  const backup = (window.AISystem6SharedProjectDisks || {})[route];
+  if (!backup) {
+    setStatus(t("backup_import_invalid"));
+    return;
+  }
+  const before = activeProjectId;
+  await importProjectBackupAsNewProject(backup);
+  // importProjectBackupAsNewProject reports its own failure and returns; only
+  // a project that actually mounted is worth remembering.
+  if (activeProjectId && activeProjectId !== before) {
+    try {
+      localStorage.setItem(sharedProjectDiskMountKey + route, activeProjectId);
+    } catch {
+      // A visitor with storage blocked gets a fresh copy each visit, which is
+      // better than refusing the link.
+    }
+  }
+  // `open-teachtext` is the wrong door: on the desktop profile it looks for a
+  // scratch tab and makes a NEW empty document when there is none, and a disk
+  // from a shared link has only a manuscript. This is the command behind
+  // Writing > Go To > Manuscript, and it syncs the linked document first.
+  await handleAction("open-teachtext-manuscript");
+  showSharedDiskManuscriptAsReading();
+}
+
+// A shared link is sent to be read, so it lands on the rendered article from
+// its first line. The manuscript command previews only when the writing route
+// owns the manuscript; a disk whose route state says otherwise, or a desk that
+// did not reach the Writing view, would leave the visitor in the Markdown
+// source. Preview is a view: the text is untouched and Edit returns to it.
+function showSharedDiskManuscriptAsReading() {
+  if (typeof showTeachTextPreview !== "function") return;
+  if (!teachTextPreviewEl?.classList.contains("is-hidden")) return;
+  showTeachTextPreview({ focus: false, preserveScroll: false });
+}
+
+async function previewProjectBackupFile() {
+  const finishNativeActivity = typeof window !== "undefined" ? window.AISystem6TinyShell?.beginFileActivity() : null;
+  try {
+
+  const file = selectedProjectBackupFile;
+  if (!file) {
+    renderBackupPreview(null);
+    return;
+  }
+
+  try {
+    // The schema's own limits and validators live with the backup module, so
+    // the preview is the first place a restore needs it.
+    if (typeof ensureProjectDiskBackupModule === "function") await ensureProjectDiskBackupModule();
+    if (file.size > window.AISystem6ProjectDiskBackup.maxBackupBytes) {
+      renderBackupPreview({});
+      importStatusEl.textContent = t("backup_preview_too_large");
+      return;
+    }
+    const bundle = JSON.parse(await file.text());
+    const validation = window.AISystem6ProjectDiskBackup.validateBackup(bundle);
+    const integrity = validation.valid
+      ? await window.AISystem6ProjectDiskBackup.verifyIntegrity(bundle)
+      : { valid: false, errors: [] };
+    const accepted = validation.valid && integrity.valid;
+    renderBackupPreview(bundle, file.name, { valid: accepted });
+    importStatusEl.textContent = accepted
+      ? t("backup_preview_status", bundle.project?.name || file.name)
+      : t("backup_preview_invalid");
+  } catch (error) {
+    renderBackupPreview({});
+    importStatusEl.textContent = t("backup_preview_invalid");
+  }
+
+  } finally { finishNativeActivity?.(); }
+}
+
+async function importReadyFilesToDocuments() {
+  const finishNativeActivity = typeof window !== "undefined" ? window.AISystem6TinyShell?.beginFileActivity() : null;
+  try {
+
+  if (!getActiveProject()) {
+    setStatus(t("no_project_mounted"));
+    openWindow("projects");
+    return;
+  }
+
+  const ready = importCandidates.filter((item) => item.supported);
+  if (!ready.length) {
+    setStatus(t("import_nothing_ready"));
+    return;
+  }
+
+  const folder = ensureFolder(t("default_folder"));
+  const now = new Date().toISOString();
+  let subtitleOutputs = 0;
+  const sourceExtPattern = /\.(txt|text|srt|rtf|md|mdx|markdown|mdown|mkd|mkdn|csv|tsv|json|js|ts|htm|html|xhtml|webarchive|css|xml|log|pdf|docx|pages|numbers|key|epub|pptx|xlsx|bmp|jpe?g|png|webp|heic|heif|aac|aif|aiff|amr|caf|flac|m4a|mp3|oga|ogg|opus|wav|webm)$/i;
+  const looksLikeDocMap = (item) => /^DocMap\b/i.test(item.name.replace(sourceExtPattern, ""))
+    || /^DocMap\b/i.test(item.name)
+    || (typeof isExportedDocMapMarkdown === "function" && isExportedDocMapMarkdown(item.body || ""));
+  // DocMap parsing lives in the lazy docmap module. Load it only when a
+  // candidate actually looks like a DocMap, so ordinary imports never drag the
+  // tool in; on load failure the import still proceeds and the file re-parses
+  // the next time it is opened.
+  if (ready.some(looksLikeDocMap)) {
+    try {
+      await ensureDocMapModule();
+    } catch {
+      // Covered by the reopen path.
+    }
+  }
+  ready.forEach((item) => {
+    const name = item.name.replace(sourceExtPattern, "");
+    const docMap = looksLikeDocMap(item) && typeof restoreDocMapFromMarkdown === "function"
+      ? restoreDocMapFromMarkdown(item.body, {
+        label: name,
+        scope: "documents",
+        meta: { importedFileName: item.name },
+        allowGeneric: /^DocMap\b/i.test(name) || /^DocMap\b/i.test(item.name),
+      })
+      : null;
+    chatFiles.unshift({
+      id: crypto.randomUUID(),
+      projectId: activeProjectId,
+      type: "text",
+      name,
+      body: item.body,
+      docMap,
+      folderId: folder.id,
+      createdAt: now,
+      updatedAt: now,
+      source: t("import_utility"),
+      durable: true,
+    });
+
+    const subtitleTranslations = item.subtitleTranslations;
+    if (subtitleTranslations?.enSrt && subtitleTranslations?.twSrt) {
+      const sourceBaseName = sanitizeFilename(item.name.replace(/\.srt$/i, "") || name || "subtitle");
+      addProjectCdTextItem(subtitleTranslations.enSrt, `${sourceBaseName}.en.srt`, {
+        sourceKind: "subtitle-translation-en",
+        metadata: {
+          sourceName: item.name,
+          subtitleLanguage: "en",
+          blockCount: Number(subtitleTranslations.blockCount) || 0,
+        },
+      });
+      addProjectCdTextItem(subtitleTranslations.twSrt, `${sourceBaseName}.tw.srt`, {
+        sourceKind: "subtitle-translation-tw",
+        metadata: {
+          sourceName: item.name,
+          subtitleLanguage: "zh-TW",
+          blockCount: Number(subtitleTranslations.blockCount) || 0,
+        },
+      });
+      subtitleOutputs += 2;
+    }
+  });
+
+  importCandidates.splice(0, importCandidates.length);
+  selectedImportFiles = [];
+  updateFilePickerLabels();
+  importStatusEl.textContent = t("imported_documents", ready.length);
+  if (subtitleOutputs) {
+    setStatus(`Imported ${ready.length} document(s). Subtitle Translator generated ${subtitleOutputs} Project CD item(s).`);
+  }
+  renderImportPreview();
+  renderDocuments();
+  saveDeskState();
+  openWindow("documents");
+
+  } finally { finishNativeActivity?.(); }
+}
+
+function addProjectCdTextItem(text, title, options = {}) {
+  if (!getActiveProject()) return null;
+  const safeTitle = sanitizeFilename(String(title || "Untitled"));
+  const existingIndex = projectCdItems.findIndex((item) => item.projectId === activeProjectId && item.title === safeTitle);
+  const now = new Date().toISOString();
+  const item = {
+    id: existingIndex >= 0 ? projectCdItems[existingIndex].id : crypto.randomUUID(),
+    projectId: activeProjectId,
+    title: safeTitle,
+    format: options.format || "text/plain",
+    body: String(text || ""),
+    sourceDocumentId: activeTextFileId || "",
+    sourceKind: options.sourceKind || "subtitle-translation",
+    claimCheckId: "",
+    burnedAt: existingIndex >= 0 ? projectCdItems[existingIndex].burnedAt : now,
+    updatedAt: now,
+    languageMode: options.languageMode || "translation",
+    metadata: {
+      ...(options.metadata || {}),
+      wordCount: countMarkdownWords(String(text || "")),
+    },
+  };
+  if (existingIndex >= 0) projectCdItems.splice(existingIndex, 1);
+  projectCdItems.unshift(item);
+  selectedProjectCdItemId = item.id;
+  selectedProjectCdItemIds.clear();
+  selectedProjectCdItemIds.add(item.id);
+  return item;
+}
+
+function formatProjectBackupMarkdown(project) {
+  const projectFiles = chatFiles.filter((file) => file.projectId === project.id);
+  const projectScraps = scraps.filter((scrap) => scrap.projectId === project.id);
+  const projectRefs = projectReferences.filter((reference) => reference.projectId === project.id);
+  const lines = [
+    `# ${project.name}`,
+    "",
+    `Created: ${new Date(project.createdAt).toLocaleString()}`,
+    `Modified: ${new Date(project.updatedAt).toLocaleString()}`,
+    "",
+    "## Summary",
+    "",
+    `- ${t("documents")}: ${projectFiles.length}`,
+    `- ${t("scrapbook")}: ${projectScraps.length}`,
+    `- ${t("references")}: ${projectRefs.length}`,
+    "",
+  ];
+
+  lines.push("## Documents", "");
+  if (projectFiles.length) {
+    projectFiles.forEach((file) => {
+      lines.push(`### ${file.name}`, "");
+      if (file.type === "chat") {
+        lines.push(formatChatFileMarkdown(file), "");
+      } else {
+        lines.push(file.body || "", "");
+      }
+    });
+  } else {
+    lines.push("_No documents._", "");
+  }
+
+  lines.push("## Scrapbook", "");
+  if (projectScraps.length) {
+    projectScraps.forEach((scrap) => {
+      lines.push(`### ${scrap.title}`, "");
+      if (scrap.tags?.length) lines.push(`Tags: ${scrap.tags.join(", ")}`, "");
+      lines.push(scrapDocumentText(scrap) || "", "");
+    });
+  } else {
+    lines.push("_No scraps._", "");
+  }
+
+  lines.push("## Saved References", "");
+  if (projectRefs.length) {
+    projectRefs.forEach((reference) => {
+      lines.push(`### ${reference.name}`, "");
+      lines.push(reference.body || (reference.chunks || []).map((chunk) => chunk.content).join("\n\n---\n\n") || "_Indexed reference only._", "");
+    });
+  } else {
+    lines.push("_No project references._", "");
+  }
+
+  return lines.join("\n").trim();
+}
+
+function formatInfoItemMarkdown(item) {
+  if (!item) return "";
+  if (item.type === "chat") return formatChatFileMarkdown(item);
+  if (item.type === "text") return [`# ${item.name}`, "", item.body || ""].join("\n");
+  if (projects.includes(item)) {
+    return formatProjectBackupMarkdown(item);
+  }
+  return [`# ${item.title || t("scrapbook")}`, "", scrapDocumentText(item) || ""].join("\n");
+}

@@ -1,0 +1,1140 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Human-reviewed generated icon pixels that overlay the broad fallback family without being regenerated during a normal build.",
+  "reviewedAgainst": [
+    "internal/evidence/drafts/icon-generation/cross-era-candidate-board.png",
+    "internal/evidence/drafts/icon-generation/cross-era-candidate-board-16px.png",
+    "internal/evidence/drafts/icon-generation/key-fringe-before-after-light.png",
+    "internal/evidence/drafts/icon-generation/key-fringe-before-after-dark.png",
+    "internal/evidence/drafts/icon-generation/runtime-derived-16-light.png",
+    "internal/evidence/drafts/icon-generation/runtime-derived-16-dark.png"
+  ],
+  "evidenceRule": "Object semantics follow the System 6 continuity ledger; only era material, perspective, lighting, and optical geometry change.",
+  "supersedingCompleteFamilies": [
+    "liquid-glass"
+  ],
+  "batch": [
+    "startupDisk",
+    "applications",
+    "fileFloppy",
+    "projectDisc"
+  ],
+  "priorAquaCompletion": [
+    "reviewDesk",
+    "docMap"
+  ],
+  "secondBatch": [
+    "quickDraft",
+    "writingStudio",
+    "manuscript",
+    "reader"
+  ],
+  "thirdBatch": [
+    "cloudModel",
+    "cloudModelOff",
+    "localModel",
+    "systemStatus"
+  ],
+  "fourthBatch": [
+    "questionSheet",
+    "outline",
+    "sectionDrafts",
+    "timeMachine"
+  ],
+  "clioTalkBatch": [
+    "assistant"
+  ],
+  "fifthBatch": [
+    "clioStage",
+    "clioChart",
+    "liquidCover",
+    "cmfStudio"
+  ],
+  "finderIdentityBatch": [
+    "finderApp",
+    "multiFinderApp"
+  ],
+  "sixthBatch": [
+    "soundscape",
+    "systemFolder",
+    "helpFolder",
+    "importUtility"
+  ],
+  "seventhBatch": [
+    "chooser",
+    "systemHelp",
+    "dictionary",
+    "writingDemo"
+  ],
+  "eighthBatch": [
+    "chatFile",
+    "chatImport",
+    "contextPanel",
+    "rebuildArticle"
+  ],
+  "ninthBatch": [
+    "bureaucracyMeme",
+    "endfieldTerminal",
+    "documents",
+    "alias"
+  ],
+  "tenthBatch": [
+    "systemFile",
+    "writingBell",
+    "trashFull",
+    "control",
+    "controlStrip"
+  ],
+  "recoveredCoreBatch": {
+    "aqua": [
+      "hardDisk",
+      "folder",
+      "document",
+      "trash",
+      "projectDisk",
+      "searcher",
+      "scrapbook",
+      "controlPanel",
+      "teachText",
+      "daHandler"
+    ],
+    "snow-leopard": [
+      "hardDisk",
+      "folder",
+      "document",
+      "trash",
+      "projectDisk",
+      "reviewDesk",
+      "searcher",
+      "docMap",
+      "scrapbook",
+      "controlPanel",
+      "teachText",
+      "daHandler"
+    ],
+    "yosemite": [
+      "hardDisk",
+      "folder",
+      "document",
+      "trash",
+      "projectDisk",
+      "reviewDesk",
+      "searcher",
+      "docMap",
+      "scrapbook",
+      "controlPanel",
+      "teachText",
+      "daHandler"
+    ]
+  },
+  "recoveredCoreEvidence": {
+    "source": "Preserved generated-core work recovered during the final branch and stash audit.",
+    "model": "gpt-image-2",
+    "promptSource": "tooling/icon-generation/generated-era-core-prompts.mjs",
+    "postProcessing": "The recovered reviewed pixels were passed through the current keyed-fringe neutralization and 128-to-16 legibility gates before acceptance.",
+    "rule": "Only objects still carrying accepted-core reconstruction pixels were replaced; newer accepted-generated objects were retained byte-for-byte."
+  },
+  "eras": {
+    "aqua": {
+      "sizes": [
+        128,
+        32,
+        16
+      ],
+      "icons": {
+        "startupDisk": {
+          "16": "9bc52df332ce72b898766906a2f0ddb4acc88da8e17f6d25074c9495f162811d",
+          "32": "0ae001f596d194e2c902d56bfc319fb4c4d57858db8da625cf8e3cb6c59b2674",
+          "128": "3f078b621fcd5d026ab1742309c6bdbf3227e9fa483ec2180293215616cb9a56"
+        },
+        "applications": {
+          "16": "1b65cc685b27459e7094bec39a16be550e429121af5a7466cbb48c852b1e4a2f",
+          "32": "5db2d39316e412c2714b6c8765e65e7843fa241541fc6c44b9be68b62175c636",
+          "128": "6ef46114d3391684ac7234402bca87b4b63250e53ee0851c99a483937831c656"
+        },
+        "fileFloppy": {
+          "16": "cd6509645584b7acab0f951712fa2f1d4bfacfcf80dc1b99b47bd9bb0ebe2b5e",
+          "32": "ccfee18e59349c4a0bd52ab7808c0445e258f9ce3d70f4cb135657f4a102f657",
+          "128": "833e798e170a6c6238153b6761a64cc5506de6054f84737d7a24632a8f4ebae5"
+        },
+        "projectDisc": {
+          "16": "d17623f1e33119ae0582f97444302aadbe235948a52c952360e777e5bed6382e",
+          "32": "54e7cb764ae3ebe5ab579502248adfdbde2ad2f944f80c3c6385378f01e42786",
+          "128": "956623390ae8dc0e02c8b5edf7194c9120d9109d09ceafdf6114bf5094d8afa7"
+        },
+        "reviewDesk": {
+          "16": "99a4607d8e9e7e2d39fd8e369f463b80d663fd26674177b5a171dec61010a8ce",
+          "32": "6d219ea5cbde89e58404699c5b536151b0b093df6da2c46dc3c8be4c292a2784",
+          "128": "b303d987d499918004ef8d1cb2dfab4bfbf5e243a2b2f517fa0195a472ba6d41"
+        },
+        "docMap": {
+          "16": "1ef72f59fb1632e17d075f0bc8f3b65b2f7063d96a351d1a27139f66eccd7805",
+          "32": "56522d1e65393c39aa1f46046e62ca0e0f4ecf2ef6d9f1b4f591b5060dbe3256",
+          "128": "fab62a8c8163608790dca746c0ea0c34320f49d95e3e5a5f42e2341d98f1e8ab"
+        },
+        "quickDraft": {
+          "16": "5eeeac2715c86266cc71b95340af6ccaa9149ac7e47120aea6174d32bde4904f",
+          "32": "8755558ae84b40b1d9ba2bbee6176cc7be4cfba3be558e658228d4618907cfd5",
+          "128": "5b55e5ae6c0416c22e021d32efa59b8b7192758ec290ae0f287b2449437dc6d2"
+        },
+        "writingStudio": {
+          "16": "20544b5a3d7aa9e1a4a14b7503562a4a24b67655499e62090c27ce9ba84da663",
+          "32": "fa09607f7be5fd8da1f79e1d4b2f8a2acae26fd57414424b2d883db43c54e8dc",
+          "128": "527a081d5521183abc3cf657ffc51506bb3d7c23f4652df7f6ed60d8afedb6b3"
+        },
+        "manuscript": {
+          "16": "31e132c033b2e31c7c701c8ea37f16fc67f28de5d0e14a99406affc83a31bf26",
+          "32": "d98befce8c2cec3375a66e0e10ff8073cf0c67db6e47b7b45835650d0534b0f5",
+          "128": "8f7e3195f51cd34b6cd6fbdb60b73dd14c759a88341d17a70ce9178a5cbaa53f"
+        },
+        "reader": {
+          "16": "22a3a9e5752ec893b44280959b71f9f8a709f81665e46a9afc265658e3e13dca",
+          "32": "93b5170cab4adca4b77f8e4e9591d97d9e03174714bae3266e10714b2720d251",
+          "128": "7221db6ee877df60a7ea0b1b2e282b5685748459fe3549247df20ba9d0c6866f"
+        },
+        "cloudModel": {
+          "16": "6cefbe3287e9c68cbf2a6a31ea0d06a773cfe601a63863ff81855e4cac7edbf6",
+          "32": "20eccae6971ced4508db5b27ee899b348d765474a11c2e0930942970aee60a58",
+          "128": "4ae81e9dbf4a7c0dc2f052c75a2791aa975df49feb61c1dc4440796ccda84c3a"
+        },
+        "cloudModelOff": {
+          "16": "ba7218d2fdabe619a6b941ffb5b0ccb4867752ee2e67d8d7e7701a44e986f0bf",
+          "32": "396f8d71349e08c7d9fa90b2b0fe3f0905e25b249efaf8f43b014e7fe473330f",
+          "128": "64002dc56020d11844d156ac24f4efad29e96a36b42d332e55b470a10c079fea"
+        },
+        "localModel": {
+          "16": "d6d800a656a270277e9a92db1aea0a7ef9e90dbb2bbc9e4dccb97bb429e1780d",
+          "32": "6f982d7693e43b69a29c74f4eded0268c7b5a6e601299cdbe63c809e5eb86f61",
+          "128": "365879a9d9229870c252e623afee6c9abaf2076a5a53c71885963bc4f4a84e81"
+        },
+        "systemStatus": {
+          "16": "04ce46fc6c17c3c2d583710b8754997e2d7efe8947d1b3fda66f78e1114b38a8",
+          "32": "b1ea2bc58b89c4a4402cb1b307b08f521af88f3f6bb7dfae8a259faf552ac6d7",
+          "128": "9d9b7248eb377c7361e019284ca4d7640015e86278a56f58b7289b4797d59a26"
+        },
+        "questionSheet": {
+          "16": "2bfe62d14faf589da8fdffc6a3bffe1b2fd28b99ca00cc31b999414179771484",
+          "32": "08e5796524069732f34bc87c0059053590d876899d775af2efd47fbfc7aa93a4",
+          "128": "7f52a2159eacd44aa0ea0aac68010b71476bf9cd43259c0bf2f755788d5bee91"
+        },
+        "outline": {
+          "16": "d33708008d524d0b02d5e61e755c35c67fd5b78a36c732fe7b173ecf928d8628",
+          "32": "2622c3cc9c871a2d61e8629cd8a48aa98d17f57ba3a7ddc0835a99a0d7d3bcec",
+          "128": "9a0a6eb6c3187c2e968495aa4eb3d429834eed42360eb7a956c593b54e9c4047"
+        },
+        "sectionDrafts": {
+          "16": "76a77341e0172e5ef78854cfebdb7c08e0ce3369c01305bf54495e31f0fa9863",
+          "32": "4dfaa5610343de5206693f88b7f9462952a6b7f72585bf911138bc555f7356b4",
+          "128": "e15661d6bfead1ae1e1f6bab3656d216bc6b8d7626b08a91cb72d25e2c370e17"
+        },
+        "timeMachine": {
+          "16": "cda78b9880b447c86142dc26efa5ceb306e127ddbad544e197e9947591155aa9",
+          "32": "471c28e03883d807d728b0063f754c609b16c143652339996fbe9f64d9828cf7",
+          "128": "20ed17066a6dfb810999d7dea6edac4395a7273bc6297413b9c9334d95aba673"
+        },
+        "assistant": {
+          "16": "c5436be04f9ea879f060f43c8b32439dcbd16acc12d242e4c62ddce3b7ec8101",
+          "32": "e82399519e887b4461b445164358fedc44b89fce632d697b4287280100c67ae4",
+          "128": "798e5d8f6d656d210cb8a4d24304ff19a990c0975479b0511733a7534a98ddf4"
+        },
+        "clioStage": {
+          "16": "e13f54b256eaaa8e7bfcce64dff147c7cdffafcf5c20babf46678bfa2158a9d3",
+          "32": "10d82ac2d49b3ac430819ccab2ca0a49ffefcfb3ce2cd25c09fa955623f6a75a",
+          "128": "5292cd2323dff7e6fdff0dd839f149ec37cee7a8436e66ee30ab2610634e0316"
+        },
+        "clioChart": {
+          "16": "9004b6ac87e2b5e1d785e2efe7ddd934897b8d050ebf949f466ade5d3b14916d",
+          "32": "963150d6d3b5b563a9cc2de840de1aae1313bdecf15d9a6af996c22724edecbe",
+          "128": "b561c95d15bd239e54aa6772522295aec80f5b42796f29cbaf2ce43e026f0ee1"
+        },
+        "liquidCover": {
+          "16": "5628d4cbaae77a857d67211e5a0a8f68f0c18bf79f14a8a54e2300d1069f37ee",
+          "32": "1b4a43ecbbeb5870e3bfe0788e4eda1c0cda31dcd79f9d9335e74a3a4743083b",
+          "128": "2f82b0224fc6e08627f801d46cf59fdc20ad6a3b91a2c62ffacd5120698e88ae"
+        },
+        "cmfStudio": {
+          "16": "a6bddd174360fec3d523c3eabef85a3e0609901cc5aff022582369ae12d032fa",
+          "32": "9d7eb3247381ad2d67e10009d30fdc5a37d52e31c6e2efad4163822516d49d77",
+          "128": "bbd3a70295901ae02baf14ef49613f4c025a228d5921aa354bf8892334e57683"
+        },
+        "finderApp": {
+          "16": "1f5badc5c634e2d15ac3eca39d1777733f36cda65dd0f822486165c45398c522",
+          "32": "972dff54be57786ea6fcd5df14353a9592801d4eacf1547a6bd311000a4751dc",
+          "128": "8fb97a50420990d4bb13ad96cfb64c40d2ecbb86dde4798e2ccd9bf28ae1ac9b"
+        },
+        "multiFinderApp": {
+          "16": "087bef67d6359f05eb770f625a79a028d901ebff0537812eb377b6d0cb7e7fd4",
+          "32": "7aa7fb1106bdf254067b90881917b1dcd5e34f11db02a988561c4c35c82cbdab",
+          "128": "f3ff6fc85ae83d1a2d0a3660342981a9e5c00ef6ae8e15b2b564ca4152924de0"
+        },
+        "soundscape": {
+          "16": "b8944cb748418e465d52daf47ec71c57d82f4ba957805f11d3695e810849583d",
+          "32": "a7abae4afd8ebeb06cf5939865e962f07077cd1466932550c6a19052228951ab",
+          "128": "e17cb72114de54b358a45f38871c27fd564b09f23e28ba350c3da37cf538b56f"
+        },
+        "systemFolder": {
+          "16": "83fa58ca4c0cc96b716d43f9ccb8186968963f97dcc77f9c8b8dae2b7b362b8d",
+          "32": "f9df54d4754dc0e3551e2255935d6e85d0a7db8915b3dcca2f836ff06b512080",
+          "128": "8d2b607dd6722fc82e8bbb24c0bab9f789c8b10500f35dd3acca6d0ec25bc586"
+        },
+        "helpFolder": {
+          "16": "a57636879d9795749cfd1054ff26490a72f4b693bc8d17d185a6c8f431cc1771",
+          "32": "d14f967dfb33481721d4ab23f85e335429c07510f3081b1eb3214165952ef242",
+          "128": "542a544bbf92ef443c87a9183315d4696f81fa3b0588b81eacfa6772751cd860"
+        },
+        "importUtility": {
+          "16": "f3be64b211ca553eac4135224518bde4490e57c16fe22b04eed8197f4b40ae00",
+          "32": "c05ebfb99caa4c30150275fe0423925eaa2ed6301d7447d68414ec2981ffea46",
+          "128": "956eccb4470b536bb4d728930a4539cf3b764396d6de17ad25dd9debde4bce9f"
+        },
+        "chooser": {
+          "16": "c14de5a0fb041e30f7bbff0201b9a5ae3fd54091823caf4986429853bed59999",
+          "32": "bb4513b852401dddcb8b473865167c19e11876b275b5fdc73b2ecf771be56ff3",
+          "128": "64c5017cd67d3f631ebd0356c8bc1002df6cc5924ce29ba70c581f0bd62f9543"
+        },
+        "systemHelp": {
+          "16": "3ae76c20bafc74a70ee829003ce23cf6b0202eaf31c67bc04fb7bff4878c79a2",
+          "32": "db9b188c89caa44e7b396baf5284e8ea8c1e2a5fa0ce9ade90072fb52f9d7400",
+          "128": "41a5f2db8769020e77dd6a1d8a78db60b493299a1aa356f2798303073b9e427c"
+        },
+        "dictionary": {
+          "16": "43649f66ce30c1271914c41e89c727d45e9e5b3afd9c7075f86e66489345e7b3",
+          "32": "874a6b31419dad9696ce7b2b10c42f3a3d45bf3efc649b614be3e026b2759a92",
+          "128": "183eb28c7224e9d488d9a4aa790c0d6463049b0f32143fe003c1c7f2606987a3"
+        },
+        "writingDemo": {
+          "16": "bca897d60316405fa2c96790b21749a428916fb4177e26ae9227c7771ec003fc",
+          "32": "3773e1c9e1ec07a6e5da3744cc015846076e3a52df04b444acb6b3d240cc3a5b",
+          "128": "6350331133126a47cebe0947c44d1b4c585a0b4a8d4f8e1f0df4755f0233905c"
+        },
+        "chatFile": {
+          "16": "968e634348185d1a272f419a148131543f21d5715cf394c581de14dcef8bf2e7",
+          "32": "fb2f2cf7944bcd10c51df29172dc6a6de2a6ef5c92ea738610d48b277cc25c0f",
+          "128": "1a7899ba920f7840bbb03e2cd3683df66c578a33ce439e46c742455469ef25ae"
+        },
+        "chatImport": {
+          "16": "aadd3ca91bf88c142dd362b867f211f1c3462a0d799de4fed431c777814cb252",
+          "32": "35362f134a5d2aaafc9291cf67c40215977c6826420e5f7ff62cdfd0322821d0",
+          "128": "b3e5da2d168b4b930201885aeec469ac1e06c146dc31bb8f7e9b8918a7b220cb"
+        },
+        "contextPanel": {
+          "16": "865356493b298e394805a7cd0e43854fee56a99f60ea2cddd7158a5a1fc5fc24",
+          "32": "a1e9377bbd9b90f5d93215e75d0e35af136826a45096c955ee7854bce6853deb",
+          "128": "d12dea41db2c51c8394eb7e3e530e864a8903296c9f35ee494917d9fba7a0755"
+        },
+        "rebuildArticle": {
+          "16": "5be663242797386b777bd52c8f9cbbd185938a54f2370c4f35b3ad79f7cda3f4",
+          "32": "1a0245ae240be83784a216395bf929e8639863faea3040f7d38f6a278de2cda6",
+          "128": "63a8e89718b83ef03e4a804412b4af924535c0d5cfa9eb581f95e9d4e0f01ad7"
+        },
+        "bureaucracyMeme": {
+          "16": "2658ba107853314d9562bfb69539aab7f51fbd1a51b5456fb711f8731df820dc",
+          "32": "44ffdd15c4b0ada441c0ca73ba649f1be2b4db6656b213617a5f7f99168c64be",
+          "128": "225b19f0fda9ee7c7dec4d2dea6d7d322727d4e1b6e2f8ef7776face610905c8"
+        },
+        "endfieldTerminal": {
+          "16": "8a732bf69e9b5d2d3ffa8433ebf60b7b5ee047de4fd29fd3b5c2048cc976e3e9",
+          "32": "e4140e94c1b121acc6aa9aa0c0a66567e5a496aef273c67579247898876a287a",
+          "128": "b2236ed5e62d097d6a198dea37e30424b5f8fe321cea9995ba6d45b820a6bfd5"
+        },
+        "documents": {
+          "16": "dcc78cecd39ec803f1e7b6baad39bb09ce4e0f1f2bb64a2deae7fb713b9ad007",
+          "32": "2d318a16b1c19453b1cf16467f539956ddebbad62bb20fb255262ae2457eeeba",
+          "128": "639ca8a5ea16506b0bd123d4ed2f45e2682be5d4572bced689e05d96c7da771e"
+        },
+        "alias": {
+          "16": "164c63263da74a2378cbf928dd82d195b1488ec63ac7c706b4735f896e965d10",
+          "32": "cbc18c9d266a2bed0e4148686549a61f8b3d342bfffb9e0f31b30d4c8a17d480",
+          "128": "2170ac77eea968f489f0f44d1b097135056e0aeb253c013d9b87fc78e4537f66"
+        },
+        "systemFile": {
+          "16": "20f6f8874b84a973e3e9d22207e186fdc9b6a3136f56dd660b8f9235584603d0",
+          "32": "5cd2cdea84818c0e27ab9773833cceb1ac076a629094fc0d35b6a24e30b30677",
+          "128": "07c403f52d57ee1949d2f06a0e8c0b94f0c8be6532e004da97b6af5afad9a567"
+        },
+        "writingBell": {
+          "16": "f94b2a4debc727f48a539c2c31a7754b6c7f03e7484da59389b12631c955b428",
+          "32": "cf5b6196370aed8236d119121c8ae685249951fee185a548c1dde57dce6684c2",
+          "128": "530d690443873a6962b35baa7d9056c9bb22daeac2cb1c05e0d7c571b061338b"
+        },
+        "trashFull": {
+          "16": "ced2412de4c0f0ec3ca312cbc90f85124645036579bcff08da392104d5348329",
+          "32": "c8e91beddfae880439f1dfa1d994672d871ba73b4ee144a5aed84bf4c9ded2f0",
+          "128": "b0e6b95d31dccdaaf0aaa9c9a6a0e933143a166ddcbe919664c62123269425f1"
+        },
+        "control": {
+          "16": "1aa6299e8cfff630f7b1fbc8b3facdddc7613eeb9e3084c99f815879dcd8b436",
+          "32": "313ae16a6c70bb007948b4c451c6e4b65c7c0bc044911aacf16cbce71fb8818e",
+          "128": "a0e531f16946586b0e26076c2a43f97e6511fac4a2ad35ce64e43b09dbfaf6a0"
+        },
+        "controlStrip": {
+          "16": "0cde0668ace6664aca1c163958315a072f8772c7ad2b695c73c7ad9256a4e5f7",
+          "32": "d888456015621e615539f091f05782b21a2f4076cd4e139a333e856a561fbaa0",
+          "128": "db51df475129ce50356eb61230c396f7cdda8cbf4283a16ba41425162acb972c"
+        },
+        "hardDisk": {
+          "16": "99ec21206cf266481247002891bf54e38bf794d9fc068c570e3c755961b80dce",
+          "32": "0c506934a360c6fb6aa0d22966e44bd4b8b0633636a80755a20e78f675f86308",
+          "128": "6d5a0b7255e763a832b9e012e43ba2d5a9cda2b9ae5a60ffd05bdb6e11f13a24"
+        },
+        "folder": {
+          "16": "5b880b083f23a73afd4eec324351c603da46e0d35990539b7014369f2f518ba3",
+          "32": "86d7cc99b12d7bdee730cc54c0082e2e922c85fa9e8ebfebcaf8d2373b7a80d6",
+          "128": "137a88503fc91ef08896e96f7222a0c05312de39060e2aa49cdc8c0dbd40deb4"
+        },
+        "document": {
+          "16": "afe8eee926b94893a1fef7d9a6b17d2cbfebf3ba0add4d8c47629eaf07b24462",
+          "32": "48683b739b42021e3b93e468dbd3f044aca0e1dbc29aba9bdde3c23f4be85caf",
+          "128": "09edda6a119cca1591c4245e13aeb62a4b111e6cb42a1c9c7b9bfeca1292cc45"
+        },
+        "trash": {
+          "16": "c8a32db91549591a517ed712751627f9f348270ced8054c56e6e4d3dea3225d0",
+          "32": "ae4ee60d35826dabbea1d77157a3e999a4ac1778c01d43b41ebcff22942059e6",
+          "128": "8a9a9ade5a1a3d5214e6368b0a7effc3b006d34104a5f01053f2c6293400217c"
+        },
+        "projectDisk": {
+          "16": "0698ccf0b60c04c93ce5edbaef3af68a6b4739fbe35f044195f88779b9fc995f",
+          "32": "ce6a52d3406d9fb511f15ec65049ceff56ad564cc6b383a883eb9125731d213e",
+          "128": "4bacfc95b1cf44084cf3c7a8c495a496e9d8a30cd9c376744d4f6ccaa3e289b7"
+        },
+        "searcher": {
+          "16": "805c63bb531a0963dbec5b952342cf54258098b251564eb9239fb1ab5f9a8fe2",
+          "32": "1bf388237937c9169db6ee44c2ea23849e97ab3ed35cd1fe51c3c9e95784317a",
+          "128": "3f291630bdf033aca395e96c481762f10bd873be3c09197b08366d3941d5f224"
+        },
+        "scrapbook": {
+          "16": "b2e53accb231755c6fb91a89dc846f2254dad3274beb9e77517b894635d1232a",
+          "32": "f6fca796ca04b4ce23f690058777566b65b9abe375c8b99f97b6ee040af66fc2",
+          "128": "008b7ea3928e9ccb1d6efdafaba361f5dcef49de17af7ce5756cc28155aec29d"
+        },
+        "controlPanel": {
+          "16": "e2ab7b4a3dd47c1b7c9d838079a9dd3225ecc13f80fb86ee70f712cb5366f2b9",
+          "32": "4c5212b894947129674b013976751fee633c8cfc945a074d94042bec4eb0afc5",
+          "128": "b859bb25a4b2922db88acd7e4af98f10b998d3ebd478d46557a6d8fdce5d2dd8"
+        },
+        "teachText": {
+          "16": "18ccd783272ba1f6dc1a01b3a508561c2f94db1d9a4cb12ee1a3a7253e474907",
+          "32": "8ec2c1d9a2d5bc221be4fac0355f5ffec44e046d3692f42a1a7b66ae70192719",
+          "128": "519ce8b7d5b35cbea0d7c4acc78b42fadddff8e252826274c7dc6b4ceae4a8e0"
+        },
+        "daHandler": {
+          "16": "790305319c8661539b02da0be7d94bc0ca5011f0cc39b1b4f354ae74d60db138",
+          "32": "ee6f8ac6b9d56ac7d0b36640f1fbe1d114c38616c60d8e7fb1d39ae5ef552986",
+          "128": "e8ed546a9c66b09478dc164507220c34bfe5e6b9c71913af0dbd3d8d1b9fc704"
+        }
+      },
+      "supersedesHistoricalLineageOverlays": true
+    },
+    "snow-leopard": {
+      "sizes": [
+        512,
+        128,
+        32,
+        16
+      ],
+      "icons": {
+        "startupDisk": {
+          "16": "f43fbd455a57831f47e61831f3947b5e80451479437dc636f17e5c2341fdaf2d",
+          "32": "8f30afd89d1caaf2a3ae077b279388ced71b24f2087098fe22fbfff3ecea564a",
+          "128": "bb3dec0ad57b3a403e28c8c8ecc247e532a41dba74fd985d440e441a1c7cac9e",
+          "512": "88031f820b596ca9157c8f5f461dbfdf3f3fa240716fbe8a9a63aab9d901dd79"
+        },
+        "applications": {
+          "16": "ed3ea329a3d19a02614d9c78237071f53d5463df31ea0e3f98dce32f46696e74",
+          "32": "b2ff2d22c3db2c0470067c951d9de8d4b5e2dc03383dfc2b92c2e13fbcd14b9f",
+          "128": "6add58956da1f4ec50e4e376cf4f2a0a6f2f49e4e0b0c4c2d007af1525552a32",
+          "512": "36b8b25edb7fb9fe7c9dd3d104576421f9ed7c989ecf80c26758ddc9e57a2cae"
+        },
+        "fileFloppy": {
+          "16": "db3ffa76734be34fd42b4fbaf5aa14b81162601905c1ab7b0428a1821517aa3a",
+          "32": "aba71bc3823c1ab184a426303f30d30d381392e93a757b1b8f4f45042fb6239a",
+          "128": "d68a0da5d829643b55c7aa52436f4fb98c9382daf892b55e60a6a5d656c009eb",
+          "512": "f00399e8e4e0ef7b1178d1934c27b99a1f7c94908c94c4fb2e0ebacbdd07e435"
+        },
+        "projectDisc": {
+          "16": "4573cffc46feaf56a56250b774a49897e20f1ce28fb5ccf459ee69bab9d53525",
+          "32": "67bd3ed472a719379dcaadd4d7f3bcaaf6fc7e08657f6284894fc62ad0bd3bf0",
+          "128": "7dbfed595c3938875fe2d84646c69431831eb8c7bd5a58faa8fa15efe38ad0da",
+          "512": "8b03fc89efcd719d7112b9c278a3a37aca74f16f72568b6501448ef92e8ecad5"
+        },
+        "quickDraft": {
+          "16": "c28de484a4213aefcf5f7aa228aafb42db521cdcdb0d509197c666f9901dab17",
+          "32": "5a3cba1d084bdc515487280308dc5a10f1b4c8746f961c03b2e2a21d92700e25",
+          "128": "7dab91f8dba56fecc36fda5ced42c13f6c135b71361a3f72b0298bf7281275dd",
+          "512": "a313eb90d35f34e423bbee3c072fccdbbb3e18f12b3e3f9d7add915001c4d161"
+        },
+        "writingStudio": {
+          "16": "d4110b611ff4c7a884bc426ddd268aba1d67a2ea9738a70fc1b4c75292e7a03e",
+          "32": "f387edc2a6251e64d8c9d9e4e0d6b9e15cab5f0e1c4091c47941b8274dae3aae",
+          "128": "ebd26ca6e580c73a8a01576101ee73a526a81486d1f67ba33d2af897e45a1dc2",
+          "512": "8eef9bd81928b9a4ce6714e32ac40d589e8a186e7cf152a4addb85587db2c272"
+        },
+        "manuscript": {
+          "16": "499859f1354f0e6329d185c5f0073594449e47383e2b92e31c3e0dbb7a055017",
+          "32": "9106f3aaefdd2010c15a8c466ca08f29c0f6f68b174236812bcf75a3481829b3",
+          "128": "260b8ac71b6a17f33d0c1b73e8ad1a6ba29023a3e02c0d4f4f253be35f2e20b5",
+          "512": "e3ad61bdcb5c351a87f12d2e463df969453c113d640a3895d0d4fd6de2d22fd2"
+        },
+        "reader": {
+          "16": "3e7cb22e3a9ac99ee31e69eecb7fe7c3a84e7a4411acea8f1ad981db44b2aab3",
+          "32": "210a97dc6cbbd8441842d35b2eb37642396abb1aad27c8aa942f92279a878bcf",
+          "128": "488111e0c702e7c3a9931926e3cfe32f569ad23aed3b9edc776cc3ddabbdc26c",
+          "512": "0891789b0cedd56f657b81454fe0dfcc84ef65eab987196d7b0010f54f145e04"
+        },
+        "cloudModel": {
+          "16": "14da4a8d74d58cdbd888753711ab25e42e4799390bcfbc81aa7d2da2ef00fd20",
+          "32": "a41a5b576862cbafed319883f3c8e267b0bd2a22528ed00e3718c29cab4155ea",
+          "128": "71f681e1020a4ebf4eb24e8f7f0909f8c62d22b3367c5d5bcce0c230ac130351",
+          "512": "ad31568f5ed2ce435e26830824675dbc81e98c78b353e4e5d0dd16928534df31"
+        },
+        "cloudModelOff": {
+          "16": "44a007b333a4d0fec2526a7642b1687815fd9509357ba612620f13b866914285",
+          "32": "abf07d1e7e0ffd01c8e3ea46ee104ec0606200fdad725eff851541af16de8b51",
+          "128": "1278a1ad0077483d29e6c1d6dce8123cf79e88b1b47c6fd99fb12b817ddc8a8a",
+          "512": "14c161e0150d09b94d856b014656900d9ebde7f95698a25357bfb4799c487d4c"
+        },
+        "localModel": {
+          "16": "eb9c9ea84e3275bbd4c1527e62c86fae8f6da6b9d7456960c606763b0a39d394",
+          "32": "4c96d6ad3bf0d6549ab74066576dc31b325d18b1589d161f39446d26f925d935",
+          "128": "0d542b1987c34896a417ee1eb12d276bace476975f6922b303489665c63ce5d2",
+          "512": "68ec2bcb90edf1f1c92abb525742f716d68199f04b9030f21b67408a1a512312"
+        },
+        "systemStatus": {
+          "16": "f2234d0c0984cc77c3ef7dc346e2c37b11baeb45a75f825a2fa2342e88f8e537",
+          "32": "64dd5743fe2efa6db83843a9f4f731803f6bc02a4b66ff82a2ebf2593dedca77",
+          "128": "c53b497d2b0500cec11d83ddef25df3f18c82fdd266c21cf742e9709899fd23d",
+          "512": "65bb6290dd9bf6cc2e085ab84a67aba3ad484f1790d6076e46d51626701790b0"
+        },
+        "questionSheet": {
+          "16": "9677a7557c0558a5a9d82e7cf9009cb72c658e7f677da94f6636cd6b2f73e9ef",
+          "32": "65ee493bd3a374d75a551b9a117443154bd804ec3ee6864ab2633a27f84940ac",
+          "128": "24302934ae6afc528fc0c55aa9ae7a105f0b438ab40c3c9aa37735c7d988fc5f",
+          "512": "f7011c624c220577cd8e6f92811c2b8273bdf516e8e9476f1da47f610fbad4e2"
+        },
+        "outline": {
+          "16": "b96f436be695b599dbf88ed27c5b5cafb6b74cbcd6dee165844508c04ac3448c",
+          "32": "cefb6826fb9f93e0c74f08221b8e61222b76933d542387b33ab04b9bd52abe9d",
+          "128": "407d5a36750c472a0af7874357352c9295d2c217ac10e0759c682029b0111da9",
+          "512": "a1bcb378161cde5429d37930bb3b7fefb10a6144a2f294b2fd58a2bc005d2c61"
+        },
+        "sectionDrafts": {
+          "16": "7c563ac055796ece5a5bf94e2e05c5c12e179b5dbaa00caa92a7138dc69d3e32",
+          "32": "204c3c2a8daa08c446237c99c8db3076ad4e85e95138ca1406b95d6271d879c5",
+          "128": "a8e71616e2a6fbb3df53ad32f6b44f8e5a30eef990e3008c9618bd9832da45b9",
+          "512": "e5202dbf7d3004169e0d51f5c97fe8b9a30fe2b65b353f5366037080ebe6ecf2"
+        },
+        "timeMachine": {
+          "16": "85c7e8aa5e92db99a818c2fbcad6b09f85f0e547c3dc79d59637c4d5773af3ee",
+          "32": "4e0e500be1cd9cbdb74651fba7ce8ab4fb458e5b3e923cd9665a89b203061a77",
+          "128": "fa8faa17f21d47d953897e9ca18babcc0a3efdc32a99caa9b73a4931ddc196bf",
+          "512": "6dfac7d8c92b32eec75e8026ed202da77c9436e25dedfdec2cddf987a9152334"
+        },
+        "assistant": {
+          "16": "fa1d7825e6b8ec64010fdcf80c584195e23308fce63ed55200234f9d2bf6a568",
+          "32": "d1529e0550a18f538a9d6309c0ca4234585aa12b4052af0751de118b4eef1149",
+          "128": "0e5916cd0293622b298d94f8a96fe32a85393410d70bf5fa29b3f7a02e5c9ff2",
+          "512": "e3361b687c1d62e8306cf3e4cc92cec382cf7af265e16804a5f79f0141042ea5"
+        },
+        "clioStage": {
+          "16": "3fa12162e9d74d14e093d5baf95c2c45441590611d602d4d33bd1cd017392350",
+          "32": "74eb848cce332c8abc2ba296a9c382aa31f8ceb3d8d28226d62eecd06710b162",
+          "128": "f09985e6c50975479531e8ef7961eb8103f2e248335fc83fabfc7e2e98021dd9",
+          "512": "532954cef4fb9ec86ad4007a0fb4300bae1e4722c4556569b86465ad35a40517"
+        },
+        "clioChart": {
+          "16": "fdeaf469088b4ad84118ff18505f8d0d0ff2765cef15d21f958cbb092434982c",
+          "32": "924545982ef7f7c2cb7c6e04d14a6df9bdc2a4443c86d5076b175c9635d42d17",
+          "128": "76a53c65d78ee9d69fb92c3a093811b351b824537a1efd2ac64ab30782723fc0",
+          "512": "50cf32b36d07f57c9fc4de0f3f3df3512f4396a63cb08b729ae3fdcbe82a5bd7"
+        },
+        "liquidCover": {
+          "16": "5c044d7a2da0dc5ecb320298250b8e3d932a0f0655c834e863933a97180c1cd0",
+          "32": "add9c220d6f7941f88060112f5c271a1369f5900eadbf10988a21307d06e7897",
+          "128": "45c35a56484f0e6627589e95ea52f25490080ea2b2eed18fb60c78c230204854",
+          "512": "2fb1751e824eb5598e3b399c181b982851e18a80cf9cc0a60ac19816297eeddc"
+        },
+        "cmfStudio": {
+          "16": "6a37fe7622b6b12f1342f92c6fdb946d5a5ada7a2a7c09868d90222d9c0728d8",
+          "32": "79f9c4b0f3a6c41616ddeac8ac10c9003bb7d2c741b48cb2e655cbd10bc410d6",
+          "128": "7897fbec1d6d3afca4883a90c4d11a2317950e700b8ed23c5484a1e08adde3fd",
+          "512": "7e25048ffaab8d3cada213cb13579c90309e07055dbff3659351eb1ee5a1a077"
+        },
+        "finderApp": {
+          "16": "c74099488c0a22d465a5348b1cd20c10b125073e8860100db78b413afa21223b",
+          "32": "aac30abf5e18c44d28bc74ba5b4c7d0361daf6d28134b7236789e5a9e4fd8984",
+          "128": "c4b9e0c71a2f2b61562c35ff7d085816a73db3e06ad93294b95f6c4a1884dd13",
+          "512": "bdba9a38f235ebd99625fca245875edeacffdf20bc38de95eb6d0e5b632b9d30"
+        },
+        "multiFinderApp": {
+          "16": "82d9d0893029631e359f732994a529e398e2e23fd734ecee2fa2a65e7aec8c12",
+          "32": "70da6d98ec19b3e913f21aa742cf9a5f45c4ad8956f1ddf7a605ad7359c7fc58",
+          "128": "e406f40eda65bee7dbdb0b33b332937defccc6ecd9345704d2a422724c389c2c",
+          "512": "fd986b03475b4c1a6d6361f6ccde648d16658eae9f8dc9a1f558835004816f9e"
+        },
+        "soundscape": {
+          "16": "96acd0aefe5d359960fe4caa4e7d0e5fe130077e793b22eead5e52adc3220090",
+          "32": "2004e92280986c329e24b7a8e1a80dfa04df426a19d94cd1b2a6d2b7797fa4cb",
+          "128": "f6356eb7d26b9a9735dd801808176e8047bc58fbdcb6741e94a4d6afe1757fc8",
+          "512": "0629de780fa1a3d84ff510c52676d2156dacf6b8365c21ff0c1acbd916e53b6d"
+        },
+        "systemFolder": {
+          "16": "0e0661468eec0858d3be99d9784900175e3a17264eeaa760f7269123c680d5a4",
+          "32": "3775c55312547a01a726bc609e537cf4f1da5f0ce26bd948923c82354f23bf66",
+          "128": "e869e7e5640bee9cb18c8a57dfc6da2c5f6e21c9b063040580920e64d34527c6",
+          "512": "00190af864dada50c1df706a22cdac22835a17659e54a3ed26c2db1f2cc4e4fc"
+        },
+        "helpFolder": {
+          "16": "70d29e47c8eadaccc536888dfae421dfd285979f621f6190c14570af32ab219f",
+          "32": "98ac036057a805de3b75d70b082a67d237554fe7541abf9a8887192873e7dd6f",
+          "128": "608584694522b251b9915b7da7577104f8aa9c8fc2e8e1fc57e5e5b7d8a7cac5",
+          "512": "c22a583f8c7933145d3543319e6c3de2b6f3626e3670281d3543851f1a63aa64"
+        },
+        "importUtility": {
+          "16": "44f47f24a319750134822e03e1a8b354932818e5132a860fc0de49d17744dca2",
+          "32": "78e88bc5a88d820627bc4b76e3b4a16a713a569d92629b809e9dd91dd599efaf",
+          "128": "1bc4205cda55517c1abb35beadb50a6ea82dd62c7c41fe0af846c0f84c53acbd",
+          "512": "4cf85f1e4377f4f599d1628170b9c2d46cc1757be31526e3fe7dbadfb0b9d254"
+        },
+        "chooser": {
+          "16": "84a536420513e34dd9650b79f15cde3da4fd46cb4d785b12fcc266b371a08318",
+          "32": "34590955fcf6bc2065827dbdba7d5de756b698a9e1b479ced4c069c179fb87e2",
+          "128": "e1d1938a7630aa176817f8c5548a40dfd951c0d2c5f7d07c396aa4213dc3fa52",
+          "512": "5fc9d1f79afd39cb09850055ad58cfe5c59a71101200877716ac1c8140fa6158"
+        },
+        "systemHelp": {
+          "16": "9076ca42d3691194412dc8652c9fb8fc7b9d643085bfeecff43534e7ef764123",
+          "32": "0a97a4a1abb9494fb3416862821d27f5368c2aace90047070924d7c6d5ec6e09",
+          "128": "753f8ef5dd425650245e3d5f70e7cf9c17275e34f1de40278acbcf60dc8fb25f",
+          "512": "fdb9a97531fc2beab46d651d08fecdf1fe759585ec19496ded05057f54ae4fb3"
+        },
+        "dictionary": {
+          "16": "159e6078e7124d917f2d15803991f2fd938af0acb1cbcd1e0d05a54734dfc64b",
+          "32": "269181cacafcb68992e79fe54da05c824e0aa1c219a989a4892905d9ae470271",
+          "128": "49430e5a499fc88a4da31bfa0811c7078e29a7beff9ee5f8f8d042ef6954e99b",
+          "512": "68145bbbad8553fd9060f5e8b973e40814cb1ce5cc6a489df834b563eb5061e2"
+        },
+        "writingDemo": {
+          "16": "0f79789db953117ddf19dd1480a8b3d8546b6eb799019429d91e5613a1ab9023",
+          "32": "6bc2bba5ae6b0f20ccc6b635ef25d3223c859a2b6acf390112ce6e7b2adc9b3d",
+          "128": "897ba6857171775ebb2c4274608647e8a41006f0dd786b55e8191722b63032c3",
+          "512": "509ce45acd76c59fa15100863bcc88b7fdca232cfe28f7af665ed84f7cee0551"
+        },
+        "chatFile": {
+          "16": "83a2727a859d086f59e2917a5965104d26ae0c68a300b1005a8b30692f86f81c",
+          "32": "0389375b73abb8a956f97dddaf750f5342f5ab795ad30df98082c76b55d770b8",
+          "128": "dacab87f2ee6c3841920dae737cdcd390a76eb4240404b0b780e068391005213",
+          "512": "a2274ba175dcbbc53979c00a812a6d0dde4af96262c1fc74584508bb63dc74bd"
+        },
+        "chatImport": {
+          "16": "6c1c7e5398031d67c1f2126b0afc6783e1c9cb19fe95f1fac42e2acb35629414",
+          "32": "f49243987078412fecc23f73b7a5b40621a047faab0dfab237b127875bf1bf9e",
+          "128": "55beb215fc4676adf5113c769b89f8cf484e96642cb40c79345e7f3494da5ac8",
+          "512": "3e44e770104625a4f635336453f8d81cb135aa31b99a81d5656ab6d1c2f51898"
+        },
+        "contextPanel": {
+          "16": "fcb6f7a5b1203fa26ba9c0ac6356e680025e31707fc556982a9b9f0787a22625",
+          "32": "9c2a896dac499875d2dd5dcf92aeaef71f76309b8709c89dd0567763557e5a76",
+          "128": "c444d1c38e787533cfd6b3566e0b41ce061e5b120b716e08ae7c65c81cb55be4",
+          "512": "ea2f15af010322642de6c4c9a1d85d6863194bcf5d8d7a4aea62051caba35cbd"
+        },
+        "rebuildArticle": {
+          "16": "c76803c72952e137b50393a0553c0521334f4284eb8ee350ded135fed689b8f2",
+          "32": "459d2dc0daaa74a7744a0c6a80fa361d7e99f242b4437ff296092448472bd91d",
+          "128": "8ae004058147f79ea8708e1e767a30d227aa61b34374077e842a3258e0eae31a",
+          "512": "66ba5535bfb40353ee9626eabb47f092e9bc4c803fba05cb9b74f8307f342d0f"
+        },
+        "bureaucracyMeme": {
+          "16": "4fd9b884b8b92ec0d1adbfb8fb762c1db63f1d27473469226ee25d9741cd9cf2",
+          "32": "38feb7f85449d78d43382462755ec3484639585fdff4799a2c750cbb453f8522",
+          "128": "056b825e061f4934a65af14985b57ff7635f198987722c3cd64e00959a3c60dc",
+          "512": "c15596dbcab629bd5daa02e71207c2c7e196ebe38a013d5a40762f64fca865cd"
+        },
+        "endfieldTerminal": {
+          "16": "b27412354d02f3d90f247d4d167dd770f7a8d27adbd500cfd12e1ddbfe2c36d5",
+          "32": "63fe438ae47058a7cb017f3460d03eef0ae7ac2ca030f1ac4ce077563737ffde",
+          "128": "7e46cded08c3c13e1bd0c29f11260953e4dd74e9a5a19c24ea3dd83fd041a372",
+          "512": "2e80ee8277b384e38680b793044d025c3463d9f78f0a8657151c673b0cd1fb74"
+        },
+        "documents": {
+          "16": "acf298def7be55456f4004365ef52a678dc725c57be4200ff691d8618716aebc",
+          "32": "c90b7952125591014afaf3bcb0a638964c6e72e7f6c65d5442565aa6f4f4bf2e",
+          "128": "52e3123e7c0b886245bc7c60c51b0f5a8820b6e1320304c472ff90cafc7ae5b2",
+          "512": "f40b29b241805934097fe8b5ed99fc725446751e362bb924a3c7c1f9cf2f3b29"
+        },
+        "alias": {
+          "16": "62e684c4140b74d18557f0e27b500ba78a9cb1980d7cae82d41702ea7c7d9693",
+          "32": "f1948d46053907647b78f08c5b971f1e92ada9642332c7ce0ce3ef6244e0da9b",
+          "128": "8a05771b410ecf3c8edfd3e2cbed6f1af44c31afde8828052c8e50994c71be6b",
+          "512": "e7af347ac66fef1083f4748da85440f73b493563b11c3f9963091c7d60aa0665"
+        },
+        "systemFile": {
+          "16": "4f5e0bde3ab10e215cc935ab7e1ab6645dc5572d1820b2c3eb1faf3ed2147efb",
+          "32": "6b54ae5058a28d091dd6895b4a902efd6b6caa23cd01173e98c65660411d0278",
+          "128": "2788ca4e016ae395d87bca891866e70702623dea38ffe6b3041c5311459b5143",
+          "512": "69f0b3810d5e194d5a36ecf5a22e00c040d284e16042158624972832d4064037"
+        },
+        "writingBell": {
+          "16": "4cd7f8d6f69b5e81c9b5e76f2fede1160cc5376136d4d9318cfa9525368e675d",
+          "32": "685b177d8de25f2bedec94853bfe8060a35b9137f7d510d9a6e2085f23ba92c3",
+          "128": "c0612f18490fb64c22e09ceb2965fa90d2bbde0f9da096d3ff75f5a825280874",
+          "512": "1d77ff0e97f49e7faa62b24bd685920538e705ca37e359eb943993d61a84db9d"
+        },
+        "trashFull": {
+          "16": "c1e4726989770a37ee98a46051a3c0728d6f992a1c41bfc083fa4f8791a356d6",
+          "32": "3181a1f8aa5b5d93da98e0074806f50a835b8b5868830e7de9acd14309972d47",
+          "128": "432eceb3857ab0083b2ca60683368bc04a77535f2a1fdfca7299de17669d3b62",
+          "512": "26b230c578886a894b0ef449862c9d0093ba32191073ef5f361ebfc68a4a3ed9"
+        },
+        "control": {
+          "16": "e0e31b08de0a1fcf78c70af7744a5c914a8e8e5bded85ce15c541241d43be9d2",
+          "32": "f65c1c5dc79feda4b18fbea7f3f9a764af6efae08cd8288fe44cd268595a69ce",
+          "128": "37571937615f5fcc5b58387d253ec23e59f00bbcc6227adfcf48a7d8232fa006",
+          "512": "88e55c24d93097f6d82de016e34f8601fe6556997da804b7e4e43d912ad9a231"
+        },
+        "controlStrip": {
+          "16": "9d9bc5cf6a4e6b5b1a29be40b0df03be9b70e91b1f6cace46dd911a929939f88",
+          "32": "85b656154c2d1cd8a7cada5cdf5e7c09d7e7c010ade310ce8efd3c17c3c4d703",
+          "128": "0e0f98689d4171fd2a88a6e04ebef4e71ba8db7d8ee662f9e033ccadfc678d2b",
+          "512": "4d14b821313bc384b099a6dd1e5d534a21e7c9e6ee928a86f696ad142272d6a3"
+        },
+        "hardDisk": {
+          "16": "d0c67686d751abc3b2ababfae16beff3f27743a0ecf1c5cf91a92c66962e7c1b",
+          "32": "c9a1f5f9a82af95ef446c86fd2e3aca008b4a9933f26c10607e29ee6d97655eb",
+          "128": "90ccd8b1de9e09cf531407657e41ce98de2d0b86e25270f25bf04da4e5f0069d",
+          "512": "1f68b7907077d6283ad9391cfe25f256b602115115098be1295722df1d1f7595"
+        },
+        "folder": {
+          "16": "ed7d89d0438f2b48abf8d424d24030d558ce3760e3305d7e4ef54056b63dab55",
+          "32": "0d8680b584e0f28ec7862bb5239dc48f83d6fdd990a128312be18e939ae70c17",
+          "128": "35488fa4538ea42db32fa6dd86d63e3a503b8bfdc973b0480a808221dad3e2db",
+          "512": "2ba52c736a054c32f1d597aabf2cd471f90e5dde38af11c7a77e9cf6a992e47d"
+        },
+        "document": {
+          "16": "adba13ac9595a9718e7322c58d0fbf67ecd37f257dfe3ccebbcaebb04f3e3ef1",
+          "32": "329d948c65f4a1e2469cb876a4fe941feb56911f71aa749559258f30c8f13286",
+          "128": "6a5bc1e93b032e87ec87082785a5777f9160d6681a1254051c2eb4e3aae2b322",
+          "512": "6c3a2a72044a632837374937cc11cb2fc66819df799b2806f944b41fab2238d1"
+        },
+        "trash": {
+          "16": "cad490f5b600c0017285686f877996b4769ac65da80b995f0f58a194d6aaf7e7",
+          "32": "59f4dcb37d86624daf382945ac779416a12609107f24894276edf520deb04d23",
+          "128": "c9bee16dd8a0beb42123238361e34134cc45372434ee5c7a74796e164fe763ca",
+          "512": "10792e8b55a1bddf78830fa36613003af8aaa286a16440d86ceaa22c7d3c557f"
+        },
+        "projectDisk": {
+          "16": "a3658188c12ddc2ac1b85d77b6c447b65483812b739dfe924051e1f5c399b7b1",
+          "32": "69f164a2718e607369fd178908acbd4676483d85c8e5e02d2eb0ce7915ca18ab",
+          "128": "c90f0f6f027f3e0f5cd58dfa2d10e4b6a76faf3ff38df31da929e14bbc12e535",
+          "512": "8f67fcdc218041983c686c4cfe73a6c77868ef5b54c9c5f4bfc00b5e7b232035"
+        },
+        "reviewDesk": {
+          "16": "53e5ee7bbc5b928a87305506792f4b52de5822dc94a9cfd2e5ec04b9f152dda8",
+          "32": "99079d236469f8447fae00f704f37027332c9e20bc9d6031e50138cc87cf1126",
+          "128": "845cba570bc907a75adedd8a451eb5e91149f4a6aedd2ed69e4054bfd7b3bc08",
+          "512": "9c3eec9d2c30b2d5e331a5ec1a1773af52bc7edcb092d981bf84bb3bf6dcc86c"
+        },
+        "searcher": {
+          "16": "1ff696b6aa3d4b3bcd1f941740c1a405ec0206717c6b4bf235a1be5ea8719f32",
+          "32": "d60ed7ba60b7f01bbe550b933bef7e73e303bc46964116a269e5f238f1fb0937",
+          "128": "b86139045def96a7a296286c87b9e08021d05b8390d23a3607a5e6651a7f3592",
+          "512": "f975394f9693e94c00ea0213acfef598cc7b474dffeabd66d3d497e247b07e7f"
+        },
+        "docMap": {
+          "16": "3d3473b0c89ac1dcfd707c605a7b3a22245fd1ce223760b93538450ceaa7a53a",
+          "32": "8dd2ba061939f4a1d1a9ac29f5a03e059f0737be7bec1dd07c23610d540231be",
+          "128": "da1f2eaa41c0e066e721b6b85b905a080e77d0a319f448a0ebfa69ac663da881",
+          "512": "a8b3a3fd1bb7f870f69909811b9decf127c6f67b3a018914e74d4d4f7fce891c"
+        },
+        "scrapbook": {
+          "16": "b841ac3b7d95b91299c72ae61eeb1efa519457c4d7019d66e2c1b6c422231681",
+          "32": "d54c00ce92a4737258b793453dfdb6809237e5971b2a30b90c006cf6e851aa53",
+          "128": "7cc2af00a28bf98d4e46702d1d21fd1f846cdf2bf80679f6bb1c711cfb1ffae5",
+          "512": "bb3897c625512de0f1135779be2ad68bc690f219eb339ef41b4f1cf037841126"
+        },
+        "controlPanel": {
+          "16": "c83f1bba0a35ad7786947fef7b29edc15dc84926c7224bb7e8cac70d436c709c",
+          "32": "5c6d25c14172b95bb844343408a4a6c2d1ec644292363b436c12c59bfd60b226",
+          "128": "5ec961bec4f4bf96c0dc2e76db4f4bb4e4e10a23cdacca294401691659b1e575",
+          "512": "e12629c0bbc5db127d82a8b26a836e5b7a9bfda6cae26de2d6f678ec8592dffb"
+        },
+        "teachText": {
+          "16": "12c9ebf2cffdbeb4694733c92a8521ac75849ea1b81731e019c85df30f525c69",
+          "32": "6c54ddae7cab38103b93ec9fb8ad0d18a7905628da7a2dc6e88ce1352236e269",
+          "128": "d9d66ab835ee45029191a0aa9740ecf08c6a60a7b649cf34085f00f98808a3e2",
+          "512": "ccb18607b6fe8a02fce0a3f4a316f1280d5d9fc70dceaed1e1aea01e60b2ef78"
+        },
+        "daHandler": {
+          "16": "275f5939f4858e1323eb5320ff08c4a65b3f55ddb89178993e4273fcd40445b7",
+          "32": "5aaedf688308578be053aa5542a7f3cd7d3ab87aa5c8de90c2e881e6820d93ec",
+          "128": "2c99f493e7b750abd43dc511e93f5649bceeab6c445b6a946a98e89b66f43524",
+          "512": "ece484f78aaf2cc1d07f648110756ee4460bf5911ba04f74064978771cb821cc"
+        }
+      },
+      "supersedesHistoricalLineageOverlays": true
+    },
+    "yosemite": {
+      "sizes": [
+        128,
+        64,
+        32,
+        16
+      ],
+      "icons": {
+        "startupDisk": {
+          "16": "9832c34bdd2fa3a6dbe7ac9208bb02197dd452b4950abc1988076cc7a7cb8dfc",
+          "32": "a1115b447cd7c62dff5eb19c4b69890342f7a6fdb0154e4b236eb785312e14b1",
+          "64": "1506b0ad0dc9dafecec0a6ea78aeec10424ce6064936abde64ebec8152fccdaa",
+          "128": "750a6e5324c3e0fc3d8af57463ee28a77f59dfe712e45e88493846db5c4d8859"
+        },
+        "applications": {
+          "16": "616a9374d62c3d48fe458bf6e85da136c67e6136e6f669982f74b948b8e44e8a",
+          "32": "83f49d67f38748ce29fbbb78198bad5d48dcba25dedf8d4852bdd4c747be80c8",
+          "64": "079fb687cb4c8ed80b3b022472b451905952298f7643c1cdc741b47bcf7ccc59",
+          "128": "da10a09c421ba65fb169365bd61b765b81076af39c69475901ff795d14f2a3a8"
+        },
+        "fileFloppy": {
+          "16": "7fe033ffbe66cad5e757d3fb8826e31de379ee505945fd6ac470636822b71588",
+          "32": "5a65c7cc0b7f9e9d8ed2c757627688e2e23ba75e1b27e5538a36b16b96bc5821",
+          "64": "97c2a960b708d2203eb9d7dee51f2a37fbdf0eb1612f8ed184dacadae94c661f",
+          "128": "f05ab3e0a2d5e59f03b6e73894f2b992914d276b18cd7b4b1ff82498e0a95d77"
+        },
+        "projectDisc": {
+          "16": "41a00773c7d6ee28a2d4dbf866ba8538e6f0ce93bb21c506f06f7b10e46683ce",
+          "32": "a5d460b8e4ac84a1ed329f2dbb347b4e3308b25a75caa030e69ea74486175004",
+          "64": "c44d48afcdd6d97aa4293d31fb6e4b3c628d62d1591b89e189f1d9925b86fbf8",
+          "128": "95ae58fa1ecde2331401a0a9f4b630590fa6edaa4efe681dc5cf4cc24e803f31"
+        },
+        "quickDraft": {
+          "16": "955ceae43970fe9ea6a4f8b6c5fa3d86b97500dc2d1fd939cf4b24aa7ff2b775",
+          "32": "bf232bce18a1f309452a60bb21fb7cc4f5ff848342c847038486421cb8f1e435",
+          "64": "7cd64fe986eb95e0e980fcaf88b5db2ed2c417a6d78133cfbf6c4ffc835d8241",
+          "128": "87f897bd5976bed244b3118cfe0c4b86337ebe2013610a494e6a5405ffa6482d"
+        },
+        "writingStudio": {
+          "16": "114f43ec09fe22f8f4ccd69094efb3ed0e3ad9eecbde385e6b023af9932a1487",
+          "32": "31ed23c490c1633ce3682315dadcf44385fa42b24f22c7aef21da06d3331c4a8",
+          "64": "ecfa929cff7794c1d372b9a5053ff23856caa189332471b65481b7b3e262e2f3",
+          "128": "9175345850065606af09eaa4dd2bb12b331756645d8fae1e83c4b18165a0f38d"
+        },
+        "manuscript": {
+          "16": "0ed5ef2e02cf18f665436b0b1f543a9000d35100069c1bb16da4a26e02910953",
+          "32": "9aa052194d4729313cc16eb36a72545ddb9bcab5cc99d64f8c1a7d8d17f26fb2",
+          "64": "e427d64219577fec141d1890f8fcac4b95f7846182bdc51bf31a86bc83fcd524",
+          "128": "d7c0f8ec182f5d83b672cae39c0d1e07f0935cbe02187c7cd5bc3a17aa403af0"
+        },
+        "reader": {
+          "16": "3cd1fb35b48e955ba2aceac9e7bd594210e1d76023da8818275bb6983724a8f5",
+          "32": "d0afb9c6e801bbfea784de7f09a907d047b67711279bb774839aa666220dc596",
+          "64": "6ef3f154a11080ed4cd059a256010d3a27df34951da18c3dc6854083a0ac82bf",
+          "128": "4175e6f7a3f51d29ed538c268ffcb9d401efaacb2576d35737fc2542f31a99d3"
+        },
+        "cloudModel": {
+          "16": "10141a042df6ede28060bf33f02af7d751bdd2e3b9172cbf77e46a0420efc50f",
+          "32": "cfb30a1e184de11d44739cc3dce50a99aa99f41198c05ac219207a180eeb3e43",
+          "64": "057a2b785742f0dbea45484b642341e2f4b5b43f3f487b4e00b8fe820bdaa5ad",
+          "128": "8491ec0e9901d56cf3fa3e78c76b54032d7602a8ba14e14a74c487ffc7c941f6"
+        },
+        "cloudModelOff": {
+          "16": "20feeabba9d87b7412597cf9ad39ddfad6f4faa60b5fe9a938ab2d2dc6e28ccb",
+          "32": "0dae9cb28b85d2a49260c5c77e470450784feb13dc73d5751825a8ebd0548a6a",
+          "64": "f2b933070a6c3ca497685f1071cff42e19c5fee32400f7a580cad6386861ef50",
+          "128": "ce9c8c81c600db158ecad6ddf4671aa3bd10dc049b3fdfc137fbda6890a6aac9"
+        },
+        "localModel": {
+          "16": "76f68714d68273c208624233e00f600dca713ae47e78f45f9d210af5762413b5",
+          "32": "8c69c98a761ec6647eaf3b5339db936120b87de99c4fc6d658efae75bdfa721f",
+          "64": "0cb6e67f6b1db09f3d0961ee8a6e36a8bae984b1266f49cbd529e2589834640c",
+          "128": "21101339c45a4bbee75eecd4d30f6e72e49e1f528a80b3094b794523da66b0d2"
+        },
+        "systemStatus": {
+          "16": "45052b762d3d7cabad4bb7daa849f89eb3b62122fca78f138edb2ff8aaa2d981",
+          "32": "a195097d3131ff0959c9d8318034ec6f4e4244770e5306dddabf29484feff8d3",
+          "64": "6d872d0ea0ce9efb9ebf5f3e3903ff8bbc728f3f60a981066edda468296d9043",
+          "128": "fd132fc6d525be04a4ef2096b022ecd47c20a762f1b2259392266b776f854843"
+        },
+        "questionSheet": {
+          "16": "4cb0ece78076a63c2649586b2191c689f0fe484895f4551fee01c5613df7caa1",
+          "32": "eabee584aaf207e370f3718844fd6dd02a7d5a5162cf265165cd18b45c708711",
+          "64": "46265bb2793471c3dd0c0e80002f61b01d5e61847ff8cb89e91ed6a18a2e0827",
+          "128": "bd146a7ef7774567fcac9a07058cd49e73b4da7395c06246e164d7d58b64a6ce"
+        },
+        "outline": {
+          "16": "22b9a9caa60fea590c94c59e14b38a2708518f794073069d441dd12307634a4e",
+          "32": "e80c59962a404385568e14596637c1e10c4e4e66133929109d483d0419bda35c",
+          "64": "f60045b6ae885a669878b1a0afc096de2094f1d23d145df69abcb1ec8efe4e82",
+          "128": "8558720508c68acd615f7fa4b76ced8a575d1cda1abf56adfad9d90efb2bbca2"
+        },
+        "sectionDrafts": {
+          "16": "31b00e5d3bb627c6ce7370203ceb5b87ef2b609ae35b002308ce8f65b3beef07",
+          "32": "63c9a176ec4ee0b4e12e58d5d0d6efc003489f71f63257d3c0e756bdd8d2410a",
+          "64": "09b3dc5c60fdb75b092c59ab0f65f6a4efee832587e2a24f44660928f6974a71",
+          "128": "ec5a08d6e8c40e347c94aa87353f8b037885d3bd2fa0a4ee0311d462b919ee7c"
+        },
+        "timeMachine": {
+          "16": "6fa4b9c5e666c6e864b6ac177b4fa113966288410de9f0604edab0f71fec8d67",
+          "32": "aa206930a25959a2685d21f2b8979e132aa76355cea9ed2db8c11a2022f70d06",
+          "64": "97b759478a79dbffa1bc02ba0f12727c7b374d010498ae847054a261817154d2",
+          "128": "fda1e0cdaa3a7039877b463b247d351b65eeb416bb441fca93c36da8f219268c"
+        },
+        "assistant": {
+          "16": "c2b2f9d6af00584e3d7e9fb165a09babc2d8c2eb29b48179bb6b72db9eddc96e",
+          "32": "ed7274e43399b3b2a5ae36916217db83bcfa906dcc349a71283a2ca66d43413f",
+          "64": "7333197f07b066807621d130c60078cb8f677b8b6afade2341943d808e42113c",
+          "128": "de6dee5731a35f8cc62b5f4191ff7a29e7c817e4bd308ede63e74c65c5b09531"
+        },
+        "clioStage": {
+          "16": "5820e61d6fe741d66c5b8133875792db579c49670a7f689335c26369356a6ba4",
+          "32": "8391c5f24f221be80c2b5e14f8ac8467c67201b7c197f7fb6144d2108f95e0d1",
+          "64": "ee17f61ba35409cdda674d25a5aba166f73c4bc2d6e8a2c8ed8982daa53872fa",
+          "128": "119d599f38273e5ed1bf95a4dacbf253209c5c5f158ae4f53046fd84aacb56b2"
+        },
+        "clioChart": {
+          "16": "82b7c9482c3233ca0d86b351eb1f678e9066c44f61599df0c5f13e9a2e66523c",
+          "32": "4b494838f97f6d95539c14da054cc113ac3d8db71a09f384591444bf86b8ba50",
+          "64": "5dbb667891e8999d227097d4d47fd47e94faca9443bedf915c42907aeb8ca68e",
+          "128": "7c1ad7a179cf0a94187a33bbb9b718665fc97667b62cf86249a59738ffd999a7"
+        },
+        "liquidCover": {
+          "16": "73a88e55238870c5c14c9d78229c73c123e1d45a50ae8901c19e49d1e86a3d3e",
+          "32": "e597d42cd9c236b3ddf047cbacf6cf9bf9b9708ed2057b76bc26d663a69d9aef",
+          "64": "99553f9896800f5fab8e0d83e411c0e4a48e47357d94018829d2782a809faf43",
+          "128": "9d0bfbef4915090fb776383d6b87a5dad4cc33efb9e9572ea1ff037f943bf42a"
+        },
+        "cmfStudio": {
+          "16": "9b0908e537e489ec6db319984ea27d48b6b2accb54677a6f65ff82e83f559543",
+          "32": "19ff7c064ce6b32f455b455d74a6c347113e2c68aaa56d37ae07683a99b14d6f",
+          "64": "5424e508eebf9445f7d024a5cd76376e2431b3e3a46d9cf60e3248eecfc04619",
+          "128": "b886e420ba8adf0ca27b46909cc90f8a41a15b762a0a6c4c2cc4f8ff9249cb4a"
+        },
+        "finderApp": {
+          "16": "3fd2df0153421b87ae5365c6df99622175aeb8bec67db60a9dbeb899b8fca4e0",
+          "32": "cbbc8f36ce9a94004f084c336ff2dc1c8c1ac6b759ab04097648650b0254bcb7",
+          "64": "7697e5b735281b8445cb33f3c6674f0a2f11e16a58137df2abd5ac26e8d515ac",
+          "128": "37aa8ffaf89edaa63f45c016b84da4570f055e9143a884f94c6ef1dd85001bce"
+        },
+        "multiFinderApp": {
+          "16": "39fa4bfbc312a9747c1478b866082d5555ccc0df950acfe4c6bb93526e3f8a3a",
+          "32": "cdfbf4526b0347f14d5eed75a349ba0bfdb6b36dd8dd090873529aa284408df4",
+          "64": "0fef967e5b54d1c93eb35061bf322be723df0aa9e8959af886c26aa3b2818075",
+          "128": "5ceb8db8979bccb8760d22e3bfdd0c5e1fd965100d724c319c201324f01a29b7"
+        },
+        "soundscape": {
+          "16": "865abc9b0f694b20e52a4f483da75aef62d771dbb6fa8d527b2739837f7e24fd",
+          "32": "b90009080645c6f8cf8ccbc1f04840d68119d666c5bef6735e39500455b622fa",
+          "64": "f350f5242aefb75618ab06cc8dd32f91116e85720f60ae994172f6be784f6e95",
+          "128": "9646a91cc112d6cb2c17d9a0f05794fe6b49e2890af05525c620f90a1e291515"
+        },
+        "systemFolder": {
+          "16": "9e12d5ab1ee11f61af875a590a0114958bd28877043ff0a162bafb503d695b57",
+          "32": "00a11633a5f26182091f702f0020bbec5a074f8d6793c73023dc00314ddf6000",
+          "64": "87fe1bd8c5c381c94780d90ecb66d1233323e17bafd0c5b36a268c8c59cf2784",
+          "128": "42fa7d4cebf3f1f6a3f0ee27ce366081fe9a463e85b356d07cdc5836766b492e"
+        },
+        "helpFolder": {
+          "16": "a9c64f1e7d2e8b1a1e5c0cfd5277e91d65da630ca40dd1b705c8b3a124827881",
+          "32": "89cdf84cba30520092a0dd5fbace299a129755e3917c11afac58986964484ff6",
+          "64": "435c128e2010ad323553b693bc12d413cd380dad77b80f4780b2687178ac89d9",
+          "128": "22da59dcca88ddefcc6abf3eb96918122ebab795f8874b9df742c71d88cc879c"
+        },
+        "importUtility": {
+          "16": "1cd049b33a4fd3578fe73d88b33017a7e40971766c4aeac408326d7185c49bc2",
+          "32": "d69527c642dad57b1ec0d17bc0d0926dffebc966cce6d12e221a314570830ff5",
+          "64": "9fbacc4b2125e421482bcf1e459967dc2a1bec0b1508c0fef1d6462f26fdade8",
+          "128": "fb2800998bf9559d6e68e57ecb9399d4c654b750cc28bf4938a2e8ba426e65ef"
+        },
+        "chooser": {
+          "16": "ab97329d134e4843fcbe3d4616c3f68224659d9a9967e589b13250b1248fde52",
+          "32": "b09e76ddea4ff2d14735fd125fefeb38f33c6dd52c27f28f97d38e0a0283014c",
+          "64": "5d5b2f897f8e57ebaffdbd57d89472b03457abdc3cfd61de7f248b9dbe5cc561",
+          "128": "c713eb87d3c3a0e1b81da9426d230006821166cce13f800e6ae9016971355d45"
+        },
+        "systemHelp": {
+          "16": "831a727249891c0769dd4a58eabdda2176e1300fe0f24677980669593d2c0388",
+          "32": "2b96254b216e97a863e4886a0f4282a3d62ec2193337927a639c7016fca3700f",
+          "64": "868681fe54b9a83052f929d36d93185fce3549ab9a1a52605d533132db03377e",
+          "128": "71aa5a4ab6a321eb1f9deb4d6aea2b01af3c10dc3261935aaa54c3fe5e22933d"
+        },
+        "dictionary": {
+          "16": "d4403bca495f2c69cbe755def6b62236afc3c402afce3930df14eb35ec9c2608",
+          "32": "db0ed250185b2918077d2eaea1efef1ef298a07d6ab7f23ac597db35b5b58115",
+          "64": "efa702430c3e71c647fb78bea0ff265e70c7456167a102e0ef6e5fc5ea59b9a5",
+          "128": "3036a84c42facbea55ca73475db6ace1d62a25ba32f65db40bda60bd88e34485"
+        },
+        "writingDemo": {
+          "16": "21676edf2ceedd050c386b90769b280e1d51c615096cbcd4fb0eda145d5a0181",
+          "32": "f685fdc24d117de8ee04f0f42d9fdf9d1bbc82f3a299b1c770c4d999baacf496",
+          "64": "8dbd75419176d4c81dd661cf6e296d1215ce13bf30b43419c2f1fd7ae3d48795",
+          "128": "f54111471885a27399a980add00b8f129319e9385b318833a6d56baa410c003c"
+        },
+        "chatFile": {
+          "16": "8e00791a6ac20eba56dfa7279c7774abc4130d5f33b6a5e9dca49c1a45bcab4f",
+          "32": "ed41d7d3f29fb825684c0fae2aae2b4c9965da25a4873822fee7284055215e9b",
+          "64": "3ff00e7d65e46732d17b6ee6fbbb6a29721101e73fd8e5cb5b50ec11fab9cd76",
+          "128": "393ba71130709155c72c0819ca96243ca3eb71af40fd11a78082a53644c47855"
+        },
+        "chatImport": {
+          "16": "cb06632da8e3fd83e2aaddf7ef96806818b94d9b01555eb625d2e76aa2c3ea8c",
+          "32": "0446ab38a7d22aa29fb5a912f0b82fa5691714731cdaaa953d804ea69878e720",
+          "64": "feeb8f0f158ae05406309347df0393c93d1ed6a49042551fadf323112eff03fc",
+          "128": "4f72e597537badf1ce1255362e3c39b5baaddfc672c0101f87ac13ecbd2f94bc"
+        },
+        "contextPanel": {
+          "16": "01760424df6f0c068db52141aac774b959a09cdae985d82686a6578567134faa",
+          "32": "e2af02359ec0a65a9d70ba5d2d492568b05502f9c006b1d2b26ea2a769f3c7b1",
+          "64": "07410fbf39e736e5158d499e60d135f6977036aba476506a49091bdaf011cd74",
+          "128": "5ea68e25f304d876fc5d78d384e57d3c7cfe91dc8cf174efb171614f0717be15"
+        },
+        "rebuildArticle": {
+          "16": "fe60deb5c0d40965b5c4d743be13b19e55225a08a9d3de75fd9251487c87667d",
+          "32": "907da659a0eca2ddbe6c41bd0faf2a39ad20a45e10bc3063390782b2515dbf7a",
+          "64": "7d9e38204202c60517b476d946c4d044528e60bb3ea6e9c24a07ad7ea86eb417",
+          "128": "9fd3ba9b77cb1e075aeb0517b912f8606c24997ee5e8d5289788dd1f90251d9f"
+        },
+        "bureaucracyMeme": {
+          "16": "7eb4a1590a7f60a839c33009fca5a3cb1b070b757beb422c1b36210389438d01",
+          "32": "9d0a96e6717a91e953753d67c3b411c4ec1fd77eb8bc4b2cb9d61299d1b80a40",
+          "64": "8c71f8da629e6b3f5e530e88ffeb6a6064e308bd6fb418eca01e46c8f61ac5c1",
+          "128": "4d7f8fa47f914fae2e850fbba1057fbfdfec3de0e922de7a22fbc879d002f11f"
+        },
+        "endfieldTerminal": {
+          "16": "4407a9a757269e34d13a0d56965a7aad836a153433f1903ebe53b73fa6e19271",
+          "32": "faa690f4c388764381727b65bc06bcf9a4733e1d00908330e883bb4f7d43ba1e",
+          "64": "9bcae3718094eea557089b6ba8ea78cad955c8fc1b91552e99925a9cc92708e1",
+          "128": "03859ffce7aaf4e0fa59b5f0df24c6bae009a21370fc7e53a19bba07e2099249"
+        },
+        "documents": {
+          "16": "0743e05d166c59b90084793bae2412d5de592d4557ae70ae2f04b10a18a731f9",
+          "32": "22511aa2bbe4871f635b0a52c2cf46669f9d600c53de2ea254b3be94e6c02e10",
+          "64": "706423a35ae2e8d718a410e0e0e3fff7a48642529aba47cee3213d062e3d9af8",
+          "128": "1d95d2b1d7760d080f74cb85eec61054957c8a26b59dd77e24dab42563021c08"
+        },
+        "alias": {
+          "16": "c4e654c2084ddb959b7ba80f72ba86a95520da8c97bd13edeae35ded56bbc6b1",
+          "32": "74fda8f6e687219781ad47109f5ab32d6bb59ec78b4abdd82b65ac1beb85536d",
+          "64": "8d1d96c4c05fa12b054499eda24a04b5fe00e00878aafb728b96438bc26ea195",
+          "128": "4ab2a0e3711de97c99a6974d80f9c527c0dba67c3345e37db7a8434142d5f79a"
+        },
+        "systemFile": {
+          "16": "2168aae99ae1e8cd559608548149ff63d5433cda9e1ac48196d3a478b05b6a68",
+          "32": "82402f396860181468c7f7286356cbe7fecd94d1647bafa7d78f919d62d5d82b",
+          "64": "807fa5179a4260f4b12e68a9500e1e51a3c684716414711dd07374670f657167",
+          "128": "738ececf2efc0088db57021f03790387bc49a03e9e5807ab8bad4589524a6652"
+        },
+        "writingBell": {
+          "16": "1b2c33914ee4ade90cfce2022b60701265f2240d3576caeacd2582179bac892b",
+          "32": "1a3adb5e911b74d676ab5696adde283e0a0b9fcb7030f19f138ddbf0586f92e8",
+          "64": "4191bddd78fdde9832265faa778fac506cf2f2784a6d61e9a2067bd3eefee6b8",
+          "128": "c803260d7400504e1c73ff097586282f02ccf11f46e38b4ee96880dc04f90623"
+        },
+        "trashFull": {
+          "16": "24adcfe732f6519b9af143b2417897976fbb9154e262275d11e2d00e82fc024b",
+          "32": "1abbfaeed6726dd0caedd4a94c2a143eaddd97884d705585d709a4bd8c1e5115",
+          "64": "55960e9e2d25366c68266fb0c3414fafbf01acd3fc78ae1233e845abcabe3d41",
+          "128": "b6d07f7017fd99c3f7360eb59bf319283802c83f78e62e28f8e5c79d2a415863"
+        },
+        "control": {
+          "16": "fc78f0c6afc0b3bfdd2cd2e3bdf555a3f22139014aaba30b6fe9e5c61b46ee91",
+          "32": "f0b8c7d716b04517a3f904c21b4d596dff9854d987875b1b38bdec38a7a6fbd7",
+          "64": "9c944269a8b42ed995898cc1f2dbcb14f7c561b26deb78099c83898487eed62b",
+          "128": "7a1254bd6a04698b3875b5aad1fa13ec868909ac52e3b869e9cf0700458c0855"
+        },
+        "controlStrip": {
+          "16": "f55b217992799f081c79eb31574d35007d2111b93e1c52318dd91bbfda22eb30",
+          "32": "737870d000fd811c47f0793a9ecde8250c6faca6c04cbae2ebd7d5858dbe09dd",
+          "64": "c8522627019d5ad350201e9fc8ddc7f8e82b4a3d3b8e8420a77684555c894b84",
+          "128": "28772dc5e9831e02de32f2f1c400e0cd8f9ffd618f1a02cbf95fff3a59a1b57a"
+        },
+        "hardDisk": {
+          "16": "7f99b7f3f01e5148cf1cc11eba4a6f04bb720729fa8abeca012c0539061e8f8c",
+          "32": "6259d3ed0d412aebbbcbd731eef9ecdfbac1cfd53613ad9f8387110d5acff5a4",
+          "64": "3c7c1eb9ddcc4393db6b2a152872be2057e44c0902510a977f4ebc5552bacd52",
+          "128": "b16edc9bb7a226ce3137ad05f4b2bd3b1c299a54f819a1877945ba1ef9c6a4f4"
+        },
+        "folder": {
+          "16": "d83525b5e404931c540d5daeb4144d37ab593b9a3d989d17654beaee503be030",
+          "32": "3484a73c20eb9b26ef003193e9d55213ee1147df7e0eae3d7008f3665c394457",
+          "64": "b8bd7d4377999cdd7139b0f83ad1691e63a9570f170c068813ab9a35c560a0b6",
+          "128": "390a4eaef663fd2ca9a18dc3cd8b39430aa0d6ddd215f6e632871dad2f5b5c68"
+        },
+        "document": {
+          "16": "38436e0263b3da32344e85335b350a16368fc85bfeeb5e7e14074233ba82a1a5",
+          "32": "ee80b6ec62748b4049e34ea5c88e3ea5fe04f1cad8b2246f9c3963f908573a9d",
+          "64": "fd0f04d7d37f5e1ed33c2a8f4b1294f584e4bed46540af9382103589a319ac6a",
+          "128": "76605c4498686a7693b5585714b9804eecb1e014a8097e8bb0a34bd39bbab129"
+        },
+        "trash": {
+          "16": "315b8b5d9b6444adb537a163489090c93175e1f15241922d6d36672a84d17bf7",
+          "32": "8c956094208ec30c6aa967bf423a55ca94562a6200f2c360521d3b9eba315af2",
+          "64": "c8640b3de00fa2f66b00a7f457dad177f574feb690b38511df3184edacb71458",
+          "128": "0624d7271500f2e942e6075c098c106f818a8bd04b574f8fa349831eff9c9872"
+        },
+        "projectDisk": {
+          "16": "a332de6fcd549ce3237845702f99c61bab4368582cdcda7c3c334d54014fc590",
+          "32": "d74549425b263885c8c87f7bf5b1f9facf895dce972b518ed81d81e5fb645389",
+          "64": "8b0ffbd41acf2f27939f1d987395c4b3d9efbfceced25fdb2b4c42dd4d67383a",
+          "128": "3e41770684b743744efc05b561e341943f18efc14dda35718489df31520bf897"
+        },
+        "reviewDesk": {
+          "16": "4363e2656aac138ddd97981927e5fdaf2decbb7e7bca5351975588040f95465a",
+          "32": "054ea402bab66fb183691e27a6c2cf15b108c1d41a479f17c3f5cbf3dbc36517",
+          "64": "488e8e91d397877d626c28ea5079d5d22c6b3800722309256f9afe45056d716a",
+          "128": "74d1d18fc3efb3167c3c208025bf7aa5554612a4e9704c1897fda980f3b50cd5"
+        },
+        "searcher": {
+          "16": "0691b5b3c3c283a36b269d173536b5469b2febc1e2791dd9ba1e1422e7c7d48f",
+          "32": "45e545843323425ae2cabdc9369538987e0260fefea2483184c3afcd2527265c",
+          "64": "19ab3af396e44974215e192c4058ede4f9726706918cc280ee8af36b07c77808",
+          "128": "08721c3c7aa8393726c907b8beee610a341a090a1b95d6d7cc7dc9bb9c7d7bcd"
+        },
+        "docMap": {
+          "16": "6e3b558a1d5e724825ecc35015da2c9444084bc3d1477587dea5759e0cfbc5ef",
+          "32": "b843a02aaa9a2ff704d7e1164b9b41afad2ff1eb7e99203476f88f5280cfef28",
+          "64": "7af7e142762b5dc7d11476ecc28a08d4f73bab51af91ac04f94156bd7505fd69",
+          "128": "833ab4d1ed049e93084b187835529abb37e134506ce318c9c957f5e12a43550c"
+        },
+        "scrapbook": {
+          "16": "fac49604a99316c0a3b65edbfae8e74f59dc66784d49b6bcf1895fa4e40c2f02",
+          "32": "0927ea8bfa2aa444d6778cfe26ab0b79134de9e20562987269efb0163a433a75",
+          "64": "5a307d9c916b304098de95cd3190a427230387c7467268c8f592202598a6dcb5",
+          "128": "769530ee820a13fc3b59d9a18f6e4be614133d93faa032dba09ce7adcdfb22ef"
+        },
+        "controlPanel": {
+          "16": "2aa4173e156b22d62ae5367ebaa209e126da8e8063b9e6e40b0759f8ad9bacf5",
+          "32": "9880b9dc71426b74d08a478dfab76120934639cc20f80dd778d5b7b9caa3a9ce",
+          "64": "e596d625f95b407a6c3124d17bd39616e6df827c56bc18a665b4b794ded577b4",
+          "128": "3b4fdd93afe4c727331db076ea3cb9cb20b1387f9986468cbaa6537c3ef67c34"
+        },
+        "teachText": {
+          "16": "3bab71e493a53789be6f64dd326c49c1784f3134398d24944875c8cf5a9caf25",
+          "32": "4b3e857b84cd85296f035320fb7af36009bb519e1ba56bd673f688f5f1e5cdc3",
+          "64": "e5321103d646b7bf9321428f1aef6f1647105c8a532e8e1a6073920d2fe7f050",
+          "128": "ee65a76620db0bd4f12f0b309abd82cd2493fc883a081b7a253b74972061affd"
+        },
+        "daHandler": {
+          "16": "afa243ea6443f4ec235a890bda724b85417510bdf46c981684b58e6aae7fb1c3",
+          "32": "9a79464f04117b9e5f45d8db2f5104e10e31dd32b94ed536a9cc2908cf13f4c4",
+          "64": "1215d5db3302f2c3eb3754713daba3bdae752a53640c024089ced553454356f9",
+          "128": "60fe47a52920855e25281596a8b0ec4fd3f7b48691ae75c1d5278e8d2accbd96"
+        }
+      },
+      "supersedesHistoricalLineageOverlays": true
+    }
+  },
+  "priorityLineageOverlay": {
+    "builder": "tooling/build-approved-priority-lineage.mjs",
+    "ledger": "tooling/icon-generation/approved-priority-lineage.json",
+    "broadArchive": "icons/imagegen-source",
+    "prioritySource": "icons/priority-lineage-source",
+    "broadArchiveHashesPreserved": true,
+    "meaning": "The accepted generated ledger continues to pin the broad archive. The later priority source is separate, and historical status remains owned by the continuity and priority ledgers.",
+    "objects": [
+      "reviewDesk",
+      "searcher",
+      "assistant",
+      "projectDisk",
+      "teachText",
+      "controlPanel",
+      "docMap"
+    ]
+  }
+}

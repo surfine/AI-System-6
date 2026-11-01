@@ -1,0 +1,2383 @@
+/* Macintosh Appearance parameter tables.
+   Recipe lineage is explicit in the registry: Classic -> Platinum,
+   Aqua -> Snow Leopard, and Liquid Glass -> Yosemite. Classic
+   defaults remain single-sourced in 00-foundation.css, while Liquid Glass
+   keeps its established material and debt ratchet in 70-liquid-glass.css.
+   Historical appearances are evidence-led web adaptations, not claims of
+   pixel-perfect OS resource reproduction. */
+
+@font-face {
+  font-family: "Platinum Asap";
+  src: url("./assets/fonts/platinum/Asap-Variable.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 75% 125%;
+  font-display: swap;
+}
+
+body[data-theme]:not(.use-modern-fonts) {
+  --ui-font: var(--theme-ui-font);
+  --title-font: var(--theme-title-font);
+}
+
+html[data-lineage~="platinum"],
+body[data-lineage~="platinum"] {
+  /* Apple names Charcoal as the default system font. The face remains
+     local-only; Geneva, installed only on a Mac, now precedes the bundled
+     Asap, so a Mac draws the era's own face and every other platform keeps
+     Asap. The window title keeps the Asap metrics it was measured with
+     (see the Platinum .title-bar h1/h2 rule). */
+  /* 华文宋体: the Simplified face Mac OS 8.5/9 shipped with the Chinese
+     Language Kit. PingFang did not exist until El Capitan in 2015. */
+  --theme-ui-font: Charcoal, "Charcoal CY", Geneva, "Platinum Asap", "ChicagoFLF", Chicago, "STSong", "Songti SC", "SimSun", serif;
+  /* Bold chrome (push buttons, popups, menu titles, window titles) keeps a
+     face that has a bold: Chromium on macOS has none for Geneva, and the real
+     machine's chrome is bold Charcoal (C3). Regular-weight text takes the
+     Geneva-first stack above. */
+  --theme-title-font: Charcoal, "Charcoal CY", "Platinum Asap", var(--theme-ui-font);
+  /* Platinum paints its native popup arrow in the wrapper well. */
+  --select-wrapper-arrow-display: block;
+  --system-readable-min: 12px;
+  --system-title-size: 12px;
+  --system-control-size: 12px;
+  --system-text-size: 12px;
+  --system-caption-size: 10px;
+  --system-menu-height: 20px;
+  --system-titlebar-height: 19px;
+  /* The finished Mac OS 9 recipe uses 11px boxes with a 5px visual gap:
+     11px art + 5px spacing = a 16px title-bar lane per control. */
+  --system-titlebar-control-slot: 16px;
+  /* Mac OS 8/9 is the only era whose native title bar carries the
+     WindowShade collapse box; open its slot and show the control. */
+  --system-titlebar-shade-slot: 16px;
+  --system-titlebar-shade-display: block;
+  --system-titlebar-control-size: 11px;
+  --system-titlebar-control-art-size: 11px;
+  --system-titlebar-control-art-offset-y: -2px;
+  --system-titlebar-close-art-offset-x: 0px;
+  --system-titlebar-resize-art-offset-x: 0px;
+  --system-titlebar-control-margin-x: 0;
+  --system-titlebar-title-height: 13px;
+  --system-titlebar-font-size: 12px;
+  --system-control-min-height: 22px;
+  --system-button-min-height: 20px;
+  --system-button-small-height: 18px;
+  --system-button-mini-height: 16px;
+  --system-button-small-font-size: 11px;
+  --system-button-mini-font-size: 10px;
+  --system-button-small-padding-x: 8px;
+  --system-button-mini-padding-x: 7px;
+  --system-button-padding-y: 2px;
+  --system-button-padding-x: 10px;
+  --ink: #000000;
+  --paper: #dddddd;
+  --panel: #cccccc;
+  --quiet-panel: #eeeeee;
+  --shade: #999999;
+  /* 4.48:1 on paper against a 4.5:1 floor. #707070 measures 4.95:1. */
+  --shade-dark: #707070;
+  --md-marker-ink: #606060;  /* ground is #dddddd here, the darkest of the six */
+  --rule: #888888;
+  /* Mac OS 9 "azul" desktop: a deep-mid blue wave pattern, not a light
+     gradient. The seamless 96px tile is generated (internal/evidence/drafts/gen-azul-tile.mjs,
+     3.4KB, within the 4KB per-era tile budget) from the wave geometry of the
+     512 Pixels capture; the solid base carries reduced-data fallbacks. */
+  --desktop: #4a71ab;
+  --desktop-surface:
+    url("./assets/themes/platinum/azul-tile.png") left top / 96px 96px repeat,
+    linear-gradient(#4a71ab, #4a71ab);
+  --pane-bg: #dddddd;
+  --window-bg: #cccccc;
+  --window-border: 1px solid #000000;
+  --window-radius: 0;
+  --window-shadow:
+    1px 1px 0 #000000,
+    inset 1px 0 0 #ffffff,
+    inset 0 1px 0 #ffffff,
+    inset -1px 0 0 #999999,
+    inset 0 -1px 0 #999999;
+  --active-window-shadow: var(--window-shadow);
+  --inactive-window-shadow:
+    1px 1px 0 #999999,
+    inset 1px 1px 0 #eeeeee,
+    inset -1px -1px 0 #999999;
+  --system-titlebar-active-bg:
+    linear-gradient(#cccccc, #cccccc) left top / var(--system-titlebar-control-slot) 100% no-repeat,
+    linear-gradient(#cccccc, #cccccc) right top / var(--system-titlebar-control-slot-right, calc(var(--system-titlebar-control-slot) + var(--system-titlebar-shade-slot))) 100% no-repeat,
+    linear-gradient(to bottom, #cccccc 0 1px, transparent 1px 13px, #cccccc 13px 17px, #999999 17px 18px),
+    repeating-linear-gradient(to bottom, #ffffff 0 1px, #777777 1px 2px) 0 1px / 100% 2px repeat-y,
+    #cccccc;
+  --system-titlebar-inactive-bg: #dddddd;
+  --system-titlebar-background-origin: border-box;
+  --system-titlebar-background-clip: border-box;
+  /* The finished Mac OS 9 CSS reference and GUIdebook captures both erase
+     title-bar controls on a background window while retaining its title. */
+  --system-titlebar-inactive-control-visibility: hidden;
+  --system-titlebar-inactive-control-opacity: 1;
+  --system-titlebar-inactive-title-color: #777777;
+  --titlebar-title-bg: #cccccc;
+  --titlebar-title-fg: #000000;
+  --titlebar-border: 1px solid #000000;
+  --titlebar-shadow: none;
+  --surface-primary: #dddddd;
+  --surface-secondary: #dddddd;
+  --surface-inset: #ffffff;
+  --toolbar-bg: #dddddd;
+  --toolbar-border: 1px solid #000000;
+  --sidebar-bg: #eeeeee;
+  --selection-bg: #ccccff;
+  --selection-edge: #ccccff;
+  --selection-fg: #000000;
+  /* Mac OS 9 document chrome: a compact inset placard for the leading
+     receipt, beside a grooved source rail. These are shared system roles;
+     the Reader merely opts into them in its stable DOM. */
+  --status-placard-padding: 2px 6px;
+  --status-placard-border: var(--system-border);
+  --status-placard-bg: #eeeeee;
+  --status-placard-shadow: inset 1px 1px 0 #888888, inset -1px -1px 0 #ffffff;
+  --status-placard-font-family: var(--mono-font);
+  --status-placard-font-size: var(--system-caption-size);
+  --tdi-rail-padding: 3px;
+  --tdi-rail-border: var(--system-border);
+  --tdi-rail-bg: #cccccc;
+  --tdi-rail-shadow: inset 1px 1px 0 #888888, inset -1px -1px 0 #ffffff;
+  --tdi-tabs-gap: 1px;
+  --tdi-tabs-padding: 1px;
+  --tdi-tabs-bg: transparent;
+  --tdi-tabs-border-bottom: 0;
+  --tdi-tab-height: 38px;
+  --tdi-tab-min-height: 38px;
+  --tdi-tab-border: 0;
+  --tdi-tab-border-bottom: 1px solid #aaaaaa;
+  --tdi-tab-bg: #eeeeee;
+  --tdi-tab-shadow: none;
+  --tdi-tab-active-border: 0;
+  --tdi-tab-active-border-bottom: 1px solid #888888;
+  --tdi-tab-active-bg: var(--selection-bg);
+  --tdi-tab-active-fg: var(--selection-fg);
+  --tdi-tab-active-shadow: inset 1px 1px 0 #ffffff;
+  /* Tier 2 selection states. Unfocused reuses the same #dddddd/#555555 the
+     window itself dims to (body[data-lineage~="platinum"] .window:not(.is-active)
+     above). Hover is a deliberate no-op: "Platinum carries no hover state"
+     (see --btn-hover-bg above) -- the pair below equals the idle tab exactly.
+     Pressed gets real feedback, matching --btn-active-*. */
+  --tdi-tabs-heading-padding: 4px 8px 2px;
+  --tdi-tabs-heading-fg: #000000;
+  --tdi-tabs-heading-font-size: 11px;
+  --tdi-tabs-heading-letter-spacing: normal;
+  --tdi-tabs-heading-text-transform: none;
+  --tdi-tabs-heading-border-bottom: 1px dotted var(--shade-dark);
+  --tdi-tab-active-unfocused-border: 0;
+  --tdi-tab-active-unfocused-border-bottom: 1px solid #aaaaaa;
+  --tdi-tab-active-unfocused-bg: #dddddd;
+  --tdi-tab-active-unfocused-fg: #555555;
+  --tdi-tab-active-unfocused-shadow: none;
+  --tdi-tab-active-unfocused-small-color: #777777;
+  --tdi-tab-hover-bg: #eeeeee;
+  --tdi-tab-hover-fg: #000000;
+  --tdi-tab-hover-shadow: none;
+  --tdi-tab-pressed-bg: #666666;
+  --tdi-tab-pressed-fg: #ffffff;
+  --tdi-tab-pressed-shadow: inset 1px 1px 0 #333333, inset -1px -1px 0 #999999;
+  /* Searcher result table, Sherlock 2 idiom (Mac OS 9 gallery evidence):
+     column headers over dense rows in a white list interior, plus the
+     rank-mapped relevance bar. The bar paints with currentColor so the
+     lavender selection inversion keeps it visible. */
+  --find-path-header-display: grid;
+  --find-path-relevance-display: block;
+  --find-path-result-display: grid;
+  --find-path-result-align: baseline;
+  --find-path-result-column-gap: 10px;
+  --find-path-result-padding: 6px 10px;
+  --find-path-results-bg: #ffffff;
+  --find-path-header-padding: 3px 10px;
+  --find-path-header-border-bottom: 1px solid var(--shade-dark);
+  --find-path-header-bg: linear-gradient(var(--quiet-panel), var(--panel));
+  --find-path-header-font-size: var(--system-caption-size);
+  /* P13: a selected icon in Mac OS 9 -- desktop or Finder window -- has a
+     black label with white words and a darkened icon (native 02 x716-787
+     y42-73); lavender is text and list selection, not an icon label. */
+  --desktop-label-box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
+  --desktop-label-selected-bg: #000000;
+  --desktop-label-selected-fg: #ffffff;
+  --desktop-icon-selected-filter: brightness(0.5);
+  /* X2: the menu bar's notification item is plain black words on the bar,
+     no dividers and no 1-bit inverted block (native menu bar, 02/04). */
+  --notification-button-divider: 0;
+  --notification-button-active-bg: transparent;
+  --notification-button-active-fg: #000000;
+  --sidebar-selection-bg: #ccccff;
+  --sidebar-selection-fg: #000000;
+  --separator: #888888;
+  /* Mac OS 9 list separators stay light dotted hairlines; the family owns
+     this one role and every app divider follows (Theme Family Contract §5). */
+  --system-secondary-divider: 1px dotted var(--shade-dark);
+  --control-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #888888;
+  --control-active-shadow: inset 1px 1px 0 #555555, inset -1px -1px 0 #999999;
+  /* Theme Family Contract: the keyboard ring. The base layer writes System 6's
+     dotted ink ring, so every era that never answered wore it. Each era already
+     names its own ring for controls; this points the shared role at it. */
+  --system-focus-outline: var(--control-focus-outline);
+  --control-focus-outline: 2px solid #6666cc;
+  --control-focus-offset: 0;
+  --control-disabled-bg: #dddddd;
+  --control-disabled-field-bg: #ffffff;
+  --control-disabled-opacity: 1;
+  /* Platinum dims by ink alone (opacity 1 above), so the ink has to carry the
+     whole signal. --shade-dark reads 2.79:1 on the era's #cccccc button face;
+     this clears 3:1 while staying a Platinum grey. */
+  --system-disabled-fg: #6f6f6f;
+  --system-border: 1px solid #000000;
+  --system-inset:
+    inset 1px 1px 0 #888888,
+    inset -1px -1px 0 #ffffff;
+  --control-radius: 0;
+  --btn-border-color: #000000;
+  --btn-radius: 3px;
+  --btn-bg: #dddddd;
+  --btn-shadow:
+    inset 1px 1px 0 #dddddd,
+    inset 2px 2px 0 #ffffff,
+    inset -1px -1px 0 #777777,
+    inset -2px -2px 0 #aaaaaa;
+  /* Owner ruling: Platinum carries no hover state (System 7/8/9 had none on a
+     mouse-only Mac) -- this token is inherited plumbing from the shared .btn
+     rule, not a deliberate Platinum hover; do not add new hover material
+     here or to any Platinum control. */
+  --btn-hover-bg: #dddddd;
+  --btn-hover-fg: #000000;
+  --btn-hover-shadow:
+    inset 1px 1px 0 #dddddd,
+    inset 2px 2px 0 #ffffff,
+    inset -1px -1px 0 #777777,
+    inset -2px -2px 0 #aaaaaa;
+  --btn-active-bg: #666666;
+  --btn-active-fg: #ffffff;
+  --btn-active-shadow: inset 1px 1px 0 #333333, inset -1px -1px 0 #999999;
+  --btn-default-bg: var(--btn-bg);
+  --btn-default-shadow: var(--btn-shadow);
+  /* Platinum's default button is the ordinary button (no Aqua/Snow Leopard
+     blue-highlight recipe) -- these answer the same shared tokens other eras
+     use for their own default/toolbar material, aliased to what Platinum
+     already carries above rather than inventing new colour. */
+  --btn-default-fg: var(--btn-hover-fg);
+  --btn-default-active-bg: var(--btn-active-bg);
+  --btn-default-active-fg: var(--btn-active-fg);
+  --btn-active-border-color: var(--btn-border-color);
+  --app-toolbar-bg: var(--toolbar-bg);
+  --app-toolbar-border-bottom: 1px solid var(--btn-border-color);
+  --field-bg: #ffffff;
+  --field-focus-bg: #ffffff;
+  --field-border: 1px solid #000000;
+  --field-radius: 0;
+  --select-radius: 3px;
+  --field-shadow: -1px -1px 0 #888888;
+  --field-focus-border: 1px solid #000000;
+  --field-focus-ring: 0 0 0 2px #6666cc;
+  --choice-bg: #dddddd;
+  --choice-border: 1px solid #000000;
+  --choice-radius: 0;
+  --choice-shadow: inset -1px -1px 0 #888888, inset 1px 1px 0 #ffffff;
+  --choice-checked-bg: #dddddd;
+  --choice-checked-bg-image: none;
+  --choice-checkmark-image: url("./assets/vendor/classic-stylesheets/macos9/checkmark.svg");
+  --system-check-size: 12px;
+  --system-radio-size: 12px;
+  --radio-bg: #dddddd;
+  --radio-border: 1px solid #000000;
+  --radio-shadow: inset 1px 1px 0 #dddddd, inset -1px -1px 0 #888888;
+  --radio-image: linear-gradient(to bottom right, #ffffff, #888888);
+  --radio-focus-image: var(--radio-image);
+  --radio-checked-image:
+    radial-gradient(circle, #000000 0 3px, transparent 3.5px),
+    linear-gradient(to bottom right, #555555, #ffffff);
+  --radio-checked-focus-image: var(--radio-checked-image);
+  --menu-bar-bg: #dddddd;
+  --menu-bar-border-color: #000000;
+  --menu-bar-border: 1px solid var(--menu-bar-border-color);
+  --menu-bar-shadow: inset 0 1px 0 #ffffff, inset 0 -1px 0 #999999;
+  --menu-panel-bg: #dddddd;
+  --menu-panel-border: 1px solid #000000;
+  --menu-panel-radius: 0;
+  --menu-panel-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #888888, 1px 1px 0 #000000;
+  --menu-item-bg: #dddddd;
+  --menu-item-fg: #000000;
+  --menu-button-active-bg: #333399;
+  --menu-button-active-fg: #ffffff;
+  --menu-item-active-bg: #333399;
+  --menu-item-active-fg: #ffffff;
+  /* Mac OS 9 Balloon Help: yellow rounded box with a black border and a
+     small pointer tail (Mac OS 8/9 HIG). System 6 has no balloons; the
+     shared foundation default is paper, and Liquid Glass swaps the tokens
+     for glass — Platinum owns the classic yellow. */
+  --balloon-help-bg: #ffffcc;
+  --balloon-help-border: 1px solid #000000;
+  --balloon-help-radius: 6px;
+  --balloon-help-shadow: 2px 2px 0 #777777;
+  /* Platinum draws depth with 1px bevels, never with flat fill: the lane is a
+     sunk channel, the scroll box and the arrow boxes are raised out of it.
+     The same three recipes the webkit scroll bar below already uses, now
+     reaching the window frame's own scroller as well. */
+  --window-frame-track-bg: #aaaaaa;
+  --window-frame-track-border: 1px solid #000000;
+  --window-frame-track-shadow: inset 1px 1px #777777, inset -1px -1px #cccccc;
+  --window-frame-thumb-bg: #9999ff;
+  /* Flat fill — the horizontal lane shares the era's vertical thumb unchanged. */
+  --window-frame-thumb-bg-horizontal: var(--window-frame-thumb-bg);
+  --window-frame-thumb-border: 1px solid #000000;
+  --window-frame-thumb-shadow: inset 1px 1px #ccccff, inset -1px -1px #6666cc;
+  --window-frame-arrow-bg: #dddddd;
+  --window-frame-arrow-shadow: inset 1px 1px #ffffff, inset -1px -1px #999999;
+  --scrollbar-track: #aaaaaa;
+  --scrollbar-thumb: var(--window-frame-thumb-bg);
+  --scrollbar-button: #dddddd;
+  --scrollbar-width: 16px;
+
+  /* P16: native 16 — the 349-row lavender thumb carries four grip ridges
+     (light over dark at x589-596), a #eee corner pixel, and the two #777/#888
+     rows below it. The vertical grip is the native cut; the horizontal lane
+     rotates the recipe. */
+  --window-frame-thumb-bg:
+    url("./assets/themes/platinum/chrome/thumb-grip-vertical.svg") center 5px / 8px 8px no-repeat,
+    linear-gradient(#eeeeee, #eeeeee) left top / 1px 1px no-repeat,
+    #9999ff;
+  --window-frame-thumb-bg-horizontal:
+    url("./assets/themes/platinum/chrome/thumb-grip-horizontal.svg") 5px center / 8px 8px no-repeat,
+    linear-gradient(#eeeeee, #eeeeee) left top / 1px 1px no-repeat,
+    #9999ff;
+  --window-frame-thumb-shadow: inset 1px 1px #ccccff, inset -1px -1px #6666cc, 0 1px 0 #777777, 0 2px 0 #888888;
+  --window-frame-thumb-shadow-horizontal: inset 1px 1px #ccccff, inset -1px -1px #6666cc, 1px 0 0 #777777, 2px 0 0 #888888;
+
+  /* P17: native Mac OS 9 stacks both arrow boxes at the two ends of the lane
+     with the track between them, and the track's far end is closed by a
+     hairline. The orders keep the DOM [up, track, down]. */
+  --window-frame-arrow-up-order: 1;
+  --window-frame-arrow-down-order: 2;
+  --window-frame-arrow-down-border-top: 0;
+  --window-frame-arrow-left-order: 1;
+  --window-frame-arrow-right-order: 2;
+  --window-frame-arrow-right-border-left: 0;
+  /* The far end of the track: native draws one black line where the lane meets
+     the window frame's inner border. */
+  --window-frame-track-end-border: 1px solid #000000;
+
+  /* P27: native scroll lane — a double bevel on the track, a single raised
+     rim on each arrow box, and stepped art that widens by 2px per row (up:
+     2/4/6/8 starting at left 5 top 5) instead of the base's 7px/1px apex. */
+  --window-frame-track-shadow: inset 1px 1px #777777, inset 2px 2px #888888, inset -1px -1px #cccccc, inset -2px -2px #bbbbbb;
+  --window-frame-arrow-shadow: inset 1px 1px #ffffff, inset -1px -1px #bbbbbb;
+  --window-frame-arrow-up-art-size: 2px 1px, 4px 1px, 6px 1px, 8px 1px;
+  --window-frame-arrow-up-art-position: left 5px top 5px, left 4px top 6px, left 3px top 7px, left 2px top 8px;
+  --window-frame-arrow-down-art-size: 8px 1px, 6px 1px, 4px 1px, 2px 1px;
+  --window-frame-arrow-down-art-position: left 2px top 5px, left 3px top 6px, left 4px top 7px, left 5px top 8px;
+  /* No horizontal native capture exists; these are the vertical art rotated, so
+     the horizontal lane matches the vertical one's step rhythm. */
+  --window-frame-arrow-left-art-size: 1px 2px, 1px 4px, 1px 6px, 1px 8px;
+  --window-frame-arrow-left-art-position: left 5px top 5px, left 6px top 4px, left 7px top 3px, left 8px top 2px;
+  --window-frame-arrow-right-art-size: 1px 8px, 1px 6px, 1px 4px, 1px 2px;
+  --window-frame-arrow-right-art-position: left 5px top 2px, left 6px top 3px, left 7px top 4px, left 8px top 5px;
+  --window-frame-empty-track-bg: #eeeeee;
+  --window-frame-empty-track-shadow: none;
+  --window-frame-empty-arrow-ink: #888888;
+  --window-frame-empty-arrow-shadow: none;
+
+  --tab-radius: 0;
+  --tab-overlap: 1px;
+  --tab-bg: #cccccc;
+  --tab-hover-bg: #dddddd;
+  --tab-active-bg: #eeeeee;
+  --theme-lab-button-min-width: 58px;
+  --theme-lab-group-position: relative;
+  --theme-lab-group-margin: 6px 0 0;
+  --theme-lab-group-padding: 14px 10px 10px;
+  --theme-lab-group-bg: #dddddd;
+  --theme-lab-group-border: 1px solid #888888;
+  --theme-lab-group-shadow: inset 1px 1px 0 #ffffff, 1px 1px 0 #ffffff;
+  /* Theme Lab is a measurement specimen: these are direct Mac OS 8 HIG and
+     classic-stylesheets Mac OS 9 recipe values, not a recolor preset. */
+  --theme-lab-details-min-height: 20px;
+  --theme-lab-details-padding: 2px 7px 3px;
+  --theme-lab-details-border-bottom: 1px solid #000000;
+  --theme-lab-details-bg: #dddddd;
+  --theme-lab-pane-gap: 8px;
+  --theme-lab-pane-padding: 8px;
+  --theme-lab-pane-bg: #dddddd;
+  --theme-lab-pane-border: 1px solid #000000;
+  --theme-lab-pane-border-top: 0;
+  --theme-lab-pane-shadow: 1px 1px 0 #ffffff, 1px 0 0 #ffffff, 0 1px 0 #ffffff, -1px -1px 0 #999999, -1px 0 0 #999999, 0 -1px 0 #999999;
+  --theme-lab-heading-position: absolute;
+  --theme-lab-heading-left: 8px;
+  --theme-lab-heading-top: 0;
+  --theme-lab-heading-transform: translateY(-50%);
+  --theme-lab-heading-margin: 0;
+  --theme-lab-heading-padding: 0 4px;
+  --theme-lab-heading-padding-bottom: 0;
+  --theme-lab-heading-border-bottom: 0;
+  --theme-lab-heading-bg: #dddddd;
+  --theme-lab-heading-line-height: 14px;
+  --theme-lab-heading-weight: 700;
+  --theme-lab-button-row-gap: 10px 12px;
+  --theme-lab-button-row-margin-bottom: 10px;
+  --theme-lab-size-row-margin: -3px 0 9px;
+  --theme-lab-choice-gap: 6px 12px;
+  --theme-lab-choice-row-min-height: 18px;
+  --theme-lab-choice-label-gap: 5px;
+  --theme-lab-checkbox-checkmark-image: none;
+  --theme-lab-checkbox-mark-content: "";
+  --theme-lab-checkbox-mark-position: absolute;
+  --theme-lab-checkbox-mark-inset: -1px auto auto -1px;
+  --theme-lab-checkbox-mark-width: 12px;
+  --theme-lab-checkbox-mark-height: 12px;
+  --theme-lab-checkbox-mark-margin: 0;
+  --theme-lab-checkbox-mark-border-bottom: 0;
+  --theme-lab-checkbox-mark-border-left: 0;
+  --theme-lab-checkbox-mark-bg: var(--choice-checkmark-image) center / 12px 12px no-repeat;
+  --theme-lab-checkbox-mark-transform: none;
+  --theme-lab-checkbox-frame-overlay-content: "";
+  --theme-lab-checkbox-frame-overlay-inset: -1px auto auto -1px;
+  --theme-lab-checkbox-frame-overlay-bg:
+    linear-gradient(#dddddd, #dddddd) 10px 1px / 1px 1px no-repeat,
+    linear-gradient(#dddddd, #dddddd) 1px 10px / 1px 1px no-repeat;
+  --theme-lab-checkbox-mark-color: #000000;
+  --theme-lab-checkbox-mark-shadow: -1px 1px 0 rgba(0, 0, 0, 0.3);
+  --theme-lab-checkbox-disabled-mark-color: #888888;
+  --theme-lab-checkbox-disabled-mark-shadow: none;
+  --theme-lab-checkbox-disabled-mark-filter: grayscale(1) opacity(0.55);
+  /* Held checkbox and radio, recorded from classic-stylesheets macos9. Real
+     controls wear them (65-platinum-utility.css), so the Lab's specimen needs no
+     darkening of its own. */
+  --choice-pressed-bg: #777777;
+  --choice-pressed-shadow: inset 1px 1px 0 #555555, inset -1px -1px 0 #999999;
+  --radio-pressed-filter: brightness(0.55);
+  --theme-lab-choice-active-filter: none;
+  --theme-lab-radio-checked-bg: var(--radio-checked-image);
+  --theme-lab-radio-checked-shadow: none;
+  --theme-lab-radio-dot-content: none;
+  --theme-lab-radio-dot-bg: #000000;
+  --theme-lab-form-gap: 6px 12px;
+  --theme-lab-form-label-columns: minmax(82px, max-content) minmax(0, 1fr);
+  --theme-lab-form-label-align: right;
+  --theme-lab-form-label-column-gap: 7px;
+  --theme-lab-form-label-align-items: center;
+  --theme-lab-disabled-field-fg: #808080;
+  --theme-lab-disabled-field-bg: #ffffff;
+  --theme-lab-disabled-field-border-color: #555555;
+  --theme-lab-disabled-field-shadow: 0 0 0 1px #dddddd;
+  --theme-lab-disabled-popup-fg: #777777;
+  --theme-lab-disabled-popup-border-color: #888888;
+  --theme-lab-disabled-popup-shadow: none;
+  --tab-strip-gap: 0;
+  --tab-strip-padding: 0 10px;
+  --tab-strip-border-bottom: 0;
+  --tab-strip-overflow: hidden;
+  /* Content width, not the art's width. The tab is drawn as three slices --
+     a 14px cap cut from each end of tab.svg and the flat --tab-bg between them
+     -- which is precisely so it can stretch to its label. Pinning every tab to
+     the 74px of the source drawing defeated that and clipped any word longer
+     than the 46px left between the paddings. */
+  --tab-flex: 0 0 auto;
+  --tab-font-weight: 700;
+  --tab-line-height: 18px;
+  --tab-min-height: 23px;
+  --tab-height: 23px;
+  --tab-margin: 0 -1px 0 0;
+  --tab-padding: 0 14px 3px;
+  --tab-font-variation-settings: "wdth" 123;
+  --tab-border: 0;
+  --tab-shadow: inset 0 1px #000000, inset 0 2px #cccccc, inset 0 3px #dddddd;
+  --tab-edge-content: "";
+  --tab-edge-width: 14px;
+  --tab-edge-height: 23px;
+  --tab-edge-left-bg: url("./assets/vendor/classic-stylesheets/macos9/tab.svg") left top / 74px 23px no-repeat;
+  --tab-edge-right-bg: url("./assets/vendor/classic-stylesheets/macos9/tab.svg") right top / 74px 23px no-repeat;
+  --tab-active-min-height: 25px;
+  --tab-active-height: 25px;
+  --tab-active-fg: #000000;
+  --tab-active-shadow: none;
+  --tab-active-edge-top: 0;
+  --tab-active-edge-height: 24px;
+  --tab-active-edge-left-bg: url("./assets/themes/platinum/tab-selected-left.svg") left top / 14px 24px no-repeat;
+  --tab-active-edge-right-bg: url("./assets/themes/platinum/tab-selected-right.svg") right top / 14px 24px no-repeat;
+  --tab-pressed-bg: transparent url("./assets/vendor/classic-stylesheets/macos9/tab-active.svg") center top / 74px 23px no-repeat;
+  --tab-pressed-fg: #ffffff;
+  --tab-focus-outline: 0;
+  --tab-focus-text-shadow: 0 0 2px #6666cc;
+  --tab-panel-min-height: 31px;
+  --tab-panel-margin-top: -4px;
+  --tab-panel-padding: 7px 10px 5px;
+  --tab-panel-border: 1px solid #000000;
+  --tab-panel-radius: 0;
+  --tab-panel-bg: #eeeeee;
+  --tab-panel-shadow: inset 1px 1px #cccccc, inset 2px 2px #ffffff, inset -1px -1px #999999, inset -2px -2px #bbbbbb;
+  --theme-lab-split-min-height: 146px;
+  --theme-lab-split-columns: minmax(126px, 0.75fr) minmax(180px, 1.25fr);
+  --theme-lab-split-gap: 9px;
+  --theme-lab-split-padding: 1px;
+  --theme-lab-split-border: 0;
+  --theme-lab-split-radius: 0;
+  --theme-lab-split-bg: #eeeeee;
+  --theme-lab-split-overflow: visible;
+  --theme-lab-split-shadow: none;
+  --theme-lab-sidebar-padding: 3px;
+  --theme-lab-sidebar-border: 1px solid #000000;
+  --theme-lab-sidebar-border-right: 1px solid #000000;
+  --theme-lab-sidebar-bg: #ffffff;
+  --theme-lab-sidebar-shadow: -1px -1px #888888, 1px 1px #ffffff;
+  --theme-lab-list-row-min-height: 20px;
+  --theme-lab-list-row-gap: 5px;
+  --theme-lab-list-row-padding: 2px 6px;
+  --theme-lab-list-row-radius: 0;
+  --theme-lab-list-row-font-family: var(--theme-ui-font);
+  --theme-lab-list-row-font-size: var(--system-control-size);
+  --theme-lab-list-row-line-height: 16px;
+  --theme-lab-sidebar-icon-size: 16px;
+  --theme-lab-sidebar-icon-bg: transparent;
+  --theme-lab-sidebar-system-svg-opacity: 0;
+  --theme-lab-sidebar-startup-disk-image: url("./assets/themes/platinum/startup-disk-16.svg");
+  --theme-lab-sidebar-applications-image: url("./assets/themes/platinum/applications-32.svg");
+  --theme-lab-sidebar-trash-image: url("./assets/themes/platinum/trash-32.svg");
+  --theme-lab-sidebar-selected-bg: #ccccff;
+  --theme-lab-sidebar-selected-fg: #000000;
+  --theme-lab-sidebar-selected-outline: 0;
+  --theme-lab-sidebar-selected-outline-offset: 0;
+  --theme-lab-list-bg: #ffffff;
+  --theme-lab-list-frame-border: 1px solid #000000;
+  --theme-lab-list-frame-shadow: -1px -1px #888888, 1px 1px #ffffff;
+  --theme-lab-list-focus-outline: 2px solid #6666cc;
+  --theme-lab-list-focus-outline-offset: 0;
+  --theme-lab-list-row-border-bottom: 0;
+  --theme-lab-list-selected-bg: #ccccff;
+  --theme-lab-list-selected-fg: #000000;
+  --theme-lab-list-icon-display: block;
+  --theme-lab-list-icon-size: 16px;
+  --theme-lab-list-icon-image: url("./assets/themes/platinum/folder-32.svg");
+  --theme-lab-list-scrollbar-width: 16px;
+  --theme-lab-layer-columns: minmax(0, 1fr) minmax(0, 1fr);
+  --theme-lab-layer-gap: 10px;
+  --theme-lab-layer-border: 1px solid #000000;
+  --theme-lab-layer-radius: 0;
+  --theme-lab-layer-bg: #dddddd;
+  --theme-lab-layer-shadow: inset 1px 1px #ffffff, inset -1px -1px #888888, 1px 1px #000000;
+  --theme-lab-layer-padding: 10px 12px;
+  --theme-lab-generic-fixture-display: none;
+  --theme-lab-platinum-fixture-display: grid;
+  --menu-panel-padding: 2px 0;
+  --menu-item-min-height: 18px;
+  --menu-item-padding: 1px 3px 1px 21px;
+  /* Menu rows are bold Charcoal on the real machine; Chromium on macOS has no
+     bold for Geneva, so with Geneva first (A2) every row fell to regular
+     weight. Rows keep a face that has a bold, as the window title does (C3). */
+  --menu-item-font-family: Charcoal, "Charcoal CY", "Platinum Asap", var(--theme-ui-font);
+  --menu-item-font-size: var(--system-control-size);
+  --menu-item-line-height: 16px;
+  --menu-item-disabled-bg: #dddddd;
+  --menu-item-disabled-fg: #777777;
+  --menu-item-disabled-opacity: 1;
+  --menu-separator-margin: 2px 0;
+  --menu-separator-border-top: 1px solid #888888;
+  --menu-separator-border-bottom: 1px solid #ffffff;
+  --menu-check-left: 3px;
+  --menu-check-width: 9px;
+  --menu-check-height: 8px;
+  --menu-check-bg: currentColor;
+  --menu-check-font-size: 0;
+  --menu-check-mask: url("./assets/vendor/classic-stylesheets/macos9/checkmark.svg") center / 9px 8px no-repeat;
+  --theme-lab-popover-generic-label-display: none;
+  --theme-lab-balloon-label-display: block;
+  --theme-lab-alert-icon-display: block;
+  --theme-lab-alert-icon-image: url("./assets/themes/platinum/alert-32.svg");
+  --theme-lab-sheet-display: none;
+  --theme-lab-progress-row-gap: 8px;
+  --theme-lab-progress-row-margin-top: 10px;
+  /* Mac OS 9 barber-pole progress: the base sheet owns the recipe, this hands
+     it the period numbers -- a black-outlined bevel well and a blue-violet
+     fill with its own inset chord. */
+  --progress-height: 12px;
+  --progress-padding: 0;
+  --progress-border-color: #000000;
+  --progress-radius: 0;
+  --progress-bg: #bbbbbb;
+  --progress-shadow: 1px 1px #ffffff, -1px -1px #aaaaaa, inset 1px 1px #888888, inset -1px -1px #dddddd;
+  --progress-fill-border-right: 1px solid #000000;
+  --progress-fill-radius: 0;
+  --progress-fill-bg: linear-gradient(to bottom, #333399, #6666cc, #9999ff, #ccccff, #eeeeee, #ccccff, #9999ff, #6666cc, #333399, #000088);
+  --progress-fill-shadow: inset 1px 0 #6666cc, inset 2px 0 rgba(255, 255, 255, 0.2), inset -1px 0 #000055, inset -2px 0 #333399, 1px 0 #555555, 2px 0 #888888;
+  --progress-fill-active-bg: var(--progress-fill-bg);
+  --progress-fill-active-size: 100% 100%;
+  --theme-lab-toolbar-min-height: 20px;
+  --theme-lab-toolbar-gap: 0;
+  --theme-lab-toolbar-padding: 1px 6px;
+  --theme-lab-toolbar-border: 1px solid #000000;
+  --theme-lab-toolbar-radius: 0;
+  --theme-lab-toolbar-bg: #dddddd;
+  --theme-lab-toolbar-shadow: inset 1px 1px #ffffff, inset -1px -1px #999999;
+  --theme-lab-toolbar-button-display: none;
+  --theme-lab-toolbar-location-display: none;
+  --theme-lab-toolbar-status-display: block;
+  --theme-lab-toolbar-status-weight: 400;
+  --theme-lab-separator-display: none;
+  --theme-lab-separator-width: 2px;
+  --theme-lab-separator-bg: linear-gradient(to right, #888888 0 1px, #ffffff 1px 2px);
+  --theme-lab-finder-min-height: 126px;
+  --theme-lab-finder-columns: repeat(3, 76px);
+  --theme-lab-finder-gap: 8px;
+  --theme-lab-finder-padding: 8px;
+  --theme-lab-finder-border: 1px solid #000000;
+  --theme-lab-finder-border-top: 0;
+  --theme-lab-finder-bg: #ffffff;
+  --theme-lab-finder-shadow: inset 1px 1px #888888;
+  --theme-lab-finder-item-width: 76px;
+  --theme-lab-finder-item-gap: 0;
+  --theme-lab-finder-item-icon-size: 32px;
+  --theme-lab-finder-item-font-family: var(--theme-ui-font);
+  --theme-lab-finder-item-font-size: var(--system-control-size);
+  --theme-lab-finder-era-extra-display: flex;
+  --theme-lab-finder-icon-selected-bg: #333399;
+  --theme-lab-finder-icon-selected-fg: #ffffff;
+  --theme-lab-finder-label-bg: #ffffff;
+  --theme-lab-finder-label-margin-top: 5px;
+  --theme-lab-finder-label-padding: 1px;
+  --theme-lab-finder-label-font-weight: 400;
+  --theme-lab-finder-icon-bg: transparent;
+  --theme-lab-finder-system-svg-opacity: 0;
+  --theme-lab-finder-startup-disk-image: url("./assets/themes/platinum/startup-disk-32.svg");
+  --theme-lab-finder-folder-image: url("./assets/themes/platinum/folder-32.svg");
+  --theme-lab-finder-app-image: url("./assets/themes/platinum/finder-app-32.svg");
+  --theme-lab-finder-document-image: url("./assets/themes/platinum/document-32.svg");
+  --theme-lab-finder-rows-border: 1px solid #000000;
+  --theme-lab-finder-rows-display: none;
+  --theme-lab-finder-rows-bg: #ffffff;
+  --theme-lab-finder-rows-shadow: -1px -1px #888888, 1px 1px #ffffff;
+  --theme-lab-finder-row-min-height: 20px;
+  --theme-lab-finder-row-columns: 18px minmax(0, 1fr) auto;
+  --theme-lab-finder-row-gap: 4px;
+  --theme-lab-finder-row-padding: 1px 5px;
+  --theme-lab-finder-row-border-bottom: 0;
+  --theme-lab-finder-row-icon-size: 16px;
+  /* Alarm Clock DA: Platinum chrome (Mac OS 9). 1px black frame with the
+     bevel window shadow, striped Platinum title bar, white face and readout,
+     square bevel close box and lever. Classic and Liquid Glass keep their
+     own dedicated sets; Platinum must not inherit the System 6 look. */
+  --alarm-clock-frame-border: 1px solid #000000;
+  --alarm-clock-frame-radius: 0;
+  --alarm-clock-frame-shadow: var(--window-shadow);
+  --alarm-clock-title-bg: var(--system-titlebar-active-bg);
+  --alarm-clock-surface-bg: #dddddd;
+  --alarm-clock-readout-bg: #ffffff;
+  --alarm-clock-divider: 1px solid #000000;
+  --alarm-clock-active-bg: #000000;
+  --alarm-clock-active-fg: #ffffff;
+  --alarm-clock-close-size: 10px;
+  --alarm-clock-close-border: 1px solid #000000;
+  --alarm-clock-close-radius: 0;
+  --alarm-clock-close-bg: #ffffff;
+  --alarm-clock-close-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #888888;
+  --alarm-clock-lever-radius: 0;
+  --alarm-clock-lever-bg: #dddddd;
+  --alarm-clock-lever-hover-bg: #eeeeee;
+  --alarm-clock-lever-fg: #000000;
+  --alarm-clock-lever-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #888888;
+  --alarm-clock-lever-focus-outline: 1px dotted #000000;
+  --alarm-clock-mode-divider: 1px solid #000000;
+  --alarm-clock-mode-radius: 0;
+  --alarm-clock-mode-bg: #dddddd;
+  --alarm-clock-mode-hover-bg: #eeeeee;
+  --alarm-clock-mode-active-shadow: inset 0 0 0 3px #ffffff;
+  --alarm-clock-section-gap: 0px;
+  /* Control Panel section chooser: the OS 8 tab sheet is Platinum-era
+     vocabulary, so Platinum pins the shared .system-tab harness values here
+     (the foundation defaults are Classic's cdev icon rail). */
+  --control-settings-columns: minmax(0, 1fr);
+  --control-settings-rows: none;
+  --control-chooser-area: auto;
+  --control-chooser-direction: row;
+  --control-chooser-gap: 3px;
+  --control-chooser-border-bottom: var(--system-border);
+  --control-chooser-border-right: 0;
+  --control-chooser-item-direction: row;
+  --control-chooser-item-flex: 1 1 0;
+  --control-chooser-item-gap: 6px;
+  --control-chooser-item-padding: 4px 10px;
+  --control-chooser-item-offset: calc(0px - var(--tab-overlap));
+  --control-chooser-item-border: var(--system-border);
+  --control-chooser-item-radius: var(--tab-radius) var(--tab-radius) 0 0;
+  --control-chooser-item-bg: var(--tab-bg);
+  --control-chooser-item-fg: var(--ink);
+  --control-chooser-hover-bg: var(--tab-hover-bg);
+  --control-chooser-hover-fg: var(--ink);
+  --control-chooser-active-bg: var(--tab-active-bg);
+  --control-chooser-active-fg: var(--ink);
+  --control-chooser-label-padding: 0;
+  --control-chooser-active-label-bg: transparent;
+  --control-chooser-active-label-fg: currentColor;
+  --control-chooser-active-weight: var(--system-strong-weight);
+  --control-chooser-icon-display: none;
+  --control-chooser-label-size: inherit;
+  /* The OS 8 tab sheet's own height: the 28px tab plus the strip's bottom
+     rule. Platinum's strip clips, so the rail has to carry this floor or the
+     settings grid can hand the row less than its tabs need. */
+  --control-chooser-min-height: 29px;
+  /* Control Strip, measured on Mac OS 9.0.4 (exe study 2026-10-16): square
+     #c0c0c0 body in a black frame, each module a full-height tile between
+     1px black separators, lit white one pixel in from its top-left and shaded
+     #a0a0a0 then #808080 at its bottom-right. No gradients, no capsule. The
+     pressed tile inverts the bevel (approximation: no pressed capture). */
+  --control-strip-thickness: 24px;
+  --control-strip-bg: #c0c0c0;
+  --control-strip-border: 1px solid #000000;
+  --control-strip-divider: 1px solid #000000;
+  --control-strip-radius: 0;
+  --control-strip-radius-mirrored: 0;
+  --control-strip-shadow: none;
+  --control-strip-tile-bg: #c0c0c0;
+  --control-strip-tile-radius: 0;
+  --control-strip-tile-shadow: inset 1px 1px #c0c0c0, inset 2px 2px #ffffff, inset -1px -1px #808080, inset -2px -2px #a0a0a0;
+  --control-strip-tile-margin: 0;
+  --control-strip-tile-height: calc(var(--control-strip-thickness) - 2px);
+  --control-strip-tile-hover-shadow: var(--control-strip-tile-shadow);
+  --control-strip-hover-bg: #c0c0c0;
+  --control-strip-hover-fg: #000000;
+  --control-strip-hover-shadow: none;
+  --control-strip-active-bg: #a0a0a0;
+  --control-strip-active-fg: #000000;
+  --control-strip-active-shadow: inset 1px 1px #808080, inset -1px -1px #ffffff;
+  --control-strip-gauge: #333333;
+  --control-strip-gauge-bg: #ffffff;
+  --control-strip-grip-inset: 5px 0;
+  --control-strip-grip: repeating-linear-gradient(to bottom, #ffffff 0 1px, #555555 1px 2px, transparent 2px 4px) 50% 50% / 6px 100% no-repeat;
+
+  /* P01: native 07, every tab 21 rows with the baseline at y121, #ddd between
+     tab tops, a 4-row rounded corner then a 1px step every 3 rows. The native-cut
+     caps are 16x22, so the metrics below are the 21-row tab plus its baseline.
+     --tab-bg paints only the middle: the caps own the ends, so the fill starts
+     past the left cap and stops before the right one. */
+  --tab-edge-width: 16px;
+  --tab-edge-height: 22px;
+  --tab-edge-left-bg: url("./assets/themes/platinum/chrome/tab-inactive-left.svg") left top / 16px 22px no-repeat;
+  --tab-edge-right-bg: url("./assets/themes/platinum/chrome/tab-inactive-right.svg") right top / 16px 22px no-repeat;
+  --tab-height: 22px;
+  --tab-min-height: 22px;
+  --tab-active-height: 22px;
+  --tab-active-min-height: 22px;
+  --tab-active-edge-height: 22px;
+  --tab-active-edge-left-bg: url("./assets/themes/platinum/chrome/tab-active-left.svg") left top / 16px 22px no-repeat;
+  --tab-active-edge-right-bg: url("./assets/themes/platinum/chrome/tab-active-right.svg") right top / 16px 22px no-repeat;
+  --tab-overlap: 1px;
+  --tab-margin: 0 -1px 0 0; /* native 07: neighbouring slopes meet in a V at the baseline */
+  --tab-padding: 1px 16px 0;
+  --tab-line-height: 20px;
+  --tab-shadow: none;
+  --tab-active-shadow: none;
+  --tab-last-border-right: 0;
+  --tab-strip-padding: 0 4px;
+  --tab-strip-border-bottom: 1px solid #000000;
+  --tab-panel-margin-top: 0;
+  --tab-hover-bg: var(--tab-bg);
+  --tab-bg:
+    linear-gradient(#000000, #000000) 16px 0 / calc(100% - 32px) 1px no-repeat,
+    linear-gradient(#dddddd, #dddddd) 16px 2px / calc(100% - 32px) 1px no-repeat,
+    linear-gradient(#000000, #000000) 16px 100% / calc(100% - 32px) 1px no-repeat,
+    linear-gradient(#cccccc, #cccccc) 16px 0 / calc(100% - 32px) 100% no-repeat;
+  --tab-active-bg:
+    linear-gradient(#000000, #000000) 16px 0 / calc(100% - 32px) 1px no-repeat,
+    linear-gradient(#cccccc, #cccccc) 16px 1px / calc(100% - 32px) 1px no-repeat,
+    linear-gradient(#ffffff, #ffffff) 16px 2px / calc(100% - 32px) 1px no-repeat,
+    linear-gradient(#eeeeee, #eeeeee) 16px 0 / calc(100% - 32px) 100% no-repeat;
+  --tab-panel-bg: #eeeeee;
+
+  /* P02: the Control Panel section chooser is the P01 tab sheet, so it wears the
+     same caps and the same 22px row — but its items carry the caps through the
+     control-chooser token family, not --tab-*, because the chooser is a
+     settings-navigation object. */
+  --control-chooser-item-edge-content: "";
+  --control-chooser-gap: 0;
+  --control-chooser-item-flex: 0 0 auto;
+  --control-chooser-item-border: 0;
+  --control-chooser-item-radius: 0;
+  --control-chooser-item-height: 22px;
+  --control-chooser-item-min-height: 22px;
+  --control-chooser-item-padding: 1px 16px 0;
+  --control-chooser-item-offset: -1px;
+  --control-chooser-item-bg: var(--tab-bg);
+  --control-chooser-hover-bg: var(--tab-bg);
+  --control-chooser-active-bg: var(--tab-active-bg);
+  --control-chooser-item-font-weight: 700;
+  --control-chooser-active-weight: 700;
+  --control-chooser-padding: 0 4px;
+  --control-chooser-min-height: 23px;
+
+  /* P04: native Mac OS 9 bevel button — #ccc face inside a 1px black border,
+     raised #eee top/left over a 2px #888 bottom/right, pressed the mirror. */
+  --view-controls-border: 0;
+  --view-controls-bg: transparent;
+  --view-controls-gap: 2px;
+  --view-controls-height: 18px;
+  --view-btn-width: 22px;
+  --view-btn-height: 18px;
+  --view-btn-border: 1px solid #000000;
+  --view-btn-bg: #cccccc;
+  --view-btn-glyph: #000000;
+  --view-btn-hover-bg: #cccccc;
+  --view-btn-shadow: inset 1px 1px 0 #eeeeee, inset -1px -1px 0 #888888, inset -2px -2px 0 #888888;
+  --view-btn-active-bg: #cccccc;
+  --view-btn-active-glyph: #000000;
+  --view-btn-active-shadow: inset 1px 1px 0 #888888, inset 2px 2px 0 #888888, inset -1px -1px 0 #eeeeee;
+
+  /* P05: native 14/04 — the open popup sits over its control, 16px rows, no
+     dividers, check mark on the current item, #333399 highlight with #6666cc /
+     #000088 side columns, frame black + inner white top/left #999 bottom/right +
+     1px #222 shadow. --system-select-menu-top lifts the panel by the caller's
+     --system-select-selected-top (the JS sets it); it is inert until then. */
+  --system-select-menu-top: calc(0px - var(--system-select-selected-top, 0px) - 1px);
+  --system-select-menu-padding: 1px 0;
+  --system-select-menu-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #999999, 1px 1px 0 #222222;
+  --system-select-option-min-height: 16px;
+  --system-select-option-padding: 0 20px 0 18px;
+  --system-select-option-font-family: var(--theme-ui-font);
+  --system-select-option-font-weight: 600;
+  --system-select-option-line-height: 16px;
+  --system-select-option-divider: 0;
+  --system-select-option-selected-bg: #dddddd;
+  --system-select-option-selected-fg: #000000;
+  --system-select-option-selected-shadow: none;
+  --system-select-option-active-bg: #333399;
+  --system-select-option-active-fg: #ffffff;
+  --system-select-option-active-shadow: inset 1px 0 0 #6666cc, inset -1px 0 0 #000088;
+
+  /* P06: Mac OS 9 modal frame — 1px black over Platinum grey; the inner bevel is
+     three white steps inside #555/#999/#aaa with a 1px #000 drop. Answered via
+     the shared --modal-* hooks so the alert, startup sheet and Finder operation
+     dialog all follow without an app-scoped rule. */
+  --modal-border: 1px solid #000000;
+  --modal-bg: #dddddd;
+  --modal-shadow: inset 1px 1px 0 #dddddd, inset 2px 2px 0 #ffffff, inset 3px 3px 0 #ffffff, inset -1px -1px 0 #555555, inset -2px -2px 0 #999999, inset -3px -3px 0 #aaaaaa, 1px 1px 0 #000000;
+
+  /* P09: native 21 — a 21px row of bevel header buttons. Unsorted columns are
+     #ccc raised (#666/white top/left, #333/#888 bottom/right); the sorted column
+     is #888 sunken. The renderer marks it with aria-sort on the header cell. */
+  --finder-list-header-padding: 2px 4px;
+  --finder-list-header-bg: #cccccc;
+  --finder-list-header-weight: 700;
+  --finder-list-header-cell-padding: 1px 6px;
+  --finder-list-header-cell-bg: #cccccc;
+  --finder-list-header-cell-shadow: inset 1px 1px 0 #666666, inset 2px 2px 0 #ffffff, inset -1px -1px 0 #333333, inset -2px -2px 0 #888888;
+  --finder-list-header-sorted-bg: #888888;
+  --finder-list-header-sorted-shadow: inset 1px 1px 0 #111111, inset 2px 2px 0 #555555, inset -1px -1px 0 #222222, inset -2px -2px 0 #444444;
+
+  /* P10: native Mac OS 9 list rows carry no divider, sit 18px tall, and tint
+     the sorted column (#ddd on the first cell, #eee for the rest). The base
+     rule's dotted `#888` rule and 27px row lose to these. */
+  --finder-list-row-rule: 0;
+  --finder-list-row-min-height: 18px;
+  --finder-list-row-bg: #eeeeee;
+  --finder-list-sorted-first-cell-bg: #dddddd;
+  /* C3: native Kind and Size cells are separated by 8px; the base grid had no
+     gap, so the two labels met edge to edge. */
+  --finder-list-column-gap: 8px;
+
+  /* P11: native Finder icon/view panes are white paper, and their labels are
+     Geneva 10 regular in the 12px-minimum adaptation the owner kept — weight
+     400, no width axis, breaking between words only. The pane hook is separate
+     from --pane-bg on purpose: the writing surfaces share --pane-bg. */
+  --finder-pane-bg: #ffffff;
+  --finder-label-bg: transparent;
+  --finder-label-weight: 400;
+  --finder-label-font-variation: "wdth" 100;
+  --finder-label-wrap: normal;
+  --finder-label-word-break: keep-all;
+
+  /* P12: native desktop labels are a ~70% white tag with no edge, one line,
+     weight 400. P13: the selected object inverts to black/white and darkens
+     its artwork. P20: the native tag grows with its name, so a short name
+     still sits on one line; `nowrap` forced every long name to stay one line
+     and spill past the tag instead of wrapping inside it (2026-10-06 report),
+     so the lineage wraps only when the name would not otherwise fit. */
+  --desktop-label-bg: rgba(255, 255, 255, 0.7);
+  --desktop-label-box-shadow: none;
+  --desktop-label-font-weight: 400;
+  --desktop-label-font-variation: "wdth" 100;
+  --desktop-label-white-space: normal;
+  --desktop-label-selected-bg: #000000;
+  --desktop-label-selected-fg: #ffffff;
+  --desktop-icon-selected-filter: brightness(0.5);
+
+  /* P18: the checked box keeps its raised bevel (the base token inherits
+     `none` and flattened it) and wears the native-cut check overlay. */
+  --choice-checked-shadow: var(--choice-shadow);
+  --choice-checkmark-image: url("./assets/themes/platinum/checkbox-checked-overlay.svg");
+  --choice-checkmark-size: 12px 12px;
+  /* P19: native 12px radio art, outline included, replaces the drawn ring. */
+  --radio-border: 0;
+  --radio-bg: transparent;
+  --radio-shadow: none;
+  --radio-image: url("./assets/themes/platinum/chrome/radio-unchecked-native-12.svg");
+  --radio-checked-image: url("./assets/themes/platinum/chrome/radio-checked-native-12.svg");
+  --radio-checked-size: 12px 12px;
+  /* P20: native group box — etched #888 with a white line inside. */
+  --control-section-border: 1px solid #888888;
+  --control-section-shadow: inset 1px 1px 0 #ffffff, 1px 1px 0 #ffffff;
+  /* P21: native menu rows are 16px at weight 600. */
+  --menu-item-font-weight: 600;
+  --menu-item-min-height: 16px;
+  --menu-item-padding: 0 3px 0 21px;
+  --menu-item-line-height-menu: 16px;
+  /* P24: the panel starts at the bar's own height, drops its top rule, and
+     carries the native #222 shadow and the two #6666cc/#000088 selection
+     columns. The shared top is already the bar height minus 2px, so this
+     offset only gives those 2px back. A full bar height here was added a
+     second time, and the menu hung below the title with the desktop between. */
+  --menu-popover-offset-top: 2px;
+  /* Shared title is 2px short of the bar; Platinum's highlight is the bar
+     itself, so titles fill via tokens consumed by 60-responsive (not charged
+     geometry in this sheet). */
+  --menu-title-height: 100%;
+  --menu-title-min-height: 0;
+  --menu-title-line-height: var(--system-menu-height);
+  --menu-panel-border-top-width: 0;
+  --menu-panel-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #999999, 1px 1px 0 #222222;
+  --menu-button-active-shadow: inset 0 1px 0 #6666cc, inset 0 -1px 0 #000088;
+  --menu-item-active-shadow: inset 1px 0 0 #6666cc, inset -1px 0 0 #000088;
+  /* P29: pressed push button — #444/#555 top/left over #888/#777 bottom/right. */
+  --btn-active-shadow: inset 1px 1px 0 #444444, inset 2px 2px 0 #555555, inset -1px -1px 0 #888888, inset -2px -2px 0 #777777;
+  /* P30: white etch on the bottom/right of every field. */
+  --field-shadow: -1px -1px 0 #888888, 1px 1px 0 #ffffff;
+  /* P32: native barber-pole fill — ten 1px hard stops, not an interpolation. */
+  --progress-fill-bg: linear-gradient(to bottom, #333399 0 1px, #6666cc 1px 2px, #9999ff 2px 3px, #ccccff 3px 4px, #eeeeee 4px 5px, #ccccff 5px 6px, #9999ff 6px 7px, #6666cc 7px 8px, #333399 8px 9px, #000055 9px 10px);
+  /* P28: the Finder's back-button + breadcrumb band is the second Platinum
+     placard: white top row, #dddddd face, #aaaaaa bottom row, black rule. */
+  --details-bar-shadow: inset 0 1px 0 #ffffff, inset 0 -1px 0 #aaaaaa;
+  --details-bar-min-height: 20px;
+  --details-bar-optical-rise: 0px;
+  --details-bar-padding-y: 0;
+  /* C7: alerts use the era's own 32px placeholder art, not the shared "!". */
+  --alert-icon-image: url("./assets/themes/platinum/alert-32.svg");
+}
+
+/* P25/X3: the ridges start 3px after the close box, so the left cover grows by
+   1px; and a Platinum window that hides both Zoom and WindowShade narrows the
+   trailing cover to the close-box lane alone, which is what Page Setup
+   measured (ridges stopped at x466 against a frame at x501). */
+body[data-lineage~="platinum"] .title-bar:has(> .close-box):not(:has(> .resize-box)):not(:has(> .shade-box)) {
+  --system-titlebar-control-slot-right: var(--system-titlebar-control-slot);
+}
+
+/* Yosemite icon family: independent OS X 10.10 object geometry with flat
+   Retina fills, steel-blue hairlines, shallow gradients, and no inherited
+   Liquid Glass composition. Menus and the control strip retain compact inline
+   glyphs; Finder and application objects use this complete asset family. */
+body[data-theme="yosemite"] .sys-icon[data-system-icon]:not(:where([data-system-icon="play"], [data-system-icon="pause"], [data-system-icon="previousTrack"], [data-system-icon="nextTrack"], [data-system-icon="shuffleTracks"], [data-system-icon="repeatTracks"], [data-system-icon="speaker"])) {
+  border-radius: 0;
+  background-color: transparent;
+  background-image: none;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  filter: none;
+}
+
+/* Liquid Glass's selected/hover icon resets use the `background` shorthand at
+   the same specificity as the recipe above. Keep those contexts transparent;
+   the size-aware Yosemite raster now travels inside the shared SVG envelope. */
+body[data-theme="yosemite"] :is(
+  .finder-item.is-selected,
+  .desktop-icon:is(:hover, :focus-visible, .is-selected),
+  .spine-actions button:is(:hover, :focus-visible, .is-selected)
+) .sys-icon {
+  background-color: transparent;
+  background-image: none;
+  box-shadow: none;
+}
+
+/* 10.10 desktop/Finder hover: a flat light-gray rounded selection — never
+   the Liquid Glass frosted pill. The LG skin paints desktop-icon,
+   finder-item and spine-actions hover states with a translucent glass
+   background, 18px radius, blur and a blue ring; Yosemite's hover is a quiet
+   gray tile with no blur, no glass shadow and no color ring.
+
+   The generic Liquid Glass button-hover recipe (70-liquid-glass.css
+   `button:hover:not(…)`) carries nine :not() guards, so it outranks any
+   plain class override and would repaint these surfaces with the glass
+   shadow and blue ring. This recipe mirrors those guards and adds the
+   data-theme-family attribute to win the cascade without touching the
+   Liquid Glass skin (its own desktop-icon hover recipe keeps working there). */
+body[data-theme="yosemite"] :is(
+  .desktop-icon,
+  .spine-actions button
+):is(:hover, :focus-visible, .is-selected):not(:disabled):not(.is-disabled):not(.is-active):not(.is-multi-selected):not(.tdi-tab-close):not(.tdi-stack-open):not(.tdi-stack-close):not(.view-switch-option):not(.system-help-related-link) {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  outline: 0;
+}
+
+body[data-theme="yosemite"] .finder-item:is(:hover, :focus-visible):not(:disabled):not(.is-disabled):not(.is-active):not(.is-multi-selected):not(.tdi-tab-close):not(.tdi-stack-open):not(.tdi-stack-close):not(.view-switch-option):not(.system-help-related-link) {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 6px;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  outline: 0;
+}
+
+/* The System 6 label inversion (black pill + light text) is not 10.10:
+   hovered/selected desktop labels keep dark text on the gray selection. */
+body[data-theme="yosemite"] .desktop-icon:is(:hover, :focus-visible, .is-selected) span:last-child {
+  background: transparent;
+  color: var(--ink);
+}
+body[data-theme="yosemite"] .sys-icon-svg :is(.sys-icon-classic, .sys-icon-platinum-core, .sys-icon-aqua, .sys-icon-snow-leopard, .sys-icon-liquid) {
+  display: none;
+}
+
+body[data-theme="yosemite"] .sys-icon-svg .sys-icon-yosemite {
+  display: block;
+}
+
+/* Menus and the control strip receive the true 16px Yosemite tier through
+   the same SVG envelope rather than falling back to Classic line art. */
+body[data-theme="yosemite"] :is(.menu-bar, .control-strip) .sys-icon {
+  background-color: transparent;
+  background-image: none;
+  filter: none;
+}
+body[data-theme-family="classic"][data-lineage~="platinum"] .desktop,
+
+body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .desktop  {
+
+  background: var(--desktop-surface);
+
+}
+
+html[data-theme="yosemite"],
+body[data-theme="yosemite"] {
+  /* No hover outline on choices in this era (no native evidence of one). */
+  --control-choice-hover-shadow: none;
+  /* The 10.10 alert sheet fill, measured from the Empty Trash capture
+     (512 Pixels, solid #ececec). The older rgba(255,255,255,0.95) read as
+     pure white on the Theme Lab stage and could not calibrate the sheet. */
+  --modal-bg: #ececec;
+  /* A background 10.10 window shows one flat grey lamp, not a dimmed red one.
+     Ship the grey disc from the Mail capture; do not flatten the coloured
+     sprite (filter AA left a 1.6px edge over the 1.5 floor). */
+  --titlebar-inactive-control-filter: none;
+  --system-titlebar-inactive-control-filter: none;
+  --system-titlebar-inactive-control-opacity: 1;
+  /* The base sheet owns the progress recipe; the era supplies its numbers. */
+  --progress-height: 12px;
+  --progress-radius: 6px;
+  --progress-border-color: rgba(0, 0, 0, 0.18);
+  --progress-bg: #e5e5e5;
+  --progress-fill-radius: 5px;
+  --progress-fill-bg: linear-gradient(#4c97fe, #0564e3);
+  --progress-fill-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26);
+  --progress-fill-active-bg: var(--progress-fill-bg);
+  --progress-fill-active-size: 100% 100%;
+  /* Evidence boundary: vinceliuice/Yosemite-gtk-theme 03b6f721 provides the
+     surface hierarchy, 36/26/22px control relationships, #0e6bff selection,
+     6/5px radii and active/backdrop states. Period pure-CSS window studies
+     confirm the shell geometry; real 10.10 Finder and System Preferences
+     captures calibrate translucency. No GTK selectors or assets are copied. */
+  /* 黑体-简: the Simplified system face from Lion through Yosemite. */
+  --theme-ui-font: "Helvetica Neue", Helvetica, "Heiti SC", "STHeiti", "Microsoft YaHei", sans-serif;
+  --theme-title-font: var(--theme-ui-font);
+
+  --system-readable-min: 13px;
+  --system-title-size: 13px;
+  --system-control-size: 13px;
+  --system-text-size: 13px;
+  --system-caption-size: 11px;
+  /* 10.10 still drew the 22px menu bar; the 24px bar arrived later. Without
+     this the era fell back to the System 6 default. */
+  --system-menu-height: 22px;
+  --system-titlebar-height: 22px;
+  --system-titlebar-control-slot: 24px;
+  /* 13px menu text sits on a 16px line; the 22px row is min-height. */
+  --menu-item-line-height: 16px;
+  --system-titlebar-control-size: 12px;
+  --system-titlebar-title-height: 18px;
+  --system-titlebar-font-size: 13px;
+  --system-titlebar-margin-y: 0;
+  --system-titlebar-padding-y: 0;
+  --system-titlebar-padding-x: 8px;
+  --system-titlebar-inactive-title-color: rgba(36, 36, 36, 0.48);
+  --system-control-min-height: 22px;
+  --system-button-min-height: 26px;
+  --system-button-padding-y: 2px;
+  --system-button-padding-x: 9px;
+  --system-select-control-min-height: 24px;
+  --system-select-control-padding: 2px 25px 2px 8px;
+  --system-select-control-border: 1px solid rgba(0, 0, 0, 0.2);
+  --system-select-control-radius: 5px;
+  --system-select-control-bg: linear-gradient(#ffffff, #f1f1f1);
+  --system-select-control-shadow: 0 1px 1px rgba(16, 16, 16, 0.04), 0 1px 2px rgba(16, 16, 16, 0.01), inset 0 1px 0 rgba(255, 255, 255, 0.86);
+  --system-select-control-font-weight: 400;
+  --field-control-padding: 2px 8px;
+  /* Searcher's query field takes this field's padding. Its sheet now loads
+     after this one (lazy), so the family field rule no longer wins by order. */
+  --find-path-query-padding: var(--field-control-padding);
+  /* Real 10.10 Finder: the unified chrome is ~52px at 1x — a 22px titlebar
+     plus a ~30px toolbar, not the 36px toolbar inherited from Liquid Glass. */
+  --theme-lab-toolbar-min-height: 30px;
+  --theme-lab-toolbar-padding: 4px 8px;
+  --theme-lab-toolbar-radius: 6px 6px 0 0;
+  --theme-lab-toolbar-search-display: block;
+  --theme-lab-toolbar-search-width: 160px;
+  /* 10.10 NSSearchField (Finder toolbar): a 22px rounded-rect field with a
+     left magnifying glass, hairline border and inner shadow — not the pill
+     shape of Snow Leopard's search field. */
+  --search-field-min-height: 22px;
+  --search-field-padding: 2px 8px 2px 22px;
+  --search-field-radius: 5px;
+  --search-field-background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 11 11'%3E%3Ccircle cx='4.5' cy='4.5' r='3' fill='none' stroke='%23707070'/%3E%3Cpath d='m6.8 6.8 3 3' stroke='%23707070' stroke-width='1.4' stroke-linecap='round'/%3E%3C/svg%3E") 7px center / 11px 11px no-repeat,
+    var(--field-bg);
+  --theme-lab-nav-row-min-height: 26px;
+  --theme-lab-nav-row-padding-block: 2px;
+  --theme-lab-finder-row-min-height: 28px;
+  /* Real 10.10 Finder list rows are ~22px with thin separators; the generic
+     Liquid Glass default of 30px makes the content list read oversized. */
+  --theme-lab-list-row-min-height: 22px;
+  --theme-lab-list-row-gap: 6px;
+  --theme-lab-list-row-padding: 2px 6px;
+  --theme-lab-list-row-radius: 0;
+  --theme-lab-list-row-font-size: var(--system-control-size);
+  --theme-lab-list-row-line-height: 16px;
+  --theme-lab-list-row-border-bottom: 1px solid rgba(0, 0, 0, 0.09);
+  /* Theme Lab sidebar/list icons: point at the PNGs. The SVG wrappers embed
+     icons/*.png via relative <image href>, which CSS background-image does not
+     resolve — the sidebar previously painted label text with empty icon slots. */
+  --theme-lab-sidebar-icon-size: 16px;
+  --theme-lab-sidebar-icon-bg: transparent;
+  --theme-lab-sidebar-system-svg-opacity: 0;
+  --theme-lab-sidebar-startup-disk-image: url("./assets/themes/yosemite/icons/startupDisk-16.png");
+  --theme-lab-sidebar-applications-image: url("./assets/themes/yosemite/icons/applications-16.png");
+  --theme-lab-sidebar-trash-image: url("./assets/themes/yosemite/icons/trash-16.png");
+  --theme-lab-sidebar-document-image: url("./assets/themes/yosemite/icons/folder-16.png");
+  --theme-lab-list-icon-display: block;
+  --theme-lab-list-icon-size: 16px;
+  --theme-lab-list-icon-image: url("./assets/themes/yosemite/icons/folder-16.png");
+  --theme-lab-list-document-image: url("./assets/themes/yosemite/icons/document-16.png");
+  /* Theme Lab Finder surface renders the full 10.10 window: the product's own
+     title bar, the 36px unified toolbar, status, content. */
+  --theme-lab-finder-window-display: block;
+  --theme-lab-finder-window-border: 1px solid #afafaf;
+  --theme-lab-finder-window-radius: 5px 5px 0 0;
+  --theme-lab-finder-window-bg: #ffffff;
+  --theme-lab-finder-window-shadow: 0 4px 10px rgba(0, 0, 0, 0.26);
+  --theme-lab-finder-status-display: flex;
+  --theme-lab-finder-status-height: 20px;
+  --theme-lab-finder-status-border-top: 1px solid #d5d5d5;
+  --theme-lab-finder-status-bg: #f6f6f6;
+  /* Until 2026-11-01 the lamps were Yosemite-gtk-theme
+     titlebutton-{close,minimize,maximize}.png; they are now crops of the
+     10.10 captures, painted by 88-desk-dock.css. */
+  --traffic-light-size: 12px;
+  /* Alarm Clock: 10.10 flat light chrome, thin borders, blue accent. */
+  --alarm-clock-frame-border: 1px solid rgba(0, 0, 0, 0.11);
+  --alarm-clock-frame-radius: 6px;
+  --alarm-clock-frame-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
+  --alarm-clock-title-bg: #f5f5f5;
+  --alarm-clock-surface-bg: #ffffff;
+  --alarm-clock-readout-bg: #ffffff;
+  --alarm-clock-divider: 1px solid #d5d5d5;
+  --alarm-clock-active-bg: #0e6bff;
+  --alarm-clock-active-fg: #ffffff;
+  --alarm-clock-close-size: 12px;
+  --alarm-clock-close-border: 0;
+  --alarm-clock-close-radius: 50%;
+  --alarm-clock-close-bg: radial-gradient(circle at 40% 33%, #f7787d 0 1px, #f25056 2.5px, #d63a44 5.8px);
+  --alarm-clock-close-shadow: none;
+  --alarm-clock-lever-radius: 4px;
+  --alarm-clock-lever-bg: #ffffff;
+  --alarm-clock-lever-hover-bg: #f0f0f0;
+  --alarm-clock-lever-fg: #363636;
+  --alarm-clock-lever-shadow: 0 1px 1px rgba(16, 16, 16, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.86);
+  --alarm-clock-lever-focus-outline: 1px solid #74aaff;
+  --alarm-clock-mode-divider: 0;
+  --alarm-clock-mode-radius: 4px;
+  --alarm-clock-mode-bg: #f5f5f5;
+  --alarm-clock-mode-hover-bg: #e8f3ff;
+  --alarm-clock-mode-active-shadow: inset 0 0 0 2px #0e6bff;
+  --alarm-clock-section-gap: 2px;
+  --ink: #242424;
+  --paper: rgba(245, 245, 245, 0.97);
+  --panel: rgba(229, 229, 229, 0.95);
+  --quiet-panel: rgba(250, 250, 250, 0.97);
+  --shade: #c7c7c7;
+  /* 4.48:1 on paper against the 4.5:1 floor for the 13px text this token also
+     carries. #707070 measures 4.95:1. */
+  --shade-dark: #707070;
+  --md-marker-ink: #717171;  /* ground #f5f5f5 */
+  /* Theme Family Contract §5, the two divider roles. System 6 rules a desk in
+     ink — a solid black primary rule and a dotted secondary one — and Platinum
+     keeps the dotted hairline. Yosemite rules it in grey hairlines and had never
+     said so, so every divider that reads the family role was still drawing
+     Classic ink: the dotted rules under each Quick Draft field are the ones
+     you can see without looking for them. */
+  --system-primary-divider: 1px solid var(--rule);
+  --system-secondary-divider: 1px solid var(--rule);
+  --rule: rgba(0, 0, 0, 0.11);
+  --pane-bg: #f5f5f5;
+  --details-bar-bg: rgba(245, 245, 245, 0.96);
+  --details-bar-border: #e1e1e1;
+  /* Abstracted from the 10.10 default wallpaper (512 Pixels 6k capture):
+     warm peach sunset sky at the top, tan ridge, then the dark blue-slate
+     valley below. Measured vertical ramp, no raster payload. */
+  --desktop: #464955;
+  /* Yosemite "Valley" structure: peach sky, warm ridge, cool valley floor
+     (512 Pixels 10.10; CSS abstraction, not the 6K raster). */
+  --desktop-surface:
+    radial-gradient(ellipse 55% 18% at 50% 0%, rgb(255 242 228 / 0.85), transparent 60%),
+    radial-gradient(ellipse 70% 28% at 50% 6%, rgb(255 220 198 / 0.72), transparent 55%),
+    radial-gradient(ellipse 40% 14% at 28% 42%, rgb(120 88 72 / 0.48), transparent 70%),
+    radial-gradient(ellipse 45% 16% at 72% 40%, rgb(100 78 68 / 0.45), transparent 68%),
+    radial-gradient(ellipse 70% 20% at 22% 52%, rgb(90 68 60 / 0.55), transparent 72%),
+    radial-gradient(ellipse 80% 18% at 78% 48%, rgb(78 62 58 / 0.5), transparent 70%),
+    radial-gradient(ellipse 120% 30% at 50% 68%, rgb(28 32 42 / 0.78), transparent 62%),
+    linear-gradient(180deg, #f4c4b4 0%, #ebb0a4 10%, #d4a294 22%, #b98b74 34%, #8c756f 50%, #545860 68%, #3a404c 86%, #4a515c 100%);
+  /* Endfield terminal: warm-paper survey, contour lines (等高线) and a
+     chartreuse glow over the 10.10 peach. */
+  --endfield-pane-bg:
+    linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+    url("assets/endfield-background.svg"),
+    radial-gradient(circle at 88% 8%, rgba(234, 253, 79, 0.24), transparent 34%),
+    linear-gradient(168deg, #f6e3da 0%, #e7c4b2 40%, #f0ded2 72%, #f8eeea 100%);
+  --endfield-pane-bg-size: 34px 34px, 34px 34px, max(1200px, 118vw) auto, auto, auto;
+  --endfield-pane-bg-position: center, center, 45% 20%, center, center;
+  --endfield-pane-bg-repeat: repeat, repeat, no-repeat, no-repeat, no-repeat;
+  --window-bg: rgba(245, 245, 245, 0.99);
+  --window-border: 1px solid rgba(0, 0, 0, 0.16);
+  /* Real 10.10 windows: ~5px corner radius at 1x (measured 10px at 2x). */
+  --window-radius: 5px;
+  /* Theme Family Contract: the shared object shadow. `2px 2px 0 var(--ink)`
+     is System 6's hard offset shadow, and only Liquid Glass had ever replaced
+     it — so a focused Quick Draft field, a Time Machine popover and a
+     ClioStage frame all stood on a solid black bar in Yosemite too. This is the
+     era's own window shadow at object scale. */
+  --system-shadow: 0 1px 2px rgba(0, 0, 0, 0.12), 0 4px 10px rgba(0, 0, 0, 0.12);
+  /* Theme Family Contract: the shadow a small raised object casts — the
+     composer, an action chip, a help tag. The base layer writes System 6's
+     hard offset; Yosemite casts the same soft shadow it gives every other object. */
+  --system-object-shadow: var(--system-shadow);
+  /* Mac OS X help tag: a pale yellow slip with a thin grey rule and a small
+     corner. The base layer's balloon is System 6's — white paper inside a
+     black hairline with a 12px corner — and only Platinum had answered with
+     its own, so Yosemite was still popping a System 6 balloon. */
+  --balloon-help-bg: #fbfbc8;
+  --balloon-help-border: 1px solid #9d9d7d;
+  --balloon-help-radius: 4px;
+  --window-shadow:
+    0 5px 5px rgba(0, 0, 0, 0.18),
+    0 8px 15px rgba(0, 0, 0, 0.14),
+    0 0 0 1px rgba(0, 0, 0, 0.08);
+  --active-window-shadow: var(--window-shadow);
+  --inactive-window-shadow: 0 3px 3px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.06);
+  /* 10.10 window content is opaque; only the chrome surfaces keep
+     translucency. The whole-window blur is a Liquid Glass feature. */
+  --window-backdrop-filter: none;
+  /* Painter contract: Yosemite is translucent chrome without Liquid blur.
+     --painter-blur-px stays 0 so Theme Lab cannot pass a reduced-glass Liquid. */
+  --painter-blur: none;
+  --painter-blur-px: 0;
+  /* 10.10 vibrancy is surface-specific and restrained: the fused
+     titlebar/toolbar is a solid light-gray gradient (no blur), the sidebar
+     keeps a subtle frosted blur, and the menu owns its own material. This is
+     the frosted-glass (毛玻璃) boundary — NOT the Liquid Glass skin, which
+     blurs every chrome surface. Window content stays opaque. (512 Pixels
+     Yosemite: only the frontmost window's sidebar shows translucency;
+     inactive windows fall back to opaque surfaces.) */
+  --sidebar-backdrop-filter: blur(7px);
+  --titlebar-toolbar-backdrop-filter: none;
+  --surface-backdrop-filter: none;
+  --system-titlebar-active-bg: linear-gradient(#f5f5f5 0%, #e9e9e9 10%, #e2e2e2 52%, #d2d2d2 100%);
+  /* P2 inactive frame honesty: backdrop 10.10 windows fall back to a flat
+     opaque chrome (512 Pixels). That flat chrome is #f6f6f6, measured at the
+     background Mail window's own grey Close lamp — the active/inactive cut is
+     carried by the flat fill vs the active gradient, not by darkening the
+     bar. #e8e8e8 was too dark: the grey lamp (222) then sat only ~10 levels
+     off its bar, so the silhouette no longer read as a disc and the Fidelity
+     floor's geometry pass could not see an edge. */
+  --system-titlebar-inactive-bg: #f6f6f6;
+  --system-titlebar-background-origin: padding-box;
+  --system-titlebar-background-clip: border-box;
+  --system-titlebar-inactive-control-visibility: visible;
+  /* Opacity stays 1: inactive lamps are authored grey discs (see tokens above). */
+  --system-titlebar-inactive-control-opacity: 1;
+  --titlebar-title-bg: transparent;
+  --titlebar-title-fg: #363636;
+  --titlebar-border: 1px solid #afafaf;
+  --titlebar-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  --surface-primary: rgba(255, 255, 255, 0.96);
+  --surface-secondary: rgba(245, 245, 245, 0.95);
+  --surface-inset: #ffffff;
+  --toolbar-bg: linear-gradient(#f5f5f5 0%, #e9e9e9 10%, #e2e2e2 52%, #d2d2d2 100%);
+  --toolbar-bg-inactive: #f6f6f6;
+  /* 10.10 fuses the titlebar and toolbar into one continuous chrome surface:
+     no divider at the titlebar/toolbar boundary. The chrome edge is the
+     window border itself. */
+  --toolbar-border: 0;
+  --toolbar-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.76);
+  --tdi-rail-bg: var(--sidebar-bg);
+  /* 512 Pixels Finder capture: the 10.10 sidebar is a near-opaque light gray
+     with a soft blur — not a saturated glass panel. */
+  --sidebar-bg: rgba(248, 248, 248, 0.94);
+  /* Focused list / desktop selection: Force Quit native row #116cd6
+     (512 Pixels 2x). Menu tracking keeps its own --menu-item-active-*
+     ramp (#1680f5…); do not conflate the two blues. */
+  --selection-bg: #116cd6;
+  --selection-edge: #116cd6;
+  --selection-fg: #ffffff;
+  /* Source-list selection stays flat grey in both key and backdrop windows
+     (Applications／Mail captures); vibrancy changes, not selection colour. */
+  --sidebar-selection-bg: #cecece;
+  --sidebar-selection-fg: #1c1c1c;
+  /* Tier 2 selection states. Yosemite has no --tdi-tab-* recipe of its own
+     yet (the rail still paints with the System 6 baseline), so these read
+     against that plain tab rather than a flat 10.10 one; a flat --tdi-tab-*
+     recipe for Yosemite is separate, pre-existing scope this lane did not
+     open. Values stay in the era's own quiet, low-saturation register. */
+  --tdi-tabs-heading-padding: 10px 12px 4px;
+  --tdi-tabs-heading-fg: #8a8a8f;
+  --tdi-tabs-heading-font-size: 11px;
+  --tdi-tabs-heading-letter-spacing: 0.02em;
+  --tdi-tabs-heading-text-transform: uppercase;
+  --tdi-tabs-heading-border-bottom: 0;
+  --tdi-tab-active-unfocused-border: 0;
+  --tdi-tab-active-unfocused-border-bottom: 0;
+  --tdi-tab-active-unfocused-bg: rgba(0, 0, 0, 0.06);
+  --tdi-tab-active-unfocused-fg: var(--ink);
+  --tdi-tab-active-unfocused-shadow: none;
+  --tdi-tab-active-unfocused-small-color: rgba(0, 0, 0, 0.5);
+  --tdi-tab-hover-bg: rgba(0, 0, 0, 0.04);
+  --tdi-tab-hover-fg: var(--ink);
+  --tdi-tab-hover-shadow: none;
+  --tdi-tab-pressed-bg: rgba(0, 0, 0, 0.09);
+  --tdi-tab-pressed-fg: var(--ink);
+  --tdi-tab-pressed-shadow: none;
+  /* Yosemite keeps the browser visible as a flat, lightly separated source
+     sidebar; only the material changes, not Scrapbook selection behavior. */
+  --scrapbook-list-display: block;
+  --scrapbook-pager-display: none;
+  --scrapbook-pane-columns: minmax(160px, 0.72fr) minmax(0, 1fr);
+  --scrapbook-pane-rows: minmax(0, 1fr) auto auto;
+  --scrapbook-pane-gap: 12px;
+  --scrapbook-mobile-pane-columns: 1fr;
+  --scrapbook-mobile-pane-rows: minmax(132px, 156px) minmax(0, 1fr) auto;
+  --scrap-list-bg: rgba(248, 248, 248, 0.96);
+  --scrap-list-border: 1px solid rgba(0, 0, 0, 0.18);
+  --scrap-list-radius: 4px;
+  --scrap-list-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.86);
+  --scrap-list-item-divider: 1px solid rgba(0, 0, 0, 0.08);
+  --scrap-list-item-selected-bg: var(--selection-bg);
+  --scrap-list-item-selected-fg: var(--selection-fg);
+  --scrap-list-item-selected-radius: 3px;
+  /* 10.10 desktop labels are shadowed white text on the wallpaper with a
+     small-radius flat selection rectangle — no paper tag, no candy pill. */
+  --desktop-label-bg: transparent;
+  --desktop-label-fg: #ffffff;
+  --desktop-label-text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+  --desktop-label-radius: 3px;
+  --desktop-label-selected-bg: var(--selection-bg);
+  --desktop-label-selected-fg: var(--selection-fg);
+  --separator: rgba(0, 0, 0, 0.11);
+  --control-shadow: 0 1px 1px rgba(16, 16, 16, 0.04), 0 1px 2px rgba(16, 16, 16, 0.01);
+  --control-active-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.18);
+  /* Theme Family Contract: the keyboard ring. The base layer writes System 6's
+     dotted ink ring, so every era that never answered wore it. Each era already
+     names its own ring for controls; this points the shared role at it. */
+  --system-focus-outline: var(--control-focus-outline);
+  --control-focus-outline: 3px solid rgba(78, 158, 255, 0.52);
+  --control-focus-offset: 1px;
+  --control-disabled-bg: #f3f3f3;
+  /* Disabled controls lighten their edge too; the shared default is the dark
+     shade, which made the disabled pop-up heavier than the live one. */
+  --control-disabled-border: rgba(0, 0, 0, 0.12);
+  /* The pop-up's blue arrow well (10.10 General preferences capture): a 16x20
+     well flush to the button's right edge with up and down chevrons. */
+  --system-select-arrow-bg: url("./assets/themes/yosemite/popup-arrows.svg");
+  --system-select-arrow-width: 16px;
+  --system-select-arrow-height: 20px;
+  --system-select-arrow-right: 0;
+  --system-select-arrow-top: 50%;
+  --system-select-arrow-transform: translateY(-50%);
+  --system-select-arrow-side: 0 solid transparent;
+  --system-select-arrow-wedge: 0 solid transparent;
+  --control-disabled-field-bg: #f1f1f1;
+  --system-border: 1px solid rgba(0, 0, 0, 0.16);
+  --system-inset: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+  --control-radius: 5px;
+  --btn-border-color: rgba(0, 0, 0, 0.18);
+  --btn-radius: 5px;
+  --btn-bg: #ffffff;
+  --btn-shadow: 0 1px 1px rgba(16, 16, 16, 0.04), 0 1px 2px rgba(16, 16, 16, 0.01), inset 0 1px 0 rgba(255, 255, 255, 0.86);
+  /* #fafafa on a white button read as no hover at all; one more step keeps
+     it restrained but actually visible. */
+  --btn-hover-bg: #f5f5f5;
+  --btn-hover-fg: #242424;
+  --btn-hover-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  --btn-active-bg: #afafaf;
+  --btn-active-fg: #242424;
+  --btn-active-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+  /* Native Force Quit suggested-action (2x crop): bright #4c9af8→#1f6ff0
+     ramp, not the flatter GTK solid #3484e2 (material 17.2 vs floor 12). */
+  --btn-default-bg: linear-gradient(#4c9af8 0%, #3a8ef6 42%, #2a7ef5 72%, #1f6ff0 100%);
+  --btn-default-fg: #ffffff;
+  --btn-default-text-shadow: 0 -1px 0 rgba(0, 58, 130, 0.32);
+  --btn-default-shadow: 0 1px 1px rgba(19, 71, 132, 0.06), 0 1px 2px rgba(19, 71, 132, 0.02);
+  --btn-default-active-bg: linear-gradient(#3a8ef6 0%, #1c6bc7 100%);
+  --btn-default-active-fg: #ffffff;
+  /* 10.10 suggested-action hover: GTK 03b6f721 gtk-light.css pins
+     button.suggested-action:hover background-color #619fe8 (lighter than the
+     resting #3484e2, darker than nothing — the blue button never turns white). */
+  --btn-default-hover-bg: #619fe8;
+  --btn-default-hover-fg: #ffffff;
+  --field-bg: #ffffff;
+  --field-focus-bg: #ffffff;
+  /* gtk-light.css entry: 1px rgba(0,0,0,0.11) border, outer drop shadows and
+     a hairline inset ring; the old 0.2 border was heavier than 10.10. */
+  --field-border: 1px solid rgba(0, 0, 0, 0.11);
+  --field-radius: 5px;
+  /* ClioTalk reply slip: 10.10 flat content-box idiom (hairline border,
+     measured 5px control radius, hairline inset only). */
+  --clio-slip-radius: 5px;
+  --clio-slip-surface: #ffffff;
+  --clio-slip-border: 1px solid rgba(0, 0, 0, 0.12);
+  --clio-slip-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.01);
+  --clio-slip-kept-surface: #ffffff;
+  --clio-slip-kept-border: 1px solid rgba(0, 0, 0, 0.24);
+  --clio-slip-kept-shadow: none;
+  --clio-slip-mark-border: 1px solid rgba(0, 0, 0, 0.12);
+  --clio-slip-mark-kept: rgba(0, 0, 0, 0.7);
+  --clio-said-rule: 3px solid rgba(0, 0, 0, 0.24);
+  --select-radius: 5px;
+  --field-shadow: 0 1px 1px rgba(16, 16, 16, 0.04), 0 1px 2px rgba(16, 16, 16, 0.01), inset 0 0 0 1px rgba(0, 0, 0, 0.01);
+  --field-focus-border: 1px solid #4c97fe;
+  --field-focus-ring: 0 0 0 3px rgba(76, 151, 254, 0.36);
+  --choice-bg: #ffffff;
+  /* Yosemite-gtk-theme checkbox-unchecked.png / radio-unchecked.png: the
+     10.10 border is a light steel blue, not a neutral gray. */
+  --choice-border: 1px solid #d0d7e6;
+  /* Yosemite-gtk checkbox asset rect uses rx=2. */
+  --choice-radius: 2px;
+  --choice-shadow: inset 0 1px 0 #ffffff;
+  /* checkbox-checked.png: flat #0e6bff fill with a white two-stroke check. */
+  --choice-checked-bg: #0e6bff;
+  --choice-checkmark-image: url("./assets/themes/yosemite/checkbox-check-white.svg");
+  /* The checked fill reaches the rounded corner edge: no gray outline and
+     no white inset highlight in the Yosemite-gtk asset. */
+  --choice-checked-border-color: transparent;
+  --choice-checked-shadow: none;
+  --radio-bg: #ffffff;
+  --radio-border: 1px solid #d0d7e6;
+  --radio-checked-border-color: #8f99ac;
+  --radio-shadow: inset 0 1px 0 #ffffff;
+  --radio-image: none;
+  --radio-focus-image: none;
+  /* radio-checked.png: #0e6bff circle with a white center dot. */
+  --radio-checked-image:
+    radial-gradient(circle, #ffffff 0 1px, rgba(255, 255, 255, 0.65) 1.6px, rgba(14, 107, 255, 0) 2.1px),
+    linear-gradient(to bottom, #0e6bff, #0e6bff);
+  --radio-checked-focus-image: var(--radio-checked-image);
+  --theme-lab-checkbox-checkmark-image: var(--choice-checkmark-image);
+  --theme-lab-checkbox-mark-content: none;
+  --theme-lab-radio-checked-bg: var(--radio-checked-image);
+  --theme-lab-radio-dot-content: none;
+  /* 10.10: denser cool frost than Big Sur's warm vibrancy (P2 differentiation). */
+  --menu-bar-bg: rgba(245, 245, 247, 0.88);
+  /* The opaque colour under that fill. See 60-responsive.css's installed-surface
+     block: a home-screen web app gets a system blur painted over the top of the
+     screen, and a blur over a translucent material is the desk showing through
+     it. The bar keeps its material everywhere else; the strip that runs under
+     the status area is flat. */
+  --menu-bar-base: #f5f5f7;
+  /* 10.10 translucent menu bar frosts the wallpaper (512 Pixels desktop). */
+  --menu-bar-backdrop-filter: blur(20px) saturate(165%);
+  --menu-bar-border-color: rgba(0, 0, 0, 0.16);
+  --menu-bar-border: 1px solid var(--menu-bar-border-color);
+  --menu-bar-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  --menu-panel-bg: rgba(255, 255, 255, 0.95);
+  --menu-panel-border: 1px solid rgba(0, 0, 0, 0.11);
+  --menu-panel-radius: 6px;
+  --menu-panel-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+  /* 20px like the bar: the 10.10 capture shows only blurred wallpaper colour
+     through a menu; at 7px Finder labels behind stayed readable and collided
+     with the items (2026-10-08). */
+  --menu-panel-backdrop-filter: blur(20px) saturate(165%);
+  /* Real 10.10 Apple menu capture (512 Pixels, 1:1 at 2x): the open-menu
+     selection is a deep saturated blue (#0f74f5 measured from the capture)
+     with white labels; the menu keeps a subtle vertical ramp, not the pale
+     #5e9aec mid-stop that previously rendered too light. */
+  --menu-button-active-bg: linear-gradient(#1680f5, #1077f2 50%, #0e6bf0);
+  --menu-button-active-fg: #ffffff;
+  --menu-item-active-bg: linear-gradient(#1680f5, #1077f2 50%, #0e6bf0);
+  --menu-item-active-fg: #ffffff;
+  /* The shared default: Yosemite keeps the roomy 28px gutter, so the check
+     sits at the stock 12px offset. Stated so the era answers the token. */
+  --menu-check-left: 12px;
+  /* Real 10.10 Force Quit capture (512 Pixels, 2x): a focused list selection
+     is solid #116cd6 with white labels. The previous #97ddfd came from the
+     Finder capture's folder-icon tab, not from a selected row -- that capture
+     is in icon view with nothing selected. #0e6bff stays the accent blue. */
+  --theme-lab-list-selected-bg: #116cd6;
+  --theme-lab-list-selected-fg: #ffffff;
+  /* Real 10.10 Applications and Mail captures (512 Pixels, 2x): a source-list
+     row is selected with a flat #cecece fill and dark labels in both the key
+     and the backdrop window. What changes with window state is the sidebar's
+     vibrancy, not the selection colour. */
+  --theme-lab-sidebar-selected-bg: #cecece;
+  --theme-lab-sidebar-selected-fg: #1c1c1c;
+  --window-frame-lane: 10px;
+  --window-frame-track-bg: transparent;
+  --window-frame-track-border: 0;
+  /* B00merang scrollbar.slider: 6px radius, 3px transparent border,
+     ~21% ink mix on the theme background. */
+  --window-frame-thumb-bg: rgba(78, 78, 78, 0.34);
+  /* Flat fill — the horizontal lane shares the era's vertical thumb unchanged. */
+  --window-frame-thumb-bg-horizontal: var(--window-frame-thumb-bg);
+  --window-frame-thumb-border: 3px solid transparent;
+  --window-frame-thumb-radius: 6px;
+  --window-frame-arrow-bg: transparent;
+  --window-frame-arrow-ink: transparent;
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: var(--window-frame-thumb-bg);
+  --scrollbar-button: transparent;
+  --scrollbar-width: 10px;
+  --tab-radius: 5px 5px 0 0;
+  --tab-overlap: 0;
+  /* Usability, not evidence (no 10.10 tab capture in the repo): #f6f6f6 left
+     the white selected tab indistinguishable from the others (2026-10-09). */
+  --tab-bg: #ebebeb;
+  --tab-hover-bg: #ffffff;
+  --tab-active-bg: #ffffff;
+  --system-check-size: 15px;
+  --system-radio-size: 15px;
+  --theme-lab-button-min-width: 70px;
+  --theme-lab-group-bg: rgba(245, 245, 245, 0.95);
+  --theme-lab-group-border: 1px solid rgba(0, 0, 0, 0.11);
+  --theme-lab-group-shadow: none;
+  /* Control Panel section chooser — the flat 10.10 toolbar: thin-line icons,
+     hairline divider, the chosen section on a light gray rounded plane. An
+     independent 10.10 recipe, never "Liquid Glass minus glass". */
+  --control-settings-columns: minmax(0, 1fr);
+  --control-settings-rows: none;
+  --control-chooser-area: auto;
+  --control-chooser-direction: row;
+  --control-chooser-gap: 4px;
+  --control-chooser-padding: 2px 8px;
+  --control-chooser-border-bottom: 1px solid #d4d4d4;
+  --control-chooser-border-right: 0;
+  --control-chooser-item-direction: column;
+  --control-chooser-item-flex: 1 1 0;
+  --control-chooser-item-gap: 2px;
+  --control-chooser-item-padding: 3px 8px 4px;
+  --control-chooser-item-offset: 0px;
+  --control-chooser-item-border: 0;
+  --control-chooser-item-radius: 4px;
+  --control-chooser-item-bg: transparent;
+  --control-chooser-item-fg: #4a4a4a;
+  --control-chooser-hover-bg: rgba(0, 0, 0, 0.05);
+  --control-chooser-hover-fg: #2b2b2b;
+  --control-chooser-active-bg: #dcdcdc;
+  --control-chooser-active-fg: #2b2b2b;
+  --control-chooser-label-padding: 0;
+  --control-chooser-active-label-bg: transparent;
+  --control-chooser-active-label-fg: currentColor;
+  --control-chooser-active-weight: inherit;
+  --control-chooser-active-shadow: none;
+  --control-chooser-icon-display: block;
+  --control-chooser-icon-size: 20px;
+  --control-chooser-label-size: 10px;
+  /* The toolbar rail's own height: 20px icon + 2px gap + the 12px name, in a
+     3px 8px 4px cell, on the 2px-padded rail with its bottom rule. */
+  --control-chooser-min-height: 46px;
+  /* Control Strip — signed counterfactual: translucent 10.10 white with a
+     hairline frame; the active module lights the system blue instead of
+     gaining a plate. Flat 5px corners keep distance from the Liquid Glass
+     capsule. */
+  --control-strip-thickness: 24px;
+  --control-strip-bg: rgba(251, 251, 251, 0.82);
+  --control-strip-border: 1px solid rgba(0, 0, 0, 0.16);
+  --control-strip-divider: 1px solid rgba(0, 0, 0, 0.08);
+  --control-strip-radius: 5px;
+  --control-strip-radius-mirrored: 5px;
+  --control-strip-shadow: 0 3px 9px rgba(0, 0, 30, 0.25);
+  --control-strip-backdrop: blur(18px);
+  --control-strip-hover-bg: rgba(0, 0, 0, 0.05);
+  --control-strip-hover-fg: #2b2b2b;
+  --control-strip-hover-shadow: none;
+  --control-strip-active-bg: rgba(0, 0, 0, 0.05);
+  --control-strip-active-fg: #157efb;
+  --control-strip-active-shadow: none;
+  --control-strip-gauge: #157efb;
+  --control-strip-gauge-bg: rgba(255, 255, 255, 0.9);
+  --control-strip-grip-inset: 6px 0;
+  --control-strip-grip: repeating-linear-gradient(to bottom, #9a9a9a 0 1px, rgba(0, 0, 0, 0) 1px 4px) 50% 50% / 2px 100% no-repeat;
+}
+
+/* The 10.10 alert (512 Pixels' Empty Trash capture): a hairline grey edge, a
+   5 px corner and a soft drop shadow, no frame. Written as a rule, the way
+   Big Sur's is, so the frame does not become a token every era must answer;
+   the base double black frame is System 6's alert. */
+body[data-theme="yosemite"] :is(.system-modal, .startup-settings-modal) {
+  border: 1px solid rgba(0, 0, 0, 0.22);
+  border-radius: 5px;
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.08), 0 12px 32px rgba(0, 0, 0, 0.32);
+}
+
+/* Semantic aliases keep application selectors independent of the era. */
+body[data-theme] {
+  /* One semantic surface vocabulary for application CSS. These aliases live
+     on the themed body so they resolve after the era parameter table, rather
+     than freezing :root's Classic values into every descendant. */
+  --system-raised-surface: var(--surface-primary);
+  --system-frame-border: var(--window-border);
+  --system-selection-bg: var(--selection-bg);
+  --system-selection-fg: var(--selection-fg);
+  /* --system-disabled-fg is declared at :root in 00-foundation.css. Repeating
+     it here on body[data-theme] matched every era at the SAME specificity but
+     later in the file, so it silently beat every per-appearance override above
+     it -- which is why Platinum's disabled ink could not be changed. */
+  --system-status-surface: var(--details-bar-bg);
+  --help-row-selected-bg: var(--selection-bg);
+  --help-row-selected-fg: var(--selection-fg);
+  --find-path-result-selected-bg: var(--selection-bg);
+  --find-path-result-selected-fg: var(--selection-fg);
+  --find-path-result-selected-title-color: var(--selection-fg);
+  --find-path-result-selected-detail-color: var(--selection-fg);
+  /* The foundation hover chain substitutes on :root, where the era
+     selection override cannot reach it; re-substitute the chain here so
+     hover previews each era's own selection instead of Classic ink. */
+  --find-path-result-hover-border: var(--find-path-result-selected-border);
+  --find-path-result-hover-border-bottom: var(--find-path-result-selected-border-bottom);
+  --find-path-result-hover-bg: var(--find-path-result-selected-bg);
+  --find-path-result-hover-fg: var(--find-path-result-selected-fg);
+  --find-path-result-hover-shadow: var(--find-path-result-selected-shadow);
+  --find-path-result-hover-title-color: var(--find-path-result-selected-title-color);
+  --find-path-result-hover-detail-color: var(--find-path-result-selected-detail-color);
+  --find-path-result-last-hover-border-bottom: var(--find-path-result-last-border-bottom);
+  --alarm-clock-selection-bg: var(--selection-bg);
+  --alarm-clock-selection-fg: var(--selection-fg);
+  --cmf-selected-bg: var(--selection-bg);
+  --cmf-selected-fg: var(--selection-fg);
+  --video-timeline-selected-bg: var(--selection-bg);
+  --video-timeline-selected-fg: var(--selection-fg);
+}
+/* System 7 draws its own bar (#eeeeee under six #777777 lines); without this
+   the generic System 6 bar showed on every window that has no rule of its own. */
+body[data-theme-family="classic"]:where([data-theme="system-7"]) .title-bar,
+body[data-theme-family="classic"][data-lineage~="platinum"] .title-bar,
+
+body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .title-bar  {
+
+  background: var(--system-titlebar-active-bg);
+  background-origin: var(--system-titlebar-background-origin);
+  background-clip: var(--system-titlebar-background-clip);
+  border-bottom: var(--titlebar-border);
+
+}
+
+body[data-theme-family="classic"][data-lineage~="platinum"] .window:not(.is-active) .title-bar,
+
+body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .window:not(.is-active) .title-bar  {
+
+  background: var(--system-titlebar-inactive-bg);
+  background-origin: var(--system-titlebar-background-origin);
+  background-clip: var(--system-titlebar-background-clip);
+
+}
+
+body[data-theme-family="classic"][data-lineage~="platinum"] .title-bar h1,
+
+body[data-theme-family="classic"][data-lineage~="platinum"] .title-bar h2,
+
+body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .title-bar h1,
+
+body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .title-bar h2  {
+
+  background: var(--titlebar-title-bg);
+  color: var(--titlebar-title-fg);
+
+}
+
+/* Platinum is not a flat gray recolor. These recipes reproduce the structural
+   cues documented by the Mac OS 8 HIG: a four-sided drag frame, etched title
+   lines, raised controls, inset fields, beveled menu edges, and solid scroll
+   indicators. The application DOM and its layout remain shared. */
+body[data-lineage~="platinum"] {
+  font-size: var(--system-text-size);
+  font-variation-settings: "wdth" 113;
+}
+
+/* System 6 and System 7 draw a scroll arrow as an outline with a stem, not a
+   filled wedge: vendor/system.css-reference/icon/scrollbar-up.svg (a System 6
+   reconstruction) and the System 7.5.3 canvas read in
+   internal/evidence/drafts/system-7-reference ("hollow line" arrows). Platinum
+   and Drawing Board keep the filled Mac OS 9 wedge, so the family is narrowed
+   to the two monochrome-lineage eras. Drawn from 1px ink rects so the empty,
+   inactive and pressed states keep recolouring it through the arrow ink. */
+body[data-theme-family="classic"]:not([data-lineage~="platinum"]) {
+  /* A System 6 pop-up is a square white box with a 1px drop shadow and a black
+     wedge (vendor/system.css-reference style.css, select); it was a rounded bevel. */
+  --system-select-radius: 0;
+  --system-select-shadow: 1px 1px 0 var(--ink);
+  --window-frame-arrow-up-art: linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink));
+  --window-frame-arrow-up-art-size: 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 4px 1px, 4px 1px, 1px 3px, 1px 3px, 5px 1px;
+  --window-frame-arrow-up-art-position: left 7px top 3px, left 6px top 4px, left 8px top 4px, left 5px top 5px, left 9px top 5px, left 4px top 6px, left 10px top 6px, left 3px top 7px, left 11px top 7px, left 2px top 8px, left 9px top 8px, left 5px top 9px, left 9px top 9px, left 5px top 12px;
+  --window-frame-arrow-down-art: linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink));
+  --window-frame-arrow-down-art-size: 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 4px 1px, 4px 1px, 1px 3px, 1px 3px, 5px 1px;
+  --window-frame-arrow-down-art-position: left 7px top 10px, left 6px top 9px, left 8px top 9px, left 5px top 8px, left 9px top 8px, left 4px top 7px, left 10px top 7px, left 3px top 6px, left 11px top 6px, left 2px top 5px, left 9px top 5px, left 5px top 2px, left 9px top 2px, left 5px top 1px;
+  --window-frame-arrow-left-art: linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink));
+  --window-frame-arrow-left-art-size: 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 4px, 1px 4px, 3px 1px, 3px 1px, 1px 5px;
+  --window-frame-arrow-left-art-position: left 3px top 7px, left 4px top 6px, left 4px top 8px, left 5px top 5px, left 5px top 9px, left 6px top 4px, left 6px top 10px, left 7px top 3px, left 7px top 11px, left 8px top 2px, left 8px top 9px, left 9px top 5px, left 9px top 9px, left 12px top 5px;
+  --window-frame-arrow-right-art: linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink)), linear-gradient(var(--window-frame-arrow-ink), var(--window-frame-arrow-ink));
+  --window-frame-arrow-right-art-size: 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 1px, 1px 4px, 1px 4px, 3px 1px, 3px 1px, 1px 5px;
+  --window-frame-arrow-right-art-position: left 10px top 7px, left 9px top 6px, left 9px top 8px, left 8px top 5px, left 8px top 9px, left 7px top 4px, left 7px top 10px, left 6px top 3px, left 6px top 11px, left 5px top 2px, left 5px top 9px, left 2px top 5px, left 2px top 9px, left 1px top 5px;
+}
+
+/* P14: native Mac OS 9 — on each side, a black outer line, then a raised 4px
+   strip, then a black content border; the scroll lanes sit INSIDE that content
+   border. The geometry (5px insets for the frame bars and the grow box, 2px
+   more top padding on the window so the content loses 2px of width, and no
+   extra row under the title bar) rides on --window-frame-inset-* and on this
+   era-scoped rule pair, so only Platinum and its child Drawing Board move.
+   Native basis: Mac OS 8/9 window farm captures (16/21). */
+body[data-lineage~="platinum"] .window {
+  padding: 2px 5px 5px;
+  background: var(--window-bg);
+}
+
+body[data-lineage~="platinum"] .window:not(.is-active) {
+  /* N1: controls in a background window go flat and grey, as Mac OS 9 draws
+     them (native 53: #888 border, flat face, #777 words). */
+  --btn-border-color: #888888;
+  --btn-shadow: none;
+  --btn-fg: #777777;
+  --view-btn-shadow: none;
+  --view-btn-active-shadow: none;
+  --field-shadow: none;
+  --choice-shadow: none;
+  --pane-bg: var(--inactive-pane-bg, #eeeeee);
+  --titlebar-title-bg: var(--inactive-titlebar-title-bg, #dddddd);
+  --window-border-image: var(--inactive-window-border-image, none);
+  border-color: var(--inactive-window-border-color, #555555);
+  background: var(--inactive-window-bg, #dddddd);
+  color: var(--inactive-window-fg, #555555);
+  /* P26: the native background window keeps its 1px #555 drop and the two
+     inset rules; :1811's `box-shadow:none` erased all three. */
+  box-shadow: var(--inactive-window-shadow);
+}
+
+body[data-lineage~="platinum"] .window:not(.is-active) .title-bar {
+  border-bottom-color: var(--inactive-window-border-color, #555555);
+}
+
+body[data-lineage~="platinum"] .window:not(.is-active) .title-bar :is(h1, h2) {
+  background: var(--inactive-titlebar-title-bg, #dddddd);
+  color: var(--inactive-titlebar-title-fg, #777777);
+}
+
+body[data-lineage~="platinum"] .title-bar {
+  /* P14/N2: the base 1px bottom margin painted an extra #ccc row under every
+     title bar; the content border belongs to the window frame instead. */
+  margin: 0;
+  padding: 1px;
+  border-bottom: 1px solid #000000;
+}
+
+/* Reclaim the fourth lane after the late responsive layer collapses the
+   shared title bar to three columns. This keeps Zoom and WindowShade at
+   the measured five-pixel visual gap without adding another owner. The
+   Writing Flow rail's title row has no lamps, so the four-track template
+   stays off it — this era layer outranks the row's own symmetric template,
+   and the leak parked its three children in the wrong lanes. */
+body[data-lineage~="platinum"] .title-bar:not(.spine-title-row) {
+  grid-template-columns: var(--titlebar-gutter) minmax(0, 1fr) var(--titlebar-slot-zoom) calc(var(--titlebar-gutter) - var(--titlebar-slot-zoom));
+}
+
+body[data-lineage~="platinum"] .title-bar :is(h1, h2) {
+  --title-font: Charcoal, "Charcoal CY", "Platinum Asap", var(--theme-ui-font);
+  padding-inline: 4px;
+  font-weight: 700;
+  font-variation-settings: "wdth" 123;
+  transform: translate(-1px, -1px);
+}
+
+body[data-lineage~="platinum"] :is(.close-box, .resize-box, .shade-box) {
+  background: none;
+  filter: none;
+}
+
+/* One list, written the way the era already writes it two rules above:
+   `:is()` takes the specificity of its most specific branch, so all three
+   still resolve at (0, 3, 0) in the same source position — the same three
+   controls, two selectors fewer on the appearance wall. */
+body[data-lineage~="platinum"] .title-bar :is(.close-box, .resize-box, .shade-box)::before {
+  box-sizing: border-box;
+  width: var(--system-titlebar-control-art-size);
+  height: var(--system-titlebar-control-art-size);
+  border: 1px solid var(--titlebar-control-art-ink, #222222);
+  border-radius: 0;
+  background: var(--titlebar-control-art-bg, linear-gradient(to bottom right, #999999, #ffffff));
+  box-shadow: var(--titlebar-control-art-shadow,
+    -1px -1px 0 #888888,
+    -1px 0 0 #888888,
+    0 -1px 0 #888888,
+    1px 1px 0 #ffffff,
+    1px 0 0 #ffffff,
+    0 1px 0 #ffffff,
+    inset 1px 1px 0 #cccccc,
+    inset -1px -1px 0 #888888);
+  opacity: 1;
+}
+
+body[data-lineage~="platinum"] :is(.close-box, .resize-box, .shade-box):active::before {
+  background: var(--titlebar-control-art-pressed-bg, linear-gradient(to bottom right, #444444, #bbbbbb));
+  box-shadow: var(--titlebar-control-art-pressed-shadow, -1px -1px 0 #888888, 1px 1px 0 #ffffff, inset -1px -1px 0 #999999);
+  opacity: 1;
+}
+
+/* 20px is the Platinum push-button height for a one-line title, not a cap: a
+   fixed height made a wrapped two-line title (the Note Pad "Send to …" row on a
+   phone) spill out below the button frame. min-height keeps the standard size
+   and lets the frame grow with its title. */
+body[data-lineage~="platinum"] .btn {
+  position: relative;
+  min-width: var(--theme-button-min-width, 58px);
+  min-height: 20px;
+  padding: 2px 10px;
+  border: 1px solid var(--btn-border-color);
+  border-radius: var(--btn-radius);
+  background: var(--btn-bg);
+  box-shadow: var(--btn-shadow);
+  font-size: var(--system-control-size);
+  font-weight: 700;
+  line-height: 14px;
+  transition: none;
+}
+
+body[data-lineage~="platinum"] .btn.default {
+  border-radius: 3px;
+  background: var(--btn-default-bg);
+  color: var(--btn-default-fg, var(--ink));
+  text-shadow: var(--btn-default-text-shadow, none);
+  box-shadow: var(--btn-default-shadow);
+}
+
+body[data-lineage~="platinum"] :is(.btn:disabled, .btn.is-disabled, .system-select-button:disabled) {
+  /* N5: a disabled default button loses its black ring with its bevel. */
+  --btn-default-ring-shadow: 0 0 0 1px #888888;
+  border-color: #888888;
+  background: #dddddd;
+  color: #777777;
+  box-shadow: none;
+}
+
+body[data-lineage~="platinum"] :is(input[type="text"], input[type="search"], input[type="url"], input[type="password"], input[type="number"]) {
+  height: 22px;
+  min-height: 22px;
+  margin: 2px;
+  padding: 2px;
+  border: 1px solid #000000;
+  border-radius: 0;
+  background: #ffffff;
+  box-shadow: -1px -1px 0 #888888;
+  font-family: var(--theme-ui-font);
+  font-size: var(--system-control-size);
+  line-height: 16px;
+}
+
+body[data-lineage~="platinum"] input[type="search"] {
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+body[data-lineage~="platinum"] .theme-lab-form-grid :is(input, select):disabled {
+  border-color: var(--theme-lab-disabled-control-border-color);
+  background: var(--theme-lab-disabled-control-bg);
+  color: var(--theme-lab-disabled-control-fg);
+  box-shadow: var(--theme-lab-disabled-control-shadow);
+  opacity: 1;
+}
+
+body[data-lineage~="platinum"] :is(select, .system-select-button) {
+  height: 20px;
+  min-height: 20px;
+  padding: 1px 27px 1px 7px;
+  border: 1px solid #000000;
+  border-radius: 3px;
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: #dddddd;
+  background-image: none;
+  box-shadow: inset 1px 1px #ffffff, inset -1px -1px #aaaaaa;
+  font-family: var(--theme-title-font);
+  font-size: var(--system-control-size);
+  font-weight: 700;
+  line-height: 16px;
+}
+
+/* P31: the arrow part is bevelled on its own and flush with the button's
+   frame (native 09b x440-469 y141-164), not inset two rows. */
+body[data-lineage~="platinum"] :is(.select-wrap, .system-select-button)::after {
+  right: 0;
+  top: 0;
+  width: 20px;
+  height: 18px;
+  border: 0;
+  background:
+    url("./assets/vendor/classic-stylesheets/macos9/dropdown.svg") calc(50% - 1px) center / 7px 10px no-repeat,
+    #dddddd;
+  box-shadow:
+    inset 1px 1px #dddddd,
+    inset 2px 2px #ffffff,
+    inset -1px -1px #777777,
+    inset -2px -2px #aaaaaa,
+    -1px 0 #aaaaaa;
+  transform: none;
+}
+
+body[data-lineage~="platinum"] :is(.select-wrap:has(select:disabled), .system-select-button:disabled)::after {
+  background:
+    url("./assets/vendor/classic-stylesheets/macos9/dropdown-disabled.svg") center / 7px 10px no-repeat,
+    #dddddd;
+  box-shadow: -1px 0 #aaaaaa;
+  opacity: 1;
+}
+
+body[data-lineage~="platinum"] input[type="checkbox"] {
+  background-size: 9px 8px;
+  transition: none;
+}
+
+body[data-lineage~="platinum"] input[type="radio"] {
+  border: var(--radio-border);
+  box-shadow: var(--radio-shadow);
+  transition: none;
+}
+
+/* The well greys (#888 frame, #ddd face), but the radio and the check are
+   bitmap art the frame colour cannot reach, so the control also fades: at
+   opacity 1 a disabled selected radio drew exactly like a live one. */
+body[data-lineage~="platinum"] :is(input[type="checkbox"], input[type="radio"]):disabled {
+  border-color: #888888;
+  background-color: #dddddd;
+  box-shadow: none;
+  opacity: 0.45;
+}
+
+body[data-lineage~="platinum"] .menu-bar {
+  padding-inline: 4px;
+}
+
+body[data-lineage~="platinum"] :is(.menu-popover, .menu-sub-popover) hr {
+  border-top: 1px solid #888888;
+  border-bottom: 1px solid #ffffff;
+}
+
+body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .system-select-button:not(:disabled)  {
+
+  min-height: var(--system-select-control-min-height);
+  padding: var(--system-select-control-padding);
+  border: var(--system-select-control-border);
+  border-radius: var(--system-select-control-radius);
+  background: var(--system-select-control-bg);
+  box-shadow: var(--system-select-control-shadow);
+  font-size: var(--system-control-size);
+  font-weight: var(--system-select-control-font-weight);
+
+}
+
+/* 10.10 non-frontmost windows fall back to opaque surfaces: an inactive
+   sidebar loses its blur and returns to a solid material. (512 Pixels
+   Yosemite review: only the frontmost window lets content show through.) */
+html[data-theme="yosemite"] .theme-lab-generic-browser.is-inactive .theme-lab-sidebar,
+body[data-theme="yosemite"] .theme-lab-generic-browser.is-inactive .theme-lab-sidebar {
+  --sidebar-backdrop-filter: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .window:not(.is-active)  {
+
+  box-shadow: var(--inactive-window-shadow);
+
+}
+
+body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) :where(.btn)  {
+
+  border-color: var(--btn-border-color);
+  border-radius: var(--btn-radius);
+  background: var(--btn-bg);
+  box-shadow: var(--btn-shadow);
+  font-weight: 400;
+
+}
+
+body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .btn.default  {
+
+  background: var(--btn-default-bg);
+  border-color: #1c6bc7;
+  color: var(--btn-default-fg);
+  box-shadow: var(--btn-default-shadow);
+
+}
+
+body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .btn:is(.is-active, :active):not(:disabled):not(.is-disabled)  {
+
+  background: var(--btn-active-bg);
+  color: var(--btn-active-fg);
+  box-shadow: var(--btn-active-shadow);
+
+}
+
+body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) :is(.btn:disabled, .btn.is-disabled)  {
+
+  background: var(--control-disabled-bg);
+  color: var(--shade-dark);
+  box-shadow: none;
+
+}
+
+body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) :where(
+  textarea:not(.mde-input),
+  input[type="url"],
+  input[type="text"],
+  input[type="password"],
+  input[type="search"],
+  input[type="number"]
+)  {
+
+  /* Single-line controls keep the shared 22px control minimum from the base
+     rule; textareas stay content-sized so app-owned transcript/editor
+     min-heights (dictation 84px, translation pad 118px, rebuild 180px) win
+     again instead of collapsing to a field row height. */
+  padding: var(--field-control-padding);
+  border: var(--field-border);
+  border-radius: var(--field-radius);
+  background: var(--field-bg);
+  box-shadow: var(--field-shadow);
+  font-family: var(--theme-ui-font);
+  font-size: var(--system-control-size);
+
+}
+
+/* :not(.mde-input) — a writing surface is not a field; its ink is painted by an
+   overlay BEHIND the textarea (50-apps.css), so a focus fill here covers it. */
+body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) :is(input, textarea, select):not(.mde-input):focus  {
+
+  border: var(--field-focus-border);
+  outline: 0;
+  /* Preserve the arrow and other control images while changing the fill. */
+  background-color: var(--field-focus-bg);
+  box-shadow: var(--field-focus-ring);
+
+}
+
+body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) .theme-lab-toolbar  {
+
+  border-radius: var(--theme-lab-toolbar-radius);
+  box-shadow: var(--toolbar-highlight);
+
+}
+
+body[data-theme-family="liquid-glass"]:not([data-theme="liquid-glass"]) :is(.theme-lab-sidebar, .theme-lab-list) button  {
+
+  min-height: var(--theme-lab-nav-row-min-height);
+  padding-block: var(--theme-lab-nav-row-padding-block);
+
+}
+/* Yosemite is expressed as a restrained delta from the Liquid Glass lineage:
+   one fused header material, thin controls, and bounded early vibrancy. */
+body[data-theme="yosemite"] .window > .title-bar {
+  grid-template-columns:
+    var(--titlebar-gutter)
+    minmax(0, 1fr)
+    var(--titlebar-gutter);
+}
+
+body[data-theme="yosemite"] .window > .title-bar :is(h1, h2) {
+  padding-inline: 8px;
+  font-weight: 500;
+  text-shadow: none;
+}
+
+body[data-theme="yosemite"] .title-bar > :is(.close-box, .resize-box) {
+  border-radius: 50%;
+}
+
+/* The traffic-light eras put three lamps in a row at the left; the art and
+   offsets are 88-desk-dock.css's, and window-frame.test.mjs holds each era to
+   saying so. */
+body[data-theme="yosemite"] .title-bar > .close-box {
+  grid-column: 1;
+  justify-self: start;
+}
+
+body[data-theme="yosemite"] .title-bar > .resize-box {
+  grid-column: 1;
+  justify-self: start;
+}
+
+body[data-theme="yosemite"] select:not([multiple]) {
+  min-height: 24px;
+  padding: 2px 25px 2px 8px;
+  border: var(--field-border);
+  border-radius: var(--select-radius);
+  background-color: #ffffff;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='m1 1 3 3 3-3z' fill='%235c5c5c'/%3E%3C/svg%3E"),
+    linear-gradient(#ffffff, #f1f1f1);
+  background-position: right 8px center, left top;
+  background-size: 8px 5px, 100% 100%;
+  box-shadow: var(--btn-shadow);
+  font-family: var(--theme-ui-font);
+  font-size: var(--system-control-size);
+}
+
+/* A disabled pop-up's well goes grey with the rest of it, or the blue still
+   says "click me". */
+body[data-theme="yosemite"] .system-select-button:disabled::after {
+  filter: grayscale(1) opacity(0.45);
+}
+
+body[data-theme="yosemite"] :is(select, input, .system-select-button):disabled {
+  /* Dimmed once, by ink, on the shared disabled-fg token. The old literal
+     #a0a0a0 read 2.31:1 over this field even before the base rule's opacity
+     dimmed it again to 1.58; the era's disabled ink clears the 3:1 floor. */
+  color: var(--system-disabled-fg, var(--shade-dark));
+  background-color: #f1f1f1;
+}
+
+body[data-theme="yosemite"] .theme-lab-form-grid input[type="search"] {
+  appearance: none;
+  -webkit-appearance: none;
+  padding: var(--search-field-padding);
+  border-radius: var(--search-field-radius);
+  background: var(--search-field-background, var(--field-bg));
+}
+
+/* 10.10 windows have no visible resize handle in the corner: resizing is an
+   edge gesture, and the corner is plain window edge. The generic Liquid Glass
+   skin draws a rounded-corner handle here (the later iPadOS-era affordance);
+   Yosemite keeps the drag target but paints nothing. macOS 11 is the same
+   (the corner is window edge; its captures show no handle), and without this
+   Big Sur fell through to the System 6 double-square icon. */
+body:is([data-theme="yosemite"], [data-theme="big-sur"]) .grow-box {
+  background: transparent;
+  box-shadow: none;
+  cursor: se-resize;
+}
+body:is([data-theme="yosemite"], [data-theme="big-sur"]) .grow-box:is(:hover, :focus, :focus-visible) {
+  background: transparent;
+  outline: 0;
+  box-shadow: none;
+}
+
+body:is([data-theme="yosemite"], [data-theme="big-sur"]) .grow-box:is(:hover, :focus, :focus-visible)::before {
+  border-color: transparent;
+}
+
+/* Yosemite titlebar chrome is solid: the generic Liquid Glass skin blurs the
+   title bar, but 10.10 keeps a flat gradient (毛玻璃 applies only to the
+   sidebar and menus). */
+body[data-theme="yosemite"] .window > .title-bar {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* The Finder toolbar field is a 10.10 NSSearchField, not the generic
+   aqua-family text field (which wins on specificity over the theme-lab rule
+   and would flatten padding and the magnifying-glass layer). */
+body[data-theme="yosemite"] .theme-lab-toolbar-search input {
+  appearance: none;
+  -webkit-appearance: none;
+  border-radius: var(--search-field-radius);
+  background: var(--search-field-background, var(--field-bg));
+  padding: var(--search-field-padding);
+}
+
+/* 10.10 text fields are flat white with a hairline border and 5px radius;
+   the generic Liquid Glass field recipe (12px glass pill, translucent
+   gradient) must not leak into Yosemite. */
+body[data-theme="yosemite"] .theme-lab-form-grid :where(
+  input[type="text"],
+  input[type="search"],
+  input[type="url"],
+  input[type="password"],
+  input[type="number"]
+) {
+  appearance: none;
+  -webkit-appearance: none;
+  padding: var(--field-control-padding);
+  border: var(--field-border);
+  border-radius: var(--field-radius);
+  background: var(--field-bg);
+  box-shadow: var(--field-shadow);
+}
+
+body[data-theme="yosemite"] .theme-lab-form-grid :where(
+  input[type="text"],
+  input[type="search"]
+):is(:focus, .theme-lab-focus-demo) {
+  border: var(--field-focus-border);
+  outline: 0;
+  /* Preserve the arrow and other control images while changing the fill. */
+  background-color: var(--field-focus-bg);
+  box-shadow: var(--field-focus-ring);
+}
+
+/* 10.10 pressed / suggested-action fill: same Force Quit / Empty Trash
+   ramp as --btn-default-bg. The 512 Pixels set has no mouse-down capture;
+   Theme Lab .is-active is scored against that native blue push-button
+   fill, not the Appearance «Blue» swatch and not the GTK #4c97fe→#0564e3. */
+body[data-theme="yosemite"] .theme-lab-button-row .btn:is(
+  :active,
+  .is-active
+):not(:disabled):not(.is-disabled):not(.default) {
+  border-color: rgb(28, 107, 199);
+  background: var(--btn-default-bg);
+  color: #ffffff;
+  text-shadow: 0 -1px 0 rgba(0, 58, 130, 0.32);
+  box-shadow: none;
+}
+
+/* 10.10 choice controls are not Liquid Glass squares: the generic
+   Liquid Glass rules paint 18px glass with the star glyph, which loses
+   Yosemite's flat 15-16px steel-blue checkbox/radio. The vinceliuice assets
+   (16px frame) calibrate these recipes; the Theme Lab checkmark image is the
+   two-stroke white check. State coverage: normal, checked, pressed, disabled,
+   and the hover hairline from 10.10. */
+body[data-theme="yosemite"] .theme-lab-choice-matrix :is(
+  input[type="checkbox"],
+  input[type="radio"]
+) {
+  display: inline-grid;
+  place-items: center;
+  width: 15px;
+  min-width: 15px;
+  height: 15px;
+  min-height: 15px;
+  border: var(--choice-border);
+  background: var(--choice-bg);
+  box-shadow: var(--choice-shadow);
+}
+
+body[data-theme="yosemite"] .theme-lab-choice-matrix input[type="checkbox"] {
+  border-radius: var(--choice-radius);
+}
+
+body[data-theme="yosemite"] .theme-lab-choice-matrix input[type="checkbox"]:checked {
+  border-color: transparent;
+  background-color: var(--choice-checked-bg);
+  background-image:
+    var(--theme-lab-checkbox-checkmark-image, var(--choice-checkmark-image)),
+    var(--choice-checked-bg-image, none);
+  box-shadow: none;
+}
+
+body[data-theme="yosemite"] .theme-lab-choice-matrix input[type="radio"]:checked {
+  border-color: #8f99ac;
+  background-color: var(--choice-checked-bg);
+  background-image: var(--theme-lab-radio-checked-bg, var(--radio-checked-image));
+  box-shadow: var(--radio-shadow);
+}
+
+/* A disabled control that is on stays on, faded: the grey well belongs to the
+   unchecked one only, or a checked box shows a white tick on near-white. */
+body[data-theme="yosemite"] .theme-lab-choice-matrix :is(
+  input[type="checkbox"],
+  input[type="radio"]
+):disabled:not(:checked) {
+  background-color: var(--control-disabled-bg);
+  box-shadow: none;
+  opacity: var(--control-disabled-opacity, 0.56);
+}
+
+body[data-theme="yosemite"] .menu-popover {
+  padding-block: 10px;
+}
+
+body[data-theme="yosemite"] .theme-lab-split-view {
+  background: var(--desktop-surface);
+  background-size: cover;
+}
+
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  html[data-theme="yosemite"],
+  body[data-theme="yosemite"] {
+    --window-bg: #f2f3f4;
+    --menu-panel-bg: #f5f6f7;
+    --sidebar-bg: #dfe4e8;
+    --window-backdrop-filter: none;
+    --surface-backdrop-filter: none;
+    --menu-panel-backdrop-filter: none;
+    --sidebar-backdrop-filter: none;
+    --titlebar-toolbar-backdrop-filter: none;
+  }
+}
+
+/* Platinum/Yosemite boot/shutdown: same shared harness, era material only. */
+body[data-theme-family="classic"][data-lineage~="platinum"] :is(.boot-screen, .shutdown-screen) { background: linear-gradient(180deg, #dde3ec, #c4cddb); }
+body[data-theme-family="classic"][data-lineage~="platinum"] .boot-progress { border-color: #6f7b8d; background: #f4f6f9; }
+body[data-theme-family="classic"][data-lineage~="platinum"] .boot-progress span { background: #6a7689; }
+body[data-theme-family="classic"][data-lineage~="platinum"] .shutdown-screen { animation: platinum-boot-in .35s ease-out; }
+@keyframes platinum-boot-in { from { opacity: 0 } to { opacity: 1 } }
+body[data-theme="yosemite"] :is(.boot-screen, .shutdown-screen) { background: linear-gradient(180deg, #242424, #0f0f0f); color: #fff; animation: yosemite-screen-in .45s ease-out; }
+body[data-theme="yosemite"] .happy-mac { border-color: #4a4a4a; border-radius: 4px; background: #dcdcdc; box-shadow: inset 0 1px 0 #f5f5f5, 0 8px 20px rgba(0, 0, 0, 0.45); animation: yosemite-mac-in .55s ease-out both; }
+body[data-theme="yosemite"] .happy-mac::after { border-color: #4a4a4a; background: #cfcfcf; }
+body[data-theme="yosemite"] .happy-mac-face { border-color: #4a4a4a; background: #fafafa; }
+body[data-theme="yosemite"] .boot-progress { border: 0; height: 6px; padding: 0; border-radius: 3px; background: rgba(255, 255, 255, 0.14); }
+body[data-theme="yosemite"] .boot-progress span { position: relative; overflow: hidden; border-radius: 3px; background: #0a84ff; }
+body[data-theme="yosemite"] .boot-progress span::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent); transform: translateX(-100%); animation: yosemite-progress-stripe 1.4s ease-in-out infinite; }
+body[data-theme="yosemite"] :is(.boot-ledger, .shutdown-ledger) { border: 1px solid rgba(255, 255, 255, 0.16); background: rgba(30, 30, 33, 0.62); color: #fff; }
+@keyframes yosemite-screen-in { from { opacity: 0 } to { opacity: 1 } }
+@keyframes yosemite-mac-in { from { opacity: 0; transform: translateY(10px) scale(var(--boot-mac-scale)) } to { opacity: 1; transform: translateY(0) scale(var(--boot-mac-scale)) } }
+@keyframes yosemite-progress-stripe { from { transform: translateX(-100%) } to { transform: translateX(100%) } }
+@media (prefers-reduced-motion: reduce) { body[data-theme-family="classic"][data-lineage~="platinum"] .shutdown-screen, body[data-theme="yosemite"] :is(.boot-screen, .shutdown-screen), body[data-theme="yosemite"] .happy-mac, body[data-theme="yosemite"] .boot-progress span::after { animation: none } }
+
+/* ---------------------------------------------------------------------------
+   Increase Contrast.
+
+   The system setting asks for a higher-contrast scheme. Until now this app
+   answered it with exactly the bytes it answers with by default: measured in
+   Chromium with `Emulation.setEmulatedMedia({ features: [{ name:
+   "prefers-contrast", value: "more" }] })`, every role below read what it reads
+   with the setting off — the same silence `prefers-reduced-transparency` used
+   to keep in this file. So this block is the answer, and it is deliberately
+   small: the two roles that carry meaning at a glance (a secondary divider, a
+   disabled label), plus the one thing that can never be made legible by
+   tweaking a colour — a control sitting on a translucent surface it cannot be
+   separated from. The glass era gives up its blur (in styles/70-liquid-glass.css)
+   and its labels keep their opaque fills.
+
+   It is scoped to `body[data-theme]`, the same specificity the era blocks use,
+   and it lives at the end of the last boot sheet, so it wins by order against
+   every boot sheet without editing one era. An appearance sheet that loads on
+   demand comes later and wins ties; the two that were boot sheets until
+   2026-09-26 (styles/67-aqua-appearance.css and 70-liquid-glass.css) end with
+   a copy of this block scoped to their own family, so those eras still answer
+   the setting. It cannot reach the appearance instruments: they run with the
+   setting off. */
+@media (prefers-contrast: more) {
+  body[data-theme] {
+    /* A dotted 1px shade becomes a solid ink rule: the divider is the most
+       common non-text element here, and a dotted line never reaches the 3:1
+       that non-text content asks for across its whole length. */
+    --system-secondary-divider: 1px solid var(--ink);
+    /* Disabled ink at 7.4:1 on the era's paper instead of 5.7:1, so a disabled
+       label reads as disabled by weight and context rather than by being hard
+       to read. The blur this setting also asks for is dropped by the
+       reduced-transparency blocks in 70-liquid-glass.css, which match both
+       settings.
+       Menu-item disabled ink is deliberately left to its era: it is the one
+       role that costs 30 boot bytes to reach, disabled controls are exempt from
+       the contrast floor, and the floppy reserve is a harder promise. */
+    --system-disabled-fg: #3f3f3f;
+  }
+}

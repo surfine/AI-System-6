@@ -1,0 +1,177 @@
+{
+  "schema": "ai-system-6-lightroom-icon-extension-v1",
+  "semanticIdentity": "a proof sheet under localized close inspection",
+  "sourceRoot": "tooling/icon-generation/lightroom-six-era",
+  "eras": {
+    "classic": {
+      "source": "tooling/icon-generation/lightroom-six-era/classic.svg",
+      "sourceSha256": "ccc1023d22e68f10e4f72bdc690691e7b8ffc9f5cb29f1abe117990ee6ca34f4",
+      "sizes": [
+        32,
+        16
+      ],
+      "assets": {
+        "16": {
+          "file": "icons/lightroom-16.svg",
+          "sha256": "9d7ff12f5a0c84e78f95b4114b14b53ffd954a8258c2fd5412b503e86423fc06"
+        },
+        "32": {
+          "file": "icons/lightroom-32.svg",
+          "sha256": "7bf8ba0809532575672f529fd2870b556ba338558074dac3cad134f1c63b7dcd"
+        }
+      }
+    },
+    "platinum": {
+      "source": "tooling/icon-generation/lightroom-six-era/platinum.svg",
+      "sourceSha256": "67643a6d9e208be03d47b97fa5a8cd2f602679173875147c21f12cca29038281",
+      "sizes": [
+        42,
+        32,
+        16
+      ],
+      "assets": {
+        "16": {
+          "file": "icons/lightroom-16.png",
+          "sha256": "a11659aeeef44b4e99f007a7f7dabee02b52f215cc1b7155767375dee14ca398"
+        },
+        "32": {
+          "file": "icons/lightroom-32.png",
+          "sha256": "e3b8046c3a92b2262f589b01b0aedcd960846f02c59dae272367a9f8193aec20"
+        },
+        "42": {
+          "file": "icons/lightroom-42.png",
+          "sha256": "54395014fa1728b9cf5ce96c722d53d7cea0b69e02435fa0fa76bf635fa06a3f"
+        }
+      }
+    },
+    "aqua": {
+      "source": "tooling/icon-generation/lightroom-six-era/aqua.svg",
+      "sourceSha256": "d18d4ab5e3c27dbb0d49510408acec23169ee6f563ac24f591a54c3fb7cfe23d",
+      "sizes": [
+        128,
+        32,
+        16
+      ],
+      "assets": {
+        "16": {
+          "file": "icons/lightroom-16.png",
+          "sha256": "7c5088e38f62ff1fbd11f873e39f7556febd46752d229eef92d75cfdfd26f853"
+        },
+        "32": {
+          "file": "icons/lightroom-32.png",
+          "sha256": "6fceabb0f709bdd755927cbe18f0ceb386c65cc312a7b08a7fdd10dde0aad92b"
+        },
+        "128": {
+          "file": "icons/lightroom-128.png",
+          "sha256": "4309236f6a2677a683924930ea13c1dd1abfcc7b2047ee45b9ba8a3b8be720a8"
+        }
+      }
+    },
+    "snow-leopard": {
+      "source": "tooling/icon-generation/lightroom-six-era/snow-leopard.svg",
+      "sourceSha256": "4aa95ca6085a7d0b8fe44615f3e42c355240c05c2ae00e010cbf8cf1c50b5529",
+      "sizes": [
+        128,
+        32,
+        16
+      ],
+      "assets": {
+        "16": {
+          "file": "icons/lightroom-16.png",
+          "sha256": "b51f0627708c1f12a7eb3c8d328f1d57a3504497647ac85ccb8f4ea772ee36f8"
+        },
+        "32": {
+          "file": "icons/lightroom-32.png",
+          "sha256": "ec5454eae4b7910c506394c26d03dc1afe8c132f4d81d56f9dca522664c98214"
+        },
+        "128": {
+          "file": "icons/lightroom-128.png",
+          "sha256": "fd93b7d89bda17512b082495bda8e32ba5998e999eb1139ab55e6542c32cb999"
+        }
+      }
+    },
+    "yosemite": {
+      "source": "tooling/icon-generation/lightroom-six-era/yosemite.svg",
+      "sourceSha256": "d575365a91fe16e48ab33bd4793e542a6dc8170eef5809c355a49a24985f5487",
+      "sizes": [
+        128,
+        32,
+        16
+      ],
+      "assets": {
+        "16": {
+          "file": "icons/lightroom-16.png",
+          "sha256": "9e52167f83442169fe7422ecfc04c71883e5db1dfa8f22064ccc5677603a8919"
+        },
+        "32": {
+          "file": "icons/lightroom-32.png",
+          "sha256": "479d017e4ded8bf0292883283afa437ebe8d6ea7bf1c92d57396dae9ed55b975"
+        },
+        "128": {
+          "file": "icons/lightroom-128.png",
+          "sha256": "ec31819804d8ca8b3af5a71753e46b77b439449fcba7350d7e9d243ec69ac35b"
+        }
+      }
+    },
+    "liquid-glass": {
+      "source": "tooling/icon-generation/lightroom-six-era/liquid-glass.svg",
+      "sourceSha256": "5575717cfa6f2bf2d212cc3931bb47ca7c13741b53da130330aa558ba0b643e1",
+      "sizes": [
+        128,
+        64,
+        32,
+        16
+      ],
+      "assets": {
+        "128-default": {
+          "file": "icons/lightroom-128-default.png",
+          "sha256": "a851797a5cc82e0fbc998455bdbe9e060d1ed14dfea8a775e5c2a3d75c7e9b1f"
+        },
+        "128-dark": {
+          "file": "icons/lightroom-128-dark.png",
+          "sha256": "4faf4e2c6c82b1af2777e3f157b26f049ef30baba6919661dbbb677544e588db"
+        },
+        "128-clear": {
+          "file": "icons/lightroom-128-clear.png",
+          "sha256": "8b924418350dfb9903c5a5a3d0724a53347d1226639b76c07fb86d47766d3dec"
+        },
+        "64-default": {
+          "file": "icons/lightroom-64-default.png",
+          "sha256": "e3e81a87ea4e94b66d9eaa3c6b3a0423e68829ebc039bbd9ce0f24671a33ad8c"
+        },
+        "64-dark": {
+          "file": "icons/lightroom-64-dark.png",
+          "sha256": "86c508d274f4b23b25e8880f56945d4f057784d6c1e0fe2c1332ca9440bf3541"
+        },
+        "64-clear": {
+          "file": "icons/lightroom-64-clear.png",
+          "sha256": "ccb24869351d323d017e2513b3b43801750cf12d28d8cdd30be391bfc94fad5a"
+        },
+        "32-default": {
+          "file": "icons/lightroom-32-default.png",
+          "sha256": "69caa197e888eb295de5f922146c14d03cdb91c78fd1abcad85d1a46c43a9241"
+        },
+        "32-dark": {
+          "file": "icons/lightroom-32-dark.png",
+          "sha256": "028e5a0a9970256d5cb1b96b8675ace8588fd994aa712da83924f803f24b15bf"
+        },
+        "32-clear": {
+          "file": "icons/lightroom-32-clear.png",
+          "sha256": "631dc44be948b179a58fe799723fd2988e846575bb3722c86505875b9447caae"
+        },
+        "16-default": {
+          "file": "icons/lightroom-16-default.png",
+          "sha256": "af5a816043e35c87f1033f9326ce1bd741bd1d78cf5399006f634a8310dfcb15"
+        },
+        "16-dark": {
+          "file": "icons/lightroom-16-dark.png",
+          "sha256": "1aeaef5b8f833971e401ae49f885ce9501d8079d7ce325728de34e5fac8a4c23"
+        },
+        "16-clear": {
+          "file": "icons/lightroom-16-clear.png",
+          "sha256": "5a426b34f5ac417ebf7db852044c7517276ba3983bd1c25df61f23a076f02a87"
+        }
+      }
+    }
+  }
+}

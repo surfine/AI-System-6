@@ -1,0 +1,974 @@
+// Optional, system-owned Balloon Help. The interaction follows the System 7
+// model: the user turns the mode on, then unfamiliar objects explain their
+// function and current unavailable state. It complements task-oriented System
+// Help instead of becoming an automatic tour.
+
+let balloonHelpEnabled = false;
+let balloonHelpTouchedInspect = false;
+let balloonHelpExplicit = false;
+let balloonHelpTarget = null;
+// The object whose balloon stood down because its own panel opened. Kept apart
+// from balloonHelpTarget, which hideBalloonHelp() clears.
+let balloonHelpYieldedTarget = null;
+let balloonHelpTextKey = "";
+let balloonHelpTimer = null;
+
+const BALLOON_HELP_STORAGE_KEY = "ai-system6-balloon-help";
+
+const balloonHelpSelectionRequiredActions = new Set([
+  "open-menu-selection",
+  "open-file-info",
+  "open-project-info",
+  "duplicate-selection",
+  "move-file-trash",
+  "eject-menu-selection",
+  "rename-project-disk",
+  "duplicate-project-disk",
+  "archive-project-disk",
+  // Cut/Copy/Clear grey out with a caret and no selection — see the comment
+  // by hasEditableSelectionRange in window-manager.js.
+  "cut",
+  "copy",
+  "clear-edit",
+]);
+
+const balloonHelpProjectRequiredActions = new Set([
+  "insert-text-disk",
+  "add-text-disk-project",
+  "guide-start-route",
+]);
+
+// Commands that act on the document in front (the manuscript on screen, its
+// body, the conversation to export). window-manager's availability table
+// greys them when none is, so the refusal says that and the way out.
+const balloonHelpDocumentRequiredActions = new Set([
+  "send-manuscript-review",
+  "export-document-word",
+  "export-teachtext-project-cd",
+  "print-current",
+  "download-active-markdown",
+  "copy-active-markdown",
+  "save-copy",
+]);
+
+function balloonHelpElement() {
+  return document.querySelector("#balloon-help");
+}
+
+function balloonHelpKeyFor(target) {
+  if (!target) return "";
+  const unavailable = target.matches(":disabled, .is-disabled, [aria-disabled='true']");
+  return unavailable && target.dataset.balloonHelpDisabled
+    ? target.dataset.balloonHelpDisabled
+    : target.dataset.balloonHelp || "";
+}
+
+const balloonHelpCensusNoOpReasons = {
+  "open-about-multifinder": "balloon_disabled_menu_multifinder",
+  "open-heading-navigator": "balloon_disabled_menu_headings",
+  "show-writing-flow": "balloon_disabled_menu_writing_flow_open",
+  "close-writing-flow": "balloon_disabled_menu_writing_flow_closed",
+  "toggle-writing-flow-shade": "balloon_disabled_menu_writing_flow_closed",
+  "hand-in-rebuild-flow": "balloon_disabled_rebuild_checks",
+  "rebuild-merge-section": "balloon_disabled_rebuild_merge",
+  "rootline-recenter": "balloon_disabled_menu_host_window",
+  "rootline-sound": "balloon_disabled_menu_host_window",
+  "rootline-speed": "balloon_disabled_menu_host_window",
+  "clear-notifications": "balloon_notifications_empty_clear",
+  "advance-outline-to-drafts": "balloon_outline_needs_content",
+  "advance-drafts-to-manuscript": "balloon_draft_needs_content",
+  "mingming-outline": "balloon_outline_needs_content",
+  "structure-outline": "balloon_outline_needs_content",
+  "expand-outline": "balloon_outline_needs_content",
+  "reduce-outline": "balloon_outline_needs_content",
+  "draft-current-section": "balloon_draft_needs_section",
+  "polish-draft": "balloon_draft_needs_content",
+  "suggest-draft": "balloon_draft_needs_content",
+  "eli5-rewrite-section": "balloon_draft_needs_content",
+  "eli5-review-section": "balloon_draft_needs_content",
+  "one-sentence-rewrite-section": "balloon_draft_needs_content",
+  "one-sentence-check-section": "balloon_draft_needs_content",
+  "open-selected-find-file": "balloon_find_file_needs_result",
+  "reveal-selected-find-file": "balloon_find_file_needs_result",
+  "advance-manuscript-to-review": "balloon_manuscript_needs_body",
+  "docmap-save": "balloon_docmap_save_disabled",
+  "docmap-print-pdf": "balloon_docmap_needs_map",
+  "docmap-send-question": "balloon_docmap_needs_map",
+  "docmap-insert-outline": "balloon_docmap_needs_map",
+};
+
+function runtimeUnavailableReasonKey(action = "") {
+  const name = String(action || "");
+  if (!name) return "";
+  const runtime = typeof window !== "undefined" ? window.AISystem6Runtime?.commandAvailability?.(name) : null;
+  if (runtime && runtime.available === false && runtime.reason && runtime.reason !== "unregistered") {
+    return runtime.reason;
+  }
+  return "";
+}
+
+function actionUnavailableReasonKey(action = "") {
+  const name = String(action || "");
+  if (!name) return "";
+  return runtimeUnavailableReasonKey(name) || disabledMenuBalloonHelpKey({ dataset: { action: name } });
+}
+
+function disabledMenuBalloonHelpKey(button) {
+  const action = button?.dataset.action || button?.dataset.submenuAction || "";
+  // A lazy module that failed to load names itself, instead of falling
+  // through to the generic "unavailable in the current window" reason below,
+  // which would be honest about the symptom but not the cause. The stored
+  // value is already-rendered text, not a translation key — t() returns an
+  // unrecognized key unchanged, so this displays as-is.
+  if (typeof failedLazyCommandActions !== "undefined" && failedLazyCommandActions.has(action)) {
+    return failedLazyCommandActions.get(action);
+  }
+  // Host-window games and creative labs register their own reason; prefer
+  // that over the generic context line so a grey joyride/cmf/rootline row
+  // does not look like a broken primary.
+  const runtimeReason = runtimeUnavailableReasonKey(action);
+  if (runtimeReason) return runtimeReason;
+  // The desktop profile withholds the writing route, so the refusal names
+  // the workspace and the way back (System 6 refusal grammar: which command,
+  // why, where to go). The Review Desk also answers from a 回稿 — the reason
+  // the desk's own board ① gives it a second way in.
+  if (typeof isWorkspaceActionAllowed === "function" && !isWorkspaceActionAllowed(action)) {
+    return action === "open-review-desk"
+      ? "balloon_disabled_menu_review_desk"
+      : "balloon_disabled_menu_workspace";
+  }
+  // Elsewhere the same rows refuse for want of a document in front; with the
+  // manuscript in front they refuse for want of a project or a body.
+  if (balloonHelpDocumentRequiredActions.has(action)) {
+    if (action === "export-teachtext-project-cd" && typeof getActiveProject === "function" && !getActiveProject()) return "balloon_disabled_menu_project";
+    if (typeof resolveMenuContextWindow !== "function" || resolveMenuContextWindow()?.dataset.window !== "teachText") return "balloon_disabled_menu_document";
+    if (!teachTextBodyInput?.value.trim()) return "balloon_disabled_menu_document_empty";
+  }
+  if (balloonHelpCensusNoOpReasons[action]) return balloonHelpCensusNoOpReasons[action];
+  // "Why is this unavailable?" is Balloon Help's job, and with no model
+  // connected it is the answer for every model-backed command at once.
+  if (typeof actionNeedsModel === "function"
+    && actionNeedsModel(action)
+    && typeof modelReadyForRequests === "function"
+    && !modelReadyForRequests()) {
+    return "balloon_disabled_menu_model";
+  }
+  if (balloonHelpProjectRequiredActions.has(action)) return "balloon_disabled_menu_project";
+  if (balloonHelpSelectionRequiredActions.has(action)) return "balloon_disabled_menu_selection";
+  // "Unavailable in the current window" is true but useless here: the window
+  // is right, the table is what is missing measurements.
+  if (action === "clio-chart-reverse-sort") return "balloon_disabled_chart_no_order";
+  // Same reason to be specific: the window is right and the field is empty.
+  if (action === "select-all") return "balloon_disabled_menu_empty_field";
+  return "balloon_disabled_menu_context";
+}
+
+function syncDisabledMenuBalloonHelp() {
+  const menuCommands = document.querySelectorAll([
+    ".menu-popover button[data-action]",
+    ".menu-submenu-popover button[data-action]",
+    ".menu-sub-popover button[data-submenu-action]",
+  ].join(","));
+
+  menuCommands.forEach((button) => {
+    const unavailable = button.disabled
+      || button.classList.contains("is-disabled")
+      || button.getAttribute("aria-disabled") === "true";
+    const generated = button.dataset.balloonHelpGenerated === "true";
+
+    if (unavailable && (!button.dataset.balloonHelp || generated)) {
+      const key = disabledMenuBalloonHelpKey(button);
+      button.dataset.balloonHelp = key;
+      button.dataset.balloonHelpDisabled = key;
+      button.dataset.balloonHelpGenerated = "true";
+      return;
+    }
+
+    if (!unavailable && generated) {
+      delete button.dataset.balloonHelp;
+      delete button.dataset.balloonHelpDisabled;
+      delete button.dataset.balloonHelpGenerated;
+      forgetBalloonHelpTarget(button);
+      if (button === balloonHelpTarget) hideBalloonHelp();
+    }
+  });
+}
+
+function syncWindowBalloonHelpTargets() {
+  document.querySelectorAll(".window > .title-bar > .close-box").forEach((closeBox) => {
+    closeBox.dataset.balloonHelp ||= "balloon_close_box";
+  });
+  document.querySelectorAll(".window > .title-bar > h2").forEach((title) => {
+    title.dataset.balloonHelp ||= "balloon_windowshade";
+  });
+  document.querySelectorAll(".window > .title-bar > .resize-box:not([disabled])").forEach((zoomBox) => {
+    zoomBox.dataset.balloonHelp ||= "balloon_zoom_box";
+  });
+  document.querySelectorAll(".window > .title-bar > .shade-box").forEach((shadeBox) => {
+    shadeBox.dataset.balloonHelp ||= "balloon_shade_box";
+  });
+  document.querySelectorAll(".window > .grow-box").forEach((growBox) => {
+    growBox.dataset.balloonHelp ||= "balloon_grow_box";
+  });
+}
+
+function describeBalloonHelpTarget(target) {
+  const describedBy = new Set((target.getAttribute("aria-describedby") || "").split(/\s+/).filter(Boolean));
+  describedBy.add("balloon-help");
+  target.setAttribute("aria-describedby", [...describedBy].join(" "));
+}
+
+function forgetBalloonHelpTarget(target) {
+  if (!target) return;
+  const describedBy = (target.getAttribute("aria-describedby") || "")
+    .split(/\s+/)
+    .filter((id) => id && id !== "balloon-help");
+  if (describedBy.length) target.setAttribute("aria-describedby", describedBy.join(" "));
+  else target.removeAttribute("aria-describedby");
+}
+
+// Where a balloon lands follows five rules, in priority order: point at the
+// object it explains; do not cover that object; do not cover what the object
+// opens; do not cover the object's peers; then be as near as possible.
+//
+// Three rectangles carry that, each with one job. Pressing them into a single
+// anchor was the old defect: the same rectangle decided what the tail pointed
+// at, what the balloon sat against, and what it avoided, so "against the menu"
+// became "in the middle of the menu", and a menu that had not opened yet was
+// in no rectangle at all -- which is how a balloon came to sit on the commands
+// it was explaining.
+//
+//   subject    the control under the pointer; the tail points here
+//   keepClear  rectangles the balloon may not cover, each weighted
+//   field      the area the balloon must stay inside
+
+const BALLOON_HELP_GAP = 12;
+const BALLOON_HELP_EDGE = 10;
+const BALLOON_HELP_TAIL_INSET = 18;
+const BALLOON_HELP_NARROW_WIDTH = 200;
+const BALLOON_HELP_FALLBACK_PANEL_WIDTH = 180;
+// Before a panel has ever opened, its own min-width is all we have, and a real
+// menu is wider than its minimum -- the commands and their shortcuts see to
+// that. Guessing high only pushes the balloon further sideways; guessing low
+// puts it back on the commands, so the guess leans high until the first open
+// replaces it with the measured size.
+const BALLOON_HELP_PANEL_GUESS = 1.3;
+// Covering the object itself is worse than covering a neighbour, and covering
+// the panel it is about to open sits between the two.
+const BALLOON_HELP_WEIGHT = { subject: 8, panel: 4, peer: 1 };
+
+function balloonHelpOverlapArea(position, size, rect) {
+  const width = Math.min(position.left + size.width, rect.right) - Math.max(position.left, rect.left);
+  const height = Math.min(position.top + size.height, rect.bottom) - Math.max(position.top, rect.top);
+  return width > 0 && height > 0 ? width * height : 0;
+}
+
+function balloonHelpSideOrigin(side, subject, size) {
+  // Along the cross axis the balloon follows the SUBJECT, never the obstacle:
+  // a command's balloon belongs beside that command, not beside the middle of
+  // the menu the command lives in.
+  const centeredLeft = subject.left + (subject.width - size.width) / 2;
+  if (side === "below") return { left: centeredLeft, top: subject.top + subject.height + BALLOON_HELP_GAP };
+  if (side === "above") return { left: centeredLeft, top: subject.top - size.height - BALLOON_HELP_GAP };
+  if (side === "right") return { left: subject.left + subject.width + BALLOON_HELP_GAP, top: subject.top };
+  return { left: subject.left - size.width - BALLOON_HELP_GAP, top: subject.top };
+}
+
+function balloonHelpClampToField(position, size, field) {
+  return {
+    left: Math.max(field.left, Math.min(position.left, field.right - size.width)),
+    top: Math.max(field.top, Math.min(position.top, field.bottom - size.height)),
+  };
+}
+
+function balloonHelpInsideField(position, size, field) {
+  return position.left >= field.left
+    && position.top >= field.top
+    && position.left + size.width <= field.right
+    && position.top + size.height <= field.bottom;
+}
+
+// Step aside by the smallest move that clears the obstacle, rather than
+// abandoning the side. A pulled-down menu is 190px wide and the whole height
+// of the screen: leaving it sideways costs 200px, leaving it downwards costs
+// the screen.
+function balloonHelpPushClear(position, size, keepClear, field) {
+  let current = { left: position.left, top: position.top };
+  // Two obstacles in a row can hand the balloon back and forth -- stepping off
+  // the icon below puts it on the icon above, whose smallest move is back down
+  // again. Places already tried are not offered twice.
+  const visited = new Set([`${Math.round(current.left)},${Math.round(current.top)}`]);
+  for (let pass = 0; pass < 6; pass += 1) {
+    const hit = keepClear.find((rect) => balloonHelpOverlapArea(current, size, rect) > 0);
+    if (!hit) break;
+    const options = [
+      { left: hit.right + BALLOON_HELP_GAP, top: current.top },
+      { left: hit.left - size.width - BALLOON_HELP_GAP, top: current.top },
+      { left: current.left, top: hit.bottom + BALLOON_HELP_GAP },
+      { left: current.left, top: hit.top - size.height - BALLOON_HELP_GAP },
+    ]
+      .filter((option) => balloonHelpInsideField(option, size, field))
+      .filter((option) => !visited.has(`${Math.round(option.left)},${Math.round(option.top)}`))
+      .map((option) => ({
+        ...option,
+        move: Math.abs(option.left - current.left) + Math.abs(option.top - current.top),
+      }))
+      .sort((a, b) => a.move - b.move);
+    if (!options.length) break;
+    current = { left: options[0].left, top: options[0].top };
+    visited.add(`${Math.round(current.left)},${Math.round(current.top)}`);
+  }
+  return current;
+}
+
+function balloonHelpOverlapCost(position, size, keepClear) {
+  const area = Math.max(1, size.width * size.height);
+  return keepClear.reduce((cost, rect) => {
+    const overlap = balloonHelpOverlapArea(position, size, rect);
+    return overlap ? cost + (overlap / area) * (rect.weight || 1) * 1000 : cost;
+  }, 0);
+}
+
+function balloonHelpDistance(position, size, subject) {
+  const dx = (position.left + size.width / 2) - (subject.left + subject.width / 2);
+  const dy = (position.top + size.height / 2) - (subject.top + subject.height / 2);
+  return Math.sqrt((dx * dx) + (dy * dy));
+}
+
+// The tail goes on the edge that faces the subject, at the point of that edge
+// nearest to it. When the subject sits diagonally off a corner -- which is
+// what stepping aside from a menu usually produces -- the dominant axis names
+// the edge and the tail lands in that corner, pointing the way the subject
+// actually lies.
+function balloonHelpTail(position, size, subject) {
+  const rect = {
+    left: position.left,
+    top: position.top,
+    right: position.left + size.width,
+    bottom: position.top + size.height,
+  };
+  const centerX = subject.left + (subject.width / 2);
+  const centerY = subject.top + (subject.height / 2);
+  const inset = BALLOON_HELP_TAIL_INSET;
+  const clamp = (value, min, max) => Math.max(min, Math.min(value, max));
+  const gapLeft = rect.left - centerX;
+  const gapRight = centerX - rect.right;
+  const gapTop = rect.top - centerY;
+  const gapBottom = centerY - rect.bottom;
+  const horizontal = Math.max(gapLeft, gapRight);
+  const vertical = Math.max(gapTop, gapBottom);
+  if (horizontal >= vertical) {
+    return {
+      side: gapLeft >= gapRight ? "right" : "left",
+      tailLeft: inset,
+      tailTop: clamp(centerY - rect.top, inset, Math.max(inset, size.height - inset)),
+    };
+  }
+  return {
+    side: gapTop >= gapBottom ? "below" : "above",
+    tailLeft: clamp(centerX - rect.left, inset, Math.max(inset, size.width - inset)),
+    tailTop: inset,
+  };
+}
+
+// Pure: everything the DOM knows arrives as rectangles, so the placement can be
+// held by a contract that never opens a browser.
+// Returns the position, the tail, and what it cost -- `overlap` is zero only
+// when the balloon covers nothing it was told to keep clear.
+function placeBalloonHelp({ subject, keepClear = [], field, size }) {
+  const sides = ["below", "above", "right", "left"];
+  let best = null;
+  sides.forEach((side, order) => {
+    const origin = balloonHelpSideOrigin(side, subject, size);
+    const position = balloonHelpPushClear(
+      balloonHelpClampToField(origin, size, field),
+      size,
+      keepClear,
+      field,
+    );
+    const overlap = balloonHelpOverlapCost(position, size, keepClear);
+    const distance = balloonHelpDistance(position, size, subject);
+    // The order of `sides` is the preference; it only breaks ties.
+    const cost = overlap + distance + (order * 0.5);
+    if (!best || cost < best.cost) best = { ...position, overlap, distance, cost, from: side };
+  });
+  return { ...best, ...balloonHelpTail(best, size, subject) };
+}
+
+function balloonHelpFieldRect() {
+  const viewport = window.visualViewport;
+  const offsetLeft = viewport?.offsetLeft || 0;
+  const offsetTop = viewport?.offsetTop || 0;
+  return {
+    left: offsetLeft + BALLOON_HELP_EDGE,
+    top: offsetTop + BALLOON_HELP_EDGE,
+    right: offsetLeft + (viewport?.width || window.innerWidth) - BALLOON_HELP_EDGE,
+    bottom: offsetTop + (viewport?.height || window.innerHeight) - BALLOON_HELP_EDGE,
+  };
+}
+
+// Panels that are already on screen. A menu title and its pulled-down menu are
+// read together, and so are a command and the menu it sits in.
+function balloonHelpOpenSurfaces(target) {
+  return [
+    target.closest(".menu.is-open")?.querySelector(":scope > .menu-popover"),
+    target.closest(".menu-item-with-sub.is-open")?.querySelector(":scope > .menu-sub-popover"),
+    target.closest(".menu-submenu")?.querySelector(":scope > .menu-submenu-popover"),
+    // The desk's own select harness. Its menu is a div inside the wrap, not a
+    // .menu-popover, so a balloon explaining the control treated the open list
+    // as a neighbour and settled on top of the choices.
+    // The same two-step lookup the owned-panel answer uses, so "is it open?"
+    // and "which panel is it?" cannot disagree about a converted select. A
+    // field label owns its control, so the subject is often the label rather
+    // than the button: that label sits OUTSIDE the wrap and can only reach in.
+    (target.closest(".select-wrap.is-system-select-open")
+      || target.querySelector?.(".select-wrap.is-system-select-open"))
+      ?.querySelector(":scope > .system-select-menu"),
+    target.closest("details[open]")?.querySelector(":scope > .teachtext-command-popover, :scope > .teachtext-command-subpopover"),
+    target.closest(".menu-popover, .menu-sub-popover, .menu-submenu-popover, .teachtext-command-popover, .teachtext-command-subpopover"),
+  ].filter(Boolean);
+}
+
+// The panel this control opens when it is pressed.
+function balloonHelpOwnedPanel(target) {
+  const menu = target.closest(".menu");
+  if (menu && menu.querySelector(":scope > button") === target) {
+    return menu.querySelector(":scope > .menu-popover");
+  }
+  // The select harness: the button owns the listbox in the same wrap. Without
+  // this the panel was in no keepClear rectangle at all, and the balloon
+  // landed on the commands — the next thing the person has to operate.
+  // The select harness: a button owns the listbox in its wrap. The balloon's
+  // subject is usually the field label around that wrap, so the wrap is looked
+  // for both around and inside the subject. Without this the panel was in no
+  // keepClear rectangle at all, and the balloon landed on the commands — the
+  // next thing the person has to operate.
+  // Three shapes reach here: the button a person points at, the native select
+  // the harness left transparent behind it, and a label wrapping the whole
+  // control. All three have to find the same listbox, or the panel is in no
+  // keep-clear rectangle and the balloon lands on the choices.
+  const selectWrap = target.closest?.(".select-wrap.has-system-select")
+    || target.querySelector?.(".select-wrap.has-system-select");
+  if (selectWrap) return selectWrap.querySelector(":scope > .system-select-menu");
+  const withSub = target.closest(".menu-item-with-sub");
+  if (withSub && withSub.querySelector(":scope > button") === target) {
+    return withSub.querySelector(":scope > .menu-sub-popover");
+  }
+  const submenu = target.closest(".menu-submenu");
+  if (submenu && submenu.querySelector(":scope > .menu-submenu-trigger") === target) {
+    return submenu.querySelector(":scope > .menu-submenu-popover");
+  }
+  const details = target.closest("details");
+  if (details && details.querySelector(":scope > summary") === target) {
+    return details.querySelector(":scope > .teachtext-command-popover, :scope > .teachtext-command-subpopover");
+  }
+  return null;
+}
+
+// A closed panel cannot be measured, so the size it had the last time it opened
+// is remembered on the element. Before it has ever opened, its own CSS
+// min-width is the floor and the column runs to the bottom of the field:
+// reserving too much only pushes the balloon sideways, reserving too little
+// puts it back on top of the commands.
+function rememberBalloonHelpPanelSizes() {
+  document.querySelectorAll([
+    ".menu.is-open > .menu-popover",
+    ".menu-item-with-sub.is-open > .menu-sub-popover",
+    ".select-wrap.is-system-select-open > .system-select-menu",
+    "details[open] > .teachtext-command-popover",
+    "details[open] > .teachtext-command-subpopover",
+  ].join(",")).forEach((panel) => {
+    const rect = panel.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    panel.dataset.balloonPanelWidth = String(Math.round(rect.width));
+    panel.dataset.balloonPanelHeight = String(Math.round(rect.height));
+  });
+}
+
+function forgetBalloonHelpPanelSizes() {
+  document.querySelectorAll("[data-balloon-panel-width]").forEach((panel) => {
+    delete panel.dataset.balloonPanelWidth;
+    delete panel.dataset.balloonPanelHeight;
+  });
+}
+
+function balloonHelpPredictedPanelRect(target, field) {
+  const panel = balloonHelpOwnedPanel(target);
+  if (!panel) return null;
+  const live = panel.getBoundingClientRect();
+  // Open already: the measured rectangle above is the truth.
+  if (live.width && live.height) return null;
+
+  const style = window.getComputedStyle(panel);
+  const offsetLeft = Number.parseFloat(style.left);
+  const offsetTop = Number.parseFloat(style.top);
+  const host = (panel.parentElement || target).getBoundingClientRect();
+  const fixed = style.position === "fixed";
+  const left = fixed
+    ? (Number.isFinite(offsetLeft) ? offsetLeft : host.left)
+    : host.left + (Number.isFinite(offsetLeft) ? offsetLeft : 0);
+  const top = fixed
+    ? (Number.isFinite(offsetTop) ? offsetTop : host.bottom)
+    : host.top + (Number.isFinite(offsetTop) ? offsetTop : host.height);
+
+  const rememberedWidth = Number.parseFloat(panel.dataset.balloonPanelWidth || "");
+  const rememberedHeight = Number.parseFloat(panel.dataset.balloonPanelHeight || "");
+  const minWidth = Number.parseFloat(style.minWidth);
+  const width = rememberedWidth > 0
+    ? rememberedWidth
+    : Math.max(minWidth > 0 ? minWidth : 0, BALLOON_HELP_FALLBACK_PANEL_WIDTH) * BALLOON_HELP_PANEL_GUESS;
+  const bottom = rememberedHeight > 0 ? top + rememberedHeight : field.bottom;
+  return { left, top, right: left + width, bottom };
+}
+
+// The subject's peers: the other icons in the same column, the other titles in
+// the menu bar, the other buttons in the same group. The balloon leaves them
+// alone when it can -- on a touch screen the object below the one being
+// inspected is the next thing the finger reaches for.
+function balloonHelpPeerElements(target) {
+  let node = target;
+  for (let depth = 0; depth < 3 && node?.parentElement; depth += 1) {
+    const peers = [...node.parentElement.children]
+      .filter((element) => element !== node && balloonHelpIsPeer(element));
+    if (peers.length) return peers;
+    node = node.parentElement;
+  }
+  return [];
+}
+
+function balloonHelpIsPeer(element) {
+  if (element.id === "balloon-help" || element.matches(".menu-popover, .menu-sub-popover, .menu-submenu-popover, .system-select-menu")) return false;
+  const rect = element.getBoundingClientRect();
+  if (!rect.width || !rect.height) return false;
+  return element.matches("button, a, input, select, .desktop-icon, .menu, [data-action], [data-open], [role='button']")
+    || Boolean(element.querySelector("button, .desktop-icon, [data-action], [data-open]"));
+}
+
+function balloonHelpKeepClearRects(target, field) {
+  const rects = [];
+  const push = (rect, weight) => {
+    if (!rect) return;
+    const right = rect.right ?? (rect.left + rect.width);
+    const bottom = rect.bottom ?? (rect.top + rect.height);
+    if (!(right > rect.left) || !(bottom > rect.top)) return;
+    rects.push({ left: rect.left, top: rect.top, right, bottom, weight });
+  };
+  push(target.getBoundingClientRect(), BALLOON_HELP_WEIGHT.subject);
+  balloonHelpOpenSurfaces(target).forEach((surface) => push(surface.getBoundingClientRect(), BALLOON_HELP_WEIGHT.panel));
+  push(balloonHelpPredictedPanelRect(target, field), BALLOON_HELP_WEIGHT.panel);
+  balloonHelpPeerElements(target).forEach((peer) => push(peer.getBoundingClientRect(), BALLOON_HELP_WEIGHT.peer));
+  // The menu bar is where the next command lives. A balloon for a window's
+  // close box chose "above" and sat on the bar (Liquid Glass, 2026-10-08
+  // survey); unless the subject is in the bar, the bar is kept clear.
+  const menuBar = document.querySelector(".menu-bar");
+  if (menuBar && !menuBar.contains(target)) push(menuBar.getBoundingClientRect(), BALLOON_HELP_WEIGHT.panel);
+  return rects;
+}
+
+function balloonHelpMeasure(balloon) {
+  const rect = balloon.getBoundingClientRect();
+  return { width: rect.width, height: rect.height };
+}
+
+function positionBalloonHelp(target) {
+  const balloon = balloonHelpElement();
+  if (!balloon || !target) return;
+  const rect = target.getBoundingClientRect();
+  const subject = { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
+  const field = balloonHelpFieldRect();
+  const keepClear = balloonHelpKeepClearRects(target, field);
+
+  balloon.style.removeProperty("--balloon-help-max-width");
+  let size = balloonHelpMeasure(balloon);
+  let placement = placeBalloonHelp({ subject, keepClear, field, size });
+  // Near beats wide. A balloon carries one or two sentences, so when it cannot
+  // clear the obstacles at full width it gets narrower before it agrees to
+  // travel.
+  if (placement.overlap > 0 && size.width > BALLOON_HELP_NARROW_WIDTH) {
+    balloon.style.setProperty("--balloon-help-max-width", `${BALLOON_HELP_NARROW_WIDTH}px`);
+    const narrowSize = balloonHelpMeasure(balloon);
+    const narrow = placeBalloonHelp({ subject, keepClear, field, size: narrowSize });
+    if (narrow.cost < placement.cost) {
+      placement = narrow;
+      size = narrowSize;
+    } else {
+      balloon.style.removeProperty("--balloon-help-max-width");
+    }
+  }
+
+  balloon.dataset.side = placement.side;
+  balloon.style.setProperty("--balloon-help-left", `${Math.round(placement.left)}px`);
+  balloon.style.setProperty("--balloon-help-top", `${Math.round(placement.top)}px`);
+  balloon.style.setProperty("--balloon-help-tail-left", `${Math.round(placement.tailLeft)}px`);
+  balloon.style.setProperty("--balloon-help-tail-top", `${Math.round(placement.tailTop)}px`);
+}
+
+// The world moves under a balloon that is already showing: a menu pulls down, a
+// submenu opens, a panel closes. Waiting for the pointer to re-enter the object
+// left the balloon sitting on commands that had appeared underneath it.
+function refreshBalloonHelpPlacement() {
+  rememberBalloonHelpPanelSizes();
+  syncBalloonHelpWithOwnedPanel();
+}
+
+/**
+ * Does this object's own panel stand open right now?
+ */
+function balloonHelpOwnedPanelIsOpen(target) {
+  const panel = balloonHelpOwnedPanel(target);
+  if (!panel) return false;
+  return balloonHelpOpenSurfaces(target).includes(panel);
+}
+
+/**
+ * The balloon explains an object; it yields to the panel that object opens, and
+ * comes back when the panel closes. Placement alone kept losing that fight —
+ * the balloon is already up when the control is pressed, and a listbox opens
+ * directly under the trigger the tail points at, inside a panel that is tight
+ * already, so no step-aside is both near and clear. A state cannot be dodged by
+ * a layout: that is what the reporter's "说了很多次气球帮助不要挡住菜单" needs.
+ */
+function yieldBalloonHelpToOwnedPanel() {
+  if (!balloonHelpTarget) return false;
+  if (!balloonHelpOwnedPanelIsOpen(balloonHelpTarget)) return false;
+  balloonHelpYieldedTarget = balloonHelpTarget;
+  hideBalloonHelp();
+  return true;
+}
+
+function syncBalloonHelpWithOwnedPanel() {
+  if (!balloonHelpTarget) {
+    restoreBalloonHelpAfterOwnedPanel();
+    return;
+  }
+  yieldBalloonHelpToOwnedPanel();
+}
+
+function restoreBalloonHelpAfterOwnedPanel() {
+  const target = balloonHelpYieldedTarget;
+  if (!target) return;
+  if (!balloonHelpEnabled || !target.isConnected) {
+    balloonHelpYieldedTarget = null;
+    return;
+  }
+  if (balloonHelpOwnedPanelIsOpen(target)) return;
+  balloonHelpYieldedTarget = null;
+  if (target.matches(":hover") || target.contains(document.activeElement)) showBalloonHelp(target);
+}
+
+function hideBalloonHelp() {
+  window.clearTimeout(balloonHelpTimer);
+  balloonHelpTimer = null;
+  forgetBalloonHelpTarget(balloonHelpTarget);
+  balloonHelpTarget = null;
+  balloonHelpTextKey = "";
+  const balloon = balloonHelpElement();
+  balloon?.classList.add("is-hidden");
+  balloon?.style.removeProperty("--balloon-help-max-width");
+  if (balloon?.matches?.(":popover-open")) balloon.hidePopover();
+}
+
+// Coarse/touch select-then-open: one first-use balloon across desktop icons,
+// Finder, Documents, Project Hard Disk, Project CD, File Floppy, Find File,
+// and Searcher. ADHD/HIG: explain once, then get out of the way (no nag loop).
+let selectOpenTapHintShown = false;
+
+function revealSelectOpenTapHint(target, options = {}) {
+  if (selectOpenTapHintShown || !target) return false;
+  if (Number(options.detail) >= 2) return false;
+  if (
+    typeof window.matchMedia === "function"
+    && window.matchMedia("(hover: hover)").matches
+  ) {
+    return false;
+  }
+  selectOpenTapHintShown = true;
+  showBalloonHelp(target, "desktop_tap_hint", { force: true, autoHideMs: 3200 });
+  return true;
+}
+
+// Gray / unavailable primary: one tap explains why (balloon + quiet status).
+// Distinct from system Balloon Help mode — works with Help off. ADHD: same
+// window+reason does not nag again until the control becomes available.
+const grayAffordanceExplained = new Set();
+
+function controlIsUnavailable(target) {
+  if (!target || target.nodeType !== 1) return false;
+  if (target.matches?.(":disabled, .is-disabled, [aria-disabled='true']")) return true;
+  return target.disabled === true || target.getAttribute?.("aria-disabled") === "true";
+}
+
+function unavailableControlReasonKey(target) {
+  if (!target) return "";
+  const stored = target.dataset?.balloonHelpDisabled || "";
+  if (stored) return stored;
+  const action = target.dataset?.action || target.dataset?.submenuAction || "";
+  if (action && typeof actionUnavailableReasonKey === "function") {
+    return actionUnavailableReasonKey(action);
+  }
+  return balloonHelpKeyFor(target) || "";
+}
+
+function grayAffordanceScopeKey(target, reasonKey) {
+  const win = target?.closest?.(".window");
+  const scope = win?.dataset?.window || target?.id || "desk";
+  return `${scope}::${reasonKey}`;
+}
+
+function markGrayAffordance(control, unavailable, reasonKey = "") {
+  if (!control) return;
+  const blocked = Boolean(unavailable);
+  control.classList.toggle("is-disabled", blocked);
+  if (blocked) {
+    control.setAttribute("aria-disabled", "true");
+    // Prefer aria-disabled so one tap can still ask why. Native disabled
+    // swallows the click on many surfaces; keep html disabled only when the
+    // caller already set it and we are not owning the affordance.
+    if (reasonKey) {
+      control.disabled = false;
+      control.dataset.balloonHelpDisabled = reasonKey;
+      control.dataset.grayAffordance = "1";
+    }
+  } else {
+    control.removeAttribute("aria-disabled");
+    if (control.dataset.grayAffordance === "1") {
+      // We set the grey flag and the reason together, so clearing the flag
+      // also clears the reason. Without this a control whose reason changes
+      // (running -> needs-something) keeps a stale reason after it ungreys.
+      control.disabled = false;
+      delete control.dataset.grayAffordance;
+      delete control.dataset.balloonHelpDisabled;
+    }
+    if (reasonKey && control.dataset.balloonHelpDisabled === reasonKey) {
+      delete control.dataset.balloonHelpDisabled;
+    }
+    const scope = grayAffordanceScopeKey(control, reasonKey || control.dataset.balloonHelpDisabled || "");
+    if (scope.endsWith("::")) grayAffordanceExplained.delete(scope);
+    else if (reasonKey) grayAffordanceExplained.delete(grayAffordanceScopeKey(control, reasonKey));
+  }
+}
+
+function revealUnavailableControlWhy(target, options = {}) {
+  if (!target || !controlIsUnavailable(target)) return false;
+  const key = options.reasonKey || unavailableControlReasonKey(target);
+  if (!key) return false;
+  const scope = grayAffordanceScopeKey(target, key);
+  if (!options.force && grayAffordanceExplained.has(scope)) {
+    // Already explained this window+reason; quiet status only, no second balloon.
+    if (typeof setStatus === "function") setStatus(t(key));
+    return true;
+  }
+  grayAffordanceExplained.add(scope);
+  showBalloonHelp(target, key, { force: true, autoHideMs: options.autoHideMs || 3600 });
+  if (typeof setStatus === "function") setStatus(t(key));
+  return true;
+}
+
+function unavailableControlFromEvent(event) {
+  const direct = event.target?.closest?.(
+    "button:disabled, button.is-disabled, [aria-disabled='true'], summary.is-disabled, .is-disabled[data-action], textarea:disabled, input:disabled, select:disabled",
+  );
+  if (direct && controlIsUnavailable(direct) && unavailableControlReasonKey(direct)) return direct;
+  // A live foreground control owns the click. Disabled controls in lower
+  // windows must not intercept it through the hit-test stack.
+  if (event.target?.closest?.("button, summary, [role='button'], [role='tab'], input, textarea, select")) return null;
+  // Native :disabled does not receive the click; hit-test recovers the control.
+  if (typeof document.elementsFromPoint !== "function") return null;
+  const x = event.clientX;
+  const y = event.clientY;
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+  const stack = document.elementsFromPoint(x, y);
+  return stack.find((el) => {
+    if (!el?.matches) return false;
+    if (!el.matches("button, summary, [role='button'], [data-action], textarea, input, select")) return false;
+    if (!controlIsUnavailable(el)) return false;
+    return !!unavailableControlReasonKey(el);
+  }) || null;
+}
+
+function installGrayAffordanceClicks() {
+  if (typeof document === "undefined" || document.documentElement?.dataset?.grayAffordanceClicks === "1") {
+    return;
+  }
+  document.documentElement.dataset.grayAffordanceClicks = "1";
+  document.addEventListener("click", (event) => {
+    if (event.defaultPrevented) return;
+    // Balloon Help touch-inspect owns the first tap when that mode is on.
+    if (balloonHelpTouchedInspect && event.pointerType === "touch") return;
+    const target = unavailableControlFromEvent(event);
+    if (!target) return;
+    // Menu-bar greys keep the existing menu path (status via handleAction).
+    if (target.closest(".menu-popover, .menu-submenu-popover, .menu-sub-popover, .menu-bar")) {
+      return;
+    }
+    if (!revealUnavailableControlWhy(target)) return;
+    // Native :disabled lets the click fall through; stop that so one tap only
+    // explains, never activates whatever sits under the grey control.
+    event.preventDefault();
+    event.stopPropagation();
+  }, true);
+}
+
+function showBalloonHelp(target, key = balloonHelpKeyFor(target), options = {}) {
+  const balloon = balloonHelpElement();
+  const text = document.querySelector("#balloon-help-text");
+  if (!balloon || !text || !target || !key || (!balloonHelpEnabled && !options.force)) return;
+  // NeXTSTEP hides the traditional menu bar, which initially owns this
+  // shared tooltip. A popover inside display:none still has no layout box.
+  if (balloon.parentElement !== document.body) document.body.append(balloon);
+  window.clearTimeout(balloonHelpTimer);
+  forgetBalloonHelpTarget(balloonHelpTarget);
+  balloonHelpTarget = target;
+  balloonHelpTextKey = key;
+  text.textContent = t(key);
+  describeBalloonHelpTarget(target);
+  balloon.classList.remove("is-hidden");
+  if (typeof balloon.showPopover === "function" && !balloon.matches(":popover-open")) {
+    balloon.showPopover();
+  }
+  positionBalloonHelp(target);
+  // The object may already have its panel open (a re-entry, a focus move): the
+  // same rule as the mutation path decides whether it may stay at all.
+  syncBalloonHelpWithOwnedPanel();
+
+  if (options.autoHideMs) {
+    balloonHelpTimer = window.setTimeout(hideBalloonHelp, options.autoHideMs);
+  }
+}
+
+function syncBalloonHelpLanguage() {
+  // The menus are redrawn in the other language, so every remembered panel size
+  // describes a panel that no longer exists.
+  forgetBalloonHelpPanelSizes();
+  const text = document.querySelector("#balloon-help-text");
+  if (text && balloonHelpTextKey) text.textContent = t(balloonHelpTextKey);
+  document.body.classList.toggle("is-balloon-help", balloonHelpEnabled);
+}
+
+function loadBalloonHelpPreference() {
+  let stored = "";
+  try {
+    stored = String(localStorage.getItem(BALLOON_HELP_STORAGE_KEY) || "").trim();
+  } catch {}
+  if (stored === "on" || stored === "off") {
+    balloonHelpExplicit = true;
+    return stored === "on";
+  }
+  // First visit: hover-capable devices get the discoverable default so new
+  // users meet the help balloons. Touch-primary devices stay off so the
+  // explicit-inspect mode can never swallow a tap.
+  return window.matchMedia("(hover: hover)").matches;
+}
+
+function setBalloonHelpEnabled(enabled, { announce = true, persist = true } = {}) {
+  balloonHelpEnabled = Boolean(enabled);
+  if (persist) {
+    balloonHelpExplicit = true;
+    balloonHelpTouchedInspect = balloonHelpEnabled;
+    try {
+      localStorage.setItem(BALLOON_HELP_STORAGE_KEY, balloonHelpEnabled ? "on" : "off");
+    } catch {}
+  } else {
+    // Initial application of a stored/default preference: only an explicit
+    // choice enables the touch inspect mode, never the hover default.
+    balloonHelpTouchedInspect = balloonHelpExplicit && balloonHelpEnabled;
+  }
+  document.body.classList.toggle("is-balloon-help", balloonHelpEnabled);
+  if (!balloonHelpEnabled) hideBalloonHelp();
+  if (typeof updateMenuState === "function") updateMenuState();
+  if (announce && typeof setStatus === "function") {
+    setStatus(t(balloonHelpEnabled ? "balloon_help_on" : "balloon_help_off"));
+  }
+}
+
+function toggleBalloonHelp() {
+  setBalloonHelpEnabled(!balloonHelpEnabled);
+}
+
+function revealMultiFinderSwitcherHint() {
+  if (!clioOnboardingCompleted) return;
+  if (!isMultiFinderMode() || multiFinderSwitcherHintSeen) return;
+  const switcher = document.querySelector("#multifinder-button");
+  if (!switcher || switcher.closest(".is-hidden")) return;
+  multiFinderSwitcherHintSeen = true;
+  showBalloonHelp(switcher, "multifinder_switcher_discovery", { force: true, autoHideMs: 7000 });
+  saveDeskState();
+}
+
+function initializeBalloonHelp() {
+  if (!balloonHelpElement()) return;
+  setBalloonHelpEnabled(loadBalloonHelpPreference(), { announce: false, persist: false });
+  installGrayAffordanceClicks();
+
+  document.addEventListener("pointerover", (event) => {
+    if (!balloonHelpEnabled || event.pointerType === "touch") return;
+    const target = event.target.closest?.("[data-balloon-help], [data-balloon-help-disabled]");
+    if (target && target !== balloonHelpTarget) showBalloonHelp(target);
+  });
+
+  document.addEventListener("pointerout", (event) => {
+    if (!balloonHelpEnabled || event.pointerType === "touch" || !balloonHelpTarget) return;
+    if (balloonHelpTarget.contains(event.relatedTarget)) return;
+    hideBalloonHelp();
+  });
+
+  document.addEventListener("focusin", (event) => {
+    if (!balloonHelpEnabled) return;
+    const target = event.target.closest?.("[data-balloon-help], [data-balloon-help-disabled]");
+    if (target) showBalloonHelp(target);
+  });
+
+  document.addEventListener("focusout", (event) => {
+    if (!balloonHelpEnabled || !balloonHelpTarget) return;
+    if (balloonHelpTarget.contains(event.relatedTarget)) return;
+    hideBalloonHelp();
+  });
+
+  // In explicit help mode, a touch inspects an object instead of activating
+  // it. A second tap on the same object lets the action through, so the
+  // balloon explains once and then gets out of the way. Menu-bar buttons
+  // remain usable so the user can hide Balloon Help.
+  document.addEventListener("pointerdown", (event) => {
+    if (!balloonHelpTouchedInspect || event.pointerType !== "touch") return;
+    const target = event.target.closest?.("[data-balloon-help], [data-balloon-help-disabled]");
+
+    // A tap aimed away from the current object is the user's next action.
+    // Dismiss the old balloon first so it never sits on top of what they are
+    // trying to press next, even though the popover itself is pointer-transparent.
+    if (balloonHelpTarget && !balloonHelpTarget.contains(event.target)) {
+      hideBalloonHelp();
+    }
+    if (!target) return;
+
+    if (target === balloonHelpTarget) {
+      // The object is already identified. Let this tap perform its action,
+      // then clear the balloon so the mode stays available for the next
+      // unfamiliar object without swallowing a second press.
+      hideBalloonHelp();
+      return;
+    }
+
+    showBalloonHelp(target);
+    if (!target.closest(".menu-bar")) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  }, true);
+
+  window.addEventListener("resize", hideBalloonHelp);
+  document.addEventListener("scroll", hideBalloonHelp, true);
+
+  // A panel opens and closes without telling the balloon anything; the DOM is
+  // the announcement. One rule then covers every kind of panel — a menu, a
+  // select listbox, a details popover — because all of them say so in the same
+  // place: the open surface our own panel lookup already knows.
+  if (typeof MutationObserver === "function") {
+    new MutationObserver(() => {
+      syncBalloonHelpWithOwnedPanel();
+    }).observe(document.body, {
+      attributes: true,
+      attributeFilter: ["class", "hidden", "open", "aria-expanded"],
+      subtree: true,
+    });
+  }
+}

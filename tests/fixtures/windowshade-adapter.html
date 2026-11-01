@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>WindowShade adapter fixture — not the full application</title>
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; font: 14px system-ui; }
+.menu-bar { height: 30px; }
+.desktop { position: relative; margin-left: 20px; width: calc(100vw - 40px); height: calc(100vh - 40px); border: 2px solid; }
+.window { position: absolute; min-width: 220px; min-height: 180px; border: 2px solid; background: Canvas; color: CanvasText; }
+.title-bar { height: 26px; border-bottom: 1px solid; display: flex; justify-content: space-between; }
+.content { padding: 12px; height: calc(100% - 26px); overflow: auto; }
+textarea { width: 100%; height: 80px; }
+.window.is-collapsed { min-height: 0; height: auto; }
+.window.is-collapsed > :not(.title-bar) { display: none; }
+.window.is-collapsed.is-shade-peeking > :not(.title-bar) { display: block; }
+.is-hidden, .is-app-hidden, .is-minimized { display: none; }
+.menu-popover { background: Canvas; color: CanvasText; border: 1px solid; padding: 4px; }
+.menu-popover button { display: block; width: 100%; text-align: left; border: 0; padding: 5px 12px; }
+</style>
+<div class="menu-bar">Adapter contract fixture. Real browser, substitute shell; not production-theme verification.</div>
+<div class="desktop">
+ <section class="window is-active" data-window="first" style="left:180px;top:80px;width:560px;height:340px">
+  <div class="title-bar"><span>First document</span><button class="close-box">×</button></div>
+  <div class="content"><textarea>Unsaved text must survive every layout.</textarea><p>Scroll state belongs to the application.</p></div>
+ </section>
+ <section class="window" data-window="second" style="left:820px;top:180px;width:440px;height:360px">
+  <div class="title-bar"><span>Second document</span><button class="resize-box">Zoom</button></div><div class="content">A second window.</div>
+ </section>
+</div>
+<script>
+// Deliberate adapters, not a pretend full AI System 6 boot. Their boundaries
+// mirror window-manager.js at e949d766; the new production module is loaded intact.
+let writerMode = false;
+let currentLanguage = "en";
+let saves = 0;
+let topZ = 10;
+const explicitLayoutGeneration = new WeakMap();
+const getWindow = (name) => document.querySelector(`[data-window="${name}"]`);
+const isNarrowViewport = () => window.innerWidth <= 860;
+const isCenteredSystemWindow = (win) => win.dataset.centered === "true";
+const isResizableWindow = (win) => win.dataset.fixedSize !== "true";
+const aspectRatioForWindow = (win) => Number(win.dataset.aspect) || 0;
+const getDesktopAvoidanceInsets = () => ({ left: 110, right: 70, bottom: 40 });
+const deskBottomReserve = () => 40;
+function setStatus(value) { window.lastStatus = value; }
+function scheduleWorkingSessionSave() { saves++; }
+function markWindowUserPositioned(win) { win.dataset.userPositioned = "true"; win.dataset.systemPositioned = "false"; }
+const windowPinnedZ = 9000;
+const windowLayerMaxZ = 8990;
+let pinnedTopZ = windowPinnedZ;
+let shadePeekWindow = null;
+function canPinWindow(win) { return !!win && win.dataset.centered !== 'true' && win.dataset.window !== 'about'; }
+function isWindowPinned(win) { return !!win && win.dataset.windowPinned === 'true'; }
+function setWindowPinned(win, pinned = true) {
+ if (!canPinWindow(win)) return false;
+ if (pinned) { win.dataset.windowPinned = 'true'; win.style.zIndex = String(++pinnedTopZ); }
+ else { delete win.dataset.windowPinned; win.style.zIndex = String(++topZ); }
+ scheduleWorkingSessionSave();
+ return true;
+}
+function canPeekWindow(win) {
+ return !!win?.classList.contains('is-collapsed') && win.dataset.windowShadePeek !== 'false'
+  && !win.querySelector("input[type='password']") && !win.querySelector('iframe');
+}
+function isWindowPeeking(win = shadePeekWindow) {
+ return !!win && win === shadePeekWindow && win.classList.contains('is-shade-peeking');
+}
+function beginPeek(win) {
+ if (!canPeekWindow(win)) return false;
+ if (isWindowPeeking(win)) return true;
+ if (shadePeekWindow && shadePeekWindow !== win) endPeek(shadePeekWindow);
+ if (win.dataset.shadeRestoreHeight) win.style.height = win.dataset.shadeRestoreHeight;
+ if (win.dataset.shadeRestoreMaxHeight) win.style.maxHeight = win.dataset.shadeRestoreMaxHeight;
+ win.classList.add('is-shade-peeking');
+ shadePeekWindow = win;
+ return true;
+}
+function endPeek(win = shadePeekWindow) {
+ if (!win?.classList?.contains('is-shade-peeking')) { if (shadePeekWindow === win) shadePeekWindow = null; return false; }
+ win.classList.remove('is-shade-peeking');
+ if (win.classList.contains('is-collapsed')) { win.style.height = ''; win.style.maxHeight = ''; }
+ if (shadePeekWindow === win) shadePeekWindow = null;
+ return true;
+}
+function commitPeek(win = shadePeekWindow) {
+ if (!win) return false;
+ endPeek(win);
+ if (win.classList.contains('is-collapsed')) toggleCollapsed(win);
+ return true;
+}
+function cancelAllWindowPeeks() { if (shadePeekWindow) endPeek(shadePeekWindow); }
+function sessionStamp() {
+ return JSON.stringify([...document.querySelectorAll('.window[data-window]')].map((node) => ({
+  name: node.dataset.window, className: node.className, style: node.getAttribute('style'),
+  pinned: node.dataset.windowPinned || '', peek: node.classList.contains('is-shade-peeking'),
+ })));
+}
+function focusWindow(win) {
+ document.querySelectorAll('.window[data-window]').forEach((item) => item.classList.remove('is-active'));
+ win.classList.add('is-active');
+ if (isWindowPinned(win)) win.style.zIndex = String(++pinnedTopZ);
+ else win.style.zIndex = String(Math.min(windowLayerMaxZ, ++topZ));
+ scheduleWorkingSessionSave();
+}
+function placeWindowForExplicitLayout(win, frame = {}, options = {}) {
+ explicitLayoutGeneration.set(win, (explicitLayoutGeneration.get(win) || 0) + 1);
+ win.classList.remove('is-collapsed', 'is-desklet', 'is-finder-content-fit', 'is-shade-peeking');
+ win.style.removeProperty('--finder-fit-width');
+ for (const key of ['left','top','right','width','height','maxHeight','transform']) {
+   const value = frame[key] ?? (key === 'right' ? 'auto' : key === 'transform' ? 'none' : '');
+   win.style[key] = typeof value === 'number' ? Math.round(value) + 'px' : value;
+ }
+ win.dataset.zoomed = 'false';
+ if (options.userPositioned) markWindowUserPositioned(win);
+}
+function toggleCollapsed(win) {
+ const collapse = !win.classList.contains('is-collapsed');
+ delete win.dataset.appHiddenCollapsed;
+ endPeek(win);
+ if (collapse) {
+   win.style.setProperty('--window-shade-width', Math.round(win.getBoundingClientRect().width) + 'px');
+   win.dataset.shadeRestoreHeight = win.style.height;
+   win.dataset.shadeRestoreMaxHeight = win.style.maxHeight;
+   win.style.height = ''; win.style.maxHeight = ''; win.classList.add('is-collapsed');
+ } else {
+   win.classList.remove('is-collapsed'); win.style.removeProperty('--window-shade-width');
+   win.style.height = win.dataset.shadeRestoreHeight || '';
+   win.style.maxHeight = win.dataset.shadeRestoreMaxHeight || '';
+   delete win.dataset.shadeRestoreHeight; delete win.dataset.shadeRestoreMaxHeight;
+   focusWindow(win);
+ }
+ scheduleWorkingSessionSave();
+}
+const modalScrim = document.createElement("div");
+modalScrim.className = "modal-scrim is-hidden";
+modalScrim.style.cssText = "position:fixed;inset:0";
+document.body.append(modalScrim);
+const commands = new Map();
+window.AISystem6Runtime = { registerCommand: (key, value) => commands.set(key, value) };
+let loaded = null;
+function ensureLazySystemModule(path, flag) {
+ if (window[flag]) return Promise.resolve(true);
+ if (!loaded) loaded = new Promise((resolve, reject) => setTimeout(() => {
+   const script = document.createElement('script');
+   // Fixture runners inject the exact production source; no network required.
+   script.textContent = window.fixtureWindowShadeSource || '';
+   document.head.append(script);
+   if (window[flag]) resolve(true);
+   else { loaded = null; reject(new Error('fixture load failed')); }
+ }, window.fixtureDelay || 0));
+ return loaded;
+}
+</script>
+
+</html>

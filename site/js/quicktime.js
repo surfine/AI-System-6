@@ -1,0 +1,26 @@
+// QuickTime-style window for the promo film (Bilibili BV1gYph6hEE6, 2:37).
+// Nothing third-party loads until the visitor presses play: the poster is a
+// local image, and the click swaps in the Bilibili embed.
+
+import { L } from "./copy.js?v=20261010a";
+
+const EMBED =
+  "https://player.bilibili.com/player.html?bvid=BV1gYph6hEE6&autoplay=1&high_quality=1&danmaku=0";
+
+export function initQuickTime() {
+  const poster = document.getElementById("qt-poster");
+  const body = document.getElementById("qt-body");
+  if (!poster || !body) return;
+
+  poster.addEventListener("click", (e) => {
+    e.preventDefault();
+    const frame = document.createElement("iframe");
+    frame.src = EMBED;
+    frame.className = "qt-frame";
+    frame.setAttribute("title", L("AI System 6 - The film (Bilibili)", "AI System 6 - 宣传片（哔哩哔哩）"));
+    frame.setAttribute("allow", "autoplay; fullscreen");
+    frame.setAttribute("scrolling", "no");
+    body.replaceChild(frame, poster);
+    frame.focus();
+  });
+}

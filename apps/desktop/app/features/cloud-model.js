@@ -1,0 +1,1207 @@
+// Cloud model integration — DeepSeek is the first-class cloud provider.
+// The server routes stay OpenAI-compatible internally; Anthropic's Messages
+// API is the one other paid vendor, local-only, adapted on the server
+// (apps/server/server/anthropic-messages.js). Product QA promises no others.
+
+(function () {
+  "use strict";
+
+  const cloudProviderEl = document.querySelector("#cloud-provider");
+  const cloudApiKeyEl = document.querySelector("#cloud-api-key");
+  const cloudApiKeyLabelEl = document.querySelector("#cloud-api-key-label");
+  const cloudModelEl = document.querySelector("#cloud-model");
+  const cloudModelSelectEl = document.querySelector("#cloud-model-select");
+  const manualModelFieldsEl = document.querySelector("#manual-model-fields");
+  const cloudCheckBtn = document.querySelector("#cloud-check-status");
+  const cloudStatusEl = document.querySelector("#cloud-status");
+  const cloudStatusDot = document.querySelector("#cloud-status-indicator");
+  const cloudStatusText = document.querySelector("#cloud-status-text");
+  const cloudBalanceEl = document.querySelector("#cloud-balance");
+  const cloudStatusHint = document.querySelector("#cloud-status-hint");
+  const cloudIndicatorEl = document.querySelector("#cloud-model-indicator");
+  const websiteAiButton = document.querySelector("#use-website-ai");
+  const localAiButton = document.querySelector("#use-local-ai");
+  const advancedAiButton = document.querySelector("#show-ai-advanced");
+  const simpleAiStatus = document.querySelector("#simple-ai-status");
+  const ownKeyDetails = document.querySelector("#cloud-own-key-details");
+
+  function setSimpleAiStatus(key, fallback = "") {
+    if (!simpleAiStatus) return;
+    simpleAiStatus.dataset.i18n = key;
+    simpleAiStatus.textContent = typeof t === "function" ? t(key) : fallback;
+  }
+  const DEEPSEEK_BASE_URL = "https:" + String.fromCharCode(47, 47) + "api.deepseek.com";
+
+  const PROVIDER_BASE_URLS = {
+    deepseek: DEEPSEEK_BASE_URL,
+    // Subscription CLIs run on this Mac: the server turns the sentinel into a
+    // `claude` / `codex` run (docs/SUBSCRIPTION-CLI.md).
+    "claude-subscription": "subscription-cli://claude",
+    "codex-subscription": "subscription-cli://codex",
+    anthropic: "https:" + String.fromCharCode(47, 47) + "api.anthropic.com",
+  };
+  // Sentinel the server resolves per task: heavy analysis runs on V4 Pro,
+  // everything else on Flash. Kept out of the model list itself so
+  // /api/cloud/models keeps describing real models.
+  const AUTO_CLOUD_MODEL_ID = "auto";
+  const BUILTIN_PROVIDER_MODELS = {
+    deepseek: [
+      { id: "deepseek-flash", name: "DeepSeek Flash", context_length: 1000000, vision: true },
+      { id: "deepseek-v4-pro", name: "DeepSeek V4 Pro", context_length: 1000000 },
+    ],
+    // The model is whatever the CLI itself uses; each answer reports it.
+    "claude-subscription": [{ id: "default", i18n: "cloud_model_cli_default", context_length: 200000 }],
+    "codex-subscription": [{ id: "default", i18n: "cloud_model_cli_default", context_length: 200000 }],
+  };
+
+  // Local-only providers (the subscription CLIs, Anthropic) name the
+  // capability they need; each shows only where the server offers it, and an
+  // active one the server stopped offering is switched off.
+  window.addEventListener?.("ai-system6:capabilities", function (event) {
+    const features = /** @type {CustomEvent} */ (event).detail?.features || {};
+    cloudProviderEl?.querySelectorAll?.("option[data-requires-capability]").forEach(function (option) {
+      option.hidden = features[option.dataset.requiresCapability] !== true;
+      if (option.hidden && option.value === cloudConfig?.provider && cloudConfig.active) {
+        cloudConfig.active = false;
+        saveCloudConfig();
+        applyCloudActiveState();
+      }
+    });
+  });
+
+  let cloudModels = [];
+  let cloudBalanceAtActivation = null;
+
+  window.syncCloudCredentialUi = function () {
+    // A subscription CLI signs in on its own, so there is no key to ask for.
+    const keyField = cloudApiKeyEl?.closest?.(".control-field");
+    if (keyField) keyField.hidden = isSubscriptionCloudProvider(cloudConfig?.provider) || isKeychainCloudProvider(cloudConfig?.provider);
+    const sharedAvailable = isPublicCloudCredentialMode() && publicSharedCloudAvailable;
+    const mode = typeof cloudCredentialMode === "function" ? cloudCredentialMode() : "none";
+    if (cloudApiKeyLabelEl) {
+      const labelKey = sharedAvailable ? "cloud_api_key_optional" : "cloud_api_key";
+      cloudApiKeyLabelEl.dataset.i18n = labelKey;
+      cloudApiKeyLabelEl.textContent = typeof t === "function" ? t(labelKey) : "API Key";
+    }
+    if (!cloudStatusHint || cloudConfig?.active) return;
+    const hintKey = mode === "keychain"
+      ? "cloud_anthropic_keychain_hint"
+      : mode === "byok"
+      ? "cloud_byok_hint"
+      : sharedAvailable
+        ? "cloud_shared_hint"
+        : "cloud_status_hint";
+    cloudStatusHint.textContent = typeof t === "function" ? t(hintKey) : "";
+  };
+
+  function isManualModelMode() {
+    return !!manualModelFieldsEl?.checked || cloudConfig?.modelInputMode === "manual";
+  }
+
+  function setCloudModelControlValue(value) {
+    const saved = String(value || "");
+    // A Control Panel saved before the rename shows the id DeepSeek publishes.
+    const nextValue = /^(?:deepseek-)?v4-flash(?:-vision-exp)?$/i.test(saved) ? "deepseek-flash" : saved;
+    if (cloudConfig && nextValue && cloudConfig.model !== nextValue) cloudConfig.model = nextValue;
+    if (cloudModelEl) cloudModelEl.value = nextValue;
+    if (cloudModelSelectEl) {
+      if (nextValue && ![...cloudModelSelectEl.options].some((option) => option.value === nextValue)) {
+        const option = document.createElement("option");
+        option.value = nextValue;
+        option.textContent = nextValue;
+        cloudModelSelectEl.append(option);
+      }
+      cloudModelSelectEl.value = nextValue;
+    }
+  }
+
+  function selectedCloudModelValue() {
+    return isManualModelMode()
+      ? (cloudModelEl?.value || "").trim()
+      : (cloudModelSelectEl?.value || "").trim();
+  }
+
+  window.syncCloudModelControls = function () {
+    const manual = isManualModelMode();
+    const hasProvider = !!cloudProviderEl.value;
+    if (manualModelFieldsEl && cloudConfig?.modelInputMode === "manual") {
+      manualModelFieldsEl.checked = true;
+    }
+    if (cloudModelSelectEl) {
+      cloudModelSelectEl.hidden = manual;
+      cloudModelSelectEl.disabled = manual || !hasProvider;
+    }
+    if (cloudModelEl) {
+      cloudModelEl.hidden = !manual;
+      cloudModelEl.disabled = !manual || !hasProvider;
+    }
+    setCloudModelControlValue(cloudConfig?.model || "");
+    if (typeof refreshSystemSelectControls === "function") refreshSystemSelectControls();
+  };
+
+  async function changeLocalCredential(action, payload = {}) {
+    if (isPublicCloudCredentialMode()) return null;
+    const response = await window.AISystem6Capabilities.requestService("cloud.credentials", {
+      init: {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, ...payload }),
+      },
+    });
+    if (!response.ok) throw new Error(serviceErrorDetail(response.status, await response.text()));
+    return response.json();
+  }
+
+  async function stageCloudCredentialIfNeeded() {
+    const apiKey = cloudApiKeyEl.value.trim() || cloudRuntimeApiKey;
+    if (isPublicCloudCredentialMode()) {
+      if (apiKey) setCloudRuntimeApiKey(apiKey);
+      return { credentialId: "", staged: false };
+    }
+    if (!apiKey) {
+      return { credentialId: cloudConfig?.credentialId || "", staged: false };
+    }
+    const baseUrl = PROVIDER_BASE_URLS[cloudConfig?.provider] || DEEPSEEK_BASE_URL;
+    const data = await changeLocalCredential("stage", {
+      provider: cloudConfig?.provider || "deepseek",
+      base_url: baseUrl,
+      api_key: apiKey,
+    });
+    if (!cloudConfig) cloudConfig = {};
+    cloudConfig.credentialId = String(data?.credential_id || "");
+    cloudConfig.credentialPersistence = String(data?.persistence || "service-session");
+    setCloudRuntimeApiKey("");
+    cloudApiKeyEl.value = "";
+    saveCloudConfig();
+    return { credentialId: cloudConfig.credentialId, staged: true };
+  }
+
+  async function persistVerifiedCloudCredential() {
+    if (isPublicCloudCredentialMode() || !cloudConfig?.credentialId) return;
+    const data = await changeLocalCredential("persist", {
+      credential_id: cloudConfig.credentialId,
+    });
+    if (window.tiny?.api) {
+      if (data.persistence !== "keychain") throw new Error(t("native_key_failed"));
+      const check = await changeLocalCredential("available", { credential_id: cloudConfig.credentialId,
+        provider: cloudConfig.provider || "deepseek", base_url: PROVIDER_BASE_URLS[cloudConfig.provider] || DEEPSEEK_BASE_URL });
+      if (!check.available) throw new Error(t("native_key_failed"));
+    }
+    cloudConfig.credentialPersistence = String(data?.persistence || "service-session");
+    saveCloudConfig();
+  }
+
+  // The Claude Code engine's token (`claude setup-token`): its own Keychain
+  // item, filed under the provider the engine host reads (agent/runs.js).
+  const claudeCodeTokenEl = document.querySelector("#claude-code-token");
+  const claudeCodeStatusEl = document.querySelector("#claude-code-token-status");
+  document.querySelector("#claude-code-token-save")?.addEventListener("click", async function () {
+    // A token copied from a wrapped terminal line carries the wrap as
+    // whitespace inside it; a token never contains any, so all of it goes.
+    const token = (claudeCodeTokenEl?.value || "").replace(/\s+/g, "");
+    if (!token || !claudeCodeStatusEl) return;
+    try {
+      const staged = await changeLocalCredential("stage", { provider: "claude-code", base_url: PROVIDER_BASE_URLS.anthropic, api_key: token });
+      const saved = await changeLocalCredential("persist", { credential_id: staged?.credential_id });
+      if (saved?.persistence !== "keychain") throw new Error(t("native_key_failed"));
+      claudeCodeTokenEl.value = "";
+      claudeCodeStatusEl.textContent = t("claude_code_token_saved");
+    } catch (error) {
+      claudeCodeStatusEl.textContent = String(error?.message || error).slice(0, 200);
+    }
+  });
+
+  async function discardStagedCloudCredential(credentialId) {
+    if (isPublicCloudCredentialMode() || !credentialId) return;
+    try {
+      await changeLocalCredential("discard", { credential_id: credentialId });
+    } catch {}
+  }
+
+  async function verifyRestoredCloudCredential() {
+    if (isPublicCloudCredentialMode() || !cloudConfig?.credentialId) return;
+    try {
+      const data = await changeLocalCredential("available", {
+        credential_id: cloudConfig.credentialId,
+        provider: cloudConfig.provider || "deepseek",
+      });
+      if (data?.available) return;
+      cloudConfig.credentialId = "";
+      cloudConfig.credentialPersistence = "";
+      cloudConfig.active = false;
+      saveCloudConfig();
+      applyCloudActiveState();
+      updateCheckButtonState();
+    } catch {
+      // A temporarily unavailable local service must not erase a valid
+      // Keychain reference. The next status check will surface the failure.
+    }
+  }
+
+  // boot() restores the desk's saved Notification Center list from IndexedDB
+  // (persistence-status.js applySettings -> restoreSystemNotifications) and
+  // replaces the in-memory list wholesale when it does. That restore and this
+  // file's own boot-time credential restore are two independent async chains
+  // with no ordering between them, so a notification pushed too early is not
+  // shown late — it is overwritten and gone. document.body's data-app-ready
+  // attribute already exists as boot's own "fully restored" signal (app.js
+  // reads it the same way at the end of boot()); this just waits for it
+  // instead of adding a second one.
+  function waitForBootReady() {
+    const state = document.body.dataset.appReady;
+    if (state === "ready" || state === "error") return Promise.resolve();
+    return new Promise(function (resolve) {
+      const observer = new MutationObserver(function () {
+        const current = document.body.dataset.appReady;
+        if (current === "ready" || current === "error") {
+          observer.disconnect();
+          resolve();
+        }
+      });
+      observer.observe(document.body, { attributes: true, attributeFilter: ["data-app-ready"] });
+    });
+  }
+
+  // Fires at most once per boot, and only when a key an older build left in
+  // browser storage was just migrated out of it. The Control Panel's own
+  // hint text already says a connected key is session-only going forward;
+  // this is the one-time notice for the change itself, so a working key
+  // never just disappears with nothing said about it.
+  function notifyCloudKeyLeftBrowserStorage() {
+    if (typeof pushSystemNotification !== "function" || typeof t !== "function") return;
+    waitForBootReady().then(function () {
+      // This can still land before the language table has loaded (t() falls
+      // back to the raw key then, same as the Reset Usage button label
+      // above). messageKey makes the Notification Center redraw this in the
+      // right language once translations are ready, instead of freezing the
+      // id string into the record.
+      pushSystemNotification(t("cloud_key_left_browser_storage"), {
+        messageKey: "cloud_key_left_browser_storage",
+        actionId: "open-cloud-ai-settings",
+        actionLabel: t("ai_action_reconnect"),
+        state: "error",
+      });
+    });
+  }
+
+  async function fetchBalanceOnly() {
+    if (!cloudConfig || !cloudConfig.provider || !cloudCredentialReady()) return null;
+    if (isSubscriptionCloudProvider(cloudConfig.provider)) return null;
+    if (isKeychainCloudProvider(cloudConfig.provider)) return null;
+    if (cloudCredentialMode() === "shared") return null;
+    try {
+      const baseUrl = PROVIDER_BASE_URLS[cloudConfig.provider] || DEEPSEEK_BASE_URL;
+      const res = await window.AISystem6Capabilities.requestService("cloud.status", {
+        init: {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...cloudCredentialTransportFields("status"),
+            provider: cloudConfig.provider,
+            base_url: baseUrl,
+          }),
+        },
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      if (data.connected && data.balance) {
+        cloudConfig.balance = data.balance;
+        if (typeof renderCloudModelPopover === "function") renderCloudModelPopover();
+        if (typeof renderCloudStatePanel === "function") renderCloudStatePanel();
+        return data.balance;
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  window.fetchCloudBalanceSilent = function () { return fetchBalanceOnly(); };
+
+  async function fetchCloudModels(provider) {
+    try {
+      const response = await window.AISystem6Capabilities.requestService("cloud.models", {});
+      if (!response.ok) return [];
+      const data = await response.json();
+      const models = data.by_provider?.[provider] || data.models;
+      return Array.isArray(models) ? models : [];
+    } catch (e) { return []; }
+  }
+
+  function syncCloudModelContextLength() {
+    if (!cloudConfig || !cloudConfig.model) return;
+    const knownMap = typeof CLOUD_MODEL_CONTEXT_LENGTHS !== "undefined" ? CLOUD_MODEL_CONTEXT_LENGTHS : {};
+    cloudConfig.modelContextLength = knownMap[cloudConfig.model] || 0;
+  }
+
+  // A subscription CLI has no endpoint to probe: ask the server whether the
+  // CLI is installed and signed in, without running a model.
+  async function checkSubscriptionCliStatus() {
+    cloudStatusEl.hidden = false;
+    cloudStatusDot.className = "cloud-status-dot";
+    cloudStatusText.textContent = typeof t === "function" ? t("cloud_checking") : "Checking...";
+    cloudBalanceEl.textContent = "";
+    try {
+      const response = await window.AISystem6Capabilities.requestService("cloud.subscriptionStatus", {
+        init: { headers: { Accept: "application/json" } },
+      });
+      const data = response.ok ? await response.json() : {};
+      const entry = (Array.isArray(data.providers) ? data.providers : []).find((item) => item?.id === cloudConfig.provider);
+      if (entry?.available && entry.signedIn) {
+        cloudStatusDot.classList.add("is-connected");
+        cloudStatusText.textContent = `${t("subscription_cli_ready")} ${entry.host}${entry.version ? ` · ${entry.version}` : ""}`;
+      } else {
+        cloudStatusDot.classList.add("is-error");
+        cloudStatusText.textContent = t(entry?.available ? "subscription_cli_signed_out" : "subscription_cli_missing");
+      }
+    } catch (err) {
+      cloudStatusDot.classList.add("is-error");
+      cloudStatusText.textContent = t("subscription_cli_missing");
+    }
+  }
+
+  async function checkCloudStatus() {
+    if (!cloudConfig || !cloudConfig.provider || !cloudCredentialReady()) return;
+    if (isSubscriptionCloudProvider(cloudConfig.provider)) {
+      await checkSubscriptionCliStatus();
+      return;
+    }
+    const baseUrl = PROVIDER_BASE_URLS[cloudConfig.provider] || DEEPSEEK_BASE_URL;
+    cloudStatusEl.hidden = false;
+    cloudStatusDot.className = "cloud-status-dot";
+    cloudStatusText.textContent = typeof t === "function" ? t("cloud_checking") : "Checking...";
+    cloudBalanceEl.textContent = "";
+    try {
+      const response = await window.AISystem6Capabilities.requestService("cloud.status", {
+        init: {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...cloudCredentialTransportFields("status"),
+            provider: cloudConfig.provider,
+            base_url: baseUrl,
+          }),
+        },
+      });
+      if (!response.ok) {
+        const error = new Error("HTTP " + response.status);
+        error.status = response.status;
+        throw error;
+      }
+      const data = await response.json();
+      if (data.connected) {
+        cloudConfig.credentialMode = data.credential_mode || cloudCredentialMode();
+        cloudStatusDot.classList.add("is-connected");
+        const connectedKey = data.credential_mode === "shared"
+          ? "cloud_connected_shared"
+          : data.credential_mode === "byok"
+            ? "cloud_connected_byok"
+            : "cloud_connected";
+        cloudStatusText.textContent = typeof t === "function" ? t(connectedKey) : "Connected";
+        if (data.balance) {
+          cloudBalanceEl.textContent = data.balance.currency + " " + Number(data.balance.total).toFixed(2);
+        }
+      } else {
+        cloudStatusDot.classList.add("is-error");
+        // lane-errors: data.model_error is the provider's own raw string
+        // (an HTTP status word, an upstream error code) and used to be shown
+        // as-is; friendlyErrorDetail replaces a known technical shape with
+        // the matching localized note (or the direct cloud_* translation)
+        // instead of leaking a diagnostic into Control Panel's status line.
+        const errorMsg = data.model_error
+          ? (typeof friendlyErrorDetail === "function" ? friendlyErrorDetail(data.model_error) : data.model_error)
+          : (typeof t === "function" ? t("cloud_disconnected") : "Disconnected");
+        cloudStatusText.textContent = errorMsg;
+      }
+    } catch (err) {
+      cloudStatusDot.classList.add("is-error");
+      cloudStatusText.textContent = typeof friendlyErrorDetail === "function"
+        ? friendlyErrorDetail(err)
+        : (err.message || (typeof t === "function" ? t("cloud_error") : "Error"));
+    }
+  }
+
+  function populateCloudModelDropdown(models) {
+    cloudModels = Array.isArray(models) ? models : [];
+    cloudModelSelectEl?.replaceChildren();
+    // Only DeepSeek has the two tiers the server routes between, so the
+    // automatic entry appears only when they are on offer.
+    const supportsAuto = cloudModels.some((m) => String(m?.id || "").includes("deepseek-v4"));
+    if (supportsAuto) {
+      const option = document.createElement("option");
+      option.value = AUTO_CLOUD_MODEL_ID;
+      option.dataset.i18n = "cloud_model_auto";
+      option.textContent = typeof t === "function" ? t("cloud_model_auto") : "Automatic";
+      cloudModelSelectEl?.append(option);
+    }
+    cloudModels.forEach(function (m) {
+      const option = document.createElement("option");
+      option.value = m.id;
+      if (m.i18n) option.dataset.i18n = m.i18n;
+      option.textContent = m.i18n && typeof t === "function" ? t(m.i18n) : (m.name || m.id);
+      cloudModelSelectEl?.append(option);
+    });
+    if (!cloudConfig) cloudConfig = {};
+    if (!cloudConfig.model && cloudModels.length) {
+      cloudConfig.model = supportsAuto ? AUTO_CLOUD_MODEL_ID : cloudModels[0].id;
+      saveCloudConfig();
+    }
+    setCloudModelControlValue(cloudConfig.model);
+    window.syncCloudModelControls();
+  }
+
+  function applyCloudActiveState() {
+    const active = !!(cloudConfig && cloudConfig.active && cloudConfig.provider && cloudCredentialReady());
+    // "Cloud chosen" tracks the user's route intent (provider + enabled)
+    // even before the credential is validated, so status surfaces never
+    // fall back to presenting the local LM Studio pipeline as the active
+    // route. The cloud panel itself still shows the honest connection state.
+    document.body.classList.toggle("is-cloud-configured", !!(cloudConfig && cloudConfig.active && cloudConfig.provider));
+    document.body.classList.toggle("is-cloud-active", active);
+    // The System Status window may already be open; re-render it so the
+    // local LM Studio pipeline panel is replaced by the cloud route the
+    // moment activation (or deactivation) happens, not on the next reopen.
+    if (typeof renderSystemStatus === "function") renderSystemStatus();
+    const labelEl = document.querySelector("#cloud-model-label");
+    if (active) {
+      syncCloudModelContextLength();
+      if (typeof refreshCloudUsageDisplay === "function") refreshCloudUsageDisplay();
+      const activeHintKey = cloudCredentialMode() === "shared"
+        ? "cloud_shared_active_hint"
+        : cloudCredentialMode() === "byok"
+          ? "cloud_byok_active_hint"
+          : "cloud_active_hint";
+      cloudStatusHint.textContent = typeof t === "function" ? t(activeHintKey) : "Cloud model active.";
+      fetchBalanceOnly().then(function (bal) {
+        if (bal && cloudBalanceAtActivation === null) cloudBalanceAtActivation = bal.total;
+      });
+      if (typeof updateContextMaxForCurrentModel === "function") updateContextMaxForCurrentModel();
+      if (typeof updateLocalModelState === "function") {
+        updateLocalModelState({ ready: true });
+      }
+    } else {
+      if (typeof updateContextMaxForCurrentModel === "function") updateContextMaxForCurrentModel();
+      if (typeof refreshLocalModelReadiness === "function") {
+        refreshLocalModelReadiness().finally(function () {
+          if (typeof refreshCloudUsageDisplay === "function") refreshCloudUsageDisplay();
+          if (typeof renderCloudModelPopover === "function") renderCloudModelPopover();
+          if (typeof renderCloudStatePanel === "function") renderCloudStatePanel();
+        });
+      }
+      const hasConfig = cloudConfig && cloudConfig.provider && cloudCredentialReady();
+      if (hasConfig) {
+        if (typeof refreshCloudUsageDisplay === "function") refreshCloudUsageDisplay();
+      } else {
+        if (typeof refreshCloudUsageDisplay === "function") refreshCloudUsageDisplay();
+      }
+      window.syncCloudCredentialUi();
+    }
+    if (typeof renderCloudModelPopover === "function") renderCloudModelPopover();
+  }
+
+  function toggleCloud() {
+    if (!cloudConfig || !cloudConfig.provider || !cloudCredentialReady()) return;
+    if (cloudConfig.active) window.AISystem6ClioImages?.invalidateCredentials?.();
+    cloudConfig.active = !cloudConfig.active;
+    if (cloudConfig.active) {
+      cloudConfig.baseUrl = PROVIDER_BASE_URLS[cloudConfig.provider] || DEEPSEEK_BASE_URL;
+    }
+    saveCloudConfig();
+    applyCloudActiveState();
+  }
+
+  function cloudPopoverElement(tag, className = "", text = "") {
+    const element = document.createElement(tag);
+    if (className) element.className = className;
+    element.textContent = String(text);
+    return element;
+  }
+
+  function cloudPopoverButton(action, mark, label, sublabel = "") {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.action = action;
+    const markElement = cloudPopoverElement("span", "cl-mrk", mark);
+    const textElement = cloudPopoverElement("span", "cl-txt", label);
+    if (sublabel) {
+      textElement.append(cloudPopoverElement("small", "cl-subtxt", sublabel));
+    }
+    button.append(markElement, textElement);
+    return button;
+  }
+
+  function cloudPopoverRow(label, value, supplementary = "") {
+    const row = cloudPopoverElement("div", "cl-row");
+    const labelElement = cloudPopoverElement("span", "", `${label}:`);
+    const valueElement = cloudPopoverElement("b", "", value);
+    if (supplementary) {
+      const detail = cloudPopoverElement("small", "", supplementary);
+      detail.style.opacity = ".65";
+      valueElement.append(" ", detail);
+    }
+    row.append(labelElement, valueElement);
+    return row;
+  }
+
+  function cloudPopoverStaticRow(mark, label, sublabel = "") {
+    const row = cloudPopoverElement("div", "cl-static-row");
+    const markElement = cloudPopoverElement("span", "cl-mrk", mark);
+    const textElement = cloudPopoverElement("span", "cl-txt", label);
+    if (sublabel) {
+      textElement.append(cloudPopoverElement("small", "cl-subtxt", sublabel));
+    }
+    row.append(markElement, textElement);
+    return row;
+  }
+
+  function wireCloudPopoverButtons(popover) {
+    popover.querySelectorAll("button").forEach(function (button) {
+      button.addEventListener("click", function (event) {
+        event.stopPropagation();
+        if (typeof closeMenus === "function") closeMenus();
+        const action = button.dataset.action;
+        if (action === "toggle-cloud" && !cloudConfig?.active) {
+          toggleCloud();
+        } else if (action === "toggle-local" && cloudConfig?.active) {
+          toggleCloud();
+        } else if (action === "refresh-balance") {
+          checkCloudStatus();
+        } else if (action === "open-model-settings" || action === "open-cloud-settings") {
+          if (typeof openWindow === "function") {
+            openWindow("control");
+            if (action === "open-cloud-settings") {
+              const keyElement = document.querySelector("#cloud-api-key");
+              if (keyElement) {
+                keyElement.focus();
+                keyElement.select();
+              }
+            }
+          }
+        }
+      });
+    });
+  }
+
+  window.renderCloudModelPopover = function (targetPopover = null) {
+    const popover = targetPopover || document.querySelector("#cloud-model-popover");
+    if (!popover) return;
+    const localReady = typeof isLocalModelIndicatorReady === "function"
+      && isLocalModelIndicatorReady();
+    const cloudReady = !!(cloudConfig?.active && cloudConfig?.provider && cloudCredentialReady());
+    if (!cloudReady && !localReady) {
+      const disconnectedText = typeof t === "function" ? t("model_not_connected") : "Model not connected";
+      const nodes = [cloudPopoverElement("div", "cl-hdr", disconnectedText)];
+      if (cloudConfig?.provider && cloudCredentialReady()) {
+        nodes.push(cloudPopoverButton(
+          "toggle-cloud",
+          "",
+          typeof t === "function" ? t("cl_act_cld") : "Use Cloud Model"
+        ));
+      }
+      nodes.push(cloudPopoverButton(
+          "open-model-settings",
+          "",
+          typeof t === "function" ? t("control_panel") : "Control Panel"
+      ));
+      popover.replaceChildren(...nodes);
+      wireCloudPopoverButtons(popover);
+      return;
+    }
+
+    if (!cloudConfig) {
+      const localName = typeof getLocalModelDisplayName === "function"
+        ? getLocalModelDisplayName()
+        : (document.querySelector("#model")?.value || "").trim();
+      const contextText = typeof currentContextWindowText === "function"
+        ? currentContextWindowText()
+        : (document.querySelector("#context-length")?.value || "-");
+      const localStateText = typeof modelStateCurrentStep === "function" ? modelStateCurrentStep() : "-";
+      popover.replaceChildren(
+        cloudPopoverElement("div", "cl-hdr", localName),
+        cloudPopoverRow(t("context_length"), contextText),
+        cloudPopoverRow(t("model_state"), localStateText),
+        document.createElement("hr"),
+        cloudPopoverButton(
+          "open-model-settings",
+          "",
+          typeof t === "function" ? t("control_panel") : "Control Panel"
+        )
+      );
+      wireCloudPopoverButtons(popover);
+      return;
+    }
+
+    const latestText = typeof cloudUsageText === "function" ? cloudUsageText(latestCloudUsage) : "-";
+    const sessionText = typeof cloudUsageText === "function" ? cloudUsageText(sessionCloudUsage) : "-";
+    const balText = typeof cloudBalanceText === "function" ? cloudBalanceText(cloudConfig) : "-";
+    let balanceSpentText = "";
+    if (cloudConfig.balance && balText !== "-") {
+      const cur = cloudConfig.balance.currency || "CNY";
+      if (cloudBalanceAtActivation !== null) {
+        const spent = cloudBalanceAtActivation - Number(cloudConfig.balance.total);
+        if (spent > 0.000001) balanceSpentText = `(-${cur}${spent.toFixed(4)})`;
+      }
+    }
+
+    const activeText = cloudConfig.active ? "✓" : "";
+    const localText = !cloudConfig.active ? "✓" : "";
+    const cloudModeText = cloudConfig.provider !== "deepseek"
+      ? cloudProviderDisplayName(cloudConfig.provider)
+      : currentLanguage === "zh" ? "DeepSeek（云端）" : "DeepSeek (Cloud)";
+    const cloudRouteText = typeof cloudModelRouteLabel === "function" ? cloudModelRouteLabel(cloudConfig) : cloudModeText;
+    const localModeText = currentLanguage === "zh" ? "LM Studio（本地）" : "LM Studio (Local)";
+    const localModelText = (document.querySelector("#model")?.value || "").trim();
+    const localProviderEl = document.getElementById("local-provider");
+    const localProviderText = localProviderEl ? localProviderEl.options[localProviderEl.selectedIndex]?.text : "";
+    const localSummary = localModelText || localProviderText || (typeof t === "function" ? t("local_lm_studio") : "LM Studio");
+    const contextText = typeof currentContextWindowText === "function" ? currentContextWindowText(cloudConfig) : (document.querySelector("#context-length")?.value || "-");
+    const localStateText = typeof modelStateCurrentStep === "function" ? modelStateCurrentStep() : "-";
+    const divider = () => document.createElement("hr");
+    const nodes = cloudConfig.active
+      ? [
+          cloudPopoverElement("div", "cl-hdr", t("cloud_model")),
+          cloudPopoverElement("div", "cl-model-name", cloudRouteText),
+          cloudPopoverRow(t("context_length"), contextText),
+          cloudPopoverRow(t("cl_lat"), latestText),
+          cloudPopoverRow(t("cl_ses"), sessionText),
+          cloudPopoverRow(t("cl_bal"), balText, balanceSpentText),
+          cloudPopoverElement(
+            "div",
+            "cl-est-note",
+            typeof t === "function"
+              ? t("cl_est_note")
+              : "Costs estimated from published prices. See provider dashboard for actual billing."
+          ),
+          divider(),
+          cloudPopoverButton("toggle-cloud", activeText, cloudModeText, cloudRouteText),
+          cloudPopoverButton("toggle-local", localText, localModeText, localModelText),
+          divider(),
+          cloudPopoverButton("refresh-balance", "", t("cl_act_ref")),
+          cloudPopoverButton("open-cloud-settings", "", t("cl_act_set")),
+        ]
+      : [
+          cloudPopoverStaticRow(localText, localModeText, localSummary),
+          cloudPopoverRow(t("context_length"), contextText),
+          cloudPopoverRow(t("model_state"), localStateText),
+          divider(),
+          cloudPopoverButton(
+            "toggle-cloud",
+            activeText,
+            typeof t === "function" ? t("cl_act_cld") : cloudModeText
+          ),
+        ];
+
+    popover.replaceChildren(...nodes);
+    wireCloudPopoverButtons(popover);
+  };
+
+  function updateCheckButtonState() {
+    const hasKey = !!cloudApiKeyEl.value.trim() || cloudCredentialReady();
+    const hasProvider = !!cloudProviderEl.value;
+    // A grey Check now says which half is missing instead of failing quietly.
+    const reasonKey = hasProvider
+      ? (hasKey ? "" : "balloon_cloud_needs_key")
+      : "balloon_cloud_needs_provider";
+    const blocked = !(hasKey && hasProvider);
+    if (typeof markGrayAffordance === "function") {
+      markGrayAffordance(cloudCheckBtn, blocked, reasonKey);
+    } else {
+      cloudCheckBtn.disabled = blocked;
+      if (blocked && reasonKey) cloudCheckBtn.dataset.balloonHelpDisabled = reasonKey;
+      else delete cloudCheckBtn.dataset.balloonHelpDisabled;
+    }
+  }
+
+  // Provider change
+  cloudProviderEl.addEventListener("change", async function () {
+    await ensureClioProviderResolver().catch(() => {});
+    const provider = cloudProviderEl.value;
+    if (provider !== cloudConfig?.provider) window.AISystem6ClioImages?.invalidateCredentials?.();
+    if (provider) window.AISystem6ClioProvider?.setPreference?.("byok");
+    if (!provider) {
+      const credentialId = cloudConfig?.credentialId || "";
+      cloudConfig = null;
+      saveCloudConfig();
+      setCloudRuntimeApiKey("");
+      if (credentialId && !isPublicCloudCredentialMode()) {
+        changeLocalCredential("delete", { credential_id: credentialId }).catch(function () {});
+      }
+      cloudModelSelectEl?.replaceChildren();
+      cloudModelEl.value = "";
+      window.syncCloudModelControls();
+      cloudApiKeyEl.value = "";
+      cloudStatusEl.hidden = true;
+      updateCheckButtonState();
+      applyCloudActiveState();
+      return;
+    }
+    if (!cloudConfig) cloudConfig = {};
+    cloudConfig.provider = provider;
+    cloudConfig.active = false;
+    saveCloudConfig();
+    window.syncCloudCredentialUi();
+    updateCheckButtonState();
+    cloudStatusEl.hidden = true;
+    if (isSubscriptionCloudProvider(provider)) cloudConfig.model = "default";
+    if (isKeychainCloudProvider(provider) && !/^claude-/.test(String(cloudConfig.model || ""))) cloudConfig.model = "claude-opus-5-5";
+    populateCloudModelDropdown(BUILTIN_PROVIDER_MODELS[provider] || []);
+    const models = isSubscriptionCloudProvider(provider) ? [] : await fetchCloudModels(provider);
+    if (models.length) populateCloudModelDropdown(models);
+    if (cloudConfig.model) setCloudModelControlValue(cloudConfig.model);
+    window.syncCloudModelControls();
+  });
+
+  // Model change
+  function handleCloudModelChanged() {
+    if (!cloudConfig) cloudConfig = {};
+    cloudConfig.model = selectedCloudModelValue();
+    cloudConfig.active = false;
+    syncCloudModelContextLength();
+    saveCloudConfig();
+    cloudStatusEl.hidden = true;
+    applyCloudActiveState();
+    window.syncCloudModelControls();
+  }
+  cloudModelSelectEl?.addEventListener("change", handleCloudModelChanged);
+  cloudModelEl.addEventListener("input", handleCloudModelChanged);
+  cloudModelEl.addEventListener("change", handleCloudModelChanged);
+  manualModelFieldsEl?.addEventListener("change", function () {
+    if (!cloudConfig) cloudConfig = {};
+    cloudConfig.modelInputMode = manualModelFieldsEl.checked ? "manual" : "select";
+    cloudConfig.model = selectedCloudModelValue() || cloudConfig.model || "";
+    cloudConfig.active = false;
+    syncCloudModelContextLength();
+    saveCloudConfig();
+    cloudStatusEl.hidden = true;
+    window.syncCloudModelControls();
+    if (typeof syncLocalModelControls === "function") syncLocalModelControls();
+    applyCloudActiveState();
+  });
+
+  // API key change
+  cloudApiKeyEl.addEventListener("input", async function () {
+    if (!cloudConfig) cloudConfig = {};
+    window.AISystem6ClioImages?.invalidateCredentials?.();
+    setCloudRuntimeApiKey(cloudApiKeyEl.value.trim());
+    cloudConfig.credentialMode = cloudRuntimeApiKey
+      ? "byok"
+      : publicSharedCloudAvailable
+        ? "shared"
+        : "";
+    cloudConfig.active = false;
+    await ensureClioProviderResolver().catch(() => {});
+    if (cloudRuntimeApiKey) window.AISystem6ClioProvider?.setPreference?.("byok");
+    saveCloudConfig();
+    updateCheckButtonState();
+    cloudStatusEl.hidden = true;
+    applyCloudActiveState();
+    window.syncCloudCredentialUi();
+  });
+
+  // Check status button. The body is a named function so that other surfaces —
+  // Start Here, above all — can await the settled result instead of clicking
+  // the control and guessing when the check is done.
+  async function runCloudStatusCheck() {
+    setControlLoading(cloudCheckBtn, true, typeof t === "function" ? t("cloud_checking") : "Checking…");
+    let stagedCredentialId = "";
+    try {
+      const staged = await stageCloudCredentialIfNeeded();
+      stagedCredentialId = staged.staged ? staged.credentialId : "";
+      await checkCloudStatus();
+      if (cloudStatusDot.classList.contains("is-connected")) {
+        await persistVerifiedCloudCredential();
+        if (window.tiny?.api && tinyShellLegacyKeyPending) {
+          tinyShellLegacyKeyPending = "";
+          setCloudRuntimeApiKey(""); cloudApiKeyEl.value = "";
+        }
+        cloudConfig.active = true;
+        cloudConfig.credentialMode = cloudCredentialMode();
+        cloudConfig.baseUrl = PROVIDER_BASE_URLS[cloudConfig.provider] || DEEPSEEK_BASE_URL;
+        saveCloudConfig();
+        applyCloudActiveState();
+      } else {
+        await discardStagedCloudCredential(stagedCredentialId);
+        if (stagedCredentialId && cloudConfig?.credentialId === stagedCredentialId) {
+          cloudConfig.credentialId = "";
+          cloudConfig.credentialPersistence = "";
+        }
+        cloudConfig.active = false;
+        saveCloudConfig();
+        applyCloudActiveState();
+      }
+    } catch (error) {
+      console.warn("Website AI connection failed", error);
+      await discardStagedCloudCredential(stagedCredentialId);
+      if (stagedCredentialId && cloudConfig?.credentialId === stagedCredentialId) {
+        cloudConfig.credentialId = "";
+        cloudConfig.credentialPersistence = "";
+      }
+      if (cloudConfig) cloudConfig.active = false;
+      saveCloudConfig();
+      cloudStatusEl.hidden = false;
+      cloudStatusDot.className = "cloud-status-dot is-error";
+      const recovery = window.AISystem6ModelUserErrors?.failure?.(error, {
+        provider: cloudConfig?.provider || "deepseek",
+        kind: "cloud",
+      });
+      cloudStatusText.textContent = recovery
+        ? `${t(recovery.messageKey)} ${t(recovery.actionKey)}`
+        : (window.AISystem6UserRecoveryMessages?.text?.("cloudConnection")
+          || (typeof t === "function" ? t("cloud_connection_failed_message") : "Website AI is unavailable."));
+      if (recovery?.actionId) {
+        window.AISystem6ModelUserErrors?.notify?.(error, {
+          provider: cloudConfig?.provider || "deepseek",
+          kind: "cloud",
+        });
+      }
+      applyCloudActiveState();
+    } finally {
+      setControlLoading(cloudCheckBtn, false);
+      updateCheckButtonState();
+    }
+    return !!cloudConfig?.active;
+  }
+
+  cloudCheckBtn.addEventListener("click", runCloudStatusCheck);
+
+  async function connectWebsiteAi() {
+    if (!publicSharedCloudAvailable) {
+      // The Mac app reaches the same allowance through the website instead of
+      // serving it itself, so "this host has no shared allowance" is the one
+      // case that still has a next step rather than a dead end.
+      if (await connectSharedWebsiteFallback()) return true;
+      setSimpleAiStatus("website_ai_unavailable", "Website AI is unavailable.");
+      if (ownKeyDetails) ownKeyDetails.open = true;
+      return false;
+    }
+    // On a public deployment, verification happens before Website AI is
+    // marked ready, not on the first Generate after a 401. The passive retry
+    // in public-access.js remains as a fallback for every other protected
+    // capability (Reader, Search), but the model entry point verifies first.
+    if (window.AISystem6PublicAccess?.ensureSession) {
+      try {
+        await window.AISystem6PublicAccess.ensureSession();
+      } catch {
+        setSimpleAiStatus("website_ai_verification_cancelled", "Website AI verification was cancelled.");
+        return false;
+      }
+    }
+    window.AISystem6ClioImages?.invalidateCredentials?.();
+    cloudConfig = {
+      ...(cloudConfig || {}),
+      provider: "deepseek",
+      model: cloudConfig?.model || BUILTIN_PROVIDER_MODELS.deepseek[0].id,
+      credentialMode: "shared",
+      active: false,
+    };
+    cloudProviderEl.value = "deepseek";
+    populateCloudModelDropdown(BUILTIN_PROVIDER_MODELS.deepseek);
+    setCloudModelControlValue(cloudConfig.model);
+    saveCloudConfig();
+    updateCheckButtonState();
+    setSimpleAiStatus("website_ai_connecting", "Connecting to website AI…");
+    const connected = await runCloudStatusCheck();
+    setSimpleAiStatus(
+      connected ? "cloud_connected_shared" : "website_ai_unavailable",
+      connected ? "Connected · Site allowance" : "Website AI is unavailable."
+    );
+    return connected;
+  }
+
+  async function readMacSharedSession() {
+    const response = await window.AISystem6Capabilities.requestService("macShared.session", {
+      init: { method: "GET", cache: "no-store" },
+    });
+    if (!response.ok) throw new Error(serviceErrorDetail(response.status, await response.text()));
+    return response.json();
+  }
+
+  async function connectSharedWebsiteFallback() {
+    let session = await readMacSharedSession();
+    if (!session.connected) {
+      const sitekey = String(session.turnstile_site_key || session.sitekey || "");
+      const action = String(session.turnstile_action || "turnstile-spin-v2");
+      if (!session.available || !sitekey) return false;
+      await window.AISystem6PublicAccess?.verifyExternalSession?.({
+        sitekey,
+        action,
+        exchange: async (turnstileToken) => {
+          const response = await window.AISystem6Capabilities.requestService("macShared.session", {
+            init: {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ turnstile_token: turnstileToken }),
+            },
+          });
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok || data.connected !== true) {
+            const error = new Error(data.error || "Website AI verification failed.");
+            error.code = data.code || "mac_shared_session_failed";
+            throw error;
+          }
+        },
+      });
+      session = await readMacSharedSession();
+    }
+    if (!session.connected) return false;
+
+    cloudConfig = {
+      ...(cloudConfig || {}),
+      provider: "deepseek",
+      model: cloudConfig?.model || BUILTIN_PROVIDER_MODELS.deepseek[0].id,
+      baseUrl: DEEPSEEK_BASE_URL,
+      credentialMode: "shared-remote",
+      active: true,
+    };
+    saveCloudConfig();
+    if (cloudProviderEl) cloudProviderEl.value = "deepseek";
+    populateCloudModelDropdown(BUILTIN_PROVIDER_MODELS.deepseek);
+    setCloudModelControlValue(cloudConfig.model);
+    applyCloudActiveState();
+    setSimpleAiStatus("cloud_connected_shared", "Connected · Site allowance");
+    syncClioTalkModelAvailability?.();
+    try {
+      const quotaResponse = await window.AISystem6Capabilities.requestService("cloud.quota", {
+        init: { method: "GET", cache: "no-store" },
+      });
+      if (quotaResponse.ok) {
+        const quota = await quotaResponse.json();
+        await ensureClioProviderResolver().catch(() => {});
+        window.AISystem6ClioProvider?.updateQuota?.({
+          state: quota.pool_state,
+          remainingSessionRequests: quota.remaining_session_requests,
+          resetAt: quota.resets_at,
+        });
+      }
+    } catch {}
+    return true;
+  }
+
+  // Where ClioTalk's answers come from is one choice of four, so it is one
+  // radio group, as each era's own preferences draw such a choice. Three push
+  // buttons with the first one wearing the default ring said "press Return
+  // for Website AI" and never said which source was in use.
+  const aiSourceRadios = [...document.querySelectorAll('input[name="ai-source"]')];
+  const autoAiRadio = document.querySelector("#ai-source-auto");
+
+  window.syncAiSourceChoice = function () {
+    const current = typeof clioProviderPreference === "string" ? clioProviderPreference : "auto";
+    aiSourceRadios.forEach(function (radio) {
+      radio.checked = radio.value === current;
+    });
+  };
+
+  async function chooseAiSource(value) {
+    await ensureClioProviderResolver().catch(() => {});
+    window.AISystem6ClioProvider?.setPreference?.(value);
+    window.syncAiSourceChoice();
+  }
+
+  autoAiRadio?.addEventListener("change", function () {
+    chooseAiSource("auto");
+  });
+
+  websiteAiButton?.addEventListener("change", async function () {
+    await chooseAiSource("website");
+    connectWebsiteAi();
+  });
+
+  localAiButton?.addEventListener("change", async function () {
+    window.AISystem6ClioImages?.invalidateCredentials?.();
+    await chooseAiSource("local");
+    if (typeof setControlTab === "function") setControlTab("local");
+    document.getElementById("detect-local-models")?.focus();
+  });
+
+  advancedAiButton?.addEventListener("change", async function () {
+    await chooseAiSource("byok");
+    if (ownKeyDetails) ownKeyDetails.open = true;
+    ownKeyDetails?.querySelector("summary")?.focus();
+  });
+
+  window.addEventListener?.("ai-system6:clio-provider", function () {
+    window.syncAiSourceChoice();
+  });
+  window.syncAiSourceChoice();
+
+  // isPublicCloudCredentialMode() reads a dataset attribute that /api/capabilities
+  // sets asynchronously — on first paint it always reads "not public" before
+  // that response lands. An ordinary boot never notices: cloudRuntimeApiKey
+  // stays empty until the user acts, long after capabilities have resolved.
+  // A key just migrated out of browser storage is the one case where
+  // cloudRuntimeApiKey is already set this early, so it is the one case that
+  // must wait for the real profile — routing it on the pre-response guess
+  // would send a public deployment's migrated key down the local Keychain
+  // path (which does not exist there), and it would be lost outright.
+  function restoreCloudCredentialAfterBoot(legacyCloudKeyMigrated) {
+    if (window.tiny?.api && tinyShellLegacyKeyPending) return;
+    const profileKnown = legacyCloudKeyMigrated && cloudRuntimeApiKey && window.AISystem6PublicAccess?.getCapabilities
+      ? window.AISystem6PublicAccess.getCapabilities().catch(function () {})
+      : Promise.resolve();
+    profileKnown.then(function () {
+      if (cloudRuntimeApiKey && !isPublicCloudCredentialMode()) {
+        stageCloudCredentialIfNeeded()
+          .then(updateCheckButtonState)
+          .catch(function () {
+            cloudApiKeyEl.value = "";
+            setCloudRuntimeApiKey("");
+            updateCheckButtonState();
+            // The local service that keeps the key in the Keychain could not
+            // take it just now, so the migrated key is gone rather than staged
+            // — the one case this boot where a working key really is discarded.
+            if (legacyCloudKeyMigrated) notifyCloudKeyLeftBrowserStorage();
+          });
+      } else {
+        verifyRestoredCloudCredential();
+        // Public BYOK: the key still works for this tab (it lives in
+        // cloudRuntimeApiKey now), but it will not survive the next reload —
+        // say so once, the same boot it left storage.
+        if (legacyCloudKeyMigrated && isPublicCloudCredentialMode()) {
+          notifyCloudKeyLeftBrowserStorage();
+        }
+      }
+    });
+  }
+
+  window.migrateTinyShellCloudCredential = async function () {
+    if (!window.tiny?.api || !tinyShellLegacyKeyPending) return;
+    const previous = { ...cloudConfig }, key = tinyShellLegacyKeyPending;
+    try {
+      const staged = await stageCloudCredentialIfNeeded();
+      await checkCloudStatus();
+      if (!cloudStatusDot.classList.contains("is-connected")) throw new Error(t("native_key_failed"));
+      await persistVerifiedCloudCredential();
+      const available = await changeLocalCredential("available", {
+        credential_id: staged.credentialId, provider: cloudConfig.provider,
+        base_url: PROVIDER_BASE_URLS[cloudConfig.provider] || DEEPSEEK_BASE_URL,
+      });
+      if (!available.available || cloudConfig.credentialPersistence !== "keychain") throw new Error(t("native_key_failed"));
+      tinyShellLegacyKeyPending = "";
+      setCloudRuntimeApiKey(""); cloudApiKeyEl.value = "";
+      saveCloudConfig(); updateCheckButtonState();
+    } catch (e) {
+      cloudConfig = previous; tinyShellLegacyKeyPending = key;
+      setCloudRuntimeApiKey(key); cloudApiKeyEl.value = "";
+      updateCheckButtonState(); throw e;
+    }
+  };
+
+  // Restore saved config
+  loadCloudConfig();
+  const legacyCloudKeyMigrated = typeof consumeCloudLegacyKeyMigration === "function"
+    && consumeCloudLegacyKeyMigration();
+  if (cloudConfig && cloudConfig.provider) {
+    cloudProviderEl.value = cloudConfig.provider;
+    cloudApiKeyEl.value = "";
+    populateCloudModelDropdown(BUILTIN_PROVIDER_MODELS[cloudConfig.provider] || []);
+    fetchCloudModels(cloudConfig.provider).then(function (models) {
+      if (models.length) populateCloudModelDropdown(models);
+      if (cloudConfig.model) setCloudModelControlValue(cloudConfig.model);
+      window.syncCloudModelControls();
+    });
+    applyCloudActiveState();
+    restoreCloudCredentialAfterBoot(legacyCloudKeyMigrated);
+  } else {
+    window.syncCloudModelControls();
+  }
+  // The public site hands every visitor a working model with no setup step:
+  // the shared allowance is the default connection, not an offer behind a
+  // button. Verification, if the deployment asks for one, happens on the first
+  // protected request through the public-access gate. A key of the user's own
+  // or a local model replaces this at any time, and the daily-limit message is
+  // what invites BYOK — not a form on the first screen.
+  function enableWebsiteAiByDefault() {
+    if (!publicSharedCloudAvailable || !isPublicCloudCredentialMode()) return false;
+    if (cloudRuntimeApiKey || cloudConfig?.credentialId || cloudConfig?.active) return false;
+    if (typeof localModelState !== "undefined" && (localModelState?.ready || localModelState?.loaded)) return false;
+
+    cloudConfig = {
+      ...(cloudConfig || {}),
+      provider: "deepseek",
+      model: cloudConfig?.model || BUILTIN_PROVIDER_MODELS.deepseek[0].id,
+      baseUrl: DEEPSEEK_BASE_URL,
+      credentialMode: "shared",
+      active: true,
+    };
+    saveCloudConfig();
+    if (cloudProviderEl) cloudProviderEl.value = "deepseek";
+    populateCloudModelDropdown(BUILTIN_PROVIDER_MODELS.deepseek);
+    setCloudModelControlValue(cloudConfig.model);
+    applyCloudActiveState();
+    setSimpleAiStatus("cloud_connected_shared", "Connected · Site allowance");
+    if (typeof syncClioTalkModelAvailability === "function") syncClioTalkModelAvailability();
+    return true;
+  }
+
+  // A fresh desk connects itself to the site's shared allowance over the bridge
+  // the Control Panel already offers as "Use Website AI" — the session, the
+  // one-time verification and the shared-remote mode all existed; nothing used
+  // them until somebody found the button, so a new install met "Model not
+  // connected" on its first screen. Anything the writer chose wins over this.
+  let sharedDefaultAttempted = false;
+
+  function connectSharedAiOnFirstRun(capabilities) {
+    const target = String(capabilities?.deployment_target || document.documentElement.dataset.deploymentTarget || "static");
+    // Only the macOS shell: /api/mac-shared/session belongs to it, and asking
+    // from a browser leaves a 404 in a console the release walk requires clean.
+    if (sharedDefaultAttempted || target !== "mac") return false;
+    if ((clioProviderPreference && clioProviderPreference !== "auto")
+      || cloudRuntimeApiKey || cloudConfig?.credentialId || cloudConfig?.active
+      || localModelState?.ready || localModelState?.loaded) return false;
+    sharedDefaultAttempted = true;
+    connectSharedWebsiteFallback().then(function (ready) {
+      if (!ready) setSimpleAiStatus("website_ai_unavailable", "Website AI is unavailable. Use your own API key or a local model.");
+    }).catch(function () {
+      setSimpleAiStatus("website_ai_unavailable", "Website AI is unavailable. Use your own API key or a local model.");
+    });
+    return true;
+  }
+
+  window.AISystem6PublicAccess?.getCapabilities?.().then(function (capabilities) {
+    setPublicSharedCloudAvailable(capabilities?.features?.cloud_shared === true);
+    const connected = enableWebsiteAiByDefault();
+    updateCheckButtonState();
+    window.syncCloudCredentialUi();
+    if (!connected) connectSharedAiOnFirstRun(capabilities);
+  });
+
+  window.AISystem6CloudModel = Object.freeze({
+    connectWebsiteAi,
+    connectSharedWebsiteFallback,
+    enableWebsiteAiByDefault,
+    websiteAiAvailable: () => publicSharedCloudAvailable,
+    revealOwnKeyFields() {
+      if (ownKeyDetails) ownKeyDetails.open = true;
+      cloudApiKeyEl?.focus();
+    },
+  });
+  updateCheckButtonState();
+  window.syncCloudCredentialUi();
+})();
+
+// Update boot screen
+(function () {
+  const bootEl = document.querySelector("#boot-local-model");
+  if (bootEl && cloudConfig && cloudConfig.active && cloudConfig.model) {
+    bootEl.textContent = (typeof t === "function" ? t("boot_model_pending") : "LLM") + ": " + cloudConfig.model;
+  }
+})();
+
+// Reset usage button
+(function () {
+  const section = document.querySelector(".control-cloud-section");
+  if (!section) return;
+  const btn = document.createElement("button");
+  btn.className = "btn control-wide-button";
+  btn.type = "button";
+  // The bundle boots before the language table is ready, so t() can return
+  // the key itself here. Attach the key to data-i18n instead: the app's
+  // language sweep fills the label once translations load (and on every
+  // language switch), keeping zh/en in sync.
+  btn.dataset.i18n = "cloud_reset_usage";
+  btn.textContent = "";
+  btn.style.marginTop = "4px";
+  btn.addEventListener("click", function () {
+    localStorage.removeItem("ai-system6-cloud-usage");
+    if (typeof refreshCloudUsageDisplay === "function") refreshCloudUsageDisplay();
+  });
+  section.appendChild(btn);
+})();

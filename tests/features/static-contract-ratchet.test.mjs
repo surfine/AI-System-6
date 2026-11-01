@@ -1,0 +1,226 @@
+// Ratchet, not a feature contract about the app: this counts how many
+// tests/features/*.test.mjs files are STATIC ONLY — they read source with
+// assertIncludes/assertMatches (tests/helpers/feature-test-harness.mjs) and
+// never execute real app code — and fails if that count rises above the
+// budget in tooling/static-contract-budget.json. It mirrors the precedent in
+// tooling/css-budget.json: a number that may only fall, with the file's own
+// "_note" explaining how to lower or (rarely, with justification) raise it.
+//
+// Why this exists: 253 static contracts stayed green while 20 route commands
+// were dead, a Finder list overflowed in all six eras, and Control Panel
+// could not be typed into. A static contract reads the shape of the source —
+// it cannot see whether the wiring it describes actually runs. Converting
+// the whole suite in one pass was explicitly not the goal (see the lane's
+// report); this ratchet is what keeps the conversion from stalling at
+// today's three contracts once this task's session ends. Every new feature
+// test should execute real app code — see the harnesses named in
+// tooling/static-contract-budget.json — and every converted contract lowers
+// this number by exactly one, verified in the same commit.
+
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { createFeatureTest, forEachAstChild, parseJsSource, root } from "../helpers/feature-test-harness.mjs";
+
+const test = createFeatureTest("static-contract-ratchet");
+
+const featureDir = join(root, "tests/features");
+const budgetPath = join(root, "tooling/static-contract-budget.json");
+const budget = JSON.parse(readFileSync(budgetPath, "utf8"));
+
+// A file counts as "executing" if it reaches real app code through any of
+// the shared VM harnesses, or builds its own VM directly with node:vm — the
+// same union ~100 existing feature tests already use.
+//
+// The explicitly listed files are infrastructure ABOUT the suite rather than contracts about
+// the app, and are excluded from both sides of the count: this ratchet, and
+// gate-self-proof, which builds each gate's own defect from a fixture or a
+// temporary git repository and requires the gate to go red. The development
+// feedback and generator-cache contracts likewise execute tooling in temporary
+// projects and exercise failures, log bounds and cache invalidation. None makes a
+// claim about the product, so neither belongs in a budget that measures how
+// much of the product is claimed without being executed. Every other file in
+// tests/features/ is counted, whatever it does.
+//
+// The signal is read from the file's IMPORT SPECIFIERS, not from its text.
+// A raw text search made the ratchet defeatable by a comment: writing
+// `// this file does not use node:vm` in a purely static contract moved it
+// into the executing column and bought a free slot under the budget. An
+// import is the thing that actually reaches the app; a comment is not.
+// Two kinds of reach, both real: a VM harness that runs the app's own code, and
+// an import of a deployed server's own modules. The second was added when the
+// public deployment grew code worth testing — `functions/_lib/*` and
+// `functions/api/*` ARE the shipped server on Pages, and `workers/*` is the
+// deployed Durable Object; a contract that imports them runs the route, its
+// validation and its ledger rather than reading text about them.
+// `apps/server/server/routes/*` is the same thing on the other deployment: the
+// VPS serves those modules as its endpoints, so a contract that requires one
+// and drives it — `tests/features/one-more-tune-preview-relay.test.mjs` calls
+// the relay's handler and counts what it fetches — runs the shipped code, and
+// counting it as a reading of source would be the measurement lying. The routes
+// are named rather than all of apps/server: importing a data module is not
+// executing an endpoint, and a signal that wide would hand the whole server
+// tree's neighbours a slot each.
+const executingSignal = /node:vm|boot-vm\.mjs|draft-desk-vm\.mjs|write-lease-vm\.mjs|backup-vm\.mjs|app-boot-vm\.mjs|^\.\.\/\.\.\/(?:functions\/(?:_lib|api)|workers|apps\/server|platform\/macos\/tinyjs\/src\/node)\//;
+const suiteInfrastructure = new Set([
+  "static-contract-ratchet.test.mjs",
+  "gate-self-proof.test.mjs",
+  "development-feedback.test.mjs",
+  "generated-assets-cache.test.mjs",
+  // Executes the snapshot retry helper and checks its wiring: tooling
+  // infrastructure, like the generator-cache contract above.
+  "appearance-snapshot-retry.test.mjs",
+  // Runs the shared-control gate's own self-test in a browser and requires each
+  // historical defect to be rejected. That is a claim about the GATE, the way
+  // gate-self-proof above is, not about the product — the history it replays is
+  // the gate's, not the app's.
+  "visual-primitives.test.mjs",
+  // Execute packaging policy and publication validation, with actual pinned
+  // patch inputs and invalid manifests. These exercise tooling, not app UI.
+  "tinyjs-packaging.test.mjs",
+  "tinyjs-ota-publish.test.mjs",
+  // Runs the Intel/Monterey legacy line's Mach-O gate against real binaries
+  // (a cloned node standing in for a wrong-architecture canvas.node).
+  "mac-legacy-build.test.mjs",
+  // Runs the release checkpoint CLI for real in a temporary tree and holds it
+  // to the bank path the orchestrator writes. It makes a claim about the
+  // release tooling, not about the product, so it belongs on this side of the
+  // count like the two above.
+  "release-step-resume.test.mjs",
+]);
+
+/** Every module specifier the file imports, static or dynamic. */
+function importSpecifiers(source) {
+  const specifiers = [];
+  const visit = (node) => {
+    if (
+      (node.type === "ImportDeclaration"
+        || node.type === "ExportNamedDeclaration"
+        || node.type === "ExportAllDeclaration")
+      && node.source?.type === "Literal"
+    ) {
+      specifiers.push(String(node.source.value));
+    }
+    if (node.type === "ImportExpression" && node.source?.type === "Literal") {
+      specifiers.push(String(node.source.value));
+    }
+    if (
+      node.type === "CallExpression"
+      && node.callee?.type === "Identifier"
+      && node.callee.name === "require"
+      && node.arguments[0]?.type === "Literal"
+    ) {
+      specifiers.push(String(node.arguments[0].value));
+    }
+    forEachAstChild(node, visit);
+  };
+  visit(parseJsSource(source));
+  return specifiers;
+}
+
+/**
+ * Does the file spawn the real server, or compile the shipped native helper?
+ *
+ * That is the strongest form of what this ratchet asks for — a VM harness runs
+ * the app's code, a spawned server runs the whole product including its
+ * routing, its guards and its process boundary — and it has no import to read,
+ * because the path is an argument. The Swift download contract likewise compiles
+ * the shipped Downloads.swift and executes the resulting binary against real
+ * files, including an existing file and a symlink target. It is taken from the syntax tree and
+ * never from the text: a comment naming the same call must not buy a slot, the
+ * way one did before the import rule landed.
+ */
+function spawnsRealServer(source) {
+  let found = false;
+  const visit = (node) => {
+    if (found) return;
+    if (
+      node.type === "CallExpression"
+      && /^(spawn|spawnSync|fork|execFile|execFileSync)$/.test(node.callee?.name || "")
+      && node.arguments.some((argument) => (
+        (argument.type === "Literal" && /(?:apps\/server\/server\.js|platform\/macos\/tinyjs\/native\/Downloads\.swift)$/.test(String(argument.value)))
+        || (argument.type === "ArrayExpression" && argument.elements.some((element) => (
+          element?.type === "Literal" && /(?:apps\/server\/server\.js|platform\/macos\/tinyjs\/native\/Downloads\.swift)$/.test(String(element.value))
+        )))
+      ))
+    ) {
+      found = true;
+      return;
+    }
+    forEachAstChild(node, visit);
+  };
+  visit(parseJsSource(source));
+  return found;
+}
+
+/**
+ * A test-local module (under tests/) that itself runs code in a VM context — a
+ * fixture builder that loads the shipped adapters with vm.runInContext, or an
+ * editor harness like tests/helpers/quire-editor-vm.mjs. The test that imports
+ * it executes app code exactly as one importing app-boot-vm.mjs does; only the
+ * helper's name differs (learned 2026-10-18 from the ClioWorks S11 round-trip
+ * kits and the ClioWrite events contract). One level deep, and only for files
+ * that both import node:vm and call into a VM context.
+ */
+function importsVmRunningModule(source, fileDir) {
+  return importSpecifiers(source).some((specifier) => {
+    if (!specifier.startsWith(".")) return false;
+    const target = resolve(fileDir, specifier);
+    if (!target.startsWith(join(root, "tests") + "/") || !existsSync(target)) return false;
+    const helper = readFileSync(target, "utf8");
+    return importSpecifiers(helper).includes("node:vm") && /\bvm\.(?:runInContext|runInNewContext|runInThisContext|Script)\b|new\s+vm\.Script\b/.test(helper);
+  });
+}
+
+function executesAppCode(source, fileDir = featureDir) {
+  return importSpecifiers(source).some((specifier) => executingSignal.test(specifier))
+    || spawnsRealServer(source)
+    || importsVmRunningModule(source, fileDir);
+}
+
+function collectTestFiles(dir, base = "") {
+  const out = [];
+  readdirSync(dir, { withFileTypes: true }).forEach((entry) => {
+    const relative = join(base, entry.name);
+    const absolute = join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...collectTestFiles(absolute, relative));
+    else if (entry.name.endsWith(".test.mjs")) out.push(relative);
+  });
+  return out;
+}
+
+const allTestFiles = collectTestFiles(featureDir).filter((relative) => !suiteInfrastructure.has(relative));
+test.assert(
+  allTestFiles.length > 200,
+  allTestFiles.length > 200
+    ? `scanned ${allTestFiles.length} feature test files (sanity floor: 200, catches a broken scan rather than a small suite)`
+    : `found only ${allTestFiles.length} feature test files — the scan looks broken, not the suite`
+);
+
+const staticOnlyFiles = allTestFiles.filter(
+  (relative) => !executesAppCode(readFileSync(join(featureDir, relative), "utf8"), dirname(join(featureDir, relative))),
+);
+
+test.assert(
+  typeof budget.staticOnlyFeatureContracts === "number",
+  "tooling/static-contract-budget.json declares staticOnlyFeatureContracts as a number"
+);
+
+test.assert(
+  staticOnlyFiles.length <= budget.staticOnlyFeatureContracts,
+  staticOnlyFiles.length > budget.staticOnlyFeatureContracts
+    ? `static-only feature contracts rose from ${budget.staticOnlyFeatureContracts} to ${staticOnlyFiles.length} — convert the new one to execute real app code instead of adding another source-reading contract, or lower an existing one first`
+    : `static-only feature contracts: ${staticOnlyFiles.length} (budget ${budget.staticOnlyFeatureContracts})`
+);
+
+// The budget must never go stale in the other direction either: if the real
+// count already sits below the recorded budget, silently allowing that gap to
+// keep widening hides how much conversion has actually happened. This does
+// not fail the gate — only a rise does, matching css-budget.json's own
+// rule — but it prints as a reminder rather than passing in silence.
+if (staticOnlyFiles.length < budget.staticOnlyFeatureContracts) {
+  test.ok(
+    `budget could be lowered to ${staticOnlyFiles.length} (currently ${budget.staticOnlyFeatureContracts}) — edit tooling/static-contract-budget.json to record the conversion`
+  );
+}
+
+test.finish();

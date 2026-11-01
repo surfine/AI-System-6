@@ -1,0 +1,1961 @@
+/* AI System 6 - site 3.0 scene layer.
+   Everything here rides the era tokens defined in site.css: the same DOM
+   re-skins across six release appearances with no layout change. */
+
+/* ---------- The machine (real captured frames) ---------- */
+
+.machine-figure {
+  margin: 0 auto;
+  border: var(--screen-border, 2px solid var(--ink));
+  border-radius: var(--win-radius, 0);
+  box-shadow: var(--win-shadow, 4px 4px 0 rgba(0,0,0,0.55));
+  overflow: hidden;
+  background: #808080;
+}
+html[data-theme] .machine-figure { border: 1px solid rgba(0, 0, 0, 0.45); }
+.machine-figure-narrow { max-width: 860px; }
+.machine-figure-strip { max-width: 960px; }
+
+.machine-port {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  aspect-ratio: var(--machine-aspect);
+}
+.machine-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: auto;
+  transform: var(--machine-transform);
+  transform-origin: 0 0;
+  opacity: 1;
+  transition: transform 0.45s ease, opacity 0.28s ease;
+}
+.machine-frame.is-under { position: absolute; }
+.machine-frame.is-loading { opacity: 0; transition: transform 0.45s ease, opacity 0s; }
+.machine-error {
+  margin: 0;
+  padding: 28px 18px;
+  background: var(--win-bg, var(--paper));
+  color: var(--ink);
+  text-align: center;
+}
+.machine-error[hidden] { display: none; }
+.machine-error a { color: inherit; font-weight: bold; }
+.machine-has-error .machine-port { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .machine-frame { transition: none; }
+}
+
+.machine-provenance {
+  margin: 10px 0 14px;
+  font-family: var(--mono-font);
+  font-size: 13px;
+  color: var(--note-ink, var(--ink));
+}
+:root:not([data-theme]) .machine-provenance {
+  background: var(--paper);
+  display: table;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 1px 10px;
+  border: 1px solid var(--ink);
+}
+html[data-theme] .machine-provenance { color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.4); }
+html[data-theme="liquid-glass"] .machine-provenance { color: #1c2733; text-shadow: none; }
+
+.model-providers {
+  display: flex;
+  justify-content: center;
+  gap: 26px;
+  flex-wrap: wrap;
+  margin: 18px 0 10px;
+}
+.model-providers > span {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--ink);
+}
+html[data-theme] .model-providers > span { color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+html[data-theme="liquid-glass"] .model-providers > span { color: #1c2733; text-shadow: none; }
+
+.imp-line { margin: 2px 0 10px; font-size: 13.5px; }
+.imp-actions { margin: 0 0 8px; }
+
+/* ---------- Scene scaffolding ---------- */
+
+.desk { max-width: 980px; }
+
+.scene {
+  margin: 72px 0;
+  text-align: center;
+}
+.scene-wide { margin-left: -8px; margin-right: -8px; }
+
+.scene-head {
+  font-family: var(--display-font);
+  font-size: clamp(30px, 5.4vw, 52px);
+  font-weight: normal;
+  line-height: 1.08;
+  color: var(--head-ink, var(--ink));
+  text-shadow: var(--head-shadow, none);
+  margin: 18px 0 10px;
+}
+.scene-note {
+  color: var(--note-ink, var(--ink));
+  text-shadow: var(--head-shadow, none);
+  font-size: 17px;
+  margin: 8px 0 18px;
+}
+.scene-fine {
+  font-size: 14px;
+  opacity: 0.9;
+  color: var(--note-ink, var(--ink));
+  text-shadow: var(--head-shadow, none);
+}
+/* The hero subtitle carries the positioning, so it reads like a scene note
+   rather than inheriting bare body ink onto the desk pattern. */
+.hero-sub {
+  color: var(--note-ink, var(--ink));
+  text-shadow: var(--head-shadow, none);
+  font-size: 17px;
+  margin: 8px 0 18px;
+}
+
+/* Headlines sit straight on the desk pattern: give them a paper plate in
+   classic (like a title bar plate), soft ink elsewhere. */
+:root:not([data-theme]) .scene-head,
+:root:not([data-theme]) .scene-note,
+:root:not([data-theme]) .scene-fine,
+:root:not([data-theme]) .hero-sub,
+:root:not([data-theme]) .hero-brand,
+:root:not([data-theme]) .scene-kicker {
+  background: var(--paper);
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 2px 14px;
+  border: 1px solid var(--ink);
+}
+:root:not([data-theme]) .scene-head { box-shadow: 2px 2px 0 var(--ink); }
+
+html[data-theme] .scene-head { --head-shadow: 0 1px 2px rgba(0,0,0,0.35); }
+html[data-theme] .scene-head,
+html[data-theme] .hero-sub,
+html[data-theme] .scene-note { color: #fff; }
+html[data-theme="liquid-glass"] .scene-head,
+html[data-theme="liquid-glass"] .hero-sub,
+html[data-theme="liquid-glass"] .scene-note { color: #1c2733; --head-shadow: 0 1px 1px rgba(255,255,255,0.5); }
+html[data-theme] .scene-fine { color: #fff; opacity: 1; }
+html[data-theme="liquid-glass"] .scene-fine { color: #1c2733; }
+
+.js .scene { opacity: 0; }
+.js .scene.scene-in { opacity: 1; animation: scene-in 0.3s steps(5, end); }
+.js .hero-scene { opacity: 1; }
+
+/* Printing never scrolls, so the observer never fires and a scene that was
+   never scrolled past would print as a blank page. Measured with
+   emulateMedia({media:"print"}): 13 of 13 sections still at opacity 0, while
+   the same page without JavaScript is fully readable. Print and the reader
+   modes get the settled state, not the animation's start. */
+@media print {
+  .js .scene { opacity: 1 !important; animation: none !important; transform: none !important; }
+}
+
+@keyframes scene-in {
+  from { opacity: 0.2; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ---------- Hero ---------- */
+
+.hero-scene {
+  text-align: center;
+  margin: 34px 0 90px;
+}
+.hero-brand {
+  font-family: var(--display-font);
+  font-size: 15px;
+  letter-spacing: 0.35em;
+  text-indent: 0.35em;
+  margin-bottom: 14px;
+  color: var(--note-ink, var(--ink));
+  text-shadow: var(--head-shadow, none);
+}
+html[data-theme] .hero-brand { color: #fff; --head-shadow: 0 1px 2px rgba(0,0,0,0.35); }
+html[data-theme="liquid-glass"] .hero-brand { color: #1c2733; --head-shadow: none; }
+
+.hero-head {
+  font-family: var(--display-font);
+  font-size: clamp(38px, 7.4vw, 76px);
+  font-weight: normal;
+  line-height: 1.04;
+  margin: 0 0 18px;
+  color: var(--head-ink, var(--ink));
+  text-shadow: var(--head-shadow, none);
+}
+:root:not([data-theme]) .hero-head {
+  background: var(--paper);
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 6px 26px 10px;
+  border: 2px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+html[data-theme] .hero-head { color: #fff; --head-shadow: 0 2px 4px rgba(0,0,0,0.4); }
+html[data-theme="liquid-glass"] .hero-head { color: #17222e; --head-shadow: 0 1px 0 rgba(255,255,255,0.6); }
+
+.hero-btns { margin-bottom: 30px; }
+
+/* ---------- Mini windows ---------- */
+
+.mini-window {
+  position: absolute;
+  background: var(--win-bg, var(--paper));
+  border: 1px solid var(--win-border, var(--ink));
+  border-radius: var(--win-radius, 0);
+  box-shadow: var(--win-shadow, none);
+  -webkit-backdrop-filter: var(--win-blur, none);
+  backdrop-filter: var(--win-blur, none);
+  overflow: hidden;
+  min-width: 180px;
+}
+.mini-tbar {
+  height: 21px;
+  padding: 2px 4px;
+  cursor: default;
+  touch-action: none;
+}
+.mini-tbar h3 {
+  font-family: var(--site-font, var(--ui-font));
+  font-size: 14px;
+  font-weight: normal;
+  line-height: 15px;
+  background: var(--tbar-title-bg, var(--paper));
+  color: var(--tbar-ink, var(--ink));
+  padding: 0 7px;
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: calc(100% - 40px);
+}
+html[data-theme] .mini-tbar { height: 24px; }
+html[data-theme] .mini-tbar h3 { font-size: 12.5px; font-weight: 600; }
+
+button.close-box {
+  cursor: pointer;
+  padding: 0;
+  appearance: none;
+}
+button.close-box:focus-visible { outline: 2px solid var(--btn-border, var(--ink)); outline-offset: 2px; }
+.mini-tbar .close-box { left: 7px; width: 11px; height: 11px; }
+
+/* Platinum's collapse box: the WindowShade control Mac OS 8 puts on the
+   right end of the title bar. Other eras collapse by double-click only. */
+.shade-box { display: none; }
+html[data-theme="platinum"] .shade-box {
+  display: block;
+  position: absolute;
+  right: 7px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 11px;
+  height: 11px;
+  padding: 0;
+  appearance: none;
+  border: 1px solid #555;
+  background: linear-gradient(135deg, #f4f4f4, #bdbdbd);
+  cursor: pointer;
+}
+html[data-theme="platinum"] .shade-box::after {
+  content: "";
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  top: 4px;
+  height: 1px;
+  background: #555;
+}
+html[data-theme="platinum"] .shade-box:focus-visible { outline: 2px solid #333; outline-offset: 2px; }
+html[data-theme="aqua"] .mini-tbar .close-box,
+html[data-theme="snow-leopard"] .mini-tbar .close-box,
+html[data-theme="yosemite"] .mini-tbar .close-box,
+html[data-theme="big-sur"] .mini-tbar .close-box,
+html[data-theme="liquid-glass"] .mini-tbar .close-box {
+  width: 11px;
+  height: 11px;
+  box-shadow: 17px 0 0 #febc2e, 34px 0 0 #28c840;
+}
+
+.mini-wbody {
+  padding: 10px 12px 12px;
+  font-size: 13.5px;
+  line-height: 1.4;
+  color: var(--ink);
+  text-align: left;
+}
+html[data-theme="liquid-glass"] .mini-wbody { color: #1c1c1e; }
+
+.mini-window.shaded .mini-wbody { display: none; }
+.mini-window.shaded { min-width: 0; }
+
+.win-zoom { animation: win-zoom 0.22s steps(4, end); }
+@keyframes win-zoom {
+  from { transform: scale(0.4); opacity: 0.4; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+/* Mini window content bits */
+.mw-status { font-size: 12.5px; opacity: 0.9; margin: 4px 0 0; }
+/* ---------- Desk icons ---------- */
+
+.desk-icon {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 4px 2px;
+  min-width: 64px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--site-font, var(--ui-font));
+  font-size: 12px;
+  color: inherit;
+  cursor: default;
+}
+.desk-icon:focus-visible { outline: 2px dotted var(--paper); outline-offset: 1px; }
+.desk-icon img { display: block; }
+.desk-icon-label {
+  background: var(--paper);
+  color: var(--ink);
+  padding: 0 4px 1px;
+  line-height: 1.25;
+  max-width: 92px;
+  text-align: center;
+}
+.desk-icon.selected .desk-icon-label { background: var(--ink); color: var(--paper); }
+:root:not([data-theme]) .desk-icon.selected img { filter: invert(1); }
+html[data-theme] .desk-icon.selected img { filter: brightness(0.55); }
+html[data-theme] .desk-icon-label { background: transparent; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.65); }
+html[data-theme="liquid-glass"] .desk-icon-label { color: #1c2733; text-shadow: 0 1px 1px rgba(255,255,255,0.6); }
+html[data-theme] .desk-icon.selected .desk-icon-label { background: var(--sel-bg, rgba(35,80,180,0.85)); color: #fff; border-radius: 4px; text-shadow: none; }
+
+/* Classic + Platinum icons keep their pixel edges at integer scale. */
+:root:not([data-theme]) img.obj-icon,
+html:is([data-theme="system-7"], [data-theme="platinum"], [data-theme="drawing-board"]) img.obj-icon { image-rendering: pixelated; }
+
+/* ---------- Era strip ---------- */
+
+.era-strip {
+  margin: 18px auto 0;
+  max-width: 660px;
+  padding: 12px 18px 10px;
+  background: var(--win-bg, var(--paper));
+  border: 1px solid var(--win-border, var(--ink));
+  border-radius: var(--win-radius, 0);
+  box-shadow: var(--win-shadow, 2px 2px 0 var(--ink));
+  -webkit-backdrop-filter: var(--win-blur, none);
+  backdrop-filter: var(--win-blur, none);
+}
+.era-strip-big { max-width: 760px; padding: 16px 22px 12px; }
+
+.era-range {
+  display: block;
+  width: 100%;
+  margin: 2px 0 6px;
+  appearance: none;
+  -webkit-appearance: none;
+  height: 22px;
+  background: transparent;
+}
+.era-range::-webkit-slider-runnable-track {
+  height: 4px;
+  background: var(--ink);
+  border-radius: var(--btn-radius, 0);
+}
+.era-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -8px;
+  background: var(--btn-bg, var(--paper));
+  border: 2px solid var(--ink);
+  border-radius: var(--btn-radius, 2px);
+  box-shadow: var(--btn-shadow, 1px 1px 0 var(--ink));
+  cursor: ew-resize;
+}
+.era-range::-moz-range-track { height: 4px; background: var(--ink); border-radius: var(--btn-radius, 0); }
+.era-range::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: var(--btn-bg, var(--paper));
+  border: 2px solid var(--ink);
+  border-radius: var(--btn-radius, 2px);
+  cursor: ew-resize;
+}
+.era-range:focus-visible { outline: 2px dotted var(--ink); outline-offset: 4px; }
+
+.era-ticks {
+  display: flex;
+  justify-content: space-between;
+}
+.era-tick {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 2px 4px;
+  font-family: var(--site-font, var(--ui-font));
+  font-size: 13px;
+  color: var(--ink);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 44px;
+}
+.era-tick-year { font-family: var(--mono-font); font-size: 12px; }
+.era-tick-name { font-size: 13px; }
+.era-tick.is-active .era-tick-year,
+.era-tick.is-active .era-tick-name { background: var(--ink); color: var(--paper); padding: 0 4px; }
+.era-tick:focus-visible { outline: 2px dotted var(--ink); outline-offset: 2px; }
+.era-actions { margin-top: 16px; }
+.btn-glyph svg { vertical-align: -3px; margin-right: 4px; }
+.cycle-stop { display: none; }
+#cycle-btn.is-cycling .cycle-play { display: none; }
+#cycle-btn.is-cycling .cycle-stop { display: block; }
+
+/* ---------- Route scene ---------- */
+
+.route-stage { margin-bottom: 14px; }
+.route-belt {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  padding: 14px 10px 10px;
+  background: var(--win-bg, var(--paper));
+  border: 1px solid var(--win-border, var(--ink));
+  border-radius: var(--win-radius, 0);
+  box-shadow: var(--win-shadow, 2px 2px 0 var(--ink));
+  -webkit-backdrop-filter: var(--win-blur, none);
+  backdrop-filter: var(--win-blur, none);
+}
+.route-obj {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 4px 6px;
+  min-width: 84px;
+  min-height: 44px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--site-font, var(--ui-font));
+  font-size: 12.5px;
+  color: var(--ink);
+  cursor: pointer;
+}
+.route-obj-label { padding: 0 4px 1px; max-width: 110px; line-height: 1.25; }
+.route-obj.is-active .route-obj-label { background: var(--ink); color: var(--paper); }
+html[data-theme] .route-obj.is-active .route-obj-label { background: var(--sel-bg, rgba(35,80,180,0.85)); color: #fff; border-radius: 4px; }
+.route-obj:focus-visible { outline: 2px dotted var(--ink); outline-offset: 2px; }
+
+/* The route belt is an ordered list of stops, so the numbers carry the
+   sequence and no icon family has to be shipped twice. */
+.route-step { display: contents; }
+.route-ordinal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--ink);
+  border-radius: var(--win-radius, 0);
+  font-size: 11px;
+  line-height: 1;
+}
+.route-obj.is-active .route-ordinal { background: var(--ink); color: var(--paper); }
+html[data-theme] .route-obj.is-active .route-ordinal {
+  background: var(--sel-bg, rgba(35,80,180,0.85));
+  border-color: transparent;
+  color: #fff;
+}
+
+/* The panel is a window surface, not floating text: copy set straight on the
+   desk pattern loses contrast in every era except classic. */
+.route-panel {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+  padding: 14px 16px;
+  background: var(--win-bg, var(--paper));
+  border: 1px solid var(--win-border, var(--ink));
+  border-radius: var(--win-radius, 0);
+  box-shadow: var(--win-shadow, 2px 2px 0 var(--ink));
+  -webkit-backdrop-filter: var(--win-blur, none);
+  backdrop-filter: var(--win-blur, none);
+}
+.route-panel:not(:has(.route-shot)) { grid-template-columns: minmax(0, 1fr); }
+.route-shot { margin: 0; }
+.route-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--win-border, var(--ink));
+  border-radius: var(--win-radius, 0);
+  box-shadow: var(--win-shadow, 2px 2px 0 var(--ink));
+}
+.route-shot figcaption {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--note-ink, var(--ink));
+}
+/* Prose, so it reads from the left even though the scene is centred. */
+.route-text { text-align: left; }
+.route-stop-head { margin: 0 0 4px; font-size: 15px; }
+.route-stop-lede { margin: 0 0 8px; font-size: 15px; font-weight: 700; }
+.route-stop-note { margin: 0; font-size: 14px; line-height: 1.5; }
+/* Inside the panel the text sits on the window surface, so it inherits the
+   window's ink in every era and needs no per-theme override. */
+
+/* ---------- Nothing saves itself ---------- */
+
+.temp-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 12px;
+}
+.temp-card {
+  padding: 12px 14px;
+  background: var(--win-bg, var(--paper));
+  border: 1px solid var(--win-border, var(--ink));
+  border-radius: var(--win-radius, 0);
+  box-shadow: var(--win-shadow, 2px 2px 0 var(--ink));
+  -webkit-backdrop-filter: var(--win-blur, none);
+  backdrop-filter: var(--win-blur, none);
+}
+.temp-card { text-align: left; }
+.temp-card h3 { margin: 0 0 6px; font-size: 14px; }
+.temp-card p { margin: 0; font-size: 13.5px; line-height: 1.5; }
+/* Desk accessories put their real capture above the caption. The shot is a
+   small window with its own aspect, so it scales to fit a fixed strip instead
+   of being cropped or stretched. */
+.accessory-card { display: flex; flex-direction: column; }
+.accessory-shot {
+  display: block;
+  width: 100%;
+  height: 190px;
+  object-fit: contain;
+  object-position: center;
+  margin: 0 0 10px;
+  background: transparent;
+}
+
+/* ---------- Chat is an app: the comparison ---------- */
+
+.compare-wall {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.compare-col {
+  padding: 12px 14px;
+  background: var(--win-bg, var(--paper));
+  border: 1px solid var(--win-border, var(--ink));
+  border-radius: var(--win-radius, 0);
+  box-shadow: var(--win-shadow, 2px 2px 0 var(--ink));
+  -webkit-backdrop-filter: var(--win-blur, none);
+  backdrop-filter: var(--win-blur, none);
+}
+.compare-col { text-align: left; }
+.compare-col h3 { margin: 0 0 8px; font-size: 14px; }
+.compare-col ul { margin: 0; padding-left: 18px; }
+.compare-col li { font-size: 13.5px; line-height: 1.5; margin-bottom: 4px; }
+.compare-col.is-ours { border-width: 2px; }
+
+/* ---------- Finder window (impossible) ---------- */
+
+.finder-window {
+  background: var(--win-bg, var(--paper));
+  border: 1px solid var(--win-border, var(--ink));
+  border-radius: var(--win-radius, 0);
+  box-shadow: var(--win-shadow, 3px 3px 0 var(--ink));
+  -webkit-backdrop-filter: var(--win-blur, none);
+  backdrop-filter: var(--win-blur, none);
+  overflow: hidden;
+  text-align: left;
+}
+.finder-window .tbar h2 {
+  font-size: 16px;
+  max-width: calc(100% - 56px);
+}
+.finder-status {
+  font-size: 12px;
+  color: var(--ink);
+  padding: 3px 12px;
+  border-bottom: 1px solid var(--win-border, var(--ink));
+  white-space: pre;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Four icons, centred as a row. An auto-fill grid spread them across seven
+   columns and left the folder looking half unpacked. */
+.finder-body {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 136px));
+  justify-content: center;
+  gap: 14px 6px;
+  padding: 16px 14px 22px;
+  /* Only tall enough to hold the card a double click opens; the folder used to
+     reserve room for eight icons and kept the empty half. */
+  min-height: 156px;
+}
+/* The wall of proof. Four real captures, visible without a click, because the
+   double take is the whole scene and a double take behind an interaction is a
+   double take that never happens. */
+.proof-wall {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding: 16px 14px 4px;
+}
+/* The games strip stands alone in its scene, outside a finder window. */
+.games-wall {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  max-width: 1080px;
+  margin: 18px auto 6px;
+  padding: 0 14px;
+}
+.games-shot { aspect-ratio: 4 / 3; }
+.proof-card {
+  margin: 0;
+  border: 1px solid var(--win-border, var(--ink));
+  border-radius: var(--win-radius, 0);
+  background: var(--paper);
+  overflow: hidden;
+}
+.proof-shot {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  /* Anchored to the top: these windows put their work under the title bar and
+     several of them leave a lot of empty desk at the bottom. */
+  object-position: top center;
+  border-bottom: 1px solid var(--win-border, var(--ink));
+  background: var(--paper);
+}
+.proof-cap {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 2px 10px;
+  padding: 9px 11px 11px;
+  align-items: center;
+}
+.proof-cap .obj-icon { grid-row: span 2; align-self: start; }
+.proof-label {
+  font-family: var(--display-font);
+  font-size: 15px;
+  line-height: 1.2;
+  color: var(--ink);
+}
+.proof-line {
+  grid-column: 2;
+  font-size: 14px;
+  line-height: 1.35;
+  opacity: 0.75;
+  color: var(--ink);
+}
+
+/* The claim belongs against the evidence, not a screen further down. */
+.proof-note {
+  margin: 0;
+  padding: 10px 16px 2px;
+  font-size: 13px;
+  text-align: center;
+  opacity: 0.75;
+  color: var(--ink);
+}
+
+.finder-more {
+  margin: 8px 0 0;
+  padding: 12px 16px 0;
+  border-top: 1px solid var(--win-border, var(--ink));
+  font-size: 13px;
+  text-align: center;
+  opacity: 0.75;
+  color: var(--ink);
+}
+
+.finder-item { min-height: 64px; }
+.finder-item .desk-icon-label { background: transparent; color: var(--ink); }
+.finder-item.selected .desk-icon-label { background: var(--ink); color: var(--paper); }
+html[data-theme] .finder-item .desk-icon-label { text-shadow: none; }
+html[data-theme] .finder-item.selected .desk-icon-label { background: var(--sel-bg, rgba(35,80,180,0.85)); color: #fff; }
+
+.demo-window {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(320px, 86%);
+  z-index: 8;
+}
+
+/* ---------- Six appearances, one argument ----------
+   A Finder list view, used as a type specimen sheet. Every row carries its own
+   era's system face in --row-face and that era's monospace in --row-mono, both
+   set inline from js/argument.js out of the single token block in site.css. So
+   the six faces stand next to each other no matter which year the page itself
+   is wearing, which is the only way the argument is visible in one glance. */
+
+.claim-window { max-width: 760px; margin: 0 auto; }
+
+.claim-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.claim-row + .claim-row { border-top: 1px solid var(--win-border, var(--ink)); }
+/* A branch is not the next stop on the line: a double rule and a gap say so. */
+.claim-row + .claim-row.is-branch { border-top: 3px double var(--win-border, var(--ink)); margin-top: 10px; }
+/* The branch scene shows one whole capture: a 16:10 frame, never cropped. */
+.branch-card .proof-shot { height: auto; }
+
+.claim-hit {
+  display: grid;
+  grid-template-columns: 32px 62px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0 14px;
+  width: 100%;
+  padding: 12px 16px;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+.claim-icon { display: block; width: 32px; height: 32px; }
+/* Each icon is pixelated by its own year, not by the page's: 1988 and 1999
+   drew at 32 pixels and meant it. The later rows are smooth art. */
+.claim-row[data-era="classic"] .claim-icon,
+.claim-row[data-era="system-7"] .claim-icon,
+.claim-row[data-era="platinum"] .claim-icon,
+.claim-row[data-era="drawing-board"] .claim-icon { image-rendering: pixelated; }
+
+/* The year is set in the monospace of its own decade: Monaco until 2009, then
+   Menlo, then SF Mono. Three faces nobody announces, which is the point. */
+.claim-year {
+  justify-self: start;
+  font-family: var(--row-mono, var(--mono-font));
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  opacity: 0.8;
+}
+.claim-body { min-width: 0; font-family: var(--row-face, var(--site-font, var(--ui-font))); }
+.claim-era { font-size: 16px; }
+.claim-role {
+  font-size: 13px;
+  opacity: 0.8;
+  margin-left: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.claim-text { display: block; font-size: 14px; margin-top: 2px; }
+.claim-face {
+  font-family: var(--row-mono, var(--mono-font));
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
+.claim-hit:hover .claim-text,
+.claim-hit:focus-visible .claim-text { text-decoration: underline; }
+/* Finder selection: the row you are standing in is inverted, like a selected
+   list item, not decorated with a badge the Finder never had. */
+.claim-row.is-current .claim-era {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0 4px;
+}
+html[data-theme] .claim-row.is-current .claim-era {
+  background: var(--sel-bg, rgba(35, 80, 180, 0.85));
+  color: #fff;
+}
+.claim-row.is-current .claim-year { opacity: 1; }
+
+.claim-kicker {
+  font-family: var(--display-font);
+  font-size: clamp(17px, 2.4vw, 22px);
+  text-align: center;
+  padding: 14px 16px 16px;
+  margin: 0;
+  border-top: 1px solid var(--win-border, var(--ink));
+}
+
+@media (max-width: 700px) {
+  .claim-hit { grid-template-columns: 32px minmax(0, 1fr); gap: 2px 12px; padding: 12px 14px; }
+  .claim-year { grid-column: 2; font-size: 12px; }
+  .claim-body { grid-column: 2; }
+  .claim-face { grid-column: 2; }
+  .claim-role { display: block; margin: 2px 0 0; }
+}
+
+/* ---------- Two floppies ---------- */
+
+.floppy-wall {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px 28px;
+  align-items: end;
+  margin-top: 8px;
+  text-align: left;
+}
+.floppy-side { min-width: 0; }
+.floppy-side-theirs {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, #000 60%, transparent 100%);
+  mask-image: linear-gradient(to right, #000 60%, transparent 100%);
+}
+
+.floppy-pile {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  align-items: flex-end;
+}
+.floppy-pile img { display: block; }
+
+/* The second pile is deliberately unreadable: it runs past the right edge
+   and fades, because the point is that you cannot count it. */
+.floppy-pile-wall {
+  flex-wrap: wrap;
+  max-height: 148px;
+  width: 140%;
+  overflow: hidden;
+}
+
+.floppy-label-line {
+  margin-top: 8px;
+  font-size: 15px;
+  color: var(--note-ink, var(--ink));
+}
+.floppy-label-line strong {
+  font-family: var(--display-font);
+  font-size: 26px;
+  font-weight: normal;
+  margin-right: 8px;
+  font-variant-numeric: tabular-nums;
+}
+:root:not([data-theme]) .floppy-label-line {
+  background: var(--paper);
+  border: 1px solid var(--ink);
+  padding: 2px 10px;
+  width: fit-content;
+}
+html[data-theme] .floppy-label-line { color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+html[data-theme="liquid-glass"] .floppy-label-line { color: #1c2733; text-shadow: none; }
+.floppy-wall .scene-fine { grid-column: 1 / -1; margin-top: 6px; }
+
+@media (max-width: 700px) {
+  .floppy-wall { grid-template-columns: 1fr; gap: 16px; }
+  .floppy-pile-wall { max-height: 96px; }
+}
+
+/* ---------- QuickTime window ---------- */
+
+.qt-window {
+  max-width: 760px;
+  margin: 0 auto;
+  background: var(--win-bg, var(--paper));
+  border: 1px solid var(--win-border, var(--ink));
+  border-radius: var(--win-radius, 0);
+  box-shadow: var(--win-shadow, 3px 3px 0 var(--ink));
+  -webkit-backdrop-filter: var(--win-blur, none);
+  backdrop-filter: var(--win-blur, none);
+  overflow: hidden;
+}
+.qt-badge {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  font-family: var(--mono-font);
+  background: var(--tbar-title-bg, var(--paper));
+  color: var(--tbar-ink, var(--ink));
+  padding: 0 6px;
+  border: 1px solid var(--tbar-border, var(--ink));
+}
+.qt-body { position: relative; background: #000; }
+.qt-poster { display: block; position: relative; cursor: pointer; }
+.qt-poster img { display: block; width: 100%; height: auto; }
+.qt-poster-play {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 64px;
+  height: 44px;
+  background: var(--btn-bg, var(--paper));
+  border: 2px solid var(--btn-border, var(--ink));
+  border-radius: var(--btn-radius, 8px);
+  box-shadow: var(--btn-shadow, 2px 2px 0 rgba(0,0,0,0.6));
+}
+.qt-poster-play::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-40%, -50%);
+  border-style: solid;
+  border-width: 9px 0 9px 15px;
+  border-color: transparent transparent transparent currentColor;
+  color: var(--btn-ink, var(--ink));
+}
+.qt-poster:hover .qt-poster-play,
+.qt-poster:focus-visible .qt-poster-play { background: var(--ink); }
+.qt-poster:hover .qt-poster-play::after,
+.qt-poster:focus-visible .qt-poster-play::after { color: var(--paper); }
+.qt-poster:focus-visible { outline: 2px dotted var(--paper); outline-offset: -4px; }
+.qt-poster-note {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  font-size: 12.5px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--ink);
+  padding: 1px 10px;
+  white-space: nowrap;
+}
+.qt-frame {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  background: #000;
+}
+.qt-strip {
+  margin: 0;
+  padding: 5px 12px;
+  font-size: 12.5px;
+  color: var(--ink);
+  background: var(--bar-bg, var(--paper));
+  border-top: 1px solid var(--bar-border, var(--ink));
+  text-align: left;
+}
+.qt-strip a { color: inherit; }
+
+/* ---------- Boot picker ---------- */
+
+.boot-picker {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(150px, 210px));
+  justify-content: center;
+  gap: 18px;
+  margin-top: 26px;
+}
+.boot-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  color: var(--ink);
+  background: var(--win-bg, var(--paper));
+  border: 1px solid var(--win-border, var(--ink));
+  border-radius: var(--win-radius, 0);
+  box-shadow: var(--win-shadow, 3px 3px 0 var(--ink));
+  -webkit-backdrop-filter: var(--win-blur, none);
+  backdrop-filter: var(--win-blur, none);
+  padding: 22px 12px 16px;
+}
+.boot-choice:hover .boot-label,
+.boot-choice:focus-visible .boot-label { background: var(--ink); color: var(--paper); }
+.boot-choice:focus-visible { outline: 2px dotted var(--ink); outline-offset: 3px; }
+.boot-choice img { width: 64px; height: 64px; }
+.boot-label { font-size: 17px; padding: 0 6px; }
+.boot-sub { font-size: 13px; opacity: 0.9; }
+
+/* ---------- Read Me ---------- */
+
+.readme-window { max-width: 720px; margin: 0 auto; text-align: left; }
+.readme-body p { margin: 8px 2px 6px; font-size: 15px; }
+.readme-body pre { margin-top: 8px; }
+
+/* The Read Me used to be five folded paragraphs, and folded paragraphs are
+   where a reader agrees with you and leaves. It is now eight cards, one real
+   desktop object each: the icon says which object, the line says what it does
+   for you, and nobody has to read a manifesto to get the idea. The two long
+   answers that survive are links, not accordions. */
+.pack-lede { font-size: 14px; opacity: 0.72; margin: 2px 2px 14px; }
+.pack-grid {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+}
+.pack-card {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  /* Cards in a row share a height, so pack the rows at the top: without this
+     a two-line card spreads its own text to match a three-line neighbour. */
+  align-content: start;
+  gap: 2px 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--win-border, var(--ink));
+  border-radius: var(--win-radius, 0);
+  background: var(--card-bg, var(--paper));
+}
+.pack-card .obj-icon { grid-row: span 2; align-self: start; }
+.pack-card h3 {
+  font-family: var(--display-font);
+  font-size: 15px;
+  font-weight: normal;
+  line-height: 1.15;
+  margin: 0;
+}
+.pack-card p { grid-column: 2; margin: 4px 0 0; font-size: 13.5px; line-height: 1.4; }
+.pack-more { margin-top: 14px; font-size: 13.5px; }
+.pack-more a { color: inherit; }
+
+/* The later eras give their windows a tinted body, so a card painted in flat
+   paper would sit on it like a sticker. Follow the window instead. */
+html[data-theme] .pack-card { background: var(--card-bg, rgba(255, 255, 255, 0.5)); }
+html[data-theme="platinum"] .pack-card { background: #eeeeee; }
+
+/* ---------- Balloon Help ---------- */
+
+.balloon {
+  position: absolute;
+  z-index: 300;
+  max-width: 240px;
+  background: #fff;
+  color: #000;
+  border: 1px solid #000;
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-family: var(--ui-font);
+  font-size: 13px;
+  line-height: 1.35;
+  box-shadow: 1px 1px 0 #000;
+  pointer-events: none;
+}
+.balloon::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  left: 14px;
+  border: 5px solid transparent;
+  border-bottom: 8px solid #000;
+  border-top: 0;
+}
+.balloon::after {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 15px;
+  border: 4px solid transparent;
+  border-bottom: 7px solid #fff;
+  border-top: 0;
+}
+.balloon-above::before { top: auto; bottom: -8px; border-bottom: 0; border-top: 8px solid #000; }
+.balloon-above::after { top: auto; bottom: -6px; border-bottom: 0; border-top: 7px solid #fff; }
+
+/* ---------- Snapshot panel ---------- */
+
+.snapshot-panel {
+  position: relative;
+  margin: 18px auto 0;
+  width: min(560px, 100%);
+}
+.snapshot-preview canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--win-border, var(--ink));
+}
+.snapshot-actions { margin: 10px 0 0; }
+
+/* ---------- Selection color per era ---------- */
+html[data-theme="platinum"] { --sel-bg: #333399; --gauge-fill-solid: #7a7a7a; }
+html[data-theme="aqua"] { --sel-bg: #3875d7; --gauge-fill-solid: #4a7fc4; }
+html[data-theme="snow-leopard"] { --sel-bg: #2f66b0; --gauge-fill-solid: #5c799f; }
+html[data-theme="yosemite"] { --sel-bg: #0a60ff; --gauge-fill-solid: #0a60ff; }
+html[data-theme="big-sur"] { --sel-bg: #0a64d8; --gauge-fill-solid: #0a64d8; }
+html[data-theme="liquid-glass"] { --sel-bg: rgba(40, 90, 200, 0.8); --gauge-fill-solid: #7fa8e0; }
+
+/* ---------- Reduced motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .js .scene { opacity: 1; animation: none; }
+  .win-zoom { animation: none; }
+}
+
+/* ---------- Small screens ---------- */
+
+@media (max-width: 700px) {
+  .scene { margin: 52px 0; }
+  .hero-scene { margin-top: 12px; margin-bottom: 64px; }
+  .hero-brand { font-size: 12px; margin-bottom: 8px; }
+  .hero-head { font-size: clamp(26px, 8.6vw, 34px); margin-bottom: 12px; }
+  :root:not([data-theme]) .hero-head { padding: 4px 14px 7px; box-shadow: 3px 3px 0 var(--ink); }
+  .hero-btns { margin: 0 0 14px; gap: 10px; }
+  .btn { min-width: 220px; }
+  .btn-default::after { inset: -4px; border-width: 2px; }
+
+  .desk-icon { min-width: 58px; min-height: 44px; }
+
+  .era-strip { padding: 10px 12px 8px; }
+  .era-tick { min-width: 34px; min-height: 44px; }
+  .era-tick-name { display: none; }
+  .era-strip-big .era-tick-name { display: none; }
+
+  .route-belt { flex-wrap: wrap; gap: 2px; padding-top: 26px; }
+  /* The shot stacks over its text, or both shrink below reading size. */
+  .route-panel { grid-template-columns: minmax(0, 1fr); }
+
+  .finder-body { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 2px; }
+  .finder-window .tbar h2 { font-size: 13px; }
+  /* One column, or the captures shrink to thumbnails and stop being proof. */
+  .proof-wall { grid-template-columns: 1fr; padding: 12px 10px 2px; }
+  .games-wall { grid-template-columns: 1fr; }
+
+
+  .boot-picker { grid-template-columns: 1fr; max-width: 280px; margin-left: auto; margin-right: auto; }
+}
+
+@keyframes caret-blink {
+  50% { opacity: 0; }
+}
+
+/* ---------- The forty-year dissolve ---------- */
+
+.dissolve { margin: 0 auto; }
+
+/* One machine: the screen and the controls that drive it share a body, so the
+   capture never ends in a seam across the desk. The shell wears whatever the
+   current era's window is made of. */
+.dissolve-shell {
+  background: var(--win-bg, var(--paper));
+  border: 1px solid var(--win-border, var(--ink));
+  border-radius: var(--win-radius, 0);
+  box-shadow: var(--win-shadow, 4px 4px 0 rgba(0, 0, 0, 0.55));
+  -webkit-backdrop-filter: var(--win-blur, none);
+  backdrop-filter: var(--win-blur, none);
+  overflow: hidden;
+}
+
+.dissolve-port {
+  position: relative;
+  width: 100%;
+  aspect-ratio: var(--dissolve-aspect, 8 / 5);
+  overflow: hidden;
+  border-bottom: 1px solid var(--win-border, var(--ink));
+  background: #808080;
+}
+
+.dissolve-panel { padding: 13px 18px 11px; }
+
+.dissolve-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Opacity is set per frame by the dissolve; no transition, because the
+     visitor's own hand is the timing function. */
+}
+
+/* A type specimen, not a caption. The year is digits and digits keep their
+   shape across four decades of type, so the era NAME is the thing set large
+   enough to read the letterforms in, and the panel names the face out loud. */
+.dissolve-readout {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 0 0 9px;
+}
+.dissolve-year {
+  font-family: var(--display-font);
+  font-size: clamp(26px, 3.6vw, 38px);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.dissolve-era {
+  font-family: var(--display-font);
+  font-size: clamp(19px, 2.7vw, 29px);
+  line-height: 1.05;
+  color: var(--ink);
+}
+.dissolve-role {
+  align-self: center;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.6;
+  color: var(--ink);
+}
+.dissolve-font {
+  margin-left: auto;
+  align-self: center;
+  font-family: var(--mono-font);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0.6;
+  color: var(--ink);
+}
+
+.dissolve-rail {
+  position: relative;
+  margin: 0;
+  padding: 0;
+}
+.dissolve-range {
+  display: block;
+  width: 100%;
+  height: 24px;
+  margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+}
+.dissolve-range::-webkit-slider-runnable-track {
+  height: 4px;
+  background: var(--ink);
+  border-radius: var(--btn-radius, 0);
+}
+.dissolve-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -9px;
+  background: var(--btn-bg, var(--paper));
+  border: 2px solid var(--ink);
+  border-radius: var(--btn-radius, 2px);
+  box-shadow: var(--btn-shadow, 1px 1px 0 var(--ink));
+  cursor: ew-resize;
+}
+.dissolve-range::-moz-range-track { height: 4px; background: var(--ink); }
+.dissolve-range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: var(--btn-bg, var(--paper));
+  border: 2px solid var(--ink);
+  border-radius: var(--btn-radius, 2px);
+  cursor: ew-resize;
+}
+.dissolve-range:focus-visible { outline: 2px dotted var(--ink); outline-offset: 4px; }
+
+.dissolve-ticks { position: relative; height: 20px; }
+.dissolve-tick {
+  position: absolute;
+  left: calc(var(--t) * 100%);
+  transform: translateX(-50%);
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 2px 4px;
+  min-width: 44px;
+  min-height: 20px;
+  font-family: var(--mono-font);
+  font-size: 11px;
+  color: var(--ink);
+  cursor: pointer;
+}
+.dissolve-tick.is-near .dissolve-tick-year {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0 4px;
+}
+.dissolve-tick:focus-visible { outline: 2px dotted var(--ink); outline-offset: 2px; }
+
+@media (max-width: 700px) {
+  .dissolve-panel { padding: 10px 12px 8px; }
+  .dissolve-readout { gap: 2px 10px; }
+  .dissolve-role { font-size: 12px; letter-spacing: 0.06em; }
+  .dissolve-font { margin-left: 0; width: 100%; }
+  .dissolve-tick { min-width: 30px; font-size: 11px; }
+  .dissolve-tick:not(:first-child):not(:last-child) .dissolve-tick-year { opacity: 0.55; }
+}
+
+/* A proof card shows the real window doing the thing, not a promise. */
+.demo-window.has-proof { width: min(560px, 92%); }
+.imp-proof { margin: -2px 0 10px; border: 1px solid var(--win-border, var(--ink)); overflow: hidden; }
+.imp-proof img { display: block; width: 100%; height: auto; }
+
+/* ==========================================================================
+   Editorial rhythm.
+
+   The page is read like a short book: a small chapter label, a headline in
+   sentence case, then one paragraph at a length a person can hold. Three
+   things make that work in every era, not only the glossy ones:
+
+   - Measure. Notes stop at about 36em, prose windows at 34em. A 950px line
+     of 17px text is a line the eye loses on the way back.
+   - Tracking by size and era. Display type tightens as it grows, but only in
+     faces drawn for it: Chicago and Charcoal were bitmap-era system faces and
+     keep their own spacing; Lucida tightens a little; Helvetica Neue and San
+     Francisco tighten the way Apple sets them.
+   - Motion by era. System 6 redrew in steps, so its scenes still arrive in
+     five frames. Every later era eases in, once, on a strong ease-out.
+   ========================================================================== */
+
+:root { --head-track: 0; --head-weight: normal; }
+html[data-theme="aqua"],
+html[data-theme="snow-leopard"] { --head-track: -0.012em; }
+html[data-theme="yosemite"] { --head-track: -0.02em; --head-weight: 300; }
+html[data-theme="big-sur"],
+html[data-theme="liquid-glass"] { --head-track: -0.018em; --head-weight: 600; }
+html[data-theme="nextstep"] { --head-track: -0.01em; --head-weight: 700; }
+
+.scene { margin: 136px 0; }
+#story { margin-top: 40px; }
+
+.scene-kicker {
+  font-family: var(--site-font, var(--ui-font));
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin: 0 auto 16px;
+  color: var(--note-ink, var(--ink));
+  text-shadow: var(--head-shadow, none);
+}
+:root:not([data-theme]) .scene-kicker { padding: 1px 10px; border: 1px solid var(--ink); font-weight: normal; letter-spacing: 0.06em; }
+html[data-theme] .scene-kicker { color: rgba(255, 255, 255, 0.82); --head-shadow: 0 1px 2px rgba(0, 0, 0, 0.35); }
+html[data-theme="liquid-glass"] .scene-kicker { color: rgba(28, 39, 51, 0.62); --head-shadow: none; }
+
+.scene-head,
+.hero-head {
+  font-weight: var(--head-weight);
+  letter-spacing: var(--head-track);
+  text-wrap: balance;
+}
+.scene-head {
+  font-size: clamp(32px, 5.4vw, 58px);
+  line-height: 1.06;
+  margin: 0 auto 18px;
+}
+.hero-head { font-size: clamp(40px, 7.6vw, 84px); line-height: 1.02; }
+
+.scene-note,
+.hero-sub {
+  max-width: 36em;
+  margin: 0 auto 22px;
+  font-size: 19px;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+.scene-fine {
+  max-width: min(44em, 100%);
+  overflow-wrap: anywhere;
+  margin: 10px auto 0;
+  font-size: 15px;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+.proof-note { max-width: 44em; margin-left: auto; margin-right: auto; }
+/* Chicago is a bitmap face: at the modern note size it reads as shouting. */
+:root:not([data-theme]) .scene-note,
+:root:not([data-theme]) .hero-sub { font-size: 17px; }
+
+/* Scenes arrive once. Classic keeps its five-frame step; later eras ease. */
+html.js[data-theme] .scene.scene-in { animation: scene-rise 720ms cubic-bezier(0.23, 1, 0.32, 1) both; }
+@keyframes scene-rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ---------- The story window ---------- */
+
+.story-window {
+  max-width: 720px;
+  margin: 8px auto 0;
+  text-align: left;
+}
+.story-window .finder-status { font-size: 12px; }
+.story-body { padding: 30px clamp(20px, 6vw, 56px) 34px; }
+.story-body p {
+  max-width: 34em;
+  margin: 0 0 1.05em;
+  font-size: 18px;
+  line-height: 1.62;
+  text-wrap: pretty;
+  color: var(--ink);
+}
+:root:not([data-theme]) .story-body p { font-size: 17px; line-height: 1.7; }
+.story-quote.story-quote {
+  margin: 30px 0 0;
+  padding: 24px 0 0;
+  border-top: 1px solid var(--win-border, var(--ink));
+  font-family: var(--display-font);
+  font-size: clamp(22px, 3.2vw, 30px);
+  font-weight: var(--head-weight);
+  line-height: 1.24;
+  letter-spacing: var(--head-track);
+  text-wrap: balance;
+  max-width: 22em;
+}
+:root:not([data-theme]) .story-quote.story-quote { border-top: 2px solid var(--ink); }
+/* CJK must wrap inside narrow columns. Strict line breaking keeps opening
+   punctuation off line ends and closing punctuation off line starts. */
+:lang(zh) .story-quote,
+:lang(zh) .scene-head,
+:lang(zh) .hero-head { word-break: normal; line-break: strict; }
+/* Keep a short title together when it fits; allow wrapping on narrow screens. */
+.title-phrase { display: inline-block; max-width: 100%; vertical-align: bottom; }
+
+/* ---------- Grids that fit their content ---------- */
+
+/* Four cards read as two pairs, never three and an orphan. */
+.temp-grid-pairs {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 800px;
+  margin: 0 auto;
+  gap: 14px;
+}
+.temp-card { padding: 16px 18px 18px; }
+.temp-card h3 { font-size: 15px; margin-bottom: 8px; }
+.temp-card p { font-size: 14.5px; line-height: 1.55; }
+.compare-wall { max-width: 800px; margin-left: auto; margin-right: auto; }
+.compare-col { padding: 16px 18px 14px; }
+.compare-col li { font-size: 14.5px; }
+
+/* A single capture is centred at a size that shows it, not left in a column. */
+.games-wall-single { grid-template-columns: minmax(0, 720px); justify-content: center; }
+.games-wall-single .games-shot { aspect-ratio: 16 / 10; }
+
+/* Game captions carry no icon, so they take the whole row. */
+.proof-cap:not(:has(.obj-icon)) { grid-template-columns: minmax(0, 1fr); text-align: left; }
+.proof-cap:not(:has(.obj-icon)) .proof-line { grid-column: 1; }
+
+/* An odd capture closes the wall across both columns instead of hanging
+   alone under the left one. */
+.proof-wall > .proof-card:last-child:nth-child(odd) { grid-column: 1 / -1; }
+.proof-wall > .proof-card:last-child:nth-child(odd) .proof-shot { aspect-ratio: 32 / 10; }
+
+.proof-note + .btn-row { margin-top: 24px; }
+.machine-figure-strip { margin-top: 30px; }
+.model-providers { margin-top: 26px; gap: 34px; }
+
+/* ---------- Press and hover ---------- */
+
+/* Press feedback that belongs to the era: System 6 and Platinum nudged a
+   pixel; everything from Aqua on gives a little under the finger. */
+html[data-theme]:not([data-theme="platinum"]) .btn {
+  transition: transform 140ms ease-out, background-color 160ms ease, color 160ms ease;
+}
+html[data-theme]:not([data-theme="platinum"]) .btn:active { transform: scale(0.97); }
+
+.boot-choice { transition: transform 220ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 220ms ease; }
+@media (hover: hover) and (pointer: fine) {
+  html[data-theme]:not([data-theme="platinum"]) .boot-choice:hover { transform: translateY(-3px); }
+}
+html[data-theme]:not([data-theme="platinum"]) .boot-choice:active { transform: scale(0.98); }
+
+html[data-theme="big-sur"] .btn-default::after { content: none; }
+html[data-theme="big-sur"] .btn-default { background: #0a64d8; color: #fff; border-color: #0a64d8; }
+
+@media (prefers-reduced-motion: reduce) {
+  html.js .scene.scene-in,
+  html.js[data-theme] .scene.scene-in { animation: none; }
+  .btn, .boot-choice { transition: none; }
+  html[data-theme] .btn:active, html[data-theme] .boot-choice:active { transform: none; }
+}
+
+@media (max-width: 700px) {
+  .scene { margin: 92px 0; }
+  .scene-head { font-size: clamp(28px, 8.4vw, 36px); }
+  .hero-head { font-size: clamp(32px, 9.6vw, 42px); }
+  .scene-note, .hero-sub { font-size: 17px; }
+  .story-body { padding: 22px 18px 24px; }
+  .story-body p { font-size: 17px; }
+  .temp-grid-pairs { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ==========================================================================
+   Site 5: the product page.
+
+   Borrowed from what worked on the WindowShade site and its peers: say the
+   requirements under the button, set alternatives out as a trade-off rather
+   than a feature table, let the reader walk the product with a scroll, open a
+   door to the long story instead of telling it here, and end on questions a
+   first-time visitor actually has. Every surface still rides the era tokens.
+   ========================================================================== */
+
+:root { --accent: #000; --accent-soft: rgba(0, 0, 0, 0.08); --theirs: #000; }
+html[data-theme] { --accent: var(--sel-bg, #2f66b0); --accent-soft: rgba(40, 90, 200, 0.12); --theirs: var(--sel-bg, #2f66b0); }
+html[data-theme="platinum"] { --theirs: #333399; }
+html[data-theme="nextstep"] { --accent: #000; --accent-soft: rgba(0, 0, 0, 0.1); --theirs: #555; }
+
+/* ---------- Facts under a button ---------- */
+.hero-facts,
+.boot-facts,
+.notes-meta {
+  font-size: 13.5px;
+  letter-spacing: 0.01em;
+  color: var(--note-ink, var(--ink));
+  opacity: 0.78;
+  margin: -6px auto 34px;
+}
+.boot-facts { margin: 22px auto 0; }
+:root:not([data-theme]) .hero-facts,
+:root:not([data-theme]) .boot-facts { background: var(--paper); border: 1px solid var(--ink); width: fit-content; padding: 1px 10px; opacity: 1; }
+html[data-theme] .hero-facts,
+html[data-theme] .boot-facts { color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35); opacity: 0.92; }
+html[data-theme="liquid-glass"] .hero-facts,
+html[data-theme="liquid-glass"] .boot-facts { color: #1c2733; text-shadow: none; opacity: 0.72; }
+
+/* Shared window surface for the new cards. */
+.way, .tour-step, .notes-cover, .more-switch {
+  background: var(--win-bg, var(--paper));
+  border: 1px solid var(--win-border, var(--ink));
+  border-radius: var(--win-radius, 0);
+  box-shadow: var(--win-shadow, 2px 2px 0 var(--ink));
+  -webkit-backdrop-filter: var(--win-blur, none);
+  backdrop-filter: var(--win-blur, none);
+  color: var(--ink);
+}
+
+/* ---------- Three ways ---------- */
+.ways {
+  list-style: none;
+  margin: 8px auto 0;
+  padding: 0;
+  max-width: 1000px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  text-align: left;
+}
+.way { overflow: hidden; padding: 0 0 20px; }
+.way h3 { margin: 4px 20px 8px; font-size: 17px; }
+.way p { margin: 0 20px; font-size: 14.5px; line-height: 1.55; text-wrap: pretty; }
+.way .way-num {
+  margin-top: 16px;
+  font-family: var(--mono-font);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  opacity: 0.6;
+}
+.way.is-ours .way-num,
+.way.is-ours h3 { color: var(--accent); opacity: 1; }
+:root:not([data-theme]) .way.is-ours { border-width: 2px; box-shadow: 3px 3px 0 var(--ink); }
+
+/* The drawings are diagrams of an idea, not of the product: grey is you,
+   the accent is the machine, and the only question each one asks is where
+   the machine's lines end up. */
+.way-illo {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  border-bottom: 1px solid var(--win-border, var(--ink));
+  background: var(--accent-soft);
+  overflow: hidden;
+}
+:root:not([data-theme]) .way-illo { background: #fff; }
+.way-illo i, .way-illo b { display: block; }
+.illo-page, .illo-window {
+  position: absolute;
+  background: var(--paper);
+  border: 1px solid var(--win-border, var(--ink));
+  border-radius: calc(var(--win-radius, 0px) * 0.5);
+  padding: 9% 7%;
+  display: grid;
+  align-content: start;
+  gap: 7%;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+:root:not([data-theme]) .illo-page,
+:root:not([data-theme]) .illo-window { box-shadow: 2px 2px 0 var(--ink); }
+.illo-page i, .illo-window i { height: 5px; border-radius: 3px; background: rgba(0, 0, 0, 0.26); }
+.illo-page i.is-theirs, .illo-window i.is-theirs { background: var(--theirs); opacity: 0.8; }
+:root:not([data-theme]) .illo-page i { background: #000; border-radius: 0; }
+:root:not([data-theme]) .illo-page i.is-theirs,
+:root:not([data-theme]) .illo-window i.is-theirs { background: var(--desk-pattern); background-size: 2px 2px; opacity: 1; }
+.illo-page i.is-short, .illo-window i.is-short { width: 60%; }
+
+.way-illo-chat .illo-bubble {
+  position: absolute;
+  left: 10%;
+  width: 34%;
+  height: 11%;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.22);
+}
+.way-illo-chat .illo-bubble:nth-child(1) { top: 16%; width: 26%; }
+.way-illo-chat .illo-bubble.is-reply { top: 34%; left: 16%; background: var(--theirs); opacity: 0.75; }
+.way-illo-chat .illo-bubble.is-reply.is-short { top: 50%; width: 24%; }
+:root:not([data-theme]) .way-illo-chat .illo-bubble { background: #000; border-radius: 8px; }
+:root:not([data-theme]) .way-illo-chat .illo-bubble.is-reply { background: var(--desk-pattern); background-size: 2px 2px; border: 1px solid #000; opacity: 1; }
+.way-illo-chat .illo-arrow {
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  width: 12%;
+  height: 2px;
+  background: var(--ink);
+  opacity: 0.55;
+}
+.way-illo-chat .illo-arrow::after {
+  content: "";
+  position: absolute;
+  right: -2px;
+  top: -4px;
+  border: 5px solid transparent;
+  border-left: 7px solid var(--ink);
+  border-right: 0;
+}
+.way-illo-chat .illo-page { right: 9%; top: 14%; width: 26%; height: 72%; }
+.way-illo-inline .illo-page.is-wide { left: 22%; right: 22%; top: 12%; bottom: -6%; gap: 9%; }
+
+.way-illo-desk .illo-window { top: 16%; width: 34%; height: 66%; padding-top: 0; }
+.way-illo-desk .illo-window b {
+  height: 12%;
+  margin: 0 -8% 8%;
+  border-bottom: 1px solid var(--win-border, var(--ink));
+  background: rgba(0, 0, 0, 0.05);
+}
+:root:not([data-theme]) .way-illo-desk .illo-window b { background: linear-gradient(to bottom, #000 0 1px, transparent 1px 2px) 0 0 / 100% 2px; }
+.way-illo-desk .illo-window.is-model { left: 8%; }
+.way-illo-desk .illo-window.is-yours { right: 8%; }
+.way-illo-desk .illo-hand {
+  position: absolute;
+  left: 44%;
+  top: 46%;
+  width: 12%;
+  border-top: 2px dashed var(--accent);
+}
+.way-illo-desk .illo-hand::after {
+  content: "";
+  position: absolute;
+  right: -3px;
+  top: -6px;
+  border: 5px solid transparent;
+  border-left: 7px solid var(--accent);
+  border-right: 0;
+}
+
+.ways-axis {
+  max-width: 30em;
+  margin: 36px auto 0;
+  font-family: var(--display-font);
+  font-size: clamp(20px, 2.6vw, 27px);
+  font-weight: var(--head-weight);
+  letter-spacing: var(--head-track);
+  line-height: 1.3;
+  text-wrap: balance;
+  color: var(--head-ink, var(--ink));
+  text-shadow: var(--head-shadow, none);
+}
+:root:not([data-theme]) .ways-axis { background: var(--paper); border: 1px solid var(--ink); width: fit-content; padding: 6px 16px; }
+html[data-theme] .ways-axis { color: #fff; --head-shadow: 0 1px 2px rgba(0, 0, 0, 0.35); }
+html[data-theme="liquid-glass"] .ways-axis { color: #1c2733; --head-shadow: none; }
+
+/* ---------- The desk tour ---------- */
+.tour {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 36px;
+  margin-top: 30px;
+  text-align: left;
+}
+/* The tour breaks out of the reading column: the camera needs the width. */
+@media (min-width: 861px) {
+  .tour {
+    margin-left: calc(50% - min(620px, 50vw - 28px));
+    margin-right: calc(50% - min(620px, 50vw - 28px));
+  }
+}
+.tour-stage-wrap {
+  position: sticky;
+  top: calc(var(--menu-bar-height) + 28px);
+  align-self: start;
+}
+.tour-stage { margin: 0; }
+.tour-port {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border: 1px solid var(--win-border, var(--ink));
+  border-radius: var(--win-radius, 0);
+  box-shadow: var(--win-shadow, 4px 4px 0 rgba(0, 0, 0, 0.55));
+  background: #808080;
+}
+.tour-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform-origin: 0 0;
+  transition: transform 900ms cubic-bezier(0.65, 0, 0.35, 1);
+}
+.tour-spot {
+  position: absolute;
+  border-radius: calc(var(--win-radius, 0px) * 0.8);
+  box-shadow: 0 0 0 200vmax rgba(10, 16, 28, 0.34);
+  outline: 2px solid rgba(255, 255, 255, 0.85);
+  outline-offset: 2px;
+  transition: left 900ms cubic-bezier(0.65, 0, 0.35, 1), top 900ms cubic-bezier(0.65, 0, 0.35, 1), width 900ms cubic-bezier(0.65, 0, 0.35, 1), height 900ms cubic-bezier(0.65, 0, 0.35, 1);
+  pointer-events: none;
+}
+/* 1988 had no translucent anything: the spotlight is a marching-ants box. */
+:root:not([data-theme]) .tour-spot { box-shadow: 0 0 0 200vmax rgba(0, 0, 0, 0.45); outline: 2px dashed #000; outline-offset: 0; border-radius: 0; }
+:root:not([data-theme]) .tour-frame,
+:root:not([data-theme]) .tour-spot { transition-timing-function: steps(6, end); }
+.tour-caption {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  opacity: 0.75;
+  color: var(--note-ink, var(--ink));
+}
+html[data-theme] .tour-caption { color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4); }
+html[data-theme="liquid-glass"] .tour-caption { color: #1c2733; text-shadow: none; }
+:root:not([data-theme]) .tour-caption { background: var(--paper); border: 1px solid var(--ink); width: fit-content; padding: 0 8px; opacity: 1; }
+
+.tour-steps { list-style: none; margin: 0; padding: 12vh 0 28vh; display: grid; gap: 34vh; }
+.tour-step {
+  padding: 18px 20px 20px;
+  cursor: pointer;
+  opacity: 0.45;
+  transition: opacity 300ms ease, transform 300ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.tour-step.is-active { opacity: 1; }
+html[data-theme] .tour-step.is-active { transform: translateX(-4px); }
+.tour-step:focus-visible { outline: 2px dotted var(--ink); outline-offset: 3px; }
+.tour-step h3 { margin: 2px 0 8px; font-size: 18px; line-height: 1.25; }
+.tour-step .tour-icon { float: right; margin: 0 0 6px 12px; width: 32px; height: 32px; }
+.tour-step p { margin: 0; font-size: 15px; line-height: 1.55; text-wrap: pretty; }
+.tour-step .tour-num { font-family: var(--mono-font); font-size: 12px; letter-spacing: 0.06em; opacity: 0.6; margin-bottom: 4px; }
+.tour-step.is-active .tour-num { color: var(--accent); opacity: 1; }
+/* Without the camera (no capture, no script) the steps read as a list. */
+.scene-tour:not(.tour-ready) .tour-steps { padding: 0; gap: 12px; }
+.scene-tour:not(.tour-ready) .tour-step { opacity: 1; cursor: default; }
+.tour-still .tour-frame, .tour-still .tour-spot, .tour-still .tour-step { transition: none; }
+
+/* ---------- Field Notes doorway ---------- */
+.notes-door {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  gap: 48px;
+  align-items: center;
+  max-width: 1000px;
+  margin: 0 auto;
+  text-align: left;
+}
+.notes-copy .scene-kicker,
+.notes-copy .scene-head,
+.notes-copy .scene-note { margin-left: 0; margin-right: 0; }
+.notes-copy .scene-note { max-width: 26em; }
+.notes-btns { justify-content: flex-start; margin: 22px 0 12px; }
+.notes-meta { margin: 0; }
+html[data-theme] .notes-meta { color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35); }
+html[data-theme="liquid-glass"] .notes-meta { color: #1c2733; text-shadow: none; }
+:root:not([data-theme]) .notes-meta { background: var(--paper); border: 1px solid var(--ink); width: fit-content; padding: 1px 8px; opacity: 1; }
+
+/* The cover is the essay's own paper, whatever year the page is wearing:
+   the long read keeps one calm face, so its doorway does too. */
+.notes-cover {
+  display: grid;
+  gap: 16px;
+  padding: 26px 28px 24px;
+  text-decoration: none;
+  background: #fbfaf6;
+  color: #1d1c1a;
+  transition: transform 260ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 260ms ease;
+}
+.notes-cover-label {
+  font-family: var(--face-mono-sf);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+.notes-cover-title {
+  font-family: "New York", "Iowan Old Style", Charter, Georgia, "Songti SC", STSong, "Noto Serif CJK SC", serif;
+  font-size: clamp(26px, 3vw, 34px);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+.notes-cover-icons { display: grid; grid-template-columns: repeat(5, 32px); gap: 10px; padding: 6px 0 2px; }
+.notes-cover-icons img { width: 32px; height: 32px; }
+.notes-cover-icons img.is-pixel { image-rendering: pixelated; }
+.notes-chapters { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; border-top: 1px solid rgba(0, 0, 0, 0.12); }
+.notes-chapters li {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 10px;
+  padding: 8px 0;
+  font-size: 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+.notes-chapters b { font-family: var(--face-mono-sf); font-weight: 500; font-size: 12.5px; opacity: 0.55; padding-top: 1px; }
+@media (hover: hover) and (pointer: fine) {
+  html[data-theme] .notes-cover:hover { transform: translateY(-3px); }
+}
+.notes-cover:focus-visible { outline: 2px dotted var(--ink); outline-offset: 4px; }
+
+/* ---------- After hours ---------- */
+.more-switch {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  margin: 6px auto 0;
+  border-radius: calc(var(--btn-radius, 7px) + 3px);
+}
+.more-switch[hidden] { display: none; }
+.more-switch button {
+  appearance: none;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 14.5px;
+  color: var(--ink);
+  padding: 7px 16px;
+  min-height: 36px;
+  border-radius: var(--btn-radius, 7px);
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+.more-switch button[aria-selected="true"] { background: var(--ink); color: var(--paper); }
+html[data-theme] .more-switch button[aria-selected="true"] { background: var(--accent); color: #fff; }
+html[data-theme="nextstep"] .more-switch button[aria-selected="true"] { background: #fff; color: #000; }
+.more-switch button:focus-visible { outline: 2px dotted var(--ink); outline-offset: 2px; }
+.more-panel { margin-top: 34px; }
+.more-panel[hidden] { display: none; }
+.more-ready .more-panel { animation: none; }
+.more-head {
+  font-family: var(--display-font);
+  font-size: clamp(22px, 3vw, 30px);
+  font-weight: var(--head-weight);
+  letter-spacing: var(--head-track);
+  margin: 0 auto 8px;
+  color: var(--head-ink, var(--ink));
+}
+:root:not([data-theme]) .more-head { background: var(--paper); border: 1px solid var(--ink); width: fit-content; padding: 1px 12px; }
+html[data-theme] .more-head { color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35); }
+html[data-theme="liquid-glass"] .more-head { color: #1c2733; text-shadow: none; }
+.more-panel .scene-fine { margin-bottom: 18px; }
+.more-panel .temp-grid { max-width: 1000px; margin: 0 auto; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.more-panel .finder-window { max-width: 1000px; margin: 0 auto; }
+/* Without the switch, the shelves stack and keep their own headings. */
+#more:not(.more-ready) .more-panel + .more-panel { margin-top: 64px; }
+
+/* ---------- Read Me questions ---------- */
+.readme-window { max-width: 760px; }
+.readme-body { padding: 6px 26px 14px; }
+.faq { border-bottom: 1px solid var(--win-border, var(--ink)); }
+.faq:last-child { border-bottom: 0; }
+.faq summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 0;
+  font-size: 16.5px;
+  font-weight: 600;
+}
+:root:not([data-theme]) .faq summary { font-weight: normal; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; font-weight: 400; opacity: 0.6; transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1); }
+.faq[open] summary::after { transform: rotate(45deg); }
+.faq summary:focus-visible { outline: 2px dotted var(--ink); outline-offset: 2px; }
+.faq-rules { margin: -4px 0 18px; padding: 0; list-style: none; display: grid; gap: 10px; max-width: 38em; }
+.faq-rules li { font-size: 15px; line-height: 1.6; padding-left: 14px; border-left: 2px solid var(--accent); text-wrap: pretty; }
+.faq-rules b { display: block; margin-bottom: 2px; }
+.faq p { margin: -4px 0 18px; font-size: 15px; line-height: 1.6; max-width: 38em; text-wrap: pretty; }
+
+@media (max-width: 860px) {
+  .ways { grid-template-columns: minmax(0, 1fr); max-width: 520px; }
+  .tour { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .tour-stage-wrap { top: calc(var(--menu-bar-height) + 8px); z-index: 2; }
+  .tour-steps { padding: 4vh 0 24vh; gap: 36vh; }
+  .tour-step { opacity: 0.55; }
+  .notes-door { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  .more-panel .temp-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 520px) {
+  .more-switch { display: flex; flex-wrap: wrap; justify-content: center; }
+  .more-switch button { padding: 6px 12px; }
+  .more-panel .temp-grid { grid-template-columns: minmax(0, 1fr); }
+  .readme-body { padding: 4px 16px 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tour-frame, .tour-spot, .tour-step, .notes-cover, .more-switch button { transition: none; }
+}
+
+/* Increase Contrast, for the same reason as the application's block of the
+   same name: measured with CDP media emulation, this page read identical
+   token values with the setting on and off. Borders are the page's structural
+   vocabulary (window frames, title bars, the menu bar, buttons), so they get
+   a defined contrasting edge, and the blur the Liquid Glass theme lays under
+   its windows is dropped rather than strengthened: a translucent panel with a
+   hard border is still translucent. Scoped to `html[data-theme]`, the same
+   specificity the theme blocks use, and late enough in the cascade to win by
+   order in every theme. */
+@media (prefers-contrast: more) {
+  :root,
+  html[data-theme] {
+    --win-border: #000;
+    --tbar-border: #000;
+    --bar-border: #000;
+    --btn-border: #000;
+    --win-blur: none;
+    --bar-blur: none;
+    --menu-blur: none;
+  }
+}
+
+/* Original games: one city, followed by its two closer views. Keep complete
+   product windows in frame, including their tools and status bars. */
+.original-games {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  max-width: 1040px;
+  margin: 36px auto 24px;
+  padding: 0 20px;
+}
+.original-city { grid-column: 1 / -1; }
+.original-games .proof-shot, .novel-proof .proof-shot { aspect-ratio: auto; height: auto; }
+.original-games .proof-cap, .novel-proof .proof-cap { padding: 16px 18px 18px; gap: 8px; }
+.original-games .proof-line, .novel-proof .proof-line { line-height: 1.6; opacity: .82; }
+.original-games .proof-label { font-size: 17px; }
+.original-note { max-width: 680px; margin: 24px auto 0; padding: 0 20px; }
+.novel-proof { max-width: 1000px; margin: 36px auto 0; }
+@media (max-width: 640px) {
+  .original-games { grid-template-columns: 1fr; gap: 24px; padding: 0; }
+  .original-city { grid-column: auto; }
+  .novel-proof { margin-top: 28px; }
+}

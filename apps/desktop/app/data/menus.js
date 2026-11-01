@@ -1,0 +1,1303 @@
+// Per-application menu declarations and renderer.
+//
+// The Apple menu and right-side status controls stay in index.html because
+// they belong to the system. This file owns only the foreground application's
+// menus, including the app-specific rows in Special.
+
+const menuItem = (action, labelKey, shortcutId = "", extra = {}) => ({
+  type: "item",
+  action,
+  labelKey,
+  shortcutId,
+  conditionId: action,
+  ...extra,
+});
+const menuSeparator = Object.freeze({ type: "separator" });
+const TABS_GATE = { menuCondition: "window-tabs" };
+const submenu = (labelKey, items, extra = {}) => ({ type: "submenu", labelKey, items, ...extra });
+const menuSectionLabel = (labelKey, menuCondition = "") => ({ type: "section-label", labelKey, menuCondition });
+
+const editBasics = [
+  menuItem("undo", "undo", "undo"),
+  menuSeparator,
+  menuItem("cut", "cut", "cut"),
+  menuItem("copy", "copy", "copy"),
+  menuItem("paste", "paste", "paste"),
+  menuItem("clear-edit", "clear"),
+  menuItem("select-all", "select_all", "select-all"),
+];
+
+const selectionTools = [
+  menuItem("selection-look-up", "look_up"),
+  // Selected text into the Scrapbook: the route's own gesture, dropped when the
+  // menu bar moved out of index.html and restored on evidence, not on a hunch.
+  menuItem("selection-clip", "clip_to_scrapbook"),
+  menuItem("selection-find-sources", "find_sources"),
+  menuItem("selection-clip-file", "selection_clip_file"),
+  menuItem("selection-translate", "translate_selection"),
+  menuItem("make-docmap-selection", "docmap_from_selection"),
+  menuItem("make-chart-selection", "chart_from_selection"),
+  menuItem("make-slides-selection", "slides_from_selection"),
+];
+
+const writingTools = [
+  menuItem("ai-describe-change", "make_a_change"),
+  menuItem("ai-proofread", "proofread"),
+  menuItem("ai-rewrite", "rewrite"),
+  menuItem("ai-friendly", "make_friendly"),
+  menuItem("ai-professional", "make_professional"),
+  menuItem("ai-concise", "make_concise"),
+  menuItem("ai-summary", "summarize"),
+  menuItem("ai-key-points", "extract_key_points"),
+  menuItem("ai-list", "make_list"),
+  menuItem("ai-table", "make_table"),
+];
+
+const flatSelectionTools = [menuSectionLabel("selection_services"), ...selectionTools];
+const editWithSelection = [...editBasics, menuSeparator, ...flatSelectionTools];
+const findCommands = [
+  menuItem("open-find-change", "find_change_ellipsis", "find-change"),
+  menuItem("find-change-next", "find_next", "find-change-next"),
+];
+
+const editWithWriting = [
+  ...editBasics,
+  menuSeparator,
+  ...findCommands,
+  menuItem("open-dictation", "dictation_pad"),
+  menuSeparator,
+  submenu("writing_tools", writingTools),
+  menuSeparator,
+  ...flatSelectionTools,
+];
+
+// Appearance menu lists every registered era. Release-ready ones switch the
+// desk; any still behind releaseReady stay visible but disabled with
+// 「尚未接入」. Eras that ship with polishPending stay clickable and name the
+// open fidelity/docs work in Balloon Help so the todos are not forgotten.
+const appearanceItems = (window.AISystem6Theme?.themes || window.AISystem6Theme?.getReleaseReadyThemes() || [])
+  .map(({ id, labelKey, releaseReady, polishPending }) => menuItem(
+    `set-theme-${id}`,
+    labelKey,
+    "",
+    {
+      themeId: id,
+      disabled: releaseReady === false,
+      unavailableReason: releaseReady === false ? "balloon_appearance_not_ready" : "",
+      balloonHelp: releaseReady !== false && polishPending ? "balloon_appearance_polish_pending" : "",
+    },
+  ));
+
+const systemSpecialItems = [
+  menuItem("tile-windows", "tile_windows"),
+  // Tile's desk-wide sibling: the Window menu raises one application's windows
+  // (Bring All to Front, where macOS keeps it), this raises every window on the
+  // desk. Both live where the desk keeps desk-wide window verbs.
+  menuItem("bring-all-windows-to-front", "bring_all_windows_to_front"),
+  menuSeparator,
+  submenu("appearance", appearanceItems),
+  menuItem("reset-system", "reset_system"),
+  menuSeparator,
+  menuItem("restart-system", "restart"),
+  menuItem("shut-down-system", "shut_down"),
+];
+
+const menu = (id, labelKey, items, extra = {}) => ({ id, labelKey, items, ...extra });
+// Special carries the desk-wide window verbs only (the overview, the per-window
+// arrangement popover, Tile). Peek acts on one rolled-up window and already
+// lives in the Window menu and inside Arrange Window…, so a third copy on
+// Special was one more greyed row to read (seen 2026-10-08).
+// The overview and the arrangement popover moved off the Window menu when it
+// took the macOS shape (owner, 2026-10-13), so Special is now their one home in
+// every era that has one -- except NeXTSTEP, which carries both in its own
+// Windows submenu and would otherwise show each twice.
+const specialMenu = (appItems = []) => menu("special", "menu_special", [
+  menuItem("window-browse", "window_browse", "", { menuCondition: "window-browse-special" }),
+  menuItem("windowshade-arrange-menu", "window_arrange_menu", "", { menuCondition: "window-arrange-special" }),
+  ...appItems,
+  ...(appItems.length ? [menuSeparator] : []),
+  ...systemSpecialItems,
+]);
+
+// The Window menu is a Mac OS X-and-later convention, so it is declared with a
+// menuCondition rather than as a stable fifth top-level menu: the appearance
+// registry decides whether the era has one ("window-menu"), and window-manager
+// hides it in the classic, Platinum, Drawing Board and NeXTSTEP eras. Every
+// row routes through windowshade-entry.js's one command registry, which owns
+// the single availability question and the arrangement geometry.
+//
+// Its shape follows the modern macOS template, in that order: Minimize, Zoom,
+// Fill, Center, Move & Resize, Enter Full Screen, Pin, the Dock switch, Bring
+// All to Front, then this application's own windows. The verbs the desk has and
+// macOS does not -- Roll Up/Unroll/Peek, Slide Over, Split, the pin stack --
+// are all still here, one submenu down, so nothing was dropped to match a
+// template. Cross-application "All Windows…" is the desk's own overview and
+// lives on Special now, where the desk-wide verbs already are; the list at the
+// bottom of this menu is this application's windows, which is what macOS means
+// by the same position.
+const windowMenu = () => menu("window", "menu_window", [
+  menuItem("minimize-window", "window_minimize", "minimize-window"),
+  menuItem("zoom-window", "window_zoom"),
+  menuSeparator,
+  menuItem("window-layout-fill", "window_arrange_fill"),
+  menuItem("window-layout-center", "window_center"),
+  submenu("move_and_resize", [
+    menuItem("window-layout-left", "window_arrange_left"),
+    menuItem("window-layout-right", "window_arrange_right"),
+    menuItem("window-layout-top", "window_arrange_top"),
+    menuItem("window-layout-bottom", "window_arrange_bottom"),
+    menuSeparator,
+    menuItem("window-layout-top-left", "window_arrange_top_left"),
+    menuItem("window-layout-top-right", "window_arrange_top_right"),
+    menuItem("window-layout-bottom-left", "window_arrange_bottom_left"),
+    menuItem("window-layout-bottom-right", "window_arrange_bottom_right"),
+    menuSeparator,
+    menuItem("window-layout-left-two-thirds", "window_arrange_left_two_thirds"),
+    menuItem("window-layout-right-two-thirds", "window_arrange_right_two_thirds"),
+    menuItem("window-layout-left-third", "window_arrange_left_third"),
+    menuItem("window-layout-right-third", "window_arrange_right_third"),
+    menuSeparator,
+    // The desk's own window verbs, one submenu down rather than gone. The
+    // arrangement popover still carries the whole vocabulary; this is the
+    // short list a menu is for.
+    menuItem("window-shade", "window_shade"),
+    menuItem("window-expand", "window_expand"),
+    menuItem("window-peek", "window_peek"),
+    menuSeparator,
+    // Slide Over's five rows sit here rather than in a submenu of their own:
+    // the desk's menu grammar stops after one submenu layer.
+    menuItem("window-slide-left", "window_slide_left"),
+    menuItem("window-slide-right", "window_slide_right"),
+    menuItem("window-slide-hide", "window_slide_hide"),
+    menuItem("window-slide-show", "window_slide_show"),
+    menuItem("window-slide-exit", "window_slide_exit"),
+    menuSeparator,
+    menuItem("window-split-choose", "window_split_choose"),
+    menuSeparator,
+    menuItem("window-layout-undo", "window_arrange_undo"),
+    menuItem("window-layout-recover", "window_arrange_recover"),
+  ]),
+  menuItem("toggle-full-screen-window", "window_full_screen"),
+  // Sierra's window-tab verbs (WINDOW-TABS-SPEC §5), between Enter Full Screen
+  // and Pinned — the place Part 2 left for them. They appear only where the
+  // era carries the `window-tabs` capability.
+  menuItem("show-previous-tab", "tabs_previous", "", TABS_GATE),
+  menuItem("show-next-tab", "tabs_next", "", TABS_GATE),
+  menuItem("toggle-tab-bar", "tabs_show_bar", "", TABS_GATE),
+  // The two verbs a second window makes expressible (§4.2 of the multi-instance
+  // work order): bring a second window's tabs back into this one, or send this
+  // window's tab out into a window of its own.
+  menuItem("merge-all-windows", "tabs_merge_all_windows", "", TABS_GATE),
+  menuItem("move-tab-to-new-window", "tabs_move_to_new_window", "", TABS_GATE),
+  menuSeparator,
+  submenu("pinned", [
+    menuItem("window-pin", "window_pin"),
+    menuItem("window-unpin", "window_unpin"),
+    menuItem("window-pinned-list", "window_pinned_list"),
+    menuSeparator,
+    menuItem("window-pin-suspend", "window_pin_suspend"),
+    menuItem("window-pin-restore", "window_pin_restore"),
+    menuItem("window-pin-clear", "window_pin_clear"),
+  ]),
+  // The Dock ships off in the Mac OS X eras (owner, 2026-09-25) and the only
+  // switch was a Control Panel row nobody is told about. The Window menu is
+  // where a put-away window is looked for, so the switch sits here too
+  // (owner, 2026-10-08); the row reads Show or Hide to match the preference.
+  menuItem("window-toggle-dock", "show_dock"),
+  menuSeparator,
+  menuItem("bring-app-front", "bring_all_to_front"),
+  menuSeparator,
+  { type: "window-list" },
+], { menuCondition: "window-menu" });
+
+// Finder's File menu holds only verbs that make sense for *any* selected
+// object. Two other kinds of verb used to live here and made it 32 rows long:
+// kind-specific verbs (install a Skill, promote a draft) moved to Get Info,
+// where openFileInfo() already branches by kind, and task lifecycle verbs went
+// to their own Task menu, whose grey/black pattern reads as information only
+// because those rows sit together.
+//
+// Insert and Eject are the exception that proves the rule: no selection at
+// all, because they are volume verbs, and the Finder's own Eject sits in File.
+// The 1992 HIG asks for that shape when a feature is either on or off — two
+// rows naming opposite actions instead of one conditional checkmark. Open
+// Demonstration Project Disks is the third kind: it names no object because it
+// opens a window listing the disks that ship with the application.
+const finderMenus = [
+  menu("file", "menu_file", [
+    menuItem("new-folder", "new_folder", "new-folder"),
+    menuItem("new-office-document", "new_office_document"),
+    menuItem("open-menu-selection", "open", "open"),
+    menuItem("open-with", "open_with"),
+    menuItem("close-active-window", "close", "close-window"),
+    menuSeparator,
+    menuItem("open-file-info", "get_info", "get-info"),
+    menuItem("duplicate-selection", "duplicate", "duplicate"),
+    menuItem("make-alias", "make_alias"),
+    menuItem("rename-file", "rename"),
+    menuItem("hand-to-clio", "hand_to_clio"),
+    menuSeparator,
+    menuItem("move-file-trash", "move_to_trash", "move-to-trash"),
+    menuItem("put-away", "put_away"),
+    menuSeparator,
+    menuItem("page-setup", "page_setup"),
+    menuItem("print-directory", "print_directory"),
+    menuSeparator,
+    menuItem("insert-text-disk", "insert_file_floppy_menu"),
+    menuItem("eject-menu-selection", "eject", "eject"),
+    menuSeparator,
+    menuItem("open-demo-disks", "open_demo_disks"),
+    menuItem("open-project-overview", "project_overview"),
+  ]),
+  menu("edit", "menu_edit", editBasics),
+  menu("view", "menu_view", [
+    menuItem("view-small-icons", "view_by_small_icon", "", { viewMode: "small-icon" }),
+    menuItem("view-icons", "view_by_icon", "", { viewMode: "icon" }),
+    menuItem("view-by-name", "view_by_name", "", { viewMode: "name" }),
+    menuItem("view-by-date", "view_by_date", "", { viewMode: "date" }),
+    menuItem("view-by-size", "view_by_size", "", { viewMode: "size" }),
+    menuItem("view-by-kind", "view_by_kind", "", { viewMode: "kind" }),
+  ]),
+  menu("task", "menu_task", [
+    menuItem("run-task-config", "run_in_cliotalk"),
+    menuItem("pause-task-config", "task_pause"),
+    menuItem("resume-task-config", "task_resume"),
+    menuItem("complete-task-config", "task_complete"),
+    menuItem("cancel-task-config", "task_cancel"),
+    menuSeparator,
+    menuItem("create-task-checkpoint", "task_checkpoint_create"),
+    menuItem("restore-task-checkpoint", "task_checkpoint_restore"),
+  ], { menuCondition: "task-menu" }),
+  windowMenu(),
+  specialMenu([
+    menuItem("empty-trash", "empty_trash"),
+    menuItem("erase-disk", "erase_disk"),
+    menuItem("set-startup-project", "set_startup"),
+    menuItem("open-theme-lab", "theme_lab"),
+  ]),
+];
+
+const teachTextMenus = [
+  menu("file", "menu_file", [
+    menuItem("new-document", "new_document", "new-document"),
+    menuItem("open-text-document", "open", "open-text-document"),
+    menuItem("close-active-window", "close", "close-window"),
+    menuSeparator,
+    menuItem("save-current", "save_current", "save"),
+    menuItem("save-copy", "save_copy", "save-copy"),
+    menuSeparator,
+    submenu("menu_export", [
+      menuItem("copy-active-markdown", "copy_markdown"),
+      menuItem("download-active-markdown", "download_markdown"),
+      menuItem("download-active-bilingual-markdown", "download_bilingual_md"),
+      menuItem("export-document-word", "export_word_document"),
+      menuItem("export-teachtext-project-cd", "export_project_cd"),
+    ]),
+    // N14 送审: one clean .docx round in the 来回 folder, citations as footnotes.
+    menuItem("send-manuscript-review", "send_manuscript_review"),
+    menuSeparator,
+    menuItem("open-document-versions", "versions_menu"),
+    menuSeparator,
+    menuItem("page-setup", "page_setup"),
+    menuItem("print-current", "print"),
+  ]),
+  menu("edit", "menu_edit", editWithWriting),
+  // Markdown, made visible. Every row names its key equivalent, which is how
+  // the keys are learned; the editor itself answers the keys.
+  menu("format", "menu_format", [
+    ...[
+      "heading-0:body", "heading-1", "heading-2", "heading-3", "",
+      "bold", "italic", "strike", "code", "link", "",
+      "quote", "bullet", "numbered", "task", "indent", "outdent", "",
+      "table", "rule", "code-block",
+    ].map((row) => {
+      if (!row) return menuSeparator;
+      const [command, label = command] = row.split(":");
+      return menuItem(`format-${command}`, `format_${label.replace(/-/g, "_")}`, command === "rule" ? "" : `format-${command}`);
+    }),
+    // N15a: 打开链接 —— 跟随光标处的 Markdown 链接（⌘/Ctrl+点击链接同义）。
+    // 独立一行；插入路径（⌘K / format-link / 贴链）行为不变。
+    menuItem("format-open-link", "format_open_link"),
+  ], { menuCondition: "writing-format-menu" }),
+  menu("writing", "menu_writing", [
+    submenu("menu_go_to", [
+      menuItem("open-question-sheet", "question_sheet", "route-question-sheet"),
+      menuItem("open-outline", "outline", "route-outline"),
+      menuItem("open-section-drafts", "section_drafts", "route-section-drafts"),
+      menuItem("open-teachtext-manuscript", "manuscript", "route-manuscript"),
+      menuItem("open-review-desk", "review_desk", "route-review-desk"),
+    ]),
+    menuItem("advance-writing-route", "advance_writing_route", "route-advance"),
+    menuItem("toggle-writing-preview", "preview", "writing-preview"),
+    menuItem("open-heading-navigator", "heading_navigator_ellipsis"),
+    menuItem("cycle-writing-focus", "focus_mode_cycle", "writing-focus"),
+    // MacWrite's ruler, narrowed to the one setting Aaron kept: line spacing.
+    // Applies to the editing paper and the preview alike, on every writing
+    // surface, and persists the way focus mode already does (localStorage).
+    submenu("line_spacing", [
+      menuItem("set-line-spacing-compact", "line_spacing_compact", "", { dataset: { lineSpacingChoice: "compact" } }),
+      menuItem("set-line-spacing-standard", "line_spacing_standard", "", { dataset: { lineSpacingChoice: "standard" } }),
+      menuItem("set-line-spacing-relaxed", "line_spacing_relaxed", "", { dataset: { lineSpacingChoice: "relaxed" } }),
+    ]),
+    // Raises every route window at once. Its own details-bar button was
+    // retired in the chrome-reduction pass (「把纸还给写作者」) because this is
+    // now its only permanent home.
+    menuItem("open-writing-flow-windows", "open_writing_flow"),
+    menuItem("see-as-chart", "clio_chart_see_as_chart"),
+    menuItem("develop-in-lightroom", "develop_in_lightroom"),
+    menuSeparator,
+    submenu("question_sheet", [
+      menuItem("organize-question-sheet", "organize_question_sheet"),
+      menuItem("insert-question-template", "insert_question_template"),
+      menuItem("generate-outline", "make_outline"),
+      menuItem("advance-question-to-outline", "to_outline"),
+    ], { surface: "questionSheet" }),
+    submenu("outline", [
+      menuItem("add-outline-section", "add_outline_section"),
+      menuItem("outline-tree-up", "outline_tree_up"),
+      menuItem("outline-tree-down", "outline_tree_down"),
+      menuItem("outline-tree-promote", "outline_tree_promote"),
+      menuItem("outline-tree-demote", "outline_tree_demote"),
+      menuItem("outline-tree-write", "outline_tree_write"),
+      menuItem("mingming-outline", "mingming_outline"),
+      menuItem("structure-outline", "structure_outline"),
+    menuItem("reduce-outline", "reduce_outline"),
+      menuItem("expand-outline", "expand_weak_topic"),
+      menuItem("advance-outline-to-drafts", "to_section_drafts"),
+    ], { surface: "outline" }),
+    submenu("section_drafts", [
+      menuItem("previous-section-draft", "previous_draft"),
+      menuItem("next-section-draft", "next_draft"),
+      menuItem("draft-current-section", "draft_section"),
+      menuItem("polish-draft", "polish_draft"),
+      menuItem("suggest-draft", "suggest_draft"),
+      menuItem("eli5-rewrite-section", "quick_draft_eli5_rewrite"),
+      menuItem("eli5-review-section", "quick_draft_eli5_review"),
+      menuItem("one-sentence-rewrite-section", "one_sentence_rewrite"),
+      menuItem("one-sentence-check-section", "one_sentence_check"),
+      menuItem("return-document-to-section-drafts", "edit_sections_again"),
+      menuItem("advance-drafts-to-manuscript", "to_manuscript"),
+    ], { surface: "sectionDrafts" }),
+    submenu("teachtext_label", [
+      // The command, its model role and its availability rule all existed; the
+      // only thing missing was a way for the writer to run it.
+      menuItem("translate-teachtext", "translate"),
+      menuItem("advance-manuscript-to-review", "to_review"),
+    ], { surface: "teachText" }),
+    submenu("review_desk", [
+      menuItem("previous-style-section", "previous_section"),
+      menuItem("next-style-section", "next_section"),
+      // View Manuscript syncs and scrolls the Manuscript to the section under
+      // review; it is more than a plain Go To, so it moved here rather than
+      // being dropped when its details-bar button was retired.
+      menuItem("review-view-manuscript", "view_manuscript"),
+      menuItem("review-style-section", "review_style_section"),
+      menuItem("review-facts-section", "review_facts_section"),
+      menuItem("review-facts-section-online", "review_facts_section_online"),
+      menuItem("review-facts-online", "review_facts_online"),
+      menuItem("review-hkrr-section", "review_hkrr_section"),
+      menuItem("review-mingming-section", "review_mingming_section"),
+      menuItem("review-mingming-handoff", "review_mingming_handoff"),
+      menuItem("review-mingming-handoff-backstage", "review_mingming_handoff_backstage"),
+      menuItem("review-export", "review_export"),
+    ], { surface: "reviewDesk" }),
+    menuSeparator,
+    menuItem("open-image-manager", "image_manager"),
+    menuItem("generate-marp-open-clio-stage", "generate_marp_open_clio_stage"),
+  ]),
+  windowMenu(),
+  specialMenu(),
+];
+
+// Quick Draft is its own application. Its route relationship is deliberately
+// one-way: the draft may enter Writing Studio, but Writing Studio never owns
+// or advertises Quick Draft as one of its internal writing surfaces.
+// 文字亮室 is its own application, so it carries its own menu bar. The views
+// belong to it now, and so does Develop; what writes the draft stays with the
+// desk that writes it.
+const lightroomLayerKinds = ["clean", "mingming", "luoluo", "hkrr", "density"];
+const lightroomLayerLabelKey = (kind) => (kind === "density" || kind === "clean"
+  ? `quick_draft_adjustment_${kind}`
+  : `quick_draft_chip_${kind}`);
+const lightroomStrengthKeys = (kind) => (kind === "density"
+  ? ["quick_draft_adjustment_density_light", "quick_draft_adjustment_density_standard", "quick_draft_adjustment_density_heavy"]
+  : ["quick_draft_adjustment_light", "quick_draft_adjustment_standard", "quick_draft_adjustment_heavy"]);
+
+// One layer, one submenu: the same four controls the inspector shows, in the
+// same order, so the menu is not a second vocabulary for the same object.
+const lightroomLayerSubmenu = (kind) => submenu(lightroomLayerLabelKey(kind), [
+  menuItem(`lightroom-layer-toggle:${kind}`, "quick_draft_layer_enabled", "", {
+    dataset: { lightroomLayer: kind, lightroomLayerRow: "enabled" },
+  }),
+  menuSeparator,
+  // 清稿 has no strength: all four clean-up operations, as one switch.
+  ...(kind === "clean" ? [] : [...lightroomStrengthKeys(kind).map((labelKey, index) => menuItem(
+    `lightroom-layer-strength:${kind}:${[25, 50, 75][index]}`,
+    labelKey,
+    "",
+    { dataset: { lightroomLayer: kind, lightroomLayerStrength: String([25, 50, 75][index]) } }
+  )), menuSeparator]),
+  menuItem(`lightroom-layer-move:${kind}:-1`, "quick_draft_adjustment_move_up", "", {
+    dataset: { lightroomLayer: kind, lightroomLayerRow: "move" },
+  }),
+  menuItem(`lightroom-layer-move:${kind}:1`, "quick_draft_adjustment_move_down", "", {
+    dataset: { lightroomLayer: kind, lightroomLayerRow: "move" },
+  }),
+  menuSeparator,
+  menuItem(`lightroom-layer-scope:${kind}`, "quick_draft_scope_selection_row", "", {
+    dataset: { lightroomLayer: kind, lightroomLayerRow: "scope-selection" },
+  }),
+  menuItem(`lightroom-layer-scope-all:${kind}`, "quick_draft_scope_whole", "", {
+    dataset: { lightroomLayer: kind, lightroomLayerRow: "scope-all" },
+  }),
+  menuSeparator,
+  // What this one layer changed, shown on the paper.
+  menuItem(`lightroom-layer-solo:${kind}`, "lightroom_layer_solo_row", "", {
+    dataset: { lightroomLayer: kind, lightroomLayerRow: "solo" },
+  }),
+]);
+
+// 文字亮室 is its own application, so it carries its own menu bar. The views
+// belong to it now, and so does Develop; what writes the draft stays with the
+// desk that writes it.
+//
+// Every row here used to be registered as a Quick Draft command, and Quick
+// Draft's availability rule opens with "the front window must be mine" — so
+// the whole bar was grey the moment the darkroom came forward. The rows are
+// the same commands; what changed is who answers for them.
+const lightroomMenus = [
+  menu("file", "menu_file", [
+    submenu("lightroom_open_document", [{ type: "lightroom-rows", rowKind: "documents" }], { dataset: { lightroomRows: "documents" } }),
+    menuItem("close-active-window", "close", "close-window"),
+    menuSeparator,
+    menuItem("lightroom-save-version", "lightroom_save_version", "lightroom-save-version"),
+    submenu("lightroom_name_version", [{ type: "lightroom-rows", rowKind: "nameVersions" }], { dataset: { lightroomRows: "nameVersions" } }),
+    submenu("lightroom_restore_version", [{ type: "lightroom-rows", rowKind: "versions" }], { dataset: { lightroomRows: "versions" } }),
+    // The negative is the writer's baseline; when the body has moved past it,
+    // the current body can become the new one.
+    menuItem("lightroom-reshoot", "lightroom_reshoot_menu"),
+    menuSeparator,
+    // Printing belongs to the reading view: the composite is the one paper
+    // this application puts on a page, so both rows grey outside it.
+    menuItem("lightroom-page-setup", "page_setup"),
+    menuItem("lightroom-print", "print"),
+  ]),
+  menu("edit", "menu_edit", [
+    ...editBasics,
+    menuSeparator,
+    ...findCommands,
+    menuSeparator,
+    ...flatSelectionTools,
+  ]),
+  menu("view", "menu_view", [
+    menuItem("quick-draft-view-grain", "quick_draft_grain", "lightroom-view-grain"),
+    menuItem("quick-draft-view-read", "quick_draft_composite", "lightroom-view-read"),
+    menuItem("quick-draft-view-listen", "quick_draft_listen", "lightroom-view-listen"),
+    menuSeparator,
+    menuItem("lightroom-zoom-grain", "quick_draft_zoom_grain", "", { dataset: { lightroomZoom: "grain" } }),
+    menuItem("lightroom-zoom-histogram", "quick_draft_histogram", "", { dataset: { lightroomZoom: "histogram" } }),
+    menuItem("lightroom-zoom-fatbits", "quick_draft_fatbits", "", { dataset: { lightroomZoom: "fatbits" } }),
+    menuSeparator,
+    menuItem("lightroom-toggle-inspector", "quick_draft_hide_adjustments"),
+    menuSeparator,
+    // Before and after: against the negative, a version or a step of history.
+    // Holding \ shows the other side for as long as the key is down.
+    menuItem("lightroom-compare-toggle", "lightroom_compare", "", { dataset: { lightroomCompareRow: "toggle" } }),
+    menuItem("lightroom-compare-mode:side", "lightroom_compare_side", "", { dataset: { lightroomCompareModeRow: "side" } }),
+    menuItem("lightroom-compare-mode:split", "lightroom_compare_split", "", { dataset: { lightroomCompareModeRow: "split" } }),
+    submenu("lightroom_compare_against", [{ type: "lightroom-rows", rowKind: "compareSources" }], { dataset: { lightroomRows: "compareSources" } }),
+  ]),
+  // The application's own verbs, and the darkroom vocabulary lives in the
+  // darkroom: these three words name the LAYERS here, never a one-shot
+  // rewrite. The one-shot rewrites are a writing move and went back to the
+  // desk that writes -- the split says write there, look here.
+  menu("adjust", "menu_adjust", [
+    menuItem("lightroom-toggle-bypass", "lightroom_adjustments_on", "", { dataset: { lightroomBypassRow: "true" } }),
+    menuSeparator,
+    ...lightroomLayerKinds.map(lightroomLayerSubmenu),
+    menuSeparator,
+    // A set of layers kept by name, and settings carried to another document.
+    submenu("lightroom_presets", [{ type: "lightroom-rows", rowKind: "presets" }], { dataset: { lightroomRows: "presets" } }),
+    menuItem("lightroom-preset-save", "lightroom_preset_save_menu"),
+    submenu("lightroom_copy_settings_to", [{ type: "lightroom-rows", rowKind: "copyTo" }], { dataset: { lightroomRows: "copyTo" } }),
+    menuSeparator,
+    menuItem("lightroom-protect-selection", "quick_draft_protect_selection"),
+    menuSeparator,
+    submenu("quick_draft_eli5_enabled", [
+      menuItem("lightroom-eli5-toggle", "quick_draft_layer_enabled", "", { dataset: { lightroomEli5: "enabled" } }),
+      menuSeparator,
+      menuItem("lightroom-eli5-baseline:secondary-school", "quick_draft_eli5_baseline_general", "", { dataset: { lightroomEli5Baseline: "secondary-school" } }),
+      menuItem("lightroom-eli5-baseline:some-familiarity", "quick_draft_eli5_baseline_some", "", { dataset: { lightroomEli5Baseline: "some-familiarity" } }),
+      menuItem("lightroom-eli5-baseline:familiar", "quick_draft_eli5_baseline_familiar", "", { dataset: { lightroomEli5Baseline: "familiar" } }),
+    ]),
+    menuSeparator,
+    menuItem("quick-draft-apply", "quick_draft_preview_adjustments", "lightroom-apply"),
+    menuItem("quick-draft-develop", "quick_draft_develop", "lightroom-develop"),
+    // Undo answers for one thing here: the last develop, while its
+    // before-develop version is still the newest link in the chain.
+    menuItem("lightroom-undo-develop", "lightroom_undo_develop", "lightroom-undo-develop"),
+    menuItem("lightroom-discard-composite", "lightroom_discard_composite"),
+  ], { menuCondition: "lightroom-document" }),
+  // The sixth menu appears with the view, the way the fifth appears with the
+  // work: these verbs exist only while the paper is being listened to.
+  menu("listen", "quick_draft_listen", [
+    menuItem("lightroom-listen-toggle", "quick_draft_listen_play", "lightroom-listen-toggle"),
+    menuItem("lightroom-listen-stop", "quick_draft_listen_stop"),
+    menuItem("lightroom-listen-back", "quick_draft_listen_back"),
+    menuItem("lightroom-listen-forward", "quick_draft_listen_forward"),
+    menuSeparator,
+    menuItem("lightroom-listen-lost", "quick_draft_listen_mark_lost"),
+    menuItem("lightroom-listen-rehearse", "quick_draft_listen_rehearse"),
+    // A partner listens read-only: one mark, one short note, no roles and no
+    // history — the product never models the relationship.
+    menuItem("lightroom-listen-partner", "quick_draft_listen_partner"),
+    menuSeparator,
+    menuItem("lightroom-eli5-review", "quick_draft_eli5_review"),
+    menuItem("lightroom-eli5-rewrite", "quick_draft_eli5_rewrite"),
+    menuSeparator,
+    submenu("quick_draft_listen_voice", [{ type: "lightroom-rows", rowKind: "voices" }], { dataset: { lightroomRows: "voices" } }),
+  ], { menuCondition: "lightroom-listen" }),
+  // The darkroom carried no Window menu while its conditional budget was two
+  // (lightroom-file, lightroom-listen). Every other Mac OS X-era application on
+  // the desk has one, and a window that can be shaded, split, tiled and put
+  // full screen is exactly where a writer looks for those verbs (owner,
+  // 2026-10-13), so the budget is three.
+  windowMenu(),
+  specialMenu(),
+];
+
+const quickDraftMenus = [
+  menu("file", "menu_file", [
+    menuItem("close-active-window", "close", "close-window"),
+    menuSeparator,
+    menuItem("quick-draft-save-project", "quick_draft_save_project_doc"),
+    menuSeparator,
+    menuItem("quick-draft-copy-markdown", "copy_markdown"),
+    menuItem("quick-draft-send-teachtext", "quick_draft_send_teachtext"),
+    menuItem("quick-draft-send-review", "quick_draft_send_review"),
+  ]),
+  menu("edit", "menu_edit", editWithWriting),
+  // Quick Draft is where the writing happens; looking at it happens in 文字亮室.
+  // The grain, composite and listen views drove Quick Draft's OWN display mode,
+  // so removing them removes real views rather than tidying repeats: the split
+  // says write here, look there, and leaving three ways to look inside the
+  // writing window was the split only two-thirds done. The paper stays, and the
+  // way across is one row instead of three.
+  menu("view", "menu_view", [
+    menuItem("quick-draft-view-body", "quick_draft_display_body"),
+    menuItem("open-lightroom", "lightroom_title"),
+    menuSeparator,
+    menuItem("quick-draft-toggle-materials", "quick_draft_hide_materials"),
+  ]),
+  // The application's own menu is not named after the application: the bold
+  // application-name menu already says "Quick Draft" in the Mac OS X eras, so
+  // two menus read the same word (seen 2026-10-08). Owner: 「草稿」/ Draft.
+  menu("quickDraft", "quick_draft_menu_label", [
+    menuItem("quick-draft-compose", "quick_draft_start_writing"),
+    menuItem("quick-draft-apply", "quick_draft_preview_adjustments"),
+    menuSeparator,
+    menuItem("quick-draft-import-chat", "quick_draft_import_chat_records"),
+    menuItem("quick-draft-walk-return", "quick_draft_walk_return"),
+    menuItem("quick-draft-vent-on", "quick_draft_vent_start"),
+    menuItem("quick-draft-vent-off", "quick_draft_vent_stop"),
+    menuItem("quick-draft-vent-summary", "quick_draft_vent_summarize"),
+    menuSeparator,
+    menuItem("quick-draft-talk-points", "quick_draft_chip_talk_points"),
+    menuItem("quick-draft-praise", "quick_draft_chip_praise"),
+    menuSeparator,
+    // One-shot rewrites named after the adjustment layers. They read as layers
+    // in the darkroom and as rewrites here, and only one of those two can be
+    // true in one window -- so they live where the writing happens.
+    menuItem("quick-draft-mingming", "quick_draft_chip_mingming"),
+    menuItem("quick-draft-luoluo", "quick_draft_chip_luoluo"),
+    menuItem("quick-draft-hkrr", "quick_draft_chip_hkrr"),
+    menuSeparator,
+    menuItem("quick-draft-toggle-sideask", "quick_draft_show_sideask"),
+    menuItem("quick-draft-open-writing-studio", "enter_writing_studio"),
+  ], { menuCondition: "quick-draft-menu" }),
+  windowMenu(),
+  specialMenu(),
+];
+
+// A conversation is a file on a disk, so its verbs live in File. "Save
+// conversation" is gone: the transcript is written to its .talk file as it
+// goes, and the info bar says where — a Save row beside an autosaving file
+// only teaches the user to doubt that it saved.
+const clioTalkMenus = [
+  menu("file", "menu_file", [
+    menuItem("start-new-clio-chat", "new_conversation", "start-new-clio-chat"),
+    submenu("recent_conversations", [{ type: "recent-chats" }]),
+    menuItem("close-active-window", "close", "close-window"),
+    menuSeparator,
+    menuItem("rename-active-chat", "rename_conversation"),
+    menuItem("reveal-active-chat-file", "reveal_in_project_disk"),
+    // Only a temporary conversation has anything to save — an ordinary one is
+    // already on disk. Gated rather than removed so the capability survives.
+    menuItem("save-conversation", "save_as_conversation_file"),
+    menuSeparator,
+    submenu("menu_export", [
+      menuItem("copy-current-chat-markdown", "copy_markdown"),
+      menuItem("download-current-chat-markdown", "download_markdown"),
+      menuItem("export-document-word", "export_word_document"),
+    ]),
+  ]),
+  menu("edit", "menu_edit", [
+    ...editWithSelection,
+    menuSeparator,
+    menuItem("find-in-cliotalk", "find_in_conversation"),
+    menuItem("find-next-in-cliotalk", "find_next"),
+  ]),
+  menu("conversation", "menu_conversation", [
+    menuItem("open-clio-attachment-picker", "compose_attach_project_file"),
+    menuItem("clear-attached-clips", "clear_context"),
+    menuSeparator,
+    // The exchange-level verbs. Both actions were registered and gated in
+    // window-manager.js, but their only affordance was a composer button kept
+    // out of the everyday row, so neither verb could be reached at all.
+    menuItem("clip-assistant-selection", "clip_assistant_selection"),
+    menuItem("retry-last-message", "retry"),
+    menuSeparator,
+    menuItem("clio-search", "clio_search", "clio-search"),
+    menuItem("start-temporary-clio-chat", "temporary_conversation"),
+    menuSeparator,
+    menuItem("remember-chat-as-project-memory", "remember_project_memory"),
+  ]),
+  windowMenu(),
+  specialMenu(),
+];
+
+const aaronBlogMenus = [
+  menu("file", "menu_file", [
+    menuItem("blog-sync", "refresh", "blog-sync"),
+    menuItem("close-active-window", "close", "close-window"),
+  ]),
+  menu("edit", "menu_edit", [
+    menuItem("copy", "copy", "copy"),
+    menuItem("select-all", "select_all", "select-all"),
+    menuSeparator,
+    menuItem("blog-search", "aaron_blog_search", "blog-search"),
+  ]),
+  menu("view", "menu_view", [
+    menuItem("blog-section-best", "aaron_blog_best"),
+    menuItem("blog-section-all", "aaron_blog_all"),
+    menuItem("blog-section-notes", "aaron_blog_notes"),
+    menuItem("blog-section-tags", "aaron_blog_tags"),
+    menuItem("blog-section-archive", "aaron_blog_archive"),
+    menuItem("blog-section-threads", "aaron_blog_threads"),
+    menuSeparator,
+    menuItem("blog-back", "aaron_blog_back"),
+  ]),
+  windowMenu(),
+  specialMenu(),
+];
+
+const readerMenus = [
+  menu("file", "menu_file", [
+    menuItem("reader-open-source", "open_source", "reader-open-source"),
+    menuItem("close-active-window", "close", "close-window"),
+  ]),
+  menu("edit", "menu_edit", [
+    menuItem("copy", "copy", "copy"), menuItem("select-all", "select_all", "select-all"),
+    menuSeparator, ...flatSelectionTools,
+  ]),
+  menu("source", "menu_source", [
+    menuItem("reader-clip", "clip"),
+    menuItem("reader-clip-translate", "clip_translate"),
+    menuItem("reader-send-manuscript", "send_to_manuscript"),
+    menuItem("reader-make-docmap", "make_docmap"),
+    menuItem("reader-docmap-source", "docmap_from_source"),
+    menuItem("make-chart", "make_chart"),
+    menuItem("make-slides", "make_slides"),
+    menuItem("reader-open-clio-stage", "open_in_clio_stage"),
+    // N9: a Pages/Numbers/Keynote source becomes an editable Office copy.
+    menuItem("reader-make-office-copy", "iwork_make_office_copy"),
+    menuItem("focus-reader-question", "ask"),
+  ]),
+  windowMenu(),
+  specialMenu(),
+];
+
+const timeMachineMenus = [
+  menu("file", "menu_file", [
+    menuItem("time-machine-new-tab", "new_tab"),
+    menuItem("time-machine-close-tab", "close_tab"),
+    menuItem("close-active-window", "close", "close-window"),
+    menuSeparator,
+    menuItem("time-machine-open-in-browser", "time_machine_open_in_browser"),
+    menuItem("time-machine-clear-data", "time_machine_clear_browsing_data"),
+  ]),
+  menu("edit", "menu_edit", [
+    menuItem("copy", "copy", "copy"), menuItem("select-all", "select_all", "select-all"),
+    menuSeparator, ...flatSelectionTools,
+    menuSeparator,
+    menuItem("time-machine-clip", "clip"),
+    menuItem("time-machine-clip-translate", "clip_translate"),
+    menuItem("time-machine-send-manuscript", "send_to_manuscript"),
+    menuItem("time-machine-docmap", "make_docmap"),
+    menuItem("time-machine-docmap-source", "docmap_from_source"),
+    menuItem("time-machine-ask", "ask"),
+  ]),
+  menu("navigate", "menu_navigate", [
+    menuItem("time-machine-back", "back"),
+    menuItem("time-machine-forward", "forward"),
+    menuItem("time-machine-stop", "stop"),
+    menuItem("time-machine-refresh", "refresh"),
+    menuItem("time-machine-switch-source", "time_machine_switch_source"),
+    menuSeparator,
+    menuItem("time-machine-toggle", "time_machine"),
+    menuItem("time-machine-web-view", "web_view"),
+    menuItem("time-machine-reader-view", "reading_view"),
+    menuSeparator,
+    menuItem("time-machine-preserve-wayback", "time_machine_preserve_wayback"),
+    menuItem("time-machine-preserve-archive-is", "time_machine_preserve_archive_is"),
+    menuSeparator,
+    // Two rows naming opposite actions, not one conditional checkmark (see
+    // the note above finderMenus).
+    menuItem("time-machine-block-ads", "time_machine_block_ads"),
+    menuItem("time-machine-allow-ads", "time_machine_allow_ads"),
+  ]),
+  windowMenu(),
+  specialMenu(),
+];
+
+const docMapMenus = [
+  menu("file", "menu_file", [
+    menuItem("close-active-window", "close", "close-window"),
+    menuSeparator,
+    menuItem("docmap-save", "save"),
+    menuItem("docmap-print-pdf", "print_pdf"),
+  ]),
+  menu("edit", "menu_edit", [menuItem("undo", "undo", "undo"), menuItem("redo", "redo", "redo"), menuSeparator, menuItem("copy", "copy", "copy"), menuSeparator,
+    menuItem("docmap-rename-node", "docmap_rename_node"), menuItem("docmap-delete-branch", "docmap_delete_branch"),
+    menuItem("docmap-move-up", "docmap_move_up"), menuItem("docmap-move-down", "docmap_move_down")]),
+  menu("map", "menu_map", [
+    menuItem("docmap-branch-to-chart", "docmap_branch_to_chart"),
+    menuItem("docmap-map-to-slides", "docmap_map_to_slides"),
+    menuSeparator,
+    menuItem("docmap-send-question", "to_question_sheet"),
+    menuItem("docmap-insert-outline", "insert_outline"),
+    menuItem("docmap-hkrr", "docmap_hkrr_document"),
+    menuItem("focus-docmap-question", "ask"),
+    menuSeparator,
+    // The two layouts the renderer actually has, named exactly as the DocMap
+    // toolbar names them, with a check on the one in use. The menu used to
+    // offer Tree / Radial / Fishbone; all three set the same one-sided layout,
+    // and Symmetric could only be reached from the toolbar.
+    submenu("menu_layout", [
+      menuItem("docmap-layout-right", "docmap_layout_right", "", { layoutChoice: "right" }),
+      menuItem("docmap-layout-balanced", "docmap_layout_balanced", "", { layoutChoice: "balanced" }),
+    ]),
+    menuItem("docmap-fit-view", "fit_view"),
+    menuItem("docmap-zoom-out", "zoom_out"),
+    menuItem("docmap-zoom-in", "zoom_in"),
+  ]),
+  windowMenu(),
+  specialMenu(),
+];
+
+const scrapbookMenus = [
+  menu("file", "menu_file", [
+    menuItem("new-note", "new_scrap"),
+    menuItem("close-active-window", "close", "close-window"),
+    menuSeparator,
+    menuItem("scrapbook-export-bilingual", "download_bilingual_md"),
+  ]),
+  menu("edit", "menu_edit", [
+    menuItem("copy", "copy", "copy"), menuItem("select-all", "select_all", "select-all"),
+    menuSeparator, ...flatSelectionTools,
+  ]),
+  menu("scrap", "menu_scrap", [
+    menuItem("scrapbook-open-source", "open_source"),
+    menuItem("scrapbook-toggle-translation", "show_translation"),
+    menuItem("scrapbook-insert", "insert"),
+    menuItem("scrapbook-attach", "attach_to_assistant"),
+    menuItem("scrapbook-send-question", "to_question_sheet"),
+    menuItem("scrapbook-outline", "scrap_outline"),
+    menuItem("make-docmap", "make_docmap"),
+    menuItem("make-docmap-source", "docmap_from_source"),
+    menuItem("make-chart", "make_chart"),
+    menuItem("make-slides", "make_slides"),
+    menuItem("focus-scrapbook-question", "ask"),
+    menuSeparator,
+    menuItem("scrapbook-delete", "delete"),
+  ]),
+  windowMenu(),
+  specialMenu(),
+];
+
+const searcherMenus = [
+  menu("file", "menu_file", [menuItem("close-active-window", "close", "close-window")]),
+  menu("edit", "menu_edit", editWithSelection),
+  menu("search", "menu_search", [
+    menuItem("focus-search-query", "search"),
+    menuItem("synthesize-search-results", "synthesize"),
+    submenu("menu_selected_result", [
+      menuItem("open-selected-in-reader", "open_in_reader"),
+      menuItem("clip-selected-find-path", "clip"),
+      menuItem("copy-search-result-markdown", "copy_markdown"),
+      menuItem("insert-search-result", "insert"),
+    ]),
+  ]),
+  windowMenu(),
+  specialMenu(),
+];
+
+const clioStageMenus = [
+  menu("file", "menu_file", [
+    menuItem("new-office-document", "office_new_blank", "new-office-document"),
+    menuItem("make-slides", "make_slides"),
+    menuItem("clio-stage-import", "import"),
+    menuItem("clio-stage-save-draft", "clio_stage_save_draft"),
+    menuItem("clio-stage-export-pdf", "print_pdf"),
+    menuItem("office-save-as-stationery", "office_save_as_stationery"),
+    menuItem("hand-to-clio", "hand_to_clio"),
+    menuItem("clio-stage-print-preview", "clio_stage_print_preview"),
+    submenu("clio_stage_restyle", [
+      menuItem("clio-stage-restyle-classic", "theme_classic"),
+      menuItem("clio-stage-restyle-platinum", "theme_platinum"),
+      menuItem("clio-stage-restyle-aqua", "theme_aqua"),
+      menuItem("clio-stage-restyle-snow-leopard", "theme_snow_leopard"),
+      menuItem("clio-stage-restyle-yosemite", "theme_yosemite"),
+      menuItem("clio-stage-restyle-big-sur", "theme_big_sur"),
+      menuItem("clio-stage-restyle-liquid-glass", "theme_liquid_glass"),
+      menuItem("clio-stage-restyle-nextstep", "theme_nextstep"),
+    ]),
+    menuItem("close-active-window", "close", "close-window"),
+  ]),
+  // Slide View is edited on the page, so Edit carries Redo beside Undo; both
+  // reach the deck's own history when no text field is the target.
+  menu("edit", "menu_edit", [editBasics[0], menuItem("redo", "redo", "redo"), ...editBasics.slice(1), menuSeparator, ...flatSelectionTools]),
+  menu("presentation", "menu_presentation", [
+    menuItem("clio-stage-present", "clio_stage_present", "clio-stage-present"),
+    menuItem("clio-stage-previous", "previous_slide"),
+    menuItem("clio-stage-next", "next_slide"),
+    submenu("menu_view", [
+      menuItem("clio-stage-source", "source_view"),
+      menuItem("clio-stage-document", "document_view"),
+      menuItem("clio-stage-slide", "slide_view"),
+      menuItem("clio-stage-cue", "cue_view"),
+      menuItem("clio-stage-overview", "clio_stage_overview"),
+    ]),
+    menuSeparator,
+    menuItem("clio-stage-add-slide", "clio_stage_slide_add"),
+    menuItem("clio-stage-duplicate-slide", "clio_stage_slide_duplicate"),
+    menuItem("clio-stage-delete-slide", "clio_stage_slide_delete"),
+    menuItem("clio-stage-reset-layout", "clio_stage_reset_layout"),
+    menuSeparator,
+    menuItem("focus-clio-stage-question", "ask"),
+  ]),
+  windowMenu(),
+  specialMenu(),
+];
+
+
+const liquidCoverMenus = [
+  menu("file", "menu_file", [
+    menuItem("cover-new", "liquid_cover_new"),
+    menuItem("cover-save", "save"),
+    menuItem("cover-save-as", "liquid_cover_save_as"),
+    menuItem("cover-send-stage", "liquid_cover_send_stage"),
+    menuSeparator,
+    menuItem("cover-choose-background", "liquid_cover_choose_background"),
+    menuItem("cover-choose-video", "liquid_cover_choose_motion"),
+    menuItem("cover-choose-subject", "liquid_cover_choose_foreground"),
+    menuSeparator,
+    menuItem("cover-export-png", "liquid_cover_export_png"),
+    menuItem("cover-export-video", "liquid_cover_export_video"),
+    menuItem("close-active-window", "close", "close-window"),
+  ]),
+  menu("edit", "menu_edit", editBasics),
+  menu("cover", "menu_cover", [
+    menuItem("cover-add-layer", "liquid_cover_add_layer"),
+    menuItem("cover-delete-layer", "delete"),
+    submenu("menu_add_shape", [
+      menuItem("cover-shape-circle", "liquid_cover_shape_circle"),
+      menuItem("cover-shape-squircle", "liquid_cover_shape_squircle"),
+      menuItem("cover-shape-capsule", "liquid_cover_shape_capsule"),
+    ]),
+    menuItem("cover-add-picture", "liquid_cover_add_picture"),
+    menuItem("cover-from-album", "liquid_cover_add_from_album"),
+    menuItem("cover-remove-background", "liquid_cover_remove_background"),
+    submenu("liquid_cover_menu_adjustment", [
+      menuItem("cover-add-adjust-brightness", "liquid_cover_adjust_brightnessContrast"),
+      menuItem("cover-add-adjust-hue", "liquid_cover_adjust_hueSaturation"),
+      menuItem("cover-add-adjust-blur", "liquid_cover_adjust_blur"),
+    ]),
+    menuItem("cover-distribute-h", "liquid_cover_distribute_h"),
+    menuItem("cover-distribute-v", "liquid_cover_distribute_v"),
+    menuItem("cover-toggle-focus", "focus"),
+    menuItem("cover-preview-motion", "preview"),
+    menuItem("cover-ai-compose", "liquid_cover_ai_compose"),
+  ]),
+  windowMenu(),
+  specialMenu(),
+];
+
+const cmfStudioMenus = [
+  menu("file", "menu_file", [
+    menuItem("cmf-save-recipe", "save"),
+    menuItem("cmf-export-usdz", "cmf_export_usdz"),
+    menuItem("close-active-window", "close", "close-window"),
+  ]),
+  menu("recipe", "menu_recipe", [
+    menuItem("cmf-shuffle", "cmf_shuffle"),
+    menuItem("cmf-reset", "reset"),
+    menuItem("cmf-reset-view", "cmf_reset_view"),
+  ]),
+  // Three alternatives, one camera. Only the thumbnail strip inside the
+  // window said which view the model is at; the rows carried no mark, so a
+  // view chosen from the menu moved the camera and marked nothing.
+  menu("view", "menu_view", [
+    menuItem("cmf-view-front", "cmf_view_front", "", { dataset: { cmfViewChoice: "01-front" } }),
+    menuItem("cmf-view-back", "cmf_view_back", "", { dataset: { cmfViewChoice: "02-back" } }),
+    menuItem("cmf-view-side", "cmf_view_side", "", { dataset: { cmfViewChoice: "05-buttons-side" } }),
+  ]),
+  windowMenu(),
+  specialMenu(),
+];
+
+const soundscapeMenus = [
+  menu("file", "menu_file", [
+    menuItem("soundscape-choose-local", "soundscape_choose_local"),
+    menuItem("soundscape-gamdl-download", "soundscape_gamdl_download"),
+    menuItem("soundscape-save-moment", "soundscape_save_moment"),
+    menuItem("close-active-window", "close", "close-window"),
+  ]),
+  menu("soundscape", "menu_soundscape", [
+    menuItem("soundscape-toggle-play", "soundscape_play_pause"),
+    menuItem("soundscape-previous", "soundscape_previous_track"),
+    menuItem("soundscape-next", "soundscape_next_track"),
+    submenu("soundscape_shuffle", [
+      menuItem("soundscape-shuffle-on", "soundscape_shuffle_mode_on", "", { shuffleMode: "on" }),
+      menuItem("soundscape-shuffle-off", "soundscape_shuffle_mode_off", "", { shuffleMode: "off" }),
+      menuSeparator,
+      menuItem("soundscape-shuffle-songs", "soundscape_shuffle_kind_songs", "", { shuffleKind: "songs" }),
+      menuItem("soundscape-shuffle-albums", "soundscape_shuffle_kind_albums", "", { shuffleKind: "albums" }),
+      menuItem("soundscape-shuffle-groupings", "soundscape_shuffle_kind_groupings", "", { shuffleKind: "groupings" }),
+    ]),
+    submenu("soundscape_repeat", [
+      menuItem("soundscape-repeat-off", "soundscape_repeat_mode_off", "", { repeatMode: "off" }),
+      menuItem("soundscape-repeat-all", "soundscape_repeat_mode_all", "", { repeatMode: "all" }),
+      menuItem("soundscape-repeat-one", "soundscape_repeat_mode_one", "", { repeatMode: "one" }),
+    ]),
+    menuItem("soundscape-reset-style", "soundscape_reset_style"),
+    menuItem("soundscape-link-project", "soundscape_add_project"),
+  ]),
+  windowMenu(),
+  specialMenu(),
+];
+
+const endfieldMenus = [
+  menu("file", "menu_file", [menuItem("close-active-window", "close", "close-window")]),
+  menu("edit", "menu_edit", editBasics),
+  menu("session", "menu_session", [
+    menuItem("endfield-new-session", "new_session"),
+    menuItem("endfield-run-query", "search"),
+    menuItem("endfield-menu-progress", "endfield_menu_progress"),
+    menuItem("endfield-menu-clip", "endfield_menu_clip"),
+    menuItem("endfield-sideask", "endfield_sideask"),
+  ]),
+  windowMenu(),
+  specialMenu(),
+];
+
+const bureaucracyMemeMenus = [
+  menu("file", "menu_file", [
+    menuItem("meme-upload", "bureaucracy_meme_upload"),
+    menuItem("meme-download", "bureaucracy_meme_download"),
+    menuItem("close-active-window", "close", "close-window"),
+  ]),
+  menu("edit", "menu_edit", editBasics),
+  menu("meme", "menu_meme", [
+    menuItem("meme-focus-topic", "bureaucracy_meme_topic"),
+    menuItem("meme-generate", "bureaucracy_meme_generate"),
+  ]),
+  windowMenu(),
+  specialMenu(),
+];
+
+const minimalMenus = [specialMenu()];
+
+const applicationMenuSets = Object.freeze({
+  finder: finderMenus,
+  lightroom: lightroomMenus,
+  quickDraft: quickDraftMenus,
+  teachText: teachTextMenus,
+  clioTalk: clioTalkMenus,
+  reader: readerMenus,
+  aaronBlog: aaronBlogMenus,
+  timeMachine: timeMachineMenus,
+  docMap: docMapMenus,
+  scrapbook: scrapbookMenus,
+  searcher: searcherMenus,
+  clioStage: clioStageMenus,
+  liquidCover: liquidCoverMenus,
+  cmfStudio: cmfStudioMenus,
+  soundscape: soundscapeMenus,
+  endfield: endfieldMenus,
+  bureaucracyMeme: bureaucracyMemeMenus,
+});
+
+const lazyApplicationMenuSets = new Map();
+globalThis.AISystem6RegisterApplicationMenuSet = (appId, definitions = []) => {
+  lazyApplicationMenuSets.set(appId, [...definitions, specialMenu()]);
+  if ((menuOwnerAppId || activeAppId) === appId) renderAppMenuBar(appId, { force: true });
+};
+
+function menuSetIdForApp(appId = "finder") {
+  if (appId === "writingStudio") return "teachText";
+  // A classic era's Finder menus load once, on the first menu bar it draws.
+  if (appId === "finder" && typeof isClassicFinderEra === "function" && isClassicFinderEra()) {
+    if (lazyApplicationMenuSets.has("finderClassic")) return "finderClassic";
+    if (typeof ensureFinderMenusModule === "function") menuSetIdForApp.asked ||= ensureFinderMenusModule().then(() => updateMenuState(), () => {});
+  }
+  return applicationMenuSets[appId] || lazyApplicationMenuSets.has(appId) ? appId : "system";
+}
+
+function menuSetForApp(appId = "finder") {
+  const setId = menuSetIdForApp(appId);
+  return applicationMenuSets[setId] || lazyApplicationMenuSets.get(setId) || minimalMenus;
+}
+
+function renderApplicationMenuItem(item) {
+  if (item.type === "separator") return document.createElement("hr");
+  if (item.type === "section-label") {
+    const label = document.createElement("div");
+    label.className = "menu-section-label";
+    label.dataset.i18n = item.labelKey;
+    label.textContent = typeof t === "function" ? t(item.labelKey) : item.labelKey;
+    return label;
+  }
+  if (item.type === "recent-chats") {
+    const fragment = document.createDocumentFragment();
+    const recent = typeof getRecentChatFiles === "function" ? getRecentChatFiles(6) : [];
+    if (!recent.length) {
+      const empty = document.createElement("div");
+      empty.className = "menu-section-label";
+      empty.textContent = typeof t === "function" ? t("no_recent_conversations") : "No recent conversations";
+      fragment.append(empty);
+      return fragment;
+    }
+    recent.forEach((file) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.action = `open-chat-file:${file.id}`;
+      // The list names conversations and marked none of them, so the row for
+      // the conversation already on screen read like every other row, and
+      // choosing it opened what was already open and said nothing.
+      button.dataset.chatFileChoice = file.id;
+      button.textContent = file.name;
+      // The list is drawn from the store, and the store can move under it (the
+      // file deleted from another window, the project switched). A row nobody
+      // can act on says so here rather than failing when it is clicked.
+      const availability = typeof window.AISystem6ApplicationRegistry?.applicationObjectAvailability === "function"
+        ? window.AISystem6ApplicationRegistry.applicationObjectAvailability(file.id, "open")
+        : { available: true };
+      button.disabled = availability.available !== true;
+      if (availability.available !== true) button.title = t("open_recent_unavailable");
+      fragment.append(button);
+    });
+    return fragment;
+  }
+  // Rows the darkroom fills in from its own state: the project's documents,
+  // the version chain, the voices this browser actually has. Same shape as the
+  // recent-chats rows above -- the menu asks the feature, the feature answers
+  // with what exists, and an empty answer says so rather than lying.
+  if (item.type === "lightroom-rows") {
+    const fragment = document.createDocumentFragment();
+    const rows = window.AISystem6QuickDraft?.lightroomMenuRows?.(item.rowKind) || [];
+    if (!rows.length) {
+      const empty = document.createElement("div");
+      empty.className = "menu-section-label";
+      empty.textContent = typeof t === "function" ? t("lightroom_rows_empty") : "None";
+      fragment.append(empty);
+      return fragment;
+    }
+    rows.forEach((row) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.action = row.action;
+      button.textContent = row.label;
+      if (row.checked) button.classList.add("is-checked");
+      fragment.append(button);
+    });
+    return fragment;
+  }
+  // The Window menu's own list, the way macOS ends it: this application's open
+  // windows, front-most first, with the one in front marked. Order and state
+  // vocabulary come from multi-finder's projection -- the same one the
+  // NeXTSTEP Windows submenu and the cross-app browse list already read -- so
+  // the menu adds no second copy of window state. Nothing open means no rows at
+  // all, rather than a section that says nothing.
+  if (item.type === "window-list") {
+    const fragment = document.createDocumentFragment();
+    const windows = typeof applicationWindowOrder === "function" ? applicationWindowOrder() : [];
+    windows.forEach((win) => {
+      const name = win.dataset.window || "";
+      if (!name) return;
+      // Rows name the identity, kind:instance; main keeps the bare-kind form.
+      const button = document.createElement("button");
+      button.type = "button";
+      const inst = win.dataset.windowInstance;
+      button.dataset.action = `window-list-row:${name}${inst ? ":" + inst : ""}`;
+      button.textContent = typeof applicationWindowTitle === "function"
+        ? applicationWindowTitle(win, { markState: true })
+        : name;
+      if (win.classList.contains("is-active")) button.classList.add("is-checked");
+      fragment.append(button);
+    });
+    return fragment;
+  }
+  if (item.type === "submenu") {
+    const wrapper = document.createElement("div");
+    wrapper.className = "menu-submenu menu-item-with-sub";
+    if (item.surface) wrapper.dataset.menuSurface = item.surface;
+    if (item.dataset) {
+      Object.entries(item.dataset).forEach(([key, value]) => { wrapper.dataset[key] = value; });
+    }
+    const trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.className = "menu-submenu-trigger";
+    trigger.dataset.i18n = item.labelKey;
+    trigger.textContent = typeof t === "function" ? t(item.labelKey) : item.labelKey;
+    const popover = document.createElement("div");
+    popover.className = "menu-submenu-popover menu-sub-popover";
+    item.items.forEach((child) => popover.append(renderApplicationMenuItem(child)));
+    wrapper.append(trigger, popover);
+    return wrapper;
+  }
+  const button = document.createElement("button");
+  button.type = "button";
+  button.dataset.action = item.action;
+  button.dataset.i18n = item.labelKey;
+  if (item.menuCondition) button.dataset.menuCondition = item.menuCondition;
+  if (item.themeId) button.dataset.themeChoice = item.themeId;
+  if (item.layoutChoice) button.dataset.layoutChoice = item.layoutChoice;
+  if (item.shortcutId) button.dataset.shortcutId = item.shortcutId;
+  if (item.viewMode) button.dataset.viewMode = item.viewMode;
+  if (item.repeatMode) button.dataset.repeatMode = item.repeatMode;
+  if (item.shuffleMode) button.dataset.shuffleMode = item.shuffleMode;
+  if (item.shuffleKind) button.dataset.shuffleKind = item.shuffleKind;
+  // Generic dataset passthrough: app menu sets can carry their own state
+  // hooks (e.g. Bonsai's data-bonsai-display for checked view toggles).
+  if (item.dataset) {
+    Object.entries(item.dataset).forEach(([key, value]) => { button.dataset[key] = value; });
+  }
+  if (item.disabled) {
+    button.disabled = true;
+    button.classList.add("is-disabled");
+    if (item.unavailableReason) {
+      button.dataset.balloonHelpDisabled = item.unavailableReason;
+      button.dataset.balloonHelp = item.unavailableReason;
+      button.dataset.balloonHelpGenerated = "true";
+    }
+  } else if (item.balloonHelp) {
+    button.dataset.balloonHelp = item.balloonHelp;
+  }
+  button.textContent = typeof t === "function" ? t(item.labelKey) : item.labelKey;
+  return button;
+}
+
+let renderedApplicationMenuSetId = "";
+let renderedCurrentApplicationSignature = "";
+
+// The Mac OS X application menu. Its title is the application whose menus the
+// bar is showing; its verbs are named after the application they act on, and
+// they exist only while the appearance uses the system-owned menu bar. In the
+// classic and platinum appearances this whole menu is hidden, because there the
+// bar already belongs to the foreground application.
+function syncCurrentApplicationMenu(appId = "finder") {
+  const label = document.querySelector("#current-app-menu-label");
+  if (!label) return;
+  const ownerLabel = typeof multiFinderAppLabels !== "undefined"
+    ? multiFinderAppLabels[appId]
+    : null;
+  label.textContent = ownerLabel || (appId === "finder" ? "Finder" : appId);
+  const currentAppMenu = label.closest(".menu-bar-current-app");
+  currentAppMenu?.setAttribute("data-current-app-id", appId);
+  // Mac OS X's application menu opens with "About <this application>" (Aqua
+  // HIG 2002 p.55). The row used to carry the Apple menu's "About Finder...",
+  // whichever application the bold name said (seen 2026-10-08 under Quick
+  // Draft), so the name follows the owner here and the workspace profile only
+  // dresses the Apple menu's copy.
+  const aboutRow = currentAppMenu?.querySelector('[data-action="open-about"]');
+  if (aboutRow && typeof t === "function") {
+    // The label takes a name, so it is painted here rather than by the
+    // data-i18n sweep (which only knows string keys); a language switch
+    // reaches it through updateMenuState → renderAppMenuBar.
+    delete aboutRow.dataset.i18n;
+    aboutRow.textContent = t("about_app", label.textContent);
+  }
+
+  const section = document.querySelector("#current-app-menu-section");
+  if (!section || typeof applicationVerbRows !== "function") return;
+  const applicationOwned = typeof usesApplicationOwnedMenuBar === "function"
+    && usesApplicationOwnedMenuBar();
+  // Rebuild only when the answer would differ. updateMenuState() runs on many
+  // ordinary events, and replacing these rows under an open menu would fight
+  // the pointer for no gain.
+  const signature = [
+    applicationOwned ? "application-owned" : "system-owned",
+    typeof activeAppLabel === "function" ? activeAppLabel() : "",
+    typeof currentLanguage === "undefined" ? "" : currentLanguage,
+    window.AISystem6WindowMinimize?.lampEnabled?.() ? "minimize" : "",
+  ].join("|");
+  if (signature === renderedCurrentApplicationSignature) return;
+  renderedCurrentApplicationSignature = signature;
+  section.replaceChildren(...(applicationOwned
+    ? []
+    : [document.createElement("hr"), ...applicationVerbRows()]));
+  if (typeof syncKeyboardShortcutLabels === "function") syncKeyboardShortcutLabels();
+  if (typeof invalidateMenuActionCache === "function") invalidateMenuActionCache();
+  if (typeof applyApplicationRowAvailability === "function") applyApplicationRowAvailability(section);
+}
+
+function renderAppMenuBar(appId = activeAppId || "finder", { force = false } = {}) {
+  const slot = document.querySelector("#app-menu-slot");
+  if (!slot) return;
+  // The bold application menu belongs to the foreground application, not to
+  // the whole AI System 6 environment. Update it even when two apps share the
+  // same declarative menu set and no menu DOM rebuild is required.
+  syncCurrentApplicationMenu(appId);
+  const setId = menuSetIdForApp(appId);
+  if (!force && renderedApplicationMenuSetId === setId) return;
+
+  const fragment = document.createDocumentFragment();
+  menuSetForApp(appId).forEach((definition) => {
+    const menuElement = document.createElement("div");
+    menuElement.className = "menu";
+    menuElement.dataset.menuId = definition.id;
+    menuElement.dataset.appMenu = "";
+    if (definition.menuCondition) menuElement.dataset.menuCondition = definition.menuCondition;
+
+    const trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.dataset.i18n = definition.labelKey;
+    trigger.textContent = typeof t === "function" ? t(definition.labelKey) : definition.labelKey;
+
+    const popover = document.createElement("div");
+    popover.className = "menu-popover";
+    definition.items.forEach((item) => popover.append(renderApplicationMenuItem(item)));
+    menuElement.append(trigger, popover);
+    fragment.append(menuElement);
+  });
+
+  // A rebuilt bar starts with no condition applied, and the rebuild can run
+  // after updateMenuState() already judged the old one, so a conditional menu
+  // (Window, Lightroom's pair) came back visible while its condition was false
+  // - a phone's empty desk showed Window and pushed the switcher off screen
+  // (2026-10-08). Judge the new menus before they are inserted.
+  if (typeof getActionAvailability === "function") {
+    try {
+      const state = getActionAvailability();
+      fragment.querySelectorAll("[data-menu-condition]").forEach((element) => {
+        element.classList.toggle("is-hidden", !state[element.dataset.menuCondition]);
+      });
+    } catch {}
+  }
+  document.querySelectorAll(".menu-bar > [data-app-menu]").forEach((element) => element.remove());
+  slot.before(fragment);
+  renderedApplicationMenuSetId = setId;
+  if (typeof syncKeyboardShortcutLabels === "function") syncKeyboardShortcutLabels();
+  if (typeof invalidateMenuActionCache === "function") invalidateMenuActionCache();
+}

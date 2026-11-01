@@ -1,0 +1,2335 @@
+/* Draft Desk -------------------------------------------------------------
+   A clean writing surface for the Quick Draft application. The durable
+   record is still project.quickDraft; this file owns only the new shell. */
+
+.draft-desk-window {
+  left: var(--draft-desk-window-left);
+  top: var(--draft-desk-window-top);
+  width: var(--draft-desk-window-width);
+  height: var(--draft-desk-window-height);
+  min-width: 300px;
+  min-height: 280px;
+}
+
+.draft-desk-details {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.draft-desk-details > #quick-draft-status {
+  grid-column: 4;
+  min-width: 0;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.draft-desk-details > #quick-draft-protect-state {
+  grid-column: 3;
+}
+
+.draft-desk-details > #quick-draft-stack-state {
+  grid-column: 5;
+}
+
+.draft-desk-pane {
+  display: grid;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.draft-desk-layout {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.draft-desk-workspace {
+  display: grid;
+  grid-template-columns:
+    var(--quick-draft-shelf-width)
+    minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--paper);
+}
+
+.draft-desk-paper {
+  grid-column: 2;
+  grid-row: 1;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--paper);
+}
+
+.draft-desk-sheet-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(126px, auto) minmax(112px, auto);
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-bottom: var(--quick-draft-divider-border);
+}
+
+.draft-desk-title-field {
+  display: grid;
+  min-width: 0;
+}
+
+.draft-desk-title-field input {
+  width: 100%;
+  min-width: 0;
+  padding: 1px 2px;
+  border: 0;
+  /* A writing rule under the title, not a control edge: it follows the era's
+     primary divider so it is an ink hairline in System 6 and the era's own
+     rule everywhere after. */
+  border-bottom: var(--system-primary-divider);
+  border-radius: var(--item-radius);
+  outline: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink);
+  font-family: var(--title-font);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.draft-desk-title-field:focus-within {
+  box-shadow: none;
+}
+
+.draft-desk-sheet-select,
+.draft-desk-sheet-select select {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Length is the trailing field in every header arrangement. Its menu grows
+   wider than the trigger in English, so anchor it to the window-facing edge
+   instead of letting the global left anchor push it out of the window. */
+.draft-desk-sheet-select:last-child .system-select-menu {
+  right: 0;
+  left: auto;
+}
+
+.draft-desk-paper-body {
+  display: grid;
+  /* Row one is the paper: the intake well and the editor both claim it and
+     swap, so it takes the height. The ELI5 strip declares no row and is
+     auto-placed into the next one, which had no size of its own and therefore
+     stretched to whatever was left over — 355 empty pixels under a control
+     strip that needs 88. Implicit rows are content-sized now. */
+  grid-template-rows: minmax(0, 1fr);
+  grid-auto-rows: min-content;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.draft-desk-intake,
+.draft-desk-editor {
+  grid-area: 1 / 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* The draft is the subject of this window, so the paper takes the room. The
+   surface is a flex item that never asked to grow, which left it at its content
+   height and put everything below it in an empty field — the writing sat in a
+   box in the middle of the window while the rest of the window was nothing. */
+.draft-desk-editor > .mde-surface {
+  flex: 1;
+}
+
+.draft-desk-intake[hidden],
+.draft-desk-editor[hidden] {
+  display: none;
+}
+
+.draft-desk-intake {
+  position: relative;
+  display: grid;
+  /* The first row's floor used to be 0, so in landscape on a phone -- 212px
+     for the whole intake -- it was handed 50px while the field inside it is a
+     label plus a textarea with a 72px minimum. Grid rows do not clip, so "What
+     I want to say" was drawn underneath Materials: two textareas in one cell,
+     56px of overlap, the primary one unreachable. A min-content floor makes the
+     rows ask for the height they need, and this box already scrolls. */
+  grid-template-rows: minmax(min-content, 1fr) minmax(108px, auto) auto;
+  gap: 0;
+  padding: 12px 16px;
+  overflow: auto;
+}
+
+.draft-desk-intake-field {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+  padding: 0 0 10px;
+  border-bottom: var(--quick-draft-divider-border);
+  color: var(--quick-draft-secondary-fg);
+  font-family: var(--title-font);
+  font-size: 11px;
+}
+
+.draft-desk-intake-field + .draft-desk-intake-field {
+  padding-top: 16px;
+}
+
+.draft-desk-intake-field textarea {
+  width: 100%;
+  min-height: 72px;
+  padding: 8px 0 4px;
+  resize: vertical;
+  border: 0;
+  border-radius: var(--inset-radius);
+  outline: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink);
+  font-family: var(--editor-font);
+  font-size: 12.5px;
+  line-height: 1.85;
+}
+
+.draft-desk-intake-primary textarea {
+  resize: none;
+}
+
+.draft-desk-intake-field:focus-within {
+  color: var(--ink);
+  background: var(--quick-draft-field-focus-bg);
+  box-shadow: var(--quick-draft-field-focus-shadow);
+}
+
+/* 一个钟点: the empty sheet asks one question in the paper's own voice, and
+   the answer is written on the paper, not in a box under a caption. */
+.draft-desk-intake-primary > span {
+  color: var(--ink);
+  font-family: var(--editor-font);
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.45;
+  text-wrap: balance;
+}
+
+.draft-desk-intake-primary textarea {
+  font-size: 14px;
+}
+
+/* Safari 27 spaces CJK from Latin letters and numerals on its own. Only on
+   surfaces with one layer of glyphs: the body editor stacks a transparent
+   textarea over its highlight layer, and spacing one of the two would put the
+   caret between the wrong characters. Browsers without the property skip it. */
+.draft-desk-intake-primary textarea,
+.lightroom-view > #quick-draft-preview {
+  text-autospace: ideograph-alpha ideograph-numeric;
+}
+
+/* The dial replaces the length menu. The <select> stays in the DOM as the
+   model, so every reader of its value is untouched; only its face is gone. */
+.draft-desk-dial-model {
+  display: none;
+}
+
+.draft-desk-dial {
+  display: inline-flex;
+  align-items: center;
+  justify-self: end;
+  gap: 6px;
+  min-width: 0;
+  min-height: 30px;
+  padding: 1px 6px 1px 2px;
+  border: 0;
+  border-radius: var(--item-radius);
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--title-font);
+  cursor: pointer;
+}
+
+.draft-desk-dial:active {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.draft-desk-dial-face {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  overflow: visible;
+  transform: rotate(-90deg);
+}
+
+.draft-desk-dial-track,
+.draft-desk-dial-fill,
+.draft-desk-dial-over {
+  fill: none;
+  stroke: currentColor;
+}
+
+.draft-desk-dial-track {
+  stroke-width: 1;
+  stroke-dasharray: 1 2;
+}
+
+.draft-desk-dial-fill {
+  stroke-width: 4;
+  stroke-dasharray: var(--dial-fill, 0) 100;
+  transition: stroke-dasharray 520ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.draft-desk-dial-over {
+  stroke-width: 1.5;
+  stroke-dasharray: var(--dial-over, 0) 100;
+}
+
+.draft-desk-dial-tick {
+  stroke: currentColor;
+  stroke-width: 1;
+}
+
+.draft-desk-dial-readout {
+  display: grid;
+  text-align: start;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.draft-desk-dial-readout b {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.draft-desk-dial-readout small {
+  color: var(--quick-draft-secondary-fg);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Hold to speak. Pressed is inverted, the way System 6 draws a held button;
+   the key keeps that face for as long as the microphone is open. */
+.draft-desk-say,
+.draft-desk-mic {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.draft-desk-say[data-live="true"],
+.draft-desk-mic[data-live="true"] {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.draft-desk-mic {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .draft-desk-dial-fill {
+    transition: none;
+  }
+}
+
+.draft-desk-intake-actions,
+.draft-desk-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.draft-desk-intake-actions {
+  flex-wrap: wrap;
+  padding-top: 12px;
+}
+
+.draft-desk-intake-actions .draft-desk-command-popover {
+  grid-template-columns: minmax(210px, 1fr);
+  min-width: 236px;
+}
+
+.draft-desk-action-gap {
+  flex: 1 1 auto;
+}
+
+.draft-desk-editor {
+  position: relative;
+  display: flex;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--inset-radius);
+  background: var(--paper);
+  box-shadow: none;
+}
+
+.draft-desk-editor > .mde-surface {
+  min-height: 0;
+}
+
+.draft-desk-editor .mde-surface > .mde-input,
+.draft-desk-editor .mde-surface > .mde-highlight {
+  max-width: 42rem;
+  padding-top: 30px;
+  padding-bottom: 40px;
+}
+
+.draft-desk-editor .teachtext-preview {
+  padding: 30px clamp(24px, 7%, 72px) 48px;
+  border: 0;
+  background: var(--paper);
+}
+
+.draft-desk-editor.is-selected {
+  outline: var(--quick-draft-state-selected-outline);
+  outline-offset: -2px;
+}
+
+.draft-desk-editor.is-selected::after,
+.draft-desk-intake.is-working::after,
+.draft-desk-editor.is-working::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+}
+
+.draft-desk-editor.is-selected::after {
+  background: var(--quick-draft-state-selected-surface);
+  animation: var(--quick-draft-state-selected-animation);
+}
+
+.draft-desk-intake.is-working::after,
+.draft-desk-editor.is-working::after {
+  top: auto;
+  height: 2px;
+  background: var(--quick-draft-state-working-surface);
+  animation: var(--quick-draft-state-working-animation);
+}
+
+.draft-desk-shelf,
+.draft-desk-inspector {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--quick-draft-panel-bg);
+}
+
+.draft-desk-shelf {
+  grid-area: 1 / 1 / 2 / 2;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  border-right: var(--quick-draft-sidebar-border);
+}
+
+.draft-desk-inspector {
+  /* Both sections take the height their content needs and stack from the top.
+     The stack used to be 1fr with Versions pinned under it, which put the
+     leftover height *between* two panels — and empty space between two things
+     reads as something missing, while empty space under the last one reads as
+     nothing more to show. */
+  grid-template-rows: auto auto;
+  align-content: start;
+  border-left: var(--quick-draft-sidebar-border);
+  overflow-y: auto;
+}
+
+.draft-desk-region-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 8px 8px 4px;
+  border-bottom: var(--quick-draft-divider-border);
+  font-family: var(--title-font);
+}
+
+.draft-desk-drawer-close,
+.draft-desk-drawer-switch {
+  display: none;
+}
+
+.draft-desk-source-map {
+  display: grid;
+  align-content: start;
+  gap: 0;
+  min-height: 0;
+  padding: 4px 0;
+  overflow: auto;
+}
+
+.draft-desk-material-row {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr);
+  align-items: start;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  padding: 4px 8px;
+  border: 0;
+  border-bottom: var(--quick-draft-divider-border);
+  border-radius: var(--item-radius);
+  background: transparent;
+  box-shadow: none;
+  text-align: left;
+}
+
+.draft-desk-material-icon {
+  position: relative;
+  width: 12px;
+  height: 14px;
+  border: var(--system-control-line) solid currentColor;
+  background: transparent;
+}
+
+.draft-desk-material-icon::after {
+  position: absolute;
+  inset: 2px 2px auto;
+  height: 1px;
+  background: currentColor;
+  box-shadow: 0 3px 0 currentColor, 0 6px 0 currentColor;
+  content: "";
+}
+
+.draft-desk-material-copy {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.draft-desk-material-row b,
+.draft-desk-material-row small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.draft-desk-material-row small,
+.draft-desk-source-empty,
+.draft-desk-layer-scope-row,
+.draft-desk-protect-summary {
+  color: var(--quick-draft-secondary-fg);
+  font-size: 11px;
+}
+
+.draft-desk-material-row.is-selected {
+  background: var(--ink);
+  color: var(--quick-draft-selected-fg);
+}
+
+.draft-desk-material-row.is-selected small {
+  color: inherit;
+}
+
+.draft-desk-source-empty {
+  margin: 0;
+  padding: 10px;
+  line-height: 1.45;
+}
+
+.draft-desk-shelf.is-empty {
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
+.draft-desk-shelf.is-empty .draft-desk-source-map {
+  padding: 18px 16px 0;
+  overflow: visible;
+}
+
+.draft-desk-shelf.is-empty .draft-desk-source-empty {
+  max-width: 34ch;
+  padding: 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.draft-desk-shelf.is-empty .draft-desk-add-material {
+  align-self: start;
+  justify-self: start;
+  margin: 8px 16px;
+}
+
+.draft-desk-add-material {
+  margin: 8px 10px 10px;
+}
+
+.draft-desk-inspector-section {
+  min-width: 0;
+}
+
+.draft-desk-layer-stack {
+  display: grid;
+  padding: 4px 8px 0;
+}
+
+.draft-desk-layer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 0;
+}
+
+.draft-desk-layer.is-off {
+  color: var(--quick-draft-secondary-fg);
+}
+
+.draft-desk-layer-row {
+  display: grid;
+  grid-template-columns: auto 14px minmax(0, 1fr);
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.draft-desk-layer-row i {
+  font-style: normal;
+  text-align: center;
+}
+
+.draft-desk-layer-row span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.draft-desk-layer .select-wrap-inline,
+.draft-desk-layer .select-wrap-inline select {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.draft-desk-layer-disclosure {
+  display: none;
+}
+
+.draft-desk-layer-scope-row,
+.draft-desk-protect-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 5px;
+}
+
+.draft-desk-eli5-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+}
+
+.draft-desk-eli5-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* The inspector and the view switches are shown and hidden by the hidden
+   attribute, and an author display rule outvotes the browser's [hidden] rule
+   whatever the specificity — the defect that made Draft Desk claim it needed a
+   project over a working workspace, twice. */
+.draft-desk-inspector[hidden],
+.draft-desk-display-switch[hidden],
+.draft-desk-drawer-switch[hidden] {
+  display: none;
+}
+
+.draft-desk-eli5-actions,
+.draft-desk-eli5-candidate {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* These two rows are shown and hidden by the hidden attribute, and an author
+   display rule beats the browser's [hidden] rule whatever the specificity.
+   Without this the ELI5 Cancel button clears the state and the row stays on
+   screen, so the writer presses Cancel and nothing appears to happen. */
+.draft-desk-eli5-actions[hidden],
+.draft-desk-eli5-candidate[hidden] {
+  display: none;
+}
+
+.draft-desk-eli5-select {
+  width: max-content;
+}
+
+.draft-desk-layer-scope-row {
+  margin: 4px 8px 0;
+  padding: 4px 0 7px;
+  border-top: var(--quick-draft-divider-border);
+}
+
+.draft-desk-layer-detail {
+  gap: 4px;
+  margin: 0 8px;
+  padding: 5px 0 7px;
+  border-bottom: var(--quick-draft-divider-border);
+}
+
+.draft-desk-layer-detail:not([hidden]) {
+  display: grid;
+}
+
+.draft-desk-layer-detail p {
+  margin: 0 0 4px;
+  color: var(--quick-draft-secondary-fg);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.draft-desk-layer-edit-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) repeat(3, auto);
+  align-items: center;
+  gap: 4px;
+}
+
+.draft-desk-layer-detail input,
+.draft-desk-protect input {
+  width: 100%;
+  min-width: 0;
+}
+
+.draft-desk-protect {
+  display: grid;
+  gap: 6px;
+  padding: 4px 8px 8px;
+  border-bottom: var(--quick-draft-divider-border);
+}
+
+.draft-desk-protect > b {
+  padding-bottom: 2px;
+  border-bottom: var(--quick-draft-divider-border);
+  font-weight: normal;
+  font-family: var(--title-font);
+}
+
+.draft-desk-protect-detail:not([hidden]) {
+  display: block;
+}
+
+.draft-desk-protect > [data-quick-draft-protect-selection] {
+  justify-self: start;
+}
+
+.draft-desk-versions-section {
+  border-top: var(--quick-draft-sidebar-border);
+}
+
+.draft-desk-versions-list {
+  display: grid;
+  overflow: visible;
+}
+
+.draft-desk-versions-list.is-empty {
+  padding: 8px 10px;
+  color: var(--quick-draft-secondary-fg);
+  font-size: 11px;
+}
+
+.draft-desk-version-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  padding: 6px 8px;
+  border-bottom: var(--quick-draft-divider-border);
+}
+
+.draft-desk-version-row > span {
+  display: grid;
+  min-width: 0;
+}
+
+.draft-desk-version-row b,
+.draft-desk-version-row small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.draft-desk-version-row small {
+  color: var(--quick-draft-secondary-fg);
+  font-size: 10px;
+}
+
+.draft-desk-versions-section > .btn {
+  margin: 3px 8px 9px;
+}
+
+.draft-desk-actions {
+  min-width: 0;
+  padding: 7px 9px;
+  border-top: var(--quick-draft-sidebar-border);
+  background: var(--quick-draft-actions-bg);
+}
+
+.draft-desk-drawer-switch {
+  align-items: center;
+}
+
+.draft-desk-display-label-narrow {
+  display: none;
+}
+
+/* .draft-desk-display-switch is now the shared .view-switch part -- its
+   selected-tab material lives in .view-switch-option[aria-selected="true"]
+   (30-surfaces.css) plus the era's --view-switch-* tokens, not here. */
+.draft-desk-drawer-switch .btn.is-active,
+.draft-desk-drawer-switch .btn[aria-expanded="true"] {
+  background: var(--ink);
+  color: var(--quick-draft-selected-fg);
+}
+
+.draft-desk-command-menu {
+  flex: 0 0 auto;
+}
+
+.draft-desk-command-menu.is-disabled > summary {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.draft-desk-command-popover {
+  grid-template-columns: repeat(2, minmax(156px, 1fr));
+  min-width: 352px;
+  max-height: min(430px, 70vh);
+  overflow: auto;
+}
+
+.draft-desk-deliver-menu .draft-desk-command-popover {
+  right: 0;
+  left: auto;
+  grid-template-columns: minmax(210px, 1fr);
+  min-width: 236px;
+}
+
+.draft-desk-command-section {
+  display: grid;
+  align-content: start;
+  gap: 3px;
+  padding: 4px;
+}
+
+.draft-desk-command-section b {
+  padding: 2px 5px;
+  border-bottom: var(--quick-draft-divider-border);
+}
+
+.draft-desk-layout.is-empty-draft .draft-desk-workspace {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.draft-desk-layout.is-empty-draft .draft-desk-paper {
+  grid-column: 1;
+}
+
+.draft-desk-layout.is-empty-draft .draft-desk-shelf {
+  display: none;
+}
+
+.draft-desk-layout.is-shelf-hidden:not(.is-empty-draft) .draft-desk-workspace {
+  grid-template-columns: 0 minmax(0, 1fr);
+}
+
+.draft-desk-layout.is-shelf-hidden .draft-desk-shelf {
+  display: none;
+}
+
+/* ---- Listen (听稿): a teleprompter over the raw body. The beat list reads
+   top to bottom, the transport sits under it, and the current beat reuses the
+   shared selected-state surface so both appearances stay themed by token. ---- */
+
+.draft-desk-listen {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+}
+
+.draft-desk-listen-beats {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 2px;
+}
+
+.draft-desk-listen-beat {
+  margin: 0 0 10px;
+  padding: 2px 4px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  cursor: pointer;
+}
+
+.draft-desk-listen-beat.is-dim {
+  color: var(--quick-draft-secondary-fg);
+}
+
+.draft-desk-listen-beat.is-current {
+  background: var(--quick-draft-state-selected-surface);
+  outline: var(--quick-draft-state-selected-outline);
+}
+
+.draft-desk-listen-beat.is-lost {
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
+.draft-desk-listen-empty {
+  margin: 8px 4px;
+  color: var(--quick-draft-secondary-fg);
+}
+
+.draft-desk-listen-transport {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 2px 2px;
+  border-top: var(--quick-draft-divider-border);
+}
+
+.draft-desk-listen-progress {
+  flex: 1;
+  min-width: 72px;
+}
+
+.draft-desk-listen-rate,
+.draft-desk-listen-voice {
+  width: max-content;
+}
+
+/* ---- Listening-risk findings: object rows under the audience bar, one row
+   per finding, with the candidate fix unfolding inside its own row. ---- */
+
+.draft-desk-findings {
+  padding: 4px 8px 6px;
+  border-bottom: var(--quick-draft-divider-border);
+}
+
+.draft-desk-findings > .draft-desk-region-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.draft-desk-finding-kept .draft-desk-finding-quote {
+  border-left-style: double;
+  text-decoration: none;
+}
+
+.draft-desk-finding-spoken {
+  margin: 3px 0;
+  padding: 0 0 0 8px;
+  font-weight: 500;
+}
+
+.draft-desk-findings-stale {
+  margin: 2px 0 4px;
+  color: var(--quick-draft-secondary-fg);
+  font-size: 11px;
+}
+
+.draft-desk-finding-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.draft-desk-finding-row {
+  padding: 5px 0 7px;
+  border-bottom: var(--quick-draft-divider-border);
+}
+
+.draft-desk-finding-row:last-child {
+  border-bottom: 0;
+}
+
+.draft-desk-finding-type {
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.draft-desk-finding-quote {
+  margin: 3px 0;
+  padding: 0 0 0 8px;
+  border-left: var(--quick-draft-sidebar-border);
+  color: var(--quick-draft-secondary-fg);
+}
+
+.draft-desk-finding-why,
+.draft-desk-finding-change {
+  margin: 2px 0;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.draft-desk-finding-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.draft-desk-fix-diff {
+  margin-top: 5px;
+  padding: 5px 0 0;
+  border-top: var(--quick-draft-divider-border);
+}
+
+.draft-desk-fix-original {
+  margin: 0 0 4px;
+  color: var(--quick-draft-secondary-fg);
+  text-decoration: line-through;
+}
+
+.draft-desk-fix-candidate {
+  margin: 0 0 4px;
+}
+
+.draft-desk-fix-changed {
+  background: var(--quick-draft-state-selected-surface);
+  color: inherit;
+}
+
+/* ---- 文字亮室 -------------------------------------------------------------
+   The darkroom reads one draft, so the draft is the subject: the negative
+   fills the window, the instruments that measure it hold a fixed column
+   beside it, and the four ways of looking sit under both. The view is the
+   scroller, so it carries the reading surface rather than staying
+   transparent over the window material. */
+.lightroom-window {
+  left: var(--lightroom-window-left);
+  top: var(--lightroom-window-top);
+  width: var(--lightroom-window-width);
+  height: var(--lightroom-window-height);
+  min-width: 300px;
+  min-height: 280px;
+}
+
+.lightroom-pane {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.lightroom-layout {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--quick-draft-inspector-width);
+  grid-template-rows: auto minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* The strip draws itself as flex, which beat the hidden attribute: it stayed
+   on screen in every view. It exists in the listen view only. */
+.draft-desk-eli5-bar[hidden] {
+  display: none;
+}
+
+.lightroom-layout > .draft-desk-eli5-bar {
+  grid-area: 1 / 1 / 2 / -1;
+  border-bottom: var(--quick-draft-divider-border);
+}
+
+/* 看片台: the room is the table and the paper is the light. The table is the
+   era's ink -- solid black in System 6 -- and the sheet sits on it with a
+   light-box edge. Only existing tokens: an era changes material, never shape. */
+.lightroom-view {
+  grid-area: 2 / 1 / 3 / 2;
+  min-width: 0;
+  min-height: 0;
+  padding: 22px 26px;
+  overflow: auto;
+  background: var(--ink);
+}
+
+.lightroom-view > #quick-draft-preview:not(.is-hidden) {
+  box-sizing: border-box;
+  max-width: 44em;
+  min-height: 100%;
+  margin: 0 auto;
+  background: var(--teachtext-preview-bg);
+  box-shadow: 0 0 0 5px var(--ink), 0 0 0 6px var(--teachtext-preview-bg);
+}
+
+/* Holding a frame shows that version; the thicker edge says "not the
+   current proof" for exactly as long as the frame is held. */
+.lightroom-view.is-peeking > #quick-draft-preview:not(.is-hidden) {
+  box-shadow: 0 0 0 5px var(--ink), 0 0 0 8px var(--teachtext-preview-bg);
+}
+
+/* Versions are a strip of film: each frame is held to be seen. */
+.draft-desk-version-frame {
+  display: grid;
+  min-width: 0;
+  padding: 4px 8px 4px 13px;
+  border: 1px solid var(--ink);
+  background:
+    repeating-linear-gradient(to bottom, var(--ink) 0 3px, transparent 3px 6px)
+    3px 0 / 3px 100% no-repeat;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.draft-desk-version-frame.is-peeking {
+  background-color: var(--ink);
+  color: var(--paper);
+}
+
+.draft-desk-version-frame.is-peeking small {
+  color: var(--paper);
+}
+
+/* Three stops replace the strength pop-up; the <select> stays as the model. */
+.draft-desk-strength-model {
+  display: none;
+}
+
+/* A layer's name is product vocabulary and is never cut to make room: the row
+   wraps, and the three stops drop under the name when the column is narrow. */
+.draft-desk-layer:has(> .draft-desk-strength) {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  row-gap: 2px;
+}
+
+.draft-desk-layer:has(> .draft-desk-strength) > .draft-desk-layer-row {
+  flex: 1 0 auto;
+}
+
+.draft-desk-layer:has(> .draft-desk-strength) .draft-desk-layer-row span {
+  overflow: visible;
+}
+
+.draft-desk-strength {
+  margin-inline-start: auto;
+}
+
+.draft-desk-strength .view-switch-option {
+  min-height: 20px;
+  padding: 0 5px;
+  font-size: 11px;
+}
+
+
+.lightroom-layout > .draft-desk-inspector {
+  grid-area: 2 / 2 / 3 / 3;
+}
+
+.lightroom-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 7px 9px;
+  border-top: var(--quick-draft-sidebar-border);
+  background: var(--quick-draft-actions-bg);
+}
+
+/* ---- 文字亮室 develop model --------------------------------------------------
+   The stack stays on screen when there is nothing to adjust, greyed and inert,
+   and folds away on a desk with Hide Adjustments (the narrow layouts have their
+   own drawer). The notices above the paper -- a stale negative, one layer's
+   changes, a comparison -- sit on the light table in the paper's own colours,
+   and a changed word is drawn the way the 1-bit screen drew a selection:
+   reversed. Everything reads from the era's ink and paper tokens. */
+.draft-desk-inspector.is-idle {
+  opacity: 0.55;
+}
+
+.lightroom-layout.is-inspector-hidden {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.lightroom-layout.is-inspector-hidden > .draft-desk-inspector {
+  display: none;
+}
+
+.lightroom-notices {
+  display: grid;
+  gap: 6px;
+  max-width: 44em;
+  margin: 0 auto 10px;
+}
+
+.lightroom-notices:empty {
+  display: none;
+}
+
+.lightroom-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 5px 8px;
+  border: 1px solid var(--ink);
+  background: var(--teachtext-preview-bg);
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.lightroom-notice > span:first-child {
+  flex: 1 1 12em;
+  min-width: 0;
+}
+
+.lightroom-notice small {
+  color: var(--quick-draft-secondary-fg);
+}
+
+.lightroom-notice.is-stale {
+  border-width: 2px;
+}
+
+.lightroom-compare-sides {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10em, 1fr));
+  gap: 14px;
+}
+
+.lightroom-compare-sides h4 {
+  margin: 0 0 4px;
+  font-size: 11px;
+}
+
+.lightroom-changes {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+mark.lightroom-changed {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+mark.lightroom-changed.is-before,
+del.lightroom-changed {
+  background: transparent;
+  color: inherit;
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+}
+
+.draft-desk-bypass {
+  padding: 4px 8px 0;
+}
+
+.draft-desk-presets {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px 0;
+}
+
+.draft-desk-presets > .select-wrap-inline {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+.draft-desk-layer-tools {
+  display: inline-flex;
+  align-items: center;
+  justify-self: end;
+  gap: 3px;
+}
+
+/* A layer with three stops keeps its name and the Δ key on one row and drops the
+   stops under them, as it already did when the column was narrow. */
+.draft-desk-layer:has(> .draft-desk-strength) > .draft-desk-layer-tools {
+  order: 1;
+  margin-inline-start: auto;
+}
+
+.draft-desk-layer:has(> .draft-desk-strength) > .draft-desk-strength {
+  order: 2;
+  flex: 1 1 100%;
+  margin-inline-start: 0;
+}
+
+.draft-desk-layer-tools > .draft-desk-layer-solo {
+  min-width: 0;
+  width: 26px;
+  padding: 0;
+  font-size: 11px;
+  line-height: 14px;
+}
+
+.draft-desk-bypass span {
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.draft-desk-layer-solo.is-active {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* The film strip: the version list laid out as frames in a row, each with the
+   few things that can be done to a frame under it. */
+.draft-desk-versions-list.is-film {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 6px;
+  padding: 6px 8px 8px;
+  overflow-x: auto;
+}
+
+.draft-desk-versions-list.is-film .draft-desk-version-row {
+  flex: 0 0 9em;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  padding: 0;
+  border-bottom: 0;
+}
+
+.draft-desk-version-row > .draft-desk-version-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.draft-desk-version-row.is-named .draft-desk-version-frame b {
+  text-decoration: underline;
+}
+
+.quick-draft-track-embrace {
+  margin: 0 0 12px;
+  white-space: pre-wrap;
+}
+
+.quick-draft-track-title {
+  margin: 0 0 4px;
+  font-weight: 700;
+}
+
+.quick-draft-track-cover {
+  margin: 0 0 12px;
+  opacity: 0.82;
+}
+
+.quick-draft-track-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.quick-draft-track-split > div + div {
+  border-left: 1px solid currentColor;
+  padding-left: 16px;
+}
+
+.quick-draft-track-ledger {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  opacity: 0.82;
+}
+
+.quick-draft-track-ledger li + li {
+  margin-top: 4px;
+}
+
+@container (max-width: 800px) {
+  /* A narrow darkroom puts the instruments under the negative rather than
+     squeezing the thing being read. */
+  .lightroom-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+
+  .lightroom-view {
+    grid-area: 2 / 1 / 3 / -1;
+  }
+
+  .lightroom-layout > .draft-desk-inspector {
+    grid-area: 3 / 1 / 4 / -1;
+    border-top: var(--quick-draft-sidebar-border);
+    border-left: 0;
+  }
+
+  .draft-desk-details {
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+
+  .draft-desk-details > #quick-draft-stats {
+    display: none;
+  }
+
+  .draft-desk-details > #quick-draft-status {
+    grid-column: 4;
+    text-align: right;
+  }
+
+  .draft-desk-details > #quick-draft-protect-state,
+  .draft-desk-details > #quick-draft-stack-state {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .draft-desk-details > #quick-draft-protect-state { grid-column: 2; }
+
+  .draft-desk-details > #quick-draft-stack-state { grid-column: 4; }
+
+  .draft-desk-window.is-quick-draft-empty .draft-desk-details > #quick-draft-protect-state,
+  .draft-desk-window.is-quick-draft-empty .draft-desk-details > #quick-draft-stack-state,
+  .draft-desk-window:not(.is-quick-draft-empty) .draft-desk-details > #quick-draft-status {
+    display: none;
+  }
+
+  .draft-desk-window.has-live-quick-draft-status .draft-desk-details > #quick-draft-status {
+    display: block;
+  }
+
+  .draft-desk-window.has-live-quick-draft-status .draft-desk-details > #quick-draft-stack-state {
+    display: none;
+  }
+
+  .draft-desk-workspace,
+  .draft-desk-layout.is-empty-draft .draft-desk-workspace {
+    position: relative;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .draft-desk-layout.is-shelf-hidden .draft-desk-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .draft-desk-paper,
+  .draft-desk-layout.is-empty-draft .draft-desk-paper {
+    grid-column: 1;
+  }
+
+  .draft-desk-shelf,
+  .draft-desk-inspector {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    display: none;
+    width: calc(100% - var(--quick-draft-drawer-edge));
+    border: 0;
+    background: var(--glass-reading-surface, var(--quick-draft-panel-bg));
+    box-shadow: var(--system-shadow);
+    backdrop-filter: var(--glass-reading-blur, none);
+    -webkit-backdrop-filter: var(--glass-reading-blur, none);
+  }
+
+  .draft-desk-shelf {
+    right: auto;
+    left: 0;
+  }
+
+  .draft-desk-inspector {
+    right: 0;
+    left: auto;
+  }
+
+  .draft-desk-layout.is-shelf-open .draft-desk-shelf,
+  .draft-desk-layout.is-inspector-open .draft-desk-inspector {
+    display: grid;
+  }
+
+  .draft-desk-layout.is-shelf-open .draft-desk-paper,
+  .draft-desk-layout.is-inspector-open .draft-desk-paper {
+    isolation: isolate;
+    cursor: pointer;
+  }
+
+  .draft-desk-drawer-close,
+  .draft-desk-drawer-switch {
+    display: flex;
+  }
+
+  .draft-desk-sheet-head {
+    grid-template-columns: minmax(0, 1fr) minmax(96px, 0.38fr) minmax(124px, 0.42fr);
+    gap: 5px;
+    padding: 5px 8px;
+  }
+
+  .draft-desk-sheet-select:last-child {
+    grid-column: auto;
+  }
+
+  .draft-desk-title-field input,
+  .draft-desk-sheet-select select {
+    font-size: 16px;
+  }
+
+  .draft-desk-intake-field textarea,
+  .draft-desk-editor .mde-surface > .mde-input,
+  .draft-desk-editor .mde-surface > .mde-highlight,
+  .draft-desk-layer-detail input,
+  .draft-desk-protect input {
+    font-size: 16px;
+  }
+
+  .draft-desk-sheet-select .system-select-button {
+    min-height: 24px;
+    padding-right: 19px;
+    padding-left: 5px;
+    font-size: 11px;
+  }
+
+  .draft-desk-sheet-select .system-select-button::after {
+    right: 6px;
+  }
+
+  .draft-desk-intake {
+    padding: 16px 16px 10px;
+  }
+
+  /* One thumb row: door, materials, speak, more, deliver, and the one
+     default action at the thumb's end. */
+  .draft-desk-actions {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: auto;
+    grid-template-rows: minmax(var(--system-button-min-height), auto);
+    justify-content: space-between;
+    align-items: center;
+    gap: 4px;
+    padding: 5px calc(var(--window-frame-lane) + var(--resize-affordance-clearance, 0px) + 6px) 5px 6px;
+    overflow: visible;
+  }
+
+  .draft-desk-display-switch {
+    grid-row: 1;
+    grid-column: 1 / 4;
+  }
+
+  .draft-desk-drawer-switch {
+    justify-self: center;
+  }
+
+  .draft-desk-actions > .draft-desk-action-gap {
+    display: none;
+  }
+
+  .draft-desk-actions > [data-action="open-lightroom"] {
+    order: -1;
+  }
+
+  /* Five cells fit a 402pt phone; six did not, and the default action was the
+     one pushed off the edge. Everything under More… except Focus is in the
+     menu bar's Quick Draft menu (a phone screen is already focused), and the entrance row repeats the speak key only where
+     there is no thumb row to carry it. */
+  .draft-desk-actions > #quick-draft-tools,
+  .draft-desk-intake-actions > .draft-desk-say {
+    display: none;
+  }
+
+  .draft-desk-mic {
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    padding: 0;
+    border: 1px solid var(--ink);
+    border-radius: 50%;
+    background: var(--paper);
+    box-shadow: 0 0 0 1px var(--paper), 0 0 0 3px var(--ink);
+    color: var(--ink);
+    font-family: var(--title-font);
+    font-size: 11px;
+    line-height: 1.1;
+  }
+
+  .draft-desk-actions .btn,
+  .draft-desk-actions summary.btn {
+    min-height: var(--system-button-min-height);
+  }
+
+  .draft-desk-display-label-wide {
+    display: none;
+  }
+
+  .draft-desk-display-label-narrow {
+    display: inline;
+  }
+
+  .draft-desk-layer {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+  }
+
+  .draft-desk-layer-disclosure {
+    display: flex;
+    min-width: 22px;
+    padding-right: 4px;
+    padding-left: 4px;
+  }
+
+  .draft-desk-inspector-section > .draft-desk-layer-scope-row {
+    display: none;
+  }
+
+  .draft-desk-layer > .draft-desk-layer-detail,
+  .draft-desk-layer > .draft-desk-layer-scope-row {
+    grid-column: 1 / -1;
+    margin-right: 0;
+    margin-left: 17px;
+  }
+
+  .draft-desk-layer > .draft-desk-layer-scope-row {
+    display: none;
+    margin-top: 0;
+    padding-top: 4px;
+  }
+
+  .draft-desk-layer.is-expanded-layer > .draft-desk-layer-scope-row {
+    display: grid;
+  }
+
+  .draft-desk-layer-detail:not(.is-editing) .draft-desk-layer-edit-controls {
+    display: none;
+  }
+
+  .draft-desk-protect {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .draft-desk-protect > b,
+  .draft-desk-protect-detail {
+    grid-column: 1 / -1;
+  }
+
+  .draft-desk-protect-summary {
+    display: block;
+  }
+
+  .draft-desk-protect-summary > [data-quick-draft-protect-toggle] {
+    display: none;
+  }
+
+  .draft-desk-protect > [data-quick-draft-protect-selection] {
+    grid-row: 2;
+    grid-column: 2;
+  }
+
+  .draft-desk-versions-section {
+    display: none;
+  }
+
+  .draft-desk-command-popover {
+    left: 0;
+    grid-template-columns: minmax(210px, 1fr);
+    min-width: min(300px, calc(100cqw - 28px));
+    max-height: min(560px, calc(100cqh - 140px));
+  }
+
+  .draft-desk-deliver-menu .draft-desk-command-popover {
+    /* Narrow, this menu sits at the left of its row, so anchoring the panel's
+       right edge to it hung 65px of the panel off the left of a 375px phone.
+       Everything opens from the left here, clamped to the container the way
+       the panel above it already is. */
+    right: auto;
+    left: 0;
+    min-width: min(236px, calc(100cqw - 28px));
+  }
+}
+
+.draft-desk-lightroom-stack {
+  display: none;
+}
+
+@container (max-width: 800px) {
+  /* On a phone the table is a margin, not a frame: the paper keeps the width. */
+  .lightroom-view {
+    padding: 10px;
+  }
+
+  .draft-desk-lightroom-stack {
+    display: inline-flex;
+  }
+
+  /* Two rows: where to look on the first, what to do on the second, with the
+     default verb at the thumb's end. */
+  .lightroom-actions {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+    row-gap: 6px;
+  }
+
+  .lightroom-actions > .draft-desk-action-gap {
+    display: none;
+  }
+
+  .lightroom-actions > .quick-draft-track-toggle {
+    grid-area: 2 / 1 / 3 / 4;
+  }
+
+  .lightroom-actions > .draft-desk-display-switch {
+    grid-area: 1 / 1;
+  }
+
+  .lightroom-actions > .draft-desk-lightroom-stack {
+    grid-area: 1 / 2;
+  }
+
+  /* The footer has no room for a third key on a phone: Compare is the View
+     menu's row there (and the film frame's button on a wider screen). */
+  .lightroom-actions > [data-lightroom-compare-toggle] {
+    display: none;
+  }
+
+  .lightroom-actions > #quick-draft-display-body {
+    grid-area: 1 / 4 / 2 / 6;
+    justify-self: end;
+  }
+
+  .lightroom-actions > [data-quick-draft-adjustment-apply] {
+    grid-area: 2 / 4;
+  }
+
+  .lightroom-actions > [data-quick-draft-adjustment-develop] {
+    grid-area: 2 / 5;
+  }
+
+  /* An absolutely placed grid child is placed against its grid area, and the
+     narrow layout parks the stack in an empty last row -- so span the layout. */
+  .lightroom-layout.is-stack-open > .draft-desk-inspector {
+    display: grid;
+    grid-area: 1 / 1 / -1 / -1;
+  }
+}
+
+@container (max-width: 520px) {
+  .draft-desk-sheet-head {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .draft-desk-title-field {
+    grid-column: 1 / -1;
+  }
+
+  .draft-desk-details {
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .draft-desk-editor.is-selected::after,
+  .draft-desk-intake.is-working::after,
+  .draft-desk-editor.is-working::after {
+    animation: none;
+  }
+}
+
+@keyframes quickDraftMarchingAnts {
+  to {
+    background-position:
+      20px 0, -20px 100%, 0 -20px, 100% 20px,
+      0 0, 100% 0, 0 100%, 100% 100%;
+  }
+}
+
+@keyframes quickDraftWorkingSweep {
+  to {
+    background-position: 165% 100%;
+  }
+}
+
+/* --- The Quick Draft window's own rules, moved out of 50-apps.css
+   (2026-09-24). Every selector below is scoped to draft-desk / quick-draft /
+   lightroom / listen / darkroom, and this sheet is requested on the only
+   path that opens those windows, so a boot no longer pays for them. The
+   selectors and their relative order are unchanged, so the cascade inside
+   this sheet is the cascade the boot sheet had. --- */
+
+.quick-draft-title-display {
+  flex: 0 1 18rem;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: bold;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quick-draft-title-input {
+  flex: 1 1 12rem;
+  min-width: 8rem;
+  height: 22px;
+  font-weight: normal;
+}
+
+#quick-draft-stats,
+#quick-draft-save-state,
+#quick-draft-source-count,
+#quick-draft-status {
+  white-space: nowrap;
+}
+
+#quick-draft-stats {
+  justify-self: start;
+}
+
+#quick-draft-status {
+  justify-self: end;
+  min-width: 5.5rem;
+  max-width: min(22ch, 28vw);
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+}
+
+.quick-draft-intake,
+.quick-draft-editor {
+  display: grid;
+  gap: 8px;
+  min-height: 0;
+  align-content: start;
+}
+
+.quick-draft-intake {
+  grid-area: intake;
+  grid-template-rows: auto repeat(4, minmax(0, 1fr));
+  overflow: auto;
+  min-width: 0;
+}
+
+.quick-draft-editor {
+  grid-area: editor;
+  grid-template-rows: minmax(0, 1fr) auto;
+  align-content: stretch;
+  min-width: 0;
+  position: relative;
+}
+
+.quick-draft-editor textarea {
+  min-height: 0;
+  resize: none;
+}
+
+.quick-draft-editor textarea {
+  font: 15px/1.55 var(--ui-font);
+}
+
+.quick-draft-tools {
+  grid-area: tools;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+.quick-draft-tools,
+.quick-draft-intake,
+.quick-draft-handoff {
+  padding: 6px;
+  border: var(--quick-draft-panel-border);
+  border-radius: var(--quick-draft-panel-radius);
+  background: var(--quick-draft-panel-bg);
+  box-shadow: var(--quick-draft-panel-shadow);
+}
+
+.quick-draft-tools:not([open]),
+.quick-draft-intake:not([open]),
+.quick-draft-handoff:not([open]) {
+  background: transparent;
+  padding: 4px 6px;
+}
+
+.quick-draft-tools[open],
+.quick-draft-intake[open],
+.quick-draft-handoff[open] {
+  display: grid;
+  gap: 8px;
+}
+
+.quick-draft-tools:not([open]) > :not(summary),
+.quick-draft-intake:not([open]) > :not(summary),
+.quick-draft-handoff:not([open]) > :not(summary) {
+  display: none;
+}
+
+.quick-draft-tools summary,
+.quick-draft-intake summary,
+.quick-draft-handoff summary {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: bold;
+}
+
+.quick-draft-source-summary {
+  margin-left: auto;
+  color: var(--shade-dark);
+  font-weight: normal;
+}
+
+.quick-draft-tools[open] summary,
+.quick-draft-intake[open] summary,
+.quick-draft-handoff[open] summary {
+  margin-bottom: 6px;
+}
+
+.quick-draft-first-day-subject {
+  grid-column: 1 / -1;
+}
+
+.quick-draft-source-map {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: start;
+  gap: 4px;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* The paper comes first in the source so it reads first and, on a phone,
+   the two drawers paint over it without a z-index of their own. Grid
+   placement puts the shelf back on the left. */
+
+/* The drawer close is a phone control; on a desk both regions are on screen. */
+
+/* Empty state, not a phase: the intake well and the body live on the same
+   paper and only one of them is on screen. */
+
+.quick-draft-versions-list {
+  min-height: 0;
+  overflow-y: auto;
+  font: 12px/1.4 var(--ui-font);
+  color: var(--shade-dark);
+}
+
+#quick-draft-save-state {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink);
+  font: 13px/1.25 var(--title-font);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#quick-draft-protect-state:empty,
+#quick-draft-stack-state:empty {
+  display: none;
+}
+
+.quick-draft-ai-cards {
+  overflow: auto;
+}
+
+.quick-draft-ai-cards:not([open]) > :not(summary) {
+  display: none;
+}
+
+.quick-draft-ai-cards summary {
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.quick-draft-result-label {
+  display: block;
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: var(--shade-dark);
+}
+
+.quick-draft-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.quick-draft-suggestion-chip {
+  max-width: 100%;
+  text-align: left;
+  white-space: normal;
+}
+
+.quick-draft-editor {
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+}
+
+.quick-draft-start-writing {
+  min-width: 9rem;
+}
+
+/* Compression grain: a read-only provenance view of the body. It reuses the
+   preview pane because a textarea cannot paint one span differently from
+   another — see the Quick Draft grain notes in the feature module. */
+.quick-draft-grain-readout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  padding-bottom: 6px;
+  margin-bottom: 10px;
+  border-bottom: var(--quick-draft-grain-border);
+  font-family: var(--ui-font);
+  font-size: 12px;
+}
+
+.quick-draft-grain-note {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--quick-draft-grain-model-fg);
+}
+
+.quick-draft-grain-body {
+  margin: 0;
+  font: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.quick-draft-grain-author {
+  color: var(--quick-draft-grain-author-fg);
+}
+
+.quick-draft-grain-model {
+  color: var(--quick-draft-grain-model-fg);
+  text-decoration: var(--quick-draft-grain-model-decoration);
+  text-underline-offset: 3px;
+}
+
+/* Masked lines carry the adjustment-layer margin marker. The mask lives as
+   line ranges (a textarea cannot paint spans); in this read-only preview the
+   bar is the honest equivalent of the layer's mask. */
+.quick-draft-grain-line.is-masked {
+  box-shadow: inset 3px 0 0 var(--quick-draft-grain-mask-fg);
+}
+
+/* Protected lines are a property of the text, not a layer: they carry their
+   own margin bar, distinct from the per-layer mask and from provenance. */
+.quick-draft-grain-line.is-protected {
+  box-shadow: inset 6px 0 0 var(--quick-draft-protected-fg);
+}
+
+.quick-draft-grain-line.is-masked.is-protected {
+  box-shadow:
+    inset 3px 0 0 var(--quick-draft-grain-mask-fg),
+    inset 6px 0 0 var(--quick-draft-protected-fg);
+}
+
+.quick-draft-grain-generation {
+  margin-left: 3px;
+  padding: 0 3px;
+  border: var(--quick-draft-grain-generation-border);
+  color: var(--quick-draft-grain-model-fg);
+  font-family: var(--mono-font);
+  font-size: 10px;
+  font-style: normal;
+  vertical-align: 2px;
+  white-space: nowrap;
+}
+
+/* FatBits — the grain view zoomed in until one sentence is one cell. A list,
+   not a grid: sentences run from four characters to sixty, and a grid of those
+   is unreadable at any cell size. Colours and rules are the grain view's own
+   tokens, because this is the same canvas at a different magnification. */
+.quick-draft-fatbits {
+  /* Same measure as the writing windows. The page width is the editable box
+     width there, and a sentence cell is an editable box, so it uses the same
+     token rather than a second number that can drift away from it. */
+  max-width: var(--mde-page-width);
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+}
+
+.quick-draft-fatbit {
+  display: grid;
+  grid-template-columns: 2.5em minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: baseline;
+  padding: 4px 2px;
+  border-bottom: var(--quick-draft-grain-border);
+}
+
+.quick-draft-fatbit-index,
+.quick-draft-fatbit-badge {
+  font-family: var(--ui-font);
+  font-size: 11px;
+  color: var(--quick-draft-grain-model-fg);
+}
+
+.quick-draft-fatbit-index {
+  text-align: right;
+}
+
+/* A cell is a field, and it has to read as one before it is clicked: the
+   TeachText editor's own paper, rule and inset, so the two surfaces say
+   "you can type here" the same way. */
+.quick-draft-fatbit-text {
+  overflow-wrap: anywhere;
+  padding: 2px 6px;
+  border: var(--teachtext-editor-border);
+  background: var(--teachtext-editor-bg);
+  box-shadow: var(--teachtext-editor-shadow);
+  cursor: text;
+}
+
+.quick-draft-fatbit-text:focus {
+  outline: var(--system-control-line) solid var(--ink);
+  outline-offset: 1px;
+}
+
+.quick-draft-fatbit-undo {
+  padding: 0 4px;
+  border: var(--quick-draft-grain-generation-border);
+  background: var(--paper);
+  color: var(--quick-draft-grain-model-fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+.quick-draft-fatbit-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+/* The same left rule the unzoomed grain line uses for a protected line, so the
+   two magnifications say "locked" with one mark. */
+.quick-draft-fatbit.is-protected {
+  box-shadow: inset 6px 0 0 var(--quick-draft-protected-fg);
+}
+
+.quick-draft-fatbit-lock {
+  width: 7px;
+  height: 8px;
+  border: var(--system-control-line) solid var(--quick-draft-protected-fg);
+  border-top-width: 3px;
+}
+
+.quick-draft-grain-zoom {
+  margin-left: auto;
+}
+
+/* The history brush picks one source state and then paints from it, so the
+   picker sits above the cells rather than repeating inside every one. */
+.quick-draft-brush-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: var(--mde-page-width);
+  margin: 0 auto 8px;
+  font-family: var(--ui-font);
+  font-size: 11px;
+}
+
+.quick-draft-brush-picker .select-wrap {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* The canvas frame. What falls outside it is still there and still readable —
+   cropping is the writer's decision, so the surface marks the edge and says
+   nothing more. */
+.quick-draft-canvas-note {
+  max-width: var(--mde-page-width);
+  margin: 0 auto 6px;
+  font-family: var(--ui-font);
+  font-size: 11px;
+  color: var(--quick-draft-grain-model-fg);
+}
+
+.quick-draft-fatbit.is-canvas-edge {
+  border-top: var(--system-control-line) dashed var(--ink);
+}
+
+.quick-draft-fatbit.is-outside-canvas .quick-draft-fatbit-index,
+.quick-draft-fatbit.is-outside-canvas .quick-draft-fatbit-text {
+  opacity: 0.55;
+}
+
+/* A citation badge names the source a sentence came from. It is not a lock
+   mark: the writer may still edit a quotation, and the model may not — two
+   different bans that must not wear one symbol. */
+.quick-draft-fatbit-cite {
+  padding: 0 3px;
+  border: var(--quick-draft-grain-generation-border);
+  font-style: normal;
+  color: var(--quick-draft-grain-model-fg);
+}
+
+.quick-draft-fatbit-brush {
+  padding: 0 4px;
+  border: var(--quick-draft-grain-generation-border);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+/* The histogram — the same canvas zoomed out. Bars are drawn from a custom
+   property rather than a positioned inline style, so the geometry stays in the
+   stylesheet and the data stays in the markup. */
+.quick-draft-histograms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  max-width: var(--mde-page-width);
+  margin: 0 auto 10px;
+}
+
+.quick-draft-histogram {
+  flex: 1 1 200px;
+  min-width: 0;
+  margin: 0;
+}
+
+.quick-draft-histogram figcaption,
+.quick-draft-histogram-summary {
+  font-family: var(--ui-font);
+  font-size: 11px;
+  margin: 0;
+}
+
+.quick-draft-histogram-summary {
+  color: var(--quick-draft-grain-model-fg);
+  margin-top: 4px;
+}
+
+.quick-draft-histogram-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 96px;
+  margin: 4px 0 0;
+  padding: 0 0 14px;
+  list-style: none;
+  border-bottom: var(--quick-draft-grain-border);
+}
+
+.quick-draft-histogram-bar {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.quick-draft-histogram-column {
+  position: relative;
+  width: 100%;
+  height: var(--grain-bar-height, 0%);
+  background: var(--quick-draft-grain-swatch-author);
+}
+
+/* The model's share of a bar carries the same dither the legend swatch uses,
+   so one pattern means one thing at every magnification. */
+.quick-draft-histogram-model {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: var(--grain-bar-model, 0%);
+  background: var(--quick-draft-grain-swatch-model);
+}
+
+.quick-draft-histogram-tick {
+  position: absolute;
+  inset: 100% 0 auto 0;
+  font-family: var(--ui-font);
+  font-size: 10px;
+  text-align: center;
+  color: var(--quick-draft-grain-model-fg);
+}
+
+.quick-draft-grain-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin-top: 12px;
+  padding-top: 6px;
+  border-top: var(--quick-draft-grain-border);
+  font-family: var(--ui-font);
+  font-size: 12px;
+}
+
+.quick-draft-grain-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.quick-draft-grain-swatch {
+  width: 22px;
+  height: 9px;
+  border: var(--quick-draft-grain-border);
+  font-style: normal;
+}
+
+.quick-draft-grain-swatch.is-author {
+  background: var(--quick-draft-grain-swatch-author);
+}
+
+.quick-draft-grain-swatch.is-model {
+  background: var(--quick-draft-grain-swatch-model);
+}
+
+.quick-draft-grain-swatch.is-protected {
+  background: var(--quick-draft-protected-fg);
+}
+
+/* The stack order and the scope both stay on the closed row. */
+
+/* One layer reads as one row: switch and name, strength, disclosure. The
+   description and the scope line live behind the triangle, the way a Finder
+   list row opens. */
+
+.quick-draft-layer-detail {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding-left: 16px;
+}
+
+.quick-draft-layer-detail[hidden] {
+  display: none;
+}
+
+/* No hard cap: the label has to fit the bitmap face and the glass face. */
+
+.quick-draft-source-map {
+  min-height: 2rem;
+  padding-top: 4px;
+  border-top: var(--quick-draft-divider-border);
+}
+
+.quick-draft-cliotalk-hint {
+  font-size: 11px;
+  color: var(--shade-dark);
+}
+
+.quick-draft-cliotalk-hint.is-hidden {
+  display: none;
+}

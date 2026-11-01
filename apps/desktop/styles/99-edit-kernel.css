@@ -1,0 +1,178 @@
+/* The edit kernel's shared parts.
+
+   Lazy: this sheet rides the loaders of the editors that use it and of Key
+   Caps' command sheet (tooling/style-manifest.mjs), so a desk that never opens
+   one never downloads it. Every selector is scoped to .command-sheet-* or
+   .edit-kernel-*. Colour and rules come from the theme tokens Key Caps already
+   uses, so each appearance dresses the sheet the way it dresses Key Caps. */
+
+/* ---- Key Caps: the command sheet --------------------------------------- */
+
+.command-sheet {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.command-sheet-title {
+  margin: 0;
+  font-size: inherit;
+  font-weight: bold;
+}
+
+.command-sheet-search {
+  width: 100%;
+  min-width: 0;
+}
+
+.command-sheet-list {
+  max-height: 240px;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+  border: var(--shortcut-grid-border);
+  border-radius: var(--shortcut-grid-radius);
+  background: var(--shortcut-grid-bg);
+}
+
+.command-sheet-menu {
+  padding: 4px 8px 2px;
+  font-weight: bold;
+  border-bottom: var(--shortcut-grid-divider);
+}
+
+.command-sheet-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  box-shadow: none;
+}
+
+.command-sheet-row:hover:not(:disabled),
+.command-sheet-row:focus-visible {
+  background: var(--ink);
+  color: var(--paper);
+  outline: none;
+}
+
+.command-sheet-row:disabled {
+  opacity: 0.45;
+}
+
+.command-sheet-key {
+  font-family: var(--mono-font);
+  font-size: inherit;
+  white-space: nowrap;
+}
+
+.command-sheet-empty {
+  margin: 0;
+}
+
+/* ---- The layers panel (app/core/edit-layers.js) ------------------------ */
+
+.edit-kernel-layers {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.edit-kernel-layer {
+  display: grid;
+  grid-template-columns: auto auto auto minmax(0, 1fr);
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px 2px calc(6px + var(--edit-kernel-depth, 0) * 12px);
+  border-bottom: var(--shortcut-grid-divider);
+  color: var(--ink);
+  cursor: default;
+}
+
+.edit-kernel-layer.is-selected {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.edit-kernel-layer.is-hidden-layer .edit-kernel-layer-name {
+  opacity: 0.45;
+}
+
+.edit-kernel-layer.is-drop-before {
+  box-shadow: inset 0 2px 0 var(--ink);
+}
+
+.edit-kernel-layer.is-drop-after {
+  box-shadow: inset 0 -2px 0 var(--ink);
+}
+
+.edit-kernel-layer-eye,
+.edit-kernel-layer-lock {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 1px solid currentColor;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 10px;
+  line-height: 14px;
+  box-shadow: none;
+}
+
+.edit-kernel-layer-eye[aria-pressed="true"]::before {
+  content: "●";
+}
+
+.edit-kernel-layer-lock[aria-pressed="true"]::before {
+  content: "■";
+}
+
+.edit-kernel-layer-tag {
+  width: 8px;
+  height: 8px;
+}
+
+.edit-kernel-layer-tag[data-tag] {
+  background: currentColor;
+}
+
+.edit-kernel-layer-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.edit-kernel-layer-rename {
+  width: 100%;
+  min-width: 0;
+  font: inherit;
+}
+
+/* ---- The inspector (app/core/edit-layers.js) --------------------------- */
+
+.edit-kernel-inspector {
+  display: grid;
+  gap: 6px;
+}
+
+.edit-kernel-field {
+  display: grid;
+  grid-template-columns: minmax(70px, auto) minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+}
+
+.edit-kernel-field input:not([type="checkbox"]) {
+  width: 100%;
+  min-width: 0;
+}

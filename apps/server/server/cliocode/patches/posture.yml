@@ -1,0 +1,83 @@
+# ClioCode engine posture for dsh 0.2.1-rc.3 (docs/CLIOCODE-DESIGN.md, M9.3).
+# Mounted on every ClioCode run instead of agent/patches/posture.yml, before
+# the provider patch. The OS boundary is the code Seatbelt profile
+# (apps/server/server/cliocode/sandbox-profile.js); this patch decides which
+# tools the model is offered and makes every file change ask.
+#
+# Same tool set as ClioTalk except the shell, which is ClioCode's M9.4/M9.5:
+# dsh's own fence stays read-only and its approval policy ask, so every
+# command arrives as an ACP requestPermission the run's mode table answers
+# (cliocode/permissions.js). A sandboxed command runs as dsh's child inside
+# the code Seatbelt profile; a command that asks to run outside the sandbox is
+# executed by the HOST as a separate unwrapped child the writer approves each
+# time by exact argv (cliocode/runs.js runExternalCommand) — never by dsh, and
+# never a session allow.
+- id: tool-bash
+- id: tool-pwsh
+  disabled: true
+- id: bash-sandbox
+  disabled: true
+- id: pwsh-sandbox
+  disabled: true
+- id: tool-jobs
+  disabled: true
+- id: subagent
+  disabled: true
+- id: subagent-spawn-in-process
+  disabled: true
+- id: subagent-fork-in-process
+  disabled: true
+- id: tool-subagent-control
+  disabled: true
+- id: tool-subagent-list-agents
+  disabled: true
+- id: tool-subagent
+  disabled: true
+- id: tool-subagent-fork
+  disabled: true
+- id: ptc-runtime
+  disabled: true
+- id: workflow-ptc
+  disabled: true
+- id: tool-workflow
+  disabled: true
+- id: goal
+  disabled: true
+- id: goal-round-driver
+  disabled: true
+- id: command-goal
+  disabled: true
+- id: tool-goal
+  disabled: true
+- id: plugin-manager
+  disabled: true
+- id: tool-plugin-manager
+  disabled: true
+# No live reload of profile or patch files during a run (dsh-acp-app already
+# switches it off; kept here so a bundle change cannot turn it back on).
+- id: hmr
+  disabled: true
+# dsh's own file policy is read-only, so every write or edit of the folder is
+# refused by dsh until it escalates, and an escalation is an ACP
+# requestPermission. The host answers it from the run's permission mode
+# (cliocode/permissions.js) and snapshots the files the call names before it
+# says yes (cliocode/runs.js): no file of the folder changes without a
+# decision and a checkpoint. Escalation reaches danger-full-access in dsh; the
+# outer profile still confines writes to the folder and the run's temp.
+- id: approval
+  config:
+    policy: ask
+- id: sandbox-policy
+  config:
+    mode: read-only
+# Nothing about a writer's session leaves the Mac as telemetry.
+- id: session-telemetry-otel
+  disabled: true
+- id: otel
+  disabled: true
+# Web fetch and search stay on; every request goes through the run's egress
+# filter (cliocode/egress.js), which admits only allowlisted hosts.
+- id: tool-web
+  config:
+    fetch: true
+    searchTimeoutMs: 60000

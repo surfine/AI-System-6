@@ -1,0 +1,289 @@
+// Static file handler. Serves index.html, the bundled app, raw
+// stylesheets, the endfield-terminal page, and the small set of
+// other asset extensions the client actually requests.
+//
+// The desktop product is the static root. Repository-level mounts are explicit
+// exceptions for third-party reference assets and archived demo material.
+//
+// Behavior parity with `serveFile` from root server.js:
+// - "/" maps to "/index.html".
+// - path.normalize is applied before the traversal guard so
+//   "/../etc/passwd" cannot escape the static root.
+// - mimeTypes returns "application/octet-stream" for anything not
+//   in the small allowlist.
+// - .html / .js / .mjs / .css get an aggressive no-cache triple
+//   (Cache-Control + Pragma + Expires).
+// - Any read error -> 404 plain text "Not found".
+
+"use strict";
+
+const fs = require("node:fs");
+const fsPromises = require("node:fs/promises");
+const path = require("node:path");
+
+const { send } = require("./lib/http.js");
+const { desktopRoot, repoRoot, appBuild, appSourceCommit } = require("./lib/build-info.js");
+const { shellOwned } = require("./shell-session.js");
+
+/**
+ * Extension -> Content-Type. Same five entries as root. Anything
+ * else falls back to application/octet-stream.
+ *
+ * @type {Readonly<Record<string, string>>}
+ */
+const mimeTypes = Object.freeze({
+  ".html": "text/html; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".mjs": "text/javascript; charset=utf-8",
+  ".md": "text/markdown; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".svg": "image/svg+xml; charset=utf-8",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+  ".gif": "image/gif",
+  ".ico": "image/x-icon",
+  ".woff": "font/woff",
+  ".woff2": "font/woff2",
+  ".wasm": "application/wasm",
+  ".dat": "application/octet-stream",
+  ".gz": "application/gzip",
+  ".usdz": "model/vnd.usdz+zip",
+});
+
+const exactPublicFiles = new Set([
+  "index.html",
+  // The application shell worker. Its scope is the path it is served from, so
+  // it has to be a root file rather than live under app/.
+  "sw.js",
+  "app.bundle.js",
+  "styles.bundle.css",
+  "styles.theme-lab.css",
+  "styles.draft-desk.css",
+  "styles.control-strip.css",
+  "styles.finder-spatial.css",
+  "styles.micropolis.css",
+  "styles.openttd.css",
+  "styles.bonsai.css",
+  "styles.cmf-studio.css",
+  "styles.endfield-terminal.css",
+  "styles.bureaucracy-meme.css",
+  "styles.stickies.css",
+  "styles.reader-pages.css",
+  "styles.time-machine.css",
+  "styles.docmap.css",
+  "styles.searcher.css",
+  "styles.clio-chart.css",
+  "styles.clio-paint.css",
+  "styles.one-more-tune.css", "styles.one-more-take.css", "styles.aaron-blog.css",
+  "styles.rootline.css",
+  "styles.joyride.css",
+  "styles.project-disks.css",
+  "styles.clio-project.css", "styles.edit-kernel.css", "styles.about.css", "styles.about-this-mac.css", "styles.extensions.css", "styles.cliotalk-agent.css", "styles.cliotalk-shell.css", "styles.chooser-book.css",
+  "styles.big-sur.css",
+  "styles.tiger.css",
+  "styles.system-7.css",
+  "styles.drawing-board.css",
+  "styles.platinum.css",
+  "styles.desk-dock.css",
+  "styles.lion.css",
+  "styles.aqua.css",
+  "styles.liquid-glass.css",
+  "styles.nextstep.css",
+  "styles.soundscape.css",
+  "styles.liquid-cover.css",
+  "styles.image-prompt-studio.css",
+  "styles.clioworks-native.css",
+  "styles.clio-stage-audit.css",
+  "endfield-terminal.html",
+]);
+
+// Browser dependencies use stable app-owned URLs. Development and packaged
+// builds serve the installed source files through these aliases; web releases
+// copy the same bytes into public/app/vendor so Nginx never exposes a general
+// node_modules route.
+const publicFileAliases = new Map([
+  ["app/vendor/paddle-ocr.js", "node_modules/@paddlejs-models/ocr/lib/index.js"],
+  ["app/vendor/pdf.min.js", "node_modules/pdfjs-dist/legacy/build/pdf.min.mjs"],
+  ["app/vendor/pdf.worker.min.js", "node_modules/pdfjs-dist/legacy/build/pdf.worker.min.mjs"],
+  ["app/vendor/pdfjs-wasm/jbig2.wasm", "node_modules/pdfjs-dist/wasm/jbig2.wasm"],
+  ["app/vendor/pdfjs-wasm/jbig2_nowasm_fallback.js", "node_modules/pdfjs-dist/wasm/jbig2_nowasm_fallback.js"],
+  ["app/vendor/pdfjs-wasm/openjpeg.wasm", "node_modules/pdfjs-dist/wasm/openjpeg.wasm"],
+  ["app/vendor/pdfjs-wasm/openjpeg_nowasm_fallback.js", "node_modules/pdfjs-dist/wasm/openjpeg_nowasm_fallback.js"],
+  ["app/vendor/pdfjs-wasm/qcms_bg.wasm", "node_modules/pdfjs-dist/wasm/qcms_bg.wasm"],
+]);
+
+// pdf.js reads CJK character maps and the 14 standard fonts on demand, one
+// file at a time, when a page needs them. They are never in the boot floppy.
+const publicDirectoryAliases = [
+  ["app/vendor/pdfjs-cmaps/", "node_modules/pdfjs-dist/cmaps/"],
+  ["app/vendor/pdfjs-standard-fonts/", "node_modules/pdfjs-dist/standard_fonts/"],
+];
+
+const desktopPublicPrefixes = [
+  "app/",
+  "go/",
+  "assets/",
+  "data/",
+];
+
+const repositoryPublicPrefixes = [
+  "endfield-archive/public/",
+];
+
+// The browser URL stayed `/system.css-reference/` when the reference tree moved
+// under `vendor/` on 2026-11-01. Installed service workers and already-cached
+// pages still name that URL, so the request is mapped to the new location
+// instead of rewriting every client.
+const repositoryPublicAliases = new Map([
+  ["system.css-reference/", "vendor/system.css-reference/"],
+]);
+
+const repositoryPublicTargets = [...repositoryPublicAliases.values()];
+
+function publicRelativePath(pathname) {
+  let decoded;
+  try {
+    decoded = decodeURIComponent(pathname);
+  } catch {
+    return "";
+  }
+  if (decoded.includes("\0") || decoded.includes("\\")) return "";
+  const relative = decoded.replace(/^\/+/, "");
+  const normalized = path.posix.normalize(relative);
+  if (!normalized || normalized === "." || normalized === ".." || normalized.startsWith("../")) {
+    return "";
+  }
+  if (normalized.split("/").some((part) => part.startsWith("."))) return "";
+  if (exactPublicFiles.has(normalized)) return normalized;
+  if (publicFileAliases.has(normalized)) return publicFileAliases.get(normalized);
+  for (const [prefix, target] of publicDirectoryAliases) {
+    if (normalized.startsWith(prefix) && normalized.length > prefix.length) return target + normalized.slice(prefix.length);
+  }
+  // A stable public URL backed by a directory that moved on disk.
+  for (const [prefix, target] of repositoryPublicAliases) {
+    if (normalized.startsWith(prefix) && normalized.length > prefix.length) return target + normalized.slice(prefix.length);
+  }
+  if (desktopPublicPrefixes.some((prefix) => normalized.startsWith(prefix))) return normalized;
+  if (repositoryPublicPrefixes.some((prefix) => normalized.startsWith(prefix))) return normalized;
+  return "";
+}
+
+function resolvePublicFile(relative) {
+  if (relative.startsWith("node_modules/")) return path.resolve(repoRoot, relative);
+  if (relative.startsWith("endfield-archive/public/")) {
+    return path.resolve(repoRoot, "internal", "archive", "endfield", "public", relative.slice("endfield-archive/public/".length));
+  }
+  if (repositoryPublicPrefixes.some((prefix) => relative.startsWith(prefix))) {
+    return path.resolve(repoRoot, relative);
+  }
+  if (repositoryPublicTargets.some((prefix) => relative.startsWith(prefix))) {
+    return path.resolve(repoRoot, relative);
+  }
+  return path.resolve(desktopRoot, relative);
+}
+
+// The Mac application replaces its payload in place while WebKit's HTTP cache
+// survives the swap, and `?v=<build>` names the build stamp, not the bytes: two
+// payloads can share a stamp. A shell-owned server is a loopback hop, so
+// nothing is pinned there; every response revalidates against an ETag that
+// carries the payload identity.
+function cacheHeaders(relative, ext, url, { pinned = true } = {}) {
+  const versioned = Boolean(url?.searchParams?.get("v"));
+  const contentHashed = /(?:^|[.-])[a-f0-9]{8,}(?:[.-]|$)/i.test(path.basename(relative));
+  if (!pinned) return { "Cache-Control": "no-cache" };
+  if (versioned || contentHashed) {
+    return { "Cache-Control": "public, max-age=31536000, immutable" };
+  }
+  if (relative === "index.html" || ext === ".html" || ext === ".js" || ext === ".mjs" || ext === ".css") {
+    return { "Cache-Control": "no-cache" };
+  }
+  // Stable, unversioned asset/data/manifest URLs can change at the next build.
+  // Revalidate them instead of keeping stale bytes for seven days.
+  return { "Cache-Control": "no-cache" };
+}
+
+/**
+ * @param {import("node:http").IncomingMessage} req
+ * @param {import("node:http").ServerResponse} res
+ */
+async function handleStatic(req, res) {
+  const url = new URL(req.url || "/", `http://${req.headers.host}`);
+  // Only the root serves the shell. `/cmf-studio` served it too until
+  // 2026-09-11, which opened the desk with no idea which app was asked for;
+  // /go/cmf-studio is the entry, and it carries the launch in the query.
+  const pathname = url.pathname === "/" ? "/index.html" : url.pathname;
+  const relative = publicRelativePath(pathname);
+  if (!relative) {
+    send(res, 404, "Not found", { "Content-Type": "text/plain" });
+    return;
+  }
+
+  const filePath = resolvePublicFile(relative);
+  if (filePath !== repoRoot && !filePath.startsWith(`${repoRoot}${path.sep}`)) {
+    send(res, 404, "Not found", { "Content-Type": "text/plain" });
+    return;
+  }
+
+  try {
+    const stat = await fsPromises.stat(filePath);
+    if (!stat.isFile()) throw new Error("Not a file");
+    const ext = path.extname(filePath);
+    const contentType = mimeTypes[ext] || "application/octet-stream";
+    const payload = shellOwned ? `-${appBuild}-${String(appSourceCommit || "").slice(0, 12)}` : "";
+    const etag = `W/"${stat.size.toString(16)}-${Math.trunc(stat.mtimeMs).toString(16)}${payload}"`;
+    const headers = {
+      "Content-Type": contentType,
+      "Content-Length": stat.size,
+      "ETag": etag,
+      ...cacheHeaders(relative, ext, url, { pinned: !shellOwned }),
+    };
+    if (relative.startsWith("assets/openttd/") || relative.startsWith("assets/doom/") || relative.startsWith("assets/mingwen/")) {
+      // Game shells (OpenTTD and DOOM in wasm, 明文 as a plain static page) run
+      // inside the desktop's same-origin iframe; the wasm ones also need
+      // 'wasm-unsafe-eval' to compile. The global policy
+      // (frame-ancestors 'none', no wasm) stays in force everywhere else;
+      // foreign origins still cannot embed the game.
+      headers["X-Frame-Options"] = "SAMEORIGIN";
+      headers["Content-Security-Policy"] = [
+        "default-src 'self'",
+        "script-src 'self' 'wasm-unsafe-eval'",
+        "style-src 'self' 'unsafe-inline'",
+        "img-src 'self' data: blob:",
+        "font-src 'self' data:",
+        "connect-src 'self'",
+        "worker-src 'self' blob:",
+        "object-src 'none'",
+        "base-uri 'none'",
+        "frame-ancestors 'self'",
+      ].join("; ");
+    }
+    if (req.headers["if-none-match"] === etag) {
+      res.writeHead(304, headers);
+      res.end();
+      return;
+    }
+    if (req.method === "HEAD") {
+      res.writeHead(200, headers);
+      res.end();
+      return;
+    }
+
+    res.writeHead(200, headers);
+    const stream = fs.createReadStream(filePath);
+    stream.on("error", () => {
+      if (!res.headersSent) {
+        send(res, 404, "Not found", { "Content-Type": "text/plain" });
+      } else {
+        res.destroy();
+      }
+    });
+    stream.pipe(res);
+  } catch {
+    send(res, 404, "Not found", { "Content-Type": "text/plain" });
+  }
+}
+
+module.exports = { cacheHeaders, handleStatic, mimeTypes, publicRelativePath, resolvePublicFile };

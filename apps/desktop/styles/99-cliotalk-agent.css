@@ -1,0 +1,988 @@
+/* ClioTalk agent mode (app/features/cliotalk-agent.js): the mode bar, the run
+   card's plan and work log, the shadow strip, Chooser's shared folders and the
+   put-back dialog. Built on demand, so this sheet travels with its loader
+   (styles.cliotalk-agent.css) and never rides the boot. Every selector is
+   scoped to .clio-agent-*, .chooser-folder* or .agent-putback-*; colours and
+   lines are the foundation's tokens, so each era dresses them. */
+
+.clio-agent-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 4px 8px;
+  border-bottom: var(--system-border);
+  background: var(--details-bar-bg);
+  font-size: 12px;
+}
+
+/* The welcome speaks about ClioTalk's own model; the agent runs on the
+   engine host, so the card would only say something untrue here. */
+.assistant-window.is-agent-mode .clio-welcome {
+  display: none;
+}
+
+.clio-agent-modes {
+  display: inline-flex;
+  gap: 0;
+}
+
+.clio-agent-mode-choice[aria-checked="true"] {
+  background: var(--agent-selected-bg, var(--ink));
+  color: var(--agent-selected-fg, var(--paper));
+}
+
+.clio-agent-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.clio-agent-model,
+.clio-agent-note {
+  color: var(--ink);
+}
+
+.clio-agent-note {
+  font-style: italic;
+}
+
+/* The build command behind 详细…: it reads as one line with the note. */
+.clio-agent-engine-detail {
+  margin-inline-start: 6px;
+  font-style: normal;
+}
+
+.clio-agent-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px;
+  border-top: var(--system-border);
+  font-size: 12px;
+}
+
+.clio-agent-stop-hint {
+  margin-left: auto;
+  /* The floating Dictate button prefers the slot above the field's right
+     end — exactly where this hint sits while a run is live (eval
+     2026-10-29). Reserving its width (min 48px + gaps) keeps 「⌘. 停止」
+     readable with the button beside it instead of under it. */
+  padding-right: 56px;
+}
+
+/* The engine's raw refusal (rg, EPERM, English) hides behind the line's
+   详细… toggle; the desk's own word is what stands in the log. */
+.clio-agent-log-detail {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.clio-agent-run .message-content {
+  display: grid;
+  gap: 10px;
+}
+
+.clio-agent-plan {
+  border: var(--system-border);
+}
+
+.clio-agent-plan-head {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 8px;
+  border-bottom: var(--system-border);
+}
+
+.clio-agent-plan-list {
+  margin: 0;
+  padding: 6px 10px;
+  list-style: none;
+  display: grid;
+  gap: 2px;
+}
+
+.clio-agent-plan-list label {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.clio-agent-plan-list .is-current {
+  font-weight: bold;
+}
+
+.clio-agent-log {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--mono-font);
+  font-size: 12px;
+}
+
+.clio-agent-log-line {
+  display: grid;
+  grid-template-columns: 7em minmax(0, 1fr);
+  column-gap: 8px;
+}
+
+.clio-agent-log-subject {
+  overflow-wrap: anywhere;
+}
+
+/* A connector call's arguments, whole: kept line by line and scrollable, so
+   no field can hide behind a long one. */
+.clio-agent-connector-args {
+  max-height: 12em;
+  margin: 0;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+.clio-agent-log-error {
+  grid-column: 2;
+  overflow-wrap: anywhere;
+}
+
+.clio-agent-log-line.is-failed .clio-agent-log-verb {
+  text-decoration: line-through;
+}
+
+.clio-agent-text {
+  border-left: 3px solid var(--ink);
+  padding-left: 10px;
+}
+
+.chooser-folder-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.chooser-folder {
+  border: var(--system-border);
+  padding: 6px;
+  display: grid;
+  gap: 4px;
+}
+
+.chooser-folder.is-unavailable {
+  opacity: 0.6;
+}
+
+.chooser-folder-head {
+  display: grid;
+}
+
+.chooser-folder-head small {
+  overflow-wrap: anywhere;
+}
+
+.chooser-folder-levels {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.agent-putback-modal {
+  width: min(760px, calc(100vw - 32px));
+}
+
+.agent-putback-form {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.agent-putback-form h2 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.agent-putback-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 220px) minmax(0, 1fr);
+  min-height: 280px;
+  border: var(--system-border);
+}
+
+.agent-putback-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-right: var(--system-border);
+  overflow: auto;
+  max-height: 50vh;
+}
+
+.agent-putback-list li {
+  border-bottom: var(--system-border);
+  padding: 4px 6px;
+}
+
+.agent-putback-list li.is-focused {
+  background: var(--agent-selected-bg, var(--ink));
+  color: var(--agent-selected-fg, var(--paper));
+}
+
+.agent-putback-list label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.agent-putback-name {
+  all: unset;
+  cursor: default;
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+
+.agent-putback-badge {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* The put-back window's two tabs: files that wait in the shadow, and the
+   engine's proposals (clips, review notes, restore packs). */
+.agent-putback-tabs {
+  display: flex;
+  gap: 0;
+}
+
+.agent-putback-tabs button {
+  border: var(--system-border);
+  border-bottom: 0;
+  padding: 2px 12px;
+}
+
+.agent-putback-tabs button.is-active {
+  background: var(--agent-selected-bg, var(--ink));
+  color: var(--agent-selected-fg, var(--paper));
+}
+
+/* A proposal's payload is data the writer reads before deciding: the passage
+   verbatim, the engine's words labelled as the engine's. */
+.agent-proposal-reason {
+  margin: 0;
+  font-style: italic;
+}
+
+.agent-proposal-quote {
+  margin: 0;
+  padding: 4px 8px;
+  border-left: 3px solid var(--ink);
+  font-family: var(--mono-font);
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.agent-proposal-files {
+  margin: 0;
+  padding: 0 0 0 18px;
+}
+
+.agent-proposal-status {
+  display: block;
+  font-size: 12px;
+  font-style: italic;
+}
+
+.agent-putback-preview .button-row {
+  margin-top: 8px;
+}
+
+.agent-putback-preview {
+  padding: 8px 10px;
+  overflow: auto;
+  max-height: 50vh;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+}
+
+.agent-putback-diff {
+  margin: 0;
+  font-family: var(--mono-font);
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.agent-putback-diff .is-added {
+  font-weight: bold;
+}
+
+.agent-putback-diff .is-removed {
+  text-decoration: line-through;
+}
+
+.agent-putback-report {
+  border: var(--system-border);
+  padding: 6px 8px;
+}
+
+.agent-putback-conflict {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 700px) {
+  .agent-putback-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .agent-putback-list {
+    border-right: 0;
+    border-bottom: var(--system-border);
+  }
+}
+
+/* Alarm Clock · Agent (app/features/alarm-clock-agent.js): the schedule list and
+   form on the Alarm Clock window, and the 无人值守 cards in ClioTalk's strip.
+   Scoped to .alarm-agent*, .alarm-clock-agent and .alarm-clock-window.is-agent. */
+
+.alarm-clock-window.is-agent .alarm-clock-readout {
+  display: none;
+}
+
+.alarm-clock-agent {
+  border-top: var(--system-border);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.alarm-clock-agent[hidden] {
+  display: none;
+}
+
+.alarm-agent {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 8px;
+}
+
+.alarm-agent-note,
+.alarm-agent-hint,
+.alarm-agent-rules {
+  margin: 0;
+}
+
+.alarm-agent-hint,
+.alarm-agent-rules {
+  font-size: 11px;
+}
+
+.alarm-agent-list {
+  max-height: 180px;
+  overflow: auto;
+  border: var(--system-border);
+}
+
+.alarm-agent-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.alarm-agent-table th {
+  position: sticky;
+  top: 0;
+  padding: 2px 6px;
+  border-bottom: var(--system-border);
+  background: var(--details-bar-bg);
+  text-align: start;
+  font-weight: normal;
+}
+
+.alarm-agent-table td {
+  padding: 3px 6px;
+  vertical-align: top;
+}
+
+.alarm-agent-row {
+  cursor: default;
+}
+
+.alarm-agent-row.is-off {
+  opacity: 0.55;
+}
+
+.alarm-agent-row.is-selected {
+  background: var(--agent-selected-bg, var(--ink));
+  color: var(--agent-selected-fg, var(--paper));
+}
+
+/* The mark that tells a standing intent from a plain schedule. */
+.alarm-agent-mark {
+  display: inline-block;
+  margin-inline-end: 4px;
+  padding: 0 3px;
+  border: 1px solid currentColor;
+  font-size: 10px;
+}
+
+.alarm-agent-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.alarm-agent-missed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border: var(--system-border);
+}
+
+.alarm-agent-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.alarm-agent-words {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  font: inherit;
+}
+
+.alarm-agent-check {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.alarm-agent-card {
+  margin: 4px 8px;
+  padding: 4px 6px;
+  border: var(--system-border);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.alarm-agent-card p {
+  margin: 2px 0;
+}
+
+.alarm-agent-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.alarm-agent-card-label {
+  padding: 0 4px;
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* The cards sit inside ClioTalk's strip, on a row of their own. */
+.clio-agent-strip:has(.clio-agent-unattended) {
+  flex-wrap: wrap;
+}
+
+.clio-agent-unattended {
+  flex: 1 0 100%;
+}
+
+/* ClioCode (app/features/code.js) on the Clio shell. The skins, sidebar
+   rows, task cards, panel head and buttons are the shell's
+   (99-cliotalk-shell.css names .clio-code-window beside .assistant-window);
+   these rules are ClioCode's own parts: the frame, the head, the work log,
+   the composer, the file list and diff, and the checkpoint timeline. Glass
+   reads the shell's --cl-* tokens (each era's --cl-era-* values); Classic
+   draws in ink on paper: 1px rules, bold for added lines and a 50% 1-bit
+   pattern for removed ones. Every rule names the shell and its skin, so it
+   outranks the shell sheet whichever of the two loaded first. */
+.clio-code-window {
+  width: min(1180px, calc(100vw - 32px));
+  min-width: 720px;
+  height: min(720px, calc(100vh - 76px));
+}
+
+.clio-code-pane {
+  padding: 0;
+  overflow: hidden;
+}
+
+.clio-code-window .clio-shell[data-skin] .cc-head {
+  box-sizing: border-box;
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.clio-code-window .clio-shell[data-skin] :is(.cc-head-name, .cc-head-state) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clio-code-window .clio-shell[data-skin] .cc-head-state {
+  flex: none;
+}
+
+.clio-code-window .clio-shell[data-skin] .cc-head-mode {
+  flex: none;
+  margin-left: auto;
+}
+
+.clio-code-window .clio-shell[data-skin] .cc-thread {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.clio-code-window .clio-shell[data-skin] .clio-task.cc-task {
+  margin-bottom: 0;
+}
+
+.clio-code-window .clio-shell[data-skin] :is(.cc-reply, .cc-empty) {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.clio-code-window .clio-shell[data-skin] .cc-log {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--mono-font, monospace);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.clio-code-window .clio-shell[data-skin] .cc-log-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.clio-code-window .clio-shell[data-skin] .cc-log-target {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clio-code-window .clio-shell[data-skin] .cc-log-state {
+  flex: none;
+  margin-left: auto;
+}
+
+.clio-code-window .clio-shell[data-skin] .cc-composer {
+  box-sizing: border-box;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.clio-code-window .clio-shell[data-skin] .cc-composer textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 54px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+  font: inherit;
+  resize: none;
+}
+
+.clio-code-window .clio-shell[data-skin] .cc-composer textarea:focus-visible {
+  outline: 0;
+}
+
+.clio-code-window .clio-shell[data-skin] .cc-composer-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.clio-code-window .clio-shell[data-skin] .cc-composer-hint {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clio-code-window .clio-shell[data-skin] .clio-panel.cc-panel {
+  width: 400px;
+}
+
+.clio-code-window .clio-shell[data-skin] .cl-panel-body.cc-panel-body {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  font-family: inherit;
+}
+
+.clio-code-window .clio-shell[data-skin] .cc-files {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  max-height: 40%;
+  margin: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.clio-code-window .clio-shell[data-skin] .cc-file {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: default;
+}
+
+.clio-code-window .clio-shell[data-skin] .cc-file-path {
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--mono-font, monospace);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clio-code-window .clio-shell[data-skin] .cc-file-count {
+  display: inline-flex;
+  flex: none;
+  gap: 6px;
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.clio-code-window .clio-shell[data-skin] .cc-file-state {
+  flex: none;
+}
+
+.clio-code-window .clio-shell[data-skin] .cc-diff {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 6px 0;
+  overflow: auto;
+  font-family: var(--mono-font, monospace);
+  font-size: 12px;
+  line-height: 18px;
+  white-space: pre;
+}
+
+.clio-code-window .clio-shell[data-skin] .cc-line {
+  display: block;
+  min-width: max-content;
+  padding-right: 12px;
+}
+
+.clio-code-window .clio-shell[data-skin] .cc-line.is-hunk {
+  padding-left: 12px;
+}
+
+.clio-code-window .clio-shell[data-skin] .cc-sign {
+  display: inline-block;
+  width: 3ch;
+  text-align: center;
+  user-select: none;
+}
+
+.clio-code-window .clio-shell[data-skin] .cc-timeline {
+  margin: 0;
+  padding: 14px 16px;
+  list-style: none;
+}
+
+.clio-code-window .clio-shell[data-skin] .cc-point {
+  position: relative;
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr);
+  column-gap: 10px;
+  padding-bottom: 14px;
+}
+
+/* The line from each point down to the next. */
+.clio-code-window .clio-shell[data-skin] .cc-point:not(:last-child)::before {
+  position: absolute;
+  top: 14px;
+  bottom: 0;
+  left: 6px;
+  width: 1px;
+  content: "";
+}
+
+.clio-code-window .clio-shell[data-skin] .cc-dot {
+  box-sizing: border-box;
+  width: 9px;
+  height: 9px;
+  margin: 4px 0 0 2px;
+}
+
+.clio-code-window .clio-shell[data-skin] .cc-point.is-origin .cc-point-title {
+  grid-column: 2;
+}
+
+.clio-code-window .clio-shell[data-skin] .cc-point-files {
+  overflow-wrap: anywhere;
+  font-family: var(--mono-font, monospace);
+}
+
+.clio-code-window .clio-shell[data-skin] .cc-point .cc-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+/* Glass: the era's palette through the shell's tokens. */
+.clio-code-window .clio-shell[data-skin="glass"] .cc-head {
+  height: 44px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--cl-line);
+}
+
+.clio-code-window .clio-shell[data-skin="glass"] .cc-head-name {
+  font-weight: 600;
+}
+
+.clio-code-window .clio-shell[data-skin="glass"] :is(.cc-head-state, .cc-log-state, .cc-log-row.is-note, .cc-composer-hint, .cc-file-state, .cc-point-files, .cc-point-mark) {
+  color: var(--cl-ink-3);
+  font-size: 12px;
+}
+
+.clio-code-window .clio-shell[data-skin="glass"] .cc-thread {
+  padding: 16px 20px;
+}
+
+.clio-code-window .clio-shell[data-skin="glass"] .cc-empty {
+  padding: 16px;
+  color: var(--cl-ink-3);
+  font-size: 14px;
+}
+
+.clio-code-window .clio-shell[data-skin="glass"] .cc-reply {
+  color: var(--cl-ink);
+  line-height: 1.6;
+}
+
+.clio-code-window .clio-shell[data-skin="glass"] .cc-log {
+  padding: 8px 12px;
+  border-radius: var(--cl-r-md);
+  background: var(--cl-raised);
+  color: var(--cl-ink-2);
+}
+
+.clio-code-window .clio-shell[data-skin="glass"] .cc-log-row[data-status="failed"] .cc-log-title {
+  text-decoration: line-through;
+}
+
+.clio-code-window .clio-shell[data-skin="glass"] .cc-composer {
+  margin: 0 16px 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--cl-line-strong);
+  border-radius: var(--cl-r-lg);
+  background: var(--cl-window);
+  color: var(--cl-ink);
+}
+
+.clio-code-window .clio-shell[data-skin="glass"] .cc-composer:focus-within {
+  border-color: var(--cl-accent);
+}
+
+.clio-code-window .clio-shell[data-skin="glass"] .cc-files {
+  padding: 8px;
+  border-bottom: 1px solid var(--cl-line);
+}
+
+.clio-code-window .clio-shell[data-skin="glass"] .cc-file {
+  height: 30px;
+  padding: 0 8px;
+  border-radius: var(--cl-r-sm);
+  font-size: 12px;
+}
+
+.clio-code-window .clio-shell[data-skin="glass"] .cc-file[aria-pressed="true"] {
+  background: var(--cl-selected);
+}
+
+.clio-code-window .clio-shell[data-skin="glass"] .cc-n-add {
+  color: var(--cl-accent);
+}
+
+.clio-code-window .clio-shell[data-skin="glass"] .cc-n-del {
+  color: var(--cl-ink-2);
+}
+
+.clio-code-window .clio-shell[data-skin="glass"] .cc-diff {
+  color: var(--cl-ink);
+}
+
+.clio-code-window .clio-shell[data-skin="glass"] .cc-line.is-add {
+  background: color-mix(in srgb, var(--cl-accent) 14%, var(--cl-window));
+}
+
+.clio-code-window .clio-shell[data-skin="glass"] .cc-line.is-add .cc-sign {
+  color: var(--cl-accent);
+}
+
+.clio-code-window .clio-shell[data-skin="glass"] .cc-line.is-del {
+  background: color-mix(in srgb, var(--cl-warn-line) 20%, var(--cl-window));
+  color: var(--cl-ink-2);
+}
+
+.clio-code-window .clio-shell[data-skin="glass"] .cc-line.is-hunk {
+  background: var(--cl-raised);
+  color: var(--cl-ink-3);
+}
+
+.clio-code-window .clio-shell[data-skin="glass"] .cc-point:not(:last-child)::before {
+  background: var(--cl-line-strong);
+}
+
+.clio-code-window .clio-shell[data-skin="glass"] .cc-dot {
+  border: 2px solid var(--cl-accent);
+  border-radius: 50%;
+  background: var(--cl-accent);
+}
+
+.clio-code-window .clio-shell[data-skin="glass"] .cc-point.is-origin .cc-dot {
+  border-color: var(--cl-line-strong);
+  background: var(--cl-window);
+}
+
+.clio-code-window .clio-shell[data-skin="glass"] .cc-point.is-current .cc-dot {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cl-accent) 24%, var(--cl-window));
+}
+
+.clio-code-window .clio-shell[data-skin="glass"] .cc-point-title {
+  color: var(--cl-ink);
+  font-weight: 600;
+}
+
+/* Classic: ink on paper. */
+.clio-code-window .clio-shell[data-skin="classic"] .cc-head {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--ink);
+  line-height: 18px;
+}
+
+.clio-code-window .clio-shell[data-skin="classic"] .cc-thread {
+  padding: 10px 12px;
+  font-family: var(--text-font);
+}
+
+.clio-code-window .clio-shell[data-skin="classic"] .cc-empty {
+  padding: 10px 12px;
+}
+
+.clio-code-window .clio-shell[data-skin="classic"] .cc-log {
+  padding: 4px 8px;
+  border: 1px solid var(--ink);
+}
+
+.clio-code-window .clio-shell[data-skin="classic"] .cc-log-row[data-status="failed"] .cc-log-title {
+  text-decoration: line-through;
+}
+
+.clio-code-window .clio-shell[data-skin="classic"] .cc-composer {
+  margin: 0 12px 10px;
+  padding: 6px 8px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  font-family: var(--text-font);
+}
+
+.clio-code-window .clio-shell[data-skin="classic"] .cc-composer-bar {
+  font-family: var(--ui-font);
+}
+
+.clio-code-window .clio-shell[data-skin="classic"] .cc-files {
+  padding: 4px 0;
+  border-bottom: 1px solid var(--ink);
+}
+
+.clio-code-window .clio-shell[data-skin="classic"] .cc-file {
+  padding: 2px 10px;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.clio-code-window .clio-shell[data-skin="classic"] .cc-file[aria-pressed="true"] {
+  background: var(--selection-bg, var(--ink));
+  color: var(--selection-fg, var(--paper));
+}
+
+.clio-code-window .clio-shell[data-skin="classic"] .cc-line.is-add {
+  font-weight: bold;
+}
+
+.clio-code-window .clio-shell[data-skin="classic"] .cc-line.is-add .cc-sign {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* A removed line: its gutter is the 50% pattern, the sign knocked out. */
+.clio-code-window .clio-shell[data-skin="classic"] .cc-line.is-del .cc-sign {
+  background: repeating-conic-gradient(var(--ink) 0 25%, var(--paper) 0 50%) 0 0 / 2px 2px;
+  color: transparent;
+}
+
+.clio-code-window .clio-shell[data-skin="classic"] .cc-line.is-hunk {
+  border-top: 1px dotted var(--ink);
+}
+
+.clio-code-window .clio-shell[data-skin="classic"] .cc-point:not(:last-child)::before {
+  background: var(--ink);
+}
+
+.clio-code-window .clio-shell[data-skin="classic"] .cc-dot {
+  border: 1px solid var(--ink);
+  background: var(--ink);
+}
+
+.clio-code-window .clio-shell[data-skin="classic"] .cc-point.is-origin .cc-dot {
+  background: var(--paper);
+}
+
+.clio-code-window .clio-shell[data-skin="classic"] .cc-point.is-current .cc-dot {
+  box-shadow: 0 0 0 1px var(--paper), 0 0 0 2px var(--ink);
+}
+
+.clio-code-window .clio-shell[data-skin="classic"] .cc-point-title {
+  font-family: var(--ui-font);
+}
+
+.clio-code-window .clio-shell[data-skin="classic"] .cc-point-files {
+  font-size: 12px;
+}

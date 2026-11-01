@@ -1,0 +1,6412 @@
+// Core runtime module: window-manager.
+
+// Loaded before app.js as a classic script; shares the AI System 6 global scope.
+
+
+function shouldPromptForTeachTextFileSave() {
+  if (teachTextStatusEl?.dataset.statusKey !== "modified") return false;
+  const project = typeof getActiveProject === "function" ? getActiveProject() : null;
+  const isLinkedManuscript = project?.manuscriptLinkedToOutline
+    && typeof teachTextPipelineLabel === "function"
+    && teachTextPipelineLabel();
+  if (isLinkedManuscript) {
+    setTeachTextStatus("saved");
+    return false;
+  }
+  return true;
+}
+
+function teachTextUnsavedChangesMessage() {
+  const name = typeof getTeachTextDocumentName === "function"
+    ? getTeachTextDocumentName({ fallback: teachTextNameInput?.value?.trim() || t("untitled") })
+    : t("untitled");
+  return t("unsaved_changes", name);
+}
+
+// A name is a kind; the element without data-window-instance is its main
+// (second-instance machinery: lazy window-instances.js).
+function getWindow(name) {
+  return document.querySelector(`[data-window="${currentWindowName(name)}"]:not([data-window-instance])`);
+}
+function getWindowInstance(name, instance = "main") {
+  return instance === "main" ? getWindow(name)
+    : document.querySelector(`[data-window="${name}"][data-window-instance="${instance}"]`);
+}
+
+const writerModeCssOwnedWindows = new Set(["teachText", "assistant", "findPath", "contextPanel"]);
+const writerModeCompatibleAppIds = new Set(["writingStudio", "teachText", "clioTalk", "accessories"]);
+// Windows the narrow non-writer work-area CSS does NOT own: dialogs, system
+// pages, and Desk Accessories keep their own overlay vocabulary, so they keep
+// their inline geometry. Mirrors the :not(...) exclusion list in the
+// body:not(.is-writer-mode) .window work-area rule (60-responsive.css).
+// Which windows keep their own overlay geometry on a narrow screen is a
+// property of the window, so it lives in the registry with the rest.
+function isCenteredSystemWindow(winOrName) {
+  const name = typeof winOrName === "string" ? winOrName : winOrName?.dataset.window;
+  return isCenteredWindow(name);
+}
+
+// The accessory ladder lives in 00-foundation.css. Reading it here keeps one
+// source for a width that both the stylesheet and this map have to agree on.
+// Function declarations hoist, so the map above may call this.
+function readPixelToken(name, fallback) {
+  const raw = getComputedStyle(document.documentElement).getPropertyValue(name);
+  const value = Number.parseInt(raw, 10);
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function readZLayerToken(name, fallback) {
+  const raw = getComputedStyle(document.documentElement).getPropertyValue(name);
+  const value = Number.parseInt(raw, 10);
+  return Number.isFinite(value) ? value : fallback;
+}
+
+const windowLayerBaseZ = readZLayerToken("--z-window-layer-base", 10);
+const windowLayerCompactBaseZ = readZLayerToken("--z-window-layer-compact-base", 100);
+const windowLayerCompactThresholdZ = readZLayerToken("--z-window-layer-compact-threshold", 8800);
+const windowLayerMaxZ = readZLayerToken("--z-window-layer-max", 8990);
+const windowPinnedZ = readZLayerToken("--z-window-pinned", 9000);
+// Pinned windows share a band below priority surfaces (Control Strip, menus).
+// Ordinary focus/raise never crosses into this band; local MRU stays inside it.
+const windowPriorityZ = readZLayerToken("--z-window-priority", 9200);
+const windowPinnedMaxZ = Math.max(windowPinnedZ, windowPriorityZ - 1);
+let pinnedTopZ = windowPinnedZ;
+// About is the one window that dims the desk behind it, so it has to sit above
+// its own scrim; the pinned-window layer is below it.
+const systemModalZ = readZLayerToken("--z-system-modal", 9510);
+const windowSaveZ = readZLayerToken("--z-window-save", 8500);
+const writingLayoutWindowNames = new Set(["questionSheet", "outline", "sectionDrafts", "teachText", "reviewDesk"]);
+const finderCascadeWindowNames = new Set([
+  "disk",
+  "helpFolder",
+  "applications",
+  "projectDisks",
+  "projects",
+  "documents",
+  "projectCd",
+  "trash",
+  "textDisk",
+]);
+let quickDraftAssistantHome = null;
+let closingQuickDraftAssistantPair = false;
+
+function visibleLayeredWindows() {
+  return Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-minimized)"));
+}
+
+function isWindowPinned(win) {
+  return !!win && win.dataset.windowPinned === "true";
+}
+
+// normal / pinned / system-modal ownership — one place for focus, raise, hide.
+function windowStackLayer(win) {
+  if (!win) return "normal";
+  if (isWindowPinned(win)) return "pinned";
+  return "normal";
+}
+
+// Writing-mode split panes are CSS-owned layers (--z-local-base /
+// --z-local-popover): an inline z-index would override those tokens and stack
+// the panes above menus and popovers. One predicate so focus, compaction and
+// reservation all agree on which windows the core must not touch.
+function windowUsesCssLayer(win) {
+  return writerMode
+    && (writerModeCssOwnedWindows.has(win.dataset.window) || win.dataset.window === "systemHelp");
+}
+
+// Only a known presentation role may reserve a layer. A large numeric request
+// alone never grants an ordinary window permission to cross menus or modals.
+// About and the save sheet own system bands; a full-screen window owns the
+// priority band; a phone shade and a mobile system page own the pinned band.
+function reservedWindowLayerZ(win) {
+  if (win.dataset.window === "saveChat") return windowSaveZ;
+  if (win.classList.contains("is-fullscreen")) return windowPriorityZ;
+  if (win.dataset.windowSlide && !isWindowPinned(win)) return windowLayerMaxZ + 1;
+  if (isNarrowViewport() && (win.classList.contains("is-collapsed")
+      || (isPortraitDocumentFlow() && mobileWindowPresentation(win) === "system-page"))) {
+    return windowPinnedZ;
+  }
+  return null;
+}
+
+function normalLayerWindows() {
+  return visibleLayeredWindows().filter((win) => windowStackLayer(win) === "normal"
+    && !windowUsesCssLayer(win) && reservedWindowLayerZ(win) === null);
+}
+
+function pinnedLayerWindows() {
+  return visibleLayeredWindows().filter((win) => windowStackLayer(win) === "pinned");
+}
+
+function compactWindowLayerStack() {
+  const ordinary = normalLayerWindows()
+    .sort((a, b) => Number(a.style.zIndex || 0) - Number(b.style.zIndex || 0));
+  if (ordinary.length > windowLayerMaxZ - windowLayerCompactBaseZ + 1) {
+    throw new RangeError("The ordinary window layer is full.");
+  }
+  ordinary.forEach((win, index) => {
+    win.style.zIndex = windowLayerCompactBaseZ + index;
+  });
+  topZ = Math.min(windowLayerMaxZ, windowLayerCompactBaseZ + ordinary.length);
+}
+
+function compactPinnedWindowLayerStack() {
+  pinnedLayerWindows()
+    .sort((a, b) => Number(a.style.zIndex || 0) - Number(b.style.zIndex || 0))
+    .forEach((win, index) => {
+      win.style.zIndex = windowPinnedZ + index;
+    });
+  pinnedTopZ = windowPinnedZ + pinnedLayerWindows().length - 1;
+  if (pinnedTopZ < windowPinnedZ) pinnedTopZ = windowPinnedZ;
+}
+
+function nextWindowLayerZ(minimum = windowLayerBaseZ) {
+  if (topZ >= windowLayerCompactThresholdZ) compactWindowLayerStack();
+  topZ = Math.min(windowLayerMaxZ, Math.max(minimum, Number(topZ || 0) + 1));
+  return topZ;
+}
+
+function nextPinnedWindowLayerZ(minimum = windowPinnedZ) {
+  if (pinnedTopZ >= windowPinnedMaxZ) compactPinnedWindowLayerStack();
+  pinnedTopZ = Math.min(windowPinnedMaxZ, Math.max(minimum, Number(pinnedTopZ || windowPinnedZ) + 1));
+  return pinnedTopZ;
+}
+
+function setWindowLayerZ(win, value) {
+  if (!win) return windowLayerBaseZ;
+  // Writing-mode split panes are CSS-owned layers (--z-local-base /
+  // --z-local-popover): an inline z-index would override those tokens and
+  // stack the panes above menus and popovers.
+  if (windowUsesCssLayer(win)) {
+    return windowLayerBaseZ;
+  }
+  // WM1 + hardening: a reserved presentation role owns its band through the
+  // focus path; an ordinary raise must never clamp it back down into the normal
+  // range. Set the declared layer rather than trusting whatever was inline.
+  const reserved = reservedWindowLayerZ(win);
+  if (reserved !== null) {
+    win.style.zIndex = reserved;
+    return reserved;
+  }
+  const numeric = Number(value);
+  if (windowStackLayer(win) === "pinned") {
+    const z = Number.isFinite(numeric)
+      ? Math.min(windowPinnedMaxZ, Math.max(windowPinnedZ, numeric))
+      : nextPinnedWindowLayerZ();
+    win.style.zIndex = z;
+    pinnedTopZ = Math.min(windowPinnedMaxZ, Math.max(Number(pinnedTopZ || windowPinnedZ), z));
+    return z;
+  }
+  const z = Number.isFinite(numeric)
+    ? Math.min(windowLayerMaxZ, Math.max(windowLayerBaseZ, numeric))
+    : nextWindowLayerZ();
+  win.style.zIndex = z;
+  topZ = Math.min(windowLayerMaxZ, Math.max(Number(topZ || windowLayerBaseZ), z));
+  return z;
+}
+
+function canPinWindow(win) {
+  if (!win?.isConnected || !win.matches?.(".window[data-window]")) return false;
+  if (win.matches(".is-hidden, .is-fullscreen, .is-mobile-fullscreen")) return false;
+  if (win.dataset.window === "saveChat") return false;
+  if (typeof isCenteredSystemWindow === "function" && isCenteredSystemWindow(win)) return false;
+  if (writerMode && (writerModeCssOwnedWindows.has(win.dataset.window) || win.dataset.window === "systemHelp")) return false;
+  return true;
+}
+
+function setWindowPinned(win, pinned = true) {
+  if (!canPinWindow(win)) return false;
+  window.AISystem6WindowPinControls?.changed(win);
+  const next = !!pinned;
+  if (isWindowPinned(win) === next) {
+    if (next) setWindowLayerZ(win, nextPinnedWindowLayerZ());
+    return true;
+  }
+  if (next) {
+    win.dataset.windowPinned = "true";
+    setWindowLayerZ(win, nextPinnedWindowLayerZ());
+  } else {
+    delete win.dataset.windowPinned;
+    setWindowLayerZ(win, nextWindowLayerZ());
+  }
+  if (typeof updateMenuState === "function") updateMenuState();
+  if (typeof renderMultiFinderMenu === "function") renderMultiFinderMenu();
+  scheduleWorkingSessionSave?.();
+  return true;
+}
+
+function windowLayoutGroup(nameOrWin) {
+  const name = typeof nameOrWin === "string" ? nameOrWin : nameOrWin?.dataset.window || "";
+  if (writingLayoutWindowNames.has(name)) return "writing-flow";
+  return getWindowAppId(nameOrWin);
+}
+
+function setWindowLayoutMetadata(win) {
+  if (!win) return;
+  win.dataset.layoutGroup = windowLayoutGroup(win);
+}
+
+function markWindowUserPositioned(win) {
+  if (!win) return;
+  // The writer owns this frame now: any title alignment scheduled against the
+  // frame it replaced no longer applies.
+  invalidateWindowAutoLayout(win);
+  win.dataset.userPositioned = "true";
+  win.dataset.systemPositioned = "false";
+}
+
+// WM0: the pointer now owns this window's frame. Any title alignment scheduled
+// before this press belongs to the frame it replaced, so bump the same
+// generation the explicit-layout writers use; the delayed 80/220ms callbacks
+// then no-op instead of yanking a window the writer is dragging. Cancelling the
+// drag must not revive that expired alignment, so this only ever increments.
+function invalidateWindowAutoLayout(win) {
+  if (!win) return;
+  explicitLayoutGeneration.set(win, (explicitLayoutGeneration.get(win) || 0) + 1);
+}
+window.AISystem6InvalidateWindowAutoLayout = invalidateWindowAutoLayout;
+
+function markWindowSystemPositioned(win) {
+  if (!win) return;
+  if (win.dataset.userPositioned !== "true") {
+    win.dataset.systemPositioned = "true";
+  }
+  setWindowLayoutMetadata(win);
+}
+
+function windowFrame(win) {
+  if (!win) return null;
+  const rect = win.getBoundingClientRect();
+  return {
+    left: inlineStyleValue(win, "left") || `${Math.round(rect.left)}px`,
+    top: inlineStyleValue(win, "top") || `${Math.round(rect.top)}px`,
+    right: inlineStyleValue(win, "right") || "auto",
+    width: inlineStyleValue(win, "width") || `${Math.round(rect.width)}px`,
+    height: inlineStyleValue(win, "height") || `${Math.round(rect.height)}px`,
+    maxHeight: inlineStyleValue(win, "max-height") || "",
+    transform: inlineStyleValue(win, "transform") || "none",
+  };
+}
+
+function applyWindowFrame(win, frame = {}) {
+  if (!win || !frame) return;
+  setInlineStyleValue(win, "left", frame.left || "");
+  setInlineStyleValue(win, "top", frame.top || "");
+  setInlineStyleValue(win, "right", frame.right || "auto");
+  setInlineStyleValue(win, "width", frame.width || "");
+  setInlineStyleValue(win, "height", frame.height || "");
+  setInlineStyleValue(win, "max-height", frame.maxHeight || "");
+  setInlineStyleValue(win, "transform", frame.transform || "none");
+}
+
+// Writing-mode split windows are CSS-owned (60-responsive.css): any inline
+// frame left behind by an earlier placement, boot-time spine reflow, or a
+// previous non-writer session would override the non-!important CSS rules.
+// Drop the stale geometry so the stylesheet owns the layout again.
+function clearWindowInlineGeometry(win) {
+  if (!win?.style) return;
+  for (const property of [
+    "left", "right", "top", "bottom", "width", "height", "max-height", "transform",
+  ]) {
+    win.style.removeProperty(property);
+  }
+}
+
+function isMobileWorkAreaCssOwnedWindow(win) {
+  if (!win || writerMode) return false;
+  const name = win.dataset.window;
+  if (isMobileOverlayWindow(name)) return false;
+  if (
+    win.classList.contains("is-mobile-fullscreen")
+    || win.classList.contains("is-mobile-dialog")
+    || win.classList.contains("is-mobile-system-page")
+  ) return false;
+  return true;
+}
+
+function isMobileWorkAreaCssOwned(win) {
+  return isMobileWorkAreaCssOwnedWindow(win) && isNarrowViewport();
+}
+
+function snapshotMobileWorkAreaFrame(win) {
+  if (!win) return;
+  // Only the inline frame matters here: computed fallbacks (e.g. a hidden or
+  // mid-resize rect of 0x0) would corrupt the restore. Empty inline values
+  // stay empty and the CSS-owned mobile layout keeps them empty.
+  win.dataset.mobileWorkAreaRestoreLeft = inlineStyleValue(win, "left");
+  win.dataset.mobileWorkAreaRestoreTop = inlineStyleValue(win, "top");
+  win.dataset.mobileWorkAreaRestoreRight = inlineStyleValue(win, "right");
+  win.dataset.mobileWorkAreaRestoreWidth = inlineStyleValue(win, "width");
+  win.dataset.mobileWorkAreaRestoreHeight = inlineStyleValue(win, "height");
+  win.dataset.mobileWorkAreaRestoreMaxHeight = inlineStyleValue(win, "max-height");
+  win.dataset.mobileWorkAreaRestoreTransform = inlineStyleValue(win, "transform");
+  win.dataset.mobileWorkAreaSnapshot = "true";
+}
+
+function restoreMobileWorkAreaFrame(win) {
+  if (!win) return;
+  setInlineStyleValue(win, "left", win.dataset.mobileWorkAreaRestoreLeft || "");
+  setInlineStyleValue(win, "top", win.dataset.mobileWorkAreaRestoreTop || "");
+  setInlineStyleValue(win, "right", win.dataset.mobileWorkAreaRestoreRight || "");
+  setInlineStyleValue(win, "width", win.dataset.mobileWorkAreaRestoreWidth || "");
+  setInlineStyleValue(win, "height", win.dataset.mobileWorkAreaRestoreHeight || "");
+  setInlineStyleValue(win, "max-height", win.dataset.mobileWorkAreaRestoreMaxHeight || "");
+  setInlineStyleValue(win, "transform", win.dataset.mobileWorkAreaRestoreTransform || "");
+  delete win.dataset.mobileWorkAreaRestoreLeft;
+  delete win.dataset.mobileWorkAreaRestoreTop;
+  delete win.dataset.mobileWorkAreaRestoreRight;
+  delete win.dataset.mobileWorkAreaRestoreWidth;
+  delete win.dataset.mobileWorkAreaRestoreHeight;
+  delete win.dataset.mobileWorkAreaRestoreMaxHeight;
+  delete win.dataset.mobileWorkAreaRestoreTransform;
+  delete win.dataset.mobileWorkAreaSnapshot;
+}
+
+// Narrow non-writer work-area windows are CSS-owned: snapshot + drop stale
+// desktop inline frames on the way in, restore them on the way back out so a
+// wide arrangement survives a phone detour. Mirrors the mobile
+// work-area rule in 60-responsive.css (no !important after the migration).
+function syncMobileWorkAreaFrames() {
+  if (writerMode) return;
+  const narrow = isNarrowViewport();
+  // Managed windows only: a `.window` with no data-window was never opened by
+  // the manager. Theme Lab shows real windows as specimens so the era paints
+  // them, and a sweep that hides or re-frames one empties the board.
+  document.querySelectorAll(".window[data-window]").forEach((win) => {
+    if (!isMobileWorkAreaCssOwnedWindow(win)) return;
+    if (win.classList.contains("is-hidden") || win.classList.contains("is-app-hidden")) return;
+    if (narrow) {
+      if (win.dataset.mobileWorkAreaSnapshot !== "true") {
+        snapshotMobileWorkAreaFrame(win);
+        clearWindowInlineGeometry(win);
+      }
+    } else if (win.dataset.mobileWorkAreaSnapshot === "true") {
+      restoreMobileWorkAreaFrame(win);
+    }
+  });
+}
+
+function windowFrameValue(value, fallback = "") {
+  if (typeof value === "number" && Number.isFinite(value)) return `${Math.round(value)}px`;
+  if (typeof value === "string") return value;
+  return fallback;
+}
+
+// Bumped each time an explicit layout writes a window's frame. A title
+// alignment scheduled before that write belongs to the frame it replaced.
+const explicitLayoutGeneration = new WeakMap();
+
+function placeWindowForExplicitLayout(win, frame = {}, options = {}) {
+  if (!win) return;
+  explicitLayoutGeneration.set(win, (explicitLayoutGeneration.get(win) || 0) + 1);
+  clearFinderContentFit(win);
+  const height = windowFrameValue(frame.height);
+  win.classList.remove("is-collapsed", "is-desklet");
+  applyWindowFrame(win, {
+    left: windowFrameValue(frame.left),
+    top: windowFrameValue(frame.top),
+    right: windowFrameValue(frame.right, "auto"),
+    width: windowFrameValue(frame.width),
+    height,
+    maxHeight: windowFrameValue(frame.maxHeight, height),
+    transform: windowFrameValue(frame.transform, "none"),
+  });
+  win.dataset.zoomed = "false";
+  if (options.userPositioned) markWindowUserPositioned(win);
+  else markWindowSystemPositioned(win);
+}
+
+function keyboardInsetValue() {
+  return Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--keyboard-inset")) || 0;
+}
+
+// A system-placed window must stay reachable: if its default frame (creative
+// labs and other wide windows after the writing spine) would push the right
+// or bottom edge past the viewport, shift it back inside. User-dragged
+// windows are never touched here — the user owns their position. Neither is
+// a phone's full-screen page: the shell's CSS owns that frame, and a height
+// written here mid-rotation outlived the turn and pushed the page's bottom
+// controls off the screen.
+function clampWindowToViewport(win, margin = 16) {
+  if (!win || win.dataset.userPositioned === "true" || win.classList?.contains("is-mobile-fullscreen")) return;
+  let r = win.getBoundingClientRect();
+  if (r.width <= 0 || r.height <= 0) return;
+  const vw = window.innerWidth || document.documentElement.clientWidth;
+  // The keyboard owns the bottom; --keyboard-inset is 0 at rest.
+  const keyboardInset = keyboardInsetValue();
+  const vh = (window.innerHeight || document.documentElement.clientHeight) - keyboardInset - deskDockReserve();
+  const horizontalMargin = Math.min(margin, Math.max(0, Math.floor((vw - r.width) / 2)));
+  const verticalMargin = Math.min(margin, Math.max(0, Math.floor((vh - r.height) / 2)));
+  // The menu bar is not part of the work area. Clamping to a plain margin put
+  // a short window's title bar under the bar, and the measured result was a
+  // close box whose centre belonged to the bar, not to the button: the window
+  // could neither be quit nor zoomed by touch.
+  const minTop = Math.max(
+    verticalMargin,
+    Math.round(document.querySelector(".menu-bar")?.getBoundingClientRect().bottom || 0),
+  );
+  const top = Math.max(r.top, minTop);
+  // The height is what fits below where the window actually is: raising the
+  // floor to the menu bar must not hand the window the bar's own height back,
+  // or a tall window grows past the bottom of the screen instead.
+  const maxH = Math.max(160, Math.round(vh - top - verticalMargin));
+  if (r.height > maxH) {
+    setInlineStyleValue(win, "height", maxH + "px");
+    setInlineStyleValue(win, "max-height", maxH + "px");
+    r = win.getBoundingClientRect();
+  }
+  const maxLeft = Math.max(horizontalMargin, vw - r.width - horizontalMargin);
+  const maxTop = Math.max(minTop, vh - r.height - verticalMargin);
+  const nextLeft = Math.min(Math.max(r.left, horizontalMargin), maxLeft);
+  const nextTop = Math.min(top, maxTop);
+  if (Math.abs(nextLeft - r.left) >= 0.5) setInlineStyleValue(win, "left", Math.round(nextLeft) + "px");
+  if (Math.abs(nextTop - r.top) >= 0.5) setInlineStyleValue(win, "top", Math.round(nextTop) + "px");
+}
+
+function reconcileVisibleSystemWindowsToViewport() {
+  document.querySelectorAll(".window[data-window]:not(.is-hidden)").forEach((win) => clampWindowToViewport(win));
+}
+
+function saveKeyboardWindowFrame(win) {
+  const frame = windowFrame(win);
+  for (const [key, value] of Object.entries(frame)) {
+    win.dataset[`keyboardRestore${key[0].toUpperCase()}${key.slice(1)}`] = value;
+  }
+  win.dataset.keyboardRestoreActive = "true";
+}
+
+function restoreKeyboardWindowFrame(win) {
+  if (!win || win.dataset.keyboardRestoreActive !== "true") return;
+  applyWindowFrame(win, {
+    left: win.dataset.keyboardRestoreLeft || "",
+    top: win.dataset.keyboardRestoreTop || "",
+    right: win.dataset.keyboardRestoreRight || "auto",
+    width: win.dataset.keyboardRestoreWidth || "",
+    height: win.dataset.keyboardRestoreHeight || "",
+    maxHeight: win.dataset.keyboardRestoreMaxHeight || "",
+    transform: win.dataset.keyboardRestoreTransform || "none",
+  });
+  Object.keys(win.dataset).forEach((key) => {
+    if (key.startsWith("keyboardRestore")) delete win.dataset[key];
+  });
+}
+
+// Pull the focused window above the keys; put its frame back on close.
+// CSS-owned roles and user-dragged windows are left alone.
+function syncKeyboardWindowFrame() {
+  const inset = keyboardInsetValue();
+  const current = document.activeElement?.closest?.(".window") || null;
+  const adjusted = document.querySelector('.window[data-keyboard-restore-active="true"]');
+  if (!inset) { if (adjusted) restoreKeyboardWindowFrame(adjusted); return; }
+  if (!current) return;
+  if (adjusted !== current) restoreKeyboardWindowFrame(adjusted);
+  if (current.dataset.userPositioned === "true" || current.className.includes("is-mobile-")) return;
+  if (current.dataset.keyboardRestoreActive !== "true") saveKeyboardWindowFrame(current);
+  clampWindowToViewport(current);
+}
+
+// Portrait Desk Accessories skip syncKeyboardWindowFrame (CSS owns their slot).
+// Re-measure the rail against visualViewport so Note Pad / Clipboard sit above
+// the soft keyboard instead of under it.
+function syncKeyboardPortraitDeskAccessories() {
+  if (typeof isPortraitDocumentFlow !== "function" || !isPortraitDocumentFlow()) return;
+  if (!document.querySelector(".window.is-mobile-da-arranged:not(.is-hidden)")) return;
+  const front = document.activeElement?.closest?.(".window") || null;
+  arrangePortraitDeskAccessories(front);
+}
+
+// Keep the caret above the keys once the shell or DA rail has made room. iOS
+// page-scroll is undone for the full-screen shell; this moves the scrollers that
+// hold the field instead, innermost first. The test is the CARET, not the field:
+// a writing editor is CodeMirror behind a backing textarea whose box is the whole
+// editor, so its view says where the line being typed is (its own scroller is not
+// an ancestor of the textarea that holds focus). Every clipping box above it
+// (pane, surface, window) limits what can be seen, not only the one scrolled.
+function revealFocusedFieldAboveKeyboard() {
+  const el = document.activeElement;
+  const vv = window.visualViewport;
+  if (!vv || !keyboardInsetValue() || !el?.matches?.("input, textarea, [contenteditable]")) return;
+  // A textarea resized by the keys keeps its old scroll: the end stays the end.
+  if (el.selectionEnd === el.value?.length) el.scrollTop = el.scrollHeight;
+  const view = window.AISystem6WritingEditor?.viewFor?.(el);
+  const pos = view?.state.selection.main.head;
+  const sel = getSelection();
+  const rects = el.isContentEditable && sel.rangeCount ? sel.getRangeAt(0).getClientRects() : [];
+  const at = view?.coordsAtPos(pos) || rects[rects.length - 1] || el.getBoundingClientRect();
+  let { top, bottom } = at;
+  let clipTop = vv.offsetTop;
+  let clipBottom = vv.offsetTop + vv.height;
+  const chain = [];
+  for (let n = view?.scrollDOM || el.parentElement; n && n !== document.body; n = n.parentElement) chain.push(n);
+  for (const n of chain) {
+    if (getComputedStyle(n).overflowY === "visible") continue;
+    const box = n.getBoundingClientRect();
+    clipTop = Math.max(clipTop, box.top);
+    clipBottom = Math.min(clipBottom, box.bottom);
+  }
+  for (const n of chain) {
+    if (!/auto|scroll/.test(getComputedStyle(n).overflowY) || n.scrollHeight <= n.clientHeight + 1) continue;
+    const delta = bottom > clipBottom - 16 ? bottom - clipBottom + 16 : top < clipTop + 8 ? top - clipTop - 8 : 0;
+    if (!delta) continue;
+    const before = n.scrollTop;
+    n.scrollTop = before + delta;
+    top -= n.scrollTop - before;
+    bottom -= n.scrollTop - before;
+  }
+}
+
+function saveSideAskRestoreFrame(win) {
+  if (!win || win.dataset.sideaskRestoreActive === "true") return;
+  const frame = windowFrame(win);
+  win.dataset.sideaskRestoreActive = "true";
+  win.dataset.sideaskRestoreLeft = frame.left;
+  win.dataset.sideaskRestoreTop = frame.top;
+  win.dataset.sideaskRestoreRight = frame.right;
+  win.dataset.sideaskRestoreWidth = frame.width;
+  win.dataset.sideaskRestoreHeight = frame.height;
+  win.dataset.sideaskRestoreMaxHeight = frame.maxHeight;
+  win.dataset.sideaskRestoreTransform = frame.transform;
+  win.dataset.sideaskRestoreZoomed = win.dataset.zoomed || "false";
+}
+
+function restoreSideAskFrame(win) {
+  if (!win || win.dataset.sideaskRestoreActive !== "true") return;
+  applyWindowFrame(win, {
+    left: win.dataset.sideaskRestoreLeft || "",
+    top: win.dataset.sideaskRestoreTop || "",
+    right: win.dataset.sideaskRestoreRight || "auto",
+    width: win.dataset.sideaskRestoreWidth || "",
+    height: win.dataset.sideaskRestoreHeight || "",
+    maxHeight: win.dataset.sideaskRestoreMaxHeight || "",
+    transform: win.dataset.sideaskRestoreTransform || "none",
+  });
+  win.dataset.zoomed = win.dataset.sideaskRestoreZoomed || "false";
+  delete win.dataset.sideaskRestoreActive;
+  delete win.dataset.sideaskRestoreLeft;
+  delete win.dataset.sideaskRestoreTop;
+  delete win.dataset.sideaskRestoreRight;
+  delete win.dataset.sideaskRestoreWidth;
+  delete win.dataset.sideaskRestoreHeight;
+  delete win.dataset.sideaskRestoreMaxHeight;
+  delete win.dataset.sideaskRestoreTransform;
+  delete win.dataset.sideaskRestoreZoomed;
+  // The DocMap window just changed size back from its SideAsk pane; refit the
+  // canvas so the map fills the restored window instead of the old pane.
+  if (win.dataset.window === "docMap" && typeof queueDocMapFitToView === "function") {
+    queueDocMapFitToView(8);
+  }
+}
+
+function restoreSideAskFrames() {
+  document.querySelectorAll(".window[data-sideask-restore-active='true']").forEach(restoreSideAskFrame);
+}
+
+function rectsOverlap(a, b, gap = 10) {
+  if (!a || !b) return false;
+  return !(
+    a.right + gap <= b.left
+    || a.left >= b.right + gap
+    || a.bottom + gap <= b.top
+    || a.top >= b.bottom + gap
+  );
+}
+
+function windowPlacementMetric(property, fallback) {
+  const value = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue(property));
+  return Number.isFinite(value) && value >= 0 ? value : fallback;
+}
+
+// The Control Strip floats at the bottom edge when expanded. Default window
+// placement subtracts its thickness so a freshly opened window does not land
+// under the strip; the user can still drag a window over it freely. The
+// reserve is a body class toggled by the strip module, not a measurement of
+// the strip itself.
+function controlStripPlacementReserve() {
+  return document.body.classList.contains("control-strip-expanded")
+    ? windowPlacementMetric("--control-strip-thickness", 26)
+    : 0;
+}
+
+// The Dock's band along the bottom edge: written by the Dock module while the
+// Dock is on screen, and 0 whenever it is hidden or not loaded, so a desk
+// without a Dock places, zooms and lays out every window exactly as before.
+// Only system placement reads it; a window the writer drags may sit over the
+// Dock, as on the Mac.
+function deskDockReserve() {
+  if (!document.body?.classList.contains("desk-dock-shown")) return 0;
+  const value = Number.parseFloat(getComputedStyle(document.body).getPropertyValue("--desk-dock-reserve"));
+  return Number.isFinite(value) && value > 0 ? value : 0;
+}
+
+// What default placement keeps clear at the bottom: the taller of the expanded
+// Control Strip and the Dock.
+function deskBottomReserve() {
+  return Math.max(controlStripPlacementReserve(), deskDockReserve());
+}
+
+function windowPlacementOverlapArea(rect, obstacle, gap = 0) {
+  const width = Math.max(0, Math.min(rect.right, obstacle.right + gap) - Math.max(rect.left, obstacle.left - gap));
+  const height = Math.max(0, Math.min(rect.bottom, obstacle.bottom + gap) - Math.max(rect.top, obstacle.top - gap));
+  return width * height;
+}
+
+function windowPlacementRect(left, top, width, height, desktopRect) {
+  return {
+    left: desktopRect.left + left,
+    top: desktopRect.top + top,
+    right: desktopRect.left + left + width,
+    bottom: desktopRect.top + top + height,
+  };
+}
+
+function windowHasOwnedPlacement(win) {
+  const name = win?.dataset.window || "";
+  return !win
+    || writerMode
+    || isPortraitDocumentFlow()
+    || isCenteredSystemWindow(name)
+    || name === "saveChat"
+    || writingLayoutWindowNames.has(name)
+    || isAssistantSidecarWindow(name)
+    || isDeskAccessoryPlacementWindow(name);
+}
+
+// A new floating window never moves an old one. It first searches the usable
+// desk for a frame with a real air gap around every visible peer. Only when the
+// desk cannot hold another clear frame does it overlap, following a stable
+// down-right staircase from the frontmost old window so every title remains
+// reachable. Full-work-area surfaces keep their authored placement because no
+// alternative frame of the same size can reduce their overlap.
+function placeNewWindowAvoidingVisibleWindows(win) {
+  if (windowHasOwnedPlacement(win) || win.dataset.userPositioned === "true") return false;
+  if (writerMode && writerModeCssOwnedWindows.has(win.dataset.window)) return false;
+  if (writerMode && win.dataset.window === "systemHelp") return false;
+  const desktop = document.querySelector(".desktop");
+  const desktopRect = desktop?.getBoundingClientRect();
+  if (!desktopRect) return false;
+
+  const edge = windowPlacementMetric("--window-placement-edge", 18);
+  const gap = windowPlacementMetric("--window-placement-gap", 14);
+  const stepX = Math.max(1, windowPlacementMetric("--window-placement-step-x", 28));
+  const stepY = Math.max(1, windowPlacementMetric("--window-placement-step-y", 24));
+  const avoidance = getDesktopAvoidanceInsets({ margin: edge, spineGap: edge, iconGap: 48 });
+  const rect = win.getBoundingClientRect();
+  const width = rect.width || 360;
+  const height = rect.height || 280;
+  const stripReserve = deskBottomReserve();
+  const minLeft = Math.max(edge, avoidance.left);
+  const minTop = Math.max(edge, writingSpineAlignedTopForWindow(win, edge));
+  const maxLeft = Math.max(minLeft, desktopRect.width - avoidance.right - edge - width);
+  const maxTop = Math.max(minTop, desktopRect.height - edge - stripReserve - height);
+  const workWidth = maxLeft - minLeft + width;
+  const workHeight = maxTop - minTop + height;
+  if (width + gap >= workWidth || height + gap >= workHeight) return false;
+
+  const peers = Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-minimized):not(.is-collapsed)"))
+    .filter((peer) => peer !== win)
+    .map((peer) => ({ peer, rect: peer.getBoundingClientRect() }))
+    .filter(({ rect: peerRect }) => peerRect.width > 0 && peerRect.height > 0)
+    .sort((a, b) => Number(b.peer.style.zIndex || 0) - Number(a.peer.style.zIndex || 0));
+  if (!peers.length) return false;
+
+  const anchor = {
+    left: Math.round(clampNumber(rect.left - desktopRect.left, minLeft, maxLeft)),
+    top: Math.round(clampNumber(rect.top - desktopRect.top, minTop, maxTop)),
+  };
+  const candidates = [];
+  const candidateKeys = new Set();
+  const addCandidate = (left, top) => {
+    const candidate = {
+      left: Math.round(clampNumber(left, minLeft, maxLeft)),
+      top: Math.round(clampNumber(top, minTop, maxTop)),
+    };
+    const key = `${candidate.left}:${candidate.top}`;
+    if (!candidateKeys.has(key)) {
+      candidateKeys.add(key);
+      candidates.push(candidate);
+    }
+  };
+
+  addCandidate(anchor.left, anchor.top);
+  peers.forEach(({ rect: peerRect }) => {
+    const peerLeft = peerRect.left - desktopRect.left;
+    const peerTop = peerRect.top - desktopRect.top;
+    addCandidate(peerRect.right - desktopRect.left + gap, peerTop);
+    addCandidate(peerLeft - width - gap, peerTop);
+    addCandidate(peerLeft, peerRect.bottom - desktopRect.top + gap);
+    addCandidate(peerLeft, peerTop - height - gap);
+  });
+  for (let top = minTop; top <= maxTop; top += stepY) {
+    for (let left = minLeft; left <= maxLeft; left += stepX) addCandidate(left, top);
+  }
+  addCandidate(maxLeft, maxTop);
+
+  candidates.sort((a, b) => (
+    Math.abs(a.left - anchor.left) + Math.abs(a.top - anchor.top)
+    - Math.abs(b.left - anchor.left) - Math.abs(b.top - anchor.top)
+  ));
+  let placement = candidates.find((candidate) => {
+    const candidateRect = windowPlacementRect(candidate.left, candidate.top, width, height, desktopRect);
+    return peers.every(({ rect: peerRect }) => !rectsOverlap(candidateRect, peerRect, gap));
+  });
+
+  if (!placement) {
+    const frontRect = peers[0].rect;
+    const originLeft = clampNumber(frontRect.left - desktopRect.left, minLeft, maxLeft);
+    const originTop = clampNumber(frontRect.top - desktopRect.top, minTop, maxTop);
+    const columns = Math.max(1, Math.floor((maxLeft - minLeft) / stepX) + 1);
+    const rows = Math.max(1, Math.floor((maxTop - minTop) / stepY) + 1);
+    const originColumn = Math.round((originLeft - minLeft) / stepX);
+    const originRow = Math.round((originTop - minTop) / stepY);
+    const cascadeCandidates = [];
+    const rungCount = Math.min(48, Math.max(columns, rows) * 2);
+    for (let rung = 1; rung <= rungCount; rung += 1) {
+      const left = Math.min(maxLeft, minLeft + ((originColumn + rung) % columns) * stepX);
+      const top = Math.min(maxTop, minTop + ((originRow + rung) % rows) * stepY);
+      const candidateRect = windowPlacementRect(left, top, width, height, desktopRect);
+      const overlap = peers.reduce((total, { rect: peerRect }) => (
+        total + windowPlacementOverlapArea(candidateRect, peerRect, gap)
+      ), 0);
+      const conflicts = peers.reduce((total, { rect: peerRect }) => (
+        total + (rectsOverlap(candidateRect, peerRect, gap) ? 1 : 0)
+      ), 0);
+      cascadeCandidates.push({ left, top, overlap, conflicts, rung });
+    }
+    cascadeCandidates.sort((a, b) => (
+      a.conflicts - b.conflicts || a.overlap - b.overlap || a.rung - b.rung
+    ));
+    placement = cascadeCandidates[0] || anchor;
+  }
+
+  setInlineStyleValue(win, "left", `${Math.round(placement.left)}px`);
+  setInlineStyleValue(win, "top", `${Math.round(placement.top)}px`);
+  setInlineStyleValue(win, "right", "auto");
+  setInlineStyleValue(win, "transform", "none");
+  return true;
+}
+
+async function prepareFinderModeForApp(appId) {
+  if (isMultiFinderMode()) return true;
+  // NeXTSTEP is a multitasking system: launching an application never quits
+  // another one, and a miniwindow stays on the desk (owner, 2026-09-25).
+  if (typeof getCurrentTheme === "function" && getCurrentTheme() === "nextstep") return true;
+  const writerModeCompatible = writerModeCompatibleAppIds.has(appId)
+    || (sideAskEnabled && isSideAskPairApp(appId));
+  if (writerMode && !writerModeCompatible) {
+    // Awaited: leaving defers itself behind a transition that is still in
+    // flight, and the rest of this function reads writerMode.
+    await leaveWriterMode();
+  } else if (writerMode) {
+    return true;
+  }
+  if(appId==="accessories")return true;
+  const allowSideAskPair = sideAskEnabled && isSideAskPairApp(appId);
+  if (sideAskEnabled && !isSideAskPairApp(appId)) clearSideAskMode();
+  const windowsToHide = Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden)"))
+    .filter((win) => {
+      // On a phone the foregrounded app is the full-screen backdrop, so a modal,
+      // system window, or desk accessory floats over it instead of replacing it.
+      // Only those may skip single-tasking: another real app must still quit the
+      // running one, or Finder mode would silently become MultiFinder on a phone.
+      if (
+        isPortraitDocumentFlow()
+        && win.classList.contains("is-mobile-fullscreen")
+        && !isFinderModeSingleTaskApp(appId)
+      ) return false;
+      // Find/Change edits the window being brought forward, so bringing that
+      // window forward must not dismiss it. Narrowly scoped to the apps it can
+      // act on, the same shape as the SideAsk pair exemption below.
+      if (win.dataset.window === "findChange" && ["teachText", "writingStudio"].includes(appId)) return false;
+      const currentAppId = getWindowAppId(win);
+      if (finderModeForegroundAppIds.has(currentAppId)) {
+        return isFinderModeSingleTaskApp(appId) || allowSideAskPair;
+      }
+      if (allowSideAskPair && isSideAskPairApp(currentAppId)) return false;
+      if (!isFinderModeSingleTaskApp(appId)) return isFinderModeSingleTaskApp(currentAppId);
+      return currentAppId !== appId && isFinderModeSingleTaskApp(currentAppId);
+    });
+
+  for (const win of windowsToHide) {
+    if (win.dataset.window === "teachText" && shouldPromptForTeachTextFileSave()) {
+      const result = await showSystemModal(teachTextUnsavedChangesMessage(), "save");
+      if (result === "cancel") return false;
+      if (result === "yes") {
+        const saved = await saveTextDocument();
+        if (!saved) return false;
+      } else {
+        setTeachTextStatus("saved");
+      }
+    }
+  }
+
+  windowsToHide.forEach((win) => {
+    if (win.dataset.window === "themeLab") window.AISystem6ThemeLab?.cleanup?.();
+    win.classList.add("is-hidden");
+    win.classList.remove("is-app-hidden", "is-active", "is-minimized");
+    delete win.dataset.appHiddenCollapsed;
+    forgetWindowFromRunningApps(win.dataset.window);
+  });
+  hiddenAppIds.clear();
+  updateQuickDraftFocusChrome();
+  return true;
+}
+
+function updateQuickDraftFocusChrome() {
+  const quickDraft = getWindow("quickDraft");
+  const lightroom = getWindow("lightroom");
+  const visible = !isMultiFinderMode()
+    && (
+      (quickDraft
+        && !quickDraft.classList.contains("is-hidden")
+        && !quickDraft.classList.contains("is-app-hidden"))
+      || (lightroom
+        && !lightroom.classList.contains("is-hidden")
+        && !lightroom.classList.contains("is-app-hidden"))
+    );
+  // quick-draft-focus also quiets .icon-column (see 60-responsive.css), so
+  // Quick Draft / 文字亮室 deep work shares the writing-focus desk calm.
+  document.body.classList.toggle("quick-draft-focus", !!visible);
+}
+
+function setSideAskAnchorApp(appId = "teachText", ownerAppId = appId) {
+  sideAskAnchorAppId = appId || "teachText";
+  sideAskAnchorOwnerAppId = ownerAppId || sideAskAnchorAppId;
+  sideAskEnabled = true;
+  updateSideAskSourceChrome();
+}
+
+function clearSideAskMode() {
+  restoreQuickDraftIntegratedAssistant();
+  restoreSideAskFrames();
+  const wasQuickDraftSideAsk = sideAskAnchorAppId === "quickDraft";
+  sideAskEnabled = false;
+  sideAskAnchorAppId = "teachText";
+  sideAskAnchorOwnerAppId = "teachText";
+  if (wasQuickDraftSideAsk && typeof exitQuickDraftClioTalkSession === "function") {
+    exitQuickDraftClioTalkSession({ restore: true });
+  } else if (typeof exitSideAskClioTalkSession === "function") {
+    exitSideAskClioTalkSession({ restore: true });
+  }
+  updateSideAskSourceChrome();
+}
+
+function sideAskSourceDisplayLabel(appId = sideAskAnchorAppId) {
+  if (appId === "teachText") {
+    const title = typeof getTeachTextDocumentName === "function"
+      ? getTeachTextDocumentName({ fallback: teachTextNameInput?.value?.trim() || t("teachtext_label") })
+      : t("teachtext_label");
+    return `${t("teachtext_label")} / ${title}`;
+  }
+  if (appId === "quickDraft") return t("quick_draft_label");
+  if (appId === "lightroom") return t("lightroom_title");
+  if (appId === "reader") return currentReaderPage?.title
+    ? `${t("reader")} / ${currentReaderPage.title}`
+    : t("reader");
+  if (appId === "scrapbook") return t("scrapbook");
+  if (appId === "docMap") return currentDocMap?.sourceLabel
+    ? `${t("docmap")} / ${currentDocMap.sourceLabel}`
+    : t("docmap");
+  if (appId === "clioStage") return typeof clioStageState !== "undefined" && clioStageState?.source?.title
+    ? `${t("clio_stage_label")} / ${clioStageState.source.title}`
+    : t("clio_stage_label");
+  if (appId === "clioChart") {
+    const drawing = window.AISystem6ClioDiagram?.current?.();
+    return drawing?.title ? `${t("clio_chart_label")} / ${drawing.title}` : t("clio_chart_label");
+  }
+  if (appId === "timeMachine") {
+    const page = typeof currentTimeMachinePage !== "undefined" ? currentTimeMachinePage : null;
+    const title = page?.reader?.title || page?.title || "";
+    return title ? `${t("time_machine")} / ${title}` : t("time_machine");
+  }
+  if (appId === "imagePromptStudio") return t("image_prompt_studio_label");
+  const anchor = window.AISystem6SideAskAnchors?.[appId];
+  if (anchor) return anchor.label();
+  if (appId === "endfieldTerminal") {
+    const ctx = window.AISystem6EndfieldSideAsk;
+    return ctx?.query
+      ? `${t("endfield_terminal_label")} / ${ctx.query}`
+      : t("endfield_terminal_label");
+  }
+  return t("sideask");
+}
+
+// Paired with ClioStage or a ClioChart drawing, SideAsk can also change what
+// it reads: this button sends the message as an edit request instead of a
+// question. The window shows the result side by side and nothing lands until
+// the writer accepts it there.
+function sideAskEditTarget() {
+  if (sideAskAnchorAppId === "clioStage") return window.AISystem6ClioStage?.proposeEdit ? window.AISystem6ClioStage : null;
+  if (sideAskAnchorAppId === "clioChart" && window.AISystem6ClioChart?.mode?.() === "diagram") return window.AISystem6ClioDiagram || null;
+  return null;
+}
+
+function syncSideAskApplyEdit(sideAskActive) {
+  const target = sideAskActive ? sideAskEditTarget() : null;
+  let button = document.getElementById("sideask-apply-edit");
+  if (!button && target) {
+    button = document.createElement("button");
+    button.type = "button";
+    button.id = "sideask-apply-edit";
+    button.className = "btn sideask-apply-edit";
+    button.addEventListener("click", () => {
+      const text = promptInput?.value?.trim() || "";
+      const editor = sideAskEditTarget();
+      if (!text || !editor) { promptInput?.focus(); return; }
+      promptInput.value = "";
+      promptInput.dispatchEvent(new Event("input", { bubbles: true }));
+      focusSideAskSource();
+      editor.proposeEdit(text);
+    });
+    const row = document.querySelector("#chat-form .composer-action-row");
+    row?.insertBefore(button, row.querySelector('button[type="submit"]'));
+  }
+  if (!button) return;
+  button.hidden = !target;
+  button.textContent = t(sideAskAnchorAppId === "clioChart" ? "sideask_apply_edit_drawing" : "sideask_apply_edit_page");
+}
+
+function focusSideAskSource() {
+  if (!sideAskEnabled || isMultiFinderMode()) return;
+  const windowName = {
+    quickDraft: "quickDraft",
+    teachText: "teachText",
+    reader: "reader",
+    scrapbook: "scrapbook",
+    docMap: "docMap",
+    clioStage: "clioStage",
+    clioChart: "clioChart",
+    timeMachine: "timeMachine",
+    imagePromptStudio: "imagePromptStudio",
+    endfieldTerminal: "endfieldTerminal",
+    aaronBlog: "aaronBlog",
+  }[sideAskAnchorAppId];
+  const sourceWindow = windowName ? getWindow(windowName) : null;
+  if (sourceWindow) focusWindow(sourceWindow);
+  // On a phone the pair cannot share a screen; returning to the source must
+  // also re-foreground it in the single full-screen app shell.
+  if (isPortraitDocumentFlow() || isNarrowViewport()) {
+    syncMobileAppForeground();
+  }
+}
+
+function updateSideAskSourceChrome() {
+  const askForms = {
+    reader: readerAskForm,
+    scrapbook: scrapbookAskForm,
+    docMap: docMapAskForm,
+    clioStage: clioStageAskForm,
+    // Time Machine is a lazy module, so its form is read from the document
+    // rather than the eager dom-handles bundle.
+    timeMachine: document.querySelector("#time-machine-ask-form"),
+  };
+  Object.entries(askForms).forEach(([appId, form]) => {
+    if (!form) return;
+    form.hidden = !isMultiFinderMode() && sideAskEnabled && sideAskAnchorAppId === appId;
+  });
+  const quickDraftSideAsk = !isMultiFinderMode() && sideAskEnabled && sideAskAnchorAppId === "quickDraft";
+  const sideAskActive = !isMultiFinderMode() && sideAskEnabled;
+  if (!quickDraftSideAsk) restoreQuickDraftIntegratedAssistant();
+  const assistant = getWindow("assistant");
+  assistant?.classList.toggle("is-sideask", sideAskActive);
+  if (assistant) assistant.dataset.sideaskAnchor = sideAskActive ? sideAskAnchorAppId : "";
+  const modeStrip = document.getElementById("sideask-mode-strip");
+  if (modeStrip) modeStrip.hidden = !sideAskActive;
+  const sourceName = document.getElementById("sideask-source-name");
+  if (sourceName && sideAskActive) {
+    sourceName.textContent = t("sideask_paired_with", sideAskSourceDisplayLabel());
+  }
+  syncSideAskApplyEdit(sideAskActive);
+  const quickDraftHint = document.getElementById("quick-draft-cliotalk-hint");
+  if (quickDraftHint) {
+    quickDraftHint.classList.add("is-hidden");
+  }
+  // Like TeachText, Quick Draft keeps an explicit in-window SideAsk command.
+  // Its label describes whether it will open the pair or return focus to it.
+  const quickDraftReturnSideAsk = document.getElementById("quick-draft-return-sideask");
+  if (quickDraftReturnSideAsk) {
+    const labelKey = quickDraftSideAsk ? "quick_draft_return_sideask" : "quick_draft_show_sideask";
+    quickDraftReturnSideAsk.classList.remove("is-hidden");
+    quickDraftReturnSideAsk.dataset.i18n = labelKey;
+    quickDraftReturnSideAsk.textContent = t(labelKey);
+    const unavailable = isMultiFinderMode() || (typeof canUseSideAsk === "function" && !canUseSideAsk());
+    quickDraftReturnSideAsk.disabled = unavailable;
+    quickDraftReturnSideAsk.dataset.balloonHelpDisabled = "sideask_unavailable";
+  }
+  const composeToolsToggle = document.getElementById("compose-tools-toggle");
+  if (composeToolsToggle && typeof t === "function") {
+    composeToolsToggle.setAttribute("aria-label", t("compose_tools"));
+    composeToolsToggle.title = t("compose_tools");
+  }
+  if (typeof syncPromptPlaceholder === "function") syncPromptPlaceholder();
+  const assistantTitle = document.getElementById("assistant-title");
+  if (assistantTitle && typeof t === "function") {
+    assistantTitle.textContent = sideAskActive ? t("sideask_title") : t("assistant_title");
+  }
+}
+
+function quickDraftClioTalkSlot() {
+  return document.getElementById("quick-draft-cliotalk-slot");
+}
+
+function restoreQuickDraftIntegratedAssistant() {
+  const assistant = getWindow("assistant");
+  const slot = quickDraftClioTalkSlot();
+  const pane = getWindow("quickDraft")?.querySelector(".draft-desk-pane");
+  pane?.classList.remove("has-integrated-cliotalk");
+  assistant?.classList.remove("is-quick-draft-integrated");
+  if (!assistant || assistant.parentElement !== slot) return;
+  const home = quickDraftAssistantHome;
+  quickDraftAssistantHome = null;
+  if (home?.parent?.isConnected) home.parent.insertBefore(assistant, home.nextSibling?.isConnected ? home.nextSibling : null);
+  else document.querySelector(".desktop")?.prepend(assistant);
+}
+
+function resetAssistantForStandalonePlacement(win = getWindow("assistant")) {
+  if (!win) return;
+  win.dataset.userPositioned = "false";
+  markWindowSystemPositioned(win);
+  win.style.left = "";
+  win.style.top = "";
+  win.style.right = "auto";
+  win.style.width = "";
+  win.style.height = "";
+  win.style.maxHeight = "";
+  win.style.transform = "none";
+}
+
+async function toggleSideAsk() {
+  if (!canUseSideAsk()) {
+    setStatus(t("sideask_unavailable"));
+    return;
+  }
+
+  if (!sideAskEnabled) {
+    // SideAsk belongs to the surface it is asked from. Every writing-route
+    // window carries the command now, so pairing it permanently with the
+    // manuscript would answer a question about the Question Sheet next to a
+    // document the writer is not looking at.
+    const source = (typeof currentWritingRouteStop === "function" && currentWritingRouteStop()) || "teachText";
+    const canOpen = await arrangeWindowAssistantSplit(source);
+    if (!canOpen) return;
+    setStatus(t("sideask_on"));
+  } else {
+    const sourceWindowName = sideAskAnchorAppId;
+    const returningToQuickDraft = sourceWindowName === "quickDraft";
+    clearSideAskMode();
+    const sourceWindow = getWindow(sourceWindowName);
+    if (sourceWindow) focusWindow(sourceWindow);
+    if (returningToQuickDraft) {
+      window.AISystem6QuickDraftRuntime?.setQuickDraftStatus?.(t("quick_draft_ready"), { live: false });
+    }
+    setStatus(t("sideask_off"));
+  }
+  updateMenuState();
+}
+
+async function toggleQuickDraftSideAsk() {
+  if (!canUseSideAsk()) {
+    window.AISystem6QuickDraftRuntime?.setQuickDraftStatus?.(t("sideask_unavailable"));
+    return false;
+  }
+  const active = sideAskEnabled && sideAskAnchorAppId === "quickDraft";
+  if (active) {
+    clearSideAskMode();
+    const assistantWindow = getWindow("assistant");
+    if (assistantWindow && !assistantWindow.classList.contains("is-hidden")) {
+      await closeWindow("assistant", true);
+    }
+    const sourceWindow = getWindow("quickDraft");
+    if (sourceWindow) focusWindow(sourceWindow);
+    window.AISystem6QuickDraftRuntime?.setQuickDraftStatus?.(t("quick_draft_ready"), { live: false });
+  } else {
+    const paired = await arrangeWindowAssistantSplit("quickDraft");
+    if (!paired) return false;
+  }
+  updateMenuState();
+  return true;
+}
+
+async function quitApp(appId = activeAppId) {
+  if (nonQuittableAppIds.has(appId)) return;
+  if (appId === "writingStudio") {
+    await exitWritingStudio();
+    return;
+  }
+
+  if (appId === "teachText" && shouldPromptForTeachTextFileSave()) {
+    const result = await showSystemModal(teachTextUnsavedChangesMessage(), "save");
+    if (result === "cancel") return;
+    if (result === "yes") {
+      const saved = await saveTextDocument();
+      if (!saved) return;
+    } else {
+      setTeachTextStatus("saved");
+    }
+  }
+
+  // A workbook or presentation asks once when dirty and unmounts when clean; Cancel keeps the app.
+  const native = { clioChart: window.AISystem6ClioChartWorkbook, clioStage: window.AISystem6ClioStageNative, clioWrite: window.AISystem6ClioWrite }[appId];
+  if (native?.current?.() && await native.close() === "cancelled") return;
+
+  // Quitting is the total release: an application that declared onDispose
+  // frees its engine, canvas, timers and audio here. The explicit game calls
+  // below stay as the floor for a build whose lifecycle never registered.
+  const lifecycleDisposed = await (window.AISystem6ApplicationRegistry?.disposeApplication?.(appId, "quit") || false);
+
+  if (appId === "openttd") {
+    // Flush the game's browser-side storage, then tear the iframe down so
+    // the wasm main loop and its memory actually stop.
+    window.AISystem6OpenTTD?.handleQuit?.();
+  }
+
+  if (appId === "doom") {
+    // The iframe owns IDBFS. Ask it to release held input and flush storage;
+    // an acknowledgement or bounded timeout then reclaims the Wasm instance.
+    window.AISystem6Doom?.handleQuit?.();
+  }
+
+  if (appId === "bonsaiCity" && !lifecycleDisposed) {
+    // Bonsai City saves through the shared write fence on quit; the shell
+    // also stops its pacing loop so a closed window never keeps ticking. This
+    // fallback is used only when the lifecycle was not registered; otherwise
+    // the awaited onDispose above already performed the same total release.
+    const detached = await window.AISystem6BonsaiCity?.detach?.();
+    if (detached === false) return;
+  }
+
+
+
+  windowsForApp(appId).forEach((win) => {
+    win.classList.add("is-hidden");
+    win.classList.remove("is-app-hidden", "is-active");
+    delete win.dataset.appHiddenCollapsed;
+    forgetWindowFromRunningApps(win.dataset.window);
+  });
+  runningApps.delete(appId);
+  hiddenAppIds.delete(appId);
+  activeAppId = "finder";
+  updateQuickDraftFocusChrome();
+  switchToApp("finder");
+  setStatus(t("app_quit", multiFinderAppLabels[appId] || appId));
+  scheduleWorkingSessionSave?.();
+}
+
+function resetDesktopScrollOffset() {
+  if (isPortraitDocumentFlow()) return;
+  const desktop = document.querySelector(".desktop");
+  if (!desktop) return;
+  const reset = () => {
+    desktop.scrollLeft = 0;
+    desktop.scrollTop = 0;
+  };
+  reset();
+  requestAnimationFrame(reset);
+}
+
+function installDesktopScrollLock() {
+  const desktop = document.querySelector(".desktop");
+  if (!desktop || desktop.dataset.scrollLockInstalled === "true") return;
+  desktop.dataset.scrollLockInstalled = "true";
+  desktop.addEventListener("scroll", resetDesktopScrollOffset, { passive: true });
+  resetDesktopScrollOffset();
+}
+
+/**
+ * Put the keyboard where the window is.
+ *
+ * Opening a window used to move no focus at all: document.activeElement stayed
+ * on <body>, so the next Tab walked the desk icons *behind* the window the
+ * person had just opened. Modals already move focus (core/modal.js); this is the
+ * same rule for ordinary windows, and it is what the guidelines ask for — focus
+ * tells people which object their input targets (Focus and selection), and a
+ * desktop app has to work with the keyboard alone (Accessibility › Speech).
+ *
+ * The window itself takes the focus rather than its first control. A container
+ * is reached in DOM order, so the next Tab lands inside this window instead of
+ * behind it, and nothing starts typing — or opens a phone keyboard — that the
+ * person did not ask for. A window that already holds the focus keeps it:
+ * raising a window someone is typing in must not steal the caret.
+ */
+function focusIntoWindow(win) {
+  if (!win?.focus || win.contains(document.activeElement)) return;
+  win.setAttribute("tabindex", "-1");
+  win.focus({ preventScroll: true });
+}
+
+// ---- Miniaturize, and the way back --------------------------------------
+//
+// `is-minimized` is the desk's window state: focusWindow clears it, the
+// application switcher lists it, and the working session stores it. The window
+// that is put away is the same element that comes back.
+//
+// The state machine itself -- the caret and scroll snapshot, the restore, and
+// the lamp an era draws -- lives in app/core/window-minimize.js, which loads
+// only for the appearances that can draw a real minimize control (the registry
+// capability `minimize-lamp`, plus the NeXTSTEP shell that drives it). That is
+// what the floppy budget asks for: an era whose windows never had the button
+// pays nothing at startup for it. What stays here are the guards the boot path
+// needs -- focusWindow, the switcher and the title-bar wiring -- each one a
+// call through the module when it is there and a no-op when it is not.
+function minimizeWindow(win) {
+  return window.AISystem6WindowMinimize?.minimize(win) ?? false;
+}
+
+function restoreMinimizedWindow(win, options) {
+  if (window.AISystem6WindowMinimize) return window.AISystem6WindowMinimize.restore(win, options);
+  // A session saved in NeXTSTEP can reopen into an era that never loads the
+  // module; MultiFinder still lists the window, so its row has to work.
+  if (!win?.classList.contains("is-minimized")) return false;
+  unhideApp(getWindowAppId(win));
+  focusWindow(win);
+  syncMobileAppForeground();
+  renderMultiFinderMenu();
+  scheduleWorkingSessionSave();
+  return true;
+}
+
+function restoreWindowFocus(win) {
+  window.AISystem6WindowMinimize?.restoreFocus(win);
+}
+
+function syncWindowMinimizeLamp(win) {
+  window.AISystem6WindowMinimize?.syncLamp(win);
+}
+
+// A miniaturized window needs a way back, and the lists of put-away windows
+// (the Apple menu's, the switcher's, the Dock's) all live in the miniaturize
+// module, which loads only with an appearance that draws the control: NeXTSTEP,
+// or an era whose lamp ships with its Dock. A desk without it -- minimize in NeXTSTEP,
+// switch to Classic, reload -- would otherwise keep the manuscript open on no
+// screen and in no list.
+//
+// Such a window is rolled up where it stood rather than released to full
+// size: the writer asked for it out of the way, and WindowShade keeps it out
+// of the way without it ever leaving the desk -- a title bar in its own place,
+// double-click to unroll. On a phone the full-screen window was never hidden
+// (the shell outranks the put-away rule), so there only the flag is cleared.
+function appearanceHoldsMiniwindows() {
+  const theme = window.AISystem6Theme;
+  // The writer can switch the verb off (Control Panel); then no era holds one.
+  if (window.AISystem6WindowMinimize?.minimizeEnabled?.() === false) return false;
+  return theme?.getCurrentTheme?.() === "nextstep" || theme?.hasCapability?.("minimize-lamp") === true;
+}
+
+function releaseOrphanedMiniwindows() {
+  if (appearanceHoldsMiniwindows()) return;
+  const orphans = document.querySelectorAll(".window.is-minimized");
+  if (!orphans.length) return;
+  orphans.forEach((win) => {
+    win.classList.remove("is-minimized");
+    if (win.classList.contains("is-mobile-fullscreen") || win.classList.contains("is-collapsed")) return;
+    // Measured once it is back in the layout, the way toggleCollapsed measures.
+    const width = Math.round(win.getBoundingClientRect().width);
+    if (width > 0) setInlineStyleValue(win, "--window-shade-width", `${width}px`);
+    win.dataset.shadeRestoreHeight = inlineStyleValue(win, "height");
+    win.dataset.shadeRestoreMaxHeight = inlineStyleValue(win, "max-height");
+    setInlineStyleValue(win, "height", "");
+    setInlineStyleValue(win, "max-height", "");
+    win.classList.add("is-collapsed");
+    if (isPortraitDocumentFlow() || isNarrowViewport()) setWindowLayerZ(win, windowPinnedZ);
+  });
+  syncMobileAppForeground();
+  renderMultiFinderMenu();
+  scheduleWorkingSessionSave?.();
+}
+
+document.addEventListener("ai-system6-themechange", releaseOrphanedMiniwindows);
+
+// Menu conditions read the era ("window-menu" is a registry capability, and
+// "window-browse-special" is its complement), but nothing re-evaluated them
+// when the era changed: the Window menu stayed on the bar after switching to
+// System 6, and was missing after switching from it to Aqua until something
+// else happened to call updateMenuState (seen 2026-10-08). The era is one of
+// the inputs, so a change of era is one of the triggers.
+document.addEventListener("ai-system6-themechange", () => {
+  if (typeof updateMenuState === "function") updateMenuState();
+  // The Finder sidebar's headings and order belong to the era too.
+  if (typeof renderAllFinderNavigationBars === "function") renderAllFinderNavigationBars();
+});
+
+// WM1: focus rank is independent of z-index and pinning. Only a real focus
+// command advances it, so pin/unpin, hover, compaction and theme changes never
+// reorder the window walk; the walk keeps following true last-used order.
+const windowFocusRanks = new WeakMap();
+let windowFocusRankCounter = 0;
+function windowFocusRank(win) {
+  return (win && windowFocusRanks.get(win)) || 0;
+}
+
+function focusWindow(win, reveal=false) {
+  if (win?.classList.contains("is-slide-hidden")) { window.AISystem6WindowShade?.slideVisibility(win, false); return; }
+  if (!win) return;
+  const restoredMiniwindow = win.classList.contains("is-minimized");
+  win.classList.remove("is-minimized");
+  if (restoredMiniwindow) restoreWindowFocus(win);
+  if (reveal && isPortraitDocumentFlow()) {
+    revealWindowTitleInPortraitFlow(win);
+  } else {
+    resetDesktopScrollOffset();
+  }
+
+  // Managed windows only. `data-window` is what makes a `.window` the window
+  // manager's: every window in index.html carries one and createWindow assigns
+  // one, so this selects exactly the same set as `.window` did. What it now
+  // leaves alone is a `.window` nobody opened -- Theme Lab's chrome specimen,
+  // which is a real window element precisely so the era paints it, and whose
+  // active and inactive states are the specimen rather than the focus order.
+  document.querySelectorAll(".window[data-window]").forEach((item) => {
+    item.classList.remove("is-active");
+  });
+  win.classList.add("is-active");
+  // P2 (§2.7): the document-state globals follow the key window; the buckets
+  // live in the lazy identity layer (window-instances.js).
+  window.AISystem6InstanceDocState?.focus(win);
+  // WM1: a real focus is the only thing that advances last-used order.
+  windowFocusRanks.set(win, ++windowFocusRankCounter);
+  // The status line follows the active window, so a message set while another
+  // window was in front is still readable where the writer now is.
+  if (typeof syncStatusHost === "function") syncStatusHost();
+  const focusedAppId = getWindowAppId(win);
+  if (focusedAppId !== "accessories" && focusedAppId !== "system") {
+    activeAppId = focusedAppId;
+    menuOwnerAppId = focusedAppId;
+  }
+  if (hiddenAppIds.has(activeAppId)) {
+    hiddenAppIds.delete(activeAppId);
+    // The Hide mark stays on the windows still rolled up, so switching to the
+    // application later unrolls them; only the writer's own WindowShade on a
+    // window (toggleCollapsed) takes the mark off.
+    windowsForApp(activeAppId).forEach((appWin) => appWin.classList.remove("is-app-hidden"));
+  }
+  syncReviewDeskFocusQuiet(win);
+
+  if (win.dataset.window === "saveChat") {
+    win.style.zIndex = windowSaveZ;
+    updateMenuState();
+    renderMultiFinderMenu();
+    scheduleWorkingSessionSave?.();
+    return;
+  }
+
+  if (isPortraitDocumentFlow() && mobileWindowPresentation(win) === "system-page") {
+    win.style.zIndex = windowPinnedZ;
+    updateMenuState();
+    renderMultiFinderMenu();
+    scheduleWorkingSessionSave?.();
+    return;
+  }
+
+  // Pinned windows raise only inside the pinned band. Ordinary windows stay in
+  // the normal band, so clicking B/C never buries a pinned A, and A does not
+  // need to steal keyboard focus to remain painted above them.
+  if (isWindowPinned(win)) setWindowLayerZ(win, nextPinnedWindowLayerZ());
+  else setWindowLayerZ(win, nextWindowLayerZ());
+  if (isDeskAccessorySidecar(win)) {
+    raiseVisibleDeskAccessorySidecars(win);
+  } else if (getWindowAppId(win) === "accessories") {
+    raiseVisibleDeskAccessorySidecars();
+  } else {
+    raiseVisibleDeskAccessorySidecars();
+  }
+  updateMenuState();
+  renderMultiFinderMenu();
+  scheduleWorkingSessionSave?.();
+}
+
+// Harvest: when Review Desk is the key window, quiet desktop icons the same
+// way writing Focus / 文字亮室 deep mode do — without inventing a new Focus menu.
+function syncReviewDeskFocusQuiet(win = document.querySelector(".window[data-window].is-active")) {
+  const reviewFront = win?.dataset?.window === "reviewDesk"
+    && !win.classList.contains("is-hidden")
+    && !win.classList.contains("is-collapsed");
+  document.body.classList.toggle("is-review-focus", !!reviewFront);
+}
+
+// A phone is a device class, not a width, and both halves of this query are
+// load-bearing.
+//
+// The width half is the portrait screen the mobile layout was written for. The
+// height half is the SAME phone turned sideways, which is WIDER than the old
+// 860px line -- an iPhone Air is 912 CSS px in landscape, an iPhone 16 Pro Max
+// 956 -- so rotating the device switched every mobile rule off and laid all 76
+// windows out as a desktop Mac. Measured 2026-09-05; the phone matrix gate
+// (tooling/verify-device-matrix.mjs) is what keeps it measured.
+//
+// The coarse-pointer condition is what keeps a short DESKTOP window out: a
+// laptop browser resized to 900x480 has a mouse, a keyboard, and no reason to
+// lose its windows. The width half deliberately carries no such condition,
+// because a narrow desktop window does want the compact layout.
+//
+// 660px, not 500px, because iPhone Duo unfolded is 890x626 sideways: past the
+// width line, taller than 500, so opening a phone turned it into a desk. 660
+// clears it and stays under the shortest tablet landscape, 1024x768.
+//
+// This string is repeated verbatim by the CSS blocks that key on it.
+// tests/features/device-matrix.test.mjs holds the two definitions equal, so the
+// engine and the stylesheet can never disagree about what a phone is.
+const phoneViewportQuery = "(max-width: 860px), (hover: none) and (pointer: coarse) and (max-height: 660px)";
+
+function isNarrowViewport() {
+  return window.matchMedia(phoneViewportQuery).matches;
+}
+
+function isPortraitDocumentFlow() {
+  return isNarrowViewport() && window.matchMedia("(orientation: portrait)").matches;
+}
+
+// The landscape half of the phone matrix. It is a separate design from
+// portrait -- a 912x420 screen wants one wide page, not a tall column -- but
+// it is the same task model, so it shares every role and every escape path.
+function isLandscapeDocumentFlow() {
+  return isNarrowViewport() && window.matchMedia("(orientation: landscape)").matches;
+}
+
+// Mobile is a presentation system, not a collection of one-off app patches.
+// Every window is assigned one semantic role. Application and Finder pages can
+// own the phone work area; dialogs, system pages, and Desk Accessories retain a
+// separate overlay vocabulary. Keeping this taxonomy declarative makes a new
+// production window fail the mobile coverage test until its role is deliberate.
+const mobileFullScreenAppIds = new Set([
+  "clioTalk",
+  "quickDraft",
+  "lightroom",
+  "teachText",
+  "writingStudio",
+  "searcher",
+  "reader",
+  "timeMachine",
+  "endfield",
+  "docMap",
+  "clioStage",
+  "clioChart",
+  "clioWrite",
+  "clioProject",
+  "liquidCover",
+  "cmfStudio",
+  // The Image Prompt Studio built its window but never declared a phone role,
+  // so it stayed a 348px floating panel sitting on top of the desktop icons
+  // while every sibling lab took the shell.
+  "imagePromptStudio",
+  "soundscape",
+  "themeLab",
+  "scrapbook",
+  "bureaucracyMeme",
+  // Apps declared whole in the admission table carry their role there.
+  ...window.AISystem6Admissions.phoneApps(),
+]);
+
+// Immersive apps are the ones whose content IS the screen: the games (phone: 2
+// in app/core/app-admissions.js).
+// They earn the full-screen shell in landscape as well, where a floating
+// window would spend most of a phone display on desktop pattern. Every other
+// app keeps the portrait-only figure.
+const mobileImmersiveAppIds = new Set(window.AISystem6Admissions.phoneApps(2));
+
+function isMobileImmersiveWindow(win) {
+  return !!win && mobileImmersiveAppIds.has(getWindowAppId(win));
+}
+
+// A Finder page is a place you browse: DESIGN.md's Object Vocabulary gives a
+// Finder surface an icon grid or a list of objects, and object-first verbs.
+// File Floppy ("textDisk") holds the insert controls above its contents, one
+// window; the old Insert File Floppy window ("rag") is a retired name for it.
+// It is a real Finder page, so opening any other Finder page does not hide the
+// writer's material intake, which the writing route needs in hand while writing.
+const mobileFinderPageWindowNames = new Set([
+  "textDisk",
+  "finder",
+  "helpFolder",
+  "applications",
+  "disk",
+  "projectDisks",
+  "projectCd",
+  "projects",
+  "documents",
+  "trash",
+  "printDirectory",
+]);
+
+// Finder volumes share one navigation and command model. Their storage
+// implementations remain deliberately different (durable project data,
+// temporary mounted sources, and handoff media), but Finder should not need
+// three parallel ideas of selection, Get Info, Open, or Eject.
+const finderVolumeDefinitions = new Map([
+  ["disk", {
+    kind: "startup",
+    labelKey: "startup_disk",
+    parentWindowName: "",
+    writable: false,
+    removable: false,
+    supportsFolders: false,
+  }],
+  ["projects", {
+    kind: "hard-disk",
+    labelKey: "project_disk",
+    parentWindowName: "disk",
+    writable: true,
+    removable: true,
+    supportsFolders: true,
+  }],
+  ["textDisk", {
+    kind: "floppy",
+    labelKey: "mounted_text_disk",
+    parentWindowName: "disk",
+    writable: false,
+    removable: true,
+    supportsFolders: false,
+  }],
+  ["projectCd", {
+    kind: "optical",
+    labelKey: "project_cd",
+    parentWindowName: "disk",
+    writable: false,
+    removable: true,
+    supportsFolders: false,
+  }],
+]);
+
+function getFinderVolumeDefinition(windowName) {
+  return finderVolumeDefinitions.get(windowName) || null;
+}
+
+function getFinderVolumeRootItem(windowName) {
+  const volume = getFinderVolumeDefinition(windowName);
+  if (!volume) return null;
+  const project = typeof getActiveProject === "function" ? getActiveProject() : null;
+  const itemCount = windowName === "projects"
+    ? ((typeof getProjectFiles === "function" ? getProjectFiles().length : 0)
+      + (typeof getProjectFolders === "function" ? getProjectFolders().length : 0))
+    : windowName === "textDisk"
+      ? (mountedTextDisk?.files?.length || 0)
+      : windowName === "projectCd"
+        ? (typeof getProjectCdItems === "function" ? getProjectCdItems().length : 0)
+        : (typeof getStaticFinderItems === "function" ? getStaticFinderItems("disk").length : 0);
+  const label = windowName === "projects" && project
+    ? projectDisplayName(project)
+    : t(volume.labelKey);
+  return {
+    id: `finder-volume:${windowName}`,
+    type: "finder-volume",
+    name: label,
+    title: label,
+    kindLabel: t(volume.labelKey),
+    iconClass: {
+      startup: "hard-disk-icon",
+      "hard-disk": "project-disk-icon",
+      floppy: "text-disk-icon",
+      optical: "hard-disk-icon",
+    }[volume.kind] || "hard-disk-icon",
+    iconId: {
+      startup: "startupDisk",
+      "hard-disk": "projectDisk",
+      floppy: "fileFloppy",
+      optical: "projectDisc",
+    }[volume.kind] || "startupDisk",
+    itemCount,
+    sizeValue: itemCount,
+    sizeLabel: t("items_count", itemCount),
+    location: t("finder_location"),
+    projectId: windowName === "disk" ? "" : activeProjectId,
+    virtual: false,
+    readOnly: !volume.writable,
+    canOpen: false,
+    canDuplicate: false,
+    canRename: false,
+    canTrash: false,
+  };
+}
+
+function getFinderVolumeSelectedItem(windowName) {
+  if (windowName === "projects") {
+    return typeof getSelectedProjectFinderItem === "function" ? getSelectedProjectFinderItem() : null;
+  }
+  if (windowName === "textDisk") {
+    const name = selectedMountedFileNames?.values?.().next?.().value || selectedMountedFile;
+    if (!name || !mountedTextDisk?.files?.includes(name)) return null;
+    const report = typeof mountedFileDiagnostic === "function" ? mountedFileDiagnostic(name) : null;
+    const body = mountedTextDisk.fileBodies?.[name] || "";
+    return {
+      id: name,
+      type: "mountedFile",
+      name,
+      title: name,
+      body,
+      kindLabel: report && typeof fileDiskKindLabel === "function"
+        ? fileDiskKindLabel(report.kind)
+        : t("mounted_text_disk"),
+      iconClass: "doc-icon",
+      iconId: "document",
+      sizeValue: Number(report?.bytes || body.length || 0),
+      sizeLabel: `${Number(report?.bytes || body.length || 0)} bytes`,
+      location: t("mounted_text_disk"),
+      projectId: activeProjectId,
+      readOnly: true,
+      canOpen: true,
+      canDuplicate: false,
+      canRename: false,
+      canTrash: true,
+      open: () => openMountedTextFile(name),
+    };
+  }
+  if (windowName === "projectCd") {
+    const item = typeof getSelectedProjectCdItem === "function" ? getSelectedProjectCdItem() : null;
+    if (!item) return null;
+    return {
+      ...item,
+      type: "projectCdItem",
+      name: item.title,
+      kindLabel: t("project_cd"),
+      iconClass: "doc-icon",
+      iconId: "document",
+      sizeValue: String(item.body || "").length,
+      sizeLabel: `${String(item.body || "").length} bytes`,
+      location: t("project_cd"),
+      readOnly: true,
+      canOpen: true,
+      canDuplicate: false,
+      canRename: false,
+      canTrash: true,
+      open: () => openProjectCdItemInReader(item),
+    };
+  }
+  if (windowName === "disk") {
+    return typeof getSelectedStaticFinderItem === "function"
+      ? getSelectedStaticFinderItem("disk")
+      : null;
+  }
+  return null;
+}
+
+function getFinderVolumeCapabilities(windowName) {
+  const volume = getFinderVolumeDefinition(windowName);
+  if (!volume) return null;
+  const selectedItem = getFinderVolumeSelectedItem(windowName);
+  return {
+    canCreateFolder: volume.supportsFolders && volume.writable && isProjectMounted,
+    canOpen: selectedItem?.canOpen !== false && !!selectedItem,
+    canGetInfo: true,
+    canDuplicate: selectedItem?.canDuplicate !== false && !selectedItem?.virtual && !!selectedItem,
+    canRename: selectedItem?.canRename !== false && !selectedItem?.virtual && !!selectedItem,
+    canTrash: selectedItem?.canTrash !== false && !selectedItem?.virtual && !!selectedItem,
+    canEject: volume.removable && (
+      windowName === "projects"
+        ? isProjectMounted
+        : windowName === "textDisk"
+          ? getMountedTextDiskChunks().length > 0
+          : true
+    ),
+    canPrintDirectory: true,
+  };
+}
+
+function syncFinderVolumeSemantics(winOrName) {
+  const win = typeof winOrName === "string" ? getWindow(winOrName) : winOrName;
+  const volume = getFinderVolumeDefinition(win?.dataset.window || "");
+  if (!win || !volume) return;
+  win.classList.add("finder-volume-window");
+  win.dataset.finderVolume = volume.kind;
+  win.dataset.finderWritable = String(volume.writable);
+  win.dataset.finderRemovable = String(volume.removable);
+}
+
+// Does this frame leave a Finder page room to show anything?
+//
+// The strips a window wears above its content — the title bar, the details
+// strip, the Finder navigation bar — are chrome; what is left under them is
+// the content area, which is the whole reason a Finder page opens. A frame
+// with no content area has nothing to hand over: the target inherits the
+// strip, and openWindow skips fitFinderWindowToContents whenever a frame is
+// reused, so nothing measures the target again. The strip then lays its own
+// frame lane over its Zoom and close boxes, and no control inside the window
+// can get it back.
+//
+// One title bar's worth of content is the floor, and it separates the two
+// cases by a wide margin in both directions. Measured on the running app at
+// 1280x860: the shortest real Finder page is Control Strip Modules at 116px
+// over 80px of chrome, and the tallest is Project Hard Disk at 514px over
+// the same 80px; a WindowShade stub is a ~20px title bar with a 1px seam
+// under it, which is why "taller than its chrome" was not enough.
+function finderFrameHasContentRoom(win, frame) {
+  const height = Number.parseFloat(frame?.height);
+  if (!win || !Number.isFinite(height)) return false;
+  // The strips' extent, not the sum of their heights: a toolbar window lays
+  // them side by side in one row, where a sum would count that row three times.
+  const strips = [...win.children]
+    .filter((el) => el.matches(".title-bar, .details-bar, .finder-navigation-bar"));
+  const chrome = strips.length
+    ? Math.max(...strips.map((el) => el.offsetTop + el.offsetHeight)) - Math.min(...strips.map((el) => el.offsetTop))
+    : 0;
+  const titleBar = win.querySelector(":scope > .title-bar")?.offsetHeight || 0;
+  return height - chrome >= titleBar;
+}
+
+function replaceVisibleFinderLocation(targetWindowName) {
+  if (!mobileFinderPageWindowNames.has(targetWindowName)) return null;
+  // A WindowShade-collapsed source is a title bar, not a place to continue
+  // Finder browsing from: its frame's height is the shade height, not room
+  // for the target's content. Reusing it left a freshly opened Finder page
+  // (e.g. Project Hard Disk right after "Insert File Floppy", which opens
+  // collapsed by default) sized to ~20px with real content hidden below the
+  // title bar. Skipping collapsed candidates here falls through to the
+  // normal fit-to-content placement instead.
+  const candidates = [
+    ...Array.from(document.querySelectorAll(".window[data-window].is-active:not(.is-hidden):not(.is-app-hidden):not(.is-minimized):not(.is-collapsed)")),
+    ...Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-minimized):not(.is-collapsed)")),
+  ].filter((win) => mobileFinderPageWindowNames.has(win.dataset.window) && win.dataset.window !== targetWindowName);
+
+  // The narrow work area holds exactly one page, so there a new location
+  // retires every other one -- there is nowhere else for them to be. A
+  // desktop has a desktop. System 6's Finder keeps every window you opened,
+  // and browse-in-place means one window follows the path you walked: it
+  // applies to a step up or down the location tree, which is the only move
+  // the path bar, Back, and the parent map can make. Two unrelated volumes
+  // never displace each other -- opening a second disk opens a second
+  // window. Replacing whatever happened to be in front instead retired
+  // Finder windows the writer opened on purpose, the File Floppy among them,
+  // and the writing route needs its material in hand while writing.
+  const narrowPageFlow = isPortraitDocumentFlow();
+  const source = narrowPageFlow
+    ? candidates[0] || null
+    : candidates.find((win) => isFinderLocationStep(win.dataset.window, targetWindowName)) || null;
+  // WindowShade is checked by class above because that is the case the code
+  // reads for; the class is not the invariant. Judge the frame itself, so a
+  // source left short by anything else -- a restored session that saved a
+  // strip, a window measured before its content painted -- cannot pass one on.
+  const candidateFrame = source && !narrowPageFlow
+    ? windowFrame(source)
+    : null;
+  const frame = finderFrameHasContentRoom(source, candidateFrame) ? candidateFrame : null;
+
+  document.querySelectorAll(".window").forEach((win) => {
+    if (!mobileFinderPageWindowNames.has(win.dataset.window) || win.dataset.window === targetWindowName) return;
+    if (!narrowPageFlow && win !== source) return;
+    win.classList.add("is-hidden");
+    win.classList.remove("is-active");
+  });
+
+  return frame;
+}
+
+const finderParentWindowNames = new Map([
+  ["finder", "disk"],
+  ["helpFolder", "disk"],
+  ["applications", "disk"],
+  ["projectDisks", "disk"],
+  ["documents", "disk"],
+  ["importUtility", "disk"],
+  ["trash", "disk"],
+  ["printDirectory", "disk"],
+  ...Array.from(finderVolumeDefinitions.entries())
+    .filter(([, volume]) => volume.parentWindowName)
+    .map(([windowName, volume]) => [windowName, volume.parentWindowName]),
+]);
+
+// One step up or down the Finder location tree. This is the only move the
+// path bar, the Back button and navigateFinderUp() can make, so it is the
+// only move browse-in-place may answer by replacing a window.
+function isFinderLocationStep(sourceWindowName, targetWindowName) {
+  if (!sourceWindowName || !targetWindowName) return false;
+  return finderParentWindowNames.get(targetWindowName) === sourceWindowName
+    || finderParentWindowNames.get(sourceWindowName) === targetWindowName;
+}
+
+const finderLocationLabelKeys = new Map([
+  ["finder", "system_folder"],
+  ["helpFolder", "help_folder"],
+  ["applications", "applications"],
+  ["documents", "documents"],
+  ["importUtility", "import_utility"],
+  ["trash", "trash"],
+  ["printDirectory", "print_directory"],
+  ...Array.from(finderVolumeDefinitions.entries())
+    .map(([windowName, volume]) => [windowName, volume.labelKey]),
+]);
+
+const mobileDialogWindowNames = new Set([
+  "pageSetup",
+  // Write to Project Hard Disk is a task dialog -- choose files, preview,
+  // write, done -- not a Finder page to browse. As a finder-page it took the
+  // full-bleed work-area frame and filled a portrait screen.
+  "importUtility",
+  "saveChat",
+  "fileInfo",
+  "projectInfo",
+  "finishingReceipt",
+]);
+
+const mobileSystemPageWindowNames = new Set(["systemHelp", "themeLab", "about"]);
+
+const mobilePresentationClassNames = [
+  "is-mobile-app-page",
+  "is-mobile-finder-page",
+  "is-mobile-dialog",
+  "is-mobile-system-page",
+  "is-mobile-accessory",
+];
+
+let mobileFinderDesktopPreferred = false;
+
+function finderFolderTrail(folderId) {
+  if (!folderId || typeof getProjectFolders !== "function") return [];
+  const folders = getProjectFolders();
+  const byId = new Map(folders.map((folder) => [folder.id, folder]));
+  const trail = [];
+  const seen = new Set();
+  let folder = byId.get(folderId);
+  while (folder && !seen.has(folder.id)) {
+    seen.add(folder.id);
+    trail.unshift({
+      folderId: folder.id,
+      label: typeof displayFolderName === "function"
+        ? displayFolderName(folder.name)
+        : folder.name,
+    });
+    folder = folder.parentId ? byId.get(folder.parentId) : null;
+  }
+  return trail;
+}
+
+function finderNavigationSegments(windowName) {
+  const labelKey = finderLocationLabelKeys.get(windowName);
+  const currentLabel = labelKey ? t(labelKey) : (
+    getWindow(windowName)?.querySelector(":scope > .title-bar h1, :scope > .title-bar h2")?.textContent
+    || windowName
+  );
+  if (windowName === "disk") {
+    return [{ windowName, folderId: "", label: currentLabel }];
+  }
+
+  const segments = [{ windowName: "disk", folderId: "", label: t("startup_disk") }];
+  if (windowName === "finder") {
+    segments.push({ windowName, folderId: "", systemFolderPath: "", label: t("system_folder") });
+    (typeof systemFolderPathTrail === "function" ? systemFolderPathTrail() : []).forEach((entry) => {
+      segments.push({ windowName, folderId: "", systemFolderPath: entry.path, label: entry.label });
+    });
+    return segments;
+  }
+  if (windowName === "applications") {
+    segments.push({ windowName, folderId: "", applicationsFolderPath: "", label: currentLabel });
+    (typeof applicationsFolderPathTrail === "function" ? applicationsFolderPathTrail() : []).forEach((entry) => {
+      segments.push({ windowName, folderId: "", applicationsFolderPath: entry.path, label: entry.label });
+    });
+    return segments;
+  }
+  if (windowName === "projects" || windowName === "documents") {
+    segments.push({ windowName, folderId: "", label: currentLabel });
+    const folderId = selectedFolderId === "all" ? "" : selectedFolderId;
+    finderFolderTrail(folderId).forEach((entry) => {
+      segments.push({ windowName, ...entry });
+    });
+    return segments;
+  }
+
+  segments.push({ windowName, folderId: "", label: currentLabel });
+  return segments;
+}
+
+function resetFinderSelectionForNavigation() {
+  selectedChatFileId = null;
+  selectedDocumentFolderId = null;
+  selectedProjectRootItemId = null;
+  if (typeof clearDocumentSelection === "function") clearDocumentSelection();
+}
+
+function navigateFinderFolderLocation(windowName, folderId = "") {
+  selectedFolderId = folderId || "all";
+  resetFinderSelectionForNavigation();
+  if (windowName === "projects") renderProjectDisks();
+  if (windowName === "documents") renderDocuments();
+  const win = getWindow(windowName);
+  if (win) {
+    renderFinderNavigationBar(win);
+    focusWindow(win);
+  }
+}
+
+async function navigateFinderLocation(
+  sourceWindowName,
+  targetWindowName,
+  folderId = "",
+  systemFolderPath = "",
+  applicationsFolderPath = "",
+) {
+  if (sourceWindowName === targetWindowName && ["projects", "documents"].includes(targetWindowName)) {
+    navigateFinderFolderLocation(targetWindowName, folderId);
+    return;
+  }
+
+  if (targetWindowName === "finder") {
+    resetFinderSelectionForNavigation();
+    mobileFinderDesktopPreferred = false;
+    if (sourceWindowName !== "finder") await openWindow("finder");
+    navigateSystemFolderPath(systemFolderPath);
+    focusWindow(getWindow("finder"));
+    return;
+  }
+
+  if (targetWindowName === "applications") {
+    resetFinderSelectionForNavigation();
+    mobileFinderDesktopPreferred = false;
+    if (sourceWindowName !== "applications") await openWindow("applications");
+    if (typeof navigateApplicationsFolderPath === "function") navigateApplicationsFolderPath(applicationsFolderPath);
+    focusWindow(getWindow("applications"));
+    return;
+  }
+
+  if (["projects", "documents"].includes(targetWindowName)) {
+    selectedFolderId = folderId || "all";
+    resetFinderSelectionForNavigation();
+  }
+  mobileFinderDesktopPreferred = false;
+  await openWindow(targetWindowName);
+  if (targetWindowName === "projects") renderProjectDisks();
+  if (targetWindowName === "documents") renderDocuments();
+}
+
+async function navigateFinderUp(windowName) {
+  if (windowName === "finder" && typeof getSystemFolderPathDefinition === "function") {
+    const definition = getSystemFolderPathDefinition();
+    if (definition) {
+      navigateSystemFolderPath(definition.parentPath || "");
+      focusWindow(getWindow("finder"));
+      return;
+    }
+  }
+
+  if (["projects", "documents"].includes(windowName)) {
+    const folder = typeof getSelectedFolder === "function" ? getSelectedFolder() : null;
+    if (folder) {
+      navigateFinderFolderLocation(windowName, folder.parentId || "");
+      return;
+    }
+  }
+
+  if (windowName === "applications" && typeof getApplicationsFolderPathDefinition === "function") {
+    const definition = getApplicationsFolderPathDefinition();
+    // Only a subfolder has a parentPath; at the root the button leaves the
+    // window, the way it does everywhere else.
+    if (definition && "parentPath" in definition) {
+      navigateApplicationsFolderPath(definition.parentPath || "");
+      focusWindow(getWindow("applications"));
+      return;
+    }
+  }
+
+  const parentWindowName = finderParentWindowNames.get(windowName);
+  if (parentWindowName) {
+    await navigateFinderLocation(windowName, parentWindowName);
+    return;
+  }
+
+  await closeWindow(windowName);
+  if (isPortraitDocumentFlow()) {
+    mobileFinderDesktopPreferred = true;
+    activeAppId = "finder";
+    syncMobileAppForeground();
+    renderMultiFinderMenu();
+  }
+}
+
+function renderFinderNavigationBar(winOrName) {
+  const win = typeof winOrName === "string" ? getWindow(winOrName) : winOrName;
+  const windowName = win?.dataset.window || "";
+  if (!win || !mobileFinderPageWindowNames.has(windowName)) return;
+  syncFinderVolumeSemantics(win);
+
+  let nav = win.querySelector(":scope > .finder-navigation-bar");
+  if (!nav) {
+    nav = document.createElement("nav");
+    nav.className = "finder-navigation-bar";
+    const back = document.createElement("button");
+    back.type = "button";
+    back.className = "btn finder-navigation-back";
+    back.addEventListener("click", (event) => {
+      event.stopPropagation();
+      navigateFinderUp(windowName);
+    });
+    const breadcrumbs = document.createElement("div");
+    breadcrumbs.className = "finder-breadcrumbs";
+    nav.append(back, breadcrumbs);
+    const details = win.querySelector(":scope > .details-bar");
+    const title = win.querySelector(":scope > .title-bar");
+    (details || title)?.after(nav);
+  }
+  // A Finder page is a toolbar window: its title bar, details strip and this
+  // bar are sibling strips an era may lay out as one unified toolbar (see
+  // .is-toolbar-window in styles/10-windows.css).
+  win.classList.add("is-toolbar-window");
+  renderFinderSidebar(win, windowName);
+
+  nav.setAttribute("aria-label", t("finder_location"));
+  const back = nav.querySelector(".finder-navigation-back");
+  if (back) {
+    back.textContent = "‹";
+    back.setAttribute("aria-label", t("up_one_level"));
+    back.title = t("up_one_level");
+  }
+
+  if (back) back.dataset.toolbarLabel = t("back");
+  win.querySelector(":scope > .details-bar .view-controls")?.setAttribute("data-toolbar-label", t("menu_view"));
+  renderFinderToolbarPlaces(nav, win, windowName);
+  const breadcrumbs = nav.querySelector(".finder-breadcrumbs");
+  if (!breadcrumbs) return;
+  breadcrumbs.replaceChildren();
+  const segments = finderNavigationSegments(windowName);
+  segments.forEach((segment, index) => {
+    if (index > 0) {
+      const separator = document.createElement("span");
+      separator.className = "finder-breadcrumb-separator";
+      separator.textContent = "›";
+      separator.setAttribute("aria-hidden", "true");
+      breadcrumbs.append(separator);
+    }
+
+    const isCurrent = index === segments.length - 1;
+    if (isCurrent) {
+      const current = document.createElement("span");
+      current.className = "finder-breadcrumb-current";
+      current.textContent = segment.label;
+      current.setAttribute("aria-current", "page");
+      breadcrumbs.append(current);
+      return;
+    }
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "finder-breadcrumb";
+    button.textContent = segment.label;
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      navigateFinderLocation(
+        windowName,
+        segment.windowName,
+        segment.folderId,
+        segment.systemFolderPath || "",
+        segment.applicationsFolderPath || "",
+      );
+    });
+    breadcrumbs.append(button);
+  });
+}
+
+// The Finder sidebar of the Mac OS X eras (Snow Leopard, Yosemite, Big Sur,
+// Liquid Glass; decided 2026-09-23). It is the tdi-rail source list, not a new
+// primitive: .tdi-rail is the column, .tdi-source-rail-label the section
+// heading, .tdi-tab the row, so every era's existing rail tokens dress it.
+// Its places are the desktop's own objects and it navigates the way the
+// breadcrumb does. System 6, Platinum, NeXTSTEP and Aqua 10.0 stay spatial:
+// their tokens leave the rail undisplayed (--finder-sidebar-display).
+const finderSidebarPlaces = [["applications", "applications"], ["documents", "folder"]];
+const finderSidebarDisks = [["disk", "startupDisk"], ["projects", "projectDisk"], ["textDisk", "fileFloppy"], ["trash", "trash"]];
+const finderSidebarSections = [
+  ["finder_sidebar_favorites", finderSidebarPlaces],
+  ["finder_sidebar_locations", finderSidebarDisks],
+];
+
+// The headings are the era's own where there is native evidence. 10.6 put
+// the disks first under DEVICES and the folders under PLACES (512 Pixels'
+// 10-6-Snow-Leopard-Finder-Home); 10.10 put Favorites first and the disks
+// under Devices (10-10-Yosemite-Finder-Home). Big Sur and Liquid Glass have
+// no in-repo capture of the sidebar, so they keep Favorites / Locations.
+function finderSidebarSectionsForEra() {
+  const body = document.body;
+  const lineage = String(body?.dataset.lineage || "").split(/\s+/);
+  // 10.7 moved FAVORITES to the top and the disks under DEVICES
+  // (10-7-Lion-Finder-Home); 10.10 kept that order.
+  if (body?.dataset.theme === "lion" || body?.dataset.theme === "yosemite") {
+    return [["finder_sidebar_favorites", finderSidebarPlaces], ["finder_sidebar_devices", finderSidebarDisks]];
+  }
+  if (lineage.includes("snow-leopard")) {
+    return [["finder_sidebar_devices", finderSidebarDisks], ["finder_sidebar_places", finderSidebarPlaces]];
+  }
+  return finderSidebarSections;
+}
+
+function renderFinderSidebar(win, windowName) {
+  let rail = win.querySelector(":scope > .finder-sidebar");
+  if (!rail) {
+    rail = document.createElement("nav");
+    rail.className = "tdi-rail tdi-source-rail finder-sidebar";
+    (win.querySelector(":scope > .finder-navigation-bar") || win.querySelector(":scope > .title-bar"))?.after(rail);
+  }
+  rail.setAttribute("aria-label", t("finder_sidebar"));
+  const floppyMounted = typeof getMountedTextDiskChunks === "function" && getMountedTextDiskChunks().length > 0;
+  rail.replaceChildren();
+  finderSidebarSectionsForEra().forEach(([headingKey, places]) => {
+    const heading = document.createElement("div");
+    heading.className = "tdi-source-rail-label";
+    heading.textContent = t(headingKey);
+    rail.append(heading);
+    places.forEach(([target, iconId]) => {
+      if (target === "textDisk" && !floppyMounted) return;
+      const here = target === windowName;
+      const row = document.createElement("button");
+      row.type = "button";
+      row.className = here ? "tdi-tab is-active" : "tdi-tab";
+      if (here) row.setAttribute("aria-current", "page");
+      row.innerHTML = `${renderSystemIcon(iconId, { className: "tdi-tab-icon" })}<span class="tdi-tab-copy"><span>${escapeHtml(t(finderLocationLabelKeys.get(target)))}</span></span>`;
+      row.addEventListener("click", (event) => {
+        event.stopPropagation();
+        if (!here) navigateFinderLocation(windowName, target);
+      });
+      rail.append(row);
+    });
+  });
+}
+
+// Mac OS X 10.0-10.2 had no sidebar: its toolbar carried the places as
+// labelled icons beside Back and View (Apple's guidebook Finder capture:
+// Computer, Home, Favorites, Applications). The group is the sidebar's own
+// places, so it navigates the same way; every era but Aqua leaves it
+// undisplayed (--finder-toolbar-places-display).
+const finderToolbarPlaces = [["disk", "startupDisk"], ["projects", "projectDisk"], ["applications", "applications"]];
+
+function renderFinderToolbarPlaces(nav, win, windowName) {
+  let group = nav.querySelector(":scope > .finder-toolbar-places");
+  if (!group) {
+    group = document.createElement("div");
+    group.className = "finder-toolbar-places";
+    nav.append(group);
+  }
+  group.setAttribute("aria-label", t("finder_sidebar"));
+  group.replaceChildren(...finderToolbarPlaces.map(([target, iconId]) => {
+    const here = target === windowName;
+    const label = t(finderLocationLabelKeys.get(target));
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = here ? "finder-toolbar-place is-active" : "finder-toolbar-place";
+    if (here) button.setAttribute("aria-current", "page");
+    button.title = label;
+    button.innerHTML = `${renderSystemIcon(iconId, { className: "finder-toolbar-place-icon" })}<span class="finder-toolbar-place-label">${escapeHtml(label)}</span>`;
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      if (!here) navigateFinderLocation(windowName, target);
+    });
+    return button;
+  }));
+}
+
+function renderAllFinderNavigationBars() {
+  mobileFinderPageWindowNames.forEach((name) => renderFinderNavigationBar(name));
+}
+
+function mobileWindowPresentation(win) {
+  const name = win?.dataset.window || "";
+  if (mobileDialogWindowNames.has(name)) return "dialog";
+  if (mobileSystemPageWindowNames.has(name)) return "system-page";
+  if (getWindowAppId(win) === "accessories") return "accessory";
+  if (mobileFinderPageWindowNames.has(name)) return "finder-page";
+  if (mobileFullScreenAppIds.has(getWindowAppId(win))) return "app-page";
+  return "";
+}
+
+function syncMobileWindowPresentationClasses() {
+  const portrait = isPortraitDocumentFlow();
+  const narrow = isNarrowViewport();
+  // Managed windows only: a `.window` with no data-window was never opened by
+  // the manager. Theme Lab shows real windows as specimens so the era paints
+  // them, and a sweep that hides or re-frames one empties the board.
+  document.querySelectorAll(".window[data-window]").forEach((win) => {
+    mobilePresentationClassNames.forEach((className) => win.classList.remove(className));
+    win.classList.remove("is-mobile-work-area");
+    // The mobile work-area CSS owns one shared frame for app pages and Finder
+    // pages in every narrow orientation. This replaces the giant :not(...)
+    // exclusion lists that used to enumerate every dialog / DA / system page.
+    if (narrow && !writerMode) {
+      const role = mobileWindowPresentation(win);
+      if (role === "app-page" || role === "finder-page") {
+        win.classList.add("is-mobile-work-area");
+      }
+    }
+    // Roles belong to the device, not to the orientation. They used to be
+    // applied only in portrait, which is why a phone turned sideways carried
+    // no role on any of its 76 windows and fell back to desktop geometry.
+    if (!narrow) return;
+    const role = mobileWindowPresentation(win);
+    if (role) win.classList.add(`is-mobile-${role}`);
+  });
+  document.body.classList.toggle(
+    "mobile-finder-desktop",
+    portrait && mobileFinderDesktopPreferred
+  );
+}
+
+function mobileWindowCanFillScreen(win) {
+  const role = mobileWindowPresentation(win);
+  return role === "app-page" || (
+    role === "finder-page"
+    && !mobileFinderDesktopPreferred
+  );
+}
+
+function mobileFullScreenTarget() {
+  // Both orientations of a phone hand the screen to one app page. Landscape
+  // used to admit only the three games, on the reasoning that their content IS
+  // the screen; but a 912x420 display has no room for a floating window plus a
+  // desktop either, and the restore path (zoom box / grow box) is what keeps
+  // this a maximize rather than a lock. So every app page takes it.
+  if (!isPortraitDocumentFlow() && !isLandscapeDocumentFlow()) return null;
+  const wins = Array.from(
+    document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-minimized):not(.is-collapsed)")
+  ).filter((win) => (
+    mobileWindowCanFillScreen(win)
+    // Zooming or dragging the grow box restores a window down; it then stays a
+    // normal floating window (so several can share the screen) until the zoom
+    // box maximizes it again.
+    && win.dataset.mobileRestored !== "true"
+  ));
+  if (!wins.length) return null;
+  const activeAppWins = wins.filter((win) => getWindowAppId(win) === activeAppId);
+  const candidates = activeAppWins.length ? activeAppWins : wins;
+  return candidates.sort((a, b) => Number(b.style.zIndex || 0) - Number(a.style.zIndex || 0))[0];
+}
+
+function syncMobileAppForeground() {
+  syncMobileWindowPresentationClasses();
+  const target = mobileFullScreenTarget();
+  document.querySelectorAll(".window.is-mobile-fullscreen").forEach((win) => {
+    if (win !== target) win.classList.remove("is-mobile-fullscreen");
+  });
+  if (target) {
+    target.classList.add("is-mobile-fullscreen");
+    // Desktop placement code leaves inline left/top/width/height on some
+    // windows, and inline styles outrank the shell's rules. Drop that geometry
+    // so the maximized frame is the CSS shell's, not a stale desktop frame.
+    ["left", "top", "right", "bottom", "width", "height", "maxHeight", "transform", "order"]
+      .forEach((prop) => { target.style[prop] = ""; });
+  }
+  document.body.classList.toggle("mobile-app-foreground", !!target);
+  // Landscape geometry is a separate design, so the CSS keys on the state the
+  // shell already computed instead of re-deriving it from a media query.
+  document.body.classList.toggle(
+    "mobile-landscape-shell",
+    !!target && isLandscapeDocumentFlow()
+  );
+  // Immersive apps -- the games -- keep one distinction of their own: their
+  // artifact is the screen, so the landscape shell drops the window pane's
+  // reading padding for them and lets the canvas reach the safe-area edges.
+  document.body.classList.toggle(
+    "mobile-immersive-app",
+    !!target && isMobileImmersiveWindow(target)
+  );
+  repairPortraitDeskAccessoryGeometry();
+}
+
+// A phone has one stable Desk Accessory axis. Reflow every visible accessory
+// together so a newly opened DA cannot cover an older one; leaving portrait
+// clears that temporary arrangement and restores normal desktop ownership.
+function repairPortraitDeskAccessoryGeometry() {
+  if (!isPortraitDocumentFlow()) {
+    document.querySelectorAll(".window.is-mobile-da-arranged")
+      .forEach(clearPortraitDeskAccessoryPlacement);
+    return;
+  }
+  if (!visiblePortraitDeskAccessories().length) return;
+  arrangeDeskAccessories();
+}
+
+// The Finder entry in the switcher, so this is a MultiFinder-only path: bring
+// the Finder forward. Every running app is backgrounded with MultiFinder's own
+// hide vocabulary — they stay in the running-apps list and resume from the
+// switcher. Backgrounding only the frontmost one would just promote the next
+// running app to full-screen instead of revealing the desktop.
+function mobileHomeToDesktop() {
+  const appIds = new Set();
+  document.querySelectorAll(".window[data-window]:not(.is-hidden)").forEach((win) => {
+    const appId = getWindowAppId(win);
+    if (mobileFullScreenAppIds.has(appId)) appIds.add(appId);
+  });
+  appIds.forEach((appId) => hideApp(appId, { preserveActive: true }));
+  mobileFinderDesktopPreferred = true;
+  activeAppId = "finder";
+  syncMobileAppForeground();
+  renderMultiFinderMenu();
+  playSystemSound?.("close");
+}
+
+// Re-foreground a running app full-screen from the mobile switcher.
+function foregroundMobileApp(appId) {
+  if (appId === "finder") {
+    mobileHomeToDesktop();
+    return;
+  }
+  const name = runningApps.get(appId)?.lastWindowName;
+  if (name) openWindow(name);
+  else syncMobileAppForeground();
+}
+
+// NeXTSTEP floats the Writing Flow as a panel (Window Order tier 6): it sits
+// above the documents, which slide under it and are neither pushed away from
+// it nor aligned to it. The column the desk keeps free on the left is then the
+// main menu's. nextstep-shell.js sets the attribute only while the panel
+// floats, so every other era reads the palette as the desk column it is.
+function writingSpineFloats(spine) {
+  return Boolean(spine?.hasAttribute?.("data-nextstep-panel"));
+}
+
+function writingSpineAlignedTop(fallback = 18) {
+  const desktop = document.querySelector(".desktop");
+  const spine = document.querySelector(".writing-spine-panel") || document.querySelector(".spine-flow-toolbox");
+  if (writingSpineFloats(spine)) return fallback;
+  const titleBar = spine?.querySelector?.(".spine-title-row, .title-bar");
+  const desktopRect = desktop?.getBoundingClientRect();
+  const spineRect = titleBar?.getBoundingClientRect?.() || spine?.getBoundingClientRect();
+  if (
+    desktopRect
+    && spine
+    && spineRect
+    && spineRect.height > 0
+    && getComputedStyle(spine).position !== "static"
+  ) {
+    return Math.max(18, Math.round(spineRect.top - desktopRect.top));
+  }
+  return fallback;
+}
+
+function writingSpineAlignedTopForWindow(win, fallback = 18) {
+  const desktop = document.querySelector(".desktop");
+  const spine = document.querySelector(".writing-spine-panel") || document.querySelector(".spine-flow-toolbox");
+  if (writingSpineFloats(spine)) return fallback;
+  const spineTitle = spine?.querySelector?.(".spine-title-row, .title-bar");
+  const spineDivider = spine?.querySelector?.(".spine-shade-body");
+  const winTitle = win?.querySelector?.(":scope > .title-bar");
+  const desktopRect = desktop?.getBoundingClientRect();
+  const spineDividerRect = spineDivider?.getBoundingClientRect?.();
+  const spineRect = (
+    spineDividerRect
+    && spineDividerRect.height > 0
+    && getComputedStyle(spineDivider).display !== "none"
+  )
+    ? spineDividerRect
+    : spineTitle?.getBoundingClientRect?.();
+  const winRect = win?.getBoundingClientRect?.();
+  const winTitleRect = winTitle?.getBoundingClientRect?.();
+  const targetDivider = Array.from(win?.children || []).find((child) => {
+    if (child === winTitle) return false;
+    const style = getComputedStyle(child);
+    if (style.display === "none" || style.visibility === "hidden") return false;
+    const rect = child.getBoundingClientRect();
+    return rect.height > 0;
+  });
+  const targetDividerRect = targetDivider?.getBoundingClientRect?.();
+  if (
+    desktopRect
+    && spine
+    && spineRect
+    && winRect
+    && winTitleRect
+    && targetDividerRect
+    && spineRect.height >= 0
+    && winTitleRect.height > 0
+    && getComputedStyle(spine).position !== "static"
+  ) {
+    const spineLine = spineDividerRect && spineDividerRect.height > 0 ? spineDividerRect.top : spineRect.bottom;
+    const targetLineOffset = targetDividerRect.top - winRect.top;
+    return Math.max(18, Math.round(spineLine - desktopRect.top - targetLineOffset));
+  }
+  return writingSpineAlignedTop(fallback);
+}
+
+function alignWindowTitleBottomToWritingSpine(win) {
+  // WM0: a window the writer has positioned (or one already detached by a close
+  // / project switch) must not be pulled back to the spine by a late callback.
+  if (!win || !win.isConnected || win.dataset.userPositioned === "true") return;
+  if (writerMode || isPortraitDocumentFlow()) return;
+  if (win.dataset.window === "saveChat") return;
+  // Hardening: every put-away presentation owns its own frame, so a stale
+  // callback must not move a hidden, app-hidden, minimized, shaded or
+  // full-screen window back to the spine line.
+  if (["is-hidden", "is-app-hidden", "is-minimized", "is-collapsed", "is-fullscreen"]
+    .some((name) => win.classList.contains(name))) return;
+  win.style.top = `${writingSpineAlignedTopForWindow(win, parsePositiveInteger(win.style.top) || 18)}px`;
+}
+
+function scheduleWritingSpineTitleAlignment(win) {
+  // `isConnected === false` is the detached case; a stand-in object without the
+  // property is treated as attached, and the writer re-checks it before moving.
+  if (!win || win.isConnected === false || writerMode || isPortraitDocumentFlow()) return;
+  // The writing route lays its windows out right after this is scheduled
+  // (Section Drafts over TeachText, one paper width apart). An alignment that
+  // then pulled the lower window back to the spine line put TeachText exactly
+  // on top of Section Drafts in every appearance, so an explicit layout
+  // written since scheduling wins.
+  const generation = explicitLayoutGeneration.get(win) || 0;
+  // The delayed callbacks belong to the scene that scheduled them. Capture the
+  // context they were planned against and discard them when any part of it has
+  // changed: a new project, appearance or viewport would otherwise receive a
+  // write meant for the old one.
+  const project = typeof activeProjectId === "undefined" ? null : activeProjectId;
+  const theme = typeof getCurrentTheme === "function" ? getCurrentTheme() : "";
+  const viewport = `${window.innerWidth}:${window.innerHeight}`;
+  const align = () => {
+    if (win.isConnected === false || writerMode || isPortraitDocumentFlow()
+        || win.dataset.userPositioned === "true"
+        || (explicitLayoutGeneration.get(win) || 0) !== generation
+        || (typeof activeProjectId === "undefined" ? null : activeProjectId) !== project
+        || (typeof getCurrentTheme === "function" ? getCurrentTheme() : "") !== theme
+        || `${window.innerWidth}:${window.innerHeight}` !== viewport
+        || ["is-hidden", "is-app-hidden", "is-minimized", "is-collapsed", "is-fullscreen"]
+          .some((name) => win.classList.contains(name))) return;
+    alignWindowTitleBottomToWritingSpine(win);
+    // Alignment is delayed until content strips have their final height. Run
+    // collision placement after that shift as well, or a clear lower slot can
+    // be pulled back over an old window on the next animation frame.
+    if (win.dataset.systemPositioned === "true") {
+      placeNewWindowAvoidingVisibleWindows(win);
+      clampWindowToViewport(win);
+    }
+  };
+  requestAnimationFrame(() => {
+    align();
+    requestAnimationFrame(align);
+  });
+  window.setTimeout(align, 80);
+  window.setTimeout(align, 220);
+}
+
+function useNarrowWindowFlow(win) {
+  if (!win || !isNarrowViewport() || writerMode) return false;
+  if (getWindowAppId(win) === "accessories") return false;
+  win.style.left = "";
+  win.style.top = "";
+  win.style.right = "";
+  win.style.width = "";
+  win.style.height = "";
+  win.style.maxHeight = "";
+  win.style.transform = "";
+  if ((win.dataset.window === "endfieldTerminal" || win.dataset.window === "bureaucracyMeme" || win.dataset.window === "liquidCover") && !win.style.getPropertyValue("--portrait-window-height")) {
+    win.style.setProperty("--portrait-window-height", "calc(100vh - var(--system-menu-height, 26px) - 72px)");
+  }
+  revealWindowTitleInPortraitFlow(win);
+  return true;
+}
+
+function clearPortraitWindowSize(win) {
+  win?.style.removeProperty("--portrait-window-width");
+  win?.style.removeProperty("--portrait-window-height");
+}
+
+function revealWindowTitleInPortraitFlow(win) {
+  if (!win || !isPortraitDocumentFlow()) return;
+  const reveal = () => {
+    const rect = win.getBoundingClientRect();
+    const menuHeight = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--system-menu-height")) || 24;
+    const targetTop = window.scrollY + rect.top - menuHeight - 10;
+    window.scrollTo({ top: Math.max(0, targetTop), behavior: "auto" });
+  };
+  requestAnimationFrame(() => {
+    reveal();
+    requestAnimationFrame(reveal);
+  });
+  window.setTimeout(reveal, 120);
+}
+
+function placeCenteredSystemWindow(win) {
+  if (!win) return;
+  win.classList.remove("is-collapsed", "is-desklet");
+  win.style.right = "auto";
+  win.style.height = "";
+
+  if (isNarrowViewport()) {
+    win.style.left = "";
+    win.style.top = "";
+    win.style.width = "";
+    win.style.transform = "";
+    revealWindowTitleInPortraitFlow(win);
+    return;
+  }
+
+  // Centered on the screen, not on the work area between the icons.
+  //
+  // A centered window is a summoned surface rather than a resident one: About,
+  // and the film One More Tune opens. Working out a "usable" middle beside the
+  // icon rail put the film window 68px left of the middle of the desk, which
+  // reads as misplaced on a screen with nothing else open. The work area still
+  // decides where a *cascading* window lands; this one is placed against the
+  // desktop it belongs to.
+  win.style.left = "50%";
+  win.style.top = "calc(var(--system-menu-height, 25px) + (100vh - var(--system-menu-height, 25px)) / 2)";
+  win.style.width = "";
+  win.style.transform = "translate(-50%, -50%)";
+  pinWindowTransformToCorner(win);
+}
+
+// A centring translate is measured against the window's own size, so it
+// re-resolves the position every time that size changes. WindowShade changes
+// it on every roll-up: the title bar moved out from under the pointer, and the
+// second double-click that should have unrolled the shade landed on the desk.
+// Resolve the centred result to a plain corner once, then let the window be
+// positioned like every other one.
+function pinWindowTransformToCorner(win) {
+  if (!win || getComputedStyle(win).transform === "none") return;
+  const rect = win.getBoundingClientRect();
+  if (!rect.width && !rect.height) return;
+  const base = win.offsetParent?.getBoundingClientRect() || { left: 0, top: 0 };
+  win.style.left = `${Math.round(rect.left - base.left)}px`;
+  win.style.top = `${Math.round(rect.top - base.top)}px`;
+  win.style.transform = "none";
+}
+
+function placeSaveChatWindow() {
+  const win = getWindow("saveChat");
+  if (!win) return;
+  if (isPortraitDocumentFlow()) {
+    ["left", "top", "right", "width", "height", "max-height", "transform"]
+      .forEach((property) => win.style.removeProperty(property));
+    win.scrollTop = 0;
+    win.querySelector(".save-chat-pane")?.scrollTo?.({ top: 0 });
+    return;
+  }
+  win.style.left = "50%";
+  win.style.top = "calc(25px + (100vh - 25px) / 2)";
+  win.style.right = "auto";
+  win.style.width = "";
+  win.style.height = "";
+  win.style.transform = "translate(-50%, -50%)";
+  win.scrollTop = 0;
+  win.querySelector(".save-chat-pane")?.scrollTo?.({ top: 0 });
+}
+
+function placeClioStageDefaultWindow(win) {
+  if (!win || writerMode || isPortraitDocumentFlow()) return false;
+  const desktop = document.querySelector(".desktop");
+  const desktopRect = desktop?.getBoundingClientRect();
+  if (!desktopRect) return false;
+
+  const margin = 18;
+  const avoidance = getDesktopAvoidanceInsets({ margin, spineGap: 18, iconGap: 132 });
+  const workLeft = Math.max(margin, avoidance.left || margin);
+  const workTop = Math.max(margin, writingSpineAlignedTopForWindow(win, margin));
+  const workRight = Math.max(workLeft + 560, desktopRect.width - Math.max(132, avoidance.right || 132));
+  const workBottom = Math.max(workTop + 360, desktopRect.height - deskDockReserve() - margin);
+  const availableWidth = Math.max(560, workRight - workLeft);
+  const availableHeight = Math.max(360, workBottom - workTop);
+  const width = Math.min(1024, availableWidth);
+  const height = Math.min(640, availableHeight);
+  const left = workLeft + Math.max(0, (availableWidth - width) / 2);
+
+  placeWindowForExplicitLayout(win, {
+    left,
+    top: workTop,
+    width,
+    height,
+    transform: "none",
+  });
+  return true;
+}
+
+function isFinderCascadeWindow(winOrName) {
+  const name = typeof winOrName === "string" ? winOrName : winOrName?.dataset.window;
+  return finderCascadeWindowNames.has(name);
+}
+
+const finderContentFitWindowNames = new Set([
+  "finder",
+  "helpFolder",
+  "applications",
+  "disk",
+  "projectDisks",
+  "projects",
+  "documents",
+  "projectCd",
+  "textDisk",
+  "trash",
+]);
+
+function isFinderContentWindow(winOrName) {
+  const name = typeof winOrName === "string" ? winOrName : winOrName?.dataset.window;
+  return finderContentFitWindowNames.has(name);
+}
+
+function clearFinderContentFit(win, options = {}) {
+  if (!win?.classList.contains("is-finder-content-fit")) return false;
+  const rect = options.preserveSize ? win.getBoundingClientRect() : null;
+  win.classList.remove("is-finder-content-fit");
+  win.style.removeProperty("--finder-fit-width");
+  win.style.removeProperty("--finder-fit-height");
+  win.style.removeProperty("--finder-fit-max-height");
+  delete win.dataset.finderContentFit;
+  if (rect) {
+    setInlineStyleValue(win, "width", `${Math.round(rect.width)}px`);
+    setInlineStyleValue(win, "height", `${Math.round(rect.height)}px`);
+  }
+  return true;
+}
+
+// A fresh Finder window should reveal its objects before it asks the user to
+// scroll. Start at the authored width, then add one icon column at a time only
+// when the current desktop height cannot hold the full grid. The desktop bounds
+// remain the hard ceiling; oversized folders keep scrolling normally.
+// A fitted Finder window may not go below two columns of icons by two rows.
+const FINDER_FIT_FLOOR_WIDTH = 560;
+const FINDER_FIT_FLOOR_HEIGHT = 420;
+
+function fitFinderWindowToContents(win, options = {}) {
+  if (
+    !win
+    || !isFinderContentWindow(win)
+    || isPortraitDocumentFlow()
+    || isNarrowViewport()
+  ) return false;
+
+  const scroller = win.querySelector(".window-frame-scroller");
+  const desktop = document.querySelector(".desktop");
+  const desktopRect = desktop?.getBoundingClientRect();
+  if (!scroller || !desktopRect) return false;
+
+  // openWindow calls this synchronously, one frame before the scheduled
+  // "projectDisks"/"documents"/etc. render task paints real Finder items into
+  // the scroller (scheduleRenderTask batches to the next requestAnimationFrame).
+  // Fitting against an empty scroller here computes a title-bar-only height
+  // with real content still to come and nothing else ever re-measures it, so
+  // mark the window pending and let the render that finally paints content
+  // call settlePendingFinderFit() once more. A scroller that already holds
+  // something (a real item or the empty-state placeholder button) is real
+  // content, not the race, so the mark clears itself out.
+  win.dataset.finderFitPending = scroller.children.length === 0 ? "true" : "false";
+
+  const openingRect = win.getBoundingClientRect();
+  const margin = 18;
+  const avoidance = getDesktopAvoidanceInsets({ margin, spineGap: 18, iconGap: 48 });
+  const openingTop = options.force
+    ? Math.max(margin, openingRect.top - desktopRect.top)
+    : writingSpineAlignedTopForWindow(win, margin);
+  const maxWidth = Math.max(
+    320,
+    options.force
+      ? desktopRect.right - openingRect.left - margin
+      : desktopRect.width - avoidance.left - avoidance.right - margin,
+  );
+  const maxHeight = Math.max(220, desktopRect.height - deskDockReserve() - openingTop - margin);
+  const minWidth = Math.min(maxWidth, Number.parseInt(getComputedStyle(win).minWidth, 10) || 320);
+  const initialWidth = Math.min(maxWidth, Math.max(minWidth, openingRect.width || 420));
+
+  setInlineStyleValue(win, "width", "");
+  setInlineStyleValue(win, "height", "");
+  setInlineStyleValue(win, "max-height", "");
+  win.classList.add("is-finder-content-fit");
+  win.style.removeProperty("--finder-fit-height");
+  win.style.setProperty("--finder-fit-max-height", `${Math.round(maxHeight)}px`);
+
+  const icon = scroller.querySelector(".finder-item");
+  const gridStyle = getComputedStyle(scroller);
+  const columnGap = Number.parseFloat(gridStyle.columnGap) || 0;
+  const iconWidth = icon?.getBoundingClientRect().width || 96;
+  const columnStep = Math.max(72, Math.round(iconWidth + columnGap));
+  const iconMode = scroller.classList.contains("finder-grid");
+  let width = initialWidth;
+  let desiredHeight = maxHeight;
+
+  while (true) {
+    win.style.setProperty("--finder-fit-width", `${Math.round(width)}px`);
+    const winRect = win.getBoundingClientRect();
+    const chromeHeight = Math.max(0, winRect.height - scroller.clientHeight);
+    desiredHeight = Math.ceil(chromeHeight + scroller.scrollHeight);
+    if (desiredHeight <= maxHeight + 1 || width >= maxWidth || !iconMode) break;
+    width = Math.min(maxWidth, width + columnStep);
+  }
+
+  // A folder holding one row of icons must not open as a letterbox: the floor
+  // is the room a folder window is expected to have, the ceiling is the desk.
+  const comfortableWidth = Math.min(maxWidth, FINDER_FIT_FLOOR_WIDTH);
+  const comfortableHeight = Math.min(maxHeight, FINDER_FIT_FLOOR_HEIGHT);
+  width = Math.min(maxWidth, Math.max(width, comfortableWidth));
+  desiredHeight = Math.max(desiredHeight, comfortableHeight);
+
+  win.style.setProperty("--finder-fit-width", `${Math.round(width)}px`);
+  win.style.setProperty("--finder-fit-height", `${Math.round(Math.min(maxHeight, desiredHeight))}px`);
+  win.dataset.finderContentFit = options.force ? "zoom" : "auto";
+  return true;
+}
+
+// Call after a Finder-content render task actually paints items into a
+// window's scroller. Only refits a window whose most recent fit ran against
+// an empty scroller (see fitFinderWindowToContents); an ordinary content
+// update on an already-settled window is left alone, matching the "fit once
+// at open, then respect the user's own resize" contract.
+function settlePendingFinderFit(win) {
+  if (!win || win.dataset.finderFitPending !== "true") return false;
+  delete win.dataset.finderFitPending;
+  if (win.dataset.userPositioned === "true") return false;
+  return fitFinderWindowToContents(win);
+}
+
+function placeFinderCascadeWindow(win, options = {}) {
+  if (!win) return false;
+  const desktop = document.querySelector(".desktop");
+  const desktopRect = desktop?.getBoundingClientRect();
+  if (!desktopRect) return false;
+
+  const avoidance = options.avoidance || getDesktopAvoidanceInsets({ margin: 24, spineGap: 18, iconGap: 48 });
+  const rect = win.getBoundingClientRect();
+  const width = rect.width || 520;
+  const height = rect.height || 360;
+  const margin = 24;
+  const baseLeft = Math.max(avoidance.left, margin);
+  const baseTop = options.baseTop || writingSpineAlignedTopForWindow(win, 18);
+  const workRight = Math.max(baseLeft + width, desktopRect.width - avoidance.right - margin);
+  const workBottom = Math.max(baseTop + height, desktopRect.height - deskDockReserve() - margin);
+  const maxLeft = Math.max(baseLeft, workRight - width);
+  const maxTop = Math.max(baseTop, workBottom - height);
+  const horizontalStep = Math.min(190, Math.max(96, Math.round(width * 0.34)));
+  const verticalStep = 26;
+  const rowStep = 92;
+  const columns = Math.max(1, Math.floor((maxLeft - baseLeft) / horizontalStep) + 1);
+  const openFinderWindows = Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-minimized)"))
+    .filter((item) => item !== win && isFinderCascadeWindow(item));
+  const index = openFinderWindows.length;
+  const column = index % columns;
+  const row = Math.floor(index / columns);
+  const left = Math.min(maxLeft, baseLeft + column * horizontalStep);
+  const top = Math.min(maxTop, baseTop + row * rowStep + column * verticalStep);
+
+  win.style.left = `${Math.round(left)}px`;
+  win.style.top = `${Math.round(top)}px`;
+  win.style.right = "auto";
+  win.style.transform = "none";
+  return true;
+}
+
+// An accessory/system window (Control Panel, the Clock, …) can hold the
+// literal .is-active class while a document window still owns the menu bar
+// behind it — the menu bar follows menuOwnerAppId/activeAppId, not raw
+// z-order. getActionAvailability() below resolves that gap for its own
+// isAvailable() checks; a handler that instead reads only the literal
+// .is-active window disagrees with that same menu in exactly this state —
+// the control looks enabled and finds nothing to act on. Exposed so
+// getActiveEditableElement() (documents-chat.js) can agree with the menu
+// it is wired to.
+function resolveMenuContextWindow() {
+  const activeWin = document.querySelector(".window.is-active");
+  const focusedAppId = activeWin ? getWindowAppId(activeWin) : "finder";
+  if (["accessories", "system"].includes(focusedAppId)) {
+    return visibleWindowsForApp(menuOwnerAppId || activeAppId)
+      .sort((a, b) => Number(b.style.zIndex || 0) - Number(a.style.zIndex || 0))[0] || activeWin;
+  }
+  return activeWin;
+}
+
+// Editors that keep their own history (app/core/edit-history.js) register it
+// by window. Edit > Undo / Redo, their availability and the step named in the
+// menu all follow the registered history when no text field is the target. An
+// entry may be a function, for an editor whose history depends on its mode.
+const editHistories = new Map();
+function registerEditHistory(windowName, history) {
+  editHistories.set(windowName, history);
+}
+function editHistoryFor(windowName = resolveMenuContextWindow()?.dataset.window) {
+  const entry = windowName && editHistories.get(windowName);
+  const own = (typeof entry === "function" ? entry() : entry) || null;
+  // With nothing of its own to take back, the window hands Undo to the desk.
+  return own && (own.canUndo() || own.canRedo()) ? own : window.AISystem6DeskUndo || own;
+}
+
+// The Edit menu names the step it would take back, the way a Mac editor says
+// "Undo Move". A focused text field keeps the plain words.
+function syncEditStepLabels() {
+  const history = typeof getActiveEditableElement === "function" && getActiveEditableElement() ? null : editHistoryFor();
+  ["undo", "redo"].forEach((command) => {
+    const step = history?.[`${command}Label`]?.() || "";
+    // A 「全部替换 N 处」 step keeps its count: the history hands over the
+    // label's args, so the translation renders the number the step was named with.
+    const args = typeof history?.[`${command}LabelArgs`] === "function" ? history[`${command}LabelArgs`]() : [];
+    // An app whose Edit menu keeps its own Undo row marks it data-edit-step.
+    document.querySelectorAll(`[data-action="${command}"][data-i18n], [data-edit-step="${command}"][data-i18n]`).forEach((row) => {
+      const text = step ? t(`${command}_step`, t(step, ...args)) : t(row.dataset.i18n);
+      if (!writeShortcutRowLabel(row, text)) row.textContent = text;
+    });
+  });
+}
+
+function isWindowArrangementActionAvailable(win, action) {
+  if (["slideLeft", "slideRight", "splitChoose", "peek", "pinList", "pinSuspend", "pinClear", "pinRestore", "slideShow", "slideHide", "slideExit"].includes(action)) {
+    if (window.AISystem6WindowShade) return window.AISystem6WindowShade.available(win, action);
+    if (action === "peek") return !!win?.classList.contains("is-collapsed");
+    if (["slideShow", "slideHide", "slideExit", "pinRestore"].includes(action)) return false;
+    if (["pinSuspend", "pinClear", "pinList"].includes(action)) return !!document.querySelector('.window[data-window-pinned="true"]:not(.is-hidden)');
+    return !!win && !isNarrowViewport() && !writerMode;
+  }
+
+  if (!win || isNarrowViewport() || writerMode || isCenteredSystemWindow(win)
+    || win.matches(".is-hidden, .is-app-hidden, .is-minimized, .is-fullscreen, .is-mobile-fullscreen, .is-desklet")) return false;
+  const api = window.AISystem6WindowShade;
+  if (api) return api.available(win, action);
+  if (action === "undo") return false;
+  if (action === "shade") return !win.classList.contains("is-collapsed");
+  if (action === "expand") return win.classList.contains("is-collapsed");
+  if (action === "pin" || action === "unpin") return canPinWindow(win)
+    && (win.dataset.windowPinned === "true") !== (action === "pin");
+  if (["left", "right", "fill"].includes(action)) return isResizableWindow(win);
+  return action === "recover" || action === "menu";
+}
+
+function getActionAvailability() {
+  const activeWin = document.querySelector(".window.is-active");
+  const menuContextWin = resolveMenuContextWindow();
+  const showResetSystemMenu = showResetSystemMenuInput ? showResetSystemMenuInput.checked : true;
+  const winName = menuContextWin?.dataset.window;
+  // Route commands follow the writer, not the z-order. The route raises the
+  // manuscript beside the surface being edited, so gating on the frontmost
+  // window left "To Section Drafts" unavailable while the caret sat in the
+  // Outline - and an unavailable command is refused in silence.
+  const routeWinName = (typeof currentWritingRouteStop === "function" && currentWritingRouteStop()) || winName;
+  const quickDraftApi = winName === "quickDraft" ? window.AISystem6QuickDraft : null;
+  const quickDraftCanPreview = Boolean(quickDraftApi?.canPreviewAdjustments?.());
+  const quickDraftCanDevelop = Boolean(quickDraftApi?.canDevelop?.());
+  const lightroomApi = winName === "lightroom" ? window.AISystem6QuickDraft : null;
+  // The darkroom's menus follow its subject: a developed document's text
+  // counts as the body even when the desk's own draft is empty.
+  const lightroomHasBody = Boolean(lightroomApi?.hasSubjectBody?.() ?? lightroomApi?.hasBody?.());
+  const lightroomView = String(lightroomApi?.displayMode?.() || "");
+  const teachTextWin = getWindow("teachText");
+  const teachTextVisible = teachTextWin && !teachTextWin.classList.contains("is-hidden");
+  const hasTeachTextBody = teachTextVisible && !!teachTextBodyInput.value.trim();
+  // The writing route is a set of views onto one mounted project.
+  const routeHasProject = typeof getActiveProject === "function" && !!getActiveProject();
+  const hasOutlineBody = winName === "outline" && !!outlineContentEl?.value?.trim();
+  const hasMeaningfulOutline = typeof getMeaningfulOutlineSections === "function"
+    ? getMeaningfulOutlineSections(getProjectOutlineSections?.(getActiveProject?.() || {}) || []).length > 0
+    : !!(outlineContentEl?.value || "").trim();
+  const hasOutlineSectionForDraft = typeof getProjectOutlineSections === "function"
+    ? getProjectOutlineSections(getActiveProject?.() || {}).length > 0
+    : hasMeaningfulOutline;
+  const hasSectionDraftBody = !!(String(typeof draftBodyInput !== "undefined" && draftBodyInput?.value || "").trim());
+  // What the darkroom would actually receive: the mounted document, not the
+  // textarea of whichever stop happens to be in front.
+  const developableDocument = typeof activeTextFileId === "string" && activeTextFileId
+    && typeof chatFiles !== "undefined"
+    ? chatFiles.find((item) => item.id === activeTextFileId && item.type === "text")
+    : null;
+  const hasDevelopableDocument = !!developableDocument && !!String(developableDocument.body || "").trim();
+  const hasConversation = conversation.length > 0;
+  const isAssistant = winName === "assistant";
+  // Every window whose paper is a Markdown editor: it can be turned over, and
+  // the light can be narrowed on it. One list, so the two cannot drift apart.
+  const isWritingPaper = ["quickDraft", "questionSheet", "outline", "sectionDrafts", "reviewDesk", "teachText"].includes(winName);
+  const isTeachText = winName === "teachText" && teachTextVisible;
+  const isChatFile = winName === "chatFile" && !menuContextWin.classList.contains("is-hidden");
+  const hasDocumentFileSelection = winName === "documents" && !!selectedChatFileId;
+  const hasDocumentFolderSelection = winName === "documents" && !!selectedDocumentFolderId;
+  const projectFinderItem = winName === "projects" ? getSelectedProjectFinderItem() : null;
+  const currentFinderSelection = getCurrentFinderSelection();
+  const finderVolumeCapabilities = getFinderVolumeCapabilities(winName);
+  const isFinderWindow = ["projects", "documents"].includes(winName);
+  const isClioWorks = /^clio(Write|Chart|Stage)$/.test(winName);
+  const hasFinderTextFileSelection = isFinderWindow && currentFinderSelection?.type === "text" && !!(currentFinderSelection.body || "").trim();
+  const hasProjectFinderRename = !!projectFinderItem && projectFinderItem.canRename !== false && projectFinderItem.virtual !== true;
+  const hasProjectFinderTrash = !!projectFinderItem && projectFinderItem.canTrash !== false && projectFinderItem.virtual !== true;
+  const selectedTrashItem = winName === "trash" ? getSelectedTrashItem() : null;
+  const canPrintDirectory = printableDirectoryWindowNames.has(winName);
+  const canUsePageSetup = winName === "projectCd" || winName === "pageSetup" || isTeachText;
+  const teachTextSelection = isTeachText ? getTeachTextSelectionInfo() : { text: "" };
+  const hasTeachTextSelection = !!teachTextSelection.text;
+  const teachTextIsManuscript = typeof activeTeachTextAllows === "function"
+    ? activeTeachTextAllows("writingFlow")
+    : (typeof isTeachTextManuscriptRole !== "function" || isTeachTextManuscriptRole());
+  const teachTextCanExport = typeof activeTeachTextAllows === "function"
+    ? activeTeachTextAllows("projectCdExport")
+    : teachTextIsManuscript;
+  const teachTextIsSlides = hasTeachTextBody && typeof readerHasMarpFrontmatter === "function" && readerHasMarpFrontmatter(teachTextBodyInput.value || "");
+  const teachTextCanBurnProjectCd = typeof projectCdBurnIsAvailable === "function"
+    ? projectCdBurnIsAvailable()
+    : !!getActiveProject() && hasTeachTextBody && (
+      teachTextCanExport
+      || teachTextIsSlides
+    );
+  const teachTextCanReview = typeof activeTeachTextAllows === "function"
+    ? activeTeachTextAllows("review")
+    : teachTextIsManuscript;
+  let selectionContext = null;
+  try {
+    selectionContext = getSelectionServiceContext() || lastSelectionServiceContext;
+  } catch {
+    selectionContext = null;
+  }
+  const hasSelectionServiceText = !!selectionContext?.text;
+  const selectedTextLength = selectionContext?.text?.length || 0;
+  const docMapReadiness = resolveDocMapReadiness(selectionContext);
+  const canMakeDocMap = isFinderWindow && currentFinderSelection
+    ? !!currentFinderSelection.canMakeDocMap
+    : docMapReadiness?.ready;
+  const canMakeDocMapSelection = docMapReadiness?.selectionReady;
+  // A chart needs less text than a map, read off the same two candidates
+  // rather than a second walk over every source.
+  const sourceReadyAt = (source, min) => (source?.text?.length || 0) >= Math.min(source?.threshold ?? Infinity, min);
+  const canMakeChartSelection = sourceReadyAt(docMapReadiness?.selectionSource, clioChartMinSourceChars);
+  const canMakeChart = canMakeChartSelection || sourceReadyAt(docMapReadiness?.wholeSource, clioChartMinSourceChars);
+  const canMakeSlidesSelection = sourceReadyAt(docMapReadiness?.selectionSource, clioStageMinSourceChars);
+  const canMakeSlides = canMakeSlidesSelection || sourceReadyAt(docMapReadiness?.wholeSource, clioStageMinSourceChars);
+  const canMakeDocMapSource = isFinderWindow && currentFinderSelection
+    ? !!currentFinderSelection.canMakeDocMap
+    : docMapReadiness?.wholeReady;
+  const readerDocMapReadiness = winName === "reader" ? docMapReadinessForSurface("reader") : null;
+  const activeEditable = getActiveEditableElement();
+  const hasEditableText = !!String(activeEditable?.value || activeEditable?.textContent || "").trim();
+  const canUseWritingTools = hasEditableText || (hasTeachTextBody && teachTextIsManuscript) || hasSelectionServiceText;
+  const writingToolPromptReady = (mode) => window.AISystem6PromptFilesRuntime
+    ?.resolvePromptFile(`writing-tools.${({ describeChange: "describe-change", keyPoints: "key-points" })[mode] || mode}`, activeProjectId, currentLanguage)?.status === "ready";
+  const hasTeachTextTranslation = hasTeachTextBody && !!(
+    (teachTextSelection.text && getTeachTextTranslationTarget(teachTextSelection.text))
+      || getTeachTextTranslationTarget(teachTextBodyInput.value)
+  );
+  const hasOpenFile = (isTeachText && activeTextFileId) || (isChatFile && selectedChatFileId) || hasDocumentFileSelection;
+  const hasProjectCdSelection = winName === "projectCd" && !!getSelectedProjectCdItems().length;
+  const hasMountedFileSelection = winName === "textDisk" && (!!selectedMountedFile || selectedMountedFileNames.size > 0);
+  const hasEditableFocus = !!activeEditable;
+  // Cut/Copy/Clear act on a selection, not on a caret. hasEditableFocus alone
+  // (a field merely being focused, selection empty or not) used to make all
+  // three "available" even with nothing selected: the menu item looked usable
+  // and dispatching it did nothing — copy left the clipboard untouched, cut
+  // and clear left the document untouched (except execCommand("delete") with
+  // no selection, which instead deleted one unselected character next to the
+  // caret: a silent, unrequested edit, worse than a no-op). Requiring an
+  // actual non-collapsed selection matches the Mac convention these three
+  // commands have always followed elsewhere and lets Balloon Help give the
+  // real reason (balloon_disabled_menu_selection) instead of a control that
+  // is enabled and does nothing.
+  const hasEditableSelectionRange = !!activeEditable && (
+    typeof activeEditable.selectionStart === "number"
+      ? activeEditable.selectionStart !== activeEditable.selectionEnd
+      : (activeEditable.isContentEditable ? !window.getSelection()?.isCollapsed : false)
+  );
+  const selectedProject = getSelectedProject();
+  const activeItem = getActiveItem();
+  const canDuplicateFinderSelection = hasOpenFile
+    || finderVolumeCapabilities?.canDuplicate
+    || (!!activeItem && activeItem.canDuplicate !== false && activeItem.virtual !== true);
+  const hasClaimSections = !!teachTextBodyInput.value.trim() && getClaimCheckSectionBlocks().length > 0;
+  const hasStyleSections = !!teachTextBodyInput.value.trim() && getTeachTextSectionBlocks().length > 0;
+  const hasReviewDeskBody = !!reviewDeskBodyInput?.value?.trim();
+  const reviewDeskReady = !!teachTextReviewLabel();
+  // Wider than reviewDeskReady on purpose: the command promotes a saved "final"
+  // file into review rather than refusing it, so the row must stay black there.
+  const canViewReviewManuscript = canEnterTeachTextReviewState({ promoteSavedFinal: true });
+  // Some controls (Reader's toolbar, Scrapbook's editor buttons) own their
+  // real availability through the native disabled/hidden state. updateMenuState()
+  // mirrors that availability onto the shared `is-disabled` class, so reading
+  // the mirrored class back here latches the action disabled forever after one
+  // pass while the window is inactive.
+  const activeOwnedControlEnabled = (selector) => {
+    const control = document.querySelector(selector);
+    return !!control && !control.disabled && !control.hidden;
+  };
+
+  // Skill / retrospective / task-config verbs all key off one thing: the kind
+  // of artifact currently selected in a Finder window. They used to be absent
+  // from this map entirely, which meant updateMenuState() left them enabled
+  // forever and clicking one only printed "select an item first" — a menu row
+  // that looks live and is not. Contract: tests/features/menu-availability.
+  const selectedArtifact = typeof getProjectFiles === "function" && selectedChatFileId
+    ? getProjectFiles().find((item) => item.id === selectedChatFileId)
+    : null;
+  const selectedArtifactIs = (kind) => selectedArtifact?.artifactKind === kind;
+  const hasMountedSkillPackage = typeof parseMountedSkillPackage === "function"
+    && !!selectedMountedFile
+    && parseMountedSkillPackage().valid === true;
+  const selectedTaskLifecycle = selectedArtifactIs("task-config")
+    ? String(selectedArtifact.taskLifecycle?.state || "")
+    : "";
+
+  // The Window menu (Mac OS X and later) is era-gated and front-window gated.
+  // The capability is the era decision; the front window is the object, and
+  // eligible() is the arrangement engine's own test when it has loaded. Before
+  // the lazy engine loads, a front arrangeable window is enough for the row to
+  // stay reachable — the first use loads it, and windowshade-entry.js re-checks
+  // on the click. Geometry stays in the engine; this never recreates it.
+  const windowMenuEra = window.AISystem6Theme?.hasCapability?.("window-menu") === true;
+  const windowMenuFrontWindow = document.querySelector(
+    ".window[data-window].is-active:not(.is-hidden):not(.is-app-hidden):not(.is-minimized)"
+  );
+  const windowMenuAvailable = windowMenuEra && !isNarrowViewport();
+  const windowMenuBrowseAvailable = !!document.querySelector(".window[data-window]:not(.is-hidden)");
+  const arrangementAvailable = (action) => isWindowArrangementActionAvailable(windowMenuFrontWindow, action);
+  const nextstepEra = window.AISystem6Theme?.getCurrentTheme?.() === "nextstep";
+  // The era's title bar carries its own miniaturize button and no
+  // `minimize-lamp` capability, so the lamp gate below left the standard
+  // Miniaturize Window row greyed. Same shared verb; live only where the
+  // title bar really has the button.
+  const nextstepMiniaturizeWindow = nextstepEra
+    && typeof appearanceHoldsMiniwindows === "function" && appearanceHoldsMiniwindows()
+    && !!windowMenuFrontWindow
+    && windowMenuFrontWindow.dataset.window !== "saveChat"
+    && !!windowMenuFrontWindow.querySelector(".title-bar .close-box");
+
+  const availability = {
+    // Both open a scratch document, which never touches the project — that is
+    // why they are not gated on isProjectMounted the way the neighbouring
+    // "new-text-document" is. That row is a different verb: Finder writing a
+    // file into the mounted disk.
+    "new-document": true,
+    "open-text-document": true,
+    "new-folder": winName === "documents"
+      ? isProjectMounted
+      : !!finderVolumeCapabilities?.canCreateFolder,
+    // An Office blank or pad lands on the Project Hard Disk, so both need it;
+    // marking a pad also needs an Office editor in front.
+    "new-office-document": isProjectMounted,
+    "office-save-as-stationery": isProjectMounted && isClioWorks,
+    "open-menu-selection": finderVolumeCapabilities
+      ? finderVolumeCapabilities.canOpen
+      : !!activeItem,
+    "open-with": fclip(),
+    "duplicate-selection": canDuplicateFinderSelection,
+    "make-alias": isFinderWindow
+      && !!currentFinderSelection
+      && (currentFinderSelection.type === "text" || currentFinderSelection.type === "chat")
+      && currentFinderSelection.canDuplicate !== false
+      && currentFinderSelection.virtual !== true,
+    "new-project-disk": true,
+    "open-project-disks": true,
+    // The demonstration list is a window of its own: opening it is valid in
+    // every profile and every desk state, and the list it draws is a lazy
+    // module, so there is no state to read before the click. Ungated, the row
+    // would stay black without ever being asked — the contract menu-availability
+    // keeps on purpose.
+    "open-project-disk": !!selectedProject,
+    "rename-project-disk": !!selectedProject,
+    "duplicate-project-disk": !!selectedProject,
+    "archive-project-disk": !!selectedProject,
+    "eject-menu-selection": finderVolumeCapabilities
+      ? finderVolumeCapabilities.canEject
+      : isProjectMounted || getMountedTextDiskChunks().length > 0,
+    "set-startup-project": true,
+    "open-project-info": isProjectMounted,
+    "open-file-info": !!activeItem,
+    "save-current": isTeachText || teachTextVisible || (isAssistant && hasConversation),
+    "save-conversation": isAssistant && hasConversation && isProjectMounted && clioTalkTemporaryMode,
+    "rename-active-chat": isAssistant && !clioTalkTemporaryMode && !!activeChatFileId,
+    "copy-current-chat-markdown": isAssistant && hasConversation,
+    "download-current-chat-markdown": isAssistant && hasConversation,
+    "find-in-cliotalk": isAssistant && hasConversation,
+    "find-next-in-cliotalk": isAssistant && hasConversation && !!clioTalkFindQuery,
+    "open-clio-attachment-picker": isAssistant && isProjectMounted,
+    "open-clio-image-picker": isAssistant,
+    "paste-clio-interview": isAssistant,
+    // 交给 Clio…: a Finder window's document (or its disk), an editor's
+    // document (cwf marks one not saved), or with none the desk's disk.
+    "hand-to-clio": winName ? isProjectMounted && (isFinderWindow || isClioWorks && !menuContextWin.dataset.cwf) : !!selectedProject,
+    "install-mounted-skill": hasMountedSkillPackage && isProjectMounted,
+    "preview-mounted-skill": hasMountedSkillPackage,
+    "toggle-project-memory": selectedArtifactIs("project-memory"),
+    "toggle-project-skill": selectedArtifactIs("ai-skill"),
+    "configure-skill-auto-call": isProjectMounted,
+    "disable-auto-called-skill": selectedArtifactIs("skill-auto-call-receipt")
+      && !!selectedArtifact.autoSkillIds?.length,
+    "attach-retrospective-next-task": selectedArtifactIs("retrospective"),
+    "create-skill-draft-from-retrospective": selectedArtifactIs("retrospective"),
+    "create-project-skill-from-draft": selectedArtifactIs("skill-draft"),
+    "view-modification-suggestion-diff": selectedArtifactIs("teachtext-modification-suggestion")
+      && selectedArtifact.suggestion?.status === "pending",
+    "accept-modification-suggestion": selectedArtifactIs("teachtext-modification-suggestion")
+      && selectedArtifact.suggestion?.status === "pending",
+    "reject-modification-suggestion": selectedArtifactIs("teachtext-modification-suggestion")
+      && selectedArtifact.suggestion?.status === "pending",
+    "create-task-config-from-draft": selectedArtifactIs("task-config-draft"),
+    "run-task-config": selectedArtifactIs("task-config"),
+    // Lifecycle verbs are mutually exclusive on purpose: their grey/black
+    // pattern is what tells you which step the task is on.
+    "pause-task-config": selectedTaskLifecycle === "running",
+    "resume-task-config": selectedTaskLifecycle === "paused"
+      && !!selectedArtifact.taskLifecycle?.chatId,
+    "complete-task-config": ["running", "paused"].includes(selectedTaskLifecycle),
+    "cancel-task-config": ["running", "paused"].includes(selectedTaskLifecycle),
+    "create-task-checkpoint": selectedArtifactIs("task-config"),
+    "restore-task-checkpoint": selectedArtifactIs("task-checkpoint"),
+    // Whole-menu condition, not a row: the Task menu is absent until the
+    // project actually holds a Task Config.
+    "task-menu": typeof getProjectFiles === "function"
+      && getProjectFiles().some((item) => item.artifactKind === "task-config"),
+    "clear-attached-clips": attachedClipIds.size > 0,
+    "open-selected-in-reader": selectedFindPathIndex !== null,
+    "clip-selected-find-path": selectedFindPathIndex !== null,
+    "save-clio-harness": isAssistant && hasConversation && isProjectMounted,
+    "save-clio-skill": isAssistant && hasConversation && isProjectMounted,
+    "save-clio-retrospective": isAssistant && hasConversation && isProjectMounted,
+    "save-copy": isTeachText,
+    "copy-active-markdown": isTeachText || isChatFile,
+    "download-active-markdown": isTeachText || isChatFile,
+    // Word takes the manuscript on screen or the conversation in front of
+    // the writer, so the row is black wherever one of those exists.
+    "export-document-word": isTeachText || isChatFile || (isAssistant && hasConversation),
+    // N14 送审 sends the manuscript itself, so it needs exactly that: the
+    // TeachText window with a body to clean, footnote and hand over.
+    "send-manuscript-review": isTeachText && hasTeachTextBody,
+    "download-active-bilingual-markdown": hasTeachTextTranslation,
+    "export-teachtext-project-cd": teachTextCanBurnProjectCd,
+    // Sending a draft to the darkroom needs a draft. The row is grey until one
+    // is open, so the command never promises to develop nothing.
+    //
+    // It used to require the Manuscript, which made the split one-third done:
+    // developActiveDocumentInLightroom() reads activeTextFileId, not TeachText's
+    // textarea, and 文字亮室 answers the develop intent for any text document --
+    // so the only thing keeping Outline and Section Drafts out was this line.
+    // They are views onto the same mounted document, so they can hand it over
+    // too. Gated on routeWinName, never the frontmost window: route commands
+    // fire after blur, and asking who is in front rewrites the previous stop.
+    "develop-in-lightroom": ["outline", "sectionDrafts", "teachText"].includes(routeWinName)
+      && hasDevelopableDocument,
+    "open-document-versions": isTeachText && hasTeachTextBody,
+    "versions-compare": isTeachText && hasTeachTextBody,
+    "versions-restore": isTeachText && hasTeachTextBody,
+    "print-to-slides": (hasTeachTextBody && teachTextCanExport) || hasOutlineBody,
+    "ai-print-to-slides": (hasTeachTextBody && teachTextCanExport) || hasOutlineBody,
+    "generate-marp-open-clio-stage": hasTeachTextBody && teachTextCanExport,
+    "toggle-writing-preview": isWritingPaper,
+    "cycle-writing-focus": isWritingPaper,
+    "insert-question-template": routeWinName === "questionSheet",
+    "organize-question-sheet": routeWinName === "questionSheet",
+    "toggle-writing-eli5": routeWinName === "questionSheet" && Boolean(getActiveProject()),
+    "generate-outline": routeWinName === "questionSheet",
+    "advance-question-to-outline": routeWinName === "questionSheet",
+    "add-outline-section": routeWinName === "outline",
+    "toggle-outline-tree": routeWinName === "outline",
+    "toggle-outline-cards": routeWinName === "outline",
+    "question-sheet-view-page": routeWinName === "questionSheet",
+    "question-sheet-view-cards": routeWinName === "questionSheet",
+    // The four moves are available exactly when the list is open AND
+    // something is selected there: they act on the selection, and clicking
+    // one with nothing selected used to just repeat the same "select a
+    // section first" status line, in place, with no other visible sign the
+    // row was ever live.
+    "outline-tree-up": routeWinName === "outline" && outlineTreeIsOpen() && !!outlineTreeSelectedId,
+    "outline-tree-down": routeWinName === "outline" && outlineTreeIsOpen() && !!outlineTreeSelectedId,
+    "outline-tree-promote": routeWinName === "outline" && outlineTreeIsOpen() && !!outlineTreeSelectedId,
+    "outline-tree-demote": routeWinName === "outline" && outlineTreeIsOpen() && !!outlineTreeSelectedId,
+    "outline-tree-write": routeWinName === "outline" && outlineTreeIsOpen() && !!outlineTreeSelectedId,
+    // Empty Outline greys structure / Reader's Eye tools with a reason —
+    // same honesty as To Section Drafts (Goal #2 batch A / v245).
+    "mingming-outline": routeWinName === "outline" && hasMeaningfulOutline,
+    "structure-outline": routeWinName === "outline" && hasMeaningfulOutline,
+    "expand-outline": routeWinName === "outline" && hasMeaningfulOutline,
+    "reduce-outline": routeWinName === "outline" && hasMeaningfulOutline,
+    // Empty Outline stays grey with a reason (R16) instead of a live advance
+    // that only prints outline_needs_content after the click.
+    "advance-outline-to-drafts": routeWinName === "outline"
+      && (!!routeHasProject)
+      && hasMeaningfulOutline,
+    "previous-section-draft": routeWinName === "sectionDrafts" && typeof canNavigateSectionDraft === "function" && canNavigateSectionDraft(-1),
+    "next-section-draft": routeWinName === "sectionDrafts" && typeof canNavigateSectionDraft === "function" && canNavigateSectionDraft(1),
+    "draft-current-section": routeWinName === "sectionDrafts" && hasOutlineSectionForDraft,
+    "polish-draft": routeWinName === "sectionDrafts" && hasSectionDraftBody,
+    "suggest-draft": routeWinName === "sectionDrafts" && hasSectionDraftBody,
+    "eli5-rewrite-section": routeWinName === "sectionDrafts" && hasSectionDraftBody && (typeof writingStudioExplanationLens === "function"
+      ? writingStudioExplanationLens().enabled === true
+      : false),
+    "eli5-review-section": routeWinName === "sectionDrafts" && hasSectionDraftBody && (typeof writingStudioExplanationLens === "function"
+      ? writingStudioExplanationLens().enabled === true
+      : false),
+    // A new reader can ask for one action per sentence without turning on
+    // the one-pass listening lens. The command edits the section on screen.
+    "one-sentence-rewrite-section": routeWinName === "sectionDrafts" && hasSectionDraftBody,
+    "one-sentence-check-section": routeWinName === "sectionDrafts" && hasSectionDraftBody,
+    "open-find-change": true,
+    "open-find-file": true,
+    "open-find-desk": true,
+    "find-change-next": true,
+    "find-change-current": true,
+    "find-change-all": true,
+    "advance-writing-route": typeof currentWritingRouteStop === "function" && !!currentWritingRouteStop(),
+    "advance-drafts-to-manuscript": routeWinName === "sectionDrafts"
+      && (!!routeHasProject)
+      && hasMeaningfulOutline
+      && hasSectionDraftBody,
+    "return-document-to-section-drafts": routeWinName === "sectionDrafts"
+      && typeof manuscriptPhase === "function" && manuscriptPhase() === "manuscript",
+    "advance-manuscript-to-review": ["teachText", "reviewDesk"].includes(routeWinName) && routeHasProject && !!teachTextBodyInput?.value.trim()
+      && typeof isTeachTextManuscriptRole === "function" && isTeachTextManuscriptRole(),
+    "translate-teachtext": hasTeachTextTranslation,
+    "clip-teachtext-selection": hasTeachTextSelection,
+    "ai-praise": (canUseWritingTools && writingToolPromptReady("praise")) || (routeWinName === "reviewDesk" && reviewDeskReady && hasReviewDeskBody && writingToolPromptReady("reviewPraise")),
+    "ai-describe-change": canUseWritingTools && writingToolPromptReady("describeChange"),
+    "ai-proofread": canUseWritingTools && writingToolPromptReady("proofread"),
+    "ai-rewrite": canUseWritingTools && writingToolPromptReady("rewrite"),
+    "ai-friendly": canUseWritingTools && writingToolPromptReady("friendly"),
+    "ai-professional": canUseWritingTools && writingToolPromptReady("professional"),
+    "ai-concise": canUseWritingTools && writingToolPromptReady("concise"),
+    "ai-summary": canUseWritingTools && writingToolPromptReady("summary"),
+    "ai-key-points": canUseWritingTools && writingToolPromptReady("keyPoints"),
+    "ai-list": canUseWritingTools && writingToolPromptReady("list"),
+    "ai-table": canUseWritingTools && writingToolPromptReady("table"),
+    "print-to-ai": canUseWritingTools,
+    "rename-file": hasOpenFile || hasDocumentFolderSelection || hasProjectFinderRename || !!finderVolumeCapabilities?.canRename,
+    "move-file-trash": hasOpenFile
+      || hasDocumentFolderSelection
+      || hasProjectFinderTrash
+      || hasProjectCdSelection
+      || hasMountedFileSelection
+      || !!finderVolumeCapabilities?.canTrash,
+    "put-away": !!selectedTrashItem || !!document.querySelector(".desktop-object.is-selected"),
+    "page-setup": canUsePageSetup,
+    "print-current": isTeachText && hasTeachTextBody,
+    "print-directory": canPrintDirectory,
+    "close-active-window": !!activeWin && !activeWin.classList.contains("is-hidden"),
+    // An editor with a registered history answers Undo and Redo while that
+    // history has a step; a focused text field keeps its own.
+    "undo": hasEditableFocus || isTeachText || isAssistant || !!editHistoryFor(winName)?.canUndo(),
+    "redo": hasEditableFocus || (editHistoryFor(winName) ? editHistoryFor(winName).canRedo() : true),
+    "cut": hasEditableSelectionRange,
+    "copy": !!window.getSelection().toString() || hasEditableSelectionRange || fclip(),
+    "paste": hasEditableFocus || isTeachText || isAssistant || fclip(1),
+    "clear-edit": hasEditableSelectionRange,
+    // Select All takes the whole field, and an empty field has nothing to
+    // take: select() moved the caret from 0-0 to 0-0, so the command was
+    // enabled in sixteen menus and did nothing in every one of them. This is
+    // the same correction Cut, Copy and Clear already carry above -- ask what
+    // the command would act on, not whether a field happens to be there --
+    // and hasEditableText reads the very target the handler resolves.
+    "select-all": hasEditableText,
+    "selection-look-up": hasSelectionServiceText && selectedTextLength <= dictionaryMaxSelectionChars,
+    "selection-find-sources": hasSelectionServiceText && selectedTextLength <= 420,
+    "selection-clip": hasSelectionServiceText,
+    "selection-clip-file": hasSelectionServiceText,
+    "selection-translate": hasSelectionServiceText,
+    "make-docmap": canMakeDocMap,
+    "make-docmap-selection": canMakeDocMapSelection,
+    "make-docmap-source": canMakeDocMapSource,
+    "make-chart": canMakeChart,
+    "make-chart-selection": canMakeChartSelection,
+    "make-slides": canMakeSlides,
+    "make-slides-selection": canMakeSlidesSelection,
+    // "Map This" belongs to the picture-reading panel, which only shows once a
+    // reading has come back -- the button used to stay enabled with nothing to
+    // map, and silently did nothing when clicked before then.
+    "docmap-map-picture-reading": typeof docMapPictureProposal !== "undefined" && !!docMapPictureProposal,
+    // Same shape for "Read Aloud": enabled with no picture on the selected
+    // scrap, it silently returned instead of doing anything a user could see.
+    "scrapbook-read-picture": !!scrapPictures(getProjectScraps().find((scrap) => scrap.id === selectedScrapId))[0],
+    "insert-last-reply": !!lastAssistantText,
+    "clip-last-reply": !!lastAssistantText,
+    "start-new-clio-chat": isAssistant,
+    "clio-search": !!window.AISystem6ClioTalkShell?.canSearch(),
+    "start-temporary-clio-chat": isAssistant && !clioTalkTemporaryMode,
+    "reveal-active-chat-file": isAssistant && !clioTalkTemporaryMode && !!activeChatFileId,
+    "remember-chat-as-project-memory": isAssistant && !clioTalkTemporaryMode && !!activeChatFileId,
+    "clip-assistant-selection": isAssistant && !!window.getSelection().toString().trim(),
+    "retry-last-message": isAssistant && !!lastUserText && !activeAbortController,
+    "empty-trash": getProjectTrashItems().length > 0,
+    "finder-clean-up": window.AISystem6FinderOps?.cleanUpState().ok ?? true,
+    "erase-disk": !!selectedProject,
+    "reset-system": showResetSystemMenu,
+    // An empty desk has nowhere to be interrupted from, and a spent pile has
+    // nowhere to go back to.
+    "hold-that-thought": !!document.querySelector(".window.is-active:not(.is-hidden)"),
+    "open-hold-thought": true,
+    "resume-my-place": typeof hasHeldPlace === "function" && hasHeldPlace(),
+    "toggle-balloon-help": true,
+    "open-help-folder": true,
+    "open-system-concepts-docmap": true,
+    "open-system-concepts-clio-stage": true,
+    "open-about-multifinder": isMultiFinderMode(),
+    "show-writing-flow": Boolean(writingToolsPanelEl?.classList.contains("is-closed")),
+    "close-writing-flow": Boolean(writingToolsPanelEl && !writingToolsPanelEl.classList.contains("is-closed")),
+    "toggle-writing-flow-shade": Boolean(writingToolsPanelEl && !writingToolsPanelEl.classList.contains("is-closed")),
+    "hand-in-rebuild-flow": winName === "rebuildFlow" && window.AISystem6RebuildFlow?.canHandIn?.() === true,
+    "rebuild-merge-section": winName === "rebuildFlow" && window.AISystem6RebuildFlow?.canMerge?.() === true,
+    "open-applications": true,
+    // Reading every project at once needs projects to read. A desk with none
+    // would open a window that can only say so.
+    "open-project-overview": Array.isArray(projects) && projects.length > 0,
+    "open-claim-check": true,
+    // Writing-route navigation needs a mounted Project Hard Disk: every one of
+    // these surfaces is a view of one project's document. With no project the
+    // rows were black and led to the Project Hard Disk instead of where they
+    // said they went, so they report their real condition and grey out. The
+    // workspace pass below additionally greys them in the desktop profile.
+    // They have to be listed: an action missing from this map is never asked
+    // about, so its row stays black and clickable while the click is rejected.
+    "open-question-sheet": routeHasProject,
+    "open-outline": routeHasProject,
+    "open-section-drafts": routeHasProject,
+    "open-review-desk": routeHasProject,
+    "open-image-manager": routeHasProject,
+    // Its own details-bar button (Question Sheet) was retired for the Writing
+    // menu's Go To item during the paper-lane chrome reduction; same project
+    // precondition as the single-window navigation rows above.
+    "open-writing-flow-windows": routeHasProject,
+    "toggle-review-preview": reviewDeskReady,
+    "review-view-manuscript": canViewReviewManuscript,
+    "review-edit-manuscript": canViewReviewManuscript,
+    "review-style-section": reviewDeskReady && teachTextCanReview && hasStyleSections,
+    "review-facts-section": reviewDeskReady && teachTextCanReview && hasClaimSections,
+    "review-facts-section-online": reviewDeskReady && teachTextCanReview && hasClaimSections,
+    "review-facts-online": reviewDeskReady && teachTextCanReview,
+    "review-hkrr-section": reviewDeskReady && teachTextCanReview && hasStyleSections,
+    "review-mingming-section": reviewDeskReady && teachTextCanReview && hasStyleSections,
+    "review-mingming-handoff": reviewDeskReady && teachTextCanReview && hasStyleSections,
+    "review-mingming-handoff-backstage": reviewDeskReady && teachTextCanReview && hasStyleSections,
+    "review-export": reviewDeskReady && teachTextCanReview && !!(reviewDeskBodyInput?.value || teachTextBodyInput.value || "").trim(),
+    "open-review-comments": reviewDeskReady && teachTextCanReview,
+    "open-review-compare": reviewDeskReady && teachTextCanReview,
+    "open-style-sheet": true,
+    "style-check-manuscript": teachTextCanReview && !!teachTextBodyInput.value.trim(),
+    "style-check-section": teachTextCanReview && hasStyleSections,
+    "previous-style-section": hasStyleSections,
+    "next-style-section": hasStyleSections,
+    "run-claim-check-section": teachTextCanReview && hasClaimSections,
+    "previous-claim-section": hasClaimSections,
+    "next-claim-section": hasClaimSections,
+    "focus-search-query": winName === "findPath",
+    "synthesize-search-results": winName === "findPath" && findPathResults.length > 0,
+    "copy-search-result-markdown": winName === "findPath" && selectedFindPathIndex !== null,
+    "insert-search-result": winName === "findPath" && selectedFindPathIndex !== null,
+    "open-selected-find-file": selectedFindFileIndex !== null,
+    "reveal-selected-find-file": selectedFindFileIndex !== null,
+    "open-rebuild-flow": true,
+    // Each condition below is the one the handler already checked before
+    // refusing with a status line. The other three rows stay available and the
+    // reasons are worth writing down: the OS clipboard cannot be read while the
+    // menu is drawn, so greying Use Clipboard on the System 6 Clipboard alone
+    // would grey a button that works; the sample article ships in the same lazy
+    // bundle as the flow, so it is never missing; and Cancel is reachable only
+    // from inside the window it closes.
+    "open-context-panel": true,
+    "focus-sideask-source": sideAskEnabled && !isMultiFinderMode(),
+    "open-model-meter": performanceMeterInput.checked && !!lastModelMetrics,
+    // System Messages Clear is secondary and must not look clickable when the
+    // list is empty — quiet feedback, not a pretend primary.
+    "clear-notifications": Array.isArray(systemNotifications) && systemNotifications.length > 0,
+    // The Dictation Pad names the Note Pad as its destination when no field is
+    // open, so it has no state to refuse on.
+    "open-dictation": true,
+    "open-heading-navigator": !!mdeFormatTarget(false),
+    // N15a: 打开链接在光标落在 Markdown 链接内时可用。解析器是懒载的
+    // （writing-safety.js）：模块就位后按真实链接作答；未就位时按「写作面
+    // 在前」作答，命令加载后自己再解释（Time Machine 行同款边界）。
+    "format-open-link": !!MDE_FORMAT_SURFACES[winName]
+      && (window.AISystem6WritingSafety?.canFollowLink?.() ?? true),
+    "open-rag": true,
+    "open-text-disk": true,
+    "insert-text-disk": isProjectMounted,
+    "eject-text-disk": getMountedTextDiskChunks().length > 0,
+    "add-text-disk-project": getMountedTextDiskChunks().length > 0,
+    "tile-windows": canTileWindows(),
+    "toggle-sideask": canUseSideAsk(),
+    "restart-system": true,
+    "shut-down-system": true,
+    "hide-active-app": !nonQuittableAppIds.has(activeAppId) && !hiddenAppIds.has(activeAppId),
+    // getRunningApps() tracks every app launched this session, not just ones
+    // still holding an on-screen window (an app stays "running" the way real
+    // macOS apps do once their last window closes). Hiding one with nothing
+    // visible is a real no-op: require the window this command would actually
+    // collapse, matching what hideApp()/bringAppToFront() themselves check.
+    "hide-other-apps": getRunningApps().some((app) => app.id !== activeAppId && !nonQuittableAppIds.has(app.id) && !app.hidden && visibleWindowsForApp(app.id).length > 0),
+    "show-all-apps": hiddenAppIds.size > 0,
+    "bring-app-front": visibleWindowsForApp(activeAppId).length > 0,
+    // The desk-wide sibling, and the two Option variants of Minimize/Zoom. Each
+    // greys with the truth: an all-windows verb with nothing to act on stays
+    // grey instead of looking live and doing nothing.
+    "bring-all-windows-to-front": !!document.querySelector('.window[data-window]:not(.is-hidden)'),
+    "minimize-all-windows": visibleWindowsForApp(activeAppId).length > 0,
+    "zoom-all-windows": visibleWindowsForApp(activeAppId).some((win) => isZoomableWindow(win)),
+    // The Window menu's three single-window verbs. Minimize greys in an era with
+    // no yellow lamp (there is nowhere for the window to go) and when the front
+    // window is already put away; NeXTSTEP's own miniaturize button is the one
+    // other control that puts a window away, so it keeps the row live there.
+    // Zoom follows the same resize-box the traffic light does; full screen
+    // answers through the era capability, which is where the desk records which
+    // appearances shipped the button at all.
+    "minimize-window": (window.AISystem6WindowMinimize?.lampEnabled?.() === true || nextstepMiniaturizeWindow)
+      && !!visibleWindowsForApp(activeAppId).length,
+    "zoom-window": (() => {
+      const win = document.querySelector(".window.is-active[data-window]");
+      return !!win && isZoomableWindow(win);
+    })(),
+    // NeXTSTEP 3.3's own window verbs; the era is the whole gate (the keys are
+    // scope "global" because runShortcut has no per-era scope, §6B). A verb
+    // with nothing to do reports from the command instead of going quiet.
+    "nextstep-arrange-in-front": nextstepEra,
+    "nextstep-window-front": nextstepEra,
+    "nextstep-window-back": nextstepEra,
+    // Only a window that can go full screen offers the row (Lion's View menu
+    // item followed the same adoption as its title-bar button).
+    "toggle-full-screen-window": window.AISystem6Theme?.hasCapability?.("full-screen") === true
+      && window.AISystem6WindowFullscreen?.eligible?.(document.querySelector(".window.is-active[data-window]")) === true,
+    "quit-active-app": !nonQuittableAppIds.has(activeAppId),
+    "view-small-icons": true,
+    "view-icons": true,
+    "view-by-name": true,
+    "view-by-date": true,
+    "view-by-size": true,
+    "view-by-kind": true,
+    "hide-sidebars": true,
+    "switch-language": true,
+    // Opening 文字亮室 is opening an application, like the Lab above: it is
+    // always allowed. Whether a document can be DEVELOPED is a separate gate,
+    // "develop-in-lightroom", which greys until a draft exists.
+    "open-lightroom": true,
+    // Whole-menu conditions, not rows. Each one names the window whose work
+    // the menu belongs to; a condition nobody produces reads as falsy and
+    // hides its menu forever, which is how both of these menus were lost.
+    "quick-draft-menu": winName === "quickDraft",
+    // Format belongs to the writing surfaces, so it is on the bar only while
+    // one of them is in front.
+    "writing-format-menu": !!MDE_FORMAT_SURFACES[winName],
+    // The stack menu stands down while the paper is being listened to, so the
+    // darkroom's two contextual menus never both apply and the bar stays at
+    // five.
+    "lightroom-document": winName === "lightroom" && lightroomHasBody && lightroomView !== "listen",
+    "lightroom-listen": winName === "lightroom" && lightroomView === "listen",
+    // The Window menu's own gate, and its rows. The condition is false in the
+    // classic / Platinum / Drawing Board / NeXTSTEP eras (no "window-menu"
+    // capability), and in a narrow viewport where title-bar gestures stand
+    // down. Pin follows the engine's canPinWindow, so a full-screen or
+    // centered system sheet greys it.
+    // An era with a Dock keeps the menu on an empty desk too: its last row is
+    // Show Dock / Hide Dock (owner decision F11, 2026-10-08), and with the
+    // Dock hidden and no window open that row was the only way back. The
+    // window rows grey themselves when there is nothing to act on.
+    "window-menu": windowMenuAvailable
+      && (windowMenuBrowseAvailable || window.AISystem6Theme?.hasCapability?.("dock") === true),
+    // The two desk-wide window verbs Special owns. They left the Window menu
+    // when it took the macOS shape, so the question is no longer "does an era
+    // have a Window menu" but "does another menu already carry this verb" --
+    // only NeXTSTEP does, in its own Windows submenu. Narrow viewports still
+    // fall back to Special, where the title-bar gestures stand down.
+    // Sierra's window tabs appear only where the capability does (big-sur and
+    // liquid-glass; yosemite predates Sierra — WINDOW-TABS-SPEC §2.1).
+    "window-tabs": window.AISystem6Theme?.hasCapability?.("window-tabs") === true,
+    // The Apple menu lists Extensions only while a tab has something in it. Roles
+    // is the built-in set every desk has, so the writer's own skills, memories
+    // and the suggestions waiting for them decide (the same files and scopes the
+    // window's count providers read in extensions-library.js).
+    "extensions-has-content": typeof chatFiles !== "undefined" && chatFiles.some((file) => (
+      file && ["ai-skill", "ai-skill-pending", "project-memory", "project-memory-pending"].includes(file.artifactKind)
+      && (file.projectId === "desktop" || (!!activeProjectId && file.projectId === activeProjectId))
+    )),
+    "window-browse-special": isNarrowViewport() || getCurrentTheme() !== "nextstep",
+    "window-arrange-special": isNarrowViewport() || getCurrentTheme() !== "nextstep",
+    "window-shade": arrangementAvailable("shade"),
+    "window-expand": arrangementAvailable("expand"),
+    "window-layout-left": arrangementAvailable("left"),
+    "window-layout-right": arrangementAvailable("right"),
+    "window-layout-fill": arrangementAvailable("fill"),
+    "window-layout-undo": arrangementAvailable("undo"),
+    "window-layout-recover": arrangementAvailable("recover"),
+    "window-pin": arrangementAvailable("pin"),
+    "window-unpin": arrangementAvailable("unpin"),
+    "window-browse": windowMenuBrowseAvailable,
+    // The Dock switch lives in the Window menu of the eras that draw a Dock.
+    "window-toggle-dock": window.AISystem6Theme?.hasCapability?.("dock") === true,
+    // Which of a mounted workbook's wired commands the ClioChart menus list.
+    "cwk-on": !!window.AISystem6ClioChartWorkbook?.listed?.("file.save"),
+    "cwk-off": !window.AISystem6ClioChartWorkbook?.current?.(),
+    "cwk-revert": !!window.AISystem6ClioChartWorkbook?.listed?.("file.revert"),
+    "cwk-comment": !!window.AISystem6ClioChartWorkbook?.listed?.("comments.open")
+  };
+  // A lazy command answers for itself once its admission row exists: the row is
+  // the declaration that the window, its loader and its opener are real, so the
+  // map does not need a hand-written `true` beside every one of them (seven of
+  // them used to live above). Filled only where nothing has answered yet, so an
+  // eager command's own isAvailable and every conditional row above keep theirs.
+  window.AISystem6Admissions?.commands?.forEach((command) => {
+    if (availability[command] === undefined) availability[command] = true;
+  });
+  // Explicit runtime commands supply their own availability. Reader has moved
+  // off the hard-coded action map, so these rows are still grey/black in the
+  // menu without window-manager.js knowing Reader's internals.
+  window.AISystem6Runtime?.forEachCommand?.((command, action) => { if (availability[action] !== undefined) return; try { availability[action] = command.isAvailable() !== false; } catch { availability[action] = false; } });
+  Object.keys(availability).forEach((action) => {
+    if (!isWorkspaceActionAllowed(action)) availability[action] = false;
+  });
+  // A command that cannot reach a model is not available, whatever else is
+  // true about it. Applied as one pass rather than folded into thirty-seven
+  // conditions, so the rule stays readable and each command keeps its own
+  // reason for being grey. Balloon Help answers "why" from the same set.
+  if (typeof modelReadyForRequests === "function" && !modelReadyForRequests()) {
+    Object.keys(availability).forEach((action) => {
+      if (actionNeedsModel(action)) availability[action] = false;
+    });
+  }
+  return availability;
+}
+
+let cachedMenuActionElements = null;
+let cachedSubmenuActionElements = null;
+
+function menuActionElements() {
+  cachedMenuActionElements ||= [...document.querySelectorAll("[data-action]")];
+  return cachedMenuActionElements;
+}
+
+function submenuActionElements() {
+  cachedSubmenuActionElements ||= [...document.querySelectorAll("[data-submenu-action]")];
+  return cachedSubmenuActionElements;
+}
+
+function invalidateMenuActionCache() {
+  cachedMenuActionElements = null;
+  cachedSubmenuActionElements = null;
+}
+
+function updateMenuState() {
+  window.AISystem6NextstepMenus?.sync();
+  if (typeof renderAppMenuBar === "function") renderAppMenuBar(menuOwnerAppId || activeAppId);
+  renderWritingSpineState();
+  // Converges the status line on the writer after programmatic focus moves,
+  // which fire no focusin. It is a parent check and at most one append.
+  if (typeof syncStatusHost === "function") syncStatusHost();
+  const state = getActionAvailability();
+  syncEditStepLabels();
+  if (typeof syncProjectCdBurnActionVisibility === "function") syncProjectCdBurnActionVisibility();
+  const activeWin = document.querySelector(".window.is-active:not(.is-hidden)");
+  // 文字亮室 is a second front window onto the same drafting API. Asking only
+  // for quickDraft left every view checkmark and every panel label in the
+  // darkroom reading a null API, so no view was ever checked there.
+  const activeQuickDraftApi = ["quickDraft", "lightroom"].includes(activeWin?.dataset.window || "")
+    ? window.AISystem6QuickDraft
+    : null;
+  const quickDraftDisplayMode = activeQuickDraftApi?.displayMode?.() || "body";
+  const quickDraftSideAskActive = sideAskEnabled && sideAskAnchorAppId === "quickDraft";
+  const activeViewWindow = viewWindowNames.includes(activeWin?.dataset.window) ? activeWin.dataset.window : null;
+  const viewTargetIsWritingTools = !activeViewWindow && writingToolsAreViewTarget();
+  const activeViewMode = viewTargetIsWritingTools
+    ? normalizeFinderViewMode(writingToolsViewMode)
+    : normalizeFinderViewMode(windowViewModes[activeViewWindow || "finder"]);
+  document.querySelectorAll(".apple-multifinder-about-item, .apple-multifinder-about-separator")
+    .forEach((item) => item.classList.toggle("is-hidden", !isMultiFinderMode()));
+  document.querySelectorAll("[data-menu-condition]").forEach((element) => {
+    element.classList.toggle("is-hidden", !state[element.dataset.menuCondition]);
+  });
+  // Writing-route command submenus follow the active writing surface: the
+  // Writing menu shows only the commands that apply to the window in front,
+  // instead of stacking every route's commands (mostly disabled). When no
+  // route window is active (manuscript or a floating tool), the command
+  // submenus collapse and only "Go To" navigation remains. The manuscript is a
+  // route stop of its own now, so it carries its own one-command submenu.
+  const activeWritingSurface = (typeof currentWritingRouteStop === "function" && currentWritingRouteStop())
+    || document.querySelector(".window.is-active:not(.is-hidden)")?.dataset.window
+    || "";
+  document.querySelectorAll("[data-menu-surface]").forEach((element) => {
+    element.classList.toggle("is-hidden", element.dataset.menuSurface !== activeWritingSurface);
+  });
+
+  menuActionElements().forEach(btn => {
+    const action = btn.dataset.action;
+    const isMenuButton = !!btn.closest(".menu-popover, .menu-submenu-popover, .menu-sub-popover");
+    if (btn.closest("[data-action-availability='independent']")) {
+      btn.classList.remove("is-disabled");
+      if (isMenuButton) btn.disabled = false;
+    } else if (state[action] !== undefined) {
+      btn.classList.toggle("is-disabled", !state[action]);
+      if (isMenuButton || ["previous-section-draft", "next-section-draft"].includes(action)) btn.disabled = !state[action];
+    }
+    // A lazy module that failed to load this session stays disabled no
+    // matter what the state above decided — its window/command is the one
+    // thing unavailable, not a reason to trust it again until a retry works.
+    if (typeof failedLazyCommandActions !== "undefined" && failedLazyCommandActions.has(action)) {
+      btn.classList.add("is-disabled");
+      if (isMenuButton) btn.disabled = true;
+    }
+    if (action === "toggle-outline-tree") {
+      const open = typeof outlineTreeIsOpen === "function" && outlineTreeIsOpen();
+      btn.classList.toggle("is-checked", open);
+      if (btn.hasAttribute("aria-pressed")) btn.setAttribute("aria-pressed", String(open));
+    }
+    if (action === "toggle-outline-cards") {
+      const open = typeof outlineCardsIsOpen === "function" && outlineCardsIsOpen();
+      btn.classList.toggle("is-checked", open);
+      if (btn.hasAttribute("aria-pressed")) btn.setAttribute("aria-pressed", String(open));
+    }
+    if (action === "question-sheet-view-page" || action === "question-sheet-view-cards") {
+      const cardsOn = typeof questionSheetCardsIsOpen === "function" && questionSheetCardsIsOpen();
+      const checked = action === "question-sheet-view-cards" ? cardsOn : !cardsOn;
+      btn.classList.toggle("is-checked", checked);
+      if (btn.hasAttribute("aria-pressed")) btn.setAttribute("aria-pressed", String(checked));
+    }
+    if (action === "toggle-writing-eli5") {
+      const lensOn = getActiveProject()?.explanationLens?.enabled !== false;
+      btn.classList.toggle("is-checked", lensOn);
+      if (btn.hasAttribute("aria-pressed")) btn.setAttribute("aria-pressed", String(lensOn));
+    }
+    if (action === "toggle-sideask") {
+      btn.classList.toggle("is-hidden", isMultiFinderMode());
+      btn.classList.toggle("is-checked", sideAskEnabled);
+      if (btn.hasAttribute("aria-pressed")) btn.setAttribute("aria-pressed", String(sideAskEnabled));
+    }
+    if (["quick-draft-view-body", "quick-draft-view-grain", "quick-draft-view-read", "quick-draft-view-listen"].includes(action)) {
+      btn.classList.toggle("is-checked", action === `quick-draft-view-${quickDraftDisplayMode}`);
+    }
+    if (action === "quick-draft-toggle-materials" || action === "quick-draft-toggle-adjustments") {
+      const panel = action === "quick-draft-toggle-materials" ? "shelf" : "inspector";
+      const visible = Boolean(activeQuickDraftApi?.panelVisible?.(panel));
+      const labelKey = panel === "shelf"
+        ? (visible ? "quick_draft_hide_materials" : "quick_draft_show_materials")
+        : (visible ? "quick_draft_hide_adjustments" : "quick_draft_show_adjustments");
+      btn.dataset.i18n = labelKey;
+      btn.textContent = t(labelKey);
+      btn.classList.toggle("is-checked", visible);
+    }
+    if (action === "quick-draft-toggle-sideask") {
+      const labelKey = quickDraftSideAskActive ? "quick_draft_hide_sideask" : "quick_draft_show_sideask";
+      btn.dataset.i18n = labelKey;
+      btn.textContent = t(labelKey);
+      btn.classList.toggle("is-checked", quickDraftSideAskActive);
+    }
+    if (["window-shade", "window-expand", "window-pin", "window-unpin"].includes(action)) {
+      const oppositeState = action === "window-shade" ? !!activeWin?.classList.contains("is-collapsed")
+        : action === "window-expand" ? !activeWin?.classList.contains("is-collapsed")
+          : action === "window-pin" ? activeWin?.dataset.windowPinned === "true"
+            : activeWin?.dataset.windowPinned !== "true";
+      btn.classList.toggle("is-hidden", oppositeState);
+    }
+    if (["window-slide-hide", "window-slide-show", "window-slide-exit", "window-pin-suspend", "window-pin-restore"].includes(action)) {
+      const shade = window.AISystem6WindowShade;
+      const slide = shade?.slideState(activeWin);
+      const hidden = action === "window-slide-hide" ? !slide || slide.hidden
+        : action === "window-slide-show" ? !slide?.hidden
+          : action === "window-slide-exit" ? !slide
+            : action === "window-pin-suspend" ? !!window.AISystem6WindowPinControls?.isSuspended()
+              : !window.AISystem6WindowPinControls?.isSuspended();
+      btn.classList.toggle("is-hidden", hidden);
+    }
+    if (action === "finder-clean-up") btn.textContent = t(btn.dataset.i18n = window.AISystem6FinderOps?.cleanUpState().label || "clean_up_desktop");
+    if (action === "tile-windows") {
+      btn.classList.toggle("is-hidden", isPortraitDocumentFlow());
+    }
+    // Preview/Edit toggles for the three writing surfaces: same shape as
+    // toggle-outline-tree above, so the menu shows which mode is on instead
+    // of only the row's own label flipping between "Preview" and "Edit".
+    if (["toggle-question-preview", "toggle-outline-preview", "toggle-draft-preview"].includes(action)) {
+      const surface = action === "toggle-question-preview" ? "questionSheet"
+        : action === "toggle-outline-preview" ? "outline" : "sectionDrafts";
+      const config = typeof getTeachTextSurface === "function" ? getTeachTextSurface(surface) : null;
+      const previewing = !!config?.preview && !config.preview.classList.contains("is-hidden");
+      btn.classList.toggle("is-checked", previewing);
+      if (btn.hasAttribute("aria-pressed")) btn.setAttribute("aria-pressed", String(previewing));
+    }
+    if (btn.dataset.themeChoice) {
+      btn.classList.toggle("is-checked", btn.dataset.themeChoice === getCurrentTheme());
+    }
+    if (btn.dataset.lineSpacingChoice) {
+      btn.classList.toggle("is-checked", btn.dataset.lineSpacingChoice === mdeCurrentLineSpacing());
+    }
+    if (btn.dataset.layoutChoice) {
+      // Only an open map has a layout; with no map the rows are grey anyway and
+      // stay unchecked rather than claiming a default nothing is using.
+      btn.classList.toggle("is-checked", !!currentDocMap && btn.dataset.layoutChoice === docMapLayoutFor(currentDocMap));
+    }
+    if (action === "toggle-balloon-help") {
+      btn.textContent = t(balloonHelpEnabled ? "hide_balloon_help" : "show_balloon_help");
+      btn.classList.remove("is-checked");
+    }
+    if (action === "window-toggle-dock") {
+      btn.textContent = t(window.AISystem6WindowMinimize?.dockVisible?.() ? "hide_dock" : "show_dock");
+    }
+    // Full screen is one row that names where it goes next, the way the Dock
+    // switch above reads Show or Hide: macOS shows Exit Full Screen while the
+    // window is already there.
+    if (action === "toggle-full-screen-window") {
+      const front = document.querySelector(".window.is-active[data-window]");
+      btn.textContent = t(front?.classList.contains("is-fullscreen") ? "window_exit_full_screen" : "window_full_screen");
+    }
+    if (action === "reset-system") {
+      btn.classList.toggle("is-hidden", !state[action]);
+    }
+    // The row is the reminder. "Where I Left Off" tells you nothing; "Back to
+    // Section Drafts (12 min ago)" tells you what you came back for before you
+    // have even clicked it.
+    if (action === "resume-my-place" && typeof heldPlaceResumeLabel === "function") {
+      btn.textContent = heldPlaceResumeLabel();
+    }
+    if (viewTargetIsWritingTools && ["view-by-name", "view-by-date", "view-by-size", "view-by-kind", "view-list"].includes(action)) {
+      btn.classList.add("is-disabled");
+    }
+    if (btn.dataset.viewMode) {
+      btn.classList.toggle("is-checked", normalizeFinderViewMode(btn.dataset.viewMode) === activeViewMode);
+    }
+    if (btn.dataset.shuffleMode) {
+      const shuffle = window.AISystem6Soundscape?.currentShuffleMode?.();
+      btn.classList.toggle("is-checked", Boolean(shuffle) && btn.dataset.shuffleMode === shuffle);
+    }
+    if (btn.dataset.shuffleKind) {
+      const kind = window.AISystem6Soundscape?.currentShuffleKind?.();
+      btn.classList.toggle("is-checked", Boolean(kind) && btn.dataset.shuffleKind === kind);
+    }
+    // Radio-style rows in the labs and the games. Each one names a choice its
+    // own module holds; the module answers with the choice in force, and an
+    // unloaded module answers with nothing, so the rows stay unmarked rather
+    // than claiming a default the module never set. Same shape as the
+    // Soundscape rows below.
+    if (btn.dataset.micropolisSpeed) {
+      const speed = window.AISystem6Micropolis?.currentSpeedName?.() || "";
+      btn.classList.toggle("is-checked", !!speed && btn.dataset.micropolisSpeed === speed);
+    }
+    // Open Recent is the same kind of set: the conversations are alternatives
+    // and at most one of them is the transcript on screen. With the viewer
+    // closed no row is marked, because then none of them is showing.
+    if (btn.dataset.chatFileChoice) {
+      const viewer = document.querySelector('.window[data-window="chatFile"]');
+      const viewerOpen = !!viewer && !viewer.classList.contains("is-hidden");
+      const showing = viewerOpen && typeof selectedChatFileId !== "undefined"
+        ? selectedChatFileId || ""
+        : "";
+      btn.classList.toggle("is-checked", !!showing && btn.dataset.chatFileChoice === showing);
+    }
+    if (btn.dataset.bonsaiSpeedChoice) {
+      const speed = window.AISystem6BonsaiCity?.currentSpeed?.() || "";
+      btn.classList.toggle("is-checked", !!speed && btn.dataset.bonsaiSpeedChoice === speed);
+    }
+    if (btn.dataset.clioPaintCheck) {
+      btn.classList.toggle("is-checked", window.AISystem6ClioPaint?.menuChecked?.(btn.dataset.clioPaintCheck) === true);
+    }
+    if (btn.dataset.mingwenCheck) {
+      btn.classList.toggle("is-checked", window.AISystem6Mingwen?.menuChecked?.(btn.dataset.mingwenCheck) === true);
+    }
+    if (btn.dataset.cmfViewChoice) {
+      const view = window.AISystem6CMFStudio?.currentView?.() || "";
+      btn.classList.toggle("is-checked", !!view && btn.dataset.cmfViewChoice === view);
+    }
+    if (btn.dataset.clioProjectView) {
+      btn.classList.toggle("is-checked", window.AISystem6ClioProjectWindow?.currentView?.() === btn.dataset.clioProjectView);
+    }
+    if (btn.dataset.clioChartProjection) {
+      const projection = window.AISystem6ClioChart?.currentProjection?.() || "";
+      btn.classList.toggle("is-checked", !!projection && btn.dataset.clioChartProjection === projection);
+    }
+    if (btn.dataset.repeatMode) {
+      // Only the loaded feature knows the real mode; an unloaded Soundscape
+      // leaves every row unchecked rather than guessing "off".
+      const mode = window.AISystem6Soundscape?.currentRepeatMode?.();
+      btn.classList.toggle("is-checked", Boolean(mode) && btn.dataset.repeatMode === mode);
+    }
+  });
+  // 文字亮室 keeps its own checkmarks and its own greys: the layer rows, the
+  // zoom rows and the listen transport are parameterised actions, so they are
+  // not in the availability map above. Run before the submenu pass below, or a
+  // submenu whose rows are all grey would still read as live.
+  window.AISystem6QuickDraft?.syncMenuState?.();
+  document.querySelectorAll(".menu-submenu").forEach((sub) => {
+    const children = [...sub.querySelectorAll(".menu-submenu-popover [data-action]")];
+    const enabled = children.some((button) => !button.classList.contains("is-disabled"));
+    sub.classList.toggle("is-disabled", !enabled);
+    sub.querySelector(":scope > .menu-submenu-trigger")?.classList.toggle("is-disabled", !enabled);
+  });
+  submenuActionElements().forEach((btn) => {
+    const action = btn.dataset.submenuAction;
+    if (action === "ask-cliotalk") {
+      const disabled = !state["print-to-ai"];
+      btn.classList.toggle("is-disabled", disabled);
+      btn.closest(".menu-submenu")?.classList.toggle("is-disabled", disabled);
+    }
+  });
+  renderMultiFinderMenu();
+  // A lazy surface re-marks its own checked rows after the bar is rebuilt.
+  window.AISystem6MenuMarks?.();
+  if (typeof syncDisabledMenuBalloonHelp === "function") syncDisabledMenuBalloonHelp();
+  // Whether a window has anything to ask about is action availability like any
+  // other, so the ask bars recompute on the same pass.
+  refreshAskBars();
+}
+
+async function loadLazyWindowModule(name) {
+  const entry = lazyWindowRecord(name);
+  if (!entry || typeof entry.ensure !== "function") return;
+  await entry.ensure();
+  entry.attach?.();
+  // A lazy window is placed and clamped while it is still empty, and some of
+  // them grow when their module arrives -- an aspect-locked canvas asks for the
+  // size its content needs. Bonsai City measured 1000px wide at x=182 on an
+  // iPad in landscape, two pixels past the right edge, because the clamp had
+  // already run against a window that had not yet decided how big it was.
+  const win = document.querySelector(`.window[data-window="${name}"]`);
+  if (win && !win.classList.contains("is-hidden")) clampWindowToViewport(win);
+}
+
+// Appearance verification needs the real lazy window shell, not an active
+// game engine, iframe, timer, or model task. Most lazy game modules install
+// their frame as the script loads; the two exceptions declare a bounded shell
+// attach above. Ordinary open/restore continues through loadLazyWindowModule.
+async function loadLazyWindowAppearanceShell(name) {
+  const entry = lazyWindowRecord(name);
+  if (!entry || typeof entry.ensure !== "function") return Boolean(getWindow(name));
+  await entry.ensure();
+  if (!getWindow(name)) await entry.appearanceAttach?.();
+  return Boolean(getWindow(name));
+}
+
+// Mount the application that owns this window.
+//
+// This used to pass only `getWindowAppId(name)` — the *application* id. But a
+// Desk Accessory registers itself under its **window** name (`notePad`,
+// `calculator`), while its app id is the shared `accessories`. No application is
+// registered under `accessories`, so for seventeen of the thirty-five
+// registrations the mount silently did nothing, and `mountApplication` reported
+// "unregistered" to a call site that ignored the result.
+//
+// That was not dead weight. It was unreached wiring: the Calculator's keypad,
+// the Puzzle's tiles, the Note Pad's pager and input autosave, the Clipboard's
+// seven buttons and the Writing Bell's controls are all attached inside those
+// mount functions, and none of those buttons carry a `data-action` to fall back
+// on. Five accessories shipped with dead controls.
+//
+// Both keys are tried, window first, because both are legitimate: a Desk
+// Accessory is registered by window name and a multi-window application (Quick
+// Draft, TeachText) by app id. The runtime mounts once and reports
+// "unregistered" cheaply, so the second try costs nothing.
+async function mountWindowApplication(name, { reentrant = false } = {}) {
+  const runtime = window.AISystem6Runtime;
+  if (typeof runtime?.mountApplication !== "function") return { ok: true, status: "ok" };
+  const byWindow = await runtime.mountApplication(name, { windowName: name, reentrant });
+  if (byWindow?.status !== "unregistered") return byWindow;
+  // Unregistered by window name: the desk's window metadata may still name an
+  // application id (legacy windows predate per-window registration).
+  const byAppId = await runtime.mountApplication(getWindowAppId(name), { windowName: name, reentrant });
+  return byAppId ?? { ok: true, status: "ok" };
+}
+
+// Windows whose open is on the stack right now. A module may build its own
+// window and register `mount: open`, so the mount below calls openWindow() on
+// the window that is already opening: the nested open is told it is nested, and
+// the runtime answers its mount instead of handing it the promise it is already
+// inside. Without the mark, that promise waits on itself and the app never
+// appears (Cover Glass, Quick Draft).
+const windowsBeingOpened = new Set();
+
+// ClioWorks unified spec (W03): every explicit user open takes a presentation
+// ticket — a monotonic epoch captured when the open starts. An open that is
+// slow across its awaits (Finder-mode transitions, lazy module loads, mounts)
+// checks its ticket at the boundaries and stands down when a newer user open
+// has begun, instead of finishing late and stealing the focus/keyboard from
+// the window the user chose afterwards. Nested opens share the outer ticket:
+// they are the same user intent continuing, not a new claim.
+let windowPresentationEpoch = 0;
+
+function takeWindowPresentationTicket() {
+  windowPresentationEpoch += 1;
+  return windowPresentationEpoch;
+}
+
+function windowPresentationIsCurrent(ticket) {
+  return ticket === windowPresentationEpoch;
+}
+
+async function openWindow(name, options = {}) {
+  name = currentWindowName(name);
+  // The in-flight key is the identity: two instances of one kind opening
+  // concurrently must not read each other's nesting (kind ids never contain
+  // ":", so main's bare name never collides with an instance's key). A call
+  // that names NO instance is the one case the identity cannot answer — and it
+  // is exactly the re-entrant one: a `mount: open` module opens its own window
+  // from inside a mount whose options are { appId, windowName, reentrant }, so
+  // the instance never travels to that call. Any in-flight open of the kind is
+  // therefore that call's own open; without the fallback the inner open is not
+  // recognized, the runtime hands it the promise it is already inside, and the
+  // app never appears.
+  const openKey = name + ":" + (options.instance || "");
+  const nestedOpen = windowsBeingOpened.has(openKey)
+    || (!options.instance && [...windowsBeingOpened].some((key) => key.startsWith(`${name}:`)));
+  if (!nestedOpen) windowsBeingOpened.add(openKey);
+  try {
+    return await openWindowInner(name, options, nestedOpen);
+  } finally {
+    if (!nestedOpen) windowsBeingOpened.delete(openKey);
+  }
+}
+
+async function openWindowInner(name, options = {}, nestedOpen = false) {
+  if (!isWorkspaceWindowAllowed(name)) {
+    updateMenuState();
+    return;
+  }
+  // W03: a fresh open claims the presentation epoch; a nested open continues
+  // the caller's claim. The ticket is re-checked after every await that can
+  // let a newer user open slip in — standing down means no focus, no reveal
+  // sound, and no foreground-affecting side effects from this late opener.
+  const presentationTicket = nestedOpen ? windowPresentationEpoch : takeWindowPresentationTicket();
+  const presentationStale = () => !windowPresentationIsCurrent(presentationTicket);
+  const {
+    skipFinderMode = false,
+    skipPlacement = false,
+    skipFocus = false,
+    skipLiquidCoverEntrypoint = false,
+    skipQuickDraftEntrypoint = false,
+    skipSideAsk = false,
+    // Journey shell exclusivity (Hold→notify→resume→bell／todo): off during
+    // Working Session restore so a saved multi-DA desk can come back whole.
+    skipJourneyExclusive = false,
+  } = options;
+
+  if (name === "styleSheet" || name === "claimCheck") {
+    await openReviewDesk(name === "claimCheck" ? "facts" : "style");
+    return;
+  }
+  if (name === "liquidCover" && !skipLiquidCoverEntrypoint && typeof ensureLiquidCoverModule === "function") {
+    await ensureLiquidCoverModule();
+    if (typeof window.AISystem6LiquidCover?.open === "function") {
+      await window.AISystem6LiquidCover.open({ skipFinderMode, skipPlacement, skipFocus });
+      return;
+    }
+  }
+  // Session restore opens windows before the user touches anything, so the tool
+  // has to be loaded here rather than only on the click path — otherwise a
+  // restored desk comes back with an empty DocMap window.
+  if (name === "docMap" && typeof ensureDocMapModule === "function") await ensureDocMapModule();
+  if (name === "quickDraft" && !skipQuickDraftEntrypoint && typeof ensureQuickDraftModule === "function") {
+    await ensureQuickDraftModule();
+    if (typeof window.AISystem6QuickDraft?.open === "function") {
+      await window.AISystem6QuickDraft.open({ skipFinderMode, skipPlacement, skipFocus, skipSideAsk });
+      return;
+    }
+  }
+  // The lightroom shares the Quick Draft module, so a cold open of the darkroom
+  // alone — a desk icon click, or a restored desk where Quick Draft is closed —
+  // has to load and render it here, or the window comes back an empty frame.
+  if (name === "lightroom" && !skipQuickDraftEntrypoint && typeof ensureQuickDraftModule === "function") {
+    await ensureQuickDraftModule();
+    if (typeof window.AISystem6QuickDraft?.openLightroom === "function") {
+      await window.AISystem6QuickDraft.openLightroom();
+      return;
+    }
+  }
+  // A large optional application may install its window frame with the same
+  // lazy module that owns its interior. This keeps unopened games off the
+  // startup disk while preserving the ordinary window-manager contract.
+  if (!getWindow(name) && lazyWindowRecord(name)) await loadLazyWindowModule(name);
+  // A second instance's element is built by the kind's own builder through the
+  // lazy identity layer; every step below — chrome, placement, focus, hooks,
+  // the session record — is the one path the main instance takes.
+  // An instance's element is built by the identity layer BEFORE it calls this
+  // path, so the lookup is all that is needed here.
+  const win = getWindowInstance(name, options.instance);
+  // ADHD journey shell: summoning Hold / notify / bell / todo closes the other
+  // journey accessories so the chain does not stack-open (harvest O / v228).
+  if (
+    !skipJourneyExclusive
+    && window.AISystem6JourneyGates?.isJourneyShellWindow?.(name)
+  ) {
+    await window.AISystem6JourneyGates.closeSiblingJourneyAccessories(name);
+  }
+  // A lazy module injects its own window long after the boot loop bound the
+  // title-bar controls, so guarantee the chrome here rather than trusting each
+  // module to remember: a window whose close box does nothing is not a window.
+  // The wiring is idempotent, so this costs one WeakSet lookup per open.
+  window.AISystem6WireWindowChrome?.(win);
+  // Same reason for the grow box: it is installed by a sweep over the windows
+  // that exist, and a lazily injected one misses it. Micropolis is listed as
+  // resizable, so without this its corner cell never appears.
+  installGrowBoxes();
+  if (!win) return;
+  const wasAlreadyOpen = !win.classList.contains("is-hidden") && !win.classList.contains("is-app-hidden");
+  const sourceWindowForSingleTask = !isMultiFinderMode() && !skipFinderMode
+    ? document.querySelector(".window.is-active:not(.is-hidden):not(.is-app-hidden):not(.is-minimized)")
+    : null;
+  const targetAppId = getWindowAppId(name);
+  // W01: what the Finder-mode transition hides must come back if the open
+  // later fails — a refused open is not allowed to leave the desk blank.
+  const singleTaskHiddenWindows = !isMultiFinderMode() && !skipFinderMode
+    ? Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-minimized)"))
+        .filter((item) => getWindowAppId(item.dataset.window || item) !== targetAppId)
+    : [];
+  const canOpen = skipFinderMode ? true : await prepareFinderModeForApp(targetAppId);
+  if (!canOpen) return;
+  // W03 checkpoint: the Finder-mode transition awaited above can let a newer
+  // user open begin. The late opener stands down before it hides anything.
+  if (presentationStale()) return;
+  const finderReplacementFrame = replaceVisibleFinderLocation(name);
+  if (sourceWindowForSingleTask && sourceWindowForSingleTask !== win) {
+    win.dataset.returnWindowName = sourceWindowForSingleTask.dataset.window || "";
+  } else {
+    delete win.dataset.returnWindowName;
+  }
+  win.dataset.app = targetAppId;
+  setWindowLayoutMetadata(win);
+  ensureRunningApp(win.dataset.app, name);
+  hiddenAppIds.delete(win.dataset.app);
+  windowsForApp(win.dataset.app).forEach((item) => item.classList.remove("is-app-hidden"));
+
+  await loadLazyWindowModule(name);
+
+  // W01: the mount's result decides whether this open may proceed to reveal.
+  // A failed initialization must not fire onOpen/onReveal, play the open
+  // sound, or take focus — the window stays hidden and the failure is
+  // reported in place, with the previous foreground untouched.
+  const mountResult = await mountWindowApplication(name, { reentrant: nestedOpen });
+  // "unregistered" is not a failure: markup-only windows (projectDisks,
+  // the Finder pages) have no runtime application by design and work as
+  // pure DOM. Only a mount that RAN and failed gates the reveal.
+  const mountFailed = mountResult && mountResult.ok === false
+    && mountResult.status !== "unregistered";
+  if (mountFailed) {
+    // W01 restore: the Finder-mode transition hid the previous application's
+    // windows before the mount ran; a failed mount puts them back, so a
+    // refused open leaves the desk exactly as it was.
+    for (const item of singleTaskHiddenWindows) {
+      if (!item.isConnected) continue;
+      item.classList.remove("is-hidden");
+    }
+    if (singleTaskHiddenWindows.some((item) => item.classList.contains("is-active"))) {
+      // The transition also moved .is-active; give it back to the first
+      // restored window so the keyboard returns where the user left it.
+      focusWindow(singleTaskHiddenWindows.find((item) => item.classList.contains("is-active")) || singleTaskHiddenWindows[0]);
+    }
+    if (!nestedOpen && typeof setStatus === "function") {
+      const detail = mountResult.error?.message || mountResult.status || "initialization failed";
+      setStatus(t("window_mount_failed", name, detail));
+    }
+    if (typeof playSystemSound === "function" && !nestedOpen) playSystemSound("error");
+    return { ok: false, status: mountResult.status || "mount-failed", error: mountResult.error };
+  }
+  // W03 checkpoint: a slow module load or mount must not surface a window the
+  // user has since superseded. The window stays mounted (the initialization
+  // work is done and reusable) but does not reveal or focus.
+  if (presentationStale()) return;
+  runWindowHook(name, "onOpen", { win, wasAlreadyOpen });
+  // Reopening a window that was shaded must restore the size the shade saved
+  // before the collapsed class comes off, or Expand would measure the stub.
+  if (win.classList.contains("is-collapsed")) restoreWindowShadeDimensions(win);
+  win.classList.remove("is-hidden", "is-collapsed");
+  if (isPortraitDocumentFlow() && mobileFinderPageWindowNames.has(name)) {
+    mobileFinderDesktopPreferred = false;
+  }
+  if (mobileFinderPageWindowNames.has(name)) {
+    renderFinderNavigationBar(win);
+  }
+  if (isCenteredSystemWindow(name)) {
+    placeCenteredSystemWindow(win);
+  }
+  runWindowHook(name, "onReveal", { win, wasAlreadyOpen });
+  // Anything the desk deferred while this window was hidden is due now: the
+  // records moved, the repaint waited, and this is the moment it can be seen.
+  window.AISystem6Runtime?.flushDeferredRenderTasks?.(name);
+  updateQuickDraftFocusChrome();
+
+  const reusedFinderFrame = !!finderReplacementFrame && !isPortraitDocumentFlow();
+  if (reusedFinderFrame) {
+    placeWindowForExplicitLayout(win, finderReplacementFrame);
+    avoidWritingSpineOverlap(win);
+  }
+  const shouldPlaceWindow = !skipPlacement
+    && !wasAlreadyOpen
+    && !reusedFinderFrame
+    && win.dataset.userPositioned !== "true";
+
+  if (shouldPlaceWindow && isFinderContentWindow(win)) {
+    fitFinderWindowToContents(win);
+  } else if (
+    isFinderContentWindow(win)
+    && !finderFrameHasContentRoom(win, windowFrame(win))
+  ) {
+    // Opening the window again is the way back from a frame with no content
+    // area. Nothing inside such a window can recover it — the frame lane
+    // covers its own Zoom and close boxes — and the paths that skip placement
+    // (an already-open window, a restored session) are exactly the ones that
+    // can be carrying one, including a session saved before the frame check
+    // above existed. The open the user just performed is the recovery.
+    fitFinderWindowToContents(win);
+  }
+
+  if (writerMode && writerModeCssOwnedWindows.has(name)) {
+    clearWindowInlineGeometry(win);
+  } else if (isMobileWorkAreaCssOwned(win)) {
+    // Narrow non-writer work-area windows are CSS-owned too: drop stale
+    // desktop inline frames so the mobile rule wins without !important.
+    clearWindowInlineGeometry(win);
+  }
+
+  if (shouldPlaceWindow && !isCenteredSystemWindow(name) && name !== "saveChat"
+      && !(writerMode && writerModeCssOwnedWindows.has(name))) {
+    if (!useNarrowWindowFlow(win)) {
+      const desktop = document.querySelector(".desktop");
+      const desktopRect = desktop?.getBoundingClientRect();
+      const avoidance = getDesktopAvoidanceInsets({ margin: 24, spineGap: 18, iconGap: 48 });
+      const baseLeft = writerMode ? 24 : avoidance.left;
+      const baseTop = writerMode ? 34 : writingSpineAlignedTopForWindow(win, 18);
+      const step = 24;
+      const maxOffset = 200;
+
+      if (name === "clioStage" && !writerMode && placeClioStageDefaultWindow(win)) {
+        // ClioStage uses the full work area between the writing spine and Dock.
+      } else if (name === "assistant" && !writerMode) {
+        const availableWidth = desktopRect
+          ? Math.max(340, desktopRect.width - avoidance.left - avoidance.right - 24)
+          : 720;
+        win.style.left = `${avoidance.left}px`;
+        win.style.top = `${baseTop}px`;
+        win.style.right = "auto";
+        win.style.width = `${Math.min(720, availableWidth)}px`;
+        win.style.height = "min(540px, calc(100vh - 108px))";
+        win.style.maxHeight = "";
+        win.style.transform = "none";
+      } else if (name === "rebuildFlow" && !writerMode) {
+        win.style.left = `${avoidance.left}px`;
+        win.style.top = `${baseTop}px`;
+        win.style.right = "auto";
+        win.style.transform = "none";
+      } else if (["reader", "scrapbook", "endfieldTerminal", "liquidCover", "quickDraft"].includes(name) && !writerMode) {
+        win.style.left = `${avoidance.left}px`;
+        win.style.top = `${baseTop}px`;
+        win.style.right = "auto";
+        win.style.transform = "none";
+        maximizeWindow(win, { top: baseTop });
+      } else if (name === "docMap" && !writerMode) {
+        win.style.left = `${avoidance.left}px`;
+        win.style.top = `${baseTop}px`;
+        win.style.right = "auto";
+        win.style.transform = "none";
+        maximizeWindow(win, { top: baseTop });
+        requestAnimationFrame(() => {
+          withDocMap(() => {
+            renderDocMap();
+            requestAnimationFrame(() => restoreDocMapCanvasView());
+          });
+        });
+      } else if (name === "systemHelp") {
+        if (!writerMode) {
+          win.style.left = `${avoidance.left}px`;
+          win.style.top = `${baseTop}px`;
+          win.style.right = "auto";
+          win.style.transform = "none";
+        }
+      } else if (["findPath", "contextPanel"].includes(name) && !writerMode) {
+        placeUtilityWindow(name, win);
+      } else if (assistantSidecarWindowNames.has(name) && !writerMode) {
+        placeAssistantSidecarWindow(name, win);
+      } else if (isDeskAccessoryPlacementWindow(name) && !writerMode) {
+        placeDA(win);
+      } else if (isFinderCascadeWindow(name) && !writerMode) {
+        placeFinderCascadeWindow(win, { avoidance, baseTop });
+      } else {
+        win.style.left = `${baseLeft + cascadeOffset}px`;
+        win.style.top = `${baseTop + cascadeOffset}px`;
+        win.style.right = "auto";
+        cascadeOffset += step;
+      }
+
+      if (cascadeOffset > maxOffset) cascadeOffset = 0;
+      placeNewWindowAvoidingVisibleWindows(win);
+      clampWindowToViewport(win);
+      markWindowSystemPositioned(win);
+      scheduleWritingSpineTitleAlignment(win);
+    }
+  }
+
+  if (!skipFocus) {
+    // W03 final checkpoint: focus is the one effect that cannot be taken back
+    // politely, so it re-checks the ticket at the last moment.
+    // W03 final checkpoint: focus is the one effect that cannot be taken back
+    // politely, so it re-checks the ticket at the last moment.
+    if (presentationStale()) return;
+    focusWindow(win);
+    // …and put the keyboard in it, so Tab continues inside the window the person
+    // just opened instead of walking the desk behind it. skipFocus is what a
+    // session restore passes, so a restored desk still opens with nothing focused.
+    focusIntoWindow(win);
+    if (!["assistant", "about"].includes(name)) playSystemSound("open");
+  }
+  // Arrange the writing workspace AFTER focus raises the window: the mobile
+  // foreground pass picks the surface with the highest z-index, so it must
+  // run once the just-opened window actually has the top z.
+  //
+  // On a phone the pass is NOT a placement decision, so it must not inherit
+  // placement's conditions. shouldPlaceWindow is false for a window that was
+  // already open, and a route command that opens the manuscript as a read-only
+  // companion opens a window that is usually already open: the companion took
+  // the focus, nothing ran to correct it, and the single foreground went to the
+  // manuscript. Advancing from the Outline put the writer in the manuscript
+  // instead of Section Drafts, on both phone orientations and on a tablet.
+  // The desktop splits keep their own condition -- they write inline geometry,
+  // and re-placing a window the writer already positioned is churn.
+  if (writingLayoutWindowNames.has(name)) {
+    // Travelling to another route stop cancels a pending request for the
+    // manuscript. This is what bounds that request: it is held until the
+    // manuscript answers it, so something has to say when the writer changed
+    // their mind. Only a focused open counts — a companion opens with
+    // skipFocus, and a companion is not a change of mind.
+    if (name !== "teachText" && !skipFocus) mobileManuscriptForegroundRequested = false;
+    if (mobileWritingForegroundOwnsRoute()) arrangeMobileWritingForeground();
+    else if (shouldPlaceWindow) arrangeActiveWritingWorkspace();
+  }
+
+  syncMobileAppForeground();
+  if (window.AISystem6JourneyGates?.isJourneyShellWindow?.(name)) {
+    window.AISystem6JourneyGates.markShellWindow?.(win, name);
+  }
+  window.AISystem6JourneyGates?.syncDeskProbe?.();
+  updateMenuState();
+  // A lazy application registers its lifecycle while attaching above, after the
+  // class flips the observer watches. Reconcile once here so a restored window
+  // comes back running instead of waiting for the next unrelated flip.
+  scheduleApplicationLifecycleRefresh?.("open-window");
+  scheduleWorkingSessionSave?.();
+}
+
+function arrangeOutlineTeachTextSplit() {
+  const outline = getWindow("outline");
+  const teachText = getWindow("teachText");
+  if (!outline || !teachText) return;
+  if (outline.classList.contains("is-hidden") || teachText.classList.contains("is-hidden")) return;
+  if (writerMode) return;
+  if (outline.dataset.userPositioned === "true" || teachText.dataset.userPositioned === "true") return;
+
+  const desktop = document.querySelector(".desktop");
+  const desktopRect = desktop?.getBoundingClientRect?.();
+  const avoidance = getDesktopAvoidanceInsets({ margin: 18, spineGap: 18, iconGap: 132 });
+  const gap = 16;
+  const left = Math.max(18, avoidance.left || 18);
+  const top = Math.max(18, writingSpineAlignedTop?.(18) || 18);
+  const right = Math.max(132, avoidance.right || 132);
+  const totalWidth = Math.max(620, (desktopRect?.width || window.innerWidth) - left - right - gap);
+  const totalHeight = Math.max(420, (desktopRect?.height || window.innerHeight) - deskDockReserve() - top - 36);
+  const stacked = window.matchMedia("(orientation: portrait), (max-width: 980px)").matches;
+  const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+  const applyFrame = (win, frame) => {
+    placeWindowForExplicitLayout(win, {
+      left: frame.left,
+      top: frame.top,
+      width: frame.width,
+      height: frame.height,
+      maxHeight: frame.height,
+    });
+  };
+
+  // The paper measure is the floor, not 360. Writing windows are pinned to a
+  // paper-driven minimum and cannot shrink below it without breaking the editor
+  // measure — the rule arrangeWritingPairSplit already follows. This split used
+  // a magic 360 instead, so at a 1280 desktop the Outline was placed at 374px
+  // against a 540px paper: CSS min-width drew 540 while the recorded frame said
+  // 374, and every later reader of that frame inherited the wrong number.
+  // When two papers do not fit, the pair stacks — same answer as its sibling.
+  const paperMin = Math.max(
+    parseFloat(getComputedStyle(outline).minWidth) || 0,
+    parseFloat(getComputedStyle(teachText).minWidth) || 0,
+    540
+  );
+
+  if (stacked || totalWidth < paperMin * 2 + gap) {
+    const halfHeight = Math.max(220, Math.floor((totalHeight - gap) / 2));
+    applyFrame(outline, { left, top, width: totalWidth, height: halfHeight });
+    applyFrame(teachText, { left, top: top + halfHeight + gap, width: totalWidth, height: totalHeight - halfHeight - gap });
+    return;
+  }
+
+  const outlineWidth = clamp(Math.round(totalWidth * 0.42), paperMin, totalWidth - gap - paperMin);
+  const teachTextWidth = totalWidth - outlineWidth - gap;
+  applyFrame(outline, { left, top, width: outlineWidth, height: totalHeight });
+  applyFrame(teachText, { left: left + outlineWidth + gap, top, width: teachTextWidth, height: totalHeight });
+}
+
+// Co-locate two writing windows as one phase workspace (Section Drafts ‖ draft
+// manuscript; Review Desk ‖ finalized manuscript). Writing windows are pinned to a
+// paper-driven minimum width and cannot shrink below it without breaking the editor
+// measure, so the pairing is responsive: side-by-side only when two paper widths
+// fit, otherwise stacked vertically (still one workspace). Invoked by an explicit
+// "advance" action, so it re-arranges even a previously user-positioned pair.
+function arrangeWritingPairSplit(leftName, rightName) {
+  const leftWin = getWindow(leftName);
+  const rightWin = getWindow(rightName);
+  if (!leftWin || !rightWin) return;
+  if (leftWin.classList.contains("is-hidden") || rightWin.classList.contains("is-hidden")) return;
+  if (writerMode) return;
+
+  const desktop = document.querySelector(".desktop");
+  const desktopRect = desktop?.getBoundingClientRect?.();
+  const avoidance = getDesktopAvoidanceInsets({ margin: 18, spineGap: 18, iconGap: 132 });
+  const gap = 16;
+  const left = Math.max(18, avoidance.left || 18);
+  const top = Math.max(18, writingSpineAlignedTop?.(18) || 18);
+  const right = Math.max(132, avoidance.right || 132);
+  const available = Math.max(560, (desktopRect?.width || window.innerWidth) - left - right);
+  const totalHeight = Math.max(420, (desktopRect?.height || window.innerHeight) - deskDockReserve() - top - 36);
+
+  // Paper-driven minimum width is load-bearing; never set a width below it.
+  const minW = Math.max(
+    parseFloat(getComputedStyle(rightWin).minWidth) || 0,
+    parseFloat(getComputedStyle(leftWin).minWidth) || 0,
+    540
+  );
+  const portrait = window.matchMedia("(orientation: portrait)").matches;
+  const canSideBySide = !portrait && available >= (minW * 2 + gap);
+  const applyFrame = (win, frame) => placeWindowForExplicitLayout(win, {
+    left: frame.left,
+    top: frame.top,
+    width: frame.width,
+    height: frame.height,
+    maxHeight: frame.height,
+  });
+
+  if (canSideBySide) {
+    const pairWidth = minW * 2 + gap;
+    const startLeft = left + Math.max(0, Math.floor((available - pairWidth) / 2));
+    applyFrame(leftWin, { left: startLeft, top, width: minW, height: totalHeight });
+    applyFrame(rightWin, { left: startLeft + minW + gap, top, width: minW, height: totalHeight });
+    return;
+  }
+
+  const halfHeight = Math.max(220, Math.floor((totalHeight - gap) / 2));
+  applyFrame(leftWin, { left, top, width: minW, height: halfHeight });
+  applyFrame(rightWin, { left, top: top + halfHeight + gap, width: minW, height: totalHeight - halfHeight - gap });
+}
+
+// 起草台: Section Drafts (editable owner) beside the read-only draft manuscript.
+function arrangeDraftingWorkspaceSplit() {
+  arrangeWritingPairSplit("sectionDrafts", "teachText", 0.42);
+}
+
+// 审校台: Review Desk beside the finalized manuscript (editable owner under review).
+function arrangeReviewWorkspaceSplit() {
+  arrangeWritingPairSplit("reviewDesk", "teachText");
+}
+
+// Does the phone/tablet single-foreground model own the writing route right
+// now? One answer, in one place, because openWindow's tail asks it too: the
+// foreground pass is a presentation decision and must run on every route open,
+// while the desktop splits below stay a placement decision.
+function mobileWritingForegroundOwnsRoute() {
+  return (isPortraitDocumentFlow() && mobileFullScreenAppIds.has("teachText")) || isNarrowViewport();
+}
+
+// Arrange whichever phase workspace is currently open as a manuscript pair. Called
+// from openWindow's placement tail (so it runs after default cascade placement and
+// sticks). Priority follows the route: review > drafting > legacy outline split.
+function arrangeActiveWritingWorkspace() {
+  // On a phone each writing phase is one full-screen app, so pairing two paper
+  // widths side by side is meaningless — and these splits write inline frames
+  // that would override the full-screen shell. Phones use an explicit
+  // single-foreground model instead: the current phase owns the screen and the
+  // previous phases stay reachable (as backable surfaces) without stacking.
+  if (mobileWritingForegroundOwnsRoute()) {
+    arrangeMobileWritingForeground();
+    return;
+  }
+  const isOpen = (name) => {
+    const win = getWindow(name);
+    return win && !win.classList.contains("is-hidden");
+  };
+  const reviewPhase = typeof teachTextReviewLabel === "function" && teachTextReviewLabel();
+  if (isOpen("teachText")) {
+    if (reviewPhase && isOpen("reviewDesk")) {
+      arrangeReviewWorkspaceSplit();
+      return;
+    }
+    if (isOpen("sectionDrafts")) {
+      arrangeDraftingWorkspaceSplit();
+      return;
+    }
+    if (isOpen("outline")) {
+      arrangeOutlineTeachTextSplit();
+      return;
+    }
+  }
+  // Phases 1 and 2 have no manuscript to pair with yet, and the old guard
+  // returned before arranging anything at all. Opening the stops one at a time
+  // therefore left four paper-width windows cascading 24 px apart, with the
+  // Question Sheet completely buried. A phase with one surface still gets the
+  // screen.
+  arrangeSoloWritingWindow();
+}
+
+// The route surface that is in front, given the whole desktop width rather than
+// a cascade offset. Respects a window the user has dragged: an explicit
+// placement is a decision, and only an explicit advance overrides it.
+// Where the writer is standing. One answer, shared by the status line, the
+// Writing Flow palette, the advance chord and Find/Change - four things that
+// each used to ask their own question and could therefore disagree on screen.
+//
+// The caret decides first. The route deliberately raises the manuscript beside
+// the surface being edited, so "the window in front" alone points at the
+// read-only projection: it would host the status line in the wrong window, mark
+// the wrong stop as current, and hand ⇧⌘→ "Mark Final?" while the writer was
+// still filling in the Question Sheet. Same reason resolvePipelineSourceSurface
+// refuses to trust document.activeElement alone.
+const writingRouteSurfaceStops = Object.freeze({
+  "question-sheet-body": "questionSheet",
+  "outline-content": "outline",
+  "draft-body": "sectionDrafts",
+  "teachtext-body": "teachText",
+  "review-desk-body": "reviewDesk",
+});
+
+function currentWritingRouteStop() {
+  const caret = writingRouteSurfaceStops[document.activeElement?.id || ""] || "";
+  if (caret) {
+    const win = getWindow(caret);
+    if (win && !win.classList.contains("is-hidden")) return caret;
+  }
+  const active = document.querySelector(".window.is-active:not(.is-hidden)")?.dataset.window || "";
+  return Object.values(writingRouteSurfaceStops).includes(active) ? active : "";
+}
+
+// The Writing Flow palette used to be five buttons that said nothing about the
+// work. Three marks, all 1-bit, each encoding something true:
+//   - the label reverses on the stop whose window is in front (where you are),
+//   - the step-number badge fills on the stop that owns the manuscript text
+//     (where the pen is),
+//   - a small diamond appears on stops that hold content, the way the classic
+//     Application menu marked an application with open windows.
+const writingSpineStops = Object.freeze({
+  "open-question-sheet": "questionSheet",
+  "open-outline": "outline",
+  "open-section-drafts": "sectionDrafts",
+  "open-teachtext": "teachText",
+  "open-review-desk": "reviewDesk",
+});
+
+function writingMarkdownHasWork(markdown) {
+  const text = String(markdown || "").trim();
+  if (!text) return false;
+  if (typeof getMeaningfulOutlineSections === "function" && typeof extractOutlineSections === "function") {
+    if (getMeaningfulOutlineSections(extractOutlineSections(text)).length > 0) return true;
+    // Prose under a placeholder heading is still work.
+    return !!text.replace(/^#{1,6}[^\n]*$/gm, "").trim();
+  }
+  return !/^#{1,6}\s*(New Section|新章节)\s*\d*$/i.test(text);
+}
+
+function writingSpineStopHasContent(name, project) {
+  const live = (element, fallback) => String(element?.value ?? fallback ?? "").trim();
+  switch (name) {
+    case "questionSheet":
+      return !!live(questionSheetBodyInput, project?.questionSheet);
+    case "outline":
+      return writingMarkdownHasWork(live(outlineContentEl, project?.outline));
+    case "sectionDrafts":
+      if (live(draftBodyInput)) return true;
+      return (project?.drafts || []).some((draft) => String(draft?.body || "").trim());
+    case "teachText":
+      // A fresh project ships the "## New Section" placeholder, and the
+      // manuscript projects it. A mark that appears before the writer has
+      // written anything reports nothing.
+      return writingMarkdownHasWork(live(teachTextBodyInput, project?.outline));
+    case "reviewDesk":
+      return typeof teachTextReviewLabel === "function" && !!teachTextReviewLabel();
+    default:
+      return false;
+  }
+}
+
+// Which stop currently owns the route document. This mirrors the locks the
+// write lease actually enforces, so the mark cannot disagree with what the
+// writer can type into.
+function writingSpineStopHoldsPen(name) {
+  const phase = typeof manuscriptPhase === "function" ? manuscriptPhase() : "drafting";
+  return phase === "drafting" ? name === "sectionDrafts" : name === "teachText";
+}
+
+function renderWritingSpineState() {
+  const buttons = document.querySelectorAll(".spine-section-main button[data-action]");
+  if (!buttons.length) return;
+  const project = typeof getActiveProject === "function" ? getActiveProject() : null;
+  const activeName = currentWritingRouteStop()
+    || document.querySelector(".window.is-active:not(.is-hidden)")?.dataset.window
+    || "";
+  buttons.forEach((button) => {
+    const name = writingSpineStops[button.dataset.action];
+    if (!name) return;
+    const current = name === activeName;
+    const pen = writingSpineStopHoldsPen(name);
+    const content = writingSpineStopHasContent(name, project);
+    // is-selected is the shared "this object is the current one" state: every
+    // appearance already has a twin for it (Liquid Glass reverses the label and
+    // sets -webkit-text-fill-color, Yosemite paints a flat gray tile). A
+    // parallel class of our own would tie on specificity with those twins and
+    // lose on source order - which is how the current stop became a blank white
+    // pill under Liquid Glass.
+    button.classList.toggle("is-selected", current);
+    button.classList.toggle("holds-pen", pen);
+    button.classList.toggle("has-content", content);
+    button.setAttribute("aria-current", current ? "true" : "false");
+    const marks = [
+      current ? t("writing_spine_here") : "",
+      pen ? t("writing_spine_pen") : "",
+      content ? t("writing_spine_has_content") : "",
+    ].filter(Boolean);
+    const label = button.querySelector("b")?.textContent?.trim() || name;
+    button.title = marks.length ? `${label} — ${marks.join(" · ")}` : label;
+  });
+}
+
+function arrangeSoloWritingWindow() {
+  if (writerMode) return;
+  const order = ["reviewDesk", "teachText", "sectionDrafts", "outline", "questionSheet"];
+  const activeName = document.querySelector(".window.is-active:not(.is-hidden)")?.dataset.window || "";
+  const isOpen = (name) => {
+    const win = getWindow(name);
+    return win && !win.classList.contains("is-hidden");
+  };
+  const name = order.includes(activeName) && isOpen(activeName)
+    ? activeName
+    : order.find(isOpen);
+  const win = name ? getWindow(name) : null;
+  if (!win) return;
+  if (win.dataset.userPositioned === "true") return;
+
+  const desktop = document.querySelector(".desktop");
+  const desktopRect = desktop?.getBoundingClientRect?.();
+  const avoidance = getDesktopAvoidanceInsets({ margin: 18, spineGap: 18, iconGap: 132 });
+  const left = Math.max(18, avoidance.left || 18);
+  const top = Math.max(18, writingSpineAlignedTop?.(18) || 18);
+  const right = Math.max(132, avoidance.right || 132);
+  const available = Math.max(360, (desktopRect?.width || window.innerWidth) - left - right);
+  const height = Math.max(320, (desktopRect?.height || window.innerHeight) - deskDockReserve() - top - 36);
+  // Paper-driven minimum width is load-bearing; a solo window may be wider than
+  // one paper measure but never narrower. Clamp to the available room first and
+  // apply the floor last: the other order let a desktop narrower than one paper
+  // measure win, so at an 880px viewport the frame recorded 510px while CSS
+  // min-width still drew 540px, and every later reader of style.width -- session
+  // restore, Zoom, a drag -- inherited the wrong number.
+  const minW = Math.max(parseFloat(getComputedStyle(win).minWidth) || 0, 540);
+  const width = Math.max(minW, Math.min(Math.round(available * 0.62), available));
+  const startLeft = left + Math.max(0, Math.floor((available - width) / 2));
+  placeWindowForExplicitLayout(win, { left: startLeft, top, width, height, maxHeight: height });
+}
+
+// Set by the two commands whose destination IS the manuscript:
+// openTeachTextManuscriptWindow (Review Desk -> View Manuscript, and
+// Writing > Go To > Manuscript) and advanceDraftsToManuscript. The user
+// explicitly asked for the manuscript, so it must own the phone screen even
+// before the workflow is marked Final. Every other opener of the manuscript is
+// preparing it, not travelling to it, and leaves this flag alone.
+let mobileManuscriptForegroundRequested = false;
+
+/**
+ * Mobile single-foreground writing model. Only one route surface owns the
+ * screen per phase; the others are hidden (not closed), so the content and
+ * state stay intact and the Writing menu's Go To can bring them back.
+ *
+ * The foreground is the highest-z open route surface (the one the app last
+ * raised), except the manuscript: it only qualifies when the user explicitly
+ * opened it (View Manuscript) or the workflow is Final. A manuscript preview
+ * that the drafting flow raises must never cover Section Drafts.
+ */
+function arrangeMobileWritingForeground() {
+  const isOpen = (name) => {
+    const win = getWindow(name);
+    return win && !win.classList.contains("is-hidden");
+  };
+  const isManuscript = typeof isTeachTextManuscriptRole === "function"
+    ? isTeachTextManuscriptRole()
+    : false;
+  const surfaces = ["questionSheet", "outline", "sectionDrafts", "reviewDesk"];
+  const openSurfaces = surfaces.filter(isOpen);
+  const teachTextOpen = isManuscript && isOpen("teachText");
+
+  if (!openSurfaces.length && !teachTextOpen) return;
+
+  const reviewPhase = typeof teachTextReviewLabel === "function" && teachTextReviewLabel();
+  const manuscriptWanted = mobileManuscriptForegroundRequested;
+  const teachTextEligible = teachTextOpen && (manuscriptWanted || reviewPhase);
+  const candidates = [...openSurfaces, ...(teachTextEligible ? ["teachText"] : [])];
+  if (!candidates.length) return;
+
+  const foreground = candidates
+    .map((name) => ({ name, z: Number(getComputedStyle(getWindow(name)).zIndex || 0) }))
+    .sort((a, b) => b.z - a.z)[0].name;
+
+  // A request for the manuscript is cleared when it is HONOURED, not when it is
+  // first read. A route command sets the request and then opens the manuscript,
+  // but the companion opens the same command fires are not awaited: one of them
+  // ran its own foreground pass in between, ate the request, and hid the very
+  // window the next statement was about to raise. So the writer who advanced
+  // the drafts into the manuscript stayed in Section Drafts. Holding the
+  // request until the manuscript actually has the screen makes the order of
+  // those two opens stop mattering. Opening any other route stop with focus
+  // cancels it (see openWindow), so it cannot outlive the move that asked.
+  if (foreground === "teachText") mobileManuscriptForegroundRequested = false;
+
+  candidates.forEach((name) => {
+    const win = getWindow(name);
+    win.classList.toggle("is-hidden", name !== foreground);
+  });
+  if (foreground) {
+    const foregroundWin = getWindow(foreground);
+    if (foregroundWin) focusWindow(foregroundWin);
+  }
+}
+
+function placeUtilityWindow(name, win) {
+  const margin = 16;
+  const menuHeight = 25;
+  const iconGutter = 112;
+  const assistant = getWindow("assistant");
+  const pairName = name === "findPath" ? "contextPanel" : "findPath";
+  const pair = getWindow(pairName);
+  const width = win.offsetWidth || (name === "findPath" ? 420 : 380);
+  const height = win.offsetHeight || (name === "findPath" ? 620 : 520);
+  const maxLeft = Math.max(margin, window.innerWidth - width - margin);
+  const rightColumnLeft = Math.max(margin, window.innerWidth - width - iconGutter);
+  let left = rightColumnLeft;
+  let top = writingSpineAlignedTopForWindow(win, 18);
+
+  if (assistant && !assistant.classList.contains("is-hidden")) {
+    const rect = assistant.getBoundingClientRect();
+    const candidateLeft = rect.right + 12;
+
+    if (candidateLeft + width <= window.innerWidth - margin) {
+      left = candidateLeft;
+      top = Math.max(menuHeight + 8, rect.top);
+    }
+  }
+
+  left = Math.min(Math.max(margin, left), maxLeft);
+
+  if (name === "contextPanel" && pair && !pair.classList.contains("is-hidden")) {
+    const pairRect = pair.getBoundingClientRect();
+    const stackedTop = pairRect.bottom + 12;
+    const bottomLimit = window.innerHeight - margin;
+    top = stackedTop + height <= bottomLimit
+      ? stackedTop
+      : Math.max(writingSpineAlignedTopForWindow(win, 18), bottomLimit - height);
+    left = Math.min(Math.max(margin, pairRect.left), maxLeft);
+  }
+
+  if (name === "findPath" && pair && !pair.classList.contains("is-hidden")) {
+    const pairRect = pair.getBoundingClientRect();
+    const pairTop = Math.min(window.innerHeight - pairRect.height - margin, top + height + 12);
+    pair.style.left = `${left}px`;
+    pair.style.top = `${Math.max(menuHeight + margin, pairTop)}px`;
+    pair.style.right = "auto";
+    pair.style.transform = "none";
+  }
+
+  win.style.left = `${left}px`;
+  win.style.top = `${Math.min(top, window.innerHeight - height - margin)}px`;
+  win.style.right = "auto";
+  win.style.transform = "none";
+}
+
+function visibleDeskAccessories() {
+  return Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-minimized)"))
+    .filter(isDeskAccessoryPlacementWindow);
+}
+
+function visiblePortraitDeskAccessories() {
+  return Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-minimized):not(.is-collapsed)"))
+    .filter((win) => getWindowAppId(win) === "accessories");
+}
+
+function clearPortraitDeskAccessoryPlacement(win) {
+  if (!win) return;
+  portraitDeskAccessoryResizeObserver?.unobserve(win);
+  portraitDeskAccessoryHeights.delete(win);
+  win.classList.remove("is-mobile-da-arranged");
+  [
+    "--mobile-da-top",
+    "--mobile-da-max-height",
+    "--mobile-da-transform",
+  ].forEach((property) => win.style.removeProperty(property));
+}
+
+function mobileSafeAreaBottom() {
+  const value = window.getComputedStyle(document.documentElement)
+    .getPropertyValue("--safe-area-bottom");
+  return Math.max(0, Number.parseFloat(value) || 0);
+}
+
+// A Desk Accessory can change height without the desk resizing — the Control
+// Panel grows when you pick a taller tab. The placement was only recomputed on
+// open/resize, so the window kept the top it was centred at while its bottom
+// slid past the screen edge, stranding the buttons on that pane off-screen with
+// nothing to scroll. Re-centre whenever an arranged DA reports a new height.
+const portraitDeskAccessoryHeights = new WeakMap();
+let portraitDeskAccessoryResizeObserver = null;
+
+function watchPortraitDeskAccessoryHeight(win) {
+  if (typeof ResizeObserver !== "function") return;
+  if (!portraitDeskAccessoryResizeObserver) {
+    portraitDeskAccessoryResizeObserver = new ResizeObserver((entries) => {
+      // The arrange pass itself resizes these windows; only a height the pass
+      // did not just record is a real content change, so this settles in one
+      // extra pass instead of looping.
+      const grew = entries.some((entry) => {
+        const height = Math.round(entry.target.getBoundingClientRect().height);
+        return portraitDeskAccessoryHeights.get(entry.target) !== height;
+      });
+      if (grew && isPortraitDocumentFlow()) arrangePortraitDeskAccessories();
+    });
+  }
+  portraitDeskAccessoryResizeObserver.observe(win);
+}
+
+function arrangePortraitDeskAccessories(frontWin = null) {
+  const margin = 12;
+  const gap = 10;
+  const menuBottom = document.querySelector(".menu-bar")?.getBoundingClientRect().bottom || 0;
+  const viewportHeight = Math.round(window.visualViewport?.height || window.innerHeight);
+  const safeAreaBottom = mobileSafeAreaBottom();
+  const topMin = Math.round(menuBottom + margin);
+  const bottomMax = Math.max(topMin + 1, viewportHeight - safeAreaBottom - margin);
+  const availableHeight = Math.max(1, bottomMax - topMin);
+  const ordered = visiblePortraitDeskAccessories()
+    .sort((a, b) => Number(a.style.zIndex || 0) - Number(b.style.zIndex || 0))
+    .filter((candidate) => candidate !== frontWin);
+  if (frontWin && visibleWindowOrNull(frontWin) && getWindowAppId(frontWin) === "accessories") {
+    ordered.push(frontWin);
+  }
+  if (!ordered.length) return;
+
+  ordered.forEach((candidate) => {
+    clearPortraitWindowSize(candidate);
+    [
+      "left",
+      "top",
+      "right",
+      "width",
+      "height",
+      "max-height",
+      "transform",
+    ].forEach((property) => candidate.style.removeProperty(property));
+    candidate.classList.add("is-mobile-da-arranged");
+    candidate.style.setProperty("--mobile-da-transform", "translateX(-50%)");
+    candidate.style.setProperty("--mobile-da-max-height", `${availableHeight}px`);
+  });
+
+  const naturalHeights = ordered.map((candidate) => candidate.getBoundingClientRect().height);
+  const naturalTotal = naturalHeights.reduce((sum, height) => sum + height, 0)
+    + gap * Math.max(0, ordered.length - 1);
+  if (naturalTotal > availableHeight) {
+    const sharedHeight = Math.max(
+      1,
+      Math.floor((availableHeight - gap * Math.max(0, ordered.length - 1)) / ordered.length)
+    );
+    ordered.forEach((candidate) => {
+      candidate.style.setProperty("--mobile-da-max-height", `${sharedHeight}px`);
+    });
+  }
+
+  const heights = ordered.map((candidate) => candidate.getBoundingClientRect().height);
+  const stackHeight = heights.reduce((sum, height) => sum + height, 0)
+    + gap * Math.max(0, ordered.length - 1);
+  // The lift is desk slack for small accessories. A single DA that nearly
+  // fills the rail reads as "off-center" when lifted (the dictionary window
+  // is capped at 440px against a ~700px rail), so keep tall single windows
+  // truly centered instead.
+  const singleTallWindow = ordered.length === 1 && heights[0] > availableHeight * 0.6;
+  const visualLift = singleTallWindow ? 0 : Math.min(60, Math.round(availableHeight * 0.08));
+  let top = topMin + Math.max(0, Math.round((availableHeight - stackHeight) / 2) - visualLift);
+
+  ordered.forEach((candidate, index) => {
+    candidate.style.setProperty("--mobile-da-top", `${Math.round(top)}px`);
+    top += heights[index] + gap;
+    setWindowLayerZ(candidate, nextWindowLayerZ(8100 + index));
+    portraitDeskAccessoryHeights.set(candidate, Math.round(heights[index]));
+    watchPortraitDeskAccessoryHeight(candidate);
+  });
+}
+
+function getTileCandidateWindows() {
+  if (writerMode) return [];
+  if (isNarrowViewport()) return [];
+  return Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-minimized)"))
+    .filter((win) => {
+      if (win.dataset.window === "saveChat") return false;
+      if (isCenteredSystemWindow(win) || applicationWindowPresentation(win) !== "open") return false;
+      if (isDeskAccessoryPlacementWindow(win)) return false;
+      if (isMultiFinderMode()) return true;
+      const appId = getWindowAppId(win);
+      if (sideAskEnabled && isSideAskPairApp(appId)) return true;
+      return appId === activeAppId;
+    });
+}
+
+function canTileWindows() {
+  return getTileCandidateWindows().some((win) => tileableWindowNames.has(win.dataset.window));
+}
+
+function visibleWindowOrNull(candidate) {
+  return candidate
+    && !candidate.classList.contains("is-hidden")
+    && !candidate.classList.contains("is-app-hidden")
+    && !candidate.classList.contains("is-collapsed")
+    ? candidate
+    : null;
+}
+
+function isDeskAccessorySidecar(winOrName) {
+  const name = typeof winOrName === "string" ? winOrName : winOrName?.dataset.window;
+  return name === "dictation" || name === "translationPad" || name === "sideAskPad";
+}
+
+function isFixedDeskAccessoryWindow(winOrName) {
+  return getWindowAppId(winOrName) === "accessories" && !isDeskAccessorySidecar(winOrName);
+}
+
+function isDeskAccessoryPlacementWindow(winOrName) {
+  return isFixedDeskAccessoryWindow(winOrName);
+}
+
+function visibleDeskAccessorySidecars() {
+  return ["dictation", "translationPad", "sideAskPad"]
+    .map(getWindow)
+    .filter(visibleWindowOrNull);
+}
+
+function raiseVisibleDeskAccessorySidecars(frontWin = null) {
+  const ordered = visibleDeskAccessorySidecars()
+    .sort((a, b) => Number(a.style.zIndex || 0) - Number(b.style.zIndex || 0))
+    .filter((candidate) => candidate !== frontWin);
+  if (isDeskAccessorySidecar(frontWin) && visibleWindowOrNull(frontWin)) ordered.push(frontWin);
+  ordered.forEach((candidate) => {
+    setWindowLayerZ(candidate, nextWindowLayerZ());
+  });
+}
+
+function deskAccessorySourceWindow(frontWin) {
+  return document.querySelector(".window.is-active:not(.is-hidden):not(.is-app-hidden):not(.is-minimized):not(.is-collapsed)")
+    || visibleWindowOrNull(getWindow("assistant"));
+}
+
+function ensureWritingSpineCollapsedForPortraitDA() {
+  if (!isPortraitDocumentFlow() || writerMode) return;
+  const spine = document.querySelector(".writing-spine-panel") || document.querySelector(".spine-flow-toolbox");
+  if (!spine || spine.classList.contains("is-shaded")) return;
+  spine.classList.add("is-shaded");
+  if (typeof syncWritingToolsShadeToggle === "function") syncWritingToolsShadeToggle();
+}
+
+function arrangeDeskAccessories(frontWin = null) {
+  if (isPortraitDocumentFlow()) {
+    arrangePortraitDeskAccessories(frontWin);
+    return;
+  }
+  visiblePortraitDeskAccessories().forEach(clearPortraitDeskAccessoryPlacement);
+  const desktop = document.querySelector(".desktop");
+  const desktopRect = desktop?.getBoundingClientRect();
+  const spine = document.querySelector(".writing-spine-panel") || document.querySelector(".spine-flow-toolbox");
+  const spineRect = spine?.getBoundingClientRect?.();
+  const margin = 16;
+  const gap = 12;
+  const stepX = 36;
+  const stepY = 32;
+  const avoidance = getDesktopAvoidanceInsets({ margin, spineGap: 18, iconGap: 48 });
+  const leftMin = avoidance.left;
+  let topMin = frontWin ? writingSpineAlignedTopForWindow(frontWin, margin) : writingSpineAlignedTop(margin);
+  if (isPortraitDocumentFlow()) {
+    if (desktopRect && spineRect && spineRect.height > 0) {
+      topMin = Math.max(topMin, Math.round(spineRect.bottom - desktopRect.top + gap));
+    }
+  }
+  const rightMax = Math.max(leftMin + 220, (desktopRect?.width || innerWidth) - avoidance.right - margin);
+  const bottomMax = Math.max(topMin + 220, (desktopRect?.height || innerHeight) - deskDockReserve() - margin);
+  const ordered = visibleDeskAccessories()
+    .sort((a, b) => Number(a.style.zIndex || 0) - Number(b.style.zIndex || 0))
+    .filter((candidate) => candidate !== frontWin && candidate.dataset.userPositioned !== "true");
+  if (frontWin && !frontWin.classList.contains("is-hidden") && frontWin.dataset.userPositioned !== "true") ordered.push(frontWin);
+  if (!ordered.length) return;
+
+  const sizes = ordered.map((candidate) => {
+    clearPortraitWindowSize(candidate);
+    candidate.style.height = "";
+    candidate.style.maxHeight = "";
+    const preferredWidth = registeredWindowWidth(candidate.dataset.window) || candidate.offsetWidth || 360;
+    const width = Math.min(preferredWidth, rightMax - leftMin);
+    const height = Math.min(candidate.offsetHeight || 320, bottomMax - topMin);
+    return { candidate, width, height };
+  });
+  const stackWidth = Math.max(...sizes.map((item) => item.width)) + stepX * (sizes.length - 1);
+  const stackHeight = Math.max(...sizes.map((item) => item.height)) + stepY * (sizes.length - 1);
+  const startMaxX = Math.max(leftMin, rightMax - stackWidth);
+  const startMaxY = Math.max(topMin, bottomMax - stackHeight);
+  let startX = startMaxX;
+  let startY = topMin;
+
+  if (isPortraitDocumentFlow() && desktopRect && spineRect && spineRect.width > 0 && spineRect.height > 0) {
+    const primaryWidth = sizes[0]?.width || 360;
+    const primaryHeight = sizes[0]?.height || 320;
+    const centerX = ((desktopRect.width || innerWidth) - primaryWidth) / 2;
+    // Visual center in portrait should sit slightly above geometric center.
+    const visualLift = Math.min(120, Math.round((desktopRect.height || innerHeight) * 0.1));
+    const centerY = (((desktopRect.height || innerHeight) - primaryHeight) / 2) - visualLift;
+    startX = clampNumber(Math.round(centerX), leftMin, startMaxX);
+    startY = clampNumber(Math.round(centerY), topMin, startMaxY);
+  }
+
+  const source = deskAccessorySourceWindow(frontWin);
+  let foundSourceSlot = false;
+
+  if (!isPortraitDocumentFlow() && source && getWindowAppId(source) !== "accessories") {
+    const rect = source.getBoundingClientRect();
+    const desktopLeft = desktopRect?.left || 0;
+    const desktopTop = desktopRect?.top || 0;
+    const left = rect.left - desktopLeft;
+    const right = rect.right - desktopLeft;
+    const top = rect.top - desktopTop;
+    const bottom = rect.bottom - desktopTop;
+    const slots = [
+      [right + gap + stackWidth <= rightMax, right + gap, clampNumber(top, topMin, startMaxY)],
+      [left - gap - stackWidth >= leftMin, left - gap - stackWidth, clampNumber(top, topMin, startMaxY)],
+      [bottom + gap + stackHeight <= bottomMax, clampNumber(left, leftMin, startMaxX), bottom + gap],
+      [top - gap - stackHeight >= topMin, clampNumber(left, leftMin, startMaxX), top - gap - stackHeight],
+    ];
+    const slot = slots.find((candidate) => candidate[0]);
+    if (slot) {
+      [, startX, startY] = slot;
+      foundSourceSlot = true;
+    }
+  }
+
+  if (!isPortraitDocumentFlow() && !foundSourceSlot) {
+    const anchor = ordered.find((candidate) => candidate !== frontWin);
+    if (anchor) {
+      const rect = anchor.getBoundingClientRect();
+      const desktopLeft = desktopRect?.left || 0;
+      const desktopTop = desktopRect?.top || 0;
+      startX = clampNumber(rect.left - desktopLeft, leftMin, startMaxX);
+      startY = clampNumber(rect.top - desktopTop, topMin, startMaxY);
+    }
+  }
+
+  sizes.forEach(({ candidate, width }, index) => {
+    // The cascade step assumes desktop slack. In portrait a desk accessory is
+    // already sized to the whole working span, so every window after the first
+    // would hang off the right edge; clamp each step back inside it.
+    const cascadeLeft = clampNumber(
+      startX + stepX * index,
+      leftMin,
+      Math.max(leftMin, rightMax - width)
+    );
+    candidate.style.left = `${Math.round(cascadeLeft)}px`;
+    candidate.style.top = `${Math.round(startY + stepY * index)}px`;
+    candidate.style.width = `${Math.round(width)}px`;
+    candidate.style.right = "auto";
+    candidate.style.transform = "none";
+    setWindowLayerZ(candidate, nextWindowLayerZ(8100 + index));
+  });
+}
+
+function placeDA(win) {
+  ensureWritingSpineCollapsedForPortraitDA();
+  if (win?.dataset.userPositioned === "true" && !isPortraitDocumentFlow()) {
+    setWindowLayerZ(win, nextWindowLayerZ());
+    return;
+  }
+  arrangeDeskAccessories(win);
+}
+
+function hasOpenAssistantSidecar() {
+  return [...assistantSidecarWindowNames].some((name) => {
+    const win = getWindow(name);
+    return win && !win.classList.contains("is-hidden");
+  });
+}
+
+function storeAssistantFrameForSidecar(assistant) {
+  if (!assistant || assistant.dataset.sidecarAdjusted === "true") return;
+  assistant.dataset.sidecarAdjusted = "true";
+  assistant.dataset.sidecarRestoreLeft = assistant.style.left || "";
+  assistant.dataset.sidecarRestoreTop = assistant.style.top || "";
+  assistant.dataset.sidecarRestoreRight = assistant.style.right || "";
+  assistant.dataset.sidecarRestoreWidth = assistant.style.width || "";
+  assistant.dataset.sidecarRestoreHeight = assistant.style.height || "";
+  assistant.dataset.sidecarRestoreTransform = assistant.style.transform || "";
+}
+
+function restoreAssistantAfterSidecar(options = {}) {
+  const assistant = getWindow("assistant");
+  if (!assistant || assistant.dataset.sidecarAdjusted !== "true") return;
+  if (!options.force && hasOpenAssistantSidecar()) return;
+
+  assistant.style.left = assistant.dataset.sidecarRestoreLeft || "";
+  assistant.style.top = assistant.dataset.sidecarRestoreTop || "";
+  assistant.style.right = assistant.dataset.sidecarRestoreRight || "";
+  assistant.style.width = assistant.dataset.sidecarRestoreWidth || "";
+  assistant.style.height = assistant.dataset.sidecarRestoreHeight || "";
+  assistant.style.transform = assistant.dataset.sidecarRestoreTransform || "";
+
+  delete assistant.dataset.sidecarAdjusted;
+  delete assistant.dataset.sidecarRestoreLeft;
+  delete assistant.dataset.sidecarRestoreTop;
+  delete assistant.dataset.sidecarRestoreRight;
+  delete assistant.dataset.sidecarRestoreWidth;
+  delete assistant.dataset.sidecarRestoreHeight;
+  delete assistant.dataset.sidecarRestoreTransform;
+}
+
+function getAssistantSidecarDefaults(name) {
+  return {
+    dictation: { width: 380, height: 520, minAssistantWidth: 420 },
+    translationPad: { width: 380, height: 520, minAssistantWidth: 420 },
+    importUtility: { width: 460, height: 520, minAssistantWidth: 420 },
+    rag: { width: 500, height: 360, minAssistantWidth: 420 },
+  }[name] || { width: 380, height: 480, minAssistantWidth: 420 };
+}
+
+function isAssistantSidecarWindow(winOrName) {
+  const name = typeof winOrName === "string" ? winOrName : winOrName?.dataset.window;
+  return assistantSidecarWindowNames.has(name);
+}
+
+function visibleSidecarAnchor(candidate) {
+  return visibleWindowOrNull(candidate);
+}
+
+function getPreferredAssistantSidecarSource(name) {
+  const active = document.querySelector(".window.is-active:not(.is-hidden):not(.is-app-hidden):not(.is-minimized):not(.is-collapsed)");
+  if (name === "importUtility") {
+    return visibleSidecarAnchor(getWindow("projects"))
+      || visibleSidecarAnchor(getWindow("assistant"))
+      || (active && !isAssistantSidecarWindow(active) ? active : null);
+  }
+  return active && !isAssistantSidecarWindow(active) ? active : null;
+}
+
+function placeAssistantSidecarWindow(name, win) {
+  const margin = 16;
+  const gap = 12;
+  const mobile = isNarrowViewport();
+  const desktop = document.querySelector(".desktop");
+  const desktopRect = desktop?.getBoundingClientRect();
+  const avoidance = getDesktopAvoidanceInsets({ margin, spineGap: 18, iconGap: 48 });
+  const desktopWidth = desktopRect?.width || window.innerWidth;
+  const desktopHeight = (desktopRect?.height || Math.max(260, window.innerHeight - 25)) - deskDockReserve();
+  const workLeft = mobile ? margin : avoidance.left;
+  const workTop = mobile ? margin : writingSpineAlignedTopForWindow(win, 18);
+  const workRight = Math.max(workLeft + 220, desktopWidth - (mobile ? margin : avoidance.right + margin));
+  const workBottom = Math.max(workTop + 260, desktopHeight - margin);
+  const workWidth = Math.max(220, workRight - workLeft);
+  const workHeight = Math.max(260, workBottom - workTop);
+  const defaults = getAssistantSidecarDefaults(name);
+  const minAssistantWidth = defaults.minAssistantWidth;
+  const width = Math.min(win.offsetWidth || defaults.width, workWidth);
+  const height = Math.min(win.offsetHeight || defaults.height, workHeight);
+  const sidecarInputTarget = name === "dictation"
+    ? dictationInputTarget
+    : name === "translationPad"
+      // The pad owns this, and it is a lazy module: a sidecar placement that
+      // somehow ran before the pad loaded would otherwise be a ReferenceError.
+      ? (typeof translationPadInputTarget === "undefined" ? null : translationPadInputTarget)
+      : null;
+  const targetWindow = sidecarInputTarget?.closest?.(".window");
+  const sourceWindow = (
+    targetWindow && !isAssistantSidecarWindow(targetWindow)
+      ? visibleSidecarAnchor(targetWindow)
+      : null
+  )
+    || getPreferredAssistantSidecarSource(name)
+    || visibleSidecarAnchor(getWindow("assistant"));
+
+  win.style.width = `${width}px`;
+  win.style.maxHeight = `${height}px`;
+  win.style.right = "auto";
+  win.style.transform = "none";
+
+  if (mobile || !sourceWindow || sourceWindow.classList.contains("is-hidden")) {
+    if (isPortraitDocumentFlow() && getWindowAppId(win) === "accessories") {
+      arrangeDeskAccessories(win);
+      return;
+    }
+    win.style.left = `${workLeft}px`;
+    win.style.top = `${workTop}px`;
+    return;
+  }
+
+  const viewportRect = sourceWindow.getBoundingClientRect();
+  const desktopLeft = desktopRect?.left || 0;
+  const desktopTop = desktopRect?.top || 0;
+  const rect = {
+    left: viewportRect.left - desktopLeft,
+    right: viewportRect.right - desktopLeft,
+    top: viewportRect.top - desktopTop,
+    bottom: viewportRect.bottom - desktopTop,
+  };
+  const topMin = workTop;
+  const topMax = Math.max(topMin, workBottom - height);
+  const leftMin = workLeft;
+  const leftMax = Math.max(leftMin, workRight - width);
+  const candidates = [
+    {
+      fits: rect.right + gap + width <= workRight,
+      left: rect.right + gap,
+      top: clampNumber(rect.top, topMin, topMax),
+    },
+    {
+      fits: rect.left - gap - width >= workLeft,
+      left: rect.left - gap - width,
+      top: clampNumber(rect.top, topMin, topMax),
+    },
+    {
+      fits: rect.bottom + gap + height <= workBottom,
+      left: clampNumber(rect.left, leftMin, leftMax),
+      top: rect.bottom + gap,
+    },
+    {
+      fits: rect.top - gap - height >= topMin,
+      left: clampNumber(rect.left, leftMin, leftMax),
+      top: rect.top - gap - height,
+    },
+  ];
+  const openSidecarOffset = [...assistantSidecarWindowNames]
+    .filter((sidecarName) => sidecarName !== name)
+    .map(getWindow)
+    .filter(visibleSidecarAnchor)
+    .length * 18;
+  const candidate = candidates.find((item) => item.fits);
+
+  if (candidate) {
+    win.style.left = `${candidate.left}px`;
+    win.style.top = `${clampNumber(candidate.top + openSidecarOffset, topMin, topMax)}px`;
+    return;
+  }
+
+  if (sourceWindow.dataset.window === "assistant") {
+    const assistant = sourceWindow;
+    const assistantLeft = Math.max(workLeft, rect.left);
+    const dictationLeft = leftMax;
+    const availableAssistantWidth = dictationLeft - gap - assistantLeft;
+
+    if (availableAssistantWidth >= minAssistantWidth) {
+      storeAssistantFrameForSidecar(assistant);
+      assistant.style.left = `${assistantLeft}px`;
+      assistant.style.right = "auto";
+      assistant.style.width = `${availableAssistantWidth}px`;
+      assistant.style.transform = "none";
+
+      win.style.left = `${dictationLeft}px`;
+      win.style.top = `${clampNumber(rect.top + openSidecarOffset, topMin, topMax)}px`;
+      return;
+    }
+  }
+
+  win.style.left = `${leftMax}px`;
+  win.style.top = `${clampNumber(topMin + openSidecarOffset, topMin, topMax)}px`;
+}
+
+function sourceWindowForAssistantContext(context) {
+  if (!context) return null;
+  if (["teachtext", "fileDisk"].includes(context.surface)) return "teachText";
+  if (context.surface === "assistant") return null;
+  const bySurface = {
+    reader: "reader",
+    scrapbook: "scrapbook",
+    questionSheet: "questionSheet",
+    outline: "outline",
+    sectionDrafts: "sectionDrafts",
+    documents: "chatFile",
+    clipboard: "clipboard",
+    styleSheet: "reviewDesk",
+    claimCheck: "reviewDesk",
+    docMap: "docMap",
+    systemHelp: "systemHelp",
+    notePad: "notePad",
+  };
+  return bySurface[context.surface] || null;
+}
+
+async function openAssistantAvoidingWindow(sourceName = "teachText") {
+  await openWindow("assistant");
+  const assistant = getWindow("assistant");
+  const sourceWindow = sourceName ? getWindow(sourceName) : null;
+  if (!assistant) return;
+  if (writerMode) {
+    setAssistantDesklet(true);
+    return;
+  }
+  if (isMobileWorkAreaCssOwned(assistant)) return;
+  if (!sourceWindow || sourceWindow.classList.contains("is-hidden")) return;
+
+  const margin = 16;
+  const menuHeight = 25;
+  const gap = 12;
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const mobile = isNarrowViewport();
+  const sourceRect = sourceWindow.getBoundingClientRect();
+  const topMin = menuHeight + margin;
+  const maxHeight = Math.max(240, viewportHeight - topMin - margin);
+  const desiredHeight = mobile ? Math.min(760, maxHeight) : Math.min(540, maxHeight);
+  const desiredWidth = Math.min(620, Math.max(360, Math.round(viewportWidth * 0.36)));
+  const minWidth = Math.min(340, viewportWidth - margin * 2);
+
+  assistant.classList.remove("is-collapsed", "is-desklet");
+  assistant.style.right = "auto";
+  assistant.style.transform = "none";
+  assistant.style.maxHeight = `${desiredHeight}px`;
+  assistant.style.height = `${desiredHeight}px`;
+
+  function applyFrame(left, top, width, height = desiredHeight) {
+    const clampedWidth = Math.max(minWidth, Math.min(width, viewportWidth - margin * 2));
+    const clampedHeight = Math.max(240, Math.min(height, viewportHeight - topMin - margin));
+    const leftMax = Math.max(margin, viewportWidth - clampedWidth - margin);
+    const topMax = Math.max(topMin, viewportHeight - clampedHeight - margin);
+    assistant.style.left = `${clampNumber(left, margin, leftMax)}px`;
+    assistant.style.top = `${clampNumber(top, topMin, topMax)}px`;
+    assistant.style.width = `${clampedWidth}px`;
+    assistant.style.height = `${clampedHeight}px`;
+    assistant.style.maxHeight = `${clampedHeight}px`;
+  }
+
+  const rightSpace = viewportWidth - sourceRect.right - gap - margin;
+  const leftSpace = sourceRect.left - gap - margin;
+  const belowSpace = viewportHeight - sourceRect.bottom - gap - margin;
+  const aboveSpace = sourceRect.top - gap - topMin;
+
+  if (!mobile && rightSpace >= minWidth) {
+    applyFrame(sourceRect.right + gap, sourceRect.top, Math.min(desiredWidth, rightSpace), desiredHeight);
+    return;
+  }
+  if (!mobile && leftSpace >= minWidth) {
+    const width = Math.min(desiredWidth, leftSpace);
+    applyFrame(sourceRect.left - gap - width, sourceRect.top, width, desiredHeight);
+    return;
+  }
+
+  const stackedWidth = Math.min(
+    Math.max(minWidth, sourceRect.width),
+    viewportWidth - margin * 2
+  );
+  const stackedLeft = Math.min(sourceRect.left, viewportWidth - stackedWidth - margin);
+  if (belowSpace >= 220) {
+    applyFrame(stackedLeft, sourceRect.bottom + gap, stackedWidth, Math.min(desiredHeight, belowSpace));
+    return;
+  }
+  if (aboveSpace >= 220) {
+    const height = Math.min(desiredHeight, aboveSpace);
+    applyFrame(stackedLeft, sourceRect.top - gap - height, stackedWidth, height);
+    return;
+  }
+
+  const fallbackHeight = mobile ? Math.min(620, maxHeight) : Math.min(300, maxHeight);
+  applyFrame(margin, viewportHeight - fallbackHeight - margin, viewportWidth - margin * 2, fallbackHeight);
+}
+
+async function arrangeDocMapAssistantSplit() {
+  return arrangeWindowAssistantSplit("docMap", {
+    onSplitApplied() {
+      requestAnimationFrame(() => {
+        withDocMap(() => {
+          renderDocMap();
+          requestAnimationFrame(() => restoreDocMapCanvasView());
+        });
+      });
+    },
+  });
+}
+
+async function arrangeClioStageAssistantSplit() {
+  return arrangeWindowAssistantSplit("clioStage");
+}
+
+async function arrangeWindowAssistantSplit(sourceWindowName, options = {}) {
+  const sourceWindow = getWindow(sourceWindowName);
+  const assistant = getWindow("assistant");
+  if (!sourceWindow || !assistant) return false;
+
+  const sourceAppId = getWindowAppId(sourceWindow);
+  const sourceAnchorId = {
+    quickDraft: "quickDraft",
+    teachText: "teachText",
+    questionSheet: "questionSheet",
+    outline: "outline",
+    sectionDrafts: "sectionDrafts",
+    reviewDesk: "reviewDesk",
+    reader: "reader",
+    scrapbook: "scrapbook",
+    docMap: "docMap",
+    clioStage: "clioStage",
+    timeMachine: "timeMachine",
+    imagePromptStudio: "imagePromptStudio",
+    endfieldTerminal: "endfieldTerminal",
+  }[sourceWindowName] || sourceAppId;
+  if (!isMultiFinderMode()) {
+    const canOpenPair = await prepareFinderModeForApp(sourceAppId);
+    if (!canOpenPair) return false;
+    setSideAskAnchorApp(sourceAnchorId, sourceAppId);
+  }
+
+  await openWindow("assistant", { skipFinderMode: true, skipPlacement: true, skipFocus: true });
+  const refreshedAssistant = getWindow("assistant") || assistant;
+  if (!isMultiFinderMode() && typeof enterSideAskClioTalkSession === "function") {
+    enterSideAskClioTalkSession(sourceAnchorId);
+  } else if (!isMultiFinderMode() && sourceAnchorId === "quickDraft" && typeof enterQuickDraftClioTalkSession === "function") {
+    enterQuickDraftClioTalkSession();
+  }
+  if (writerMode) {
+    await openAssistantAvoidingWindow(sourceWindowName);
+    return true;
+  }
+
+  // On a phone one app fills the screen, so there is no pair to lay out — and
+  // the frames below are inline styles that would override the full-screen
+  // shell. The ClioTalk session is already wired above; land on the paired
+  // conversation so SideAsk is discoverable — the assistant's own
+  // sideask-mode-strip ("Paired with TeachText" + End SideAsk) is the bridge
+  // back to the writing surface.
+  if (isPortraitDocumentFlow() || isNarrowViewport()) {
+    focusWindow(refreshedAssistant);
+  }
+  if (isPortraitDocumentFlow() || isNarrowViewport()) {
+    syncMobileAppForeground();
+    return true;
+  }
+
+  const desktop = document.querySelector(".desktop");
+  const desktopRect = desktop.getBoundingClientRect();
+  const margin = 18;
+  const gap = 14;
+  const avoidance = getDesktopAvoidanceInsets({ margin });
+  const left = avoidance.left;
+  const top = margin;
+  const isStacked = window.matchMedia("(orientation: portrait)").matches || isNarrowViewport();
+  const totalWidth = Math.max(340, desktopRect.width - avoidance.left - avoidance.right - margin);
+  const menuBarBottom = document.querySelector(".menu-bar")?.getBoundingClientRect().bottom || 0;
+  const desktopTop = Math.max(desktopRect.top, menuBarBottom);
+  const availableDesktopHeight = Math.min(desktopRect.height, Math.max(0, window.innerHeight - desktopTop));
+  const height = Math.max(300, availableDesktopHeight - margin * 2);
+
+  rememberWindowFrame(sourceWindow);
+  rememberWindowFrame(refreshedAssistant);
+  saveSideAskRestoreFrame(sourceWindow);
+  saveSideAskRestoreFrame(refreshedAssistant);
+  sourceWindow.classList.remove("is-collapsed", "is-desklet", "is-hidden");
+  refreshedAssistant.classList.remove("is-collapsed", "is-desklet", "is-hidden");
+
+  const applyFrame = (win, frame) => placeWindowForExplicitLayout(win, {
+    left: frame.left,
+    top: frame.top,
+    width: frame.width,
+    height: frame.height,
+    maxHeight: frame.height,
+  });
+
+  if (isStacked) {
+    sourceWindow.style.order = "2";
+    refreshedAssistant.style.order = "3";
+    const minStackPaneHeight = Math.min(220, Math.max(140, Math.floor((height - gap) / 2)));
+    const sourceHeight = clampNumber(
+      Math.round((height - gap) * 0.56),
+      minStackPaneHeight,
+      height - gap - minStackPaneHeight
+    );
+    const assistantHeight = height - gap - sourceHeight;
+    applyFrame(sourceWindow, { left, top, width: totalWidth, height: sourceHeight });
+    applyFrame(refreshedAssistant, {
+      left,
+      top: top + sourceHeight + gap,
+      width: totalWidth,
+      height: assistantHeight,
+    });
+  } else {
+    sourceWindow.style.order = "";
+    refreshedAssistant.style.order = "";
+    const sourceWidth = Math.round((totalWidth - gap) * 0.6);
+    const assistantWidth = Math.max(340, totalWidth - gap - sourceWidth);
+    applyFrame(sourceWindow, { left, top, width: sourceWidth, height });
+    applyFrame(refreshedAssistant, {
+      left: left + sourceWidth + gap,
+      top,
+      width: assistantWidth,
+      height,
+    });
+  }
+
+  setWindowLayerZ(sourceWindow, nextWindowLayerZ());
+  setWindowLayerZ(refreshedAssistant, nextWindowLayerZ());
+  focusWindow(refreshedAssistant);
+
+  if (typeof options.onSplitApplied === "function") {
+    options.onSplitApplied(refreshedAssistant, sourceWindow);
+  }
+  return true;
+}
+
+function arrangeReaderAssistantSplit() {
+  return arrangeWindowAssistantSplit("reader");
+}
+
+function arrangeScrapbookAssistantSplit() {
+  return arrangeWindowAssistantSplit("scrapbook");
+}
+function quietStartup() {
+  // Managed windows only: a `.window` with no data-window was never opened by
+  // the manager. Theme Lab shows real windows as specimens so the era paints
+  // them, and a sweep that hides or re-frames one empties the board.
+  document.querySelectorAll(".window[data-window]").forEach((win) => {
+    if (win.dataset.window !== "assistant") {
+      win.classList.add("is-hidden");
+    }
+  });
+  modalScrim.classList.add("is-hidden");
+}
+
+function showAboutMultiFinder() {
+  // About text is something to read, not something to answer. The balloon
+  // carries the same paragraph and leaves the desk usable.
+  pushSystemNotification(t("about_multifinder_body"));
+}
+
+async function restartSystem() {
+  let saveFailed = false;
+  try {
+    await saveDeskState();
+    await clearWorkingSession();
+  } catch (error) {
+    // lane-errors: this used to log to the console only, then reload the
+    // page 220ms later regardless - discarding whatever the failed save
+    // could not write, with nothing the user could see. Restart is
+    // destructive (a reload), so a failed save gets a real choice instead
+    // of a silent one.
+    console.warn("Restart save failed", error);
+    saveFailed = true;
+  }
+  if (saveFailed) {
+    const proceed = await showSystemModal(t("restart_save_failed_confirm"), "confirm", { defaultAction: "cancel" });
+    if (proceed !== "yes") {
+      setStatus(t("restart_save_failed_cancelled"));
+      return;
+    }
+  }
+  // An explicit Restart is a cold boot: the full Happy Mac ceremony plays
+  // again instead of the warm-resume flash.
+  if (typeof clearSessionBootSeen === "function") clearSessionBootSeen();
+  closeMenus();
+  document.body.classList.add("is-shutting-down");
+  setStatus(t("restart_starting"));
+  playSystemSound("save");
+  window.setTimeout(() => window.location.reload(), 220);
+}
+
+async function shutDownSystem() {
+  // Shut Down is the writer's own command and the desk saves itself on the way
+  // out, so there is nothing to ask about: the shutdown screen reports what
+  // actually happened, including a save that failed.
+  let saveFailed = false;
+  try {
+    await saveDeskState();
+    await clearWorkingSession();
+  } catch (error) {
+    // lane-errors: this used to log to the console only, then still show
+    // "It is now safe to shut down AI System 6." - a claim the save that
+    // just failed could not back up. The shutdown screen says which one of
+    // those actually happened instead of promising that both did.
+    console.warn("Shutdown save failed", error);
+    saveFailed = true;
+  }
+  closeMenus();
+  document.body.classList.add("is-shutting-down");
+  // Managed windows only: a `.window` with no data-window was never opened by
+  // the manager. Theme Lab shows real windows as specimens so the era paints
+  // them, and a sweep that hides or re-frames one empties the board.
+  document.querySelectorAll(".window[data-window]").forEach((win) => win.classList.add("is-hidden"));
+  document.querySelector("#shutdown-screen")?.classList.remove("is-hidden");
+  modalScrim.classList.add("is-hidden");
+  setStatus(saveFailed ? t("shutdown_save_failed") : t("shutdown_message"));
+  playSystemSound("shutdown");
+  renderMultiFinderMenu();
+}
+
+function setAssistantDesklet(enabled) {
+  const assistant = getWindow("assistant");
+  if (!assistant) return;
+
+  assistant.classList.toggle("is-desklet", enabled);
+  if (enabled) {
+    assistant.dataset.app = "clioTalk";
+    ensureRunningApp(assistant.dataset.app, "assistant");
+    hiddenAppIds.delete(assistant.dataset.app);
+    assistant.classList.remove("is-hidden", "is-app-hidden", "is-collapsed");
+    // The desklet's split geometry is CSS-owned in writer mode (60vw / 33vw);
+    // drop any stale inline frame (boot spine reflow, previous non-writer
+    // placement) so the non-!important CSS rules can win.
+    clearWindowInlineGeometry(assistant);
+  } else {
+    assistant.classList.remove("is-collapsed");
+    assistant.style.right = "auto";
+    assistant.style.left = "34px";
+    assistant.style.top = "34px";
+    assistant.style.transform = "none";
+  }
+}
+
+// The user verb: a deliberate click on the temporary peek surface unrolls the
+// shade for real. The toggle lives HERE, with the shade it changes; the peek
+// state machine itself (begin/end/isWindowPeeking) is the lazy peek module's.
+function commitPeek(win = null) {
+  const peeking = window.AISystem6WindowPeek;
+  const target = win || peeking?.shadePeekWindow?.() || null;
+  if (!target) return false;
+  const wasPeeking = !!peeking?.isWindowPeeking?.(target);
+  peeking?.endPeek?.(target);
+  if (!target.classList.contains("is-collapsed")) return wasPeeking;
+  toggleCollapsed(target);
+  return true;
+}
+
+async function closeWindow(name, force = false, instance) {
+  const win = getWindowInstance(name, instance);
+  if (!win) return false;
+
+  if (name === "about") await window.AISystem6About?.closing?.();
+
+  if (name === "assistant" && clioTalkTemporaryMode) {
+    if (activeAbortController && !force) {
+      setStatus(t("task_already_running", localModelState.task || t("working_locally")));
+      return false;
+    }
+    if (!force && !await confirmDiscardTemporaryClioTalkConversation()) return false;
+    discardTemporaryClioTalkConversation();
+  }
+
+  if (name === "teachText" && !force && shouldPromptForTeachTextFileSave()) {
+    const result = await showSystemModal(teachTextUnsavedChangesMessage(), "save");
+    if (result === "cancel") return false;
+    if (result === "yes") {
+      const saved = await saveTextDocument();
+      if (!saved) return false;
+    } else {
+      setTeachTextStatus("saved"); // clear dirty state after discard
+    }
+  }
+
+  // A mounted workbook or presentation asks about unsaved edits (cancelled
+  // keeps the window) and, answered or clean, unmounts and gives the window its chrome back.
+  const native = { clioChart: window.AISystem6ClioChartWorkbook, clioStage: window.AISystem6ClioStageNative, clioWrite: window.AISystem6ClioWrite }[name];
+  if (native?.current?.() && await native.close() === "cancelled") return false;
+
+  // Draft Desk closes like every first-class writing app: pending or Modified
+  // work is flushed before the window hides, and a failed persist keeps the
+  // window open with a Modified receipt. Never close silently over unsaved
+  // durable state.
+  if (name === "quickDraft" && !force) {
+    const workspace = typeof activeProjectQuickDraft === "function"
+      ? activeProjectQuickDraft({ create: false })?.record?.workspace
+      : null;
+    const pendingCommit = typeof pendingQuickDraftCommit !== "undefined" && pendingQuickDraftCommit;
+    if (pendingCommit || workspace?.savedStatus === "modified") {
+      const result = typeof commitQuickDraft === "function"
+        ? await commitQuickDraft({})
+        : null;
+      if (!result || result.ok !== true) {
+        window.AISystem6QuickDraftRuntime?.setSaveState?.("modified");
+        window.AISystem6QuickDraftRuntime?.setQuickDraftStatus?.(t("quick_draft_save_failed"));
+        return false;
+      }
+    }
+  }
+
+  if (name === "themeLab") window.AISystem6ThemeLab?.cleanup?.();
+  // A closed window must not be moved by a callback scheduled before the close.
+  invalidateWindowAutoLayout(win);
+  window.AISystem6WindowPeek?.endPeek?.(win);
+  window.AISystem6WindowShade?.detach(win, true);
+  window.AISystem6WindowPreview?.release(win);
+  window.AISystem6WindowMinimize?.releaseCapture(win);
+  // A second instance's tab set goes with its window (§4.2, ruling of
+  // 2026-10-14). The identity layer is loaded whenever an instance exists and
+  // answers nothing for a main window, so this is silent on the ordinary close.
+  window.AISystem6WindowInstances?.dropTabs?.(win);
+  delete win.dataset.windowPinned;
+  win.classList.add("is-hidden");
+  win.classList.remove("is-minimized");
+  // 文字亮室 shows a view of the draft, so the window going away has to put the
+  // view back. Closing it with ⌘W used to leave the display mode on "grain"
+  // with no window to show one.
+  if (name === "lightroom") window.AISystem6QuickDraft?.noteLightroomClosed?.();
+  if (name === "writingBell" && typeof noteWritingBellClosed === "function") {
+    noteWritingBellClosed();
+  }
+  if (name === "memoryCards") {
+    pauseMemoryCardsGame();
+  }
+  // Stop any in-flight USDZ render and model refresh timer before the window
+  // hides, so a closed CMF Studio never finishes parsing a model nobody can
+  // see. (Guarded: the module is only present once the window has opened.)
+  if (name === "cmfStudio" && window.AISystem6CMFStudio) {
+    window.AISystem6CMFStudio.cancelRender?.();
+  }
+  delete win.dataset.appHiddenCollapsed;
+  playSystemSound("close");
+  if (name === "findPath") {
+    document.body.classList.remove("has-find-path-open");
+  }
+  if (name === "contextPanel") {
+    document.body.classList.remove("has-context-panel-open");
+  }
+  if (name === "documents") {
+    clioTalkAttachmentPickerActive = false;
+  }
+  if (name === "quickDraft" && sideAskEnabled && sideAskAnchorAppId === "quickDraft") {
+    const assistantWindow = getWindow("assistant");
+    if (!closingQuickDraftAssistantPair && assistantWindow && !assistantWindow.classList.contains("is-hidden") && !assistantWindow.classList.contains("is-app-hidden")) {
+      closingQuickDraftAssistantPair = true;
+      await closeWindow("assistant", true);
+      closingQuickDraftAssistantPair = false;
+    }
+    clearSideAskMode();
+    resetAssistantForStandalonePlacement(assistantWindow);
+  }
+  if (name !== "assistant" && name !== "quickDraft" && sideAskEnabled && getWindowAppId(win) === sideAskAnchorAppId) {
+    clearSideAskMode();
+    resetAssistantForStandalonePlacement(getWindow("assistant"));
+  }
+  updateQuickDraftFocusChrome();
+  if (assistantSidecarWindowNames.has(name)) {
+    restoreAssistantAfterSidecar();
+  }
+  if (getWindowAppId(win) === "accessories" && !writerMode) {
+    if (isPortraitDocumentFlow() || !isDeskAccessorySidecar(win)) arrangeDeskAccessories();
+    raiseVisibleDeskAccessorySidecars();
+  }
+  if (name === "assistant") {
+    if (!closingQuickDraftAssistantPair && sideAskEnabled && sideAskAnchorAppId === "quickDraft") {
+      const quickDraftWindow = getWindow("quickDraft");
+      if (quickDraftWindow && !quickDraftWindow.classList.contains("is-hidden") && !quickDraftWindow.classList.contains("is-app-hidden")) {
+        closingQuickDraftAssistantPair = true;
+        await closeWindow("quickDraft", true);
+        closingQuickDraftAssistantPair = false;
+      }
+    }
+    if (writerMode && sideAskEnabled) {
+      writerMode = false;
+      document.body.classList.remove("is-writer-mode");
+      setAssistantDesklet(false);
+      applyLanguage();
+      saveDeskState();
+    }
+    clearSideAskMode();
+  }
+  updateMenuState();
+
+  forgetWindowFromRunningApps(name);
+  let restoredSource = null;
+  const returnWindowName = !isMultiFinderMode() ? (win.dataset.returnWindowName || "") : "";
+  if (returnWindowName) {
+    const returnWindow = getWindow(returnWindowName);
+    if (
+      returnWindow
+      && returnWindow !== win
+      && !returnWindow.classList.contains("is-hidden")
+      && !returnWindow.classList.contains("is-app-hidden")
+    ) {
+      restoredSource = returnWindow;
+    } else if (returnWindow && returnWindow !== win) {
+      returnWindow.classList.remove("is-hidden", "is-app-hidden");
+      delete returnWindow.dataset.appHiddenCollapsed;
+      ensureRunningApp(getWindowAppId(returnWindow), returnWindow.dataset.window);
+      restoredSource = returnWindow;
+    }
+  }
+  delete win.dataset.returnWindowName;
+  // Closing the window the keyboard was in must not drop the focus on the floor:
+  // the window that takes over gets it, and with no window left the desk does,
+  // so the next Tab resumes where the person is looking.
+  if (restoredSource) {
+    focusWindow(restoredSource, true);
+    focusIntoWindow(restoredSource);
+    activeAppId = getWindowAppId(restoredSource);
+  } else {
+    const next = document.querySelector(".window.is-active:not(.is-hidden):not(.is-app-hidden):not(.is-minimized)")
+      || Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-minimized)"))
+        .sort((a, b) => Number(b.style.zIndex || 0) - Number(a.style.zIndex || 0))[0];
+    if (next) {
+      focusWindow(next);
+      focusIntoWindow(next);
+    } else {
+      activeAppId = "finder";
+      document.activeElement?.blur?.();
+    }
+  }
+  syncMobileAppForeground();
+  renderMultiFinderMenu();
+  scheduleWorkingSessionSave?.();
+  return true;
+}
+
+// A shade's own height is CSS-owned; the size it had is remembered on the
+// element so Expand puts it back exactly. Shared by the shade verb, the orphan
+// release and reopening an already-open shaded window, so all three restore the
+// saved dimensions the same way. An empty string is intentional CSS ownership,
+// not a missing value.
+function restoreWindowShadeDimensions(win) {
+  if (!win) return;
+  setInlineStyleValue(win, "--window-shade-width", "");
+  setInlineStyleValue(win, "height", win.dataset.shadeRestoreHeight || "");
+  setInlineStyleValue(win, "max-height", win.dataset.shadeRestoreMaxHeight || "");
+  delete win.dataset.shadeRestoreHeight;
+  delete win.dataset.shadeRestoreMaxHeight;
+}
+
+// A pointer-driven roll up or down is a height transition from wherever the
+// window is on screen now, so pressing again reverses it without a jump.
+// endShadeRoll settles a roll onto its real end state; the transition itself
+// is only presentation.
+function endShadeRoll(win) {
+  const roll = win._shadeRoll;
+  if (!roll) return;
+  win._shadeRoll = null;
+  clearTimeout(roll.timer);
+  win.removeEventListener("transitionend", roll.done);
+  win.classList.remove("is-shading");
+  setInlineStyleValue(win, "transition", "");
+  setInlineStyleValue(win, "min-height", "");
+  setInlineStyleValue(win, "height", roll.final);
+}
+
+function rollShade(win, from) {
+  const to = win.getBoundingClientRect().height;
+  if (!(from > 0) || Math.abs(to - from) < 2) return;
+  const roll = { final: inlineStyleValue(win, "height") };
+  roll.done = (event) => { if (!event || (event.target === win && event.propertyName === "height")) endShadeRoll(win); };
+  win._shadeRoll = roll;
+  win.classList.add("is-shading");
+  setInlineStyleValue(win, "transition", "none");
+  setInlineStyleValue(win, "min-height", "0");
+  setInlineStyleValue(win, "height", `${from}px`);
+  void win.offsetHeight;
+  setInlineStyleValue(win, "transition", "height 180ms cubic-bezier(0.23, 1, 0.32, 1)");
+  setInlineStyleValue(win, "height", `${to}px`);
+  win.addEventListener("transitionend", roll.done);
+  roll.timer = setTimeout(roll.done, 260);
+}
+
+function toggleCollapsed(win, animate = false) {
+  if (!win?.isConnected) return;
+  const liveHeight = win._shadeRoll ? win.getBoundingClientRect().height : 0;
+  endShadeRoll(win);
+  invalidateWindowAutoLayout(win);
+  // Relinquish temporary full-screen geometry before recording the shade. A
+  // 100dvh window cannot shade, and the shade must remember the real frame,
+  // not the priority-band view it is leaving.
+  if (win.classList.contains("is-fullscreen")) window.AISystem6WindowFullscreen?.exit(win);
+  window.AISystem6WindowPreview?.remember(win);
+  window.AISystem6WindowShade?.detach(win, true);
+  const willCollapse = !win.classList.contains("is-collapsed");
+  // The writer's own roll up or down: from here the shade is theirs, not Hide's.
+  delete win.dataset.appHiddenCollapsed;
+  window.AISystem6WindowPeek?.endPeek?.(win);
+  const before = win.getBoundingClientRect();
+  if (willCollapse) {
+    const width = Math.round(before.width);
+    if (width > 0) setInlineStyleValue(win, "--window-shade-width", `${width}px`);
+    // The shade stub's height is CSS-owned (auto / title bar only). Drop any
+    // inline height from a previous maximize/placement and remember it so the
+    // window comes back at its exact size on expand.
+    win.dataset.shadeRestoreHeight = inlineStyleValue(win, "height");
+    win.dataset.shadeRestoreMaxHeight = inlineStyleValue(win, "max-height");
+    setInlineStyleValue(win, "height", "");
+    setInlineStyleValue(win, "max-height", "");
+    win.classList.add("is-collapsed");
+    // On a phone the shade floats over the next full-screen app window; pin
+    // its stacking layer so the title bar stays reachable until expanded.
+    if (isPortraitDocumentFlow() || isNarrowViewport()) {
+      setWindowLayerZ(win, windowPinnedZ);
+    }
+  } else {
+    win.classList.remove("is-collapsed");
+    restoreWindowShadeDimensions(win);
+    // Expanding must reclaim the foreground: another window may have taken
+    // the phone's full-screen shell while this one was shaded. Focus raises
+    // the z-index so the following foreground sync picks this window again.
+    focusWindow(win);
+  }
+  keepWindowCornerAfterShade(win, before);
+  if (animate && fluidMotion() && !isPortraitDocumentFlow() && !isNarrowViewport()) rollShade(win, liveHeight || before.height);
+  // A phone presents one app page at a time: a shaded window must leave the
+  // full-screen shell (it cannot stay "fullscreen" as a 20px title bar) and
+  // the expanded window must reclaim it, otherwise the shade is unreachable.
+  // The mobile CSS keeps the collapsed shade visible and above the foreground
+  // app (60-responsive.css), so the second double-click always finds it.
+  syncMobileAppForeground();
+  scheduleWorkingSessionSave?.();
+}
+
+
+
+// WindowShade rolls up and down in place. Start Here is centred by a transform,
+// and compact layouts re-anchor a collapsed window from the viewport to the
+// desk, so hiding the pane moved the title bar out from under the pointer: the
+// second double-click landed on the desk instead, and the shade could never be
+// unrolled. Whatever the stylesheet did, put the corner back where it was.
+function keepWindowCornerAfterShade(win, before) {
+  if (!before.width && !before.height) return;
+  const after = win.getBoundingClientRect();
+  if (Math.abs(after.left - before.left) < 0.5 && Math.abs(after.top - before.top) < 0.5) return;
+  const base = win.offsetParent?.getBoundingClientRect() || { left: 0, top: 0 };
+  win.style.left = `${Math.round(before.left - base.left)}px`;
+  win.style.top = `${Math.round(before.top - base.top)}px`;
+  win.style.transform = "none";
+  // A portrait Desk Accessory is centred by a responsive
+  // `transform: var(--mobile-da-transform, none) !important`, which would win
+  // over the pinned corner above when the shade unrolls. Resolve the token to
+  // none as well so the window really stays where its title bar was.
+  if (win.classList.contains("is-mobile-da-arranged")) {
+    win.style.setProperty("--mobile-da-transform", "none");
+  }
+}
+
+function isResizableWindow(win) {
+  if (!win || !resizableWindowNames.has(win.dataset.window)) return false;
+  const appId = getWindowAppId(win);
+  return !(writerMode && sideAskEnabled && isSideAskPairApp(appId));
+}
+
+// The System 6 Zoom box and grow box are separate actions even when a full app
+// exposes both. The title-bar control is authoritative: fixed system windows
+// and Desk Accessories omit it. `.resize-box` is the legacy DOM class name.
+function isZoomableWindow(win) {
+  if (!win?.querySelector(":scope > .title-bar > .resize-box:not([disabled])")) return false;
+  const appId = getWindowAppId(win);
+  return !(writerMode && sideAskEnabled && isSideAskPairApp(appId));
+}
+
+function isAspectLockedWindow(win) {
+  return win?.dataset.window === "clioStage";
+}
+
+function aspectRatioForWindow(win) {
+  if (win?.dataset.window === "clioStage") return 16 / 9;
+  return 0;
+}
+
+function lockedAspectSize(win, width, height, constraints = {}) {
+  const aspect = aspectRatioForWindow(win);
+  if (!aspect) {
+    return { width, height };
+  }
+  const minWidth = constraints.minWidth || 300;
+  const minHeight = constraints.minHeight || 160;
+  const maxWidth = Math.max(minWidth, constraints.maxWidth || width);
+  const maxHeight = Math.max(minHeight, constraints.maxHeight || height);
+  let nextWidth = Math.min(maxWidth, Math.max(minWidth, width));
+  let nextHeight = Math.min(maxHeight, Math.max(minHeight, height));
+  if (nextWidth / aspect <= nextHeight) {
+    nextHeight = nextWidth / aspect;
+  } else {
+    nextWidth = nextHeight * aspect;
+  }
+  if (nextWidth < minWidth) {
+    nextWidth = minWidth;
+    nextHeight = nextWidth / aspect;
+  }
+  if (nextHeight < minHeight) {
+    nextHeight = minHeight;
+    nextWidth = nextHeight * aspect;
+  }
+  if (nextWidth > maxWidth) {
+    nextWidth = maxWidth;
+    nextHeight = nextWidth / aspect;
+  }
+  if (nextHeight > maxHeight) {
+    nextHeight = maxHeight;
+    nextWidth = nextHeight * aspect;
+  }
+  return {
+    width: Math.round(nextWidth),
+    height: Math.round(nextHeight),
+  };
+}
+
+function rememberWindowFrame(win) {
+  const rect = win.getBoundingClientRect();
+  win.dataset.restoreLeft = win.style.left || `${rect.left}px`;
+  win.dataset.restoreTop = win.style.top || `${rect.top}px`;
+  win.dataset.restoreWidth = win.style.width || `${rect.width}px`;
+  win.dataset.restoreHeight = win.style.height || `${rect.height}px`;
+}
+
+function getDesktopAvoidanceInsets({ margin = 18, spineGap = 18, iconGap = 34 } = {}) {
+  const desktop = document.querySelector(".desktop");
+  const desktopRect = desktop?.getBoundingClientRect();
+  const spine = document.querySelector(".writing-spine-panel") || document.querySelector(".spine-flow-toolbox");
+  const spineRect = spine?.getBoundingClientRect();
+  const iconColumn = document.querySelector(".nextstep-dock") || document.querySelector(".icon-column");
+  const iconRect = iconColumn?.classList.contains("is-spatial")
+    ? window.AISystem6FinderDesk?.iconsRect?.()
+    : iconColumn?.getBoundingClientRect();
+  // NeXTSTEP's main menu owns the left column in every workspace profile, not
+  // only while the Writing Flow floats under it: in the desktop profile a
+  // window used to open at x=24 with 126px of it under the menu.
+  const nextstep = typeof getCurrentTheme === "function" && getCurrentTheme() === "nextstep";
+  const menuRect = nextstep || writingSpineFloats(spine) ? window.AISystem6NextstepMenus?.rootRect?.() : null;
+  const spineVisible = spine
+    && !nextstep
+    && !writingSpineFloats(spine)
+    && !spine.classList.contains("is-hidden")
+    && spineRect
+    && spineRect.width > 0
+    && getComputedStyle(spine).position !== "static";
+  const iconsVisible = iconColumn
+    && iconRect
+    && iconRect.width > 0
+    && getComputedStyle(iconColumn).display !== "none"
+    && getComputedStyle(iconColumn).position !== "static";
+
+  return {
+    left: spineVisible
+      ? Math.max(margin, Math.ceil(spineRect.right - (desktopRect?.left || 0) + spineGap))
+      : menuRect?.width > 0
+        ? Math.max(margin, Math.ceil(menuRect.right - (desktopRect?.left || 0) + spineGap))
+        : margin,
+    // Measured from where the column IS, not from how wide it is. The two were
+    // the same number while the column was glued to the display's right edge;
+    // once it follows the composition inset (2026-09-05) a width-based figure
+    // left the work area running underneath it, and a zoomed window covered
+    // the launcher on a 27-inch display.
+    right: iconsVisible
+      ? Math.max(margin, Math.ceil((desktopRect?.right || 0) - iconRect.left + iconGap))
+      : 0,
+    // The Dock's band along the bottom edge; 0 without a Dock.
+    bottom: deskDockReserve(),
+  };
+}
+
+// The Writing Flow toolbox is part of the usable desk, not window chrome. New
+// windows already use getDesktopAvoidanceInsets(), but a Finder replacement,
+// restored session, or window dragged before Writing Studio opens can retain a
+// frame underneath it. Keep one collision rule for all of those entry paths.
+function avoidWritingSpineOverlap(win, { gap = 18 } = {}) {
+  if (
+    !win
+    || writerMode
+    || isPortraitDocumentFlow()
+    || win.classList.contains("is-hidden")
+    || win.classList.contains("is-app-hidden")
+    || win.dataset.window === "saveChat"
+  ) return false;
+
+  const desktop = document.querySelector(".desktop");
+  const spine = document.querySelector(".writing-spine-panel") || document.querySelector(".spine-flow-toolbox");
+  if (writingSpineFloats(spine)) return false;
+  const desktopRect = desktop?.getBoundingClientRect();
+  const spineRect = spine?.getBoundingClientRect();
+  const winRect = win.getBoundingClientRect();
+  const spineStyle = spine ? getComputedStyle(spine) : null;
+  const winStyle = getComputedStyle(win);
+  if (
+    !desktopRect
+    || !spineRect
+    || spineRect.width <= 0
+    || spineRect.height <= 0
+    || spineStyle?.display === "none"
+    || spineStyle?.visibility === "hidden"
+    || spineStyle?.position === "static"
+    || winStyle.position !== "absolute"
+    || !rectsOverlap(winRect, spineRect, gap)
+  ) return false;
+
+  const nextLeft = Math.round(spineRect.right - desktopRect.left + gap);
+  setInlineStyleValue(win, "left", `${nextLeft}px`);
+  setInlineStyleValue(win, "right", "auto");
+  setInlineStyleValue(win, "transform", "none");
+  return true;
+}
+
+// A command panel is anchored to the button that opens it, so a button near a
+// screen edge opens the panel past it. Three separate menus have been
+// re-anchored by hand for this — the writing route's Cmds, Quick Draft's
+// deliver menu, TeachText's Commands — and each fix only moved the problem to
+// whichever menu sat at the other end of its row. One nudge, applied to
+// whatever opens, ends the family: the panel still belongs to its button, it
+// just stops crossing the edge.
+function clampCommandPopoverIntoView(panel, margin = 8) {
+  if (!panel) return;
+  panel.style.removeProperty("transform");
+  const box = panel.getBoundingClientRect();
+  if (box.width <= 4 || box.height <= 4) return;
+  const pastRight = Math.round(box.right - window.innerWidth + margin);
+  const pastLeft = Math.round(margin - box.left);
+  const shiftX = pastRight > 0 ? -pastRight : (pastLeft > 0 ? pastLeft : 0);
+  // Sideways, a phone is shorter than these panels are tall: the route's own
+  // Cmds panel ended 8px under the screen even after it was capped, because
+  // the cap changes its height and the anchor decides where its bottom sits.
+  // Lift it by whatever hangs over, never past the top.
+  const pastBottom = Math.round(box.bottom - window.innerHeight + margin);
+  const headroom = Math.max(0, Math.round(box.top - margin));
+  const shiftY = pastBottom > 0 ? -Math.min(pastBottom, headroom) : 0;
+  if (shiftX || shiftY) panel.style.transform = `translate(${shiftX}px, ${shiftY}px)`;
+}
+
+// `toggle` does not bubble, so the desk listens for it in the capture phase.
+document.addEventListener("toggle", (event) => {
+  const menu = event.target;
+  if (!(menu instanceof HTMLElement) || !menu.classList?.contains("teachtext-command-menu")) return;
+  const panels = menu.querySelectorAll(".teachtext-command-popover, .teachtext-command-subpopover");
+  if (!menu.open) {
+    panels.forEach((panel) => panel.style.removeProperty("transform"));
+    return;
+  }
+  panels.forEach((panel) => clampCommandPopoverIntoView(panel));
+}, true);
+
+function reflowWindowsAroundWritingSpine() {
+  let changed = false;
+  document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden):not(.is-minimized)").forEach((win) => {
+    changed = avoidWritingSpineOverlap(win) || changed;
+  });
+  if (changed) scheduleWorkingSessionSave?.();
+  return changed;
+}
+
+function scheduleWritingSpineAvoidance() {
+  reflowWindowsAroundWritingSpine();
+  requestAnimationFrame(() => reflowWindowsAroundWritingSpine());
+}
+
+function zoomWindow(win) {
+  if (!isZoomableWindow(win)) return;
+  playSystemSound("zoom");
+
+  if (isNarrowViewport()) {
+    win.classList.remove("is-collapsed");
+    // For an app that can take the full-screen shell, the zoom box is the
+    // maximize/restore control: it toggles between filling the screen and
+    // floating alongside the other windows.
+    if (mobileWindowCanFillScreen(win)) {
+      win.dataset.mobileRestored = win.dataset.mobileRestored === "true" ? "false" : "true";
+      syncMobileAppForeground();
+      focusWindow(win, 1);
+      return;
+    }
+  }
+  // Narrow non-writer work-area windows are CSS-owned; the desktop zoom frame
+  // below would write inline geometry the mobile rule no longer overrides.
+  if (isMobileWorkAreaCssOwned(win)) return;
+  if (writerMode && writerModeCssOwnedWindows.has(win.dataset.window)) return;
+
+  const desktop = document.querySelector(".desktop");
+  const desktopRect = desktop.getBoundingClientRect();
+  const margin = 18;
+  const avoidance = getDesktopAvoidanceInsets({ margin });
+  const fixedPosition = getComputedStyle(win).position === "fixed";
+
+  if (win.dataset.zoomed === "true") {
+    clearFinderContentFit(win);
+    win.style.left = win.dataset.restoreLeft || win.style.left;
+    win.style.top = win.dataset.restoreTop || win.style.top;
+    win.style.width = win.dataset.restoreWidth || win.style.width;
+    win.style.height = win.dataset.restoreHeight || win.style.height;
+    if (isAspectLockedWindow(win)) {
+      const rect = win.getBoundingClientRect();
+      const desktopRect = document.querySelector(".desktop")?.getBoundingClientRect();
+      const minWidth = Number.parseInt(getComputedStyle(win).minWidth, 10) || 300;
+      const size = lockedAspectSize(win, rect.width, rect.height, {
+        minWidth,
+        minHeight: 160,
+        maxWidth: Math.max(minWidth, (desktopRect?.right || window.innerWidth) - rect.left - 18),
+        maxHeight: Math.max(160, (desktopRect?.bottom || window.innerHeight) - deskDockReserve() - rect.top - 18),
+      });
+      win.style.width = `${size.width}px`;
+      win.style.height = `${size.height}px`;
+    }
+    win.style.right = "auto";
+    win.style.transform = "none";
+    win.dataset.zoomed = "false";
+    avoidWritingSpineOverlap(win);
+    if(win.dataset.window==="docMap"&&window.AISystem6DocMapLoaded)requestAnimationFrame(() => restoreDocMapCanvasView());
+    scheduleWorkingSessionSave?.();
+    return;
+  }
+
+  if (isFinderContentWindow(win)) {
+    rememberWindowFrame(win);
+    win.classList.remove("is-collapsed", "is-desklet");
+    if (fitFinderWindowToContents(win, { force: true })) {
+      win.dataset.zoomed = "true";
+      scheduleWorkingSessionSave?.();
+      return;
+    }
+  }
+
+  rememberWindowFrame(win);
+  win.classList.remove("is-collapsed", "is-desklet");
+  win.style.left = `${avoidance.left + (fixedPosition ? desktopRect.left : 0)}px`;
+  win.style.top = `${margin + (fixedPosition ? desktopRect.top : 0)}px`;
+  const availableWidth = Math.max(1, desktopRect.width - avoidance.left - avoidance.right - margin);
+  const availableHeight = Math.max(1, desktopRect.height - deskDockReserve() - margin * 2);
+  const minWidth = Math.min(320, Math.max(240, availableWidth));
+  const minHeight = Math.min(180, Math.max(140, availableHeight));
+  const maxWidth = Math.max(minWidth, availableWidth);
+  const maxHeight = Math.max(minHeight, availableHeight);
+  const zoomSize = lockedAspectSize(win, maxWidth, maxHeight, {
+    minWidth,
+    minHeight,
+    maxWidth,
+    maxHeight,
+  });
+  win.style.width = `${zoomSize.width}px`;
+  win.style.height = `${zoomSize.height}px`;
+  win.style.right = "auto";
+  win.style.transform = "none";
+  win.dataset.zoomed = "true";
+  if(win.dataset.window==="docMap"&&window.AISystem6DocMapLoaded)requestAnimationFrame(() => restoreDocMapCanvasView());
+  scheduleWorkingSessionSave?.();
+}
+
+function maximizeWindow(win, options = {}) {
+  if (!isResizableWindow(win)) return;
+  if (isNarrowViewport()) {
+    win.classList.remove("is-collapsed");
+    win.dataset.zoomed="true";
+    focusWindow(win,1);
+    scheduleWorkingSessionSave?.();
+    return;
+  }
+  if (writerMode && writerModeCssOwnedWindows.has(win.dataset.window)) return;
+  if (isNarrowViewport()) return;
+
+  const desktop = document.querySelector(".desktop");
+  const desktopRect = desktop.getBoundingClientRect();
+  const margin = 18;
+  const avoidance = getDesktopAvoidanceInsets({ margin });
+  const top = parsePositiveInteger(options.top) || margin;
+
+  if (win.dataset.zoomed !== "true") rememberWindowFrame(win);
+  win.classList.remove("is-collapsed", "is-desklet");
+  win.style.left = `${avoidance.left}px`;
+  win.style.top = `${top}px`;
+  const maxWidth = Math.max(320, desktopRect.width - avoidance.left - avoidance.right - margin);
+  const maxHeight = Math.max(260, desktopRect.height - deskDockReserve() - top - margin);
+  const maxSize = lockedAspectSize(win, maxWidth, maxHeight, {
+    minWidth: 320,
+    minHeight: 180,
+    maxWidth,
+    maxHeight,
+  });
+  win.style.width = `${maxSize.width}px`;
+  win.style.height = `${maxSize.height}px`;
+  win.style.right = "auto";
+  win.style.transform = "none";
+  win.dataset.zoomed = "true";
+  scheduleWorkingSessionSave?.();
+}
+
+function positionWindowOutline(outline, left, top) {
+  outline.style.setProperty("--outline-left", `${Math.round(left)}px`);
+  outline.style.setProperty("--outline-top", `${Math.round(top)}px`);
+}
+
+function sizeWindowOutline(outline, width, height) {
+  outline.style.setProperty("--outline-width", `${Math.round(width)}px`);
+  outline.style.setProperty("--outline-height", `${Math.round(height)}px`);
+}
+
+// `win` turns the ghost into a frame preview: System 6's grow image shows the
+// title bar seam and the scroll bar lanes, so the corner cell being dragged is
+// part of the ghost. Moving a window shows the plain outline instead.
+function createWindowOutline(rect, win = null) {
+  const outline = document.createElement("div");
+  outline.className = win ? "window-outline is-frame" : "window-outline";
+  if (win) {
+    const titleBar = win.querySelector(":scope > .title-bar");
+    outline.style.setProperty("--outline-titlebar", `${Math.round(titleBar?.offsetHeight || 0)}px`);
+    // Only a framed content area has lanes to preview.
+    if (!win.querySelector(".window-frame-scroller")) {
+      outline.style.setProperty("--outline-lane", "0px");
+    }
+  }
+  positionWindowOutline(outline, rect.left, rect.top);
+  sizeWindowOutline(outline, rect.width, rect.height);
+  document.body.append(outline);
+  return outline;
+}
+
+function startWindowResize(event, win, edge = "right") {
+  const originalStyle = win.getAttribute("style");
+  const originalZoom = win.dataset.zoomed;
+  const portraitFlow = isPortraitDocumentFlow() && !writerMode && getWindowAppId(win) !== "accessories";
+  if (!isResizableWindow(win) || (!portraitFlow && isNarrowViewport())) return;
+  // Writing-mode split panes are CSS-owned fixed columns; a live resize would
+  // write inline width/height that beats the non-!important split rules.
+  if (writerMode && writerModeCssOwnedWindows.has(win.dataset.window)) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  focusWindow(win);
+  invalidateWindowAutoLayout(win);
+  clearFinderContentFit(win, { preserveSize: true });
+  // The grow box performs manual sizing, while the Zoom box chooses the
+  // standard size. Dragging out of the full-screen shell restores the window
+  // down first so the grow action sizes a real floating window.
+  if (win.classList.contains("is-mobile-fullscreen")) {
+    win.dataset.mobileRestored = "true";
+    syncMobileAppForeground();
+  }
+  if (win.classList.contains("is-desklet") && win.dataset.window === "assistant" && !writerMode) {
+    const rect = win.getBoundingClientRect();
+    win.classList.remove("is-desklet");
+    win.style.left = `${rect.left}px`;
+    win.style.top = `${rect.top}px`;
+    win.style.right = "auto";
+    win.style.width = `${rect.width}px`;
+    win.style.height = `${rect.height}px`;
+    win.style.transform = "none";
+  }
+  win.style.maxHeight = "";
+  rememberWindowFrame(win);
+  win.dataset.zoomed = "false";
+
+  const handle = event.currentTarget;
+  const rect = win.getBoundingClientRect();
+  const startX = event.clientX;
+  const startY = event.clientY;
+  const startWidth = rect.width;
+  const startHeight = rect.height;
+  const minWidth = Number.parseInt(getComputedStyle(win).minWidth, 10) || 300;
+  const minHeight = 160;
+  const desktop = document.querySelector(".desktop");
+  const desktopRect = desktop.getBoundingClientRect();
+  const maxWidth = portraitFlow
+    ? Math.max(minWidth, Math.min(desktopRect.width - 36, window.innerWidth - 36))
+    : Math.max(minWidth, edge === "left" ? rect.right - desktopRect.left - 18 : desktopRect.right - rect.left - 18);
+  const maxHeight = portraitFlow
+    ? Math.max(minHeight, window.innerHeight - 80)
+    : Math.max(minHeight, desktopRect.bottom - deskDockReserve() - rect.top - 18);
+
+  if (event.pointerId != null && handle.setPointerCapture) {
+    try {
+      handle.setPointerCapture(event.pointerId);
+    } catch {}
+  }
+
+  // Classic draws the prospective frame as a dotted outline and only reflows the
+  // window on release — the same dotted primitive the selection marquee uses.
+  // Liquid Glass sizes live, where a wait-for-release frame reads as a stall.
+  // Portrait flow sizes a document-flowed window, not a free-floating frame, so
+  // an outline anchored to the old top-left would promise the wrong box.
+  const outline = portraitFlow || !themeHasCapability("native-window-outline")
+    ? null
+    : createWindowOutline(rect, win);
+  let pendingWidth = startWidth;
+  let pendingHeight = startHeight;
+
+  function applyWindowSize(width, height) {
+    if (portraitFlow) {
+      win.style.setProperty("--portrait-window-width", `${Math.round(width)}px`);
+      win.style.setProperty("--portrait-window-height", `${Math.round(height)}px`);
+    } else {
+      win.style.width = `${width}px`;
+      win.style.height = `${height}px`;
+      if (edge === "left") win.style.left = `${rect.left - (getComputedStyle(win).position === "fixed" ? 0 : desktopRect.left) + startWidth - width}px`;
+    }
+  }
+
+  function resizeWindow(moveEvent) {
+    if (event.pointerId != null && moveEvent.pointerId != null && event.pointerId !== moveEvent.pointerId) return;
+    const dx = edge === "center" ? 0 : (moveEvent.clientX - startX) * (edge === "left" ? -1 : 1);
+    let width = Math.min(maxWidth, Math.max(minWidth, startWidth + dx));
+    let height = Math.min(maxHeight, Math.max(minHeight, startHeight + moveEvent.clientY - startY));
+    if (isAspectLockedWindow(win)) {
+      const size = lockedAspectSize(win, width, height, { minWidth, minHeight, maxWidth, maxHeight });
+      width = size.width;
+      height = size.height;
+    }
+    pendingWidth = width;
+    pendingHeight = height;
+    if (outline) {
+      sizeWindowOutline(outline, width, height);
+      return;
+    }
+    applyWindowSize(width, height);
+  }
+
+  function stopResize(stopEvent) {
+    if (event.pointerId != null && stopEvent?.pointerId != null && event.pointerId !== stopEvent.pointerId) return;
+    window.removeEventListener("pointermove", resizeWindow);
+    window.removeEventListener("pointerup", stopResize);
+    window.removeEventListener("pointercancel", stopResize);
+    window.removeEventListener("blur", stopResize);
+    document.removeEventListener("ai-system6-themechange", stopResize);
+    window.removeEventListener("mousemove", resizeWindow);
+    window.removeEventListener("mouseup", stopResize);
+    if (["pointercancel", "blur", "ai-system6-themechange"].includes(stopEvent?.type)) {
+      outline?.remove();
+      if (originalStyle === null) win.removeAttribute("style");
+      else win.setAttribute("style", originalStyle);
+      if (originalZoom === undefined) delete win.dataset.zoomed;
+      else win.dataset.zoomed = originalZoom;
+      return;
+    }
+    // A drag that emitted no move event still has to land where it was released.
+    if ((stopEvent?.type === "pointerup" || stopEvent?.type === "mouseup")
+      && typeof stopEvent.clientX === "number") {
+      resizeWindow(stopEvent);
+    }
+    if (outline) {
+      outline.remove();
+      applyWindowSize(pendingWidth, pendingHeight);
+    }
+    markWindowUserPositioned(win);
+    if(win.dataset.window==="docMap"&&window.AISystem6DocMapLoaded)requestAnimationFrame(() => restoreDocMapCanvasView());
+    scheduleWorkingSessionSave?.();
+  }
+
+  window.addEventListener("pointermove", resizeWindow);
+  window.addEventListener("pointerup", stopResize);
+  window.addEventListener("pointercancel", stopResize);
+  window.addEventListener("blur", stopResize);
+  document.addEventListener("ai-system6-themechange", stopResize);
+  window.addEventListener("mousemove", resizeWindow);
+  window.addEventListener("mouseup", stopResize);
+  return { move: resizeWindow, stop: stopResize };
+}
+
+// The desktop icon column wraps into a second column when it runs out of room,
+// the way the Finder's does. But the Trash is the last icon and carries
+// `margin-top: auto`, so when exactly one icon overflowed it was always the
+// Trash -- and wrap-reverse put it ALONE, to the LEFT of everything else. At
+// 1366x768, the most common laptop height, that is what a writer saw.
+//
+// This does not guess a screen height. mobile-app-shell.test.mjs holds that the
+// wrap is decided by the column running out of room and never by a breakpoint,
+// and that rule is right: the icon count changes with the profile, so no height
+// is the true condition. So measure the actual outcome -- lay the column out at
+// its natural spacing, ask whether it wrapped, and only then close the gap.
+// 4px is not a new number; it is what Liquid Glass already ships for this token.
+function syncIconColumnDensity() {
+  const column = document.querySelector(".icon-column");
+  if (!column || column.classList.contains("is-spatial")) return;
+  // Measure at the natural spacing, never at the tightened one, or the
+  // measurement would describe its own previous answer.
+  column.classList.remove("is-tight");
+  const icons = [...column.children].filter((icon) => icon instanceof HTMLElement && icon.offsetParent);
+  if (icons.length < 2) return;
+  const lanes = new Set(icons.map((icon) => Math.round(icon.getBoundingClientRect().x)));
+  if (lanes.size > 1) column.classList.add("is-tight");
+  // Known limit, stated rather than hidden: nine icons need about 713px of
+  // viewport even at the tightened spacing, so below that the column genuinely
+  // has no room and wraps anyway. That case is the one the second column was
+  // designed for. What this removes is the avoidable one -- 1366x768, where it
+  // fits and only the spacing said otherwise.
+}
+
+function installGrowBoxes() {
+  document.querySelectorAll(".window").forEach((win) => {
+    if (!isResizableWindow(win) || win.querySelector(".grow-box")) return;
+
+    const growBox = document.createElement("button");
+    growBox.className = "grow-box";
+    growBox.type = "button";
+    growBox.setAttribute("data-i18n-aria-label", "grow_box_aria");
+    growBox.setAttribute("aria-label", typeof t === "function" ? t("grow_box_aria") : "Resize window");
+    growBox.dataset.balloonHelp = "balloon_grow_box";
+    growBox.addEventListener("pointerdown", (event) => startWindowResize(event, win));
+    growBox.addEventListener("mousedown", (event) => startWindowResize(event, win));
+    // Keyboard: arrows on the focused grow box size the window (Shift: x4), through the drag's own clamps.
+    growBox.onkeydown = (e) => {
+      const s = e.shiftKey ? 64 : 16, d = { ArrowLeft: [-s, 0], ArrowRight: [s, 0], ArrowUp: [0, -s], ArrowDown: [0, s] }[e.key];
+      const r = d && startWindowResize({ preventDefault() {}, stopPropagation() {}, currentTarget: growBox, clientX: 0, clientY: 0 }, win);
+      if (!r) return;
+      e.preventDefault();
+      r.move({ clientX: d[0], clientY: d[1] });
+      r.stop({ type: "mouseup", clientX: d[0], clientY: d[1] });
+    };
+    win.append(growBox);
+  });
+}
+
+let tileRequest = 0;
+async function tileWindows(candidateWindows = null) {
+  const ticket = ++tileRequest;
+  const candidates = getTileCandidateWindows();
+  const windows = Array.isArray(candidateWindows)
+    ? candidates.filter((win) => candidateWindows.includes(win)) : candidates;
+  if (!windows.length) return false;
+  const before = windows.map((win) => [win, win.getAttribute("style"), win.className]);
+  try {
+    await ensureLazySystemModule("app/core/windowshade.js", "AISystem6WindowShadeLoaded");
+    if (ticket !== tileRequest || before.some(([win, style, classes]) => !win.isConnected
+      || win.getAttribute("style") !== style || win.className !== classes)) return false;
+    return window.AISystem6WindowShade.tile(windows).ok;
+  } catch (error) {
+    console.warn("Window tiling could not load", error);
+    setStatus(t("windows_tile_no_room"));
+    return false;
+  }
+}
+
+function hideSidebars() {
+  sidebarWindowNames().forEach((name) => closeWindow(name, true));
+  openWindow("assistant");
+  if (!getWindow("teachText").classList.contains("is-hidden")) {
+    focusWindow(getWindow("teachText"));
+  }
+}

@@ -1,0 +1,543 @@
+// Feature module: desktop-tools.
+
+// Loaded before app.js as a classic script; shares the AI System 6 global scope.
+
+
+
+function renderCalculator() {
+  calculatorDisplay.value = calculatorExpression.replace(/\*/g, "×").replace(/\//g, "÷");
+}
+
+/**
+ * Apply one binary operator. Returns false for an operator the keypad cannot
+ * produce, which is how a malformed stream is refused rather than guessed at.
+ * @param {number[]} stack @param {number} left @param {number} right @param {string} operator
+ */
+function applyArithmeticOperator(stack, left, right, operator) {
+  if (operator === "+") stack.push(left + right);
+  else if (operator === "-") stack.push(left - right);
+  else if (operator === "*") stack.push(left * right);
+  else if (operator === "/") stack.push(right === 0 ? NaN : left / right);
+  else return false;
+  return true;
+}
+
+/**
+ * Arithmetic, evaluated rather than eval'd.
+ *
+ * This used to be `Function("return (" + expression + ")")`. The product's own
+ * Content-Security-Policy sets `script-src 'self'` with no `'unsafe-eval'`, so
+ * that call threw everywhere the CSP is enforced — `npm start` and the Mac app,
+ * which is to say the README's own quickstart — and the throw was caught and
+ * displayed as "Error". Every operation, including 1+2. It looked like a
+ * calculator and could not add.
+ *
+ * A console cannot show you this: DevTools evaluation is exempt from CSP, so
+ * `Function()` answers 56 there while the identical call inside the page is
+ * blocked. Only pressing the keys reveals it.
+ *
+ * Shunting-yard, then evaluate the RPN. Left-associative binary operators and a
+ * leading minus are the whole grammar this keypad can produce.
+ *
+ * @param {string} expression
+ * @returns {number | null} null when the expression is not well formed
+ */
+function evaluateArithmetic(expression) {
+  const tokens = String(expression).match(/\d+(?:\.\d+)?|[+\-*/()]/g);
+  if (!tokens) return null;
+
+  const precedence = { "+": 1, "-": 1, "*": 2, "/": 2 };
+  const output = [];
+  const operators = [];
+  let previous = null;
+
+  for (const token of tokens) {
+    if (/^\d/.test(token)) {
+      output.push(Number(token));
+    } else if (token === "(") {
+      operators.push(token);
+    } else if (token === ")") {
+      while (operators.length && operators[operators.length - 1] !== "(") output.push(operators.pop());
+      if (!operators.length) return null;
+      operators.pop();
+    } else {
+      // A minus with nothing usable before it is a sign, not a subtraction.
+      if (token === "-" && (previous === null || previous === "(" || previous in precedence)) output.push(0);
+      while (
+        operators.length
+        && operators[operators.length - 1] !== "("
+        && precedence[operators[operators.length - 1]] >= precedence[token]
+      ) output.push(operators.pop());
+      operators.push(token);
+    }
+    previous = token;
+  }
+  while (operators.length) {
+    const operator = operators.pop();
+    if (operator === "(") return null;
+    output.push(operator);
+  }
+
+  const stack = [];
+  for (const token of output) {
+    if (typeof token === "number") { stack.push(token); continue; }
+    const right = stack.pop();
+    const left = stack.pop();
+    if (right === undefined || left === undefined) return null;
+    if (!applyArithmeticOperator(stack, left, right, token)) return null;
+  }
+  return stack.length === 1 && Number.isFinite(stack[0]) ? stack[0] : null;
+}
+
+function calculateExpression() {
+  const expression = calculatorExpression.replace(/×/g, "*").replace(/÷/g, "/");
+  if (!/^[\d+\-*/().\s]+$/.test(expression)) {
+    calculatorExpression = "Error";
+    renderCalculator();
+    setStatus(t("calculator_error_hint"));
+    return;
+  }
+
+  const value = evaluateArithmetic(expression);
+  calculatorExpression = value === null ? "Error" : String(Number(value.toFixed(8)));
+  renderCalculator();
+  if (calculatorExpression === "Error") setStatus(t("calculator_error_hint"));
+}
+
+function pressCalculatorKey(key) {
+  if (key === "clear") {
+    calculatorExpression = "0";
+    renderCalculator();
+    return;
+  }
+
+  if (key === "back") {
+    calculatorExpression = calculatorExpression.length > 1 ? calculatorExpression.slice(0, -1) : "0";
+    renderCalculator();
+    return;
+  }
+
+  if (key === "=") {
+    calculateExpression();
+    return;
+  }
+
+  if (calculatorExpression === "0" || calculatorExpression === "Error") {
+    calculatorExpression = /[+\-*/.]/.test(key) ? `0${key}` : key;
+  } else {
+    calculatorExpression += key;
+  }
+
+  renderCalculator();
+}
+
+function normalizeWritingBellMode(mode) {
+  return mode === "break" ? "break" : "work";
+}
+
+// How long a bell can be *set* for; one minute is the floor.
+function normalizeWritingBellDuration(value, fallback) {
+  const seconds = Number(value);
+  if (!Number.isFinite(seconds)) return fallback;
+  return Math.min(99 * 60, Math.max(60, Math.round(seconds)));
+}
+
+// How much is *left*, a different quantity: a bell paused in its last minute
+// holds less than a minute. Sending the remainder through the duration floor
+// handed those seconds back -- paused at 00:05, reopened at 1 min -- so the
+// read-out disagreed with its own status line. Only the ceiling is shared.
+function normalizeWritingBellRemaining(value, fallback) {
+  const seconds = Number(value);
+  if (!Number.isFinite(seconds)) return fallback;
+  return Math.min(99 * 60, Math.max(0, Math.round(seconds)));
+}
+
+function formatWritingBellTime(seconds) {
+  const safeSeconds = Math.max(0, Math.round(seconds || 0));
+  const minutes = Math.floor(safeSeconds / 60);
+  const rest = safeSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(rest).padStart(2, "0")}`;
+}
+
+function formatWritingBellDisplay(seconds) {
+  const safeSeconds = Math.max(0, Math.round(seconds || 0));
+  if (safeSeconds < 60) return formatWritingBellTime(safeSeconds);
+  const minutes = Math.ceil(safeSeconds / 60);
+  return t("bell_minutes_left", minutes);
+}
+
+function writingBellModeLabel(mode = writingBellMode) {
+  return t(normalizeWritingBellMode(mode) === "break" ? "bell_break" : "bell_work");
+}
+
+function setWritingBellStatus(message) {
+  if (writingBellStatusEl) writingBellStatusEl.textContent = message;
+}
+
+function refreshWritingBellStatusLanguage() {
+  if (!writingBellStatusEl) return;
+  if (writingBellRunning) {
+    setWritingBellStatus(t("bell_running", writingBellModeLabel()));
+    return;
+  }
+  if (writingBellRemaining < writingBellDurations[writingBellMode]) {
+    setWritingBellStatus(t("bell_paused", formatWritingBellTime(writingBellRemaining)));
+    return;
+  }
+  setWritingBellStatus(t("bell_ready"));
+}
+
+function renderWritingBell() {
+  writingBellMode = normalizeWritingBellMode(writingBellMode);
+  writingBellDurations = {
+    work: normalizeWritingBellDuration(writingBellDurations?.work, 25 * 60),
+    break: normalizeWritingBellDuration(writingBellDurations?.break, 5 * 60),
+  };
+  if (!writingBellRunning) {
+    writingBellRemaining = normalizeWritingBellRemaining(writingBellRemaining, writingBellDurations[writingBellMode]);
+  }
+
+  if (writingBellTimeEl) writingBellTimeEl.textContent = formatWritingBellDisplay(writingBellRemaining);
+  // The right status slot says what this window holds, the way every other
+  // accessory's right slot says where its text goes.
+  const holds = document.querySelector("#writing-bell-holds");
+  if (holds) {
+    holds.textContent = t("bell_holds", writingBellModeLabel(), Math.round(writingBellDurations[writingBellMode] / 60));
+  }
+  if (writingBellModeEl) {
+    writingBellModeEl.querySelectorAll("[data-bell-mode]").forEach((button) => {
+      button.classList.toggle("is-active", button.dataset.bellMode === writingBellMode);
+      button.disabled = writingBellRunning;
+      if (writingBellRunning) button.dataset.balloonHelpDisabled = "balloon_writing_bell_running";
+      else delete button.dataset.balloonHelpDisabled;
+    });
+  }
+  if (writingBellPresetsEl) {
+    writingBellPresetsEl.querySelectorAll("[data-bell-preset]").forEach((button) => {
+      button.disabled = writingBellRunning;
+      button.classList.toggle("is-active", Number(button.dataset.bellPreset) * 60 === writingBellDurations[writingBellMode]);
+      if (writingBellRunning) button.dataset.balloonHelpDisabled = "balloon_writing_bell_running";
+      else delete button.dataset.balloonHelpDisabled;
+    });
+  }
+  if (writingBellStartButton) {
+    writingBellStartButton.disabled = writingBellRunning;
+    writingBellStartButton.textContent = t("start");
+    if (writingBellRunning) writingBellStartButton.dataset.balloonHelpDisabled = "balloon_writing_bell_running";
+    else delete writingBellStartButton.dataset.balloonHelpDisabled;
+  }
+  if (writingBellPauseButton) {
+    writingBellPauseButton.disabled = !writingBellRunning;
+    if (writingBellRunning) delete writingBellPauseButton.dataset.balloonHelpDisabled;
+    else writingBellPauseButton.dataset.balloonHelpDisabled = "balloon_writing_bell_pause";
+  }
+  if (writingBellResetButton) writingBellResetButton.disabled = false;
+}
+
+function tickWritingBell() {
+  if (!writingBellRunning) return;
+  writingBellRemaining = Math.max(0, Math.ceil((writingBellEndsAt - Date.now()) / 1000));
+  renderWritingBell();
+  if (writingBellRemaining <= 0) completeWritingBell();
+}
+
+function clearWritingBellTimer() {
+  if (writingBellTimer) {
+    clearInterval(writingBellTimer);
+    writingBellTimer = null;
+  }
+}
+
+// Where the writer was when the interval began. This bell is not a timer that
+// measures the writer; it is what lets them stop safely, so it learns the way
+// back before it rings.
+let writingBellStartedFrom = null;
+
+function startWritingBell() {
+  writingBellStartedFrom = typeof currentWritingPosition === "function" ? currentWritingPosition() : null;
+  writingBellRemaining = normalizeWritingBellRemaining(writingBellRemaining, writingBellDurations[writingBellMode]);
+  writingBellRunning = true;
+  writingBellEndsAt = Date.now() + writingBellRemaining * 1000;
+  clearWritingBellTimer();
+  writingBellTimer = setInterval(tickWritingBell, 1000);
+  setWritingBellStatus(t("bell_running", writingBellModeLabel()));
+  setStatus(t("bell_started", writingBellModeLabel(), formatWritingBellTime(writingBellRemaining)));
+  renderWritingBell();
+  saveDeskState();
+  window.AISystem6ControlStrip?.refreshStrip?.();
+}
+
+function pauseWritingBell() {
+  if (!writingBellRunning) return;
+  writingBellRemaining = Math.max(1, Math.ceil((writingBellEndsAt - Date.now()) / 1000));
+  writingBellRunning = false;
+  writingBellEndsAt = 0;
+  clearWritingBellTimer();
+  setWritingBellStatus(t("bell_paused", formatWritingBellTime(writingBellRemaining)));
+  setStatus(t("bell_paused", formatWritingBellTime(writingBellRemaining)));
+  renderWritingBell();
+  saveDeskState();
+  window.AISystem6ControlStrip?.refreshStrip?.();
+}
+
+/** Closing the window while a tick is live must pause honestly — not keep a silent clock. */
+function noteWritingBellClosed() {
+  const win = typeof getWindow === "function" ? getWindow("writingBell") : document.querySelector('[data-window="writingBell"]');
+  win?.setAttribute?.("data-tick-after-close", "1");
+  win?.setAttribute?.("data-nag", "0");
+  if (!writingBellRunning) return;
+  writingBellRemaining = Math.max(1, Math.ceil((writingBellEndsAt - Date.now()) / 1000));
+  writingBellRunning = false;
+  writingBellEndsAt = 0;
+  clearWritingBellTimer();
+  setWritingBellStatus(t("bell_closed_while_running", formatWritingBellTime(writingBellRemaining)));
+  setStatus(t("bell_closed_while_running", formatWritingBellTime(writingBellRemaining)));
+  renderWritingBell();
+  saveDeskState();
+  window.AISystem6ControlStrip?.refreshStrip?.();
+}
+
+function resetWritingBell() {
+  writingBellRunning = false;
+  writingBellEndsAt = 0;
+  clearWritingBellTimer();
+  writingBellRemaining = writingBellDurations[writingBellMode];
+  setWritingBellStatus(t("bell_ready"));
+  renderWritingBell();
+  saveDeskState();
+}
+
+function setWritingBellMode(mode) {
+  if (writingBellRunning) return;
+  writingBellMode = normalizeWritingBellMode(mode);
+  writingBellRemaining = writingBellDurations[writingBellMode];
+  setWritingBellStatus(t("bell_ready"));
+  renderWritingBell();
+  saveDeskState();
+}
+
+function setWritingBellMinutes(minutes) {
+  if (writingBellRunning) return;
+  const seconds = normalizeWritingBellDuration(Number(minutes) * 60, writingBellDurations[writingBellMode]);
+  writingBellDurations[writingBellMode] = seconds;
+  writingBellRemaining = seconds;
+  setWritingBellStatus(t("bell_ready"));
+  renderWritingBell();
+  saveDeskState();
+}
+
+// The bell does not invent a channel of its own. The desk already has one: a
+// system message with a button that opens and focuses a named window. So the
+// bell knocks there, and the button is the way back to the sentence.
+function knockAfterWritingBell() {
+  const where = (typeof currentWritingPosition === "function" ? currentWritingPosition() : null)
+    || writingBellStartedFrom;
+  if (typeof pushSystemNotification !== "function") return;
+  if (!where) {
+    pushSystemNotification(t("bell_stopped"), {
+      replaceId: writingBellNotificationId,
+      messageKey: "bell_stopped",
+      messageArgs: [],
+    });
+    return;
+  }
+  writingBellNotificationId = pushSystemNotification(t("bell_stopped_here", where.title), {
+    windowName: where.window,
+    actionLabelKey: "back",
+    replaceId: writingBellNotificationId,
+    messageKey: "bell_stopped_here",
+    messageArgs: [where.title],
+  });
+}
+
+let writingBellNotificationId = "";
+
+function completeWritingBell() {
+  const completedMode = writingBellMode;
+  writingBellRunning = false;
+  writingBellEndsAt = 0;
+  clearWritingBellTimer();
+  writingBellRemaining = writingBellDurations[writingBellMode];
+  const message = t("bell_done", writingBellModeLabel(completedMode));
+  setWritingBellStatus(t(completedMode === "work" ? "bell_work_done_hint" : "bell_break_done_hint"));
+  setStatus(message);
+  // A timer that stops the writer to be dismissed is the timer interrupting the
+  // work it was measuring. The bell already rings in the desk's own channels —
+  // the status line says the interval is over, the knock below carries the way
+  // back to the sentence, and the next interval loads straight away.
+  // Journey gates: never auto-open the bell or a streak modal; Start stays voluntary.
+  knockAfterWritingBell();
+  playSystemSound("alert");
+  writingBellMode = completedMode === "work" ? "break" : "work";
+  writingBellRemaining = writingBellDurations[writingBellMode];
+  setWritingBellStatus(t("bell_next_ready", writingBellModeLabel()));
+  renderWritingBell();
+  saveDeskState();
+  window.AISystem6ControlStrip?.refreshStrip?.();
+  window.AISystem6JourneyGates?.syncDeskProbe?.();
+}
+
+function getWritingBellState() {
+  if (writingBellRunning) {
+    writingBellRemaining = Math.max(0, Math.ceil((writingBellEndsAt - Date.now()) / 1000));
+  }
+  return {
+    mode: writingBellMode,
+    durations: { ...writingBellDurations },
+    remaining: writingBellRemaining,
+    running: writingBellRunning,
+    endsAt: writingBellEndsAt,
+  };
+}
+
+function restoreWritingBellState(state) {
+  state ||= {};
+  writingBellMode = normalizeWritingBellMode(state.mode);
+  writingBellDurations = {
+    work: normalizeWritingBellDuration(state.durations?.work, 25 * 60),
+    break: normalizeWritingBellDuration(state.durations?.break, 5 * 60),
+  };
+  writingBellRemaining = normalizeWritingBellRemaining(state.remaining, writingBellDurations[writingBellMode]);
+  writingBellRunning = Boolean(state.running && Number(state.endsAt) > Date.now());
+  writingBellEndsAt = writingBellRunning ? Number(state.endsAt) : 0;
+  clearWritingBellTimer();
+  if (writingBellRunning) {
+    writingBellTimer = setInterval(tickWritingBell, 1000);
+    tickWritingBell();
+    setWritingBellStatus(t("bell_running", writingBellModeLabel()));
+  } else {
+    writingBellRemaining = Math.min(writingBellRemaining, writingBellDurations[writingBellMode]);
+    setWritingBellStatus(t("bell_ready"));
+  }
+  renderWritingBell();
+}
+
+function puzzleHasGame() {
+  return Array.isArray(puzzleTiles) && puzzleTiles.length === 16;
+}
+
+function solvedPuzzleTiles() {
+  return [...Array(15)].map((_, index) => index + 1).concat(0);
+}
+
+function puzzleTileIsSolved() {
+  const solved = solvedPuzzleTiles();
+  return puzzleHasGame() && puzzleTiles.every((tile, index) => tile === solved[index]);
+}
+
+function puzzleAdjacentIndexes(index) {
+  const row = Math.floor(index / 4);
+  const col = index % 4;
+  return [
+    row > 0 ? index - 4 : -1,
+    row < 3 ? index + 4 : -1,
+    col > 0 ? index - 1 : -1,
+    col < 3 ? index + 1 : -1,
+  ].filter((item) => item >= 0);
+}
+
+function shufflePuzzleTiles() {
+  const tiles = solvedPuzzleTiles();
+  let blankIndex = 15;
+  let previousBlank = -1;
+  for (let step = 0; step < 140; step += 1) {
+    const choices = puzzleAdjacentIndexes(blankIndex).filter((index) => index !== previousBlank);
+    const nextIndex = choices[Math.floor(Math.random() * choices.length)] ?? choices[0];
+    [tiles[blankIndex], tiles[nextIndex]] = [tiles[nextIndex], tiles[blankIndex]];
+    previousBlank = blankIndex;
+    blankIndex = nextIndex;
+  }
+  if (tiles.every((tile, index) => tile === solvedPuzzleTiles()[index])) {
+    [tiles[14], tiles[15]] = [tiles[15], tiles[14]];
+  }
+  return tiles;
+}
+
+function setPuzzleStatus(message) {
+  if (puzzleStatusEl) puzzleStatusEl.textContent = message;
+}
+
+function renderPuzzle() {
+  if (!puzzleBoardEl) return;
+  if (!puzzleHasGame()) puzzleTiles = solvedPuzzleTiles();
+
+  const blankIndex = puzzleTiles.indexOf(0);
+  const movable = new Set(puzzleAdjacentIndexes(blankIndex));
+  const solved = puzzleTileIsSolved();
+  puzzleBoardEl.replaceChildren();
+  puzzleTiles.forEach((tile, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = tile ? "puzzle-tile" : "puzzle-tile puzzle-blank";
+    button.dataset.puzzleIndex = String(index);
+    button.textContent = tile ? String(tile) : "";
+    button.disabled = !tile || !movable.has(index) || solved;
+    puzzleBoardEl.append(button);
+  });
+  if (puzzleMovesEl) puzzleMovesEl.textContent = t("moves_count", puzzleMoves);
+}
+
+function newPuzzleGame(options = {}) {
+  puzzleTiles = shufflePuzzleTiles();
+  puzzleMoves = 0;
+  setPuzzleStatus(t("puzzle_hint"));
+  renderPuzzle();
+  if (options.announce !== false) {
+    setStatus(t("puzzle_new"));
+    playSystemSound("click");
+  }
+  saveDeskState();
+}
+
+function movePuzzleTile(index) {
+  if (!puzzleHasGame() || puzzleTileIsSolved()) return;
+  const blankIndex = puzzleTiles.indexOf(0);
+  if (!puzzleAdjacentIndexes(blankIndex).includes(index)) {
+    setPuzzleStatus(t("puzzle_blocked"));
+    playSystemSound("alert");
+    return;
+  }
+
+  [puzzleTiles[blankIndex], puzzleTiles[index]] = [puzzleTiles[index], puzzleTiles[blankIndex]];
+  puzzleMoves += 1;
+  renderPuzzle();
+  playSystemSound("click");
+  if (puzzleTileIsSolved()) {
+    const message = t("puzzle_won", puzzleMoves);
+    setPuzzleStatus(message);
+    setStatus(message);
+    playSystemSound("save");
+  } else {
+    setPuzzleStatus(t("puzzle_hint"));
+  }
+  saveDeskState();
+}
+
+function getPuzzleState() {
+  return {
+    tiles: puzzleHasGame() ? [...puzzleTiles] : [],
+    moves: puzzleMoves,
+  };
+}
+
+function restorePuzzleState(state = {}) {
+  const tiles = Array.isArray(state.tiles) ? state.tiles.map(Number) : [];
+  const sorted = [...tiles].sort((a, b) => a - b);
+  puzzleTiles = sorted.length === 16 && sorted.every((tile, index) => tile === index)
+    ? tiles
+    : shufflePuzzleTiles();
+  puzzleMoves = Number.isInteger(state.moves) && state.moves >= 0 ? state.moves : 0;
+  if (puzzleMoves === 0 && puzzleTileIsSolved()) {
+    puzzleTiles = shufflePuzzleTiles();
+  }
+  renderPuzzle();
+}
+
+let calcmounted=!1;function mountCalculatorRuntime(){if(calcmounted)return!0;calcmounted=!0;calculatorKeys.addEventListener("click",event=>{const key=event.target.closest("[data-calc]")?.dataset.calc;if(key)pressCalculatorKey(key)});return!0}
+window.AISystem6Runtime?.registerApplication({id:"calculator",windowName:"calculator",mount:mountCalculatorRuntime,restore:()=>mountCalculatorRuntime(),commands:{"open-calculator":{handler:()=>openWindow("calculator"),isAvailable:()=>!0}}});
+
+let pmounted=!1;function mountPuzzleRuntime(){if(pmounted)return!0;pmounted=!0;puzzleBoardEl?.addEventListener("click",event=>{const index=Number(event.target.closest("[data-puzzle-index]")?.dataset.puzzleIndex);if(Number.isInteger(index))movePuzzleTile(index)});return!0}
+window.AISystem6Runtime?.registerApplication({id:"puzzle",windowName:"puzzle",mount:mountPuzzleRuntime,restore:()=>mountPuzzleRuntime(),commands:{"open-puzzle":{handler:()=>openWindow("puzzle"),isAvailable:()=>!0}}});
+
+let wbmounted=!1;function mountWritingBellRuntime(){if(wbmounted)return!0;wbmounted=!0;writingBellModeEl?.addEventListener("click",event=>{const mode=event.target.closest("[data-bell-mode]")?.dataset.bellMode;if(mode)setWritingBellMode(mode)});writingBellPresetsEl?.addEventListener("click",event=>{const minutes=Number(event.target.closest("[data-bell-preset]")?.dataset.bellPreset||0);if(minutes)setWritingBellMinutes(minutes)});writingBellStartButton?.addEventListener("click",startWritingBell);writingBellPauseButton?.addEventListener("click",pauseWritingBell);writingBellResetButton?.addEventListener("click",resetWritingBell);return!0}
+window.AISystem6Runtime?.registerApplication({id:"writingBell",windowName:"writingBell",mount:mountWritingBellRuntime,restore:()=>mountWritingBellRuntime(),commands:{"open-writing-bell":{handler:()=>openWindow("writingBell"),isAvailable:()=>!0}}});

@@ -1,0 +1,364 @@
+{
+  "_note": "Task snapshots as the ClioTalk shell receives them (AISystem6ClioTalkShell.tasks.apply): the task API's { task, turns } with the proposals in turns[].result, plus the run's plan entries as progress. One task, Work.dc.html's data brief, at each state the shell draws. Used by tests/features/cliotalk-tasks.test.mjs and for screenshots.",
+  "snapshots": {
+    "planning": {
+      "task": {
+        "id": "task-brief-1",
+        "title": "返乡数据简报",
+        "state": "planning",
+        "mounts": [
+          { "id": "m-budget", "name": "2025预算.xlsx", "level": "read" },
+          { "id": "m-roster", "name": "访谈名单.xlsx", "level": "read" },
+          { "id": "m-brief", "name": "「简报」文件夹", "level": "propose" }
+        ],
+        "web": false,
+        "usage": { "tokens": 2400, "costEstimate": 0.01 }
+      },
+      "turns": []
+    },
+    "awaiting_plan": {
+      "task": {
+        "id": "task-brief-1",
+        "title": "返乡数据简报",
+        "state": "awaiting_plan",
+        "mounts": [
+          { "id": "m-budget", "name": "2025预算.xlsx", "level": "read" },
+          { "id": "m-roster", "name": "访谈名单.xlsx", "level": "read" },
+          { "id": "m-brief", "name": "「简报」文件夹", "level": "propose" }
+        ],
+        "web": false,
+        "usage": { "tokens": 6100, "costEstimate": 0.01 }
+      },
+      "turns": [
+        {
+          "id": "turn-1",
+          "result": {
+            "proposals": [
+              {
+                "id": "p-plan-1",
+                "kind": "plan",
+                "payload": {
+                  "steps": [
+                    "读两张表，对上人数和预算",
+                    "列出简报要回答的三个问题，先问你",
+                    "在 ClioChart 做三张图",
+                    "写一页摘要初稿（ClioWrite 修订形式）",
+                    "新文件都先当候选，你点了才放进项目硬盘"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "working": {
+      "task": {
+        "id": "task-brief-1",
+        "title": "返乡数据简报",
+        "state": "working",
+        "mounts": [
+          { "id": "m-budget", "name": "2025预算.xlsx", "level": "read" },
+          { "id": "m-roster", "name": "访谈名单.xlsx", "level": "read" },
+          { "id": "m-brief", "name": "「简报」文件夹", "level": "propose" }
+        ],
+        "web": false,
+        "usage": { "tokens": 9800, "costEstimate": 0.02 }
+      },
+      "turns": [
+        {
+          "id": "turn-1",
+          "result": {
+            "proposals": [
+              {
+                "id": "p-plan-1",
+                "kind": "plan",
+                "payload": {
+                  "steps": [
+                    "读两张表，对上人数和预算",
+                    "列出简报要回答的三个问题，先问你",
+                    "在 ClioChart 做三张图",
+                    "写一页摘要初稿（ClioWrite 修订形式）",
+                    "新文件都先当候选，你点了才放进项目硬盘"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "progress": [
+        { "content": "读两张表，对上人数和预算", "status": "in_progress" },
+        { "content": "列出要回答的三个问题", "status": "pending" },
+        { "content": "做三张图", "status": "pending" },
+        { "content": "写一页摘要初稿", "status": "pending" },
+        { "content": "放进「简报」", "status": "pending" }
+      ]
+    },
+    "awaiting_answer": {
+      "task": {
+        "id": "task-brief-1",
+        "title": "返乡数据简报",
+        "state": "awaiting_answer",
+        "mounts": [
+          { "id": "m-budget", "name": "2025预算.xlsx", "level": "read" },
+          { "id": "m-roster", "name": "访谈名单.xlsx", "level": "read" },
+          { "id": "m-brief", "name": "「简报」文件夹", "level": "propose" }
+        ],
+        "web": false,
+        "usage": { "tokens": 18000, "costEstimate": 0.03 }
+      },
+      "turns": [
+        {
+          "id": "turn-1",
+          "result": {
+            "proposals": [
+              {
+                "id": "p-plan-1",
+                "kind": "plan",
+                "payload": {
+                  "steps": [
+                    "读两张表，对上人数和预算",
+                    "列出简报要回答的三个问题，先问你",
+                    "在 ClioChart 做三张图",
+                    "写一页摘要初稿（ClioWrite 修订形式）",
+                    "新文件都先当候选，你点了才放进项目硬盘"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "turn-2",
+          "result": {
+            "proposals": [
+              {
+                "id": "p-ask-1",
+                "kind": "question",
+                "title": "简报先回答哪三个问题？",
+                "payload": {
+                  "text": "两张表能回答下面几个，选三个，或者自己写：",
+                  "options": [
+                    "谁回来了（年龄、原来在哪）",
+                    "为什么回来（访谈里说的原因）",
+                    "采访花了多少钱",
+                    "回来以后做什么"
+                  ],
+                  "multiple": true,
+                  "suggested": [0, 1, 2]
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "progress": [
+        { "content": "读两张表，对上人数和预算", "status": "completed" },
+        { "content": "列出要回答的三个问题", "status": "in_progress" },
+        { "content": "做三张图", "status": "pending" },
+        { "content": "写一页摘要初稿", "status": "pending" },
+        { "content": "放进「简报」", "status": "pending" }
+      ]
+    },
+    "permission": {
+      "task": {
+        "id": "task-brief-1",
+        "title": "返乡数据简报",
+        "state": "working",
+        "mounts": [
+          { "id": "m-budget", "name": "2025预算.xlsx", "level": "read" },
+          { "id": "m-roster", "name": "访谈名单.xlsx", "level": "read" },
+          { "id": "m-brief", "name": "「简报」文件夹", "level": "propose" }
+        ],
+        "web": false,
+        "usage": { "tokens": 26000, "costEstimate": 0.04 }
+      },
+      "turns": [
+        {
+          "id": "turn-1",
+          "result": {
+            "proposals": [
+              {
+                "id": "p-plan-1",
+                "kind": "plan",
+                "payload": {
+                  "steps": [
+                    "读两张表，对上人数和预算",
+                    "列出简报要回答的三个问题，先问你",
+                    "在 ClioChart 做三张图",
+                    "写一页摘要初稿（ClioWrite 修订形式）",
+                    "新文件都先当候选，你点了才放进项目硬盘"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "turn-2",
+          "result": {
+            "proposals": [
+              {
+                "id": "p-ask-1",
+                "kind": "question",
+                "title": "简报先回答哪三个问题？",
+                "payload": {
+                  "text": "两张表能回答下面几个，选三个，或者自己写：",
+                  "options": [
+                    "谁回来了（年龄、原来在哪）",
+                    "为什么回来（访谈里说的原因）",
+                    "采访花了多少钱",
+                    "回来以后做什么"
+                  ],
+                  "multiple": true,
+                  "suggested": [0, 1, 2]
+                },
+                "answer": { "picked": [0, 1, 2] }
+              }
+            ]
+          }
+        },
+        {
+          "id": "turn-3",
+          "result": {
+            "proposals": [
+              {
+                "id": "p-permit-1",
+                "kind": "permission",
+                "title": "要在「简报」文件夹里放一份新文件",
+                "payload": {
+                  "text": "摘要初稿会作为候选放进「简报」文件夹，你点了才算数。"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "progress": [
+        { "content": "读两张表，对上人数和预算", "status": "completed" },
+        { "content": "列出要回答的三个问题", "status": "completed" },
+        { "content": "做三张图", "status": "completed" },
+        { "content": "写一页摘要初稿", "status": "in_progress" },
+        { "content": "放进「简报」", "status": "pending" }
+      ]
+    },
+    "delivered": {
+      "task": {
+        "id": "task-brief-1",
+        "title": "返乡数据简报",
+        "state": "delivered",
+        "mounts": [
+          { "id": "m-budget", "name": "2025预算.xlsx", "level": "read" },
+          { "id": "m-roster", "name": "访谈名单.xlsx", "level": "read" },
+          { "id": "m-brief", "name": "「简报」文件夹", "level": "propose" }
+        ],
+        "web": false,
+        "usage": { "tokens": 45000, "costEstimate": 0.07 }
+      },
+      "turns": [
+        {
+          "id": "turn-1",
+          "result": {
+            "proposals": [
+              {
+                "id": "p-plan-1",
+                "kind": "plan",
+                "payload": {
+                  "steps": [
+                    "读两张表，对上人数和预算",
+                    "列出简报要回答的三个问题，先问你",
+                    "在 ClioChart 做三张图",
+                    "写一页摘要初稿（ClioWrite 修订形式）",
+                    "新文件都先当候选，你点了才放进项目硬盘"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "turn-2",
+          "result": {
+            "proposals": [
+              {
+                "id": "p-ask-1",
+                "kind": "question",
+                "title": "简报先回答哪三个问题？",
+                "payload": {
+                  "text": "两张表能回答下面几个，选三个，或者自己写：",
+                  "options": [
+                    "谁回来了（年龄、原来在哪）",
+                    "为什么回来（访谈里说的原因）",
+                    "采访花了多少钱",
+                    "回来以后做什么"
+                  ],
+                  "multiple": true,
+                  "suggested": [0, 1, 2]
+                },
+                "answer": { "picked": [0, 1, 2] }
+              }
+            ]
+          }
+        },
+        {
+          "id": "turn-3",
+          "result": {
+            "proposals": [
+              {
+                "id": "p-permit-1",
+                "kind": "permission",
+                "title": "要在「简报」文件夹里放一份新文件",
+                "payload": {
+                  "text": "摘要初稿会作为候选放进「简报」文件夹，你点了才算数。"
+                },
+                "answer": "once"
+              }
+            ]
+          }
+        },
+        {
+          "id": "turn-4",
+          "result": {
+            "proposals": [
+              {
+                "id": "p-doc-1",
+                "kind": "new-document",
+                "title": "返乡数据简报摘要",
+                "payload": {
+                  "name": "返乡数据简报摘要.md",
+                  "format": "md",
+                  "content": "# 返乡数据简报摘要\n\n这一页回答三个问题：谁回来了，为什么回来，采访花了多少钱。\n\n- 数字都来自 2025预算.xlsx 和 访谈名单.xlsx。\n- 访谈里的原因照原话引，标明是谁说的。\n"
+                }
+              },
+              {
+                "id": "p-doc-2",
+                "kind": "new-document",
+                "title": "采访花费",
+                "payload": {
+                  "name": "采访花费.csv",
+                  "format": "csv",
+                  "content": "项目,金额\n交通,见 Sheet1 C4\n住宿,见 Sheet1 C5\n"
+                }
+              },
+              {
+                "id": "p-deliver-1",
+                "kind": "deliver",
+                "payload": {
+                  "summary": "摘要和一张表做好了，都还是候选。你点了才会放进「简报」。"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "progress": [
+        { "content": "读两张表，对上人数和预算", "status": "completed" },
+        { "content": "列出要回答的三个问题", "status": "completed" },
+        { "content": "做三张图", "status": "completed" },
+        { "content": "写一页摘要初稿", "status": "completed" },
+        { "content": "放进「简报」", "status": "completed" }
+      ]
+    }
+  }
+}

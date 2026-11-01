@@ -1,0 +1,3456 @@
+{
+  "target": "Mac OS X 10.6.8 Snow Leopard",
+  "generatedBy": "tooling/build-era-icons.mjs",
+  "sharedGeometryAcrossEras": false,
+  "completeFamily": true,
+  "reviewedFamily": [
+    "startupDisk",
+    "hardDisk",
+    "folder",
+    "document",
+    "applications",
+    "trash",
+    "finderApp",
+    "fileFloppy",
+    "assistant",
+    "quickDraft",
+    "writingStudio",
+    "projectDisk",
+    "projectDisc",
+    "cloudModel",
+    "cloudModelOff",
+    "questionSheet",
+    "outline",
+    "sectionDrafts",
+    "manuscript",
+    "reviewDesk",
+    "searcher",
+    "reader",
+    "timeMachine",
+    "docMap",
+    "clioStage",
+    "clioChart",
+    "liquidCover",
+    "cmfStudio",
+    "soundscape",
+    "scrapbook",
+    "systemFolder",
+    "helpFolder",
+    "importUtility",
+    "controlPanel",
+    "chooser",
+    "systemHelp",
+    "dictionary",
+    "teachText",
+    "writingDemo",
+    "chatFile",
+    "chatImport",
+    "systemStatus",
+    "contextPanel",
+    "rebuildArticle",
+    "bureaucracyMeme",
+    "endfieldTerminal",
+    "documents",
+    "alias",
+    "systemFile",
+    "multiFinderApp",
+    "daHandler",
+    "writingBell",
+    "trashFull",
+    "control",
+    "localModel",
+    "controlStrip"
+  ],
+  "fallback": [],
+  "runtimeSize": "contextual",
+  "runtimeSizesByContext": {
+    "compactMenuList": 16,
+    "ordinary": 32,
+    "desktopLargeRetina": 128
+  },
+  "compatibilityManifest": "snow-leopard-icon-manifest.json",
+  "compatibilityManifestMeaning": "Stable 32 px semantic mapping only; app/core/system-icons.js selects 16, 32, or 128 px by rendering context.",
+  "runtimeDispatch": "apps/desktop/app/core/system-icons.js",
+  "icons": {
+    "startupDisk": {
+      "genre": "hardware",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8437,
+        "scale": 1.0286
+      },
+      "physicalMetaphor": "a bootable system disk volume with one small illuminated startup indicator in a lower corner, clearly distinct from the plain local hard disk; no arrow, upload symbol, download symbol, or large badge",
+      "semanticMark": "startup",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/startupDisk-16.png",
+        "32": "icons/startupDisk-32.png",
+        "128": "icons/startupDisk-128.png",
+        "512": "icons/startupDisk-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.7422,
+          "meanLum": 177.94,
+          "lumStd": 48.59,
+          "edgeEnergy": 67
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6836,
+          "meanLum": 177.75,
+          "lumStd": 54.2,
+          "edgeEnergy": 150
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6729,
+          "meanLum": 178.08,
+          "lumStd": 54.44,
+          "edgeEnergy": 230
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "hardDisk": {
+      "genre": "hardware",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8437,
+        "scale": 1.0286
+      },
+      "physicalMetaphor": "a mounted local hard-disk volume, clearly hardware rather than a folder or document",
+      "semanticMark": "disk",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/hardDisk-16.png",
+        "32": "icons/hardDisk-32.png",
+        "128": "icons/hardDisk-128.png",
+        "512": "icons/hardDisk-512.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6406,
+          "meanLum": 158.35,
+          "lumStd": 44.48,
+          "edgeEnergy": 46
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6201,
+          "meanLum": 160.71,
+          "lumStd": 51.63,
+          "edgeEnergy": 122
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5873,
+          "meanLum": 159.3,
+          "lumStd": 51.17,
+          "edgeEnergy": 264
+        }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "folder": {
+      "genre": "file",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.9034,
+        "scale": 1.0234
+      },
+      "physicalMetaphor": "the era's system folder as one unmistakable tabbed folder object",
+      "semanticMark": "none",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/folder-16.png",
+        "32": "icons/folder-32.png",
+        "128": "icons/folder-128.png",
+        "512": "icons/folder-512.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5586,
+          "meanLum": 152.56,
+          "lumStd": 15.21,
+          "edgeEnergy": 1
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5439,
+          "meanLum": 151.8,
+          "lumStd": 17.53,
+          "edgeEnergy": 44
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5437,
+          "meanLum": 148.59,
+          "lumStd": 25.08,
+          "edgeEnergy": 74
+        }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "document": {
+      "genre": "document",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.8758,
+        "scale": 1.099
+      },
+      "physicalMetaphor": "a generic white document sheet with one folded top corner and only a few neutral text marks",
+      "semanticMark": "none",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/document-16.png",
+        "32": "icons/document-32.png",
+        "128": "icons/document-128.png",
+        "512": "icons/document-512.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5586,
+          "meanLum": 224.22,
+          "lumStd": 18.2,
+          "edgeEnergy": 46
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5391,
+          "meanLum": 222.35,
+          "lumStd": 31.29,
+          "edgeEnergy": 107
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5351,
+          "meanLum": 220.15,
+          "lumStd": 38.96,
+          "edgeEnergy": 167
+        }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "applications": {
+      "genre": "file",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.9219,
+        "scale": 1.0442
+      },
+      "physicalMetaphor": "a tabbed Applications catalogue folder holding a staggered fan of three non-tile app objects: one manuscript sheet, one open Reader book, and one small Writing Studio typewriter keyboard or paper carriage; it represents AI System 6's high-frequency writing, reading, and long-form work and must contain no conversation bubble, no magnifying glass, no grid, no square tiles, no App Store letter, and no launcher dot matrix",
+      "semanticMark": "applications",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/applications-16.png",
+        "32": "icons/applications-32.png",
+        "128": "icons/applications-128.png",
+        "512": "icons/applications-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.625,
+          "meanLum": 159.19,
+          "lumStd": 36.88,
+          "edgeEnergy": 76
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5898,
+          "meanLum": 159.33,
+          "lumStd": 41.53,
+          "edgeEnergy": 218
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5811,
+          "meanLum": 159.32,
+          "lumStd": 42.33,
+          "edgeEnergy": 314
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "trash": {
+      "genre": "hardware",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8691,
+        "scale": 1.0906
+      },
+      "physicalMetaphor": "an empty waste basket with an open top and a readable woven or perforated body",
+      "semanticMark": "empty",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/trash-16.png",
+        "32": "icons/trash-32.png",
+        "128": "icons/trash-128.png",
+        "512": "icons/trash-512.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5625,
+          "meanLum": 97.72,
+          "lumStd": 39.06,
+          "edgeEnergy": 81
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5391,
+          "meanLum": 96.85,
+          "lumStd": 43.64,
+          "edgeEnergy": 246
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5249,
+          "meanLum": 95.97,
+          "lumStd": 43.83,
+          "edgeEnergy": 446
+        }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "finderApp": {
+      "genre": "application",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8437,
+        "scale": 1.0093
+      },
+      "physicalMetaphor": "the target era's real Finder identity, preserving its documented facial fields, eyes, and continuous smile without importing a computer chassis from another era",
+      "semanticMark": "finder",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/finderApp-16.png",
+        "32": "icons/finderApp-32.png",
+        "128": "icons/finderApp-128.png",
+        "512": "icons/finderApp-512.png"
+      },
+      "metaphorKey": "target-era-finder-identity",
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.7031,
+          "meanLum": 147.55,
+          "lumStd": 64.05,
+          "edgeEnergy": 112
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6631,
+          "meanLum": 145.5,
+          "lumStd": 68.91,
+          "edgeEnergy": 289
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6627,
+          "meanLum": 145.97,
+          "lumStd": 69.31,
+          "edgeEnergy": 433
+        }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "reference-validated",
+      "runtimeAsset": true,
+      "blindMixStatus": "not-run",
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "fileFloppy": {
+      "genre": "hardware",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8438,
+        "scale": 0.9774
+      },
+      "physicalMetaphor": "one 3.5-inch floppy disk with a readable metal shutter and label panel, clearly removable storage rather than a hard drive",
+      "semanticMark": "floppy",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/fileFloppy-16.png",
+        "32": "icons/fileFloppy-32.png",
+        "128": "icons/fileFloppy-128.png",
+        "512": "icons/fileFloppy-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.8086,
+          "meanLum": 139.18,
+          "lumStd": 73.89,
+          "edgeEnergy": 86
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.7891,
+          "meanLum": 137.64,
+          "lumStd": 76.28,
+          "edgeEnergy": 254
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.8129,
+          "meanLum": 131.86,
+          "lumStd": 79.05,
+          "edgeEnergy": 364
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "assistant": {
+      "genre": "application",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.9219,
+        "scale": 1.1028
+      },
+      "physicalMetaphor": "two overlapping speech balloons: the user's turn is a solid filled balloon and the reply is a separate balloon drawn with a clearly dashed outline to show that it remains provisional until saved",
+      "semanticMark": "assistant",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/assistant-16.png",
+        "32": "icons/assistant-32.png",
+        "128": "icons/assistant-128.png",
+        "512": "icons/assistant-512.png"
+      },
+      "metaphorKey": "solid-user-dashed-reply-balloons",
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5156,
+          "meanLum": 152.9,
+          "lumStd": 51.46,
+          "edgeEnergy": 48
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.4932,
+          "meanLum": 150.4,
+          "lumStd": 55.64,
+          "edgeEnergy": 159
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4819,
+          "meanLum": 151.47,
+          "lumStd": 55.66,
+          "edgeEnergy": 241
+        }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "quickDraft": {
+      "genre": "document",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.9219,
+        "scale": 1.1569
+      },
+      "physicalMetaphor": "one loose draft sheet with a pencil crossing a few rough horizontal marks, visibly provisional rather than a finished manuscript",
+      "semanticMark": "pencil",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/quickDraft-16.png",
+        "32": "icons/quickDraft-32.png",
+        "128": "icons/quickDraft-128.png",
+        "512": "icons/quickDraft-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6133,
+          "meanLum": 207.48,
+          "lumStd": 36.11,
+          "edgeEnergy": 91
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5752,
+          "meanLum": 206.83,
+          "lumStd": 42.63,
+          "edgeEnergy": 242
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5709,
+          "meanLum": 206.82,
+          "lumStd": 43.23,
+          "edgeEnergy": 332
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "writingStudio": {
+      "genre": "application",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.9219,
+        "scale": 0.9833
+      },
+      "physicalMetaphor": "a compact mechanical typewriter with one blank manuscript sheet emerging from the carriage",
+      "semanticMark": "writing",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/writingStudio-16.png",
+        "32": "icons/writingStudio-32.png",
+        "128": "icons/writingStudio-128.png",
+        "512": "icons/writingStudio-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6406,
+          "meanLum": 124,
+          "lumStd": 71.14,
+          "edgeEnergy": 99
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6006,
+          "meanLum": 120.4,
+          "lumStd": 74.64,
+          "edgeEnergy": 422
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5969,
+          "meanLum": 119.49,
+          "lumStd": 76.57,
+          "edgeEnergy": 683
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "projectDisk": {
+      "genre": "hardware",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8437,
+        "scale": 1.0286
+      },
+      "physicalMetaphor": "a labelled external storage volume with one restrained project label cue, distinct from the unlabelled local hard disk",
+      "semanticMark": "project",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/projectDisk-16.png",
+        "32": "icons/projectDisk-32.png",
+        "128": "icons/projectDisk-128.png",
+        "512": "icons/projectDisk-512.png"
+      },
+      "metaphorKey": "labelled-external-volume",
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.457,
+          "meanLum": 123.17,
+          "lumStd": 51.34,
+          "edgeEnergy": 64
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.417,
+          "meanLum": 123.65,
+          "lumStd": 54.84,
+          "edgeEnergy": 158
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4082,
+          "meanLum": 121.39,
+          "lumStd": 57.59,
+          "edgeEnergy": 266
+        }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "historically-reviewed",
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "projectDisc": {
+      "genre": "hardware",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8437,
+        "scale": 1.0093
+      },
+      "physicalMetaphor": "one optical project disc partly seated in a compact protective sleeve, with a small blank project tab and visible rainbow diffraction",
+      "semanticMark": "project",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/projectDisc-16.png",
+        "32": "icons/projectDisc-32.png",
+        "128": "icons/projectDisc-128.png",
+        "512": "icons/projectDisc-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.7031,
+          "meanLum": 186.47,
+          "lumStd": 25.24,
+          "edgeEnergy": 68
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6484,
+          "meanLum": 187.18,
+          "lumStd": 29.36,
+          "edgeEnergy": 184
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6548,
+          "meanLum": 184.68,
+          "lumStd": 37.73,
+          "edgeEnergy": 258
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "cloudModel": {
+      "genre": "utility",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8438,
+        "scale": 0.9818
+      },
+      "physicalMetaphor": "a compact remote server unit paired with one active cloud-shaped status light, clearly a network model service rather than local hardware",
+      "semanticMark": "cloud",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/cloudModel-16.png",
+        "32": "icons/cloudModel-32.png",
+        "128": "icons/cloudModel-128.png",
+        "512": "icons/cloudModel-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5898,
+          "meanLum": 144.7,
+          "lumStd": 47.74,
+          "edgeEnergy": 66
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5547,
+          "meanLum": 144.63,
+          "lumStd": 52.07,
+          "edgeEnergy": 195
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5397,
+          "meanLum": 144.7,
+          "lumStd": 52.97,
+          "edgeEnergy": 287
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "cloudModelOff": {
+      "genre": "utility",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8438,
+        "scale": 0.9818
+      },
+      "physicalMetaphor": "the same compact remote server concept with an unlit cloud-shaped status light and one visibly unplugged network cable",
+      "semanticMark": "cloudOff",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/cloudModelOff-16.png",
+        "32": "icons/cloudModelOff-32.png",
+        "128": "icons/cloudModelOff-128.png",
+        "512": "icons/cloudModelOff-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6172,
+          "meanLum": 105.97,
+          "lumStd": 58.49,
+          "edgeEnergy": 55
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5752,
+          "meanLum": 101.03,
+          "lumStd": 63.58,
+          "edgeEnergy": 215
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5607,
+          "meanLum": 101.22,
+          "lumStd": 64.68,
+          "edgeEnergy": 295
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "questionSheet": {
+      "genre": "document",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.9219,
+        "scale": 1.1569
+      },
+      "physicalMetaphor": "one white worksheet with a large centred question mark and two short blank response lines, no other text",
+      "semanticMark": "question",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/questionSheet-16.png",
+        "32": "icons/questionSheet-32.png",
+        "128": "icons/questionSheet-128.png",
+        "512": "icons/questionSheet-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6602,
+          "meanLum": 222.85,
+          "lumStd": 23.27,
+          "edgeEnergy": 44
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5957,
+          "meanLum": 221.59,
+          "lumStd": 28.86,
+          "edgeEnergy": 177
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5828,
+          "meanLum": 217.67,
+          "lumStd": 40.51,
+          "edgeEnergy": 217
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "outline": {
+      "genre": "document",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8438,
+        "scale": 1.0485
+      },
+      "physicalMetaphor": "three stacked index cards showing only indented bullets and horizontal hierarchy bars, clearly an outline rather than prose",
+      "semanticMark": "outline",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/outline-16.png",
+        "32": "icons/outline-32.png",
+        "128": "icons/outline-128.png",
+        "512": "icons/outline-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6211,
+          "meanLum": 192.01,
+          "lumStd": 51.69,
+          "edgeEnergy": 46
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5879,
+          "meanLum": 196.21,
+          "lumStd": 48.4,
+          "edgeEnergy": 339
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5924,
+          "meanLum": 199.31,
+          "lumStd": 47.95,
+          "edgeEnergy": 550
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "sectionDrafts": {
+      "genre": "document",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.9219,
+        "scale": 1.0826
+      },
+      "physicalMetaphor": "three staggered draft pages with distinct coloured section tabs and rough line blocks, clearly separate sections of one work",
+      "semanticMark": "sections",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/sectionDrafts-16.png",
+        "32": "icons/sectionDrafts-32.png",
+        "128": "icons/sectionDrafts-128.png",
+        "512": "icons/sectionDrafts-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5352,
+          "meanLum": 205.55,
+          "lumStd": 24.08,
+          "edgeEnergy": 26
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.4941,
+          "meanLum": 205.07,
+          "lumStd": 27.71,
+          "edgeEnergy": 142
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4711,
+          "meanLum": 205.46,
+          "lumStd": 29.55,
+          "edgeEnergy": 276
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "manuscript": {
+      "genre": "document",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8438,
+        "scale": 1.0485
+      },
+      "physicalMetaphor": "a substantial bound manuscript stack with a cloth spine and one bookmark, clearly a finished long-form document",
+      "semanticMark": "manuscript",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/manuscript-16.png",
+        "32": "icons/manuscript-32.png",
+        "128": "icons/manuscript-128.png",
+        "512": "icons/manuscript-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6367,
+          "meanLum": 175.32,
+          "lumStd": 56.41,
+          "edgeEnergy": 75
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6074,
+          "meanLum": 175.73,
+          "lumStd": 60.05,
+          "edgeEnergy": 227
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6009,
+          "meanLum": 175.97,
+          "lumStd": 60.58,
+          "edgeEnergy": 331
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "reviewDesk": {
+      "genre": "application",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8606,
+        "scale": 1.0153
+      },
+      "physicalMetaphor": "a marked manuscript page under a magnifying lens, reduced to one readable proofing object",
+      "semanticMark": "proof",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/reviewDesk-16.png",
+        "32": "icons/reviewDesk-32.png",
+        "128": "icons/reviewDesk-128.png",
+        "512": "icons/reviewDesk-512.png"
+      },
+      "metaphorKey": "marked-manuscript-with-lens",
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6133,
+          "meanLum": 157.5,
+          "lumStd": 56.92,
+          "edgeEnergy": 136
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5781,
+          "meanLum": 159.56,
+          "lumStd": 62.91,
+          "edgeEnergy": 438
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5748,
+          "meanLum": 159.47,
+          "lumStd": 64.31,
+          "edgeEnergy": 664
+        }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "historically-reviewed",
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "searcher": {
+      "genre": "application",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.9403,
+        "scale": 1.0892
+      },
+      "physicalMetaphor": "a single magnifying glass overlapping a document page, with the lens and page both readable",
+      "semanticMark": "magnify",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/searcher-16.png",
+        "32": "icons/searcher-32.png",
+        "128": "icons/searcher-128.png",
+        "512": "icons/searcher-512.png"
+      },
+      "metaphorKey": "magnifier-over-page",
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5781,
+          "meanLum": 187.82,
+          "lumStd": 47.14,
+          "edgeEnergy": 97
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5449,
+          "meanLum": 188.22,
+          "lumStd": 51.04,
+          "edgeEnergy": 291
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5408,
+          "meanLum": 187.47,
+          "lumStd": 52.91,
+          "edgeEnergy": 506
+        }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "historically-reviewed",
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "reader": {
+      "genre": "application",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.9219,
+        "scale": 1.0261
+      },
+      "physicalMetaphor": "an open reading book with one restrained highlighted passage block and a slim reading marker, no legible words",
+      "semanticMark": "reader",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/reader-16.png",
+        "32": "icons/reader-32.png",
+        "128": "icons/reader-128.png",
+        "512": "icons/reader-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.4141,
+          "meanLum": 162.19,
+          "lumStd": 49.51,
+          "edgeEnergy": 40
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.3574,
+          "meanLum": 168.37,
+          "lumStd": 53.89,
+          "edgeEnergy": 119
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.3509,
+          "meanLum": 168.72,
+          "lumStd": 53.74,
+          "edgeEnergy": 203
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "timeMachine": {
+      "genre": "utility",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8438,
+        "scale": 0.9558
+      },
+      "physicalMetaphor": "a compact archive drawer behind a round clock face with one restrained backward-history arrow",
+      "semanticMark": "archive",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/timeMachine-16.png",
+        "32": "icons/timeMachine-32.png",
+        "128": "icons/timeMachine-128.png",
+        "512": "icons/timeMachine-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.7578,
+          "meanLum": 135.45,
+          "lumStd": 48.63,
+          "edgeEnergy": 124
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.7207,
+          "meanLum": 137.38,
+          "lumStd": 53.53,
+          "edgeEnergy": 501
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.7029,
+          "meanLum": 137.73,
+          "lumStd": 55.35,
+          "edgeEnergy": 715
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "docMap": {
+      "genre": "application",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.9219,
+        "scale": 1.0351
+      },
+      "physicalMetaphor": "a document page whose heading lines grow into one simple stem with a few branches and nodes, a document structure map rather than a geographic map",
+      "semanticMark": "none",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/docMap-16.png",
+        "32": "icons/docMap-32.png",
+        "128": "icons/docMap-128.png",
+        "512": "icons/docMap-512.png"
+      },
+      "metaphorKey": "branching-document-map",
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.7656,
+          "meanLum": 162.83,
+          "lumStd": 57.82,
+          "edgeEnergy": 161
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.7813,
+          "meanLum": 159.21,
+          "lumStd": 70.61,
+          "edgeEnergy": 453
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.7574,
+          "meanLum": 161.27,
+          "lumStd": 69.03,
+          "edgeEnergy": 685
+        }
+      },
+      "metaphorMetrics": {
+        "version": 2,
+        "sourceSize": [
+          128,
+          128
+        ],
+        "bounds": [
+          8,
+          6,
+          119,
+          120
+        ],
+        "pageMode": "opaque",
+        "pageLeftDensity": 1,
+        "pageRightDensity": 0.9568,
+        "pageAdvantage": 0.0432,
+        "pageAdvantageMin": 0.02,
+        "nodeMode": "opaque",
+        "nodeBandDensities": [
+          0.8962,
+          0.9679,
+          0.9926
+        ],
+        "nodeGapDensities": [
+          0.9098,
+          1
+        ],
+        "centerHubDensity": 1,
+        "radialNodeDensities": [
+          0.9993,
+          0.8948,
+          1,
+          1
+        ],
+        "radialBranchDensities": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "layoutMode": "radial-mind-map"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "historically-reviewed",
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "clioStage": {
+      "genre": "application",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.9219,
+        "scale": 0.9752
+      },
+      "physicalMetaphor": "a small presentation stage with side curtains, a blank projection screen, and one focused overhead light",
+      "semanticMark": "stage",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/clioStage-16.png",
+        "32": "icons/clioStage-32.png",
+        "128": "icons/clioStage-128.png",
+        "512": "icons/clioStage-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.8125,
+          "meanLum": 117.21,
+          "lumStd": 73.55,
+          "edgeEnergy": 139
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.7959,
+          "meanLum": 116.78,
+          "lumStd": 77.88,
+          "edgeEnergy": 381
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.7749,
+          "meanLum": 115.04,
+          "lumStd": 79.2,
+          "edgeEnergy": 487
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "clioChart": {
+      "genre": "application",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8438,
+        "scale": 0.9558
+      },
+      "physicalMetaphor": "a standing presentation easel carrying one simple bar-and-line chart with no labels or numbers",
+      "semanticMark": "chart",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/clioChart-16.png",
+        "32": "icons/clioChart-32.png",
+        "128": "icons/clioChart-128.png",
+        "512": "icons/clioChart-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.4883,
+          "meanLum": 163.49,
+          "lumStd": 65.64,
+          "edgeEnergy": 94
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.4482,
+          "meanLum": 165.51,
+          "lumStd": 71,
+          "edgeEnergy": 297
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.445,
+          "meanLum": 165.48,
+          "lumStd": 72.4,
+          "edgeEnergy": 447
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "liquidCover": {
+      "genre": "application",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.9219,
+        "scale": 1.0442
+      },
+      "physicalMetaphor": "a landscape Bilibili-video cover artboard whose dominant visual is two large lines of glass typography: thick translucent title strokes with refractive edges over an abstract background color plane and one neutral geometric accent shape, plus a slim offset text/shape layer stack at one side; it is a glass-text cover compositor with SDF typography, material presets, multi-aspect editing, and explicit PNG/video export, never a person, face, character, anime silhouette, book, book cover, ordinary photo compositor, single glass sheet, or generic pane",
+      "semanticMark": "cover",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/liquidCover-16.png",
+        "32": "icons/liquidCover-32.png",
+        "128": "icons/liquidCover-128.png",
+        "512": "icons/liquidCover-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5938,
+          "meanLum": 95.73,
+          "lumStd": 27.03,
+          "edgeEnergy": 62
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5186,
+          "meanLum": 95.9,
+          "lumStd": 31.91,
+          "edgeEnergy": 294
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5102,
+          "meanLum": 95.26,
+          "lumStd": 32.85,
+          "edgeEnergy": 430
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "cmfStudio": {
+      "genre": "application",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8438,
+        "scale": 1.125
+      },
+      "physicalMetaphor": "a fan of colour, material, and finish swatches with one metal chip, one fabric chip, and restrained colour samples",
+      "semanticMark": "swatches",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/cmfStudio-16.png",
+        "32": "icons/cmfStudio-32.png",
+        "128": "icons/cmfStudio-128.png",
+        "512": "icons/cmfStudio-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5,
+          "meanLum": 136.27,
+          "lumStd": 51.08,
+          "edgeEnergy": 105
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.4648,
+          "meanLum": 136.34,
+          "lumStd": 56.9,
+          "edgeEnergy": 263
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.458,
+          "meanLum": 136.51,
+          "lumStd": 58.2,
+          "edgeEnergy": 378
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "soundscape": {
+      "genre": "application",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.9219,
+        "scale": 1.0442
+      },
+      "physicalMetaphor": "one compact loudspeaker emitting two controlled waveform ribbons, clearly an audio environment tool",
+      "semanticMark": "sound",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/soundscape-16.png",
+        "32": "icons/soundscape-32.png",
+        "128": "icons/soundscape-128.png",
+        "512": "icons/soundscape-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.4141,
+          "meanLum": 118.53,
+          "lumStd": 44.33,
+          "edgeEnergy": 93
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.375,
+          "meanLum": 115.27,
+          "lumStd": 51.37,
+          "edgeEnergy": 329
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.3707,
+          "meanLum": 115.09,
+          "lumStd": 53.07,
+          "edgeEnergy": 494
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "scrapbook": {
+      "genre": "application",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8438,
+        "scale": 0.9558
+      },
+      "physicalMetaphor": "a bound album opened or angled to show one mounted photographic print, clearly an album rather than a notes page",
+      "semanticMark": "scraps",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/scrapbook-16.png",
+        "32": "icons/scrapbook-32.png",
+        "128": "icons/scrapbook-128.png",
+        "512": "icons/scrapbook-512.png"
+      },
+      "metaphorKey": "bound-album-with-print",
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5469,
+          "meanLum": 130.48,
+          "lumStd": 62.07,
+          "edgeEnergy": 115
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5166,
+          "meanLum": 132.17,
+          "lumStd": 68.29,
+          "edgeEnergy": 354
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5068,
+          "meanLum": 133.47,
+          "lumStd": 69.56,
+          "edgeEnergy": 524
+        }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "systemFolder": {
+      "genre": "file",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.9219,
+        "scale": 1.0442
+      },
+      "physicalMetaphor": "a system folder carrying one small inset mechanical wheel badge, unmistakably the operating-system folder",
+      "semanticMark": "gear",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/systemFolder-16.png",
+        "32": "icons/systemFolder-32.png",
+        "128": "icons/systemFolder-128.png",
+        "512": "icons/systemFolder-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6367,
+          "meanLum": 154.71,
+          "lumStd": 25.08,
+          "edgeEnergy": 15
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6162,
+          "meanLum": 155.53,
+          "lumStd": 27.46,
+          "edgeEnergy": 113
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6162,
+          "meanLum": 156.55,
+          "lumStd": 29.09,
+          "edgeEnergy": 181
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "helpFolder": {
+      "genre": "file",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.9219,
+        "scale": 1.0442
+      },
+      "physicalMetaphor": "a help folder carrying one large clean question-mark badge, with no other text",
+      "semanticMark": "help",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/helpFolder-16.png",
+        "32": "icons/helpFolder-32.png",
+        "128": "icons/helpFolder-128.png",
+        "512": "icons/helpFolder-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6172,
+          "meanLum": 134.82,
+          "lumStd": 37.45,
+          "edgeEnergy": 48
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5742,
+          "meanLum": 136.61,
+          "lumStd": 37.52,
+          "edgeEnergy": 205
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5601,
+          "meanLum": 138.15,
+          "lumStd": 35.85,
+          "edgeEnergy": 288
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "importUtility": {
+      "genre": "utility",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8438,
+        "scale": 0.9391
+      },
+      "physicalMetaphor": "an inbox tray receiving one document sheet from above through a single downward arrow",
+      "semanticMark": "import",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/importUtility-16.png",
+        "32": "icons/importUtility-32.png",
+        "128": "icons/importUtility-128.png",
+        "512": "icons/importUtility-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6289,
+          "meanLum": 174.03,
+          "lumStd": 56.34,
+          "edgeEnergy": 84
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6367,
+          "meanLum": 167.22,
+          "lumStd": 68.75,
+          "edgeEnergy": 257
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6253,
+          "meanLum": 168.88,
+          "lumStd": 65.01,
+          "edgeEnergy": 402
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "controlPanel": {
+      "genre": "utility",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8438,
+        "scale": 0.9558
+      },
+      "physicalMetaphor": "the era's settings object, expressed as a compact panel of physical controls rather than a modern gear glyph",
+      "semanticMark": "sliders",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/controlPanel-16.png",
+        "32": "icons/controlPanel-32.png",
+        "128": "icons/controlPanel-128.png",
+        "512": "icons/controlPanel-512.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.7813,
+          "meanLum": 118.77,
+          "lumStd": 52.74,
+          "edgeEnergy": 135
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.7441,
+          "meanLum": 118.36,
+          "lumStd": 55.39,
+          "edgeEnergy": 437
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.7319,
+          "meanLum": 118.3,
+          "lumStd": 56.08,
+          "edgeEnergy": 692
+        }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "historically-reviewed",
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "chooser": {
+      "genre": "utility",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8438,
+        "scale": 0.9391
+      },
+      "physicalMetaphor": "two small desktop computers joined by one cable, with one machine visibly selected by a compact pointer tab",
+      "semanticMark": "chooser",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/chooser-16.png",
+        "32": "icons/chooser-32.png",
+        "128": "icons/chooser-128.png",
+        "512": "icons/chooser-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.3438,
+          "meanLum": 130.73,
+          "lumStd": 45.13,
+          "edgeEnergy": 25
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.3027,
+          "meanLum": 131.55,
+          "lumStd": 42.3,
+          "edgeEnergy": 113
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.3005,
+          "meanLum": 132.07,
+          "lumStd": 44.37,
+          "edgeEnergy": 227
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "systemHelp": {
+      "genre": "application",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.9219,
+        "scale": 1.0261
+      },
+      "physicalMetaphor": "a closed reference book with one large question mark on the cover and a single bookmark, no other text",
+      "semanticMark": "help",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/systemHelp-16.png",
+        "32": "icons/systemHelp-32.png",
+        "128": "icons/systemHelp-128.png",
+        "512": "icons/systemHelp-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5742,
+          "meanLum": 87.33,
+          "lumStd": 37.47,
+          "edgeEnergy": 66
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5518,
+          "meanLum": 87.62,
+          "lumStd": 44.79,
+          "edgeEnergy": 219
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.542,
+          "meanLum": 88.12,
+          "lumStd": 45.68,
+          "edgeEnergy": 321
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "dictionary": {
+      "genre": "application",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.9219,
+        "scale": 1.0261
+      },
+      "physicalMetaphor": "a thick indexed reference book with stepped edge tabs and one bookmark, no letters or words",
+      "semanticMark": "dictionary",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/dictionary-16.png",
+        "32": "icons/dictionary-32.png",
+        "128": "icons/dictionary-128.png",
+        "512": "icons/dictionary-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.7617,
+          "meanLum": 83.4,
+          "lumStd": 44.26,
+          "edgeEnergy": 71
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.7285,
+          "meanLum": 84.76,
+          "lumStd": 51.37,
+          "edgeEnergy": 274
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.7171,
+          "meanLum": 85.07,
+          "lumStd": 52.74,
+          "edgeEnergy": 374
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "teachText": {
+      "genre": "application",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.8942,
+        "scale": 1.1222
+      },
+      "physicalMetaphor": "writing paper with a pen resting across it, clearly an editable writing object",
+      "semanticMark": "writing",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/teachText-16.png",
+        "32": "icons/teachText-32.png",
+        "128": "icons/teachText-128.png",
+        "512": "icons/teachText-512.png"
+      },
+      "metaphorKey": "writing-paper-and-pen",
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6289,
+          "meanLum": 199.23,
+          "lumStd": 55.24,
+          "edgeEnergy": 91
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5986,
+          "meanLum": 198.21,
+          "lumStd": 60.93,
+          "edgeEnergy": 309
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5901,
+          "meanLum": 198.66,
+          "lumStd": 61.34,
+          "edgeEnergy": 478
+        }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "B",
+      "historicalReviewStatus": "historically-reviewed",
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "writingDemo": {
+      "genre": "document",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.9219,
+        "scale": 1.1569
+      },
+      "physicalMetaphor": "a document sheet with a single inset triangular play mark and two neutral writing lines, no text",
+      "semanticMark": "play",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/writingDemo-16.png",
+        "32": "icons/writingDemo-32.png",
+        "128": "icons/writingDemo-128.png",
+        "512": "icons/writingDemo-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6484,
+          "meanLum": 207.19,
+          "lumStd": 35.48,
+          "edgeEnergy": 76
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5918,
+          "meanLum": 205.92,
+          "lumStd": 46.92,
+          "edgeEnergy": 214
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.572,
+          "meanLum": 204.67,
+          "lumStd": 51.16,
+          "edgeEnergy": 308
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "chatFile": {
+      "genre": "document",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.9219,
+        "scale": 1.1569
+      },
+      "physicalMetaphor": "a document sheet carrying two small overlapping speech balloons, clearly a saved conversation file",
+      "semanticMark": "chat",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/chatFile-16.png",
+        "32": "icons/chatFile-32.png",
+        "128": "icons/chatFile-128.png",
+        "512": "icons/chatFile-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.582,
+          "meanLum": 209.23,
+          "lumStd": 34.7,
+          "edgeEnergy": 55
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5928,
+          "meanLum": 207.55,
+          "lumStd": 38.03,
+          "edgeEnergy": 162
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5754,
+          "meanLum": 205.2,
+          "lumStd": 44.49,
+          "edgeEnergy": 224
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "chatImport": {
+      "genre": "utility",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8438,
+        "scale": 0.9391
+      },
+      "physicalMetaphor": "an inbox tray receiving one speech balloon through a single downward arrow",
+      "semanticMark": "chat",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/chatImport-16.png",
+        "32": "icons/chatImport-32.png",
+        "128": "icons/chatImport-128.png",
+        "512": "icons/chatImport-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6367,
+          "meanLum": 171.78,
+          "lumStd": 55.11,
+          "edgeEnergy": 102
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5928,
+          "meanLum": 172.63,
+          "lumStd": 58.78,
+          "edgeEnergy": 290
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5754,
+          "meanLum": 171.58,
+          "lumStd": 60.16,
+          "edgeEnergy": 419
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "systemStatus": {
+      "genre": "utility",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8438,
+        "scale": 0.9558
+      },
+      "physicalMetaphor": "a compact desktop monitor showing one simple activity trace beside three physical status lights, no numbers or text",
+      "semanticMark": "status",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/systemStatus-16.png",
+        "32": "icons/systemStatus-32.png",
+        "128": "icons/systemStatus-128.png",
+        "512": "icons/systemStatus-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.8281,
+          "meanLum": 92.03,
+          "lumStd": 50.08,
+          "edgeEnergy": 134
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.7715,
+          "meanLum": 93.75,
+          "lumStd": 59.12,
+          "edgeEnergy": 364
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.7579,
+          "meanLum": 96.68,
+          "lumStd": 61.4,
+          "edgeEnergy": 625
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "contextPanel": {
+      "genre": "utility",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8437,
+        "scale": 1.0286
+      },
+      "physicalMetaphor": "a small index-card box with three raised source cards and distinct coloured tabs, clearly curated context rather than a folder",
+      "semanticMark": "context",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/contextPanel-16.png",
+        "32": "icons/contextPanel-32.png",
+        "128": "icons/contextPanel-128.png",
+        "512": "icons/contextPanel-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6484,
+          "meanLum": 147.54,
+          "lumStd": 58.18,
+          "edgeEnergy": 96
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6025,
+          "meanLum": 154.84,
+          "lumStd": 58.1,
+          "edgeEnergy": 190
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.606,
+          "meanLum": 154.57,
+          "lumStd": 61.19,
+          "edgeEnergy": 349
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "rebuildArticle": {
+      "genre": "utility",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8438,
+        "scale": 0.9908
+      },
+      "physicalMetaphor": "a compact tabletop printing press feeding one manuscript sheet through its rollers, clearly reconstructing a document",
+      "semanticMark": "rebuild",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/rebuildArticle-16.png",
+        "32": "icons/rebuildArticle-32.png",
+        "128": "icons/rebuildArticle-128.png",
+        "512": "icons/rebuildArticle-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.4883,
+          "meanLum": 103.73,
+          "lumStd": 55.46,
+          "edgeEnergy": 102
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.4521,
+          "meanLum": 104.95,
+          "lumStd": 63.88,
+          "edgeEnergy": 325
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.445,
+          "meanLum": 105.37,
+          "lumStd": 65.67,
+          "edgeEnergy": 480
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "bureaucracyMeme": {
+      "genre": "application",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8438,
+        "scale": 0.9818
+      },
+      "physicalMetaphor": "a red rubber office stamp pressed over a small stack of blank administrative forms, no seals or words",
+      "semanticMark": "forms",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/bureaucracyMeme-16.png",
+        "32": "icons/bureaucracyMeme-32.png",
+        "128": "icons/bureaucracyMeme-128.png",
+        "512": "icons/bureaucracyMeme-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.3984,
+          "meanLum": 109.85,
+          "lumStd": 50.68,
+          "edgeEnergy": 25
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.3604,
+          "meanLum": 112.02,
+          "lumStd": 55.78,
+          "edgeEnergy": 153
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.3509,
+          "meanLum": 110.52,
+          "lumStd": 55.69,
+          "edgeEnergy": 231
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "endfieldTerminal": {
+      "genre": "utility",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8438,
+        "scale": 0.9558
+      },
+      "physicalMetaphor": "a compact dark terminal monitor with one green prompt block and two short luminous command lines, no legible characters",
+      "semanticMark": "terminal",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/endfieldTerminal-16.png",
+        "32": "icons/endfieldTerminal-32.png",
+        "128": "icons/endfieldTerminal-128.png",
+        "512": "icons/endfieldTerminal-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.832,
+          "meanLum": 84.36,
+          "lumStd": 54.56,
+          "edgeEnergy": 116
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.8232,
+          "meanLum": 80.44,
+          "lumStd": 58.48,
+          "edgeEnergy": 355
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.8107,
+          "meanLum": 78.47,
+          "lumStd": 57.3,
+          "edgeEnergy": 509
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "documents": {
+      "genre": "file",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.9219,
+        "scale": 1.0442
+      },
+      "physicalMetaphor": "a documents folder with three visible paper sheets rising behind its front panel",
+      "semanticMark": "documents",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/documents-16.png",
+        "32": "icons/documents-32.png",
+        "128": "icons/documents-128.png",
+        "512": "icons/documents-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.7305,
+          "meanLum": 162.81,
+          "lumStd": 61.38,
+          "edgeEnergy": 32
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6924,
+          "meanLum": 165.43,
+          "lumStd": 56.7,
+          "edgeEnergy": 92
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.691,
+          "meanLum": 164.99,
+          "lumStd": 56.78,
+          "edgeEnergy": 161
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "alias": {
+      "genre": "document",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.9219,
+        "scale": 1.1569
+      },
+      "physicalMetaphor": "a white document sheet carrying one small curled shortcut arrow at its lower corner, clearly a reference rather than the original",
+      "semanticMark": "alias",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/alias-16.png",
+        "32": "icons/alias-32.png",
+        "128": "icons/alias-128.png",
+        "512": "icons/alias-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6523,
+          "meanLum": 227.5,
+          "lumStd": 22.63,
+          "edgeEnergy": 28
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5869,
+          "meanLum": 226.95,
+          "lumStd": 28.03,
+          "edgeEnergy": 80
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.576,
+          "meanLum": 222.91,
+          "lumStd": 40.43,
+          "edgeEnergy": 127
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "systemFile": {
+      "genre": "document",
+      "grid": {
+        "shape": "portrait",
+        "fitted": 0.9219,
+        "scale": 1.1569
+      },
+      "physicalMetaphor": "a white system document sheet with one small inset mechanical wheel badge and no text",
+      "semanticMark": "gear",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/systemFile-16.png",
+        "32": "icons/systemFile-32.png",
+        "128": "icons/systemFile-128.png",
+        "512": "icons/systemFile-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6484,
+          "meanLum": 222.9,
+          "lumStd": 30.31,
+          "edgeEnergy": 52
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5908,
+          "meanLum": 218.62,
+          "lumStd": 47.48,
+          "edgeEnergy": 136
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5714,
+          "meanLum": 216.42,
+          "lumStd": 51.35,
+          "edgeEnergy": 230
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "multiFinderApp": {
+      "genre": "application",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8438,
+        "scale": 0.9391
+      },
+      "physicalMetaphor": "two overlapping versions of the target era's current Finder identity, one with the light and dark colour fields exchanged, to communicate concurrent Finder environments without looking like a duplicate stamp or two computer chassis",
+      "semanticMark": "finder",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/multiFinderApp-16.png",
+        "32": "icons/multiFinderApp-32.png",
+        "128": "icons/multiFinderApp-128.png",
+        "512": "icons/multiFinderApp-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "historically-reviewed",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6836,
+          "meanLum": 169.39,
+          "lumStd": 35.18,
+          "edgeEnergy": 68
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6309,
+          "meanLum": 170.23,
+          "lumStd": 38.28,
+          "edgeEnergy": 210
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6032,
+          "meanLum": 170.02,
+          "lumStd": 40.15,
+          "edgeEnergy": 269
+        }
+      },
+      "metaphorKey": "current-finder-identity-plus-multiplicity",
+      "blindMixStatus": "not-run",
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "daHandler": {
+      "genre": "utility",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.9403,
+        "scale": 1.0558
+      },
+      "physicalMetaphor": "a generic desktop application object for the era, distinct from a document, folder, or settings panel",
+      "semanticMark": "deskAccessory",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/daHandler-16.png",
+        "32": "icons/daHandler-32.png",
+        "128": "icons/daHandler-128.png",
+        "512": "icons/daHandler-512.png"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.9766,
+          "meanLum": 118.12,
+          "lumStd": 46.97,
+          "edgeEnergy": 110
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.875,
+          "meanLum": 115.5,
+          "lumStd": 48.54,
+          "edgeEnergy": 295
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.8186,
+          "meanLum": 114.21,
+          "lumStd": 51.03,
+          "edgeEnergy": 402
+        }
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "A",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "writingBell": {
+      "genre": "accessory",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8438,
+        "scale": 1.0385
+      },
+      "physicalMetaphor": "a compact brass desk bell with one small pen-nib relief on its base, clearly a writing accessory",
+      "semanticMark": "bell",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/writingBell-16.png",
+        "32": "icons/writingBell-32.png",
+        "128": "icons/writingBell-128.png",
+        "512": "icons/writingBell-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5508,
+          "meanLum": 110.4,
+          "lumStd": 43.66,
+          "edgeEnergy": 111
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5322,
+          "meanLum": 109.05,
+          "lumStd": 51.4,
+          "edgeEnergy": 419
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5238,
+          "meanLum": 110.08,
+          "lumStd": 51.95,
+          "edgeEnergy": 563
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "trashFull": {
+      "genre": "hardware",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8438,
+        "scale": 1.0588
+      },
+      "physicalMetaphor": "a waste basket filled with several crumpled paper sheets rising above the rim, clearly the full state of the empty basket",
+      "semanticMark": "full",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/trashFull-16.png",
+        "32": "icons/trashFull-32.png",
+        "128": "icons/trashFull-128.png",
+        "512": "icons/trashFull-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.4727,
+          "meanLum": 123.14,
+          "lumStd": 57.89,
+          "edgeEnergy": 77
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.4521,
+          "meanLum": 124.55,
+          "lumStd": 61.43,
+          "edgeEnergy": 298
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4456,
+          "meanLum": 124.65,
+          "lumStd": 62.42,
+          "edgeEnergy": 546
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "control": {
+      "genre": "utility",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8438,
+        "scale": 0.9558
+      },
+      "physicalMetaphor": "a compact physical control board with two round knobs, one toggle, and one small indicator light",
+      "semanticMark": "knobs",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/control-16.png",
+        "32": "icons/control-32.png",
+        "128": "icons/control-128.png",
+        "512": "icons/control-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.6641,
+          "meanLum": 131.58,
+          "lumStd": 57.52,
+          "edgeEnergy": 133
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.6074,
+          "meanLum": 130.7,
+          "lumStd": 64.82,
+          "edgeEnergy": 383
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.6066,
+          "meanLum": 130.1,
+          "lumStd": 65.99,
+          "edgeEnergy": 623
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "localModel": {
+      "genre": "utility",
+      "grid": {
+        "shape": "square",
+        "fitted": 0.8438,
+        "scale": 1.1803
+      },
+      "physicalMetaphor": "one processor chip mounted on a compact circuit board with short visible traces, clearly local compute rather than a cloud service",
+      "semanticMark": "none",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/localModel-16.png",
+        "32": "icons/localModel-32.png",
+        "128": "icons/localModel-128.png",
+        "512": "icons/localModel-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.7891,
+          "meanLum": 106.31,
+          "lumStd": 46.77,
+          "edgeEnergy": 87
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.7275,
+          "meanLum": 108.3,
+          "lumStd": 49.67,
+          "edgeEnergy": 343
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.7205,
+          "meanLum": 108.16,
+          "lumStd": 51.44,
+          "edgeEnergy": 595
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "controlStrip": {
+      "genre": "utility",
+      "grid": {
+        "shape": "landscape",
+        "fitted": 0.9219,
+        "scale": 1.0442
+      },
+      "physicalMetaphor": "a narrow horizontal strip containing four distinct physical control modules, including a slider, a status light, and two compact toggles",
+      "semanticMark": "none",
+      "sourceKind": "original-generated-era-illustration",
+      "reviewStatus": "accepted-generated",
+      "sizes": {
+        "16": "icons/controlStrip-16.png",
+        "32": "icons/controlStrip-32.png",
+        "128": "icons/controlStrip-128.png",
+        "512": "icons/controlStrip-512.png"
+      },
+      "authoringMethod": "image-generation-plus-deterministic-processing",
+      "generationStatus": "technically-clean",
+      "provenanceClass": "C",
+      "historicalReviewStatus": "pending",
+      "runtimeAsset": true,
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.2344,
+          "meanLum": 120.93,
+          "lumStd": 32.76,
+          "edgeEnergy": 34
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.1758,
+          "meanLum": 128.94,
+          "lumStd": 39.75,
+          "edgeEnergy": 144
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.1723,
+          "meanLum": 131.11,
+          "lumStd": 43.42,
+          "edgeEnergy": 217
+        }
+      },
+      "sourceNote": "Owner-accepted snow-leopard imagegen redraw, full batch, 2026-09-01."
+    },
+    "clioPaint": {
+      "genre": "application",
+      "semanticIdentity": "Drawing palette and brush",
+      "physicalMetaphor": "Drawing palette and brush",
+      "provenanceClass": "C",
+      "sourceKind": "original-generated-era-illustration",
+      "authoringMethod": "built-in image generation for large tiers and appearances; independently authored compact artwork",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "eraGrammarReview": "original-period-adaptation-reviewed",
+      "reviewStatus": "technically-clean",
+      "runtimeAsset": true,
+      "nativeReplica": false,
+      "referenceValidated": false,
+      "sourceNote": "Original AI System 6 application. Period grammar is adapted; no historical native counterpart is claimed.",
+      "sourceReferences": [
+        "apps/desktop/assets/themes/era-icon-reference.json"
+      ],
+      "sizes": {
+        "16": "icons/clioPaint-16.png",
+        "32": "icons/clioPaint-32.png",
+        "64": "icons/clioPaint-64.png",
+        "128": "icons/clioPaint-128.png",
+        "512": "icons/clioPaint-512.png"
+      },
+      "runtimeSha256": {
+        "16-default": "d55b9bd41055f381bdb690e643ccf531c5fdfe2f5f3e2f31ab41cb07b90cadad",
+        "32-default": "f03b8ca98a4056ac5df770654c466e4baad6b0720f6009f120388075dbea7d7d",
+        "64-default": "351dab1b1f906614c6158fc387646904fef4761156f7010662165b56f131f0c7",
+        "128-default": "ca837203a9ccd2cdd4146d2b8444c1b779d3ba1bcb5766b35a98b7859912bc9b",
+        "512-default": "171dfc6e9a6edbfe060b76302708230c5e690cdf84654d11241685d76956fa58"
+      },
+      "sizePolicy": "16 and 32 px have independent compact compositions with reduced detail; large default tiers use material masters where applicable.",
+      "label": "clioPaint",
+      "metrics": {
+        "16": {
+          "pixels": 108,
+          "bbox": {
+            "minX": 2,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 13
+          },
+          "sha256": "d55b9bd41055f381bdb690e643ccf531c5fdfe2f5f3e2f31ab41cb07b90cadad",
+          "ink": {
+            "minX": 2,
+            "minY": 1,
+            "maxX": 14,
+            "maxY": 13,
+            "width": 13,
+            "height": 13
+          },
+          "gridShape": "square"
+        },
+        "32": {
+          "pixels": 395,
+          "bbox": {
+            "minX": 3,
+            "minY": 2,
+            "maxX": 29,
+            "maxY": 27
+          },
+          "sha256": "f03b8ca98a4056ac5df770654c466e4baad6b0720f6009f120388075dbea7d7d",
+          "ink": {
+            "minX": 3,
+            "minY": 2,
+            "maxX": 29,
+            "maxY": 27,
+            "width": 27,
+            "height": 26
+          },
+          "gridShape": "square"
+        },
+        "64": {
+          "pixels": 1794,
+          "bbox": {
+            "minX": 5,
+            "minY": 7,
+            "maxX": 57,
+            "maxY": 55
+          },
+          "sha256": "351dab1b1f906614c6158fc387646904fef4761156f7010662165b56f131f0c7",
+          "ink": {
+            "minX": 5,
+            "minY": 7,
+            "maxX": 57,
+            "maxY": 55,
+            "width": 53,
+            "height": 49
+          },
+          "gridShape": "square"
+        },
+        "128": {
+          "pixels": 7025,
+          "bbox": {
+            "minX": 11,
+            "minY": 16,
+            "maxX": 115,
+            "maxY": 112
+          },
+          "sha256": "ca837203a9ccd2cdd4146d2b8444c1b779d3ba1bcb5766b35a98b7859912bc9b",
+          "ink": {
+            "minX": 11,
+            "minY": 16,
+            "maxX": 115,
+            "maxY": 112,
+            "width": 105,
+            "height": 97
+          },
+          "gridShape": "square"
+        },
+        "512": {
+          "pixels": 109799,
+          "bbox": {
+            "minX": 48,
+            "minY": 62,
+            "maxX": 464,
+            "maxY": 449
+          },
+          "sha256": "171dfc6e9a6edbfe060b76302708230c5e690cdf84654d11241685d76956fa58",
+          "ink": {
+            "minX": 48,
+            "minY": 62,
+            "maxX": 464,
+            "maxY": 449,
+            "width": 417,
+            "height": 388
+          },
+          "gridShape": "square"
+        }
+      },
+      "grid": {
+        "canvas": 128,
+        "shape": "square",
+        "fitted": 0.8203125,
+        "method": "measured-output-no-resampling"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.4922,
+          "meanLum": 148.07,
+          "lumStd": 49.33,
+          "edgeEnergy": 105
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.4561,
+          "meanLum": 148.38,
+          "lumStd": 55.29,
+          "edgeEnergy": 321
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.4495,
+          "meanLum": 149.38,
+          "lumStd": 56.12,
+          "edgeEnergy": 459
+        }
+      },
+      "master": "internal/evidence/drafts/added-app-era-icons/masters/snow-leopard/clioPaint.png",
+      "masterSha256": "b9b1ae1b846b3acd75007ad655b0dfb6a138ed76e882ed1f517fb358108428d2"
+    },
+    "clioProject": {
+      "genre": "application",
+      "semanticIdentity": "Task cards and dependency links",
+      "physicalMetaphor": "Task cards and dependency links",
+      "provenanceClass": "C",
+      "sourceKind": "original-generated-era-illustration",
+      "authoringMethod": "built-in image generation for large tiers and appearances; independently authored compact artwork",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "eraGrammarReview": "original-period-adaptation-reviewed",
+      "reviewStatus": "technically-clean",
+      "runtimeAsset": true,
+      "nativeReplica": false,
+      "referenceValidated": false,
+      "sourceNote": "Original AI System 6 application. Period grammar is adapted; no historical native counterpart is claimed.",
+      "sourceReferences": [
+        "apps/desktop/assets/themes/era-icon-reference.json"
+      ],
+      "sizes": {
+        "16": "icons/clioProject-16.png",
+        "32": "icons/clioProject-32.png",
+        "64": "icons/clioProject-64.png",
+        "128": "icons/clioProject-128.png",
+        "512": "icons/clioProject-512.png"
+      },
+      "runtimeSha256": {
+        "16-default": "ffa1fe578fe65da3c421bead33cccda32b37747f078ec87c2c2502f663f2e80c",
+        "32-default": "b62a25a01297e14043cf875e24339e740b0215335aaba03f6d2d4e00b4593d98",
+        "64-default": "d0fe3404c2c949aa23a4bf36841d555c8fcaa534ad52079080e65abb6702d0b6",
+        "128-default": "9dd6e07fefe161a5d22f28eb69933d531dd1b265d63d6e24b9a9ee2ab76bafbe",
+        "512-default": "68b225690b2c83a498fd8cd938d32d9ccbbcc6b2446524938c26ef09fc7e68ae"
+      },
+      "sizePolicy": "16 and 32 px have independent compact compositions with reduced detail; large default tiers use material masters where applicable.",
+      "label": "clioProject",
+      "metrics": {
+        "16": {
+          "pixels": 86,
+          "bbox": {
+            "minX": 1,
+            "minY": 2,
+            "maxX": 15,
+            "maxY": 14
+          },
+          "sha256": "ffa1fe578fe65da3c421bead33cccda32b37747f078ec87c2c2502f663f2e80c",
+          "ink": {
+            "minX": 1,
+            "minY": 2,
+            "maxX": 15,
+            "maxY": 14,
+            "width": 15,
+            "height": 13
+          },
+          "gridShape": "landscape"
+        },
+        "32": {
+          "pixels": 327,
+          "bbox": {
+            "minX": 2,
+            "minY": 4,
+            "maxX": 30,
+            "maxY": 29
+          },
+          "sha256": "b62a25a01297e14043cf875e24339e740b0215335aaba03f6d2d4e00b4593d98",
+          "ink": {
+            "minX": 2,
+            "minY": 4,
+            "maxX": 30,
+            "maxY": 29,
+            "width": 29,
+            "height": 26
+          },
+          "gridShape": "square"
+        },
+        "64": {
+          "pixels": 1258,
+          "bbox": {
+            "minX": 6,
+            "minY": 12,
+            "maxX": 57,
+            "maxY": 51
+          },
+          "sha256": "d0fe3404c2c949aa23a4bf36841d555c8fcaa534ad52079080e65abb6702d0b6",
+          "ink": {
+            "minX": 6,
+            "minY": 12,
+            "maxX": 57,
+            "maxY": 51,
+            "width": 52,
+            "height": 40
+          },
+          "gridShape": "landscape"
+        },
+        "128": {
+          "pixels": 4849,
+          "bbox": {
+            "minX": 11,
+            "minY": 24,
+            "maxX": 115,
+            "maxY": 102
+          },
+          "sha256": "9dd6e07fefe161a5d22f28eb69933d531dd1b265d63d6e24b9a9ee2ab76bafbe",
+          "ink": {
+            "minX": 11,
+            "minY": 24,
+            "maxX": 115,
+            "maxY": 102,
+            "width": 105,
+            "height": 79
+          },
+          "gridShape": "landscape"
+        },
+        "512": {
+          "pixels": 75689,
+          "bbox": {
+            "minX": 48,
+            "minY": 98,
+            "maxX": 464,
+            "maxY": 413
+          },
+          "sha256": "68b225690b2c83a498fd8cd938d32d9ccbbcc6b2446524938c26ef09fc7e68ae",
+          "ink": {
+            "minX": 48,
+            "minY": 98,
+            "maxX": 464,
+            "maxY": 413,
+            "width": 417,
+            "height": 316
+          },
+          "gridShape": "landscape"
+        }
+      },
+      "grid": {
+        "canvas": 128,
+        "shape": "landscape",
+        "fitted": 0.8203125,
+        "method": "measured-output-no-resampling"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.3984,
+          "meanLum": 171.04,
+          "lumStd": 54.78,
+          "edgeEnergy": 63
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.3252,
+          "meanLum": 177.65,
+          "lumStd": 56.4,
+          "edgeEnergy": 138
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.3135,
+          "meanLum": 180.48,
+          "lumStd": 57.32,
+          "edgeEnergy": 193
+        }
+      },
+      "master": "internal/evidence/drafts/added-app-era-icons/masters/snow-leopard/clioProject.png",
+      "masterSha256": "2f286fe720c3edeb757cec0d9a27adfefa91f5ffc91ce3f568c536043bf1081c"
+    },
+    "oneMoreTune": {
+      "genre": "application",
+      "semanticIdentity": "Music knowledge study cards and note",
+      "physicalMetaphor": "Music knowledge study cards and note",
+      "provenanceClass": "C",
+      "sourceKind": "original-generated-era-illustration",
+      "authoringMethod": "built-in image generation for large tiers and appearances; independently authored compact artwork",
+      "generationStatus": "technically-clean",
+      "historicalReviewStatus": "pending",
+      "eraGrammarReview": "original-period-adaptation-reviewed",
+      "reviewStatus": "technically-clean",
+      "runtimeAsset": true,
+      "nativeReplica": false,
+      "referenceValidated": false,
+      "sourceNote": "Original AI System 6 application. Period grammar is adapted; no historical native counterpart is claimed.",
+      "sourceReferences": [
+        "apps/desktop/assets/themes/era-icon-reference.json"
+      ],
+      "sizes": {
+        "16": "icons/oneMoreTune-16.png",
+        "32": "icons/oneMoreTune-32.png",
+        "64": "icons/oneMoreTune-64.png",
+        "128": "icons/oneMoreTune-128.png",
+        "512": "icons/oneMoreTune-512.png"
+      },
+      "runtimeSha256": {
+        "16-default": "30c417466afa6f3d9c96f7bf7822dfd055cb3c6d90ddf5693ab77a8f4d2575d7",
+        "32-default": "5fdcedc76830dd792727db82af836a2aeffa31be1c2d80c8b2c784dc0389fd6f",
+        "64-default": "91519cf66187f968d71c6bf4a59ffda8c5ad89d369d6d9e86046f14db6977cf4",
+        "128-default": "9edcf81d95dae7c8ff7d0ea1bb61704e5e1c67e55e188f91305be9bfdd3b2a8b",
+        "512-default": "611f5ddd27d2e3a23f329ee671b6bb08e81375d890bd9b7e3b9d8ed1bf9b0c48"
+      },
+      "sizePolicy": "16 and 32 px have independent compact compositions with reduced detail; large default tiers use material masters where applicable.",
+      "label": "oneMoreTune",
+      "metrics": {
+        "16": {
+          "pixels": 158,
+          "bbox": {
+            "minX": 1,
+            "minY": 2,
+            "maxX": 13,
+            "maxY": 14
+          },
+          "sha256": "30c417466afa6f3d9c96f7bf7822dfd055cb3c6d90ddf5693ab77a8f4d2575d7",
+          "ink": {
+            "minX": 1,
+            "minY": 2,
+            "maxX": 13,
+            "maxY": 14,
+            "width": 13,
+            "height": 13
+          },
+          "gridShape": "square"
+        },
+        "32": {
+          "pixels": 616,
+          "bbox": {
+            "minX": 1,
+            "minY": 3,
+            "maxX": 27,
+            "maxY": 29
+          },
+          "sha256": "5fdcedc76830dd792727db82af836a2aeffa31be1c2d80c8b2c784dc0389fd6f",
+          "ink": {
+            "minX": 1,
+            "minY": 3,
+            "maxX": 27,
+            "maxY": 29,
+            "width": 27,
+            "height": 27
+          },
+          "gridShape": "square"
+        },
+        "64": {
+          "pixels": 2053,
+          "bbox": {
+            "minX": 6,
+            "minY": 6,
+            "maxX": 57,
+            "maxY": 58
+          },
+          "sha256": "91519cf66187f968d71c6bf4a59ffda8c5ad89d369d6d9e86046f14db6977cf4",
+          "ink": {
+            "minX": 6,
+            "minY": 6,
+            "maxX": 57,
+            "maxY": 58,
+            "width": 52,
+            "height": 53
+          },
+          "gridShape": "square"
+        },
+        "128": {
+          "pixels": 8087,
+          "bbox": {
+            "minX": 12,
+            "minY": 12,
+            "maxX": 115,
+            "maxY": 116
+          },
+          "sha256": "9edcf81d95dae7c8ff7d0ea1bb61704e5e1c67e55e188f91305be9bfdd3b2a8b",
+          "ink": {
+            "minX": 12,
+            "minY": 12,
+            "maxX": 115,
+            "maxY": 116,
+            "width": 104,
+            "height": 105
+          },
+          "gridShape": "square"
+        },
+        "512": {
+          "pixels": 127235,
+          "bbox": {
+            "minX": 49,
+            "minY": 47,
+            "maxX": 462,
+            "maxY": 464
+          },
+          "sha256": "611f5ddd27d2e3a23f329ee671b6bb08e81375d890bd9b7e3b9d8ed1bf9b0c48",
+          "ink": {
+            "minX": 49,
+            "minY": 47,
+            "maxX": 462,
+            "maxY": 464,
+            "width": 414,
+            "height": 418
+          },
+          "gridShape": "square"
+        }
+      },
+      "grid": {
+        "canvas": 128,
+        "shape": "square",
+        "fitted": 0.8203125,
+        "method": "measured-output-no-resampling"
+      },
+      "runtimePixelMetrics": {
+        "sourceSize": 128,
+        "keyHueFringe128": 0,
+        "derived16": {
+          "displaySize": 16,
+          "coverage": 0.5508,
+          "meanLum": 197.53,
+          "lumStd": 54.52,
+          "edgeEnergy": 87
+        },
+        "derived32": {
+          "displaySize": 32,
+          "coverage": 0.5146,
+          "meanLum": 199.16,
+          "lumStd": 60.12,
+          "edgeEnergy": 242
+        },
+        "derived42": {
+          "displaySize": 42,
+          "coverage": 0.5113,
+          "meanLum": 198.95,
+          "lumStd": 61.45,
+          "edgeEnergy": 359
+        }
+      },
+      "master": "internal/evidence/drafts/added-app-era-icons/masters/snow-leopard/oneMoreTune.png",
+      "masterSha256": "ac837fc2dd66dce939adcab30f605b2271d4f2e5d60f118a8b7c98d95b8689fa"
+    }
+  },
+  "reviewedCore": [
+    "finderApp",
+    "folder",
+    "hardDisk",
+    "trash",
+    "document",
+    "daHandler",
+    "controlPanel",
+    "searcher",
+    "teachText",
+    "assistant",
+    "scrapbook",
+    "reviewDesk",
+    "docMap",
+    "projectDisk"
+  ],
+  "coreBuilder": "tooling/build-snow-leopard-core-icons.mjs",
+  "schemaVersion": 2,
+  "generatedOverlayBuilder": "tooling/build-accepted-generated-era-icons.mjs",
+  "runtimeAsset": true,
+  "completeFamilyMeaning": "All 56 runtime ids resolve to technically accepted artwork. Historical review is a separate per-icon state.",
+  "generatedAcceptanceMeaning": "Authoring acceptance confirms source and technical quality; it never implies historical validation.",
+  "generatedAcceptanceLedger": "tooling/icon-generation/accepted-generated-icons.json",
+  "imageGenerationSource": "assets/themes/snow-leopard/icons/imagegen-source",
+  "reviewedGenerated": [
+    "startupDisk",
+    "applications",
+    "fileFloppy",
+    "projectDisc",
+    "quickDraft",
+    "writingStudio",
+    "manuscript",
+    "reader",
+    "cloudModel",
+    "cloudModelOff",
+    "localModel",
+    "systemStatus",
+    "questionSheet",
+    "outline",
+    "sectionDrafts",
+    "timeMachine",
+    "assistant",
+    "clioStage",
+    "clioChart",
+    "liquidCover",
+    "cmfStudio",
+    "finderApp",
+    "multiFinderApp",
+    "soundscape",
+    "systemFolder",
+    "helpFolder",
+    "importUtility",
+    "chooser",
+    "systemHelp",
+    "dictionary",
+    "writingDemo",
+    "chatFile",
+    "chatImport",
+    "contextPanel",
+    "rebuildArticle",
+    "bureaucracyMeme",
+    "endfieldTerminal",
+    "documents",
+    "alias",
+    "systemFile",
+    "writingBell",
+    "trashFull",
+    "control",
+    "controlStrip",
+    "hardDisk",
+    "folder",
+    "document",
+    "trash",
+    "projectDisk",
+    "reviewDesk",
+    "searcher",
+    "docMap",
+    "scrapbook",
+    "controlPanel",
+    "teachText",
+    "daHandler"
+  ],
+  "supplementalBuilder": "tooling/build-added-app-icons.mjs",
+  "supplementalIconIds": [
+    "clioPaint",
+    "clioProject",
+    "oneMoreTune"
+  ]
+}

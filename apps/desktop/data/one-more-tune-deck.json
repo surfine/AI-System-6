@@ -1,0 +1,3952 @@
+{
+  "version": 5,
+  "units": [
+    {
+      "id": "ipod-early",
+      "labelKey": "one_more_tune_unit_ipod_early"
+    },
+    {
+      "id": "ipod-later",
+      "labelKey": "one_more_tune_unit_ipod_later"
+    },
+    {
+      "id": "mac",
+      "labelKey": "one_more_tune_unit_mac"
+    },
+    {
+      "id": "airpods-home",
+      "labelKey": "one_more_tune_unit_airpods_home"
+    },
+    {
+      "id": "iphone-ipad",
+      "labelKey": "one_more_tune_unit_iphone_ipad"
+    },
+    {
+      "id": "keynote-2020",
+      "labelKey": "one_more_tune_unit_keynote"
+    },
+    {
+      "id": "features",
+      "labelKey": "one_more_tune_unit_features"
+    },
+    {
+      "id": "launch-2025",
+      "labelKey": "one_more_tune_unit_launch_2025"
+    },
+    {
+      "id": "mac-2024",
+      "labelKey": "one_more_tune_unit_mac_2024"
+    },
+    {
+      "id": "imac-2024",
+      "labelKey": "one_more_tune_unit_imac_2024"
+    },
+    {
+      "id": "brand-films",
+      "labelKey": "one_more_tune_unit_brand_films"
+    },
+    {
+      "id": "event-2024",
+      "labelKey": "one_more_tune_unit_event_2024"
+    },
+    {
+      "id": "credits-vision-a",
+      "labelKey": "one_more_tune_unit_credits_vision"
+    },
+    {
+      "id": "credits-vision-b",
+      "labelKey": "one_more_tune_unit_credits_vision_b"
+    },
+    {
+      "id": "credits-mac",
+      "labelKey": "one_more_tune_unit_credits_mac"
+    },
+    {
+      "id": "credits-watch",
+      "labelKey": "one_more_tune_unit_credits_watch"
+    },
+    {
+      "id": "credits-audio",
+      "labelKey": "one_more_tune_unit_credits_audio_watch"
+    },
+    {
+      "id": "bank-mac-1",
+      "labelKey": "one_more_tune_unit_bank_mac_1"
+    },
+    {
+      "id": "bank-mac-2",
+      "labelKey": "one_more_tune_unit_bank_mac_2"
+    },
+    {
+      "id": "bank-ipod-1",
+      "labelKey": "one_more_tune_unit_bank_ipod_1"
+    },
+    {
+      "id": "bank-ipod-2",
+      "labelKey": "one_more_tune_unit_bank_ipod_2"
+    },
+    {
+      "id": "bank-audio-1",
+      "labelKey": "one_more_tune_unit_bank_audio_1"
+    },
+    {
+      "id": "bank-audio-2",
+      "labelKey": "one_more_tune_unit_bank_audio_2"
+    },
+    {
+      "id": "bank-iphone-1",
+      "labelKey": "one_more_tune_unit_bank_iphone_1"
+    },
+    {
+      "id": "bank-iphone-2",
+      "labelKey": "one_more_tune_unit_bank_iphone_2"
+    },
+    {
+      "id": "bank-iphone-3",
+      "labelKey": "one_more_tune_unit_bank_iphone_3"
+    },
+    {
+      "id": "bank-vision-1",
+      "labelKey": "one_more_tune_unit_bank_vision_1"
+    }
+  ],
+  "cards": [
+    {
+      "id": "OMT-001",
+      "unit": "features",
+      "basis": "package",
+      "song": "Di-Gue-Ding-Ding",
+      "artist": "Michel Legrand",
+      "product": "App Clips",
+      "film": "WWDC 2020",
+      "year": 2020,
+      "kind": "feature_reveal",
+      "videoId": "GEZhD3J89ZE",
+      "sourceAnchor": 1690,
+      "anchorVideoId": "GEZhD3J89ZE",
+      "note": {
+        "en": "The package's own worked example. 28:10 is where a link says to start looking inside that keynote — it is not where the music starts.",
+        "zh": "研究包里作为范例的那一条。28:10 是来源给出的、在那场发布会里从哪儿开始找，不是音乐的起音位置。"
+      },
+      "enabled": false,
+      "musicEntry": {
+        "provider": "youtube",
+        "url": "https://www.youtube.com/watch?v=9t0bVw0dzMk",
+        "use": "reference",
+        "playbackTested": false,
+        "label": ""
+      },
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/dc/76/8a/dc768a48-e85d-74d2-3e78-ec0bba5cce79/mzaf_8891672796407340767.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-001",
+      "excludedAnswerLabels": [
+        "App Clips"
+      ]
+    },
+    {
+      "id": "OMT-002",
+      "unit": "mac",
+      "basis": "package",
+      "song": "New Soul",
+      "artist": "Yael Naïm",
+      "product": "MacBook Air",
+      "film": "Envelope",
+      "year": 2008,
+      "kind": "product_ad",
+      "videoId": "TLb7EVF6-Jc",
+      "sourceAnchor": null,
+      "note": {
+        "en": "The laptop comes out of the envelope. The package notes the original ad version still needs checking and its video link was never played through.",
+        "zh": "笔记本从信封里抽出来的那条。研究包注明原始广告版本仍需核对，那个视频链接也没做过播放测试。"
+      },
+      "enabled": false,
+      "musicEntry": {
+        "provider": "youtube",
+        "url": "https://www.youtube.com/watch?v=hhE7QMXRE1g",
+        "use": "reference",
+        "playbackTested": false,
+        "label": "Shazam 曲目页与公开官方 MV 署名交叉对应"
+      },
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/a2/64/ca/a264ca77-0ba7-a546-c1f3-c1cae5ea06bc/mzaf_3150018777563179967.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-002",
+      "excludedAnswerLabels": [
+        "MacBook Air",
+        "MacBook Air (M1)"
+      ]
+    },
+    {
+      "id": "OMT-003",
+      "unit": "mac",
+      "basis": "package",
+      "song": "Chimes",
+      "artist": "Hudson Mohawke",
+      "product": "MacBook Air",
+      "film": "Stickers",
+      "year": 2014,
+      "kind": "product_ad",
+      "videoId": "5DHYe4dhjXw",
+      "sourceAnchor": null,
+      "note": {
+        "en": "Two MacBook Air ads, six years apart, are two associations — not one product's card.",
+        "zh": "相隔六年的两支 MacBook Air 广告是两条对应关系，不是一款产品的一张卡。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/a4/13/14/a4131427-591c-7050-8407-cefad9ebbc43/mzaf_6439436209765360421.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-003",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [
+          "CAND-9a2c879d40e177aa9457"
+        ],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-003",
+      "excludedAnswerLabels": [
+        "MacBook Air",
+        "MacBook Air (M1)"
+      ]
+    },
+    {
+      "id": "OMT-004",
+      "unit": "mac",
+      "basis": "package",
+      "song": "She's a Rainbow",
+      "artist": "The Rolling Stones",
+      "product": "iMac G3",
+      "film": "Colors",
+      "year": 1999,
+      "kind": "product_ad",
+      "videoId": "awZv4Ok4rlc",
+      "sourceAnchor": null,
+      "note": {
+        "en": "The five fruit colours. Listed in the package through an encyclopaedia entry and an archive link rather than the catalogue alone.",
+        "zh": "五种水果配色那条。研究包是通过百科条目和存档链接列出的，不只靠目录。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/b6/3b/2f/b63b2f09-de4e-5ba7-cca5-36f62b0d0f92/mzaf_10767416011044317353.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-004",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [
+          "CAND-8f3bc80580a682fa40ba"
+        ],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-004",
+      "excludedAnswerLabels": [
+        "iMac",
+        "iMac (2024)",
+        "iMac G3"
+      ]
+    },
+    {
+      "id": "OMT-005",
+      "unit": "mac",
+      "basis": "package",
+      "song": "Tokyo Drifting",
+      "artist": "Glass Animals feat. Denzel Curry",
+      "product": "MacBook Pro 16-inch",
+      "film": "Introducing MacBook Pro 16-inch",
+      "year": 2019,
+      "kind": "product_ad",
+      "videoId": null,
+      "sourceAnchor": null,
+      "siblingOf": "OMT-075",
+      "note": {
+        "en": "From an independent commercial-music catalogue, which the package treats as a lead, not as verification. The bank's own record of this music use is OMT-075: one recording, one film, the product named in another language. They are declared siblings so no question can offer both.",
+        "zh": "来自独立的广告配乐目录站；研究包把这类记录当线索，不当已核实。资料库同一支广告的另一条记录是 OMT-075：同一段录音、同一支短片，产品名用了另一种语言。两张卡互为同题，任何一题都不会把它们同时列成选项。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/87/df/b7/87dfb7ac-10b8-acf7-aabb-bd03404d2320/mzaf_9508338958271370621.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-005",
+      "excludedAnswerLabels": [
+        "16 英寸 MacBook Pro（2019）",
+        "MacBook Pro 16-inch"
+      ]
+    },
+    {
+      "id": "OMT-006",
+      "unit": "ipod-early",
+      "basis": "reported",
+      "song": "Are You Gonna Be My Girl",
+      "artist": "Jet",
+      "product": "iPod",
+      "film": "Silhouette campaign",
+      "year": 2003,
+      "kind": "product_ad",
+      "videoId": null,
+      "sourceAnchor": null,
+      "note": {
+        "en": "The silhouette dancers. Widely reported rather than named in the research package.",
+        "zh": "剪影系列。这条广泛见于报道，但不是研究包里列出的条目。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/a3/05/68/a30568bc-12a6-40be-d9e3-a38d67a57406/mzaf_7011945816603607065.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-006",
+      "excludedAnswerLabels": [
+        "iMac",
+        "iMac (2024)",
+        "iPod"
+      ]
+    },
+    {
+      "id": "OMT-007",
+      "unit": "ipod-early",
+      "basis": "reported",
+      "song": "Vertigo",
+      "artist": "U2",
+      "product": "iPod + iTunes (U2 Special Edition)",
+      "film": "U2 iPod spot",
+      "year": 2004,
+      "kind": "product_ad",
+      "videoId": null,
+      "sourceAnchor": null,
+      "note": {
+        "en": "The black-and-red iPod launched alongside this spot; ad and single arrived together.",
+        "zh": "黑红配色的 iPod 与这支广告同期推出，广告和单曲一起发布。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/7a/4e/6c/7a4e6cfd-8c82-d84b-e532-4dc251be3b0d/mzaf_4729366778423265194.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-007",
+      "excludedAnswerLabels": [
+        "iPod",
+        "iPod + iTunes (U2 Special Edition)",
+        "iTunes"
+      ]
+    },
+    {
+      "id": "OMT-008",
+      "unit": "ipod-early",
+      "basis": "package",
+      "song": "Jerk It Out",
+      "artist": "Caesars",
+      "product": "iPod shuffle",
+      "film": "iPod shuffle spot",
+      "year": 2005,
+      "kind": "product_ad",
+      "videoId": null,
+      "sourceAnchor": null,
+      "note": {
+        "en": "The first shuffle campaign. The package cites an encyclopaedia entry beside the catalogue for this one.",
+        "zh": "第一代 shuffle 系列。研究包在目录之外还引了一条百科条目。"
+      },
+      "enabled": false,
+      "filmAlternates": [
+        {
+          "url": "https://www.youtube.com/watch?v=0d8aVzQY4Zo",
+          "provider": "youtube",
+          "label": "",
+          "role": "advertisement_archive_candidate",
+          "playbackTested": false
+        }
+      ],
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/ec/06/84/ec06848b-83d1-b642-4e7b-c5205dbcf6cf/mzaf_5020880707882435156.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-008",
+      "excludedAnswerLabels": [
+        "iPod shuffle"
+      ]
+    },
+    {
+      "id": "OMT-009",
+      "unit": "ipod-later",
+      "basis": "reported",
+      "song": "1234",
+      "artist": "Feist",
+      "product": "iPod nano (3rd generation)",
+      "film": "iPod nano spot",
+      "year": 2007,
+      "kind": "product_ad",
+      "videoId": null,
+      "sourceAnchor": null,
+      "note": {
+        "en": "The chorus everyone remembers — which is a warning, not a shortcut: an ad does not always use the part of a song you would pick.",
+        "zh": "大家记得的是副歌。这反而是个提醒：广告未必用的是你自己会挑的那一段。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/8b/24/cb/8b24cbb9-79d3-9fd9-fbd4-fdc1c69e7d69/mzaf_9141774875455564689.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-009",
+      "excludedAnswerLabels": [
+        "iPod nano (3rd generation)",
+        "iPod nano 3G",
+        "iPod touch"
+      ]
+    },
+    {
+      "id": "OMT-010",
+      "unit": "ipod-later",
+      "basis": "reported",
+      "song": "Bruises",
+      "artist": "Chairlift",
+      "product": "iPod nano (4th generation)",
+      "film": "iPod nano spot",
+      "year": 2008,
+      "kind": "product_ad",
+      "videoId": null,
+      "sourceAnchor": null,
+      "note": {
+        "en": "The tumbling-colour nano ad, widely credited as this song's first large audience.",
+        "zh": "翻滚配色的 nano 广告，普遍被认为是这首歌第一次被大量听到。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/5e/62/84/5e628438-fc23-f8ff-c58f-5b5c70b910e9/mzaf_9526863379549493154.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-010",
+      "excludedAnswerLabels": [
+        "iPod nano (4th generation)",
+        "iPod nano 4G"
+      ]
+    },
+    {
+      "id": "OMT-011",
+      "unit": "ipod-later",
+      "basis": "reported",
+      "song": "Music Is My Hot Hot Sex",
+      "artist": "CSS",
+      "product": "iPod touch",
+      "film": "iPod touch spot",
+      "year": 2008,
+      "kind": "product_ad",
+      "videoId": null,
+      "sourceAnchor": null,
+      "note": {
+        "en": "A hands-on-the-glass spot carried entirely by its music, which makes it a good melody card.",
+        "zh": "手在玻璃上操作的那条，整条靠音乐撑着，适合做旋律题。"
+      },
+      "enabled": false,
+      "questionSound": null,
+      "knowledgeGroup": "OMT-011",
+      "excludedAnswerLabels": [
+        "iPod touch"
+      ]
+    },
+    {
+      "id": "OMT-012",
+      "unit": "airpods-home",
+      "basis": "package",
+      "song": "I Learnt Some Jazz Today",
+      "artist": "Tessellated",
+      "product": "AirPods",
+      "film": "Bounce",
+      "year": 2018,
+      "kind": "product_ad",
+      "videoId": "yyNtm0LZiKc",
+      "sourceAnchor": null,
+      "note": {
+        "en": "The dancer on the alley wall. Listed through an independent commercial-music catalogue.",
+        "zh": "巷子墙上跳舞那条，来自独立的广告配乐目录站。"
+      },
+      "enabled": false,
+      "musicEntry": {
+        "provider": "spotify",
+        "url": "https://open.spotify.com/track/3oIEqAGvOkF8IIJvAO3w39",
+        "use": "reference_only",
+        "playbackTested": false,
+        "label": ""
+      },
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/04/6a/8e/046a8e8c-c6d8-cdc0-3e3c-2532ddb193c1/mzaf_14632583694348071729.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-022",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-012",
+      "excludedAnswerLabels": [
+        "AirPods"
+      ]
+    },
+    {
+      "id": "OMT-013",
+      "unit": "airpods-home",
+      "basis": "package",
+      "song": "'Til It's Over",
+      "artist": "Anderson .Paak",
+      "product": "HomePod",
+      "film": "Welcome Home (dir. Spike Jonze)",
+      "year": 2018,
+      "kind": "brand_film",
+      "videoId": "305ryPvU6A8",
+      "sourceAnchor": null,
+      "note": {
+        "en": "A four-minute short rather than a spot, and the song was written for it — the room stretches around the music.",
+        "zh": "这是四分钟的短片而不是广告，歌也是为它写的——房间跟着音乐变形。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/cd/34/39/cd3439e4-594b-3715-5289-ca74060f246a/mzaf_10899943500417177623.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-013",
+      "excludedAnswerLabels": [
+        "HomePod"
+      ]
+    },
+    {
+      "id": "OMT-014",
+      "unit": "airpods-home",
+      "basis": "package",
+      "song": "I'm Ready to Rock That",
+      "artist": "Bonti feat. NRZD",
+      "product": "HomePod mini",
+      "film": "Introducing HomePod mini",
+      "year": 2020,
+      "kind": "product_ad",
+      "videoId": null,
+      "sourceAnchor": null,
+      "siblingOf": "OMT-090",
+      "note": {
+        "en": "Kept apart from the HomePod card on purpose: same family, different film, different music. The bank's record of this same music use is OMT-090 — one recording, one film, so the two are declared siblings rather than two answers.",
+        "zh": "故意与 HomePod 那张分开：同一系列，不同短片，不同音乐。资料库把这一支广告另记成 OMT-090：同一段录音、同一支短片，所以两张卡互为同题，而不是两个答案。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/17/4d/59/174d59ad-39d8-8fd2-7c07-84e1cb33b42b/mzaf_14797583953102989343.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-014",
+      "excludedAnswerLabels": [
+        "HomePod mini"
+      ]
+    },
+    {
+      "id": "OMT-015",
+      "unit": "airpods-home",
+      "basis": "package",
+      "song": "Conticinio",
+      "artist": "Guitarricadelafuente",
+      "product": "AirPods 4 (Active Noise Cancellation)",
+      "film": "Someday",
+      "year": 2024,
+      "kind": "product_ad",
+      "videoId": "urTfEEsGHds",
+      "sourceAnchor": null,
+      "siblingOf": "OMT-016",
+      "note": {
+        "en": "Someday uses two songs. They share one film and are stored as two music-use records, each waiting for its own position — one set of timestamps must never be stretched over both.",
+        "zh": "《Someday》用了两首歌。它们共用同一支短片，存成两条音乐使用记录、各自等待定位——一组时间戳不能套在两首上。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/f4/a8/07/f4a80791-998f-b73f-077e-7c075596895b/mzaf_13081427202015050580.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-015",
+      "excludedAnswerLabels": [
+        "AirPods 4",
+        "AirPods 4 (Active Noise Cancellation)"
+      ]
+    },
+    {
+      "id": "OMT-016",
+      "unit": "airpods-home",
+      "basis": "package",
+      "song": "Perfect (feat. BIA & Mc Pikachu)",
+      "artist": "Sam i & Tropkillaz",
+      "product": "AirPods 4 (Active Noise Cancellation)",
+      "film": "Someday",
+      "year": 2024,
+      "kind": "product_ad",
+      "videoId": "urTfEEsGHds",
+      "sourceAnchor": null,
+      "siblingOf": "OMT-015",
+      "note": {
+        "en": "The second of Someday's two songs. The artist line is copied from the playlist row as-is rather than completed from memory.",
+        "zh": "《Someday》两首歌里的第二首。歌手一栏按歌单原样保留，没有凭记忆补全。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/d5/6c/a0/d56ca0ab-9536-8793-454f-83b9e93ce00f/mzaf_5380334821656300805.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-015",
+      "excludedAnswerLabels": [
+        "AirPods 4",
+        "AirPods 4 (Active Noise Cancellation)"
+      ]
+    },
+    {
+      "id": "OMT-017",
+      "unit": "iphone-ipad",
+      "basis": "package",
+      "song": "Eat Them Apples",
+      "artist": "Suzi Wu",
+      "product": "iPhone 12",
+      "film": "Meet iPhone 12",
+      "year": 2020,
+      "kind": "product_ad",
+      "videoId": "65JrtwtTOdc",
+      "sourceAnchor": null,
+      "note": {
+        "en": "A product ad, not the keynote segment — the iPhone 12 keynote music is a separate card.",
+        "zh": "这是产品广告，不是发布会片段——iPhone 12 的发布会配乐是另一张卡。"
+      },
+      "enabled": false,
+      "musicEntry": {
+        "provider": "spotify",
+        "url": "https://open.spotify.com/track/5cCrDKEfAvOK1zczpk5y2S",
+        "use": "reference_only",
+        "playbackTested": false,
+        "label": ""
+      },
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/c0/be/6a/c0be6ae0-6b6e-3c8d-7cbe-7ef157634a30/mzaf_12329127309577689344.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-030",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-017",
+      "excludedAnswerLabels": [
+        "iPhone 12"
+      ]
+    },
+    {
+      "id": "OMT-018",
+      "unit": "iphone-ipad",
+      "basis": "package",
+      "song": "Almost Free",
+      "artist": "FIDLAR",
+      "product": "iPad Pro",
+      "film": "Life on iPad",
+      "year": 2019,
+      "kind": "product_ad",
+      "videoId": "CF2BfWYRZoc",
+      "sourceAnchor": null,
+      "note": {
+        "en": "Listed through an independent commercial-music catalogue. That page carries an embedded player, and the player is not this song: it plays another FIDLAR track. Same artist, different recording — so the page is usable as a pointer to the pairing and must never be harvested for audio.",
+        "zh": "来自独立广告配乐目录站。那个页面上带一个内嵌播放器，而播放器里放的并不是这首歌，是 FIDLAR 的另一首。同一位艺人，不同的录音——所以这个页面只能当作对应关系的线索，绝不能照着它上面的播放器去取音源。"
+      },
+      "recordingWarning": true,
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/b8/f2/67/b8f267f0-97cd-bd4a-6ca6-7933ec439cbc/mzaf_9970580385386972715.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-042",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-018",
+      "excludedAnswerLabels": [
+        "iPad",
+        "iPad Pro"
+      ]
+    },
+    {
+      "id": "OMT-019",
+      "unit": "iphone-ipad",
+      "basis": "package",
+      "song": "Jam for Bwengo (Senbei Remix)",
+      "artist": "Naran Ratan",
+      "product": "iPad Pro",
+      "film": "How to Correctly Use a Computer",
+      "year": 2018,
+      "kind": "product_ad",
+      "videoId": "w0P0FQ770dE",
+      "sourceAnchor": null,
+      "note": {
+        "en": "The package checked this artist's release page and found the recording marked all rights reserved: a real contact route, not a licence.",
+        "zh": "研究包查过这位音乐人的发行页，录音标着 all rights reserved：这说明能找到联系入口，不等于拿到了许可。"
+      },
+      "enabled": false,
+      "questionSound": null,
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-043",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-019",
+      "excludedAnswerLabels": [
+        "iPad Pro"
+      ]
+    },
+    {
+      "id": "OMT-020",
+      "unit": "keynote-2020",
+      "basis": "package",
+      "song": "Wave",
+      "artist": "Whethan",
+      "product": "MacBook Air (M1)",
+      "film": "Apple Event · November 2020",
+      "year": 2020,
+      "kind": "event_segment",
+      "videoId": "5AwdkGKmZ0I",
+      "sourceAnchor": 1390,
+      "note": {
+        "en": "23:10 is the catalogue's recorded position in that event. It locates a passage to check; it is not a music in-point.",
+        "zh": "23:10 是目录记载的那场发布会里的位置。它只用来找到要核对的段落，不是音乐入点。"
+      },
+      "enabled": false,
+      "anchorVideoId": "5AwdkGKmZ0I",
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/2f/ce/77/2fce77b6-7f23-0c71-8c66-b740a3e573d4/mzaf_1439556921069365443.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-020",
+      "excludedAnswerLabels": [
+        "M1",
+        "MacBook Air",
+        "MacBook Air (M1)"
+      ]
+    },
+    {
+      "id": "OMT-021",
+      "unit": "keynote-2020",
+      "basis": "package",
+      "song": "Back It Up",
+      "artist": "Alison Wonderland × AWE",
+      "product": "Mac mini (M1)",
+      "film": "Apple Event · November 2020",
+      "year": 2020,
+      "kind": "event_segment",
+      "videoId": null,
+      "sourceAnchor": 1788,
+      "note": {
+        "en": "Three M1 machines were introduced in one event, so the question has to name which segment, not just the event.",
+        "zh": "同一场发布会介绍了三台 M1 机器，所以题目必须问到具体段落，而不只是那场发布会。"
+      },
+      "enabled": false,
+      "questionSound": null,
+      "knowledgeGroup": "OMT-021",
+      "excludedAnswerLabels": [
+        "Mac mini (M1)"
+      ]
+    },
+    {
+      "id": "OMT-022",
+      "unit": "keynote-2020",
+      "basis": "package",
+      "song": "Show Me How",
+      "artist": "Beacon",
+      "product": "MacBook Pro 13-inch (M1)",
+      "film": "Apple Event · November 2020",
+      "year": 2020,
+      "kind": "event_segment",
+      "videoId": null,
+      "sourceAnchor": 2105,
+      "siblingOf": "OMT-077",
+      "note": {
+        "en": "The third of that event's three segments; its anchor is 35:05 in the catalogue. The bank's record of this same segment is OMT-077 — one recording, the product named in another language — so the two are declared siblings and never two answers.",
+        "zh": "那场发布会三段里的第三段，目录记的位置是 35:05。资料库把同一段另记成 OMT-077：同一段录音，产品名用了另一种语言。两张卡互为同题，不会被当成两个答案。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview122/v4/91/ac/98/91ac9833-33ff-3f7e-983b-86e2513911ec/mzaf_232658500190580907.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-022",
+      "excludedAnswerLabels": [
+        "13 英寸 MacBook Pro（M1）",
+        "M1",
+        "MacBook Pro",
+        "MacBook Pro (2024)",
+        "MacBook Pro 13-inch (M1)"
+      ]
+    },
+    {
+      "id": "OMT-023",
+      "unit": "keynote-2020",
+      "basis": "package",
+      "song": "Hyperspace",
+      "artist": "TRY, Sam i, Shmuck the Loyal",
+      "product": "iPhone 12",
+      "film": "Apple Event · October 2020",
+      "year": 2020,
+      "kind": "event_segment",
+      "videoId": "KR0g-1hnQPA",
+      "sourceAnchor": 1210,
+      "note": {
+        "en": "A keynote segment for iPhone 12, which is a different association from the Meet iPhone 12 ad.",
+        "zh": "这是 iPhone 12 的发布会片段，与《Meet iPhone 12》广告是两条不同的对应关系。"
+      },
+      "enabled": false,
+      "anchorVideoId": "KR0g-1hnQPA",
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/37/27/0b/37270b38-961b-45ac-220a-1ba58855f927/mzaf_17828828073985848060.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-023",
+      "excludedAnswerLabels": [
+        "iPhone 12"
+      ]
+    },
+    {
+      "id": "OMT-024",
+      "unit": "keynote-2020",
+      "basis": "package",
+      "song": "Sturm I: Fear",
+      "artist": "Dardust",
+      "product": "iPhone 12 Pro",
+      "film": "Apple Event · October 2020",
+      "year": 2020,
+      "kind": "event_segment",
+      "videoId": "KR0g-1hnQPA",
+      "sourceAnchor": 2745,
+      "note": {
+        "en": "45:45 in that event. Two segments of one keynote, two products, two pieces of music.",
+        "zh": "那场发布会的 45:45。同一场发布会的两段、两款产品、两段音乐。"
+      },
+      "enabled": false,
+      "anchorVideoId": "KR0g-1hnQPA",
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/12/fc/f3/12fcf38b-98be-1296-73a1-a8a05872fe36/mzaf_6919477039403151095.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-024",
+      "excludedAnswerLabels": [
+        "iPhone 12 Pro"
+      ]
+    },
+    {
+      "id": "OMT-025",
+      "unit": "features",
+      "basis": "package",
+      "song": "Jeans",
+      "artist": "Rubi",
+      "product": "Apple Card",
+      "film": "Introducing Apple Card",
+      "year": 2019,
+      "kind": "service_ad",
+      "videoId": "HAZiE9NtRfs",
+      "sourceAnchor": null,
+      "note": {
+        "en": "A service, not a device. The question asks about the service.",
+        "zh": "这是服务，不是硬件，题目就问服务。"
+      },
+      "enabled": false,
+      "musicEntry": {
+        "provider": "spotify",
+        "url": "https://open.spotify.com/track/3uMoBcPjg0hNQjk09B0qo2",
+        "use": "reference_only",
+        "playbackTested": false,
+        "label": ""
+      },
+      "questionSound": null,
+      "knowledgeGroup": "OMT-025",
+      "excludedAnswerLabels": [
+        "Apple Card"
+      ]
+    },
+    {
+      "id": "OMT-026",
+      "unit": "features",
+      "basis": "package",
+      "song": "Budududum",
+      "artist": "Emmit Fenn",
+      "product": "watchOS 7 watch faces",
+      "film": "All-new Watch Faces",
+      "year": 2020,
+      "kind": "feature_reveal",
+      "videoId": "WKydF_3gxfw",
+      "sourceAnchor": null,
+      "note": {
+        "en": "A feature introduction rather than a watch model — asking which Apple Watch generation would have no fair answer.",
+        "zh": "这是功能介绍而不是某一代手表——问「哪一代 Apple Watch」不会有公平的答案。"
+      },
+      "enabled": false,
+      "musicEntry": {
+        "provider": "spotify",
+        "url": "https://open.spotify.com/track/1A2dbRGv3zOZu74KI40exh",
+        "use": "reference_only",
+        "playbackTested": false,
+        "label": ""
+      },
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/a2/45/fe/a245fe04-10d5-b922-43eb-cd264fc3bbf3/mzaf_10028589121278834018.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-048",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-026",
+      "excludedAnswerLabels": [
+        "Apple Watch",
+        "watchOS 7 watch faces"
+      ]
+    },
+    {
+      "id": "OMT-027",
+      "unit": "brand-films",
+      "basis": "package",
+      "song": "I Am the Greatest (with Marliya Choir)",
+      "artist": "Spinifex Gum",
+      "product": "Apple accessibility features, across several devices",
+      "film": "The Greatest",
+      "year": null,
+      "kind": "feature_reveal",
+      "videoId": "8sX9IEHWRJ8",
+      "sourceAnchor": null,
+      "recordingWarning": true,
+      "note": {
+        "en": "The artist line is the playlist's. The film uses a Cola Boyy remix with Matthew Whitaker on piano, so the album version is only a candidate for finding the audio — it cannot be claimed to be the recording in the film. The answer is a set of features across several devices, so no single device is right.",
+        "zh": "歌手一栏是歌单上的。短片用的是 Cola Boyy 的重混版、加了 Matthew Whitaker 的钢琴，所以专辑版只能作为寻找音源的候选，不能宣称它就是短片里那版录音。答案是跨多款设备的一组功能，因此没有哪一款设备是对的。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/b2/f6/0d/b2f60d8e-0ed8-ef11-fbf5-7eda1014082b/mzaf_2210366926190177318.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-027",
+      "excludedAnswerLabels": [
+        "Apple accessibility features, across several devices"
+      ]
+    },
+    {
+      "id": "OMT-028",
+      "unit": "",
+      "basis": "reported",
+      "song": "Shut Up and Let Me Go",
+      "artist": "The Ting Tings",
+      "product": "",
+      "film": "",
+      "year": 2008,
+      "kind": "",
+      "videoId": null,
+      "sourceAnchor": null,
+      "note": {
+        "en": "Certainly iPod-era advertising music, but which film and which product is not settled. Left without an answer on purpose.",
+        "zh": "确实是 iPod 时期的广告音乐，但具体是哪支片、哪款产品没有定。故意不给答案。"
+      },
+      "enabled": false,
+      "questionSound": null,
+      "knowledgeGroup": "OMT-028",
+      "excludedAnswerLabels": [
+        "iPod",
+        "iPod + iTunes · Gamma",
+        "iTunes"
+      ]
+    },
+    {
+      "id": "OMT-029",
+      "unit": "",
+      "basis": "reported",
+      "song": "Viva la Vida",
+      "artist": "Coldplay",
+      "product": "",
+      "film": "",
+      "year": 2008,
+      "kind": "",
+      "videoId": null,
+      "sourceAnchor": null,
+      "note": {
+        "en": "Ran in Apple advertising the year the album came out; the exact film and product need the original spot to confirm.",
+        "zh": "专辑发行那年出现在苹果广告里；具体是哪支片、哪款产品，要找到原片才能确认。"
+      },
+      "enabled": false,
+      "questionSound": null,
+      "knowledgeGroup": "OMT-029",
+      "excludedAnswerLabels": [
+        "iPod",
+        "iTunes"
+      ]
+    },
+    {
+      "id": "OMT-030",
+      "unit": "",
+      "basis": "package",
+      "song": "PUFF",
+      "artist": "",
+      "product": "",
+      "film": "Share the Joy",
+      "year": 2022,
+      "kind": "",
+      "videoId": "I_40JFauCFk",
+      "sourceAnchor": null,
+      "note": {
+        "en": "Reported as the AirPods Pro audio-sharing holiday film. The artist line is empty because the package's row did not settle it, and an empty field stays empty.",
+        "zh": "报道说是 AirPods Pro 音频共享的节日短片。歌手一栏是空的，因为研究包那一行没有定下来——空的就留空。"
+      },
+      "enabled": false,
+      "questionSound": null,
+      "knowledgeGroup": "OMT-030",
+      "excludedAnswerLabels": []
+    },
+    {
+      "id": "OMT-031",
+      "unit": "",
+      "basis": "package",
+      "song": "Pink Sky",
+      "artist": "Infinity Song",
+      "product": "",
+      "film": "",
+      "year": null,
+      "kind": "",
+      "videoId": null,
+      "sourceAnchor": null,
+      "note": {
+        "en": "One upload title points at Apple One. The package calls that a lead and keeps it as the single unconfirmed entry rather than rounding it up.",
+        "zh": "只有一个上传记录的标题指向 Apple One。研究包把它当线索，单独留作唯一一条待确认，没有往上凑。"
+      },
+      "enabled": false,
+      "questionSound": null,
+      "knowledgeGroup": "OMT-031",
+      "excludedAnswerLabels": []
+    },
+    {
+      "id": "OMT-032",
+      "unit": "launch-2025",
+      "basis": "package",
+      "song": "BLUH BLUH BLUH",
+      "artist": "_BY.ALEXANDER",
+      "product": "AirPods Pro 3",
+      "film": "Introducing AirPods Pro 3",
+      "year": null,
+      "kind": "product_ad",
+      "videoId": "EMmKs8vMKhU",
+      "sourceAnchor": null,
+      "note": {
+        "en": "The package's audition note: rule out the heartbeat and other non-music opening before deciding which passage the film actually uses.",
+        "zh": "研究包的试听备注：先排除开头心跳等非音乐部分，再核对影片实际使用的乐段。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/d4/e9/16/d4e9161d-69ec-5b4a-91e3-a50d4e851ab5/mzaf_910621401126151264.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-032",
+      "excludedAnswerLabels": [
+        "AirPods Pro",
+        "AirPods Pro 3"
+      ]
+    },
+    {
+      "id": "OMT-033",
+      "unit": "launch-2025",
+      "basis": "package",
+      "song": "Lambent Rag",
+      "artist": "Clark",
+      "product": "iPhone Air",
+      "film": "Introducing iPhone Air",
+      "year": null,
+      "kind": "product_ad",
+      "videoId": "M0au92yebLQ",
+      "sourceAnchor": null,
+      "note": {
+        "en": "The catalogue also records this piece at WWDC 2023, so the question is bound to this film and must not claim the music was used only here.",
+        "zh": "目录另记这首曲子出现在 WWDC 2023，所以题目只限定这支影片，不能宣称它只在此使用。"
+      },
+      "enabled": false,
+      "musicEntry": {
+        "provider": "youtube",
+        "url": "https://www.youtube.com/watch?v=h_HVWdXDuhA",
+        "use": "reference",
+        "playbackTested": false,
+        "label": ""
+      },
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/aa/cc/68/aacc6850-59a0-faca-7020-34b7c412cf86/mzaf_11197989865052470288.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-033",
+      "excludedAnswerLabels": [
+        "iPhone Air"
+      ]
+    },
+    {
+      "id": "OMT-034",
+      "unit": "launch-2025",
+      "basis": "package",
+      "song": "New Age Crisis",
+      "artist": "Jean Dawson",
+      "product": "iPhone 17 Pro",
+      "film": "Introducing iPhone 17 Pro",
+      "year": null,
+      "kind": "product_ad",
+      "videoId": "_-AS5DtDeqs",
+      "sourceAnchor": null,
+      "note": {
+        "en": "Kept at the level of the film. The package refused to derive a time from the playlist's running order.",
+        "zh": "答案保留在影片这一级。研究包拒绝按歌单次序推导时间。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview122/v4/78/e3/19/78e319af-10ff-2ee5-40c6-d7cea0a4a5e4/mzaf_1711463920160361598.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-034",
+      "excludedAnswerLabels": [
+        "iPhone 17 Pro"
+      ]
+    },
+    {
+      "id": "OMT-035",
+      "unit": "launch-2025",
+      "basis": "package",
+      "song": "Come Rain Or Come Shine",
+      "artist": "Connie Francis",
+      "product": "iPhone 17 Pro",
+      "film": "iPhone 17 Pro — The ultimate Pro",
+      "year": null,
+      "kind": "product_ad",
+      "videoId": "h6CwwHyQxKI",
+      "sourceAnchor": null,
+      "note": {
+        "en": "The Connie Francis recording, not the Ray Charles one the catalogue lists under the same title — same song, different record.",
+        "zh": "是 Connie Francis 的版本，不是目录中同名的 Ray Charles——同一首歌，不同录音。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview112/v4/ca/ca/fe/cacafef4-7e44-ccce-7abd-57bd4f993884/mzaf_4527356460430515808.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-035",
+      "excludedAnswerLabels": [
+        "iPhone 17 Pro"
+      ]
+    },
+    {
+      "id": "OMT-036",
+      "unit": "mac-2024",
+      "basis": "package",
+      "song": "Hey!",
+      "artist": "Gaspard Auge",
+      "product": "MacBook Pro (2024)",
+      "film": "MacBook Pro Announcement — October 30, 2024",
+      "year": 2024,
+      "kind": "product_ad",
+      "videoId": "G0cmfY7qdmY",
+      "sourceAnchor": null,
+      "note": {
+        "en": "That announcement carries several pieces of music and this one has not been located inside it.",
+        "zh": "那支发布影片里有多首音乐，这一首在片中的位置还没有定位。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/0b/39/68/0b396875-9e84-adc8-5e90-f5a250581fbd/mzaf_8836253538033556597.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-036",
+      "excludedAnswerLabels": [
+        "MacBook Pro",
+        "MacBook Pro (2024)"
+      ]
+    },
+    {
+      "id": "OMT-037",
+      "unit": "mac-2024",
+      "basis": "package",
+      "song": "WICKED GYAL",
+      "artist": "BAMBII & Lady Lykez",
+      "product": "MacBook Pro (2024)",
+      "film": "MacBook Pro Announcement — October 30, 2024",
+      "year": 2024,
+      "kind": "product_ad",
+      "videoId": "G0cmfY7qdmY",
+      "sourceAnchor": null,
+      "note": {
+        "en": "The second piece from the same announcement. Two songs, one film, two positions still to find.",
+        "zh": "同一支发布影片里的第二首。两首歌、一支片，两个位置都还要找。"
+      },
+      "enabled": false,
+      "questionSound": null,
+      "knowledgeGroup": "OMT-037",
+      "excludedAnswerLabels": [
+        "MacBook Pro",
+        "MacBook Pro (2024)"
+      ]
+    },
+    {
+      "id": "OMT-038",
+      "unit": "mac-2024",
+      "basis": "package",
+      "song": "Hello",
+      "artist": "Q",
+      "product": "Mac mini (2024)",
+      "film": "Mac mini Announcement — October 29, 2024",
+      "year": 2024,
+      "kind": "product_ad",
+      "videoId": "TtFm9n3NVzE",
+      "sourceAnchor": null,
+      "note": {
+        "en": "The catalogue's link carries t=41s. That is where the link opens, not where this song starts — the package says so explicitly.",
+        "zh": "目录给的链接带 t=41s。那是链接的入口位置，不是这首歌的入点——研究包专门写明了这一点。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/3d/c7/54/3dc754d4-c159-e893-df4d-12de3fcadaad/mzaf_925724166661637618.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-038",
+      "excludedAnswerLabels": [
+        "Mac mini",
+        "Mac mini (2024)",
+        "Mac mini (M1)"
+      ]
+    },
+    {
+      "id": "OMT-039",
+      "unit": "mac-2024",
+      "basis": "package",
+      "song": "Quartz",
+      "artist": "French 79",
+      "product": "Mac mini (2024)",
+      "film": "Mac mini Announcement — October 29, 2024",
+      "year": 2024,
+      "kind": "product_ad",
+      "videoId": "TtFm9n3NVzE",
+      "sourceAnchor": null,
+      "note": {
+        "en": "Same film as Hello, and the same warning: the link's 41 seconds belongs to neither song.",
+        "zh": "与《Hello》同片，同一条警告：链接上的 41 秒不属于其中任何一首。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/11/1c/13/111c13d1-6f75-4ec6-af1c-9bb132315ba3/mzaf_8998709184067683137.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-039",
+      "excludedAnswerLabels": [
+        "Mac mini",
+        "Mac mini (2024)",
+        "Mac mini (M1)"
+      ]
+    },
+    {
+      "id": "OMT-040",
+      "unit": "mac-2024",
+      "basis": "package",
+      "song": "You Gotta Be",
+      "artist": "Des'ree",
+      "product": "M4 chip",
+      "film": "M4 chip — No Sweat",
+      "year": null,
+      "kind": "product_ad",
+      "videoId": "1r3_pPkjOdg",
+      "sourceAnchor": null,
+      "note": {
+        "en": "The answer is the chip. The package refused to narrow it to whichever Mac happens to contain one.",
+        "zh": "答案是这颗芯片。研究包拒绝把它缩窄成某一台装了这颗芯片的 Mac。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/f0/89/75/f0897527-5ea2-584b-ef80-5f003df038e3/mzaf_12608020364204860658.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-040",
+      "excludedAnswerLabels": [
+        "M4 chip"
+      ]
+    },
+    {
+      "id": "OMT-041",
+      "unit": "imac-2024",
+      "basis": "package",
+      "song": "Meet Again (feat. Little Boots)",
+      "artist": "LP Giobbi",
+      "product": "iMac (2024)",
+      "film": "iMac Announcement — October 28, 2024",
+      "year": 2024,
+      "kind": "product_ad",
+      "videoId": "eaB7nCdId0Y",
+      "sourceAnchor": null,
+      "note": {
+        "en": "One film, three songs. The package's rule is that all three are checked separately.",
+        "zh": "一支影片，三首曲子。研究包的规矩是三首必须分别核对。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/2a/25/44/2a254458-17df-fcac-1a5c-3b353ebbe4d7/mzaf_4249353110299645670.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-041",
+      "excludedAnswerLabels": [
+        "iMac",
+        "iMac (2024)"
+      ]
+    },
+    {
+      "id": "OMT-042",
+      "unit": "imac-2024",
+      "basis": "package",
+      "song": "Cinderella",
+      "artist": "Remi Wolf",
+      "product": "iMac (2024)",
+      "film": "iMac Announcement — October 28, 2024",
+      "year": 2024,
+      "kind": "product_ad",
+      "videoId": "eaB7nCdId0Y",
+      "sourceAnchor": null,
+      "note": {
+        "en": "The second of that film's three. Sharing a film is not sharing a position.",
+        "zh": "那支影片三首里的第二首。共用一支片，不等于共用一个位置。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/62/d2/2e/62d22ef9-1914-f6eb-36c9-dbc0ffc9df89/mzaf_5278617443481910463.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-042",
+      "excludedAnswerLabels": [
+        "iMac",
+        "iMac (2024)"
+      ]
+    },
+    {
+      "id": "OMT-043",
+      "unit": "imac-2024",
+      "basis": "package",
+      "song": "Color My life",
+      "artist": "Chicano Batman",
+      "product": "iMac (2024)",
+      "film": "iMac Announcement — October 28, 2024",
+      "year": 2024,
+      "kind": "product_ad",
+      "videoId": "eaB7nCdId0Y",
+      "sourceAnchor": null,
+      "note": {
+        "en": "The third. Three cards rather than one, because a question that accepted any of them would be asking about the film, not the music.",
+        "zh": "第三首。做成三张卡而不是一张，因为一道三首都算对的题问的是影片，不是音乐。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/d7/c1/77/d7c177ea-bec2-1962-a785-133bda11639c/mzaf_3682006014186649382.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-043",
+      "excludedAnswerLabels": [
+        "iMac",
+        "iMac (2024)"
+      ]
+    },
+    {
+      "id": "OMT-044",
+      "unit": "brand-films",
+      "basis": "package",
+      "song": "Neon: 1. Shinjuku",
+      "artist": "Manchester Collective & Hannah Peel",
+      "product": "Apple design brand film",
+      "film": "Design is how it works",
+      "year": null,
+      "kind": "brand_film",
+      "videoId": "-ueUb6PNwbs",
+      "sourceAnchor": null,
+      "note": {
+        "en": "A brand film, so it is not pinned to one product. The title needed a hand-checked alias to match the catalogue, and the recording is still unverified.",
+        "zh": "这是品牌短片，因此不强配某一款产品。标题是经人工检查建立的别名才对上目录，录音仍待核。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/d5/03/c3/d503c33a-0322-1e31-8eb2-8b0f51e184f9/mzaf_16248474169268698603.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-044",
+      "excludedAnswerLabels": [
+        "Apple design brand film"
+      ]
+    },
+    {
+      "id": "OMT-045",
+      "unit": "brand-films",
+      "basis": "package",
+      "song": "The Big Ship",
+      "artist": "Brian Eno",
+      "product": "Spatial video on iPhone, watched on Apple Vision Pro",
+      "film": "A Gift for Mom",
+      "year": null,
+      "kind": "feature_reveal",
+      "videoId": "fDsBPK1WXUU",
+      "sourceAnchor": null,
+      "note": {
+        "en": "A film across two products, so the answer is the experience rather than a device.",
+        "zh": "这支片横跨两款产品，所以答案是那种体验，而不是某一台设备。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/75/0e/68/750e68a3-298d-e1da-a1ad-daff3307c494/mzaf_5491103866267900438.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-045",
+      "excludedAnswerLabels": [
+        "Apple Vision Pro",
+        "Spatial video on iPhone, watched on Apple Vision Pro",
+        "iPhone"
+      ]
+    },
+    {
+      "id": "OMT-046",
+      "unit": "event-2024",
+      "basis": "package",
+      "song": "GOOD TIMES",
+      "artist": "Jungle",
+      "product": "The keynote's opening — no single product",
+      "film": "Apple Event — September 9, 2024 introduction",
+      "year": 2024,
+      "kind": "event_segment",
+      "videoId": "uarNiSl_uh4",
+      "sourceAnchor": null,
+      "note": {
+        "en": "This establishes the opening and nothing more. The package forbids assigning it the product of whichever chapter comes next.",
+        "zh": "这一条只确立开场，别的都不确立。研究包禁止按邻接章节给它强配产品。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/c7/8c/20/c78c2084-e49c-39ef-256d-df88d15bcdb6/mzaf_10635761109517774236.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-046",
+      "excludedAnswerLabels": [
+        "The keynote's opening — no single product"
+      ]
+    },
+    {
+      "id": "OMT-047",
+      "unit": "event-2024",
+      "basis": "package",
+      "song": "Black",
+      "artist": "The Soft Moon",
+      "product": "Apple Watch Series 10",
+      "film": "Apple Watch Series 10 introduction — September 9, 2024",
+      "year": 2024,
+      "kind": "event_segment",
+      "videoId": "uarNiSl_uh4",
+      "sourceAnchor": null,
+      "note": {
+        "en": "The linked video is the whole keynote, so this song's own start and end still have to be found inside it.",
+        "zh": "链接指向的是整场发布会，所以这首歌自己的起止仍然要在里面另找。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/12/aa/a6/12aaa6b8-a41a-5c64-1e01-067469183922/mzaf_476538806562573468.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-047",
+      "excludedAnswerLabels": [
+        "Apple Watch Series 10"
+      ]
+    },
+    {
+      "id": "OMT-048",
+      "unit": "event-2024",
+      "basis": "package",
+      "song": "Welcome To Joy",
+      "artist": "Hark Madley",
+      "product": "Apple Intelligence",
+      "film": "Introducing Apple Intelligence in 5 minutes",
+      "year": null,
+      "kind": "feature_reveal",
+      "videoId": "Q_EYoV1kZWk",
+      "sourceAnchor": null,
+      "note": {
+        "en": "The same piece is used more than once; the package scoped the answer to the five-minute introduction rather than to every appearance.",
+        "zh": "同一首曲子被多次使用；研究包把答案的范围定在这支五分钟介绍片，而不是它出现过的每一处。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview126/v4/61/8c/34/618c3454-9bf3-c98f-d2fe-848a6eb04c25/mzaf_15028671737368627311.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-048",
+      "excludedAnswerLabels": [
+        "Apple Intelligence"
+      ]
+    },
+    {
+      "id": "OMT-049",
+      "unit": "credits-vision-a",
+      "basis": "foundation_v05_first_party_credit",
+      "song": "Uncontrollable Urge",
+      "artist": "Devo",
+      "product": "Apple Vision Pro",
+      "film": "Get Ready",
+      "year": null,
+      "kind": "feature_reveal",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "enabled": false,
+      "note": {
+        "en": "Two sources disagree about what this film is: the catalogue calls it the All-New Watch Faces spot, the music supervisor calls it the Series 6 reveal. The research package says to keep both and not to ask by hardware generation, so this card is a record and never a question.",
+        "zh": "两个来源对这支影片是什么意见不一致：目录把它记作 All-New Watch Faces，音乐监制称它为 Series 6 亮相片。研究包的裁定是两者都留、且不按硬件代际出题，所以这张卡是一条记录，不是一道题。"
+      },
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/e7/ea/b9/e7eab9dd-9b93-9a8d-b998-ef3e6f43d968/mzaf_1433435554524324622.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-052",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-049",
+      "excludedAnswerLabels": [
+        "Apple Vision Pro",
+        "Vision Pro"
+      ]
+    },
+    {
+      "id": "OMT-050",
+      "unit": "credits-vision-a",
+      "basis": "foundation_v05_first_party_credit",
+      "song": "Hinoki Wood",
+      "artist": "Gia Margaret",
+      "product": "Apple Vision Pro 空间记忆",
+      "film": "Spatial Memory mini film",
+      "year": null,
+      "kind": "feature_reveal",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "enabled": false,
+      "note": {
+        "en": "A first-party credit (a music supervisor or composer portfolio) names this film and this song. It does not establish that the recording on a streaming service is the one the film used, so the cue stays unverified.",
+        "zh": "这是创作者一方（音乐监制或作曲者作品页）把这首作品记到这支影片名下。它不能证明流媒体上的那个录音就是影片用的那版，所以乐段仍未核准。"
+      },
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/82/95/c8/8295c8fd-50dd-dfdf-a50a-e116983605d9/mzaf_16805586247336266919.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-053",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-050",
+      "excludedAnswerLabels": [
+        "Apple Vision Pro 空间记忆"
+      ]
+    },
+    {
+      "id": "OMT-051",
+      "unit": "credits-vision-a",
+      "basis": "foundation_v05_first_party_credit",
+      "song": "Let's Live",
+      "artist": "FKJ",
+      "product": "Apple Vision Pro",
+      "film": "Introducing Apple Vision Pro",
+      "year": null,
+      "kind": "feature_reveal",
+      "videoId": "TX9qSaGXFyg",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "enabled": false,
+      "note": {
+        "en": "A first-party credit (a music supervisor or composer portfolio) names this film and this song. It does not establish that the recording on a streaming service is the one the film used, so the cue stays unverified.",
+        "zh": "这是创作者一方（音乐监制或作曲者作品页）把这首作品记到这支影片名下。它不能证明流媒体上的那个录音就是影片用的那版，所以乐段仍未核准。"
+      },
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/ac/ac/00/acac00b1-d198-060d-7792-2124dd62d3d1/mzaf_11033573360637840804.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-054",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [
+          "CAND-25548422b8abd7b26eb7",
+          "CAND-091b5fca31098772b026"
+        ],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-051",
+      "excludedAnswerLabels": [
+        "Apple Vision Pro"
+      ]
+    },
+    {
+      "id": "OMT-052",
+      "unit": "credits-vision-a",
+      "basis": "foundation_v05_first_party_credit",
+      "song": "Anyway",
+      "artist": "Aye June",
+      "product": "Apple Vision Pro",
+      "film": "Introducing Apple Vision Pro",
+      "year": null,
+      "kind": "feature_reveal",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "enabled": false,
+      "note": {
+        "en": "A first-party credit (a music supervisor or composer portfolio) names this film and this song. It does not establish that the recording on a streaming service is the one the film used, so the cue stays unverified.",
+        "zh": "这是创作者一方（音乐监制或作曲者作品页）把这首作品记到这支影片名下。它不能证明流媒体上的那个录音就是影片用的那版，所以乐段仍未核准。"
+      },
+      "questionSound": null,
+      "knowledgeGroup": "OMT-052",
+      "excludedAnswerLabels": [
+        "Apple Vision Pro"
+      ]
+    },
+    {
+      "id": "OMT-053",
+      "unit": "credits-vision-a",
+      "basis": "foundation_v05_first_party_credit",
+      "song": "Transmit",
+      "artist": "Fyfe, Ika Strings",
+      "product": "Apple Vision Pro",
+      "film": "Introducing Apple Vision Pro",
+      "year": null,
+      "kind": "feature_reveal",
+      "videoId": "TX9qSaGXFyg",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "enabled": false,
+      "note": {
+        "en": "A first-party credit (a music supervisor or composer portfolio) names this film and this song. It does not establish that the recording on a streaming service is the one the film used, so the cue stays unverified.",
+        "zh": "这是创作者一方（音乐监制或作曲者作品页）把这首作品记到这支影片名下。它不能证明流媒体上的那个录音就是影片用的那版，所以乐段仍未核准。"
+      },
+      "questionSound": null,
+      "knowledgeGroup": "OMT-053",
+      "excludedAnswerLabels": [
+        "Apple Vision Pro"
+      ]
+    },
+    {
+      "id": "OMT-054",
+      "unit": "credits-vision-b",
+      "basis": "foundation_v05_first_party_credit",
+      "song": "New Horizon",
+      "artist": "Little Dragon",
+      "product": "Apple Vision Pro",
+      "film": "Introducing Apple Vision Pro",
+      "year": null,
+      "kind": "feature_reveal",
+      "videoId": "TX9qSaGXFyg",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "enabled": false,
+      "note": {
+        "en": "A first-party credit (a music supervisor or composer portfolio) names this film and this song. It does not establish that the recording on a streaming service is the one the film used, so the cue stays unverified.",
+        "zh": "这是创作者一方（音乐监制或作曲者作品页）把这首作品记到这支影片名下。它不能证明流媒体上的那个录音就是影片用的那版，所以乐段仍未核准。"
+      },
+      "questionSound": null,
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-057",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-054",
+      "excludedAnswerLabels": [
+        "Apple Vision Pro"
+      ]
+    },
+    {
+      "id": "OMT-055",
+      "unit": "credits-vision-b",
+      "basis": "foundation_v05_first_party_credit",
+      "song": "A.I.",
+      "artist": "Hark Madley",
+      "product": "Apple Vision Pro",
+      "film": "Introducing Apple Vision Pro",
+      "year": null,
+      "kind": "feature_reveal",
+      "videoId": "TX9qSaGXFyg",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "enabled": false,
+      "note": {
+        "en": "A first-party credit (a music supervisor or composer portfolio) names this film and this song. It does not establish that the recording on a streaming service is the one the film used, so the cue stays unverified.",
+        "zh": "这是创作者一方（音乐监制或作曲者作品页）把这首作品记到这支影片名下。它不能证明流媒体上的那个录音就是影片用的那版，所以乐段仍未核准。"
+      },
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/1d/96/d6/1d96d6a1-ee8d-d23a-fdb4-35bf95a17401/mzaf_12361029615362055915.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-050",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [
+          "CAND-555bee4c88cfb3320d80"
+        ],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-055",
+      "excludedAnswerLabels": [
+        "Apple Vision Pro"
+      ]
+    },
+    {
+      "id": "OMT-056",
+      "unit": "credits-vision-b",
+      "basis": "foundation_v05_first_party_credit",
+      "song": "Wave",
+      "artist": "StayLoose and Lucy Daydream",
+      "product": "Apple Vision Pro",
+      "film": "Introducing Apple Vision Pro",
+      "year": null,
+      "kind": "feature_reveal",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "enabled": false,
+      "note": {
+        "en": "A first-party credit (a music supervisor or composer portfolio) names this film and this song. It does not establish that the recording on a streaming service is the one the film used, so the cue stays unverified.",
+        "zh": "这是创作者一方（音乐监制或作曲者作品页）把这首作品记到这支影片名下。它不能证明流媒体上的那个录音就是影片用的那版，所以乐段仍未核准。"
+      },
+      "questionSound": null,
+      "knowledgeGroup": "OMT-056",
+      "excludedAnswerLabels": [
+        "Apple Vision Pro"
+      ]
+    },
+    {
+      "id": "OMT-057",
+      "unit": "credits-vision-b",
+      "basis": "foundation_v05_first_party_credit",
+      "song": "Free",
+      "artist": "Bakaar",
+      "product": "Apple Vision Pro",
+      "film": "Introducing Apple Vision Pro",
+      "year": null,
+      "kind": "feature_reveal",
+      "videoId": "TX9qSaGXFyg",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "enabled": false,
+      "note": {
+        "en": "A first-party credit (a music supervisor or composer portfolio) names this film and this song. It does not establish that the recording on a streaming service is the one the film used, so the cue stays unverified.",
+        "zh": "这是创作者一方（音乐监制或作曲者作品页）把这首作品记到这支影片名下。它不能证明流媒体上的那个录音就是影片用的那版，所以乐段仍未核准。"
+      },
+      "questionSound": null,
+      "knowledgeGroup": "OMT-057",
+      "excludedAnswerLabels": [
+        "Apple Vision Pro"
+      ]
+    },
+    {
+      "id": "OMT-058",
+      "unit": "credits-vision-b",
+      "basis": "foundation_v05_first_party_credit",
+      "song": "If You Only Knew",
+      "artist": "Gabriels",
+      "product": "Apple Vision Pro 空间影院",
+      "film": "First Timer",
+      "year": null,
+      "kind": "feature_reveal",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "enabled": false,
+      "note": {
+        "en": "A first-party credit (a music supervisor or composer portfolio) names this film and this song. It does not establish that the recording on a streaming service is the one the film used, so the cue stays unverified.",
+        "zh": "这是创作者一方（音乐监制或作曲者作品页）把这首作品记到这支影片名下。它不能证明流媒体上的那个录音就是影片用的那版，所以乐段仍未核准。"
+      },
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/76/a9/3c/76a93ca3-b2f9-013e-8608-d4dc66a5c9fe/mzaf_2018105034470874020.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-060",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-058",
+      "excludedAnswerLabels": [
+        "Apple Vision Pro 空间影院",
+        "Vision Pro"
+      ]
+    },
+    {
+      "id": "OMT-059",
+      "unit": "credits-mac",
+      "basis": "foundation_v05_first_party_credit",
+      "song": "Rumble",
+      "artist": "Flowdan, Fred Again and Skrillex",
+      "product": "MacBook Pro（M3 系列）",
+      "film": "MacBook M3 / M3 Pro / M3 Max film",
+      "year": null,
+      "kind": "feature_reveal",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "enabled": false,
+      "note": {
+        "en": "A first-party credit (a music supervisor or composer portfolio) names this film and this song. It does not establish that the recording on a streaming service is the one the film used, so the cue stays unverified.",
+        "zh": "这是创作者一方（音乐监制或作曲者作品页）把这首作品记到这支影片名下。它不能证明流媒体上的那个录音就是影片用的那版，所以乐段仍未核准。"
+      },
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/51/e6/0d/51e60d1c-5375-530a-a434-4ff93b96fd2e/mzaf_6494976916814603599.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-059",
+      "excludedAnswerLabels": [
+        "MacBook Pro（M3 系列）"
+      ]
+    },
+    {
+      "id": "OMT-060",
+      "unit": "credits-mac",
+      "basis": "foundation_v05_first_party_credit",
+      "song": "New Day (Intro)",
+      "artist": "Skott",
+      "product": "MacBook Pro（M3 系列）",
+      "film": "MacBook Pro M3 reveal",
+      "year": 2023,
+      "kind": "feature_reveal",
+      "videoId": "ctkW3V0Mh-k",
+      "sourceAnchor": 1158,
+      "filmClip": {
+        "start": 1158.06,
+        "end": 1190.45,
+        "basis": "cvk_clip"
+      },
+      "anchorVideoId": "ctkW3V0Mh-k",
+      "enabled": false,
+      "note": {
+        "en": "The film's own music supervisor published a clip of this passage, which is how the original is pinned to Apple's video of the 30 October 2023 event and the music located at 19:18–19:50 inside it. That is the film's clock. It still says nothing about which recording a streaming service would play, so the quiz has no in-point and this card is not a question.",
+        "zh": "影片的音乐监制本人发布了这一段的 clip，原片因此定位到苹果官方那支 2023 年 10 月 30 日发布会视频，音乐落在其中的 19:18–19:50。那是原片的时间轴。它仍然不能说明流媒体上会播哪个录音，所以试听区间依旧没有，这张卡也还不是一道题。"
+      },
+      "filmAlternates": [
+        {
+          "url": "https://www.youtube.com/clip/UgkxQ0OJ2UOaU1pRx1U0fmCh83AcBmHGQC4N",
+          "provider": "youtube_clip",
+          "label": "",
+          "role": "ad_clip_candidate",
+          "playbackTested": false
+        }
+      ],
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/5a/25/34/5a25342d-668d-7567-20d1-7740d961060f/mzaf_3170064454529198442.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-062",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-060",
+      "excludedAnswerLabels": [
+        "MacBook Pro（M3 系列）"
+      ]
+    },
+    {
+      "id": "OMT-061",
+      "unit": "credits-mac",
+      "basis": "foundation_v05_first_party_credit",
+      "song": "Plum",
+      "artist": "Omega Sapien feat. Sega Bodega",
+      "product": "MacBook Air",
+      "film": "MacBook Air film",
+      "year": null,
+      "kind": "feature_reveal",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "enabled": false,
+      "note": {
+        "en": "A first-party credit (a music supervisor or composer portfolio) names this film and this song. It does not establish that the recording on a streaming service is the one the film used, so the cue stays unverified.",
+        "zh": "这是创作者一方（音乐监制或作曲者作品页）把这首作品记到这支影片名下。它不能证明流媒体上的那个录音就是影片用的那版，所以乐段仍未核准。"
+      },
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview126/v4/0f/5a/c6/0f5ac6b8-e151-a25d-59fb-bede90e62f69/mzaf_6396576550322111470.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-061",
+      "excludedAnswerLabels": [
+        "MacBook Air"
+      ]
+    },
+    {
+      "id": "OMT-062",
+      "unit": "credits-mac",
+      "basis": "foundation_v05_first_party_credit",
+      "song": "Leaving The Light",
+      "artist": "Genesis Owusu",
+      "product": "Mac 品牌宣传片",
+      "film": "Mac brand campaign",
+      "year": null,
+      "kind": "feature_reveal",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "enabled": false,
+      "note": {
+        "en": "A first-party credit (a music supervisor or composer portfolio) names this film and this song. It does not establish that the recording on a streaming service is the one the film used, so the cue stays unverified.",
+        "zh": "这是创作者一方（音乐监制或作曲者作品页）把这首作品记到这支影片名下。它不能证明流媒体上的那个录音就是影片用的那版，所以乐段仍未核准。"
+      },
+      "questionSound": null,
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-064",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [
+          "CAND-32fb97261882e42b178c"
+        ],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-062",
+      "excludedAnswerLabels": [
+        "Mac 品牌宣传片"
+      ]
+    },
+    {
+      "id": "OMT-063",
+      "unit": "credits-audio",
+      "basis": "foundation_v05_first_party_credit",
+      "song": "Voodoo",
+      "artist": "Badshah, J Balvin and Tainy",
+      "product": "AirPods Pro",
+      "film": "AirPods Pro film",
+      "year": null,
+      "kind": "feature_reveal",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "enabled": false,
+      "note": {
+        "en": "A first-party credit (a music supervisor or composer portfolio) names this film and this song. It does not establish that the recording on a streaming service is the one the film used, so the cue stays unverified.",
+        "zh": "这是创作者一方（音乐监制或作曲者作品页）把这首作品记到这支影片名下。它不能证明流媒体上的那个录音就是影片用的那版，所以乐段仍未核准。"
+      },
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/a0/14/2c/a0142cec-c89d-57bf-4c86-70409838259b/mzaf_329131976860378602.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-063",
+      "excludedAnswerLabels": [
+        "AirPods Pro"
+      ]
+    },
+    {
+      "id": "OMT-064",
+      "unit": "credits-audio",
+      "basis": "foundation_v05_first_party_credit",
+      "song": "GMT (Jamie xx remix)",
+      "artist": "Oliver Sims",
+      "product": "HomePod",
+      "film": "Beyond The Sound",
+      "year": null,
+      "kind": "feature_reveal",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "enabled": false,
+      "note": {
+        "en": "A first-party credit (a music supervisor or composer portfolio) names this film and this song. It does not establish that the recording on a streaming service is the one the film used, so the cue stays unverified.",
+        "zh": "这是创作者一方（音乐监制或作曲者作品页）把这首作品记到这支影片名下。它不能证明流媒体上的那个录音就是影片用的那版，所以乐段仍未核准。"
+      },
+      "questionSound": null,
+      "knowledgeGroup": "OMT-064",
+      "excludedAnswerLabels": [
+        "HomePod"
+      ]
+    },
+    {
+      "id": "OMT-065",
+      "unit": "credits-watch",
+      "basis": "foundation_v05_first_party_credit",
+      "song": "Power Of My Love",
+      "artist": "Jack White",
+      "product": "Apple Watch Series 7",
+      "film": "Hard Knocks",
+      "year": null,
+      "kind": "feature_reveal",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "enabled": false,
+      "note": {
+        "en": "A first-party credit (a music supervisor or composer portfolio) names this film and this song. It does not establish that the recording on a streaming service is the one the film used, so the cue stays unverified.",
+        "zh": "这是创作者一方（音乐监制或作曲者作品页）把这首作品记到这支影片名下。它不能证明流媒体上的那个录音就是影片用的那版，所以乐段仍未核准。"
+      },
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/76/27/95/762795be-bc1d-3bc0-221b-e514348d41d7/mzaf_7128077267101447627.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-067",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [
+          "CAND-fa97fc9a44c8ee7985d5"
+        ],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-065",
+      "excludedAnswerLabels": [
+        "Apple Watch Series 7"
+      ]
+    },
+    {
+      "id": "OMT-066",
+      "unit": "credits-watch",
+      "basis": "foundation_v05_first_party_credit",
+      "song": "Hi Girls!",
+      "artist": "Michel Legrand",
+      "product": "Apple Watch Series 7",
+      "film": "Apple Watch Series 7 reveal",
+      "year": null,
+      "kind": "feature_reveal",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "enabled": false,
+      "note": {
+        "en": "A first-party credit (a music supervisor or composer portfolio) names this film and this song. It does not establish that the recording on a streaming service is the one the film used, so the cue stays unverified.",
+        "zh": "这是创作者一方（音乐监制或作曲者作品页）把这首作品记到这支影片名下。它不能证明流媒体上的那个录音就是影片用的那版，所以乐段仍未核准。"
+      },
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview114/v4/2b/4e/e4/2b4ee467-b8c5-d8dc-66e3-29bd46186fb5/mzaf_2532417435855571642.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-066",
+      "excludedAnswerLabels": [
+        "Apple Watch Series 7"
+      ]
+    },
+    {
+      "id": "OMT-067",
+      "unit": "credits-watch",
+      "basis": "foundation_v05_first_party_credit",
+      "song": "Pays Imaginaire",
+      "artist": "Polo & Pan",
+      "product": "Apple Watch Series 6",
+      "film": "Apple Watch Series 6 TV spot",
+      "year": null,
+      "kind": "feature_reveal",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "enabled": false,
+      "note": {
+        "en": "A first-party credit (a music supervisor or composer portfolio) names this film and this song. It does not establish that the recording on a streaming service is the one the film used, so the cue stays unverified.",
+        "zh": "这是创作者一方（音乐监制或作曲者作品页）把这首作品记到这支影片名下。它不能证明流媒体上的那个录音就是影片用的那版，所以乐段仍未核准。"
+      },
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/e9/f0/82/e9f082fb-94de-5825-5eef-3023bf9fdfb1/mzaf_13865634329166005321.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-068",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-067",
+      "excludedAnswerLabels": [
+        "Apple Watch Series 6"
+      ]
+    },
+    {
+      "id": "OMT-068",
+      "unit": "credits-watch",
+      "basis": "foundation_v05_first_party_credit",
+      "song": "Tokoliana",
+      "artist": "Kokoko!",
+      "product": "Apple Watch Series 6",
+      "film": "Apple Watch Series 6 TV spot",
+      "year": null,
+      "kind": "feature_reveal",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "enabled": false,
+      "note": {
+        "en": "A first-party credit (a music supervisor or composer portfolio) names this film and this song. It does not establish that the recording on a streaming service is the one the film used, so the cue stays unverified.",
+        "zh": "这是创作者一方（音乐监制或作曲者作品页）把这首作品记到这支影片名下。它不能证明流媒体上的那个录音就是影片用的那版，所以乐段仍未核准。"
+      },
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/79/89/4d/79894db4-7a8e-f5a0-cbf0-0b6732ff3a95/mzaf_3921122952050104205.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-069",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-068",
+      "excludedAnswerLabels": [
+        "Apple Watch Series 6"
+      ]
+    },
+    {
+      "id": "OMT-069",
+      "unit": "credits-audio",
+      "basis": "foundation_v05_first_party_credit",
+      "song": "Dreams",
+      "artist": "Shey Baba",
+      "product": "Apple Watch Series 6 运动宣传片",
+      "film": "The Future Of Workout",
+      "year": null,
+      "kind": "feature_reveal",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "enabled": false,
+      "note": {
+        "en": "A first-party credit (a music supervisor or composer portfolio) names this film and this song. It does not establish that the recording on a streaming service is the one the film used, so the cue stays unverified.",
+        "zh": "这是创作者一方（音乐监制或作曲者作品页）把这首作品记到这支影片名下。它不能证明流媒体上的那个录音就是影片用的那版，所以乐段仍未核准。"
+      },
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/e1/90/4a/e1904aab-70fa-82c0-86ce-d80f9e87aa83/mzaf_12886339380748086810.plus.aac.p.m4a"
+      },
+      "knowledgeGroup": "OMT-069",
+      "excludedAnswerLabels": [
+        "Apple Watch Series 6 运动宣传片"
+      ]
+    },
+    {
+      "id": "OMT-070",
+      "unit": "credits-audio",
+      "basis": "foundation_v05_first_party_credit",
+      "song": "Yret",
+      "artist": "Para One",
+      "product": "Apple Watch Series 6",
+      "film": "Apple Watch Series 6 reveal",
+      "year": null,
+      "kind": "feature_reveal",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "enabled": false,
+      "note": {
+        "en": "A first-party credit (a music supervisor or composer portfolio) names this film and this song. It does not establish that the recording on a streaming service is the one the film used, so the cue stays unverified.",
+        "zh": "这是创作者一方（音乐监制或作曲者作品页）把这首作品记到这支影片名下。它不能证明流媒体上的那个录音就是影片用的那版，所以乐段仍未核准。"
+      },
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/7d/03/29/7d032904-d04a-e9ee-46e6-0a473bf06d3d/mzaf_13180446417689808606.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-071",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-070",
+      "excludedAnswerLabels": [
+        "Apple Watch Series 6"
+      ]
+    },
+    {
+      "id": "OMT-071",
+      "unit": "",
+      "basis": "foundation_v05_first_party_credit",
+      "song": "Budududum",
+      "artist": "Emitt Fenn",
+      "product": "",
+      "film": "Apple Watch Series 6 reveal",
+      "year": null,
+      "kind": "feature_reveal",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "enabled": false,
+      "note": {
+        "en": "A first-party credit (a music supervisor or composer portfolio) names this film and this song. It does not establish that the recording on a streaming service is the one the film used, so the cue stays unverified.",
+        "zh": "这是创作者一方（音乐监制或作曲者作品页）把这首作品记到这支影片名下。它不能证明流媒体上的那个录音就是影片用的那版，所以乐段仍未核准。"
+      },
+      "questionSound": null,
+      "knowledgeGroup": "OMT-071",
+      "excludedAnswerLabels": []
+    },
+    {
+      "id": "OMT-072",
+      "unit": "brand-films",
+      "basis": "foundation_v05_first_party_credit",
+      "song": "La Valse A Mille Temps",
+      "artist": "J. Brel",
+      "product": "Apple TV+《Severance》剪辑制作短片",
+      "film": "Severance editing-process short",
+      "year": null,
+      "kind": "feature_reveal",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "enabled": false,
+      "note": {
+        "en": "A first-party credit (a music supervisor or composer portfolio) names this film and this song. It does not establish that the recording on a streaming service is the one the film used, so the cue stays unverified.",
+        "zh": "这是创作者一方（音乐监制或作曲者作品页）把这首作品记到这支影片名下。它不能证明流媒体上的那个录音就是影片用的那版，所以乐段仍未核准。"
+      },
+      "questionSound": null,
+      "knowledgeGroup": "OMT-072",
+      "excludedAnswerLabels": [
+        "Apple TV+《Severance》剪辑制作短片"
+      ]
+    },
+    {
+      "id": "OMT-073",
+      "unit": "brand-films",
+      "basis": "foundation_v05_first_party_credit",
+      "song": "The Windmill of Your Mind",
+      "artist": "Mel Tormé",
+      "product": "Apple TV+《Severance》剪辑制作短片",
+      "film": "Severance editing-process short",
+      "year": null,
+      "kind": "feature_reveal",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "enabled": false,
+      "note": {
+        "en": "A first-party credit (a music supervisor or composer portfolio) names this film and this song. It does not establish that the recording on a streaming service is the one the film used, so the cue stays unverified.",
+        "zh": "这是创作者一方（音乐监制或作曲者作品页）把这首作品记到这支影片名下。它不能证明流媒体上的那个录音就是影片用的那版，所以乐段仍未核准。"
+      },
+      "questionSound": null,
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-073",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-073",
+      "excludedAnswerLabels": [
+        "Apple TV+《Severance》剪辑制作短片"
+      ]
+    },
+    {
+      "id": "OMT-074",
+      "from": "OMT-005",
+      "unit": "bank-mac-1",
+      "basis": "package",
+      "song": "Supremacy",
+      "artist": "Muse",
+      "product": "Mac Pro（2013）",
+      "film": "Mac Pro · Sneak Peek",
+      "year": 2013,
+      "kind": "product_reveal",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "note": {
+        "en": "",
+        "zh": "指圆筒形 Mac Pro 的预告；歌曲完整版与预告剪辑不能共用时间戳。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/db/cf/80/dbcf80d4-4ca0-3c05-5efa-bc683bc5dd92/mzaf_3307232508873975156.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-005",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-074",
+      "excludedAnswerLabels": [
+        "Mac Pro",
+        "Mac Pro（2013）"
+      ]
+    },
+    {
+      "id": "OMT-075",
+      "from": "OMT-006",
+      "unit": "bank-mac-1",
+      "basis": "package",
+      "song": "Tokyo Drifting (with Denzel Curry)",
+      "artist": "Glass Animals & Denzel Curry",
+      "product": "16 英寸 MacBook Pro（2019）",
+      "film": "Introducing MacBook Pro 16-inch",
+      "year": 2019,
+      "kind": "product_reveal",
+      "videoId": "ysRigNyavF4",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "siblingOf": "OMT-005",
+      "note": {
+        "en": "The bank's record of the same music use as OMT-005, which the catalogue wrote first under an English product name. One recording, one film, so the two are declared siblings and no question may offer both.",
+        "zh": "资料库里与 OMT-005 同一支广告的记录，目录先写过一次，产品名用的是英文。同一段录音、同一支短片，所以两张卡互为同题，任何一题都不会把它们同时列出；广告剪辑与歌曲录音时间线分别校准，不与 2021 款混淆。"
+      },
+      "enabled": false,
+      "musicEntry": {
+        "provider": "spotify",
+        "url": "https://open.spotify.com/track/3AHqaOkEFKZ6zEHdiplIv7",
+        "use": "reference_only",
+        "playbackTested": false,
+        "label": ""
+      },
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/87/df/b7/87dfb7ac-10b8-acf7-aabb-bd03404d2320/mzaf_9508338958271370621.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-006",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-005",
+      "excludedAnswerLabels": [
+        "16 英寸 MacBook Pro（2019）",
+        "MacBook Pro 16-inch"
+      ]
+    },
+    {
+      "id": "OMT-076",
+      "from": "OMT-008",
+      "unit": "bank-mac-1",
+      "basis": "package",
+      "song": "Back It Up (Alison Wonderland X AWE)",
+      "artist": "Alison Wonderland x AWE",
+      "product": "Mac mini（M1）",
+      "film": "Apple Event · M1 Mac mini reveal",
+      "year": 2020,
+      "kind": "product_reveal",
+      "videoId": "5AwdkGKmZ0I",
+      "sourceAnchor": 1788,
+      "anchorVideoId": "5AwdkGKmZ0I",
+      "note": {
+        "en": "",
+        "zh": "29:48 是目录记载的完整发布会跳转点，不是歌曲录音的 29:48。"
+      },
+      "enabled": false,
+      "questionSound": null,
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-008",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [
+          "CAND-49cf54f6211504f07add"
+        ],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-076",
+      "excludedAnswerLabels": [
+        "M1",
+        "Mac mini",
+        "Mac mini (2024)",
+        "Mac mini (M1)",
+        "Mac mini（M1）"
+      ]
+    },
+    {
+      "id": "OMT-077",
+      "from": "OMT-009",
+      "unit": "bank-mac-2",
+      "basis": "package",
+      "song": "Show Me How",
+      "artist": "Beacon",
+      "product": "13 英寸 MacBook Pro（M1）",
+      "film": "Apple Event · M1 13-inch MacBook Pro reveal",
+      "year": 2020,
+      "kind": "product_reveal",
+      "videoId": "5AwdkGKmZ0I",
+      "sourceAnchor": 2105,
+      "anchorVideoId": "5AwdkGKmZ0I",
+      "siblingOf": "OMT-022",
+      "note": {
+        "en": "The bank's record of the same segment as OMT-022: one recording, one anchor, two spellings of one product. Declared siblings, so no question offers both.",
+        "zh": "与 OMT-022 同一段的资料库记录：同一段录音、同一个参考点，产品名两种写法。两张卡互为同题，任何一题都不会同时列出它们。35:05 是目录记载的发布会参考点；同名歌曲很多，必须锁定 Beacon 的录音。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview122/v4/91/ac/98/91ac9833-33ff-3f7e-983b-86e2513911ec/mzaf_232658500190580907.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-009",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [
+          "CAND-6a31c11d91549df24bfd"
+        ],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-022",
+      "excludedAnswerLabels": [
+        "13 英寸 MacBook Pro（M1）",
+        "M1",
+        "MacBook Pro",
+        "MacBook Pro (2024)",
+        "MacBook Pro 13-inch (M1)"
+      ]
+    },
+    {
+      "id": "OMT-078",
+      "from": "OMT-010",
+      "unit": "bank-mac-2",
+      "basis": "package",
+      "song": "Better in Color",
+      "artist": "Lizzo",
+      "product": "iMac（2021）",
+      "film": "Introducing the new iMac",
+      "year": 2021,
+      "kind": "product_reveal",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "note": {
+        "en": "",
+        "zh": "答案只要求这代彩色 iMac；具体颜色不能由音乐区分。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/67/d6/2b/67d62b69-2413-0000-f125-17ad029eb369/mzaf_7134829302372288150.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-010",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [
+          "CAND-0e17eff60a3f6dd8c1fa"
+        ],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-078",
+      "excludedAnswerLabels": [
+        "iMac",
+        "iMac (2024)",
+        "iMac（2021）"
+      ]
+    },
+    {
+      "id": "OMT-079",
+      "from": "OMT-011",
+      "unit": "bank-ipod-1",
+      "basis": "package",
+      "song": "Take California",
+      "artist": "Propellerheads",
+      "product": "初代 iPod",
+      "film": "iPod · 2001 commercial",
+      "year": 2001,
+      "kind": "product_ad",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "note": {
+        "en": "",
+        "zh": "出题要求猜初代 iPod；需找广告存档，不能拿歌曲 MV 当原片。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/02/d2/a9/02d2a9c9-7ce2-67c8-c82d-e717bde2cd55/mzaf_5331247804105594012.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-011",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [
+          "CAND-cbeca3405c4922abb5b9"
+        ],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-079",
+      "excludedAnswerLabels": [
+        "iPod",
+        "初代 iPod"
+      ]
+    },
+    {
+      "id": "OMT-080",
+      "from": "OMT-013",
+      "unit": "bank-ipod-1",
+      "basis": "package",
+      "song": "Technologic",
+      "artist": "Daft Punk",
+      "product": "iPod + iTunes · Pop-Lock / silhouette campaign",
+      "film": "Pop-Lock / silhouette campaign",
+      "year": 2005,
+      "kind": "campaign_ad",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "note": {
+        "en": "",
+        "zh": "目录年份有疑点；2005 为待复核年份，题干不问年份、硬盘容量或具体 iPod 代际。 新增入口核对时再次发现目录里 Pop-Lock 的 2004 年记载与歌曲 2005 年发行存在年代疑点；本次不据此推断广告确切首播日，保留现有 2005 编辑值及原始目录。"
+      },
+      "enabled": false,
+      "musicEntry": {
+        "provider": "youtube",
+        "url": "https://www.youtube.com/watch?v=D8K90hX4PrE",
+        "use": "reference",
+        "playbackTested": false,
+        "label": ""
+      },
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/d9/d7/72/d9d7726c-edc5-687a-2429-6dffa4a38496/mzaf_17942222817121564427.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-013",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [
+          "CAND-3f0e09be97ac1e5826a2"
+        ],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-080",
+      "excludedAnswerLabels": [
+        "iPod",
+        "iPod + iTunes · Pop-Lock / silhouette campaign",
+        "iTunes"
+      ]
+    },
+    {
+      "id": "OMT-081",
+      "from": "OMT-016",
+      "unit": "bank-ipod-1",
+      "basis": "package",
+      "song": "Short Skirt/Long Jacket",
+      "artist": "CAKE",
+      "product": "iPod nano（第 6 代）",
+      "film": "New Way to Nano",
+      "year": 2010,
+      "kind": "product_ad",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "note": {
+        "en": "",
+        "zh": "同曲也出现在 WWDC 歌单；计分依据是这支 nano 广告，非歌单收录。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/11/47/04/11470409-1a18-0268-c927-75a4eeaa708c/mzaf_8938122150774425934.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-016",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [
+          "CAND-900940c764d7bd10a066"
+        ],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-081",
+      "excludedAnswerLabels": [
+        "iPod nano 6G",
+        "iPod nano（第 6 代）"
+      ]
+    },
+    {
+      "id": "OMT-082",
+      "from": "OMT-017",
+      "unit": "bank-ipod-1",
+      "basis": "package",
+      "song": "Yeah Yeah",
+      "artist": "Willy Moon",
+      "product": "iPod 产品系列",
+      "film": "Bounce",
+      "year": 2012,
+      "kind": "campaign_ad",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "note": {
+        "en": "",
+        "zh": "广告同时展示多款 iPod；不能只接受 nano、touch 或 shuffle 中的一个型号。"
+      },
+      "enabled": false,
+      "musicEntry": {
+        "provider": "spotify",
+        "url": "https://open.spotify.com/track/6iBkx4s2K6bnV1FnOnS2Ue",
+        "use": "reference_only",
+        "playbackTested": false,
+        "label": ""
+      },
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/8d/95/97/8d95977b-58ea-66ca-9da3-36c91d191ecb/mzaf_16416571641666711880.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-017",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [
+          "CAND-87cb8955aa8695034510"
+        ],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-082",
+      "excludedAnswerLabels": [
+        "iPod",
+        "iPod 产品系列"
+      ]
+    },
+    {
+      "id": "OMT-083",
+      "from": "OMT-018",
+      "unit": "bank-ipod-2",
+      "basis": "package",
+      "song": "Flathead",
+      "artist": "The Fratellis",
+      "product": "iPod + iTunes · Party",
+      "film": "Party",
+      "year": 2007,
+      "kind": "campaign_ad",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "note": {
+        "en": "",
+        "zh": "按 iPod + iTunes 广告系列接受答案，不强猜单一硬件型号。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/bf/ac/97/bfac97e6-27a2-faf9-eaf5-aff3c666811f/mzaf_17897944326870848228.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-018",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [
+          "CAND-a6ca2edf6c06597f7fc8"
+        ],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-083",
+      "excludedAnswerLabels": [
+        "iPod",
+        "iPod + iTunes · Party",
+        "iTunes"
+      ]
+    },
+    {
+      "id": "OMT-084",
+      "from": "OMT-019",
+      "unit": "bank-ipod-2",
+      "basis": "package",
+      "song": "Shut Up and Let Me Go",
+      "artist": "The Ting Tings",
+      "product": "iPod + iTunes · Gamma",
+      "film": "Gamma",
+      "year": 2008,
+      "kind": "campaign_ad",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "note": {
+        "en": "",
+        "zh": "应与 2007 年 Party 的 Flathead 区分；按广告系列出题。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/6c/26/56/6c2656bc-d85c-e8aa-3d66-8eea6c165463/mzaf_11494809912390376572.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-019",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [
+          "CAND-be7413e6affac1a31fb0"
+        ],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-028",
+      "excludedAnswerLabels": [
+        "iPod",
+        "iPod + iTunes · Gamma",
+        "iTunes"
+      ]
+    },
+    {
+      "id": "OMT-085",
+      "from": "OMT-020",
+      "unit": "bank-ipod-2",
+      "basis": "package",
+      "song": "Around the Bend",
+      "artist": "The Asteroids Galaxy Tour",
+      "product": "iPod touch（第 2 代）",
+      "film": "The Funnest iPod Ever",
+      "year": 2008,
+      "kind": "product_ad",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "note": {
+        "en": "",
+        "zh": "需核对当年电视广告版本；拼写和大小写不影响答案。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/fb/eb/2a/fbeb2ae6-6d4a-e8f5-d50e-4217ef7763d8/mzaf_9990343950943404571.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-020",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [
+          "CAND-3978b859647a5ad037e8"
+        ],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-085",
+      "excludedAnswerLabels": [
+        "iPod",
+        "iPod touch",
+        "iPod touch 2G",
+        "iPod touch（第 2 代）"
+      ]
+    },
+    {
+      "id": "OMT-086",
+      "from": "OMT-021",
+      "unit": "bank-audio-1",
+      "basis": "package",
+      "song": "Down",
+      "artist": "Marian Hill",
+      "product": "AirPods / iPhone 7 · Stroll",
+      "film": "Stroll",
+      "year": 2017,
+      "kind": "product_ad",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "note": {
+        "en": "",
+        "zh": "联合宣传 AirPods 与 iPhone 7；两者都可能成立，题干限定 Stroll，不能把 iPhone 7 放作错误选项。"
+      },
+      "enabled": false,
+      "musicEntry": {
+        "provider": "youtube",
+        "url": "https://www.youtube.com/watch?v=DpMfP6qUSBo",
+        "use": "reference",
+        "playbackTested": false,
+        "label": "Observer 对乐队的访谈嵌入了该原曲 MV"
+      },
+      "filmAlternates": [
+        {
+          "url": "https://www.youtube.com/watch?v=CvVvwh3BRq8",
+          "provider": "youtube",
+          "label": "",
+          "role": "campaign_video_candidate",
+          "playbackTested": false
+        },
+        {
+          "url": "https://vimeo.com/217067855",
+          "provider": "vimeo",
+          "label": "TBWA Worldwide 发布的 Stroll 页面",
+          "role": "indexed_uploader_title",
+          "playbackTested": false
+        }
+      ],
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/08/73/ce/0873ce7a-d7d9-68a2-10d5-6d7e547af3b5/mzaf_3545543808303452364.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-021",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [
+          "CAND-ec9936d64836f7cbeea0"
+        ],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-086",
+      "excludedAnswerLabels": [
+        "AirPods",
+        "AirPods / iPhone 7 · Stroll",
+        "Siri",
+        "iPhone 7"
+      ]
+    },
+    {
+      "id": "OMT-087",
+      "from": "OMT-023",
+      "unit": "bank-audio-1",
+      "basis": "package",
+      "song": "The Difference (feat. Toro y Moi)",
+      "artist": "Flume",
+      "product": "AirPods Pro",
+      "film": "Snap",
+      "year": 2020,
+      "kind": "product_ad",
+      "videoId": "tn837tG2cxA",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "note": {
+        "en": "",
+        "zh": "录音需包含 Toro y Moi 的这首；后续混音版单独处理。"
+      },
+      "enabled": false,
+      "musicEntry": {
+        "provider": "youtube",
+        "url": "https://www.youtube.com/watch?v=MCRiUi28UpA",
+        "use": "reference",
+        "playbackTested": false,
+        "label": "Flume 的官方 SoundCloud 发布说明直接链接到此原曲 MV；未使用其 Extended 音轨替代标准 MV"
+      },
+      "filmAlternates": [
+        {
+          "url": "https://vimeo.com/397402255",
+          "provider": "vimeo",
+          "label": "Kim Gehrig 发布的 Snap 页面",
+          "role": "indexed_uploader_title",
+          "playbackTested": false
+        }
+      ],
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/f9/29/c3/f929c39e-f373-6d85-e15a-e877b0ffb1f3/mzaf_3661216602708911424.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-023",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-087",
+      "excludedAnswerLabels": [
+        "AirPods Pro"
+      ]
+    },
+    {
+      "id": "OMT-088",
+      "from": "OMT-024",
+      "unit": "bank-audio-1",
+      "basis": "package",
+      "song": "Fallin' Apart (feat. Denzel Curry & Pell)",
+      "artist": "Young Franco",
+      "product": "AirPods Pro",
+      "film": "Jump",
+      "year": 2021,
+      "kind": "product_ad",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "note": {
+        "en": "",
+        "zh": "题干可问 AirPods Pro 广告；不能推断 2022 年第二代。"
+      },
+      "enabled": false,
+      "questionSound": null,
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-024",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-088",
+      "excludedAnswerLabels": [
+        "AirPods Pro"
+      ]
+    },
+    {
+      "id": "OMT-089",
+      "from": "OMT-025",
+      "unit": "bank-audio-1",
+      "basis": "package",
+      "song": "Music for a Sushi Restaurant",
+      "artist": "Harry Styles",
+      "product": "AirPods 空间音频",
+      "film": "AirPods with Spatial Audio",
+      "year": 2022,
+      "kind": "feature_ad",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "note": {
+        "en": "",
+        "zh": "答案接受 AirPods 空间音频；配乐不能唯一确定某一副耳机的型号。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/db/30/2b/db302b37-7cfd-947d-b168-2288df0594d9/mzaf_4879334278137199118.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-025",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-089",
+      "excludedAnswerLabels": [
+        "AirPods",
+        "AirPods 空间音频"
+      ]
+    },
+    {
+      "id": "OMT-090",
+      "from": "OMT-028",
+      "unit": "bank-audio-2",
+      "basis": "package",
+      "song": "I'm Ready to Rock That (feat. NRZD)",
+      "artist": "Bonti",
+      "product": "HomePod mini",
+      "film": "Introducing HomePod mini",
+      "year": 2020,
+      "kind": "product_reveal",
+      "videoId": "VF-WANzs624",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "siblingOf": "OMT-014",
+      "note": {
+        "en": "The bank's record of the same music use as OMT-014: one recording, one film. They are declared siblings so no question can offer both as different answers.",
+        "zh": "资料库里与 OMT-014 同一支广告的记录：同一段录音、同一支短片。两张卡互为同题，任何一题都不会把它们当成两个不同答案；与同年 Tierra Whack 参与的 The Magic of Mini 节日广告仍是不同短片。"
+      },
+      "enabled": false,
+      "musicEntry": {
+        "provider": "spotify",
+        "url": "https://open.spotify.com/track/6d14XxfeCOfcNm5Er5SF9w",
+        "use": "reference_only",
+        "playbackTested": false,
+        "label": ""
+      },
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/17/4d/59/174d59ad-39d8-8fd2-7c07-84e1cb33b42b/mzaf_14797583953102989343.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-028",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [
+          "CAND-4089e6d25bdec27d9527"
+        ],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-014",
+      "excludedAnswerLabels": [
+        "HomePod mini"
+      ]
+    },
+    {
+      "id": "OMT-091",
+      "from": "OMT-029",
+      "unit": "bank-audio-2",
+      "basis": "package",
+      "song": "Aquarium (Improvisation after Le Carnaval des animaux)",
+      "artist": "Thomas Enhco & Vassilena Serafimova",
+      "product": "AirTag",
+      "film": "Couch",
+      "year": 2021,
+      "kind": "product_ad",
+      "videoId": "ckqvG0Rj35I",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "note": {
+        "en": "",
+        "zh": "必须锁定此改编及演奏录音；不能用任意《动物狂欢节·水族馆》代替。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/12/f7/58/12f75879-917b-648c-f979-7748603a9296/mzaf_8335792450855353063.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-029",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-091",
+      "excludedAnswerLabels": [
+        "AirTag"
+      ]
+    },
+    {
+      "id": "OMT-092",
+      "from": "OMT-033",
+      "unit": "bank-iphone-1",
+      "basis": "package",
+      "song": "Chitty Bang",
+      "artist": "Leikeli47",
+      "product": "iPhone 13",
+      "film": "Run Baby Run",
+      "year": 2022,
+      "kind": "product_ad",
+      "videoId": "QuMWSrJyt3o",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "note": {
+        "en": "",
+        "zh": "与同日 Doin' Laps 的歌曲不能对调；这里的 2022 为广告年份，不是 iPhone 13 发布年份。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview116/v4/9e/ce/15/9ece157e-40ac-833e-513f-6ecee5a7e81e/mzaf_14107891518000283245.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-033",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [
+          "CAND-d9b715626b8607148557"
+        ],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-092",
+      "excludedAnswerLabels": [
+        "iPhone 13"
+      ]
+    },
+    {
+      "id": "OMT-093",
+      "from": "OMT-034",
+      "unit": "bank-iphone-1",
+      "basis": "package",
+      "song": "I Look Good",
+      "artist": "O.T. Genasis",
+      "product": "iPhone 13",
+      "film": "Doin' Laps",
+      "year": 2022,
+      "kind": "product_ad",
+      "videoId": "pJIKPzZTJXM",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "note": {
+        "en": "",
+        "zh": "2022 为广告年份；需核对当前上传版本和歌曲实际选段。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview122/v4/01/6b/c9/016bc916-6e8a-e7c0-3cb8-c928e8d60739/mzaf_5279064922777987880.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-034",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [
+          "CAND-0f5a836ed5c1c8e866d8"
+        ],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-093",
+      "excludedAnswerLabels": [
+        "iPhone 13"
+      ]
+    },
+    {
+      "id": "OMT-094",
+      "from": "OMT-035",
+      "unit": "bank-iphone-1",
+      "basis": "package",
+      "song": "ALIVE",
+      "artist": "Hanni El Khatib",
+      "product": "iPhone 14",
+      "film": "R.I.P. Leon",
+      "year": 2023,
+      "kind": "product_ad",
+      "videoId": "t2n0ykn4AKw",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "note": {
+        "en": "",
+        "zh": "Apple Music 旧链接此次返回 404，记录为失效线索，不作为可用播放器地址。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/78/cc/80/78cc8062-e401-be9a-7c0c-ddc54e48b55a/mzaf_1555085032999626910.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-035",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [
+          "CAND-b09076d9ec1cd22c613c"
+        ],
+        "mediaCandidates": [
+          {
+            "source_link_ref": 61,
+            "label": "video",
+            "url": "https://www.youtube.com/watch?v=t2n0ykn4AKw",
+            "provider": "youtube",
+            "video_id": "t2n0ykn4AKw",
+            "checked_on": "2026-09-22",
+            "source_url": "https://www.applemusic.info/",
+            "evidence_scope": "catalog_outbound_target",
+            "playback_verified": false,
+            "audio_auditioned": false,
+            "page_probe": "parsed_page_or_footer",
+            "source_cache_age_reported": "last month; origin freshness not independently verified",
+            "resolution_status": "resolved_outbound_target"
+          }
+        ],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-094",
+      "excludedAnswerLabels": [
+        "iPhone 14"
+      ]
+    },
+    {
+      "id": "OMT-095",
+      "from": "OMT-036",
+      "unit": "bank-iphone-1",
+      "basis": "package",
+      "song": "All My Friends",
+      "artist": "Channel Tres",
+      "product": "iPhone 15 精确查找",
+      "film": "Find Your Friends",
+      "year": 2024,
+      "kind": "feature_ad",
+      "videoId": "yk6UVnMn9ts",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "note": {
+        "en": "",
+        "zh": "限定 iPhone 15 的找朋友场景；不要泛化成所有 Find My 广告。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/06/1e/7c/061e7cd7-dde1-107d-d0eb-67bad50342dd/mzaf_11089995418033917819.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-036",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [
+          "CAND-6e9d9353f97002eb6591"
+        ],
+        "mediaCandidates": [
+          {
+            "source_link_ref": 82,
+            "label": "video",
+            "url": "https://www.youtube.com/watch?v=yk6UVnMn9ts",
+            "provider": "youtube",
+            "video_id": "yk6UVnMn9ts",
+            "checked_on": "2026-09-22",
+            "source_url": "https://www.applemusic.info/",
+            "evidence_scope": "catalog_outbound_target",
+            "playback_verified": false,
+            "audio_auditioned": false,
+            "page_probe": "parsed_page_or_footer",
+            "source_cache_age_reported": "last month; origin freshness not independently verified",
+            "resolution_status": "resolved_outbound_target"
+          }
+        ],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-095",
+      "excludedAnswerLabels": [
+        "iPhone 15",
+        "iPhone 15 精确查找"
+      ]
+    },
+    {
+      "id": "OMT-096",
+      "from": "OMT-037",
+      "unit": "bank-iphone-2",
+      "basis": "package",
+      "song": "Attitude",
+      "artist": "Leikeli47",
+      "product": "iPhone X · Face ID",
+      "film": "Knows You When You Change",
+      "year": 2017,
+      "kind": "feature_ad",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "note": {
+        "en": "",
+        "zh": "按 iPhone X / Face ID 接受答案；不是同歌手的 Chitty Bang 广告。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/a4/a5/84/a4a584f2-7344-8c33-f160-99253ddf3369/mzaf_16111748501023906447.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-037",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-096",
+      "excludedAnswerLabels": [
+        "iPhone X",
+        "iPhone X · Face ID"
+      ]
+    },
+    {
+      "id": "OMT-097",
+      "from": "OMT-038",
+      "unit": "bank-iphone-2",
+      "basis": "package",
+      "song": "In a Black Out",
+      "artist": "Hamilton Leithauser + Rostam",
+      "product": "iPhone 7",
+      "film": "Midnight",
+      "year": 2016,
+      "kind": "product_ad",
+      "videoId": "R27KHLQ0cIU",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "note": {
+        "en": "",
+        "zh": "实际配乐乐段与歌曲完整版需对齐；不以发行专辑时间推断广告时间。"
+      },
+      "enabled": false,
+      "filmAlternates": [
+        {
+          "url": "https://www.youtube.com/watch?v=R27KHLQ0cIU",
+          "provider": "youtube",
+          "label": "",
+          "role": "ad_video_candidate",
+          "playbackTested": false
+        }
+      ],
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/ab/6c/e9/ab6ce95c-185d-0d19-96e4-c3ffe1579963/mzaf_7832719992119360289.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-038",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [
+          "CAND-4f40b49e747b65fe0f7d"
+        ],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-097",
+      "excludedAnswerLabels": [
+        "iPhone 7"
+      ]
+    },
+    {
+      "id": "OMT-098",
+      "from": "OMT-039",
+      "unit": "bank-iphone-2",
+      "basis": "package",
+      "song": "Bharat Mata",
+      "artist": "Melt Yourself Down",
+      "product": "iPhone 7",
+      "film": "Race",
+      "year": 2016,
+      "kind": "product_ad",
+      "videoId": "J9V2JxwSma8",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "note": {
+        "en": "",
+        "zh": "题目限定 Race 这支短片；避免与同代其他广告重复抽题。"
+      },
+      "enabled": false,
+      "filmAlternates": [
+        {
+          "url": "https://www.youtube.com/watch?v=J9V2JxwSma8",
+          "provider": "youtube",
+          "label": "",
+          "role": "ad_video_candidate",
+          "playbackTested": false
+        }
+      ],
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/dc/db/65/dcdb658f-3eeb-c23d-b55c-0dddea967ebf/mzaf_1962341695555952434.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-039",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-098",
+      "excludedAnswerLabels": [
+        "iPhone 7"
+      ]
+    },
+    {
+      "id": "OMT-099",
+      "from": "OMT-040",
+      "unit": "bank-iphone-2",
+      "basis": "package",
+      "song": "Who Needs You",
+      "artist": "The Orwells",
+      "product": "iPad Air 2",
+      "film": "Change",
+      "year": 2014,
+      "kind": "product_ad",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "note": {
+        "en": "",
+        "zh": "有长度不同的剪辑版本；发布会、电视版和在线版分别保存入出点。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/9b/46/9a/9b469abc-b562-1862-3a72-bc7aa40e92e5/mzaf_6127638291748485897.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-040",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-099",
+      "excludedAnswerLabels": [
+        "iPad Air 2"
+      ]
+    },
+    {
+      "id": "OMT-100",
+      "from": "OMT-041",
+      "unit": "bank-iphone-3",
+      "basis": "package",
+      "song": "Feel It Still",
+      "artist": "Portugal. The Man",
+      "product": "iPad Pro",
+      "film": "On Any Given Wednesday",
+      "year": 2017,
+      "kind": "product_ad",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "note": {
+        "en": "",
+        "zh": "不要据此要求玩家猜屏幕尺寸；本题按 iPad Pro 系列判分。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/63/7c/dd/637cdd7a-3000-0784-28c7-dcbfe99209c8/mzaf_2191237013429360837.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-041",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-100",
+      "excludedAnswerLabels": [
+        "iPad Pro"
+      ]
+    },
+    {
+      "id": "OMT-101",
+      "from": "OMT-044",
+      "unit": "bank-iphone-3",
+      "basis": "package",
+      "song": "All I Ever Need Is You",
+      "artist": "Sonny & Cher",
+      "product": "iPad Pro（M4）",
+      "film": "Crush!",
+      "year": 2024,
+      "kind": "product_ad",
+      "videoId": "ntjkwIXWtrc",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "note": {
+        "en": "",
+        "zh": "广告标题与歌曲、商品名称分别存储；开头音效与音乐入点需实听，不直接设零。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/1a/ad/8f/1aad8f71-6e58-99f5-4626-4a7c46ebfd8e/mzaf_14202316193389959943.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-044",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [
+          "CAND-2fe1988170325daa8c52"
+        ],
+        "mediaCandidates": [
+          {
+            "source_link_ref": 75,
+            "label": "video",
+            "url": "https://www.youtube.com/watch?v=ntjkwIXWtrc",
+            "provider": "youtube",
+            "video_id": "ntjkwIXWtrc",
+            "checked_on": "2026-09-22",
+            "source_url": "https://www.applemusic.info/",
+            "evidence_scope": "catalog_outbound_target",
+            "playback_verified": false,
+            "audio_auditioned": false,
+            "page_probe": "target_observed_page_or_audio_not_verified",
+            "source_cache_age_reported": "last month; origin freshness not independently verified",
+            "resolution_status": "resolved_outbound_target"
+          }
+        ],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-101",
+      "excludedAnswerLabels": [
+        "iPad Pro",
+        "iPad Pro（M4）"
+      ]
+    },
+    {
+      "id": "OMT-102",
+      "from": "OMT-045",
+      "unit": "bank-vision-1",
+      "basis": "package",
+      "song": "Yas U Kno",
+      "artist": "Atomic Drum Assembly",
+      "product": "iPadOS",
+      "film": "Introducing iPadOS",
+      "year": 2019,
+      "kind": "feature_reveal",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "note": {
+        "en": "",
+        "zh": "与 Get It 配乐的 Look What You Can Do With iPadOS 为不同视频。具体发布日期在目录中有疑点，保留年级精度。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/e4/59/0f/e4590fc3-f46d-7bbc-ed04-68b0ba50afa9/mzaf_1013540352625623867.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-045",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [
+          "CAND-95279265da151c95e235"
+        ],
+        "mediaCandidates": [
+          {
+            "source_link_ref": 2192,
+            "label": "video",
+            "url": "https://youtu.be/psL_5RIBqnY?t=3800",
+            "provider": "youtube",
+            "video_id": "psL_5RIBqnY",
+            "playback_verified": false,
+            "audio_auditioned": false,
+            "resolution_status": "resolved_outbound_target",
+            "source_anchor_seconds": 3800,
+            "source_anchor_basis": "catalog_outbound_query_parameter_not_auditioned",
+            "checked_on": "2026-09-22",
+            "source_url": "https://www.applemusic.info/",
+            "evidence_scope": "catalog_outbound_target",
+            "page_probe": "target_observed_page_or_audio_not_verified",
+            "source_cache_age_reported": "last month; origin freshness not independently verified"
+          }
+        ],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-102",
+      "excludedAnswerLabels": [
+        "iPad",
+        "iPad OS",
+        "iPadOS"
+      ]
+    },
+    {
+      "id": "OMT-103",
+      "from": "OMT-047",
+      "unit": "bank-audio-2",
+      "basis": "package",
+      "song": "Signs",
+      "artist": "Saint Mesa & Shells",
+      "product": "Apple Watch Ultra",
+      "film": "Introducing Apple Watch Ultra",
+      "year": 2022,
+      "kind": "product_reveal",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "note": {
+        "en": "",
+        "zh": "原片可能包含多段音乐，需锁定 Signs 使用区间；不能以一首歌覆盖整片。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview122/v4/8c/5a/28/8c5a28df-5003-26e3-edc9-e13b40613ea7/mzaf_12098180402914497295.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-047",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [
+          "CAND-02939eb681074a338236"
+        ],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-103",
+      "excludedAnswerLabels": [
+        "Apple Watch Ultra",
+        "Apple Watch Ultra "
+      ]
+    },
+    {
+      "id": "OMT-104",
+      "from": "OMT-055",
+      "unit": "bank-vision-1",
+      "basis": "package",
+      "song": "Want Me Anyway",
+      "artist": "Aye June",
+      "product": "Apple Vision Pro",
+      "film": "Introducing Apple Vision Pro",
+      "year": null,
+      "kind": "source_credited_film",
+      "videoId": "TX9qSaGXFyg",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "note": {
+        "en": "The source shortens the film's title, and which recording this is has not been settled.",
+        "zh": "来源把片名写短了，而且还没有定下具体是哪一个录音。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview125/v4/c7/64/f4/c764f401-377b-bb91-e916-5d3c26e666d7/mzaf_5795457678235805418.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-055",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [
+          "CAND-87b880c67871c7379364"
+        ],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-104",
+      "excludedAnswerLabels": [
+        "Apple Vision Pro"
+      ]
+    },
+    {
+      "id": "OMT-105",
+      "from": "OMT-058",
+      "unit": "bank-vision-1",
+      "basis": "package",
+      "song": "Waves",
+      "artist": "StayLoose & Lucy Daydream",
+      "product": "Apple Vision Pro",
+      "film": "Introducing Apple Vision Pro",
+      "year": null,
+      "kind": "source_credited_film",
+      "videoId": "TX9qSaGXFyg",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "note": {
+        "en": "The source's title disagrees on singular or plural, and this is not Whethan's Wave.",
+        "zh": "来源标题的单复数对不上；这不是 Whethan 的那首 Wave。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview116/v4/4b/41/a2/4b41a22e-de66-2373-5efb-b8a456df4ffa/mzaf_4738457691545208058.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-058",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [
+          "CAND-535072e90774c4370aa5"
+        ],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-105",
+      "excludedAnswerLabels": [
+        "Apple Vision Pro"
+      ]
+    },
+    {
+      "id": "OMT-106",
+      "from": "OMT-063",
+      "unit": "bank-mac-2",
+      "basis": "package",
+      "song": "Plum ft Sega Bodega (feat. Sega Bodega)",
+      "artist": "Omega Sapien",
+      "product": "MacBook Air",
+      "film": "MacBook Air film",
+      "year": null,
+      "kind": "source_credited_film",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "note": {
+        "en": "A custom arrangement, and the catalogue only fixes the generation — not the recording.",
+        "zh": "这是定制编排；目录只能确定产品代际，确定不了具体录音。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview122/v4/2e/ae/62/2eae6295-05a2-6bcc-2372-52638602fb35/mzaf_9880816427344981900.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-063",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [
+          "CAND-70520e806caab9285caf"
+        ],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-106",
+      "excludedAnswerLabels": [
+        "M2",
+        "MacBook Air",
+        "MacBook Air (M1)"
+      ]
+    },
+    {
+      "id": "OMT-107",
+      "from": "OMT-066",
+      "unit": "bank-audio-2",
+      "basis": "package",
+      "song": "GMT (Jamie xx Remix) [Edit]",
+      "artist": "Oliver Sim & Jamie xx",
+      "product": "HomePod",
+      "film": "Beyond The Sound",
+      "year": null,
+      "kind": "source_credited_film",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "note": {
+        "en": "The vocal layers are custom and the edit's identity is not confirmed.",
+        "zh": "人声层是定制叠的，这一版剪辑的身份还没有确认。"
+      },
+      "enabled": false,
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/ca/dd/98/cadd981b-bdbe-6df7-2bfa-a5af64778229/mzaf_361615628371399741.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-066",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [
+          "CAND-251289550af2ce415482"
+        ],
+        "mediaCandidates": [],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-107",
+      "excludedAnswerLabels": [
+        "HomePod"
+      ]
+    },
+    {
+      "id": "OMT-108",
+      "from": "OMT-074",
+      "unit": "bank-iphone-3",
+      "basis": "package",
+      "song": "Wingspan",
+      "artist": "Dan Mufson",
+      "product": "iPhone 16 Pro",
+      "film": "Introducing iPhone 16 Pro",
+      "year": null,
+      "kind": "source_credited_film",
+      "videoId": "",
+      "sourceAnchor": null,
+      "anchorVideoId": "",
+      "note": {
+        "en": "The composer's portfolio edit drops the voiceover and the sound design, so its timeline is not the film's.",
+        "zh": "作曲家作品集里的这一版去掉了旁白和音效，所以它的时间轴不是原片的。"
+      },
+      "enabled": false,
+      "musicEntry": {
+        "provider": "composer_library",
+        "url": "https://www.danmufson.com/music-library",
+        "use": "reference",
+        "playbackTested": false,
+        "label": ""
+      },
+      "questionSound": {
+        "provider": "preview",
+        "url": "https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/32/20/cd/3220cddd-c9b2-973d-8dca-1dfa6f4e936d/mzaf_5362864660752290987.plus.aac.p.m4a"
+      },
+      "researchV08": {
+        "namespace": "omt-research-v08",
+        "researchId": "OMT-074",
+        "joinBasis": "unicode_song_artist_complete_film",
+        "doesNotGrantReadiness": true,
+        "catalogCandidateIds": [
+          "CAND-1c582d825d405e601054"
+        ],
+        "mediaCandidates": [
+          {
+            "source_link_ref": 2165,
+            "label": "video",
+            "url": "https://www.youtube.com/watch?v=eDqfg_LexCQ",
+            "provider": "youtube",
+            "video_id": "eDqfg_LexCQ",
+            "checked_on": "2026-09-22",
+            "source_url": "https://www.applemusic.info/",
+            "evidence_scope": "catalog_outbound_target",
+            "playback_verified": false,
+            "audio_auditioned": false,
+            "page_probe": "target_observed_page_or_audio_not_verified",
+            "source_cache_age_reported": "last month; origin freshness not independently verified",
+            "resolution_status": "resolved_outbound_target"
+          }
+        ],
+        "editorialDifficulty": null,
+        "empiricalP": null,
+        "itemRestCorrelation": null
+      },
+      "knowledgeGroup": "OMT-108",
+      "excludedAnswerLabels": [
+        "iPhone 16 Pro"
+      ]
+    }
+  ]
+}

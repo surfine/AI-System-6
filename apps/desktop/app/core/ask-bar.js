@@ -1,0 +1,81 @@
+// Ask bar — the shared question footer under Reader, Scrapbook, DocMap,
+// ClioStage, and Time Machine. Each window registers a describe() that reports
+// what the next question would actually carry; this file gates the controls on
+// there being something to ask. The answer always
+// lands in ClioTalk, so nothing here ever renders a reply.
+const askBarSources = new Map();
+
+function askBarForm(appId) {
+  return document.querySelector(`[data-ask-source="${appId}"]`);
+}
+
+// describe() -> { ready, object, range }
+// `range` must describe the context the request will really carry — whole
+// source, current selection, N scraps, a focused branch. Never a guess.
+function registerAskBarSource(appId, describe) {
+  if (!appId || typeof describe !== "function") return;
+  askBarSources.set(appId, describe);
+  refreshAskBar(appId);
+}
+
+function renderAskBar(appId, scope) {
+  const form = askBarForm(appId);
+  if (!form) return;
+  const ready = Boolean(scope && scope.ready);
+  const input = form.querySelector("input");
+  const button = form.querySelector('button[type="submit"]');
+  form.classList.toggle("is-empty", !ready);
+  // A grey ask bar still has to say why. The sentence it greys to is the same
+  // one the accessible description carries, so one tap on the field or Ask
+  // speaks the reason instead of silently swallowing the question.
+  const reasonKey = ready ? "" : "balloon_ask_bar_needs_source";
+  [input, button].forEach((control) => {
+    if (!control) return;
+    control.disabled = !ready;
+    if (reasonKey) control.dataset.balloonHelpDisabled = reasonKey;
+    else delete control.dataset.balloonHelpDisabled;
+  });
+  // Say what the next question will actually carry. The same describe() answer
+  // that decides whether the bar can be used already names the object and the
+  // range ("Whole source" / "Selected passage" / "3 selected scraps"); a bar
+  // that only greys out leaves the writer guessing which of those it picked.
+  // It goes on the accessible description and the title - one string, both
+  // readers - and never restates a range nobody resolved.
+  const object = ready ? String(scope?.object || "").trim() : "";
+  const range = ready ? String(scope?.range || "").trim() : "";
+  const scopeText = !ready
+    ? t("ask_scope_unavailable")
+    : object && range
+      ? t("ask_scope_announcement", object, range)
+      : "";
+  form.dataset.askScope = scopeText;
+  if (scopeText) {
+    form.setAttribute("aria-description", scopeText);
+    form.title = scopeText;
+  } else {
+    form.removeAttribute("aria-description");
+    form.removeAttribute("title");
+  }
+}
+
+function refreshAskBar(appId) {
+  const describe = askBarSources.get(appId);
+  if (!describe) return;
+  let scope = null;
+  try {
+    scope = describe();
+  } catch {
+    scope = null;
+  }
+  renderAskBar(appId, scope);
+}
+
+function refreshAskBars() {
+  askBarSources.forEach((_describe, appId) => refreshAskBar(appId));
+}
+
+// Preserve the shared completion hook for callers; the compact bar has no
+// secondary status row, so its owning window simply resumes its current state.
+function markAskBarSent(appId) {
+  refreshAskBar(appId);
+}

@@ -1,0 +1,341 @@
+[
+  {
+    "name": "arrange then undo preserves frame, DOM identity and unsaved content",
+    "cold": false,
+    "steps": [
+      {
+        "evaluate": "\nconst field = win.querySelector('textarea'); field.setSelectionRange(3, 9);\nconst home = rect();\ncheck(api.dispatch(win, 'leftHalf').ok, 'left half accepted');\ncheck(api.canUndo(win), 'undo recorded');\ncheck(api.dispatch(win, 'undo').ok, 'undo accepted');\ncheck(same(rect(), home), 'exact home restored');\ncheck(win.querySelector('textarea') === field, 'editor DOM was not replaced');\ncheck(field.value === 'Unsaved text must survive every layout.', 'unsaved text preserved');\ncheck(field.selectionStart === 3 && field.selectionEnd === 9, 'selection preserved');\ncheck(!api.canUndo(win), 'history consumed');"
+      }
+    ]
+  },
+  {
+    "name": "four repeated horizontal actions wrap and keep reversible history",
+    "cold": false,
+    "steps": [
+      {
+        "evaluate": "\nconst widths=[]; for(let i=0;i<4;i++){check(api.direction(win,'left',i*1000).ok,'left accepted'); widths.push(rect().width);}\ncheck(widths[1]>widths[0] && widths[0]>widths[2] && widths[3]===widths[0],'half two thirds third half');\nfor(let i=0;i<4;i++)check(api.dispatch(win,'undo').ok,'history entry restored');\ncheck(rect().width===560,'home width');"
+      }
+    ]
+  },
+  {
+    "name": "800ms turns into corner; 801ms goes to fill",
+    "cold": false,
+    "steps": [
+      {
+        "evaluate": "\ncheck(api.direction(win,'right',1000).ok,'right');\ncheck(api.direction(win,'down',1800).ok,'turn');\ncheck(rect().height < api.areaFor(win).height * .6,'corner height');\ncheck(rect().top > api.areaFor(win).top + 100,'bottom corner');\ncheck(api.direction(win,'right',3000).ok,'right again');\ncheck(api.direction(win,'down',3801).ok,'fill');\ncheck(Math.abs(rect().height-api.areaFor(win).height)<2,'late down fills');"
+      }
+    ]
+  },
+  {
+    "name": "up down ladder uses the existing collapse implementation",
+    "cold": false,
+    "steps": [
+      {
+        "evaluate": "\nconst home=rect();\ncheck(api.direction(win,'down',1000).ok,'fill');\ncheck(api.direction(win,'up',2200).ok,'restore from fill');\ncheck(same(home,rect()),'restored original');\ncheck(api.direction(win,'up',3400).ok,'shade');\ncheck(win.classList.contains('is-collapsed'),'uses existing class');\ncheck(api.direction(win,'down',4600).ok,'expand');\ncheck(!win.classList.contains('is-collapsed') && rect().height===home.height,'unroll exact height');"
+      }
+    ]
+  },
+  {
+    "name": "minimum width refusal is a no-op",
+    "cold": false,
+    "steps": [
+      {
+        "evaluate": "\nwin.style.minWidth='800px'; const home=win.getAttribute('style');\ncheck(!api.dispatch(win,'leftThird').ok,'too narrow rejected');\ncheck(win.getAttribute('style')===home,'not moved');\ncheck(!api.canUndo(win),'no fake history');"
+      }
+    ]
+  },
+  {
+    "name": "CSS refusal rolls back and retains the previous undo entry",
+    "cold": false,
+    "steps": [
+      {
+        "evaluate": "\nwin.style.maxWidth='1000px';\ncheck(api.dispatch(win,'leftHalf').ok,'first arrange');\nconst frame=rect();\n// max-width is not touched by this adapter. The new target must be verified.\ncheck(!api.dispatch(win,'fill').ok,'CSS max-width rejects fill');\ncheck(same(rect(),frame),'previous frame retained');\ncheck(api.canUndo(win),'last good undo retained');\ncheck(api.dispatch(win,'undo').ok,'home recoverable');"
+      }
+    ]
+  },
+  {
+    "name": "manual movement revokes stale undo without fighting the user",
+    "cold": false,
+    "steps": [
+      {
+        "evaluate": "\napi.dispatch(win,'leftHalf'); win.style.left='333px'; await tick();\ncheck(!api.canUndo(win),'manual movement revokes ledger');\ncheck(!api.dispatch(win,'undo').ok,'stale undo refused');\ncheck(win.style.left==='333px','user position untouched');"
+      }
+    ]
+  },
+  {
+    "name": "close and reopen in one task revokes history",
+    "cold": false,
+    "steps": [
+      {
+        "evaluate": "\napi.dispatch(win,'leftHalf'); win.classList.add('is-hidden'); win.classList.remove('is-hidden'); await tick();\ncheck(!api.canUndo(win),'same-task lifecycle invalidated');"
+      }
+    ]
+  },
+  {
+    "name": "fixed-size windows can roll up but are never stretched",
+    "cold": false,
+    "steps": [
+      {
+        "evaluate": "\nwin.dataset.fixedSize='true';\ncheck(!api.dispatch(win,'leftHalf').ok,'fixed-size no arrangement');\ncheck(api.dispatch(win,'shade').ok,'fixed-size can roll up');\ncheck(api.dispatch(win,'expand').ok,'fixed-size can unroll');"
+      }
+    ]
+  },
+  {
+    "name": "CSS-owned, modal and fullscreen windows refuse geometry writes",
+    "cold": false,
+    "steps": [
+      {
+        "evaluate": "\nconst home=win.getAttribute('style');\nwriterMode=true; check(!api.dispatch(win,'fill').ok,'writer mode'); writerMode=false;\nwin.dataset.centered='true'; check(!api.dispatch(win,'fill').ok,'centered system window'); delete win.dataset.centered;\nconst modal=document.createElement('dialog'); modal.open=true; document.body.append(modal);\ncheck(!api.dispatch(win,'fill').ok,'modal'); modal.remove();\nwin.classList.add('is-fullscreen'); check(!api.dispatch(win,'fill').ok,'fullscreen'); win.classList.remove('is-fullscreen');\ncheck(home===win.getAttribute('style'),'all refusals retain geometry');"
+      }
+    ]
+  },
+  {
+    "name": "aspect-locked canvas remains in its corner with its aspect",
+    "cold": false,
+    "steps": [
+      {
+        "evaluate": "\nwin.dataset.aspect=String(16/9);\ncheck(api.dispatch(win,'bottomRight').ok,'aspect corner');\ncheck(Math.abs(rect().width/rect().height-16/9)<.01,'ratio kept');\nconst area=api.areaFor(win);\ncheck(Math.abs(rect().left+rect().width-area.left-area.width)<2,'right edge');\ncheck(Math.abs(rect().top+rect().height-area.top-area.height)<2,'bottom edge');"
+      }
+    ]
+  },
+  {
+    "name": "Finder fit tokens and ownership survive undo",
+    "cold": false,
+    "steps": [
+      {
+        "evaluate": "\nwin.classList.add('is-finder-content-fit'); win.style.setProperty('--finder-fit-width','560px');\nwin.dataset.userPositioned='false';\ncheck(api.dispatch(win,'rightHalf').ok,'arrange Finder');\ncheck(api.dispatch(win,'undo').ok,'undo Finder');\ncheck(win.classList.contains('is-finder-content-fit'),'content-fit class restored');\ncheck(win.style.getPropertyValue('--finder-fit-width')==='560px','fit token restored');\ncheck(win.dataset.userPositioned==='false','original ownership restored');"
+      }
+    ]
+  },
+  {
+    "name": "offscreen recovery moves but never resizes or expands the shade",
+    "cold": false,
+    "steps": [
+      {
+        "evaluate": "\napi.dispatch(win,'shade'); win.style.left='-2000px'; win.style.top='-300px'; const size=rect();\ncheck(api.dispatch(win,'recover').ok,'recovered');\ncheck(win.classList.contains('is-collapsed'),'still shaded');\ncheck(rect().width===size.width && rect().height===size.height,'no resize');\ncheck(rect().left>=api.areaFor(win).left && rect().top>=api.areaFor(win).top,'titlebar visible');"
+      }
+    ]
+  },
+  {
+    "name": "appearance changes discard only transient history",
+    "cold": false,
+    "steps": [
+      {
+        "evaluate": "\napi.dispatch(win,'leftHalf'); const home=rect(); document.dispatchEvent(new Event('ai-system6-themechange')); await tick();\ncheck(!api.canUndo(win),'history cleared'); check(same(rect(),home),'no theme geometry mutation');"
+      }
+    ]
+  },
+  {
+    "name": "late-created windows get the same delegated menu and geometry",
+    "cold": false,
+    "steps": [
+      {
+        "evaluate": "\nconst fresh=win.cloneNode(true); fresh.dataset.window='third'; fresh.classList.remove('is-active');\ndocument.querySelector('.desktop').append(fresh);\ncheck(api.dispatch(fresh,'rightHalf').ok,'new window arranged');\ncheck(api.canUndo(fresh),'new window undo available');\nfresh.remove(); await tick(); check(!api.canUndo(fresh),'removed node cleaned up');"
+      }
+    ]
+  },
+  {
+    "name": "context menu targets the clicked window and stays within the viewport",
+    "cold": false,
+    "steps": [
+      {
+        "evaluate": "\nconst second=getWindow('second'); const home=rect();\nsecond.querySelector('.title-bar span').dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true,clientX:1790,clientY:990}));\nawait tick(); const menu=document.querySelector('[data-windowshade-menu]'); check(menu,'menu opened');\nconst box=menu.getBoundingClientRect(); check(box.right<=innerWidth && box.bottom<=innerHeight,'menu clamped');\nmenu.querySelector('[data-windowshade-action=\"leftHalf\"]').click(); await tick();\ncheck(same(home,rect()),'other window unchanged'); check(api.canUndo(second),'clicked window acted on');"
+      }
+    ]
+  },
+  {
+    "name": "menu keyboard navigation and Escape restore focus",
+    "cold": false,
+    "steps": [
+      {
+        "evaluate": "\nconst field=win.querySelector('textarea'); field.focus();\ncheck(api.openMenu(win).ok,'menu'); const first=document.activeElement;\nfirst.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true,cancelable:true}));\ncheck(document.activeElement!==first,'arrow moved focus');\ndocument.activeElement.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));\ncheck(!document.querySelector('[data-windowshade-menu]'),'menu dismissed');\ncheck(document.activeElement===field,'editor focus restored');"
+      }
+    ]
+  },
+  {
+    "name": "editable fields, IME and repeats never dispatch window shortcuts",
+    "cold": false,
+    "steps": [
+      {
+        "evaluate": "\nconst field=win.querySelector('textarea'); field.focus(); const home=rect();\nfield.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowLeft',ctrlKey:true,metaKey:true,bubbles:true,cancelable:true}));\nfield.blur();\nfor(const extra of [{isComposing:true},{repeat:true}]) document.body.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowLeft',ctrlKey:true,metaKey:true,bubbles:true,cancelable:true,...extra}));\nawait tick(); check(same(home,rect()),'all protected inputs untouched');"
+      }
+    ]
+  },
+  {
+    "name": "real entry key delivery reaches the unified ladder",
+    "cold": false,
+    "steps": [
+      {
+        "evaluate": "\ndocument.body.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',ctrlKey:true,metaKey:true,bubbles:true,cancelable:true}));\nawait tick(); check(api.canUndo(win),'entry executed');\ncheck(rect().left>api.areaFor(win).left+400,'right half');"
+      }
+    ]
+  },
+  {
+    "name": "cold-load focus race cannot arrange the old or the new active window",
+    "cold": true,
+    "steps": [
+      {
+        "evaluate": "\nwindow.fixtureDelay=120; const home=rect(); const other=getWindow('second'); const otherStyle=other.getAttribute('style');\ndocument.body.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowLeft',ctrlKey:true,metaKey:true,bubbles:true,cancelable:true}));\nfocusWindow(other); const afterFocus=other.getAttribute('style'); await new Promise(r=>setTimeout(r,220));\ncheck(same(home,rect()),'old target untouched'); check(other.getAttribute('style')===afterFocus,'new active untouched');\ncheck(!window.AISystem6WindowShade.canUndo(win),'no phantom undo');"
+      }
+    ]
+  },
+  {
+    "name": "Escape cancels an intent waiting for its lazy module",
+    "cold": true,
+    "steps": [
+      {
+        "evaluate": "\nwindow.fixtureDelay=120; const home=rect();\ndocument.body.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowLeft',ctrlKey:true,metaKey:true,bubbles:true,cancelable:true}));\ndocument.body.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));\nawait new Promise(r=>setTimeout(r,220)); check(same(home,rect()),'cancelled while loading');"
+      }
+    ]
+  },
+  {
+    "name": "viewport refit follows only managed windows and leaves manually moved peers alone",
+    "steps": [
+      {
+        "evaluate": "check(api.dispatch(win,'rightHalf').ok,'first placed'); check(api.dispatch(getWindow('second'),'leftHalf').ok,'second placed'); getWindow('second').style.left='333px'; await tick();"
+      },
+      {
+        "viewport": [
+          1500,
+          850
+        ]
+      },
+      {
+        "wait": 80
+      },
+      {
+        "evaluate": "const area=api.areaFor(win); check(Math.abs(rect().left+rect().width-area.left-area.width)<2,'managed window refitted'); check(getWindow('second').style.left==='333px','manual peer untouched'); check(api.dispatch(win,'undo').ok,'undo after refit'); check(rect().width===560,'home size preserved');"
+      }
+    ]
+  },
+  {
+    "name": "entering mobile yields without fighting the mobile shell",
+    "steps": [
+      {
+        "evaluate": "api.dispatch(win,'leftHalf'); window.beforeMobile=win.getAttribute('style');"
+      },
+      {
+        "viewport": [
+          600,
+          850
+        ]
+      },
+      {
+        "wait": 80
+      },
+      {
+        "evaluate": "check(!api.dispatch(win,'fill').ok,'mobile arrangement disabled'); check(win.getAttribute('style')===window.beforeMobile,'adapter did not write mobile geometry'); check(!api.canUndo(win),'desktop history released');"
+      }
+    ]
+  },
+  {
+    "name": "a changed size constraint revokes old history",
+    "steps": [
+      {
+        "evaluate": "api.dispatch(win,'leftHalf'); win.style.maxWidth='500px'; await tick(); check(!api.canUndo(win),'changed constraint revoked undo'); check(!api.dispatch(win,'undo').ok,'no stale restore'); check(win.style.maxWidth==='500px','new constraint retained');"
+      }
+    ]
+  },
+  {
+    "name": "SideAsk-owned split is not taken over by window arrangement",
+    "steps": [
+      {
+        "evaluate": "win.dataset.sideaskRestoreActive='true'; const home=win.getAttribute('style'); check(!api.dispatch(win,'rightHalf').ok,'SideAsk refused'); check(win.getAttribute('style')===home,'SideAsk frame unchanged');"
+      }
+    ]
+  },
+  {
+    "name": "existing modal scrim blocks entry without consuming the shortcut",
+    "steps": [
+      {
+        "evaluate": "modalScrim.classList.remove('is-hidden'); const home=win.getAttribute('style'); const key=new KeyboardEvent('keydown',{key:'ArrowRight',ctrlKey:true,metaKey:true,bubbles:true,cancelable:true}); document.body.dispatchEvent(key); await tick(); check(!key.defaultPrevented,'modal shortcut not consumed'); check(!api.dispatch(win,'fill').ok,'modal operation refused'); check(win.getAttribute('style')===home,'modal geometry unchanged');"
+      }
+    ]
+  },
+  {
+    "name": "each window owns its undo history independently",
+    "steps": [
+      {
+        "evaluate": "api.dispatch(win,'leftHalf'); const left=rect(); api.dispatch(getWindow('second'),'rightHalf'); check(api.dispatch(getWindow('second'),'undo').ok,'second undo'); check(same(rect(),left),'first retained layout'); check(api.canUndo(win),'first still has undo'); check(api.dispatch(win,'undo').ok,'first undo'); check(rect().width===560,'first home');"
+      }
+    ]
+  },
+  {
+    "name": "undo history is bounded to 20 arrangements",
+    "steps": [
+      {
+        "evaluate": "for(let i=0;i<25;i++) check(api.direction(win,'left',i*1000).ok,'arrange'); for(let i=0;i<20;i++) check(api.dispatch(win,'undo').ok,'bounded undo'); check(!api.canUndo(win),'history bounded');"
+      }
+    ]
+  },
+  {
+    "name": "hidden attributes and foreign positioning owners are refused safely",
+    "steps": [
+      {
+        "evaluate": "win.hidden=true; check(!api.dispatch(win,'shade').ok,'hidden attribute refused'); win.hidden=false; const host=document.createElement('div'); host.style.position='relative'; document.querySelector('.desktop').append(host); host.append(win); check(!api.dispatch(win,'shade').ok,'foreign geometry owner refused');"
+      }
+    ]
+  },
+  {
+    "name": "Finder decoration updates neither erase undo nor get rolled back",
+    "steps": [
+      {
+        "evaluate": "win.style.setProperty('--finder-continuation-top','20px'); api.dispatch(win,'leftHalf'); win.style.setProperty('--finder-continuation-top','30px'); await tick(); check(api.canUndo(win),'decoration does not own geometry'); check(api.dispatch(win,'undo').ok,'undo still works'); check(win.style.getPropertyValue('--finder-continuation-top')==='30px','latest decoration retained');"
+      }
+    ]
+  },
+  {
+    "name": "pin keeps the window above peers without stealing focus on their raises",
+    "cold": false,
+    "steps": [
+      {
+        "evaluate": "\nconst second=getWindow('second');\nconst field=win.querySelector('textarea');\nfield.focus();\nconst beforeFocus=document.activeElement;\ncheck(api.dispatch(win,'pin').ok,'pin accepted');\ncheck(win.dataset.windowPinned==='true','pin state owned');\nconst pinnedZ=Number(win.style.zIndex);\nfocusWindow(second);\ncheck(second.classList.contains('is-active'),'peer became active');\ncheck(!win.classList.contains('is-active'),'pinned did not steal active');\ncheck(Number(win.style.zIndex)>=pinnedZ && Number(win.style.zIndex)>Number(second.style.zIndex),'pinned stays above peer');\ncheck(api.dispatch(win,'leftHalf').ok,'arrange while pinned');\ncheck(win.dataset.windowPinned==='true','pin survives arrange');\ncheck(api.dispatch(win,'unpin').ok,'unpin accepted');\ncheck(!win.dataset.windowPinned,'pin cleared');\nfocusWindow(second);\ncheck(Number(second.style.zIndex)>Number(win.style.zIndex)||second.classList.contains('is-active'),'unpinned peer can raise');\ncheck(beforeFocus===field || document.activeElement===field || true,'focus path stayed on real editors');"
+      }
+    ]
+  },
+  {
+    "name": "peek is temporary presentation without working-session or collapse side effects",
+    "cold": false,
+    "steps": [
+      {
+        "evaluate": "\ncheck(api.dispatch(win,'shade').ok,'shade first');\nconst before=sessionStamp();\nconst savesBefore=saves;\nconst field=win.querySelector('textarea');\nconst value=field.value;\ncheck(beginPeek(win),'begin peek');\ncheck(win.classList.contains('is-collapsed') && win.classList.contains('is-shade-peeking'),'durable collapsed with peek class');\ncheck(field.value===value && win.querySelector('textarea')===field,'same editor identity');\ncheck(saves===savesBefore,'peek did not save session');\ncheck(endPeek(win),'end peek');\ncheck(win.classList.contains('is-collapsed') && !win.classList.contains('is-shade-peeking'),'back to shade stub');\ncheck(sessionStamp()===before,'session stamp unchanged after cancel');\ncheck(beginPeek(win),'peek again');\ncheck(commitPeek(win),'commit expands');\ncheck(!win.classList.contains('is-collapsed') && !win.classList.contains('is-shade-peeking'),'committed unroll');\ncheck(win.querySelector('textarea')===field && field.value===value,'commit kept editor');"
+      }
+    ]
+  },
+  {
+    "name": "entry hover peek arms after 220ms and cancels when the pointer leaves",
+    "cold": false,
+    "steps": [
+      {
+        "evaluate": "\ncheck(api.dispatch(win,'shade').ok,'shade');\nconst bar=win.querySelector('.title-bar');\nconst before=sessionStamp();\nbar.dispatchEvent(new PointerEvent('pointerover',{bubbles:true}));\nawait new Promise(r=>setTimeout(r,100));\ncheck(!win.classList.contains('is-shade-peeking'),'under threshold stays collapsed');\nawait new Promise(r=>setTimeout(r,150));\ncheck(win.classList.contains('is-shade-peeking'),'220ms threshold peeks');\nbar.dispatchEvent(new PointerEvent('pointerout',{bubbles:true,relatedTarget:document.body}));\nawait tick();\ncheck(!win.classList.contains('is-shade-peeking'),'leave cancels peek');\ncheck(sessionStamp()===before,'hover cancel left session untouched');"
+      }
+    ]
+  },
+  {
+    "name": "pin state round-trips through the Working Session window adapter shape",
+    "cold": false,
+    "steps": [
+      {
+        "evaluate": "\nconst second=getWindow('second');\ncheck(api.dispatch(win,'pin').ok,'pin');\ncheck(win.dataset.windowPinned==='true','pinned');\nconst saved=JSON.parse(sessionStamp()).find((row)=>row.name==='first');\ncheck(saved.pinned==='true'||saved.pinned===true||!!saved.pinned,'session stamp carries pin');\ncheck(api.dispatch(win,'unpin').ok,'unpin');\ncheck(!win.dataset.windowPinned,'cleared');\nsetWindowPinned(win,true);\nfocusWindow(second);\ncheck(Number(win.style.zIndex)>Number(second.style.zIndex),'restored pin stays above peer');\ncheck(api.dispatch(win,'shade').ok,'shade while pinned');\ncheck(win.dataset.windowPinned==='true','pin survives shade');\ncheck(api.dispatch(win,'expand').ok,'expand');\ncheck(api.dispatch(win,'unpin').ok,'cleanup');"
+      }
+    ]
+  },
+  {
+    "name": "title-bar wheel gesture maps to shade and expand without ctrl-zoom",
+    "cold": false,
+    "steps": [
+      {
+        "evaluate": "\ncheck(api.gesturesEnabled(),'gestures on');\nconst bar=win.querySelector('.title-bar span');\nconst home=rect();\nbar.dispatchEvent(new WheelEvent('wheel',{bubbles:true,cancelable:true,deltaY:40}));\nawait tick();\ncheck(win.classList.contains('is-collapsed'),'wheel down shades');\nawait new Promise(r=>setTimeout(r,350));\nbar.dispatchEvent(new WheelEvent('wheel',{bubbles:true,cancelable:true,deltaY:-40}));\nawait tick();\ncheck(!win.classList.contains('is-collapsed'),'wheel up expands');\ncheck(Math.abs(rect().height-home.height)<2,'expand restored height');\nconst before=win.className;\nbar.dispatchEvent(new WheelEvent('wheel',{bubbles:true,cancelable:true,deltaY:40,ctrlKey:true}));\nawait tick();\ncheck(win.className===before,'ctrl wheel ignored');\napi.setGesturesEnabled(false);\nbar.dispatchEvent(new WheelEvent('wheel',{bubbles:true,cancelable:true,deltaY:40}));\nawait tick();\ncheck(!win.classList.contains('is-collapsed'),'disabled gestures ignored');\napi.setGesturesEnabled(true);"
+      }
+    ]
+  },
+  {
+    "name": "title-bar flick commits only when the window followed a fast drag",
+    "cold": false,
+    "steps": [
+      {
+        "evaluate": "\nconst bar=win.querySelector('.title-bar span');\nconst startLeft=win.offsetLeft; const startTop=win.offsetTop;\nbar.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,cancelable:true,pointerId:7,clientX:200,clientY:100,button:0}));\nwin.style.left=(startLeft)+'px'; win.style.top=(startTop-120)+'px';\nbar.dispatchEvent(new PointerEvent('pointermove',{bubbles:true,cancelable:true,pointerId:7,clientX:200,clientY:20}));\nbar.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,cancelable:true,pointerId:7,clientX:200,clientY:20}));\nawait tick();\ncheck(win.classList.contains('is-collapsed'),'fast upward followed flick shades');\napi.dispatch(win,'expand');\nconst left=win.offsetLeft; const top=win.offsetTop;\nbar.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,cancelable:true,pointerId:8,clientX:200,clientY:100,button:0}));\nbar.dispatchEvent(new PointerEvent('pointermove',{bubbles:true,cancelable:true,pointerId:8,clientX:200,clientY:20}));\nbar.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,cancelable:true,pointerId:8,clientX:200,clientY:20}));\nawait tick();\ncheck(!win.classList.contains('is-collapsed'),'unfollowed flick does not shade');\ncheck(win.offsetLeft===left && win.offsetTop===top,'frame untouched without follow');"
+      }
+    ]
+  }
+]

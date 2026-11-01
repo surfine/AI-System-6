@@ -1,0 +1,730 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AIC_TERMINAL_v9</title>
+    <link rel="stylesheet" href="system.css-reference/style.css" />
+    <style>
+      :root {
+        --ink: #080808;
+        --line: rgba(0, 0, 0, 0.18);
+        --paper: #ffffff;
+        --paper-strong: #ffffff;
+        --panel-fill: rgba(255, 255, 255, 0.92);
+        --yellow: #f5ff16;
+        --shadow: 2px 2px 0 #000000;
+        --primary: #ffffff;
+        --secondary: #000000;
+        --tertiary: #a5a5a5;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        display: block;
+        height: auto;
+        min-height: 100vh;
+        color: var(--ink);
+        overflow: hidden;
+        background:
+          linear-gradient(90deg, rgba(255, 255, 255, 0.3), rgba(246, 248, 213, 0.72)),
+          url("assets/endfield-background.svg"),
+          repeating-linear-gradient(0deg, transparent 0 78px, var(--line) 79px 80px),
+          repeating-linear-gradient(90deg, transparent 0 78px, var(--line) 79px 80px),
+          #f6f6ef;
+        background-size: auto, max(1700px, 150vw) auto, 80px 80px, 80px 80px, auto;
+        background-position: center, 42% 18%, 0 0, 0 0, center;
+        font-family: Chicago_12, Chicago, "PingFang SC", "Microsoft YaHei", sans-serif;
+        font-size: 18px;
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      .app {
+        display: grid;
+        grid-template-columns: minmax(260px, 31vw) minmax(520px, 1fr) 240px;
+        gap: 40px;
+        height: 100vh;
+        padding: 42px 48px 32px;
+      }
+
+      .left-panel,
+      .right-panel,
+      .center-panel {
+        min-height: 0;
+      }
+
+      .brand {
+        position: fixed;
+        top: 52px;
+        right: 50px;
+        font-weight: 800;
+        letter-spacing: 1px;
+        font-family: Chicago, Chicago_12, sans-serif;
+        font-size: 20px;
+        background: var(--paper);
+        border: 2px solid var(--ink);
+        box-shadow: var(--shadow);
+        padding: 7px 10px 5px;
+      }
+
+      .new-session {
+        width: min(455px, 100%);
+        min-height: 54px;
+        border: 2px solid var(--ink);
+        background: var(--paper);
+        box-shadow: var(--shadow);
+        font-size: 26px;
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        padding: 0 20px;
+        cursor: pointer;
+      }
+
+      .new-session span {
+        font-family: Chicago, Chicago_12, sans-serif;
+        font-size: 36px;
+        line-height: 1;
+      }
+
+      .session-list {
+        margin-top: 54px;
+        border: 2px solid var(--ink);
+        background: var(--paper);
+        box-shadow: var(--shadow);
+        max-width: 480px;
+      }
+
+      .session-item {
+        width: 100%;
+        min-height: 72px;
+        border: 0;
+        border-bottom: 2px solid var(--ink);
+        background: var(--paper);
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        padding: 14px 22px;
+        text-align: left;
+        cursor: pointer;
+      }
+
+      .session-item:last-child {
+        border-bottom: 0;
+      }
+
+      .session-item.is-active {
+        background:
+          linear-gradient(45deg, var(--ink) 25%, transparent 25%, transparent 75%, var(--ink) 75%, var(--ink)),
+          linear-gradient(45deg, var(--ink) 25%, transparent 25%, transparent 75%, var(--ink) 75%, var(--ink)),
+          var(--paper);
+        background-size: 4px 4px;
+        background-position: 0 0, 2px 2px;
+      }
+
+      .session-item.is-active .session-text,
+      .session-item.is-active .session-icon {
+        background: var(--paper);
+      }
+
+      .session-icon {
+        width: 24px;
+        height: 24px;
+        border: 2px solid var(--ink);
+        display: grid;
+        place-items: center;
+        font-size: 14px;
+        flex: none;
+      }
+
+      .session-text strong {
+        display: block;
+        font-size: 24px;
+        line-height: 1.1;
+      }
+
+      .session-text small {
+        display: block;
+        margin-top: 7px;
+        color: var(--ink);
+        font-size: 14px;
+        font-family: Monaco, "Courier New", monospace;
+      }
+
+      .center-panel {
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        gap: 16px;
+        padding-top: 45px;
+      }
+
+      .core-mark {
+        position: absolute;
+        margin-left: -124px;
+        margin-top: 0;
+        width: 92px;
+        height: 92px;
+        background: var(--yellow);
+        border: 4px solid var(--ink);
+        box-shadow: var(--shadow);
+        display: grid;
+        place-items: center;
+      }
+
+      .core-mark::before,
+      .core-mark::after {
+        content: "";
+        position: absolute;
+        border: 6px solid var(--ink);
+      }
+
+      .core-mark::before {
+        width: 42px;
+        height: 42px;
+      }
+
+      .core-mark::after {
+        width: 14px;
+        height: 14px;
+      }
+
+      .terminal {
+        min-height: 0;
+        border: 2px solid var(--ink);
+        background: var(--paper);
+        box-shadow: var(--shadow);
+        padding: 8px;
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr);
+      }
+
+      .terminal-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background:
+          linear-gradient(var(--ink) 50%, transparent 50%);
+        background-size: 8px 4px;
+        background-clip: content-box;
+        padding: 4px 2px;
+        margin-bottom: 8px;
+        font-size: 24px;
+        font-weight: 850;
+      }
+
+      .terminal-head .paper-plane {
+        font-size: 25px;
+      }
+
+      .terminal-head > span {
+        background: var(--paper);
+        padding: 0 12px;
+      }
+
+      .terminal-body {
+        overflow: auto;
+        border: 2px solid var(--ink);
+        background: var(--panel-fill);
+        padding: 28px 34px;
+      }
+
+      .welcome {
+        font-size: clamp(17px, 1.15vw, 21px);
+        line-height: 1.58;
+      }
+
+      .welcome b {
+        font-weight: 900;
+      }
+
+      .result {
+        border-top: 2px solid var(--ink);
+        padding: 22px 0;
+      }
+
+      .result:first-child {
+        border-top: 0;
+        padding-top: 0;
+      }
+
+      .result-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 12px;
+        font-size: 14px;
+        color: var(--ink);
+        font-family: Monaco, "Courier New", monospace;
+      }
+
+      .tag {
+        border: 2px solid var(--ink);
+        background: var(--paper);
+        padding: 3px 8px;
+        font-weight: 700;
+      }
+
+      .speaker {
+        font-size: 22px;
+        font-weight: 900;
+        margin-bottom: 7px;
+      }
+
+      .line {
+        font-family: "Songti SC", "SimSun", "STSong", serif;
+        font-size: 20px;
+        line-height: 1.56;
+      }
+
+      mark {
+        background: var(--yellow);
+        padding: 0 2px;
+      }
+
+      .context {
+        margin-top: 14px;
+        padding-left: 16px;
+        border-left: 2px solid var(--ink);
+        color: var(--ink);
+        font-size: 15px;
+        line-height: 1.45;
+        font-family: "Songti SC", "SimSun", "STSong", serif;
+      }
+
+      .answer {
+        border: 2px solid var(--ink);
+        padding: 18px 20px;
+        margin-bottom: 18px;
+        background:
+          linear-gradient(45deg, rgba(0, 0, 0, 0.08) 25%, transparent 25%, transparent 75%, rgba(0, 0, 0, 0.08) 75%, rgba(0, 0, 0, 0.08)),
+          linear-gradient(45deg, rgba(0, 0, 0, 0.08) 25%, transparent 25%, transparent 75%, rgba(0, 0, 0, 0.08) 75%, rgba(0, 0, 0, 0.08)),
+          var(--paper);
+        background-size: 4px 4px;
+        background-position: 0 0, 2px 2px;
+      }
+
+      .answer h2 {
+        margin: 0 0 12px;
+        font-size: 18px;
+      }
+
+      .answer-body {
+        background: var(--paper);
+        border: 2px solid var(--ink);
+        padding: 16px;
+        font-family: "Songti SC", "SimSun", "STSong", serif;
+        font-size: 18px;
+        line-height: 1.62;
+        white-space: pre-wrap;
+      }
+
+      .composer {
+        border: 2px solid var(--ink);
+        background: var(--paper);
+        box-shadow: var(--shadow);
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 146px;
+      }
+
+      .composer input {
+        min-width: 0;
+        border: 0;
+        background: transparent;
+        padding: 17px 18px;
+        font-size: 18px;
+        outline: none;
+      }
+
+      .composer button {
+        border: 0;
+        border-left: 2px solid var(--ink);
+        background: var(--paper);
+        font-weight: 900;
+        cursor: pointer;
+        box-shadow: inset 1px 1px 0 #d8d8d8;
+      }
+
+      .composer button:active {
+        background: var(--ink);
+        color: var(--paper);
+      }
+
+      .right-panel {
+        padding-top: 96px;
+        display: grid;
+        align-content: start;
+        gap: 18px;
+      }
+
+      .status-box {
+        background: var(--paper);
+        border: 2px solid var(--ink);
+        box-shadow: var(--shadow);
+        padding: 12px;
+      }
+
+      .status-box h2 {
+        margin: 0 0 12px;
+        font-size: 16px;
+        letter-spacing: 1px;
+        border-bottom: 2px solid var(--ink);
+        padding-bottom: 6px;
+      }
+
+      .stat {
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        font-size: 14px;
+        line-height: 1.8;
+      }
+
+      .model-settings {
+        display: grid;
+        gap: 8px;
+      }
+
+      .model-settings label {
+        display: grid;
+        gap: 4px;
+        font-size: 13px;
+      }
+
+      .model-settings input {
+        width: 100%;
+        border: 2px solid var(--ink);
+        padding: 6px;
+        font-family: Monaco, "Courier New", monospace;
+        font-size: 13px;
+      }
+
+      .mission-hit {
+        border-top: 2px solid var(--ink);
+        padding: 12px 0;
+        font-size: 14px;
+      }
+
+      .mission-hit strong {
+        display: block;
+        font-size: 16px;
+      }
+
+      .mission-hit small {
+        color: var(--ink);
+        font-family: Monaco, "Courier New", monospace;
+      }
+
+      .log {
+        position: fixed;
+        bottom: 16px;
+        left: 48px;
+        font-family: "Courier New", monospace;
+        font-size: 12px;
+        color: var(--ink);
+        background: var(--paper);
+        border: 1px solid var(--ink);
+        padding: 3px 5px;
+      }
+
+      @media (max-width: 1050px) {
+        body {
+          overflow: auto;
+        }
+
+        .app {
+          height: auto;
+          min-height: 100vh;
+          grid-template-columns: 1fr;
+          padding: 24px;
+          gap: 22px;
+        }
+
+        .brand {
+          position: static;
+          text-align: right;
+          padding: 18px 24px 0;
+        }
+
+        .center-panel {
+          padding-top: 0;
+        }
+
+        .core-mark,
+        .right-panel {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="brand">AIC_TERMINAL_v9</div>
+    <main class="app">
+      <aside class="left-panel">
+        <button class="new-session" type="button" id="new-session"><span>＋</span>NEW SESSION</button>
+        <nav class="session-list" aria-label="快捷查询">
+          <button class="session-item is-active" type="button" data-query="主线剧情">
+            <span class="session-icon">▣</span>
+            <span class="session-text"><strong>主线剧情</strong><small>Main Missions</small></span>
+          </button>
+          <button class="session-item" type="button" data-query="佩丽卡">
+            <span class="session-icon">◇</span>
+            <span class="session-text"><strong>佩丽卡</strong><small>角色台词检索</small></span>
+          </button>
+          <button class="session-item" type="button" data-query="武陵">
+            <span class="session-icon">⌁</span>
+            <span class="session-text"><strong>武陵</strong><small>地区剧情检索</small></span>
+          </button>
+        </nav>
+      </aside>
+
+      <section class="center-panel" aria-label="剧情检索终端">
+        <div class="core-mark" aria-hidden="true"></div>
+        <section class="terminal">
+          <header class="terminal-head">
+            <span><span class="paper-plane">▸</span> <span id="terminal-title">WELCOME_MESSAGE</span></span>
+            <span>⌃</span>
+          </header>
+          <div class="terminal-body" id="terminal-body">
+            <div class="welcome">
+              <p><b>欢迎使用明日方舟：终末地剧情检索系统</b></p>
+              <p>当前剧情库来自本地 Warfarin Wiki 任务文本。输入角色名、任务名、地名或问题后，系统会先检索原文，再调用本地 LM Studio 模型整理回答。</p>
+              <p><b>语音 Radio 已排除。</b> 检索范围包含任务简介、Objectives 与 Transcript；证据区会保留每一句对应的说话人。</p>
+              <p>示例：<b>佩丽卡是谁？</b>、<b>主线剧情讲了什么？</b>、<b>源石发电站发生了什么？</b></p>
+            </div>
+          </div>
+        </section>
+        <form class="composer" id="search-form">
+          <input id="query" autocomplete="off" placeholder="请输入指令 / ENTER COMMAND..." />
+          <button type="submit">ASK / 问答</button>
+        </form>
+      </section>
+
+      <aside class="right-panel">
+        <section class="status-box">
+          <h2>SYSTEM STATUS</h2>
+          <div class="stat"><span>PRTS</span><b>ONLINE</b></div>
+          <div class="stat"><span>DATA</span><b id="version">LOADING</b></div>
+          <div class="stat"><span>LINES</span><b id="line-count">--</b></div>
+        </section>
+        <section class="status-box">
+          <h2>LOCAL MODEL</h2>
+          <div class="model-settings">
+            <label>
+              MODEL
+              <input id="local-model" autocomplete="off" value="local-model" />
+            </label>
+            <label>
+              ENDPOINT
+              <input id="local-endpoint" autocomplete="off" placeholder="默认 127.0.0.1:1234" />
+            </label>
+          </div>
+        </section>
+        <section class="status-box">
+          <h2>MISSION MATCHES</h2>
+          <div id="mission-matches"></div>
+        </section>
+      </aside>
+    </main>
+    <div class="log" id="log">COORDINATE_SYSTEM_READY</div>
+
+    <script>
+      const form = document.querySelector("#search-form");
+      const queryInput = document.querySelector("#query");
+      const body = document.querySelector("#terminal-body");
+      const title = document.querySelector("#terminal-title");
+      const version = document.querySelector("#version");
+      const lineCount = document.querySelector("#line-count");
+      const matches = document.querySelector("#mission-matches");
+      const log = document.querySelector("#log");
+      const localModelInput = document.querySelector("#local-model");
+      const localEndpointInput = document.querySelector("#local-endpoint");
+      const sessionButtons = document.querySelectorAll(".session-item");
+
+      const state = {
+        lastQuery: "",
+        metaLoaded: false,
+      };
+
+      localModelInput.value = localStorage.getItem("endfield.localModel") || "local-model";
+      localEndpointInput.value = localStorage.getItem("endfield.localEndpoint") || "";
+      localModelInput.addEventListener("change", () => localStorage.setItem("endfield.localModel", localModelInput.value.trim()));
+      localEndpointInput.addEventListener("change", () => localStorage.setItem("endfield.localEndpoint", localEndpointInput.value.trim()));
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        runAsk(queryInput.value.trim());
+      });
+
+      document.querySelector("#new-session").addEventListener("click", () => {
+        queryInput.value = "";
+        title.textContent = "WELCOME_MESSAGE";
+        matches.innerHTML = "";
+        body.innerHTML = document.querySelector(".welcome")?.outerHTML || "";
+        setLog("NEW_SESSION_READY");
+        queryInput.focus();
+      });
+
+      sessionButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          sessionButtons.forEach((item) => item.classList.remove("is-active"));
+          button.classList.add("is-active");
+          const query = button.dataset.query || "";
+          queryInput.value = query;
+          runAsk(query);
+        });
+      });
+
+      hydrateMeta();
+
+      async function hydrateMeta() {
+        const data = await fetchSearch("");
+        updateMeta(data.meta);
+      }
+
+      async function runAsk(query) {
+        if (!query) return;
+        state.lastQuery = query;
+        title.textContent = `QUERY_${query.toUpperCase()}`;
+        body.innerHTML = `<div class="welcome"><p><b>正在调用本地模型：</b>${escapeHtml(query)}</p><p>先检索剧情证据，再交给 LM Studio 整理回答...</p></div>`;
+        matches.innerHTML = "";
+        setLog("LOCAL_MODEL_THINKING");
+
+        try {
+          const data = await fetchAsk(query);
+          updateMeta(data.meta);
+          renderAnswer(data, query);
+          setLog(`ANSWER_READY ${data.results.length}`);
+        } catch (error) {
+          setLog("LOCAL_MODEL_FAILED_FALLBACK_SEARCH");
+          try {
+            const data = await fetchSearch(query);
+            updateMeta(data.meta);
+            renderAnswer({
+              ...data,
+              answer: `本地模型暂时没有返回回答，下面先显示检索证据。\n\n错误信息：${error.message}`,
+              ai_system6_metrics: null,
+            }, query);
+          } catch (searchError) {
+            body.innerHTML = `<div class="welcome"><p><b>问答失败。</b></p><p>${escapeHtml(searchError.message)}</p></div>`;
+            setLog("ASK_FAILED");
+          }
+        }
+      }
+
+      async function fetchSearch(query) {
+        const response = await fetch("/api/endfield/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query, limit: 18 }),
+        });
+        if (!response.ok) throw new Error(await response.text());
+        return response.json();
+      }
+
+      async function fetchAsk(query) {
+        const response = await fetch("/api/endfield/ask", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query,
+            limit: 16,
+            model: localModelInput.value.trim() || "local-model",
+            _local_endpoint: localEndpointInput.value.trim(),
+          }),
+        });
+        if (!response.ok) throw new Error(await response.text());
+        return response.json();
+      }
+
+      function updateMeta(meta = {}) {
+        version.textContent = meta.gameVersion || "UNKNOWN";
+        lineCount.textContent = meta.transcriptLineCount || "--";
+      }
+
+      function renderAnswer(data, query) {
+        const answerHtml = `
+          <section class="answer">
+            <h2>LOCAL MODEL ANSWER</h2>
+            <div class="answer-body">${escapeHtml(data.answer || "本地模型没有返回文本。")}</div>
+          </section>
+        `;
+        if (!data.results.length) {
+          body.innerHTML = `${answerHtml}<div class="welcome"><p><b>未检索到匹配台词。</b></p><p>可以换成游戏内正式名称，或缩短关键词。</p></div>`;
+        } else {
+          body.innerHTML = `${answerHtml}${data.results.map((result) => resultTemplate(result, query)).join("")}`;
+        }
+
+        matches.innerHTML = (data.missionMatches || []).length
+          ? data.missionMatches.map((mission) => `
+              <div class="mission-hit">
+                <strong>${escapeHtml(mission.title)}</strong>
+                <small>${escapeHtml([mission.section, mission.chapter, mission.process].filter(Boolean).join(" / "))}</small>
+              </div>
+            `).join("")
+          : `<div class="mission-hit"><small>NO PARAMETERS DETECTED</small></div>`;
+      }
+
+      function resultTemplate(result, query) {
+        const route = [result.section, result.chapter, result.process, result.missionTitle].filter(Boolean).join(" / ");
+        const context = result.context?.length
+          ? `<div class="context">${result.context.map((item) => `${escapeHtml(item.speaker)}：${highlight(item.text, query)}`).join("<br>")}</div>`
+          : "";
+        return `
+          <article class="result">
+            <div class="result-meta">
+              <span class="tag">${escapeHtml(result.missionId)}</span>
+              <span>${escapeHtml(route)}</span>
+              <span>SCORE ${result.score}</span>
+            </div>
+            <div class="speaker">${escapeHtml(result.speaker)}</div>
+            <div class="line">${highlight(result.text, query)}</div>
+            ${context}
+          </article>
+        `;
+      }
+
+      function highlight(text, query) {
+        let output = escapeHtml(text);
+        const tokens = query
+          .replace(/[，。！？、；：“”‘’（）【】《》]/g, " ")
+          .split(/\s+/)
+          .map((token) => token.trim())
+          .filter((token) => token.length > 1)
+          .sort((a, b) => b.length - a.length);
+        for (const token of tokens) {
+          const safe = escapeRegExp(escapeHtml(token));
+          output = output.replace(new RegExp(safe, "gi"), (match) => `<mark>${match}</mark>`);
+        }
+        return output;
+      }
+
+      function setLog(message) {
+        const time = new Date().toLocaleTimeString("zh-CN", { hour12: false });
+        log.textContent = `[${time}] ${message}`;
+      }
+
+      function escapeHtml(value) {
+        return String(value || "").replace(/[&<>"']/g, (char) => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        }[char]));
+      }
+
+      function escapeRegExp(value) {
+        return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      }
+    </script>
+  </body>
+</html>

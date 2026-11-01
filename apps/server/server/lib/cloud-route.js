@@ -1,0 +1,181 @@
+"use strict";
+
+// Public-deployment cloud preflight shared by the server-side model routes
+// (bureaucracy captions, Endfield ask). /api/cloud/chat keeps its own inline
+// copy so the browser chat surface stays decoupled; this helper mirrors that
+// contract for routes that call the model on the server: BYOK key when the
+// browser supplied one, otherwise the shared allowance (server key plus the
+// daily budget reservation), the public model allowlist, and the public base
+// URL. Local deployments never call this helper.
+
+const { isPublicDeployment } = require("../runtime-profile.js");
+const { resolveCloudCredential } = require("../credential-vault.js");
+const { sessionFromRequest } = require("../security/public-session.js");
+const {
+  pseudonymousCloudUserId,
+  reserveSharedCloudRequest,
+  sharedCloudBudgetConfig,
+} = require("../shared-cloud-budget.js");
+const {
+  DEEPSEEK_PUBLIC_BASE_URL,
+  cloudAuthHeaders,
+  isDeepSeekCloudModelId,
+  normalizeCloudModelId,
+  resolveCloudTarget,
+} = require("../cloud.js");
+
+/**
+ * Build a structured model-route error that carries the HTTP status, machine
+ * code, retry hint, and a user-facing warning the route handler can forward.
+ *
+ * @param {number} status
+ * @param {string} code
+ * @param {number} retryAfter
+ * @param {string} detail
+ * @param {string} warning
+ * @returns {Error & { statusCode?: number, code?: string, warning?: string, retryAfter?: number }}
+ */
+function cloudRouteError(status, code, retryAfter, detail, warning) {
+  const error = /** @type {Error & { statusCode?: number, code?: string, warning?: string, retryAfter?: number }} */ (
+    new Error(detail)
+  );
+  error.statusCode = status;
+  error.code = code;
+  error.warning = warning;
+  if (retryAfter > 0) error.retryAfter = retryAfter;
+  return error;
+}
+
+/**
+ * The model-call payload a route hands to the cloud. The helper meters the
+ * shared allowance, so it reads and writes `max_tokens` and `user_id`. Every
+ * other field stays as the caller built it.
+ *
+ * @typedef {{
+ *   model?: string,
+ *   max_tokens?: number,
+ *   user_id?: string,
+ * } & Record<string, unknown>} CloudCallPayload
+ */
+
+/**
+ * Resolve how a server-side model route should call the cloud on the public
+ * deployment: the browser-supplied BYOK key when one is present, otherwise the
+ * shared allowance with a budget reservation. Failures throw the structured
+ * error from `cloudRouteError`, so callers forward `statusCode` / `code` /
+ * `warning` straight from their existing catch blocks.
+ *
+ * @param {object} options
+ * @param {boolean} [options.reserve]
+ * @param {string} [options.credentialId]
+ * @param {string} [options.suppliedApiKey]
+ * @param {string} [options.requestedBaseUrl] Ignored publicly; kept for caller compatibility.
+ * @param {string} [options.model]
+ * @param {CloudCallPayload} options.payload
+ * @param {import("node:http").IncomingMessage} [options.req]
+ * @returns {Promise<{
+ *   apiKey: string, baseUrl: string, model: string, payload: CloudCallPayload,
+ *   pinnedAddress: string, pinnedFamily: number,
+ *   authHeaders: Record<string, string>, usingSharedCloud: boolean,
+ *   reservation: { ok: true, inputTokens: number, outputTokens: number, reservedTokens: number, remainingSessionRequests: number, addUsage: (usage: any) => boolean, markUpstreamStarted: () => void, settle: (options?: any) => any } | null,
+ * }>}
+ */
+async function preparePublicCloudCall({
+  credentialId = "",
+  suppliedApiKey = "",
+  requestedBaseUrl: _requestedBaseUrl = "",
+  model = "deepseek-flash",
+  payload,
+  req,
+  reserve = true,
+}) {
+  if (!isPublicDeployment) {
+    throw new Error("preparePublicCloudCall is only for the public deployment");
+  }
+
+  const suppliedPublicApiKey = String(suppliedApiKey || "").trim();
+  const usingSharedCloud = !suppliedPublicApiKey;
+  const cloudTarget = await resolveCloudTarget(DEEPSEEK_PUBLIC_BASE_URL);
+  const apiKey = String(await resolveCloudCredential({
+    credentialId,
+    provider: "deepseek",
+    targetBaseUrl: cloudTarget.baseUrl,
+    suppliedApiKey: suppliedPublicApiKey,
+    allowSupplied: true,
+  })).trim();
+  const modelName = normalizeCloudModelId(model || "deepseek-flash");
+
+  if (!isDeepSeekCloudModelId(modelName)) {
+    throw cloudRouteError(
+      400,
+      "unsupported_model",
+      0,
+      "Unsupported public cloud model",
+      "该模型不在公网可用模型列表中，请在 Control Panel 选择 DeepSeek Flash 或 V4 Pro。"
+    );
+  }
+
+  const publicSession = sessionFromRequest(req);
+  const sessionNonce = publicSession?.nonce || "";
+  const sessionUserId = pseudonymousCloudUserId(sessionNonce);
+
+  if (!apiKey) {
+    throw cloudRouteError(
+      usingSharedCloud ? 503 : 400,
+      usingSharedCloud ? "shared_cloud_budget_unavailable" : "missing_byok_key",
+      0,
+      usingSharedCloud
+        ? "The site has no shared cloud key configured"
+        : "Missing API key",
+      "缺少云端 API 密钥，请在 Control Panel 的云端模型设置里填写。"
+    );
+  }
+
+  /** @type {any} */
+  let reservation = null;
+  if (usingSharedCloud) {
+    payload.max_tokens = Math.min(
+      Number.isFinite(Number(payload.max_tokens)) ? Number(payload.max_tokens) : 1800,
+      sharedCloudBudgetConfig().maxOutputTokens
+    );
+    payload.user_id = sessionUserId;
+    if (reserve) {
+      try {
+        reservation = reserveSharedCloudRequest({ sessionNonce, payload });
+      } catch (error) {
+        throw cloudRouteError(
+          503,
+          "shared_cloud_budget_unavailable",
+          60,
+          String(error?.message || "Shared cloud allowance is temporarily unavailable"),
+          "共享云端额度暂时不可用，请稍后再试，或在 Control Panel 配置自己的密钥。"
+        );
+      }
+      if (!reservation.ok) {
+        throw cloudRouteError(
+          reservation.code === "shared_cloud_input_too_large" ? 413 : 429,
+          reservation.code,
+          reservation.retryAfter || 0,
+          reservation.detail,
+          "共享云端额度已用完，请明天再试，或在 Control Panel 配置自己的密钥。"
+        );
+      }
+    }
+  } else {
+    payload.user_id = sessionUserId;
+  }
+
+  return {
+    apiKey,
+    baseUrl: cloudTarget.baseUrl,
+    pinnedAddress: cloudTarget.address,
+    pinnedFamily: cloudTarget.family,
+    model: modelName,
+    payload,
+    authHeaders: cloudAuthHeaders(apiKey),
+    usingSharedCloud,
+    reservation: usingSharedCloud && reservation?.ok ? reservation : null,
+  };
+}
+
+module.exports = { preparePublicCloudCall };

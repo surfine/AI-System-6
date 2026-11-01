@@ -1,0 +1,77 @@
+// IME safety: while Chinese/Japanese/Korean composition is in flight, Enter
+// must never submit, confirm, save, or dispatch a shortcut.
+
+import vm from "node:vm";
+import { parse } from "acorn";
+import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
+
+const test = createFeatureTest("input-method-safety");
+const guardSource = read("app/core/input-guard.js");
+const modal = read("app/core/modal.js");
+const wireup = read("app/core/wireup.js");
+const desktopRuntime = read("app/core/desktop-runtime.js");
+const markdownEditor = read("app/core/markdown-editor.js");
+const alarmClock = read("app/features/alarm-clock.js");
+const clioChart = read("app/features/clio-chart.js");
+const actions = read("app/core/actions.js");
+const askBar = read("app/core/ask-bar.js");
+const reader = read("app/features/reader.js");
+
+// The shared guard treats isComposing and the legacy WebKit 229 as composing.
+{
+  const context = vm.createContext({ window: {} });
+  vm.runInContext(guardSource, context);
+  const isComposition = context.window.AISystem6InputGuard.isComposition;
+  test.assert(isComposition({ isComposing: true }) === true, "isComposing blocks submission");
+  test.assert(isComposition({ isComposing: false, keyCode: 229 }) === true, "keyCode 229 blocks submission on legacy WebKit");
+  test.assert(isComposition({ isComposing: false, keyCode: 13 }) === false, "a plain Enter is not composition");
+  test.assert(isComposition({ isComposing: false, key: "Enter" }) === false, "a plain keydown Enter is not composition");
+}
+
+// Every Enter-submit path routes through the shared guard.
+test.assertIncludes(actions, "eventIsTextComposition(event)", "global shortcut dispatch skips composition");
+test.assertIncludes(modal, '!eventIsTextComposition(event)', "the input modal does not confirm during composition");
+test.assertIncludes(wireup, "eventIsTextComposition(event)", "ClioTalk composer skips composition Enter");
+test.assertIncludes(wireup, "projectDiskNameInput.addEventListener", "project name input is guarded");
+test.assertIncludes(reader, "readerUrlInput?.addEventListener", "Reader URL input is guarded");
+// Execute the mounted listener: both an early return and a guarded Enter
+// branch are valid, but neither may submit a composing keystroke.
+{
+  let onKey;
+  let fetched = 0;
+  let prevented = 0;
+  const context = vm.createContext({
+    window: {}, rmounted: false, readerAskForm: null,
+    readerUrlInput: { addEventListener: (_type, handler) => { onKey = handler; } },
+    askReaderQuestion() {}, registerAskBarSource() {}, describeReaderAskScope() {},
+    initReaderSplitHandle() {}, fetchReaderPage() { fetched += 1; },
+    dismissReaderSourceEntry() { return false; },
+  });
+  vm.runInContext(guardSource, context);
+  context.eventIsTextComposition = context.window.AISystem6InputGuard.isComposition;
+  const mount = parse(reader, { ecmaVersion: "latest" }).body.find((node) => node.type === "FunctionDeclaration" && node.id.name === "mountReaderRuntime");
+  vm.runInContext(reader.slice(mount.start, mount.end), context);
+  context.mountReaderRuntime();
+  const key = { key: "Enter", preventDefault() { prevented += 1; } };
+  onKey({ ...key, isComposing: true });
+  onKey({ ...key, keyCode: 229 });
+  test.assert(fetched === 0 && prevented === 0, "Reader leaves composing Enter to the input method");
+  onKey({ ...key, keyCode: 13 });
+  test.assert(fetched === 1 && prevented === 1, "Reader submits once after composition ends");
+}
+test.assertIncludes(desktopRuntime, '!eventIsTextComposition(event)', "the new-project dialog is guarded");
+test.assertIncludes(markdownEditor, '!eventIsTextComposition(event)', "the Markdown editor does not transform during composition");
+test.assertIncludes(alarmClock, '!eventIsTextComposition(event)', "Alarm Clock does not commit during composition");
+test.assertIncludes(clioChart, '!eventIsTextComposition(event)', "ClioChart does not edit cells during composition");
+test.assertIncludes(read("app/core/edit-layers.js"), "eventIsTextComposition(keyEvent)", "the shared layers panel (Cover Glass, ClioPaint, the canvas) does not finish a rename during composition");
+
+// Draft Desk has no Enter-to-generate path: the body is a multiline textarea
+// and generation is button-driven, so composition can never fire a draft.
+test.assertNotIncludes(askBar, 'event.key === "Enter"', "ask bars never intercept Enter themselves");
+test.assertIncludes(
+  wireup,
+  'event.key !== "Enter" || eventIsTextComposition(event)',
+  "the composer's Enter path is the guarded one"
+);
+
+test.finish();

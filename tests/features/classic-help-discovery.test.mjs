@@ -1,0 +1,222 @@
+// Classic Mac OS discovery is progressive: OOBE offers two quiet clues,
+// startup settings explain Finder versus MultiFinder, and user-activated
+// Balloon Help identifies unfamiliar objects without replacing System Help.
+
+import vm from "node:vm";
+import assert from "node:assert/strict";
+import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
+
+const test = createFeatureTest("classic-help-discovery");
+// 文字亮室 builds its own window, so its markup is a block in draft-desk.js
+// rather than a section in index.html. Take that block only -- pulling in the
+// whole module would let its code satisfy this file's markup assertions.
+const lightroomModuleSource = read("app/features/draft-desk.js");
+const lightroomWindowMarkup = lightroomModuleSource.slice(
+  lightroomModuleSource.indexOf("function installLightroomWindow"),
+  lightroomModuleSource.indexOf("installLightroomWindow();"),
+);
+const html = `${read("index.html")}\n${lightroomWindowMarkup}`;
+const app = read("app.js");
+const manifest = read("tooling/runtime-manifest.mjs");
+const menus = read("app/data/menus.js");
+const actions = read("app/core/actions.js");
+const wireup = read("app/core/wireup.js");
+const windowManager = read("app/core/window-manager.js");
+const desktopRuntime = read("app/core/desktop-runtime.js");
+const persistence = read("app/core/persistence-status.js");
+const boot = read("app/core/boot.js");
+const balloon = read("app/core/balloon-help.js");
+const guide = read("app/features/writer-guide.js");
+const en = read("app/data/translations-en.js");
+const zh = read("app/data/translations-zh.js");
+const dictionary = read("app/data/system-dictionary.js");
+const foundation = read("styles/00-foundation.css");
+const liquid = read("styles/70-liquid-glass.css");
+
+test.assertIncludes(manifest, '"app/core/balloon-help.js"', "Balloon Help loads as a small system runtime, not a separate app");
+test.assertMatches(html, /menu-submenu-trigger" data-i18n="help"[\s\S]*data-action="toggle-balloon-help"/, "the Apple menu's one Help submenu offers the historical Show Balloons command");
+test.assertNotIncludes(menus, 'menuItem("toggle-balloon-help"', "Special no longer carries a second copy of it");
+test.assertIncludes(actions, '"toggle-balloon-help": toggleBalloonHelp', "the command reaches the shared Balloon Help mode");
+test.assertIncludes(windowManager, '"toggle-balloon-help": true', "the global help command is deliberately available");
+test.assertMatches(windowManager, /action === "toggle-balloon-help"[\s\S]*hide_balloon_help[\s\S]*show_balloon_help/, "the menu switches between Show and Hide wording");
+
+test.assertMatches(html, /id="balloon-help"[^>]*popover="manual"/, "one system-owned tooltip can enter the browser top layer above modal dialogs");
+test.assertIncludes(html, 'data-balloon-help="balloon_multifinder_switcher"', "the MultiFinder application switcher can identify itself");
+test.assertIncludes(html, 'data-balloon-help-disabled="balloon_clio_send_disabled"', "disabled AI controls can explain why they are unavailable");
+test.assertIncludes(html, 'data-balloon-help="balloon_finder_view_switch"', "the Finder icon/list view switch can identify itself");
+test.assertIncludes(html, 'data-balloon-help="balloon_docmap_fit_view"', "the DocMap fit-view control can identify itself");
+test.assertIncludes(html, 'data-balloon-help="balloon_soundscape_repeat"', "the icon-only Soundscape repeat control can identify itself");
+test.assertIncludes(html, 'data-balloon-help="balloon_soundscape_shuffle"', "the icon-only Soundscape shuffle control can identify itself");
+test.assertIncludes(html, 'data-balloon-help="balloon_theme_switcher"', "the Liquid Glass appearance switch can identify itself");
+test.assertIncludes(html, 'data-balloon-help="balloon_reader_find_related" data-balloon-help-disabled="balloon_reader_find_related_disabled"', "Reader's Find Related Sources explains itself and its disabled state");
+// The expanded balloon set covers the creative workbench (CMF Studio), the
+// fast-draft delivery surface (Quick Draft), and the Control Panel sound
+// switch — each control that acts on the product deserves a one-line identity.
+test.assertIncludes(html, 'data-balloon-help="balloon_cmf_model"', "CMF model chooser can identify itself");
+test.assertIncludes(html, 'data-balloon-help="balloon_cmf_palette"', "CMF finish palette can identify itself");
+test.assertIncludes(html, 'data-balloon-help="balloon_cmf_export"', "CMF USDZ export can identify itself");
+test.assertIncludes(html, 'data-balloon-help="balloon_cmf_live"', "CMF live model indicator can identify itself");
+test.assertIncludes(html, 'data-balloon-help="balloon_qd_protect"', "Quick Draft Protect Selection can identify itself");
+test.assertIncludes(html, 'data-balloon-help="balloon_qd_develop"', "Quick Draft Develop can identify itself");
+test.assertIncludes(html, 'data-balloon-help="balloon_qd_versions"', "Quick Draft Versions restore can identify itself");
+test.assertIncludes(html, 'data-balloon-help="balloon_qd_save_project"', "Quick Draft Save to Project Hard Disk can identify itself");
+test.assertIncludes(html, 'data-balloon-help="balloon_sound_effects"', "the Control Panel sound switch can identify itself");
+test.assertIncludes(html, 'data-balloon-help="balloon_image_prompt_studio"', "the Image Prompt Studio launcher can identify itself");
+for (const key of [
+  "balloon_cmf_model",
+  "balloon_cmf_pose",
+  "balloon_cmf_preset",
+  "balloon_cmf_shuffle",
+  "balloon_cmf_reset",
+  "balloon_cmf_palette",
+  "balloon_cmf_parts",
+  "balloon_cmf_views",
+  "balloon_cmf_reset_view",
+  "balloon_cmf_export",
+  "balloon_cmf_live",
+  "balloon_qd_add_material",
+  "balloon_qd_protect",
+  "balloon_qd_apply",
+  "balloon_qd_develop",
+  "balloon_qd_versions",
+  "balloon_qd_view_article",
+  "balloon_qd_view_canvas",
+  "balloon_qd_teachtext",
+  "balloon_qd_review",
+  "balloon_qd_save_project",
+  "balloon_qd_export_md",
+  "balloon_sound_effects",
+  "balloon_image_prompt_studio",
+  "balloon_ips_idea",
+  "balloon_ips_title",
+  "balloon_ips_aspect",
+  "balloon_ips_style",
+  "balloon_ips_generate",
+  "balloon_ips_ref",
+  "balloon_ips_copy",
+  "balloon_ips_gpt_out",
+  "balloon_ips_universal_out",
+  "balloon_ips_history",
+]) {
+  test.assertIncludes(en, `${key}:`, `English balloon copy exists for ${key}`);
+  test.assertIncludes(zh, `${key}:`, `Chinese balloon copy exists for ${key}`);
+}
+test.assertMatches(balloon, /function balloonHelpKeyFor\(target\)[\s\S]*balloonHelpDisabled/, "balloon copy follows the target's live availability state");
+test.assertIncludes(balloon, "function revealUnavailableControlWhy", "grey controls can explain once without Balloon Help mode");
+test.assertIncludes(balloon, "function installGrayAffordanceClicks", "one shared shell click path owns grey one-tap why");
+test.assertIncludes(balloon, "grayAffordanceExplained", "same window+reason does not nag a second balloon");
+test.assertMatches(balloon, /pointerover[\s\S]*focusin[\s\S]*pointerdown/, "pointer, keyboard, and explicit touch help are supported");
+test.assertMatches(balloon, /showPopover[\s\S]*positionBalloonHelp/, "showing a balloon promotes it above dialog top layers before positioning it");
+test.assertIncludes(balloon, 'matches?.(":popover-open")', "hiding a balloon also removes it from the browser top layer");
+test.assertIncludes(balloon, 'event.pointerType !== "touch"', "touch inspection is distinct from pointer hover");
+test.assertMatches(balloon, /if \(!target\.closest\("\.menu-bar"\)\)[\s\S]*preventDefault\(\)/, "touch help inspects desktop objects without activating them while keeping the menu available");
+test.assertMatches(balloon, /if \(target === balloonHelpTarget\)[\s\S]*hideBalloonHelp\(\)[\s\S]*return;/, "a second tap on the inspected object lets its action through");
+test.assertMatches(balloon, /if \(balloonHelpTarget && !balloonHelpTarget\.contains\(event\.target\)\)[\s\S]*hideBalloonHelp\(\)/, "tapping away dismisses the old balloon before the next press lands");
+test.assertIncludes(balloon, 'const BALLOON_HELP_STORAGE_KEY', "the user's Balloon Help choice persists across sessions");
+test.assertIncludes(balloon, 'window.matchMedia("(hover: hover)")', "the discoverable default applies to hover-capable devices only");
+test.assertIncludes(balloon, "balloonHelpTouchedInspect", "the hover default never arms touch inspect mode");
+
+test.assertIncludes(html, 'id="startup-environment-help"', "startup settings contain one concise environment explanation");
+test.assertIncludes(desktopRuntime, 't("startup_environment_explanation")', "the startup choice explains both environments before the user changes it");
+test.assertIncludes(en, "Finder uses one application at a time. MultiFinder keeps several applications open", "English startup copy compares both task models");
+test.assertIncludes(zh, "Finder 一次使用一个应用。MultiFinder 让多个应用保持打开，并从菜单栏右侧切换。", "Chinese startup copy uses the approved compact comparison");
+test.assertIncludes(zh, "MultiFinder 已开启。可从菜单栏右侧切换正在运行的应用。", "the one-time switcher clue uses the approved status feedback");
+test.assertMatches(desktopRuntime, /multiFinderOnlyOption\.dataset\.balloonHelp = "balloon_startup_multifinder_only"[\s\S]*aria-disabled[\s\S]*delete multiFinderOnlyOption\.dataset\.balloonHelp/, "Finder-only startup choices explain their MultiFinder requirement only while disabled");
+test.assertMatches(balloon, /function syncWindowBalloonHelpTargets[\s\S]*balloon_windowshade[\s\S]*balloon_zoom_box[\s\S]*balloon_grow_box/, "WindowShade, Zoom, and grow keep distinct help semantics");
+test.assertIncludes(balloon, 'closeBox.dataset.balloonHelp ||= "balloon_close_box"', "every window's close box can identify itself");
+test.assertMatches(balloon, /function disabledMenuBalloonHelpKey[\s\S]*balloon_disabled_menu_project[\s\S]*balloon_disabled_menu_selection[\s\S]*balloon_disabled_menu_context/, "disabled menu commands receive a concise reason instead of repeating their label");
+test.assertIncludes(windowManager, "syncDisabledMenuBalloonHelp()", "menu availability refreshes disabled-command help at the same time");
+test.assertIncludes(wireup, "syncWindowBalloonHelpTargets()", "window control help is installed after native grow boxes exist");
+test.assertIncludes(app, "let multiFinderSwitcherHintSeen = false", "the post-enable switcher clue has a one-time state");
+test.assertIncludes(persistence, "multiFinderSwitcherHintSeen,", "the one-time MultiFinder clue uses the existing settings record");
+test.assertIncludes(persistence, "settings.multiFinderSwitcherHintSeen", "the one-time clue restores without a new storage boundary");
+test.assertMatches(desktopRuntime, /nextEnvironment === "multifinder"[\s\S]*multiFinderSwitcherHintSeen = false/, "choosing MultiFinder arms its switcher clue");
+test.assertIncludes(boot, "revealMultiFinderSwitcherHint()", "the clue appears only after the desktop finishes booting");
+test.assertMatches(guide, /async function completeClioOnboarding\([\s\S]*requestAnimationFrame\(\(\) => revealMultiFinderSwitcherHint\(\)\)/, "finishing the Clio introduction can reveal an already-enabled MultiFinder switcher without another restart");
+test.assertMatches(balloon, /function revealMultiFinderSwitcherHint\(\)[\s\S]*!clioOnboardingCompleted[\s\S]*isMultiFinderMode\(\)[\s\S]*multifinder_switcher_discovery/, "the switcher clue waits for completed OOBE and an active MultiFinder environment");
+
+for (const key of [
+  "show_balloon_help",
+  "hide_balloon_help",
+  "balloon_multifinder_switcher",
+  "balloon_clio_send_disabled",
+  "startup_environment_explanation",
+  "multifinder_switcher_discovery",
+  "balloon_startup_multifinder_only",
+  "balloon_zoom_box",
+  "balloon_grow_box",
+  "balloon_windowshade",
+  "balloon_text_disk",
+  "balloon_project_cd",
+  "balloon_question_sheet",
+  "balloon_review_desk",
+  "balloon_ask_bar",
+  "balloon_cloud_status",
+  "balloon_time_machine_archive",
+  "balloon_docmap_layout",
+  "balloon_bureaucracy_download_disabled",
+  "balloon_reader_open_clio_stage_disabled",
+  "balloon_docmap_save_disabled",
+  "balloon_disabled_menu_selection",
+  "balloon_disabled_menu_project",
+  "balloon_disabled_menu_context",
+  "balloon_close_box",
+  "balloon_finder_view_switch",
+  "balloon_docmap_fit_view",
+  "balloon_soundscape_repeat",
+  "balloon_soundscape_shuffle",
+  "balloon_theme_switcher",
+  "balloon_reader_find_related",
+  "balloon_reader_find_related_disabled",
+]) {
+  test.assertIncludes(en, `${key}:`, `English copy exists for ${key}`);
+  test.assertIncludes(zh, `${key}:`, `Chinese copy exists for ${key}`);
+}
+
+test.assertIncludes(dictionary, 'id: "balloon-help"', "System Help documents the optional Balloon Help mode");
+test.assertIncludes(dictionary, "adapted from System 7", "Help records Balloon Help's actual historical source");
+test.assertIncludes(dictionary, "The short ClioTalk introduction for a first visit or an intentional replay", "System Help matches the Clio-owned first-use introduction");
+test.assertMatches(html, /apple-menu-popover[\s\S]*data-action="open-system-help"/, "System Help is in the Apple menu's Help submenu");
+test.assertIncludes(en, "balloon_system_help:", "English explains the System Help entry");
+test.assertIncludes(zh, "balloon_system_help:", "Chinese explains the System Help entry");
+
+test.assertMatches(html, /<header class="menu-bar"[\s\S]*id="balloon-help"[\s\S]*<\/header>/, "Balloon Help inherits the existing system menu layer instead of adding z-index debt");
+test.assertMatches(foundation, /\.balloon-help \{[\s\S]*var\(--balloon-help-bg\)/, "Classic uses the shared system balloon geometry");
+test.assertMatches(foundation, /\.balloon-help \{[\s\S]*inset: auto;[\s\S]*margin: 0;/, "the top-layer balloon keeps its measured viewport position instead of popover auto-centering");
+test.assertIncludes(balloon, "window.visualViewport", "balloons stay inside the visible viewport during zoom and mobile resizing");
+test.assertIncludes(balloon, "function placeBalloonHelp", "balloon placement is one pure function over rectangles");
+test.assertIncludes(balloon, '["below", "above", "right", "left"]', "balloons prefer the familiar vertical callout, and the order is the preference");
+// A menu the balloon belongs to is kept clear whether it is already pulled down
+// or about to be, so the balloon never lands on the commands the user is
+// reaching for next. The geometry itself is held by balloon-help-placement.
+test.assertIncludes(balloon, "function balloonHelpOpenSurfaces", "an open menu joins the rectangles the balloon keeps clear");
+test.assertIncludes(balloon, "function balloonHelpPredictedPanelRect", "so does the menu a control has not pulled down yet");
+test.assertIncludes(balloon, "function balloonHelpPushClear", "a balloon steps aside by the smallest move rather than abandoning the side");
+test.assertIncludes(balloon, 'balloon.style.setProperty("--balloon-help-tail-top"', "side callouts keep their tail aimed at the target");
+test.assertMatches(foundation, /\.balloon-help\[data-side="left"\]::before[\s\S]*\.balloon-help\[data-side="right"\]::before/,
+  "edge targets can use horizontal balloon tails instead of being covered");
+test.assertMatches(foundation, /\.menu-sub-popover \{\s*z-index: var\(--z-system-menu-subpopover\)/, "menu sub-popovers keep their own system layer");
+test.assertMatches(foundation, /\.balloon-help \{\s*z-index: var\(--z-balloon-help\)/, "balloons use a dedicated layer above modal dialogs");
+const windowsCss = read("styles/10-windows.css");
+test.assertIncludes(windowsCss, "body.is-balloon-help [data-balloon-help]", "help mode gives eligible objects a visible pointer affordance");
+test.assert(["\n.close-box,", "\n.cloud-model-indicator {"].every((rule) => windowsCss.indexOf(rule) >= 0 && windowsCss.indexOf(rule) < windowsCss.indexOf("body.is-balloon-help [data-balloon-help]")),
+  "the help pointer follows the window-control cursors it replaces, in their own sheet");
+test.assertIncludes(liquid, "--balloon-help-radius: var(--r-lg)", "Liquid Glass changes balloon material through tokens");
+test.assertNotIncludes(liquid, "body[data-theme=\"liquid-glass\"] .balloon-help", "Liquid Glass does not fork the Balloon Help DOM or selector");
+
+// Exercise hit testing with a disabled button behind a live foreground tab.
+const disabledBehind = { matches: () => true, disabled: true };
+const hitContext = vm.createContext({
+  document: { elementsFromPoint: () => [disabledBehind] },
+  controlIsUnavailable: (el) => el === disabledBehind,
+  unavailableControlReasonKey: () => "unavailable",
+});
+vm.runInContext(balloon.slice(balloon.indexOf("function unavailableControlFromEvent("), balloon.indexOf("function installGrayAffordanceClicks(")), hitContext);
+const hit = hitContext.unavailableControlFromEvent;
+const liveTab = { closest: (selector) => selector.includes("role='tab'") ? {} : null };
+assert.equal(hit({ target: liveTab, clientX: 10, clientY: 10 }), null);
+assert.equal(hit({ target: { closest: () => disabledBehind }, clientX: 10, clientY: 10 }), disabledBehind);
+assert.equal(hit({ target: { closest: () => null }, clientX: 10, clientY: 10 }), disabledBehind);
+test.assert(true, "live foreground controls win over lower disabled controls while disabled-control hit recovery remains available");
+
+test.finish();

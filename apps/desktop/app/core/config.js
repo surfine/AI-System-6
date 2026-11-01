@@ -1,0 +1,1299 @@
+// Static runtime configuration for AI System 6. Keep DOM behavior in app.js.
+window.AISystem6Perf = (() => {
+  const buckets = new Map();
+  const slowEvents = [];
+  const now = () => (typeof performance !== "undefined" && performance.now ? performance.now() : Date.now());
+
+  function record(name, durationMs = 0, meta = {}) {
+    const duration = Math.max(0, Number(durationMs) || 0);
+    if (!buckets.has(name)) buckets.set(name, { samples: [], count: 0, total: 0 });
+    const bucket = buckets.get(name);
+    bucket.count += 1;
+    bucket.total += duration;
+    bucket.samples.push(duration);
+    if (bucket.samples.length > 80) bucket.samples.shift();
+    if (duration >= 80 || meta.slow) {
+      slowEvents.push({ name, duration, meta, at: new Date().toISOString() });
+      if (slowEvents.length > 20) slowEvents.shift();
+    }
+    return duration;
+  }
+
+  function start(name, meta = {}) {
+    const startedAt = now();
+    return (extra = {}) => record(name, now() - startedAt, { ...meta, ...extra });
+  }
+
+  function summary(name) {
+    const bucket = buckets.get(name);
+    if (!bucket) return null;
+    const sorted = [...bucket.samples].sort((a, b) => a - b);
+    const percentile = (ratio) => sorted[Math.min(sorted.length - 1, Math.floor((sorted.length - 1) * ratio))] || 0;
+    return {
+      count: bucket.count,
+      p50: percentile(0.5),
+      p95: percentile(0.95),
+      last: bucket.samples[bucket.samples.length - 1] || 0,
+    };
+  }
+
+  return {
+    record,
+    start,
+    summary,
+    slowEvents: () => [...slowEvents],
+  };
+})();
+
+window.AISystem6Config = (() => {
+  const legacyDefaultClioTalkSystemPrompt = "You are ClioTalk, the concise, thoughtful AI voice inside AI System 6. AI System 6 is a source-first local AI writing desktop for turning sources, judgment, feeling, and the writer's own language into work that a real recipient can receive. It is not a chat page, a retro skin, a model name, or a product from a model vendor. Explain the desk through visible writing objects: Project Hard Disk, File Floppy, Reader, Scrapbook, Question Sheet, Outline, Section Drafts, TeachText, Review Desk, and Project CD. Preserve rough human input when it carries voice or judgment; do not turn the writer into a model mouthpiece. Prefer fewer, clearer handoff steps over more output; do not create pressure by multiplying drafts, variants, or tasks unless the user asks. Be useful, calm, and direct.";
+  const previousDefaultClioTalkSystemPrompt = "You are ClioTalk inside AI System 6: a calm writing companion for turning sources, judgment, feeling, and the writer's own language into work a real recipient can receive. Preserve rough human voice; do not turn the writer into a model mouthpiece. Avoid AI-flavored filler, inflated significance, promotional polish, vague authority, and generic uplift. Keep help concrete, low-pressure, and oriented to the visible writing objects on the desk.";
+  const defaultClioTalkSystemPrompt = () => window.AISystem6PromptFilesRuntime?.resolvePromptFile("cliotalk.main", null, "en").body || "";
+  const legacyClioTalkSystemPrompts = Object.freeze([
+    legacyDefaultClioTalkSystemPrompt,
+    previousDefaultClioTalkSystemPrompt,
+  ]);
+
+  // Release identity comes from app/generated/build-info.js (written at build
+  // time). The only fallback here is an explicit dev marker: an unbuilt or
+  // unpackaged checkout must never masquerade as a current release.
+  const devBuildInfoFallback = Object.freeze({
+    version: "0.0.0-dev",
+    build: "dev",
+    sourceCommit: "",
+  });
+
+  function getAppBuildInfo() {
+    const info = window.AISystem6BuildInfo;
+    return info && typeof info.version === "string" && info.version
+      ? info
+      : devBuildInfoFallback;
+  }
+
+  const defaultWindowViewModes = Object.freeze({
+    finder: "icon",
+    helpFolder: "icon",
+    applications: "icon",
+    disk: "icon",
+    documents: "icon",
+    projects: "icon",
+    imageManager: "icon",
+  });
+
+  const memoryCardPairs = Object.freeze([
+    { key: "apple-ii", name: "Apple II", color: "blue", icon: "apple-ii" },
+    { key: "lisa", name: "Lisa", color: "blue", icon: "lisa" },
+    { key: "mac-128k", name: "Macintosh 128K", color: "blue", icon: "mac-128k" },
+    { key: "mac-portable", name: "Macintosh Portable", color: "green", icon: "mac-portable" },
+    { key: "powerbook-100", name: "PowerBook 100", color: "green", icon: "powerbook-100" },
+    { key: "newton", name: "Newton MessagePad", color: "green", icon: "newton" },
+    { key: "quicktake", name: "QuickTake", color: "green", icon: "quicktake" },
+    { key: "laserwriter", name: "LaserWriter", color: "yellow", icon: "laserwriter" },
+    { key: "applecd-sc", name: "AppleCD SC", color: "yellow", icon: "applecd-sc" },
+    { key: "keyboard", name: "Apple Keyboard", color: "yellow", icon: "keyboard" },
+    { key: "adb-mouse", name: "ADB Mouse", color: "red", icon: "adb-mouse" },
+    { key: "pippin", name: "Pippin", color: "red", icon: "pippin" },
+  ]);
+
+  const longTaskControlSelectors = Object.freeze([
+    '[data-action="generate-outline"]',
+    '[data-action="critique-outline"]',
+    '[data-action="expand-outline"]',
+    '[data-action="mingming-outline"]',
+    '[data-action="reduce-outline"]',
+    '[data-action="structure-outline"]',
+    '[data-action="draft-selected-section"]',
+    '[data-action="revise-draft"]',
+    '[data-action="polish-draft"]',
+    '[data-action="suggest-draft"]',
+    '[data-action="eli5-rewrite-section"]',
+    '[data-action="eli5-review-section"]',
+    '[data-action="one-sentence-rewrite-section"]',
+    '[data-action="one-sentence-check-section"]',
+    '[data-action="run-claim-check"]',
+    '[data-action="review-mingming-handoff"]',
+    '[data-action="review-mingming-handoff-backstage"]',
+    '[data-action="run-rebuild-flow"]',
+    '[data-action="make-docmap"]',
+    '[data-action="make-docmap-selection"]',
+    '[data-action="make-docmap-source"]',
+    '[data-action="reader-make-docmap"]',
+    '[data-action="reader-docmap-selection"]',
+    '[data-action="reader-docmap-source"]',
+    '[data-action="time-machine-docmap"]',
+    '[data-action="time-machine-docmap-selection"]',
+    '[data-action="time-machine-docmap-source"]',
+    '[data-action="clio-stage-docmap"]',
+    '[data-action="ai-print-to-slides"]',
+    '[data-action="generate-marp-open-clio-stage"]',
+    '[data-action="selection-look-up"]',
+    '[data-action="selection-translate"]',
+    "#translation-pad-translate",
+    "#reader-docmap-button",
+    "#teachtext-docmap",
+    "#clipboard-docmap",
+    "#teachtext-translate",
+    "#teachtext-download-bilingual",
+  ]);
+
+  const storageConfig = Object.freeze({
+    storageVersion: 2,
+    indexedDbName: "ai-system-6-db",
+    // Version 3 added the "cities" store (Micropolis saves); version 4 adds
+    // the separate "bonsaiCities" store so the original simulator's saves
+    // never share provenance with the GPL games. Version 5 adds
+    // "imageAttachments" so a picture is one object shared by every surface,
+    // instead of base64 swelling each project and scrap record. Version 6
+    // adds "transitPlans": the Basin's line-network plans, which Rootline
+    // writes and Bonsai City reads when the mayor flips the pot. Version 7
+    // adds "nativeDocuments" (ClioWorks N0, owner decision 2026-10-24): the
+    // bytes of an Office document (docx/xlsx/pptx) kept on the Project Hard
+    // Disk, one row per document, named by its small chatFiles item (type
+    // "office", nativeDocumentId). The store name is spelled where it is used
+    // (the upgrade below and the lazy native-binaries module), not here: the
+    // boot bundle pays for every byte. The upgrade is a no-op for every
+    // existing store.
+    indexedDbVersion: 7,
+    referenceStoreName: "projectReferences",
+    keyvalStoreName: "keyval",
+    projectsStoreName: "projects",
+    scrapsStoreName: "scraps",
+    trashStoreName: "trashItems",
+    chatFoldersStoreName: "chatFolders",
+    chatFilesStoreName: "chatFiles",
+    citiesStoreName: "cities",
+    bonsaiCitiesStoreName: "bonsaiCities",
+    imageAttachmentsStoreName: "imageAttachments",
+    transitPlansStoreName: "transitPlans",
+  });
+
+  const projectConfig = Object.freeze({
+    // Fallback only. "Project Hard Disk" is the name of the object, not a good
+    // name for a disk sitting inside it, and it left an English literal in the
+    // Chinese desktop; getDefaultProjectName() localizes it once translations
+    // are loaded.
+    defaultProjectName: "New Project",
+    // The names the APP has ever chosen for the first project, in every
+    // language it could have chosen one in. A desk that first opened in
+    // Chinese stored 新项目; switching to English then showed a Chinese name
+    // the writer never typed. These are the only names projectDisplayName
+    // re-reads through the current language -- a name the writer typed is
+    // their own and is never rewritten.
+    // "default_project_name" is the raw translation key a slow boot stored
+    // before the language table arrived; listing it here repairs those
+    // records on display without a migration.
+    appAuthoredDefaultProjectNames: Object.freeze(["New Project", "新项目", "default_project_name"]),
+    displayNameRewrites: Object.freeze([
+      Object.freeze({
+        pattern: new RegExp(`^${["示范", "项目"].join("")}\\s*-\\s*本地\\s*AI\\s*写作(\\s+\\d+)?$`, "u"),
+        replacement: "AI 写作示例$1",
+      }),
+      Object.freeze({
+        pattern: new RegExp(`^${["Demo", "Project"].join(" ")}\\s*-\\s*Local\\s+AI\\s+Writing(\\s+\\d+)?$`, "i"),
+        replacement: "AI Writing Sample$1",
+      }),
+      Object.freeze({
+        pattern: /^还原\s*-\s*AI System 6：一台为本地\s*AI\s*写作而生的小 Macintosh$/u,
+        replacement: "还原 - AI System 6：一台为 AI 写作而生的小 Macintosh",
+      }),
+      Object.freeze({
+        pattern: /^Rebuild\s*-\s*AI System 6: A Small Macintosh For Local AI Writing$/i,
+        replacement: "Rebuild - AI System 6: A Small Macintosh For AI Writing",
+      }),
+    ]),
+  });
+
+  const docToolConfig = Object.freeze({
+    docMapMinSelectionChars: 200,
+    docMapMinDocumentChars: 800,
+    // ClioChart and ClioStage read text through DocMap's readiness rules; a
+    // chart needs far less text than a map ("A 299, B 399" is a chart).
+    clioChartMinSourceChars: 40,
+    // A deck can be three pages: a short article is enough, unlike a map.
+    clioStageMinSourceChars: 200,
+    dictionaryMaxSelectionChars: 160,
+    // The Split button greys below this and runRebuildFlow() refuses below
+    // it, so both read the same number.
+    rebuildMinSourceChars: 400,
+    defaultOutlineSection: "New Section",
+  });
+
+  const contextBudgetConfig = Object.freeze({
+    maxCuratedContextItems: 3,
+    maxReferenceChunks: 12,
+    maxContextChars: 12000,
+    maxContextItemChars: 1400,
+    maxAttachedContextChars: 5000,
+    maxPipelineReferenceChunks: 12,
+    maxPipelineContextChars: 18000,
+    contextCharsPerToken: 4,
+    reservedOutputTokens: 1536,
+    reservedSafetyTokens: 256,
+    ragBudgetShare: 0.45,
+  });
+
+  const flowConfig = Object.freeze({
+    stepOrder: Object.freeze(["topic", "research", "outline", "drafting", "check"]),
+  });
+
+  const windowManagementConfig = Object.freeze({
+    tileableWindowNames: Object.freeze([
+      "assistant",
+      "teachText",
+      "documents",
+      "chatFile",
+      "scrapbook",
+      "applications",
+      "projects",
+      "reader",
+      "timeMachine",
+      "endfieldTerminal",
+      "findPath",
+      "questionSheet",
+      "outline",
+      "sectionDrafts",
+      "reviewDesk",
+      "docMap",
+      "bureaucracyMeme",
+      "clioStage",
+      "liquidCover",
+      "quickDraft",
+      "cmfStudio",
+      "soundscape",
+      "imageManager",
+      "systemHelp",
+      "notificationCenter",
+      "projectCd",
+      "importUtility",
+      "printDirectory",
+      "pageSetup",
+    ]),
+    resizableWindowNames: Object.freeze([
+      // A window that can be sized shows the two scroll bar lanes whose corner
+      // cell is the grow box. Dialogs and desk accessories have neither in
+      // System 6 — they open at one size, so they are not listed here.
+      "assistant",
+      "teachText",
+      "documents",
+      "scrapbook",
+      "applications",
+      "finder",
+      "helpFolder",
+      "disk",
+      "projectDisks",
+      "trash",
+      "textDisk",
+      "projects",
+      "reader",
+      "timeMachine",
+      "endfieldTerminal",
+      "questionSheet",
+      "outline",
+      "sectionDrafts",
+      "reviewDesk",
+      "docMap",
+      "bureaucracyMeme",
+      "clioStage",
+      "clioChart",
+      "liquidCover",
+      "quickDraft",
+      "cmfStudio",
+      "soundscape",
+      // Theme Lab is a workbench with tabs and a live token editor, so it earns
+      // a grow box. Its static markup used to hand-draw one, but themeLab was
+      // never in this list and installGrowBoxes() returns before wiring
+      // anything for a window it does not consider resizable -- so that corner
+      // was painted and dead for as long as it existed.
+      "themeLab",
+      "imageManager",
+      "systemHelp",
+      "projectCd",
+    ]),
+    assistantSidecarWindowNames: Object.freeze(["dictation", "translationPad", "importUtility"]),
+  });
+
+  return {
+    devBuildInfoFallback,
+    getAppBuildInfo,
+    defaultWindowViewModes,
+    memoryCardPairs,
+    longTaskControlSelectors,
+    storageConfig,
+    defaultClioTalkSystemPrompt,
+    legacyClioTalkSystemPrompts,
+    legacyDefaultClioTalkSystemPrompt,
+    projectConfig,
+    docToolConfig,
+    contextBudgetConfig,
+    flowConfig,
+    windowManagementConfig,
+  };
+})();
+
+const lazyScriptPromises = new Map();
+const lazyRetryNonces = new Map();
+
+function lazyScriptTimeoutMs() {
+  const configured = Number(window.AISystem6LazyScriptTimeoutMs);
+  // Long enough for a slow device on a slow link to finish one module; a
+  // timeout no longer re-inserts the script, so waiting longer costs nothing.
+  return Number.isFinite(configured) && configured > 0 ? configured : 15000;
+}
+
+function lazyScriptUrl(src) {
+  const build = window.AISystem6Config?.getAppBuildInfo?.().build || "dev";
+  return `${src}${src.includes("?") ? "&" : "?"}v=${encodeURIComponent(build)}`;
+}
+
+function resolveClassicScriptSource(src) {
+  return src;
+}
+
+function removeLazyScriptNode(src) {
+  const resolvedSrc = resolveClassicScriptSource(src);
+  document
+    .querySelectorAll(`script[data-lazy-src="${CSS.escape(resolvedSrc)}"]`)
+    .forEach((node) => node.remove());
+}
+
+// A failed script can be cached (especially 404 responses), so a retry must
+// re-fetch a fresh URL. The ?r= nonce changes only after a failure; the
+// canonical ?v=<build> cache-buster stays untouched.
+function lazyScriptUrlWithRetryNonce(resolvedSrc) {
+  const base = lazyScriptUrl(resolvedSrc);
+  const nonce = lazyRetryNonces.get(resolvedSrc) || 0;
+  return nonce > 0 ? `${base}${base.includes("?") ? "&" : "?"}r=${nonce}` : base;
+}
+
+function loadClassicScriptOnce(src) {
+  const resolvedSrc = resolveClassicScriptSource(src);
+  if (lazyScriptPromises.has(resolvedSrc)) return lazyScriptPromises.get(resolvedSrc);
+  const promise = new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[data-lazy-src="${CSS.escape(resolvedSrc)}"]`);
+    if (existing?.dataset.loaded === "true") {
+      resolve(true);
+      return;
+    }
+    const script = existing || document.createElement("script");
+    let timer = null;
+    // A timeout is not a failure to run. Removing an inserted classic script
+    // does not stop it executing once its response arrives, so the old retry
+    // inserted a second copy and the module's top-level const was declared
+    // twice ("Identifier 'GRAIN_DIFF_CELL_BUDGET' has already been declared",
+    // seen 2026-10-08 on a slow Liquid Glass boot). The element now stays in
+    // the document and marks itself loaded whenever it arrives; a timed-out
+    // call gives up, and the next call waits on the same element. Callers
+    // wait through a list on the element, so the element's own onload/onerror
+    // stay the single trigger a browser (or the boot VM) fires.
+    const waiter = {
+      load: () => { clearTimeout(timer); resolve(true); },
+      error: () => {
+        clearTimeout(timer);
+        // onerror means it never ran: drop the element so the next call
+        // fetches a fresh copy with a retry nonce.
+        lazyRetryNonces.set(resolvedSrc, (lazyRetryNonces.get(resolvedSrc) || 0) + 1);
+        lazyScriptPromises.delete(resolvedSrc);
+        script.remove();
+        reject(new Error(`Could not load ${resolvedSrc}`));
+      },
+    };
+    if (!existing) {
+      script.src = lazyScriptUrlWithRetryNonce(resolvedSrc);
+      script.dataset.lazySrc = resolvedSrc;
+      script.lazyWaiters = [];
+      script.onload = () => {
+        script.dataset.loaded = "true";
+        script.lazyWaiters.splice(0).forEach((entry) => entry.load());
+      };
+      script.onerror = () => {
+        script.lazyWaiters.splice(0).forEach((entry) => entry.error());
+      };
+    }
+    (script.lazyWaiters ||= []).push(waiter);
+    timer = setTimeout(() => {
+      const index = script.lazyWaiters.indexOf(waiter);
+      if (index >= 0) script.lazyWaiters.splice(index, 1);
+      lazyScriptPromises.delete(resolvedSrc);
+      reject(new Error(`Timed out loading ${resolvedSrc}`));
+    }, lazyScriptTimeoutMs());
+    if (!existing) document.head.append(script);
+  });
+  lazyScriptPromises.set(resolvedSrc, promise);
+  return promise;
+}
+
+// Lazy modules load through one factory. Where a module installs a Loaded
+// flag (or its API object), the loader short-circuits on it; every loader
+// keeps a shared per-module promise so concurrent callers share one load, and
+// a failed load clears the promise so a later retry can succeed. Data loaders
+// resolve to the object they install. All loaders always return a Promise, so
+// both `await` and `.then()` callers behave identically.
+// Stylesheets can be lazy too. A window whose module is lazy and whose CSS is
+// scoped to it does not need that CSS in the boot bundle; it is requested here
+// and awaited before the module runs, so the window never paints unstyled.
+const lazyStylePromises = new Map();
+
+function loadStylesheetOnce(href) {
+  // An appearance sheet has one owner: the registry keeps one <link> per sheet,
+  // in cascade order right after the boot bundle. A window that needs one asks
+  // it rather than appending a second copy after everything else.
+  const appearanceSheet = window.AISystem6Theme?.loadAppearanceStylesheet?.(href);
+  if (appearanceSheet) return appearanceSheet.then(() => true, () => false);
+  if (lazyStylePromises.has(href)) return lazyStylePromises.get(href);
+  const promise = new Promise((resolve) => {
+    const existing = document.querySelector(`link[data-lazy-style="${CSS.escape(href)}"]`);
+    if (existing?.dataset.loaded === "true") {
+      resolve(true);
+      return;
+    }
+    const link = existing || document.createElement("link");
+    const settle = (loaded) => {
+      link.dataset.loaded = String(loaded);
+      // A stylesheet that failed must not be remembered as loaded, so a later
+      // open can try again.
+      if (!loaded) lazyStylePromises.delete(href);
+      resolve(loaded);
+    };
+    link.rel = "stylesheet";
+    link.href = lazyScriptUrl(href);
+    link.dataset.lazyStyle = href;
+    link.onload = () => settle(true);
+    // A missing stylesheet degrades the window, it does not break it: the
+    // module still loads and the failure stays visible on screen.
+    link.onerror = () => settle(false);
+    if (!existing) document.head.append(link);
+  });
+  lazyStylePromises.set(href, promise);
+  return promise;
+}
+
+function createLazyModuleLoader(flag, sources, resolveData = false, stylesheets = []) {
+  let loadPromise = null;
+  // A classic script that loaded but did not install its API has already run
+  // its top-level statements: registrations, listeners, timers. Re-inserting
+  // it would run them a second time, so this is remembered and reported
+  // instead of retried - recovery is a reload (retryBoot), not another insert.
+  let ranWithoutInstalling = false;
+  return async function ensureLazyModuleLoaded() {
+    if (flag && window[flag]) return resolveData ? (window[flag] || {}) : true;
+    if (loadPromise) return loadPromise;
+    if (ranWithoutInstalling) {
+      throw new Error(`${flag || sources.join(", ")} ran without installing its API; reload to recover.`);
+    }
+    // The stylesheet request starts in parallel with the module and is awaited
+    // with it, so the two arrive together.
+    const styleChain = Promise.all(stylesheets.map((href) => loadStylesheetOnce(href)));
+    const chain = sources
+      .reduce((pending, src) => pending.then(() => loadClassicScriptOnce(src)), Promise.resolve())
+      .then(() => styleChain);
+    loadPromise = chain
+      .then(() => {
+        // A script can fire onload without executing (syntax error) or a
+        // module can fail to install its API. Loading "succeeded" must mean
+        // the module is actually present, otherwise callers would proceed
+        // against an uninstalled module.
+        if (flag && !window[flag]) {
+          sources.forEach(removeLazyScriptNode);
+          ranWithoutInstalling = true;
+          throw new Error(`${flag} did not install after loading ${sources.join(", ")}`);
+        }
+        return resolveData ? (window[flag] || {}) : true;
+      })
+      .catch((error) => {
+        // A rejected chain is a transfer/parse failure: nothing of this load
+        // ran, so the next call may try again.
+        loadPromise = null;
+        throw error;
+      });
+    return loadPromise;
+  };
+}
+
+const ensureWritingFlowModule = createLazyModuleLoader("AISystem6WritingFlowLoaded", [
+  "app/core/explanation-lens.js",
+  "app/data/evergreen-demo-corpus.js",
+  "app/content/rebuild-samples.js",
+  // The outline tree's parse/serialise half (split from app/core/markdown.js):
+  // Writing Flow edits the tree through it.
+  "app/core/markdown-outline.js",
+  "app/features/writing-flow.js",
+  // 「还原写作对象」: its own window, built on Writing Flow's helpers.
+  "app/features/rebuild-flow.js",
+]);
+// The Luoluo style contract is prompt text, not runtime: only the Mingming
+// commands read it, so it loads with them instead of at boot.
+const ensureMingmingLensModule = createLazyModuleLoader("AISystem6MingmingLensLoaded", [
+  "app/features/mingming-lens.js",
+]);
+const ensureOutlineClaimModule = createLazyModuleLoader("AISystem6OutlineClaimLoaded", [
+  "app/features/mingming-lens.js",
+  "app/features/outline-claim.js",
+]);
+// 文字亮室's durable half. Order matters: the store reads
+// window.AISystem6DarkroomRecord at call time, so the record module has to be
+// evaluated first. Both stay lazy because only the darkroom reads them, and
+// every caller reaches them through the two window handles rather than by bare
+// name — which is why the app booted for a day with neither file ever loaded
+// and nothing said so. ensureDarkroomReady() awaits this before it decides.
+const ensureDarkroomModule = createLazyModuleLoader("AISystem6DarkroomStore", [
+  "app/core/word-diff.js",
+  "app/core/edit-history.js",
+  "app/core/darkroom-record.js",
+  "app/core/darkroom-develop.js",
+  "app/core/darkroom-store.js",
+]);
+// Mac OS X Dock Genie / Scale / Suck: named here (eager) so the lazy
+// window-minimize module can call it without the path vanishing from the boot
+// bundle. The three.js vendor rides a dynamic import inside the FX module.
+const ensureDockMinimizeFxModule = createLazyModuleLoader("AISystem6DockMinimizeFxLoaded", [
+  "app/core/dock-minimize-fx.js",
+]);
+const ensureContextGistModule = createLazyModuleLoader("AISystem6ContextGist", ["app/core/context-gist.js"]);
+const ensureDocMapSourcePolicyModule = createLazyModuleLoader("AISystem6DocMapSourcePolicy", ["app/core/docmap-source-policy.js"]);
+const ensureUserRecoveryMessagesModule = createLazyModuleLoader("AISystem6UserRecoveryMessages", ["app/core/user-recovery-messages.js"]);
+// Five loaders used to sit here with nothing on the other end. They are gone,
+// and their files are declared as unbundled rather than pretending to be lazy:
+//   ensureCityDemandGauge — its file is already named by the Micropolis and
+//     Bonsai City loaders below, so the loader was pure weight;
+//   ensureBonsaiSc2000Reader / ensureBonsaiLargeDatReader /
+//     ensureBonsaiSc2kPalette — the SC2000.DAT / LARGE.DAT / PAL_MSTR.BMP readers,
+//     written and tested but wired to nothing;
+//   ensureScanShadowModule — the save-plan shadow instrument, whose guard in
+//     persistence-status.js reads window.AISystem6ScanShadow only to find it
+//     absent and whose e2e probe no longer exists.
+// internal/agents/DEBT-AUDIT.zh-CN.md holds the per-item evidence, and
+// tests/features/orphan-sources.test.mjs carries the reasons. Wiring any of
+// them is the same one-line loader it was before, now without a do-nothing
+// version of it shipping in the meantime.
+const ensureTeachtextWritingModule = createLazyModuleLoader("AISystem6TeachtextWriting", ["app/features/teachtext-writing.js"]);
+// N15a: 手稿「自动存档」修订与写作面链接跟随（features/writing-safety.js）。
+// 调度与链接解析全在模块里；急载侧只有 wireup 的一行收口、Format 菜单一行、
+// 可用性行与 markdown-editor 的 ⌘/Ctrl+点击路由。
+const ensureWritingSafetyModule = createLazyModuleLoader("AISystem6WritingSafety", ["app/features/writing-safety.js"]);
+const ensureDocumentRolePolicyModule = createLazyModuleLoader("AISystem6DocumentRolePolicy", ["app/core/document-role-policy.js"]);
+// 字符分镜图 (internal/plans/STORYBOARD-SPEC.zh-CN.md): the storyboard parser,
+// its per-paragraph model calls and the sheet. Nothing of it is in the boot
+// payload; document-role-policy.js asks for it when TeachText's Commands menu
+// opens, and Quick Draft's Deliver row asks for it when clicked. listen-beats.js
+// (already named by the Quick Draft loader) is fetched by the module itself
+// when a storyboard is built, so this line names only the two new files.
+const ensureStoryboardAsciiModule = createLazyModuleLoader("AISystem6StoryboardAscii", ["app/data/storyboard-shots.js", "app/core/storyboard-ascii.js"]);
+const ensureMarkdownParser = createLazyModuleLoader("marked", ["app/vendor/marked.umd.js"]);
+const ensurePromptFilesData = createLazyModuleLoader("AISystem6PromptFiles", [
+  "app/core/writing-tools-prompts.js",
+  "app/generated/ai-prompt-files.js",
+], true);
+const ensureWindowPreviewModule = createLazyModuleLoader("AISystem6WindowPreviewLoaded", ["app/core/window-preview.js"]);
+const ensureTranslationZh = createLazyModuleLoader("AISystem6TranslationsZh", ["app/data/translations-zh.js"], true);
+const ensureTranslationEn = createLazyModuleLoader("AISystem6TranslationsEn", ["app/data/translations-en.js"], true);
+async function ensureLanguageFor(language) {
+  const flag = language === "zh" ? "AISystem6TranslationsZh" : "AISystem6TranslationsEn";
+  const partial = window[flag];
+  // A lazy application may have supplied only its own extra strings. That
+  // object is not proof that the complete system language table has arrived.
+  if (partial && !partial.menu_special) {
+    await loadClassicScriptOnce(`app/data/translations-${language === "zh" ? "zh" : "en"}.js`);
+    for (const [key, value] of Object.entries(partial)) {
+      if (window[flag]?.[key] == null) window[flag][key] = value;
+    }
+  }
+  return language === "zh" ? ensureTranslationZh() : ensureTranslationEn();
+}
+const ensureWritingFlowHelpData = createLazyModuleLoader("AISystem6WritingFlowHelpData", ["app/data/writing-flow-help.js"], true);
+const ensureSystemConceptsData = createLazyModuleLoader("AISystem6SystemConceptsData", [
+  "app/data/evergreen-demo-corpus.js",
+  "app/data/system-concepts.js",
+], true);
+const ensureMemoryCardsModule = createLazyModuleLoader("", ["app/features/memory-cards.js"]);
+const ensureAlarmClockModule = createLazyModuleLoader("", ["app/features/alarm-clock.js"]);
+const ensureAlarmClockAgentModule = createLazyModuleLoader("AISystem6AlarmClockAgent", ["app/features/alarm-clock-agent.js"], false, ["styles.cliotalk-agent.css"]);
+// ODF (odt/ods/odp → editable Office copy) is a whole converter with its own
+// codec loads; it rides the first ODF import, never the boot.
+// N15b: the ODF import loader also carries the old-format import gate
+// (legacy-formats.js) and the workbook's CSV in/out (clio-chart-csv.js) — the
+// import-conversion side paths share one lazy bundle and name no new loaders.
+const ensureOdf = createLazyModuleLoader("AISystem6OdfImport", ["app/features/odf-import.js", "app/features/legacy-formats.js", "app/features/clio-chart-csv.js"], true);
+// N9: the iWork original-page view and 建副本 ride one loader; Reader's eager
+// hook is one lookup, everything else loads on the first iWork file.
+const ensureIworkReadingModule = createLazyModuleLoader("AISystem6IworkReading", ["app/features/iwork-reading.js"]);
+const ensureBureaucracyMemeModule = createLazyModuleLoader("AISystem6BureaucracyMeme", ["app/core/application-shell.js", "app/features/bureaucracy-meme.js"], false, ["styles.bureaucracy-meme.css"]);
+const ensurePrintDirectoryModule = createLazyModuleLoader("", ["app/features/print-directory.js"]);
+const ensureProjectCdPrintModule = createLazyModuleLoader("", ["app/core/application-shell.js", "app/features/project-cd-print.js"]);
+// The .docx writer is a whole ZIP container and an OOXML generator, and only
+// the Word export calls it. It travels with that command, not with every boot.
+const ensureWordExportModule = createLazyModuleLoader("AISystem6WordExport", ["app/features/word-export.js"]);
+const ensureTranslationPadModule = createLazyModuleLoader("", ["app/features/translation-pad.js"]);
+const ensureDictionaryHelpModule = createLazyModuleLoader("AISystem6DictionaryHelpLoaded", ["app/features/dictionary-help.js"]);
+// The shaper is pure text and only the pad calls it, so it travels with the
+// pad instead of costing every boot the bytes.
+const ensureDictationPadModule = createLazyModuleLoader("AISystem6DictationPadLoaded", [
+  "app/core/dictation-shape.js",
+  // The session: which recognition instance is current, the raw text's
+  // revision, and the identity of the organizing request. Pure, and only the
+  // pad reads it.
+  "app/core/dictation-session.js",
+  "app/features/dictation-pad.js",
+]);
+const ensureProjectPeekModule = createLazyModuleLoader("AISystem6ProjectPeekLoaded", ["app/core/application-shell.js", "app/core/markdown-outline.js", "app/features/project-peek.js"], false, ["styles.project-disks.css"]);
+// The backup schema and the assembler that reads it travel with an export or
+// a restore, not with every boot.
+const ensureProjectDiskBackupModule = createLazyModuleLoader("AISystem6ProjectDiskBackupLoaded", ["app/core/project-disk-backup.js"]);
+const ensureVideoTranscriptModule = createLazyModuleLoader("AISystem6VideoTranscriptLoaded", ["app/features/video-transcript.js"]);
+const ensureVideoDocMapModule = createLazyModuleLoader("AISystem6VideoDocMapLoaded", ["app/features/video-docmap.js"]);
+// The Searcher sheet travels with the module (Find File's rules stay eager).
+const ensureFindPathModule = createLazyModuleLoader("AISystem6FindPathLoaded", ["app/features/findpath.js"], false, ["styles.searcher.css"]);
+// Find… (the desk-wide search) is its own module; it shares Searcher's sheet for the empty-state note.
+const ensureDeskFindModule = createLazyModuleLoader("AISystem6DeskFindLoaded", ["app/features/desk-find.js"], false, ["styles.searcher.css"]);
+const ensureEndfieldTerminalModule = createLazyModuleLoader("AISystem6EndfieldTerminalLoaded", ["app/features/endfield-terminal.js"], false, ["styles.endfield-terminal.css"]);
+// Time Machine's live engines on their own, for Reader's rendered rung; the
+// loader shares the script with Time Machine's own (loaded once either way).
+const ensureAboutModule = createLazyModuleLoader("AISystem6AboutLoaded", ["app/core/application-shell.js", "app/content/about-chapters.js", "app/content/release-notes.js", "app/features/about-desk.js"], false, ["styles.about.css"]);
+const ensureExtensionsModule = createLazyModuleLoader("AISystem6ExtensionsLoaded", ["app/core/application-shell.js", "app/core/agent-tool-registry.js", "app/core/agent-roles.js", "app/features/extensions-window.js", "app/features/extensions-library.js"], false, ["styles.extensions.css"]);
+// About This Mac (关于本机): the agent-era facts window, the same module-built
+// pattern as its sibling above — window and sheet arrive with the first ask.
+const ensureAboutThisMacModule = createLazyModuleLoader("AISystem6AboutThisMacLoaded", ["app/core/application-shell.js", "app/features/about-this-mac.js"], false, ["styles.about-this-mac.css"]);
+const ensureTimeMachineEngineModule = createLazyModuleLoader("AISystem6TimeMachineEngines", ["app/features/time-machine-engine.js"]);
+const ensureTimeMachineModule = createLazyModuleLoader("AISystem6TimeMachineLoaded", ["app/features/time-machine-engine.js", "app/features/time-machine.js"], false, ["styles.time-machine.css"]);
+const ensureHkrrReviewModule = createLazyModuleLoader("", ["app/features/hkrr-review.js"]);
+// The guest bridge: tool handlers, the approval dialog and the Chooser guest
+// list load together on the first guest call or when Chooser opens. The sentinel
+// tools it shares with the quick-draft family load with it too (see the note on
+// ensureQuickDraftModule below).
+const ensureGuestToolsModule = createLazyModuleLoader("AISystem6GuestTools", [
+  // The MCP surface is the single source of the guest tool table; it loads
+  // ahead of the feature that checks its calls against it.
+  "app/core/mcp-surface.js",
+  "app/core/adjustment-layers.js",
+  "app/core/protected-ranges.js",
+  "app/features/guest-tools.js",
+]);
+const ensureReaderPagesModule = createLazyModuleLoader("AISystem6ReaderPages", ["app/features/reader-pages.js"], false, ["styles.reader-pages.css"]);
+// ClioWorks N7: the organizing model and its window ride one loader, and the
+// original-page view's lazy sheet already covers both modes.
+const ensureReaderOrganizeModule = createLazyModuleLoader("AISystem6ReaderOrganize", ["app/core/pdf-organize.js", "app/core/edit-history.js", "app/features/reader-organize.js"]);
+const ensureRebuildPackModule = createLazyModuleLoader("AISystem6RebuildPack", ["app/core/rebuild-pack.js"]);
+// The outbound half: the servers this desk asks, and the File Floppy landing
+// every answer takes. Chooser loads it, with the rail that lays Chooser out;
+// so does Searcher when the chosen provider is one of those servers.
+const ensureMcpServersModule = createLazyModuleLoader("AISystem6McpServers", ["app/features/mcp-servers.js", "app/features/chooser-book.js"], false, ["styles.chooser-book.css"]);
+// ClioTalk's agent mode and Chooser's shared folders (docs/AGENT-HARNESS.md):
+// the mode button and Chooser load it.
+const ensureClioTalkAgentModule = createLazyModuleLoader("AISystem6ClioTalkAgent", ["app/features/cliotalk-agent.js", "app/features/code.js"], false, ["styles.cliotalk-agent.css"]);
+const ensureClioTalkShellModule = createLazyModuleLoader("AISystem6ClioTalkShell", ["app/features/cliotalk-shell.js"], false, ["styles.cliotalk-shell.css"]);
+// The last ClioTalk mode (对话 / 代理) is one localStorage read (the same key
+// the lazy module's readStoredMode uses): boot restores the 代理 selection
+// before that module ever loads, and the module's own restore agrees with it.
+function clioTalkAgentModeActive() {
+  try { return !!window.AISystem6ClioTalkAgent?.isActive?.() || localStorage.getItem("ai-system6-cliotalk-mode") === "agent"; } catch { return false; }
+}
+// Boot's half of "Mode at boot"; the module's restore takes over on load.
+function restoreClioTalkAgentModeSelection() {
+  if (window.AISystem6ClioTalkAgent || !clioTalkAgentModeActive()) return false;
+  document.querySelector('[data-window="assistant"]')?.classList.add("is-agent-mode");
+  document.getElementById("clio-agent-mode")?.setAttribute("aria-pressed", "true");
+  syncPromptPlaceholder();
+  return true;
+}
+// ClioTalk's cloud agent runs on the public web (docs/AGENT-HARNESS.md).
+// 1.0.60 代理（所有者裁决 D1）把 Office 投影器（agent-projection.js，读借出文件的
+// 桌面侧机器）搭在这条代理懒链上：投影器自己会在首次 project() 时带上 text-quote
+// 与 native-locate 两个前置文件，这里不必为它多花启动字节。
+const ensureAgentCloudModule = createLazyModuleLoader("AISystem6AgentCloud", ["app/core/agent-cloud-providers.js", "app/features/agent-projection.js", "app/features/cliotalk-agent-cloud.js"]);
+const ensureMingmingHandoffReviewModule = createLazyModuleLoader("", ["app/features/mingming-handoff-review.js"]);
+// Review Desk's comment threads and version compare. The pure model and the
+// anchor search load first; the panel installs the flag.
+const ensureReviewCommentsModule = createLazyModuleLoader("AISystem6ReviewDeskPanelLoaded", [
+  "app/core/edit-history.js",
+  "app/core/word-diff.js",
+  "app/core/text-quote.js",
+  "app/core/review-comments.js",
+  "app/features/review-comments.js",
+], false, ["styles.edit-kernel.css"]);
+const ensureSlidesExportModule = createLazyModuleLoader("AISystem6SlidesExportLoaded", ["app/core/edit-embeds.js", "app/features/slide-themes.js", "app/features/slides-export.js"]);
+// The show layer (features/clio-stage-show.js) is shared machinery both stage
+// surfaces drive (must-fix 2); it loads before whichever surface needs it.
+const ensureClioStageModule = createLazyModuleLoader("AISystem6ClioStageLoaded", ["app/core/edit-history.js", "app/core/edit-snap.js", "app/core/edit-layers.js", "app/core/edit-embeds.js", "app/features/slide-themes.js", "app/features/clio-stage-show.js", "app/features/clio-stage.js"], false, ["styles.clio-chart.css", "styles.edit-kernel.css"]);
+const ensureCommandSheetModule = createLazyModuleLoader("AISystem6CommandSheet", ["app/features/command-sheet.js"], false, ["styles.edit-kernel.css"]);
+const ensureClioChartModule = createLazyModuleLoader("AISystem6ClioChartLoaded", ["app/core/edit-history.js", "app/core/edit-snap.js", "app/core/edit-layers.js", "app/core/edit-embeds.js", "app/features/clio-chart.js", "app/features/clio-diagram.js"], false, ["styles.clio-chart.css", "styles.edit-kernel.css"]);
+// The plan window carries its pure model with it: the model is also what the
+// contract executes, so it stays a separate file rather than folding in.
+const ensureClioProjectModule = createLazyModuleLoader("AISystem6ClioProjectWindowLoaded", ["app/core/application-shell.js", "app/core/edit-history.js", "app/core/clio-project.js", "app/core/markdown-outline.js", "app/features/clio-project-window.js"], false, ["styles.clio-project.css"]);
+const ensureClioPaintModule = createLazyModuleLoader("AISystem6ClioPaintLoaded", ["app/core/application-shell.js", "app/core/edit-history.js", "app/core/edit-snap.js", "app/core/edit-layers.js", "app/core/edit-assets.js", "app/core/edit-embeds.js", "app/features/clio-paint.js"], false, ["styles.clio-paint.css", "styles.edit-kernel.css"]);
+const ensureOneMoreTuneModule = createLazyModuleLoader("AISystem6OneMoreTuneLoaded", ["app/core/application-shell.js", "app/features/one-more-tune.js"], false, ["styles.one-more-tune.css"]);
+const ensureOneMoreTakeModule = createLazyModuleLoader("AISystem6OneMoreTakeLoaded", ["app/core/application-shell.js", "app/features/one-more-take.js"], false, ["styles.one-more-take.css"]);
+// The wheel rides along beside its host: same lazy lane, no stylesheet of its own.
+const ensureOneMoreTuneWheelModule = createLazyModuleLoader("AISystem6OneMoreTuneWheelLoaded", ["app/features/one-more-tune-wheel.js"]);
+const ensureAaronBlogModule = createLazyModuleLoader("AISystem6AaronBlogLoaded", ["app/core/application-shell.js", "app/features/aaron-blog.js"], false, ["styles.aaron-blog.css"]);
+// Stickies／便利贴 — To Do, Note Pad's notes and the held-thought pile as one
+// object (2026-10-31). The loader keeps To Do's name because the admission
+// table names it; the window keeps "todo" for the same reason.
+const ensureTodoDaModule = createLazyModuleLoader("AISystem6StickiesLoaded", ["app/core/application-shell.js", "app/features/stickies.js"], false, ["styles.stickies.css"]);
+const ensureSideAskPadModule = createLazyModuleLoader("AISystem6SideAskPadLoaded", ["app/core/application-shell.js", "app/features/sideask-pad.js"]);
+const ensureLiquidCoverModule = createLazyModuleLoader("AISystem6LiquidCoverLoaded", ["app/core/application-shell.js", "app/core/edit-history.js", "app/core/edit-snap.js", "app/core/edit-layers.js", "app/core/edit-assets.js", "app/core/edit-embeds.js", "app/features/image-prompt-runtime.js", "app/features/liquid-cover-model.js", "app/features/liquid-cover-sdf.js", "app/features/liquid-cover.js"], false, ["styles.liquid-cover.css", "styles.edit-kernel.css"]);
+// Cover Glass by the name the object registry and Finder use for a saved cover.
+const ensureCoverGlassModule = ensureLiquidCoverModule;
+// The cut-out: a background-removal model run in the browser. It loads on the
+// first Remove Background, never with the window, and needs the model files.
+const ensureLiquidCoverCutoutModule = createLazyModuleLoader("AISystem6CoverCutoutLoaded", ["app/features/liquid-cover-cutout.js"]);
+const ensureImagePromptStudioModule = createLazyModuleLoader("AISystem6ImagePromptStudioLoaded", ["app/core/application-shell.js", "app/features/image-prompt-runtime.js", "app/features/image-prompt-studio.js"], false, ["styles.image-prompt-studio.css"]);
+const ensureQuickDraftModule = createLazyModuleLoader("AISystem6QuickDraftLoaded", [
+  "app/core/application-shell.js",
+  "app/core/explanation-lens.js",
+  "app/core/model-user-errors.js",
+  /* The family's two shared model halves: the adjustment-layer strength/mask
+     normalizers and the immutable-sentinel protection tools. Both were eager
+     with no eager consumer at all — measured 2026-10-14, while the
+     document-tab store's window dimension needed equal-value displacement —
+     18.0KB of boot payload that only these lazy modules referenced. They load
+     before text-compose.js and draft-desk.js, which consume them. */
+  "app/core/adjustment-layers.js",
+  "app/core/protected-ranges.js",
+  "app/core/text-compose.js",
+  "app/features/mingming-lens.js",
+  "app/core/author-thesis-guidance.js",
+  "app/core/chat-vent-guidance.js",
+  "app/data/draft-desk-presets.js",
+  "app/core/listen-beats.js",
+  /* The darkroom's pure halves. Quick Draft renders the darkroom's layer rows
+     and footer keys from its first paint (a language switch repaints them), and
+     those reads need the record and develop models even if nothing has yet
+     opened the darkroom's store, so they load with the chain that reads them
+     rather than waiting for ensureDarkroomModule. Lazy either way. */
+  "app/core/word-diff.js",
+  "app/core/edit-history.js",
+  "app/core/darkroom-record.js",
+  "app/core/darkroom-develop.js",
+  /* The workspace normalizers ride with the UI that calls them. This module
+     was never added to the list when the rest of the family went lazy, so it
+     sat in the boot bundle as 20.9KB that nothing eager referenced - measured
+     2026-09-16, and the boot payload is over its floor until it moves. It
+     loads before draft-desk.js, which consumes its normalizers. */
+  "app/core/quick-draft-workspace.js",
+  "app/core/walk-transcript.js",
+  "app/features/draft-desk.js",
+  "app/features/quick-draft-intake.js",
+  "app/features/quick-draft-editor.js",
+  "app/core/grain-diff.js",
+  "app/features/quick-draft-composition.js",
+  "app/features/lightroom-develop.js",
+  "app/features/quick-draft-ai.js",
+  "app/features/quick-draft-tracks.js",
+  "app/features/quick-draft-listen.js",
+  "app/features/quick-draft-handoff.js",
+], false, ["styles.draft-desk.css"]);
+const ensureCmfStudioModule = createLazyModuleLoader("AISystem6CMFStudioLoaded", [
+  "app/features/cmf-motion.js",
+  "app/features/cmf-usdz-export.js",
+  "app/features/cmf-studio.js?cmf=exterior-ao-sanitized",
+], false, ["styles.cmf-studio.css"]);
+const ensureSoundscapeModule = createLazyModuleLoader("AISystem6SoundscapeLoaded", ["app/features/soundscape.js"], false, ["styles.soundscape.css"]);
+const ensureFindChangeModule = createLazyModuleLoader("AISystem6FindChangeLoaded", ["app/features/find-change.js"]);
+// The token workbench reads every era's delta from the live CSSOM. Aqua and
+// Liquid Glass were boot sheets when it was written, and their deltas decide
+// which tokens count as era-owned, so the lab asks for both as it opens (the
+// registry places them; see loadStylesheetOnce).
+const ensureThemeLabModule = createLazyModuleLoader("AISystem6ThemeLabLoaded", ["app/core/application-shell.js", "app/features/theme-authoring.js", "app/features/theme-lab.js"], false, ["styles.theme-lab.css", "styles.aqua.css", "styles.liquid-glass.css"]);
+window.AISystem6EnsureThemeLabModule = ensureThemeLabModule;
+// The GPL engine bundle loads first, then the AI System 6 shell; the shell's
+// flag proves both arrived. Styles ride along as a lazy bundle.
+const ensureMicropolisModule = createLazyModuleLoader("AISystem6MicropolisLoaded", [
+  "app/core/application-shell.js",
+  "app/core/wasm-host-contract.js",
+  "app/vendor/micropolis/micropolis-engine.js",
+  "app/features/micropolis-views.js",
+  "app/features/micropolis-audio.js",
+  "app/features/micropolis-scenarios.js",
+  "app/features/micropolis-cty-codec.js",
+  "app/features/city-demand-gauge.js",
+  "app/features/micropolis.js",
+], false, ["styles.micropolis.css"]);
+// The wasm game itself loads inside the window's iframe, not through this
+// loader; this only fetches the thin System 6 chrome module.
+const ensureOpenTTDModule = createLazyModuleLoader("AISystem6OpenTTDLoaded", [
+  "app/core/application-shell.js",
+  "app/core/wasm-host-contract.js",
+  "app/features/openttd.js",
+], false, ["styles.openttd.css"]);
+// Bonsai City loads the shared world core (app/core/pot-world.js, first in
+// all three game loaders), its MIT-clean core, the in-memory repository, and
+// the System 6 shell together; the shell's flag proves all three arrived.
+const ensureBonsaiCityModule = createLazyModuleLoader("AISystem6BonsaiCityLoaded", [
+  "app/core/pot-world.js",
+  "app/core/wasm-host-contract.js",
+  "app/features/bonsai-translations.js",
+  "app/features/city-demand-gauge.js",
+  "app/features/bonsai-city-sim.js",
+  // The mayor's bill for a Rootline plan. Pure, and only Bonsai City's
+  // flip-the-pot flow reads it, so it travels with that window rather than at
+  // boot.
+  "app/core/basin-flip-pot.js",
+  "app/features/bonsai-sc2-codec.js",
+  "app/features/bonsai-micropolis-codec.js",
+  "app/features/bonsai-micropolis-export.js",
+  "app/features/bonsai-osm-import.js",
+  "app/features/micropolis-cty-codec.js",
+  "app/features/bonsai-catalog.js",
+  "app/features/bonsai-audio.js",
+  "app/features/bonsai-save-worker-manager.js",
+  "app/features/bonsai-repository.js",
+  "app/features/bonsai-renderer.js",
+  "app/generated/bonsai-atlas.js",
+  "app/features/bonsai-renderer-canvas.js",
+  "app/features/bonsai-renderer-voxel.js",
+  "app/features/bonsai-city.js",
+], false, ["styles.bonsai.css"]);
+// Phase one reuses the existing iframe-game window geometry. The GPL engine
+// remains inside assets/doom/ and is fetched only by its same-origin shell.
+const ensureDoomModule = createLazyModuleLoader("AISystem6DoomLoaded", [
+  "app/core/application-shell.js",
+  "app/core/wasm-host-contract.js",
+  "app/features/doom.js",
+], false, ["styles.openttd.css"]);
+// The visual novel travels the same way DOOM's engine does: the story stays
+// inside assets/mingwen/ and is fetched only by its same-origin frame.
+const ensureMingwenModule = createLazyModuleLoader("AISystem6MingwenLoaded", [
+  "app/core/application-shell.js",
+  "app/core/wasm-host-contract.js",
+  "app/features/mingwen.js",
+], false, ["styles.openttd.css"]);
+// Rootline: the world core it takes names and hours from, the Bonsai City
+// simulation that decodes a pot's save and the converter that reads a pot as
+// a transit map, the headless core, then the map that reads it, then the
+// shell that paces it; the shell's flag proves they all arrived.
+const ensureRootlineModule = createLazyModuleLoader("AISystem6RootlineLoaded", [
+  "app/core/pot-world.js",
+  "app/core/wasm-host-contract.js",
+  "app/features/bonsai-city-sim.js",
+  "app/features/rootline-pot.js",
+  "app/core/application-shell.js",
+  "app/features/rootline-core.js",
+  "app/features/rootline-view.js",
+  "app/features/rootline.js",
+], false, ["styles.rootline.css"]);
+// Joyride drives a Bonsai City town at street level: the simulation replays
+// the demonstration town, the shared renderer helpers and the voxel renderer
+// give it a street instance of its own, then the headless core and the game.
+// The Bonsai files load once whichever of the two windows asks first.
+const ensureJoyrideModule = createLazyModuleLoader("AISystem6JoyrideLoaded", [
+  "app/core/pot-world.js",
+  "app/core/application-shell.js",
+  "app/core/wasm-host-contract.js",
+  "app/features/bonsai-translations.js",
+  "app/features/bonsai-city-sim.js",
+  "app/features/bonsai-catalog.js",
+  "app/features/bonsai-renderer.js",
+  "app/features/bonsai-renderer-voxel.js",
+  "app/features/joyride-core.js",
+  "app/features/joyride-rail.js",
+  "app/features/joyride-bus.js",
+  "app/features/joyride-traffic.js",
+  "app/features/joyride-radio.js",
+  "app/features/joyride.js",
+], false, ["styles.joyride.css"]);
+const ensureWritingDemoModule = createLazyModuleLoader("AISystem6WritingDemoLoaded", [
+  "app/data/evergreen-demo-corpus.js",
+  "app/features/writing-demo.js",
+]);
+// A shared launch link mounts one Project Hard Disk. The backups are large and
+// few visitors need one, so each travels as its own lazy module -- and the
+// folder that lists them reads a small one first: thirty-five rows should not
+// cost every manuscript in the set, nor should opening one disk fetch the rest.
+const ensureSharedProjectDisksIndexModule = createLazyModuleLoader("AISystem6SharedProjectDisksIndexLoaded", [
+  "app/content/shared-project-disks-index.js",
+], false, ["styles.project-disks.css"]);
+// Looking inside a demonstration disk: the window module, after the index it
+// reads and the shell that builds it; its styles share the folder's sheet.
+const ensureDiskPeekModule = createLazyModuleLoader("AISystem6DiskPeekLoaded", [
+  "app/core/application-shell.js",
+  "app/content/shared-project-disks-index.js",
+  "app/features/disk-peek.js",
+], false, ["styles.project-disks.css"]);
+// One lazy loader per route, made on first use and kept, so opening one disk
+// never fetches another. Null-prototype so a route cannot shadow Object.
+const sharedDiskLoaders = Object.create(null);
+function ensureSharedProjectDiskModule(route) {
+  if (!/^[a-z0-9-]+$/.test(route)) return Promise.reject(new Error(`Unknown shared project disk route: ${route}`));
+  return (sharedDiskLoaders[route] ||= createLazyModuleLoader(`AISystem6SharedProjectDisk:${route}`, [`app/content/shared-disks/${route}.js`]))();
+}
+
+// A lazy window/command whose module failed to load this session: keyed by
+// action id, valued with the already-rendered failure message (so the menu
+// and Balloon Help can show the same honest text without a new translation
+// key — an unrecognized "key" falls back to itself in t(), see app.js).
+// Read by updateMenuState() (greys the command) and
+// disabledMenuBalloonHelpKey() (names the reason); written by the lazy
+// command dispatch in actions.js. A module that later loads successfully is
+// never re-added, so a retried command clears its own entry.
+const failedLazyCommandActions = new Map();
+
+const lazySystemModulePromises = new Map();
+function ensureLazySystemModule(path, loadedFlag) {
+  if (window[loadedFlag]) return Promise.resolve(true);
+  let promise = lazySystemModulePromises.get(path);
+  if (!promise) {
+    promise = loadClassicScriptOnce(path)
+      .then(() => {
+        if (!window[loadedFlag]) {
+          removeLazyScriptNode(path);
+          throw new Error(`${loadedFlag} did not install after loading ${path}`);
+        }
+        return true;
+      })
+      .catch((error) => {
+        // Forget the shared promise so a later retry re-fetches, and rethrow
+        // the original error: swallowing it made failures look successful.
+        lazySystemModulePromises.delete(path);
+        throw error;
+      });
+    lazySystemModulePromises.set(path, promise);
+  }
+  return promise;
+}
+function ensureFinderObjectsModule() { return ensureLazySystemModule("app/features/finder-objects.js", "AISystem6FinderObjectsLoaded"); }
+function ensureFinderSpaceModule() { return ensureLazySystemModule("app/core/finder-space.js", "AISystem6FinderSpaceLoaded"); }
+function ensureFinderOpsModule() { return ensureLazySystemModule("app/core/finder-ops.js", "AISystem6FinderOpsLoaded"); }
+function ensureFinderMenusModule() { return ensureLazySystemModule("app/core/finder-menus.js", "AISystem6FinderMenusLoaded"); }
+const ensureFinderDeskModule = createLazyModuleLoader("AISystem6FinderDeskLoaded", ["app/core/finder-desk.js"], false, ["styles.finder-spatial.css"]);
+const ensureFinderDragModule = createLazyModuleLoader("AISystem6FinderDragLoaded", ["app/core/finder-drag.js"], false, ["styles.finder-spatial.css"]);
+// Full screen's move between spaces (window-fullscreen.js asks for it).
+function ensureFullscreenSpaceModule() { return ensureLazySystemModule("app/core/window-fullscreen-space.js", "AISystem6FullscreenSpaceLoaded"); }
+function ensureDesktopMaintenanceModule() { return ensureLazySystemModule("app/core/desktop-maintenance.js", "AISystem6DesktopMaintenanceLoaded"); }
+function ensureNativeBinariesModule() { return ensureLazySystemModule("app/core/native-binaries.js", "AISystem6NativeBinaries"); }
+function ensureClioWorksLedgerModule() { return ensureLazySystemModule("app/vendor/clioworks-v3/native-host.js", "AISystem6ClioWorksLoaded"); }
+function ensureOfficeNewModule() { return ensureLazySystemModule("app/features/office-new.js", "AISystem6OfficeNew"); }
+const ensureClioStageAuditModuleLoaded = createLazyModuleLoader("AISystem6ClioStageAuditLoaded", ["app/features/clio-stage-audit.js"], false, ["styles.clio-stage-audit.css"]);
+function ensureUnifiedSpecContractsModule() { return ensureLazySystemModule("app/vendor/unified-spec/contracts-install.js", "ClioWorksUnifiedContractsLoaded"); }
+const ensureChatCompactionModuleLoaded = createLazyModuleLoader("AISystem6ChatCompactionLoaded", ["app/core/chat-compaction.js"]);
+const ensureChatContextCapabilitiesModuleLoaded = createLazyModuleLoader("AISystem6ChatContextCapabilitiesLoaded", ["app/core/chat-context-capabilities.js"]);
+function ensureChatContextCapabilitiesModule() { return ensureChatContextCapabilitiesModuleLoaded(); }
+const ensureDeviceModelModuleLoaded = createLazyModuleLoader("AISystem6DeviceModelLoaded", ["app/core/device-model-client.js"]);
+function ensureDeviceModelModule() { return ensureDeviceModelModuleLoaded(); }
+const ensureBuiltInModelDoorModule = createLazyModuleLoader("AISystem6BuiltInModelDoorLoaded", ["app/features/built-in-model-door.js"]);
+function ensureChatCompactionModule() { return ensureChatCompactionModuleLoaded(); }
+function ensureChatCachePolicyModule() { return ensureLazySystemModule("app/vendor/unified-spec/cache-policy-install.js", "AISystem6ChatCachePolicyLoaded"); }
+const ensureChatRunDetailsModuleLoaded = createLazyModuleLoader("AISystem6ChatRunDetailsLoaded", ["app/core/chat-run-details.js"]);
+function ensureChatRunDetailsModule() { return ensureChatRunDetailsModuleLoaded(); }
+const ensureReadingBridgeModuleLoaded = createLazyModuleLoader("AISystem6ReadingBridgeLoaded", ["app/features/reading-bridge.js"]);
+const ensureOpenQuestionsModuleLoaded = createLazyModuleLoader("AISystem6OpenQuestionsLoaded", ["app/features/open-questions.js"]);
+const ensureClioWorksV51Loaded = createLazyModuleLoader("AISystem6ChartFramePort", ["app/vendor/clioworks-v3/ui-model.js", "app/vendor/clioworks-v3/frame-session.js", "app/vendor/clioworks-v3/runtime-port.js", "app/vendor/clioworks-v3/context-strip.js", "app/vendor/clioworks-v3/chart-frame-port.js"]);
+function ensureClioWorksV51Modules() { return ensureClioWorksV51Loaded(); }
+// The chart copy's context strip: the v5.1 modules first, then the kit shell it draws with.
+const ensureClioChartContextLoaded = createLazyModuleLoader("AISystem6ClioChartContext", ["app/vendor/clioworks-v3/core.js", "app/vendor/clioworks-v3/dom.js", "app/vendor/clioworks-v3/components.js", "app/vendor/clioworks-v3/more-menu.js", "app/vendor/clioworks-v3/chart-adapter.js", "app/features/clio-chart-context.js"], false, ["styles.clioworks-native.css"]);
+async function ensureClioChartContextModule() { await ensureClioWorksV51Modules(); return ensureClioChartContextLoaded(); }
+const ensureClioChartWorkbookLoaded = createLazyModuleLoader("AISystem6ClioChartWorkbook", ["app/features/clio-chart-comments.js", "app/features/clioworks-rail.js", "app/features/clio-chart-workbook.js"], false, ["styles.clio-chart.css"]);
+async function ensureClioChartWorkbookModule() { await ensureClioChartModule(); return ensureClioChartWorkbookLoaded(); }
+// N5b (clio-chart-workbook-tools.js): the vendored suite core first — the chart
+// renderer and dml read L.h/L.s/L.color from it — then the tools module.
+const ensureClioChartWorkbookToolsLoaded = createLazyModuleLoader("AISystem6ClioChartWorkbookTools", ["app/vendor/vibeoffice/common/core.js", "app/vendor/vibeoffice/common/charts.js", "app/features/clio-chart-workbook-tools.js"], false, ["styles.clio-chart.css"]);
+const ensureClioWriteModule = createLazyModuleLoader("AISystem6ClioWriteLoaded", ["app/core/application-shell.js", "app/features/clio-write-fonts.js", "app/features/clioworks-rail.js", "app/features/clio-write.js"], false, ["styles.clio-chart.css"]);
+// N12: the substituted-fonts display (clio-write-fonts.js) rides ClioWrite's loader above.
+// N13a: the 「修订」 review side path. The ported engine (quire-review.js) and the
+// windoid (clio-write-review.js) ride one loader with the shared ClioWrite sheet;
+// only the 编辑 menu row and this loader are eager. clio-write.js opens them
+// through window.AISystem6EnsureClioWriteReviewModule when the command runs.
+// N15b: 字数统计 (clio-write-word-count.js) is the same side path's read-only
+// window and rides this one loader with them.
+// 比较→修订: the compare windoid (clio-write-compare.js) rides the same loader,
+// with the shared word-diff core its changed-paragraph hunks read ahead of it.
+// 1.0.60 work order B2 (owner rulings D1/D2): ClioTalk's signed revisions land
+// in the same 修订 tab — the classifier, the delivery and the AI-字 ledger ride
+// this one loader too (clio-write-agent-delivery.js), so the boot pays nothing.
+// No stylesheet here: every caller lives in clio-write.js, whose own loader
+// already brings styles.clio-chart.css — the second admission was boot bytes.
+const ensureClioWriteReviewModule = createLazyModuleLoader("AISystem6ClioWriteReviewLoaded", ["app/vendor/clioworks-v3/quire-review.js", "app/features/clio-write-review.js", "app/features/clio-write-word-count.js", "app/core/word-diff.js", "app/features/clio-write-compare.js", "app/features/clio-write-agent-delivery.js"]);
+window.AISystem6EnsureClioWriteReviewModule = ensureClioWriteReviewModule;
+// N15b: the old-format gate (legacy-formats.js) screens every File Floppy
+// import batch, and clio-chart-csv.js serves the workbook File menu's 导入/
+// 导出 CSV… — both ride the ODF import loader above: one lazy bundle for the
+// import-conversion side paths, no eager lines of their own.
+// N3: the shared 查找 / 替换 windoid. The engine (find-replace.js) and the
+// windoid (clioworks-find.js) ride one loader with the shared ClioWrite sheet;
+// only the 编辑 menu rows and this loader are eager. All three editors open
+// them through window.AISystem6EnsureClioWorksFindModule when a command runs.
+const ensureClioWorksFindModule = createLazyModuleLoader("AISystem6ClioWorksFindLoaded", ["app/vendor/clioworks-v3/find-replace.js", "app/features/clioworks-find.js"], false, ["styles.clio-chart.css"]);
+window.AISystem6EnsureClioWorksFindModule = ensureClioWorksFindModule;
+// N11: the desk's own memory clipboard (features/clioworks-clipboard.js) — the
+// 带来源副本 the three ClioWorks editors paste between them. The board itself
+// is the module; every editor opens it through this loader on its first copy or
+// paste, the same one-line rule the find windoid's loader follows.
+const ensureClioworksClipboardModule = createLazyModuleLoader("AISystem6ClioworksClipboardLoaded", ["app/features/clioworks-clipboard.js"]);
+window.AISystem6EnsureClioworksClipboard = ensureClioworksClipboardModule;
+// N14: the manuscript round trip (送审 export / 回稿 import). The engine
+// (round naming, cleaning, paragraph alignment) and the dialog/windoid ride
+// one loader with the shared ClioWrite sheet; the File menu row, the Review
+// Desk Commands row and this loader are the eager lines. The flag is the UI
+// file's own ...Loaded mark, set after the last source lands — the same
+// two-file rule ensureClioWorksFindModule follows.
+const ensureManuscriptRoundTripModule = createLazyModuleLoader("AISystem6ManuscriptRoundTripUILoaded", ["app/vendor/clioworks-v3/manuscript-roundtrip.js", "app/features/manuscript-roundtrip.js"], false, ["styles.clio-chart.css"]);
+window.AISystem6EnsureManuscriptRoundTripModule = ensureManuscriptRoundTripModule;
+// 邮件合并: the marked lexer, the shared word-export generator, the CSV reader
+// and the dialog ride one loader with the shared ClioWrite sheet; ClioWrite's
+// 文件 menu row and this loader are the eager lines. The flag is the module's
+// own ...Loaded mark, set after the last source lands.
+const ensureClioworksMailMergeModule = createLazyModuleLoader("AISystem6ClioworksMailMergeLoaded", ["app/vendor/marked.umd.js", "app/features/word-export.js", "app/features/clio-chart-csv.js", "app/features/clioworks-mailmerge.js"], false, ["styles.clio-chart.css"]);
+window.AISystem6EnsureClioworksMailMerge = ensureClioworksMailMergeModule;
+// N8: the Review Desk's 回稿 tab — per-paragraph candidates, the verbatim
+// message column, the three-way compare. Engine and N14's UI first (lastImport
+// is where a fresh round is read), the shared word-diff core the candidate
+// highlighting reads, then the tab itself; the flag is the tab file's own.
+const ensureRoundtripReviewModule = createLazyModuleLoader("AISystem6RoundtripReviewLoaded", ["app/vendor/clioworks-v3/manuscript-roundtrip.js", "app/features/manuscript-roundtrip.js", "app/core/word-diff.js", "app/features/roundtrip-review.js"]);
+const ensureClioStageNativeModule = createLazyModuleLoader("AISystem6ClioStageNative", ["app/features/clio-stage-show.js", "app/features/clioworks-rail.js", "app/features/clio-stage-native.js"], false, ["styles.clio-chart.css"]);
+function ensureOpenQuestionsModule() { return ensureOpenQuestionsModuleLoaded(); }
+const ensureReadingRelationsModuleLoaded = createLazyModuleLoader("AISystem6ReadingRelationsLoaded", ["app/features/reading-relations.js"]);
+const ensureReadingLayersModuleLoaded = createLazyModuleLoader("AISystem6ReadingLayersLoaded", ["app/features/reading-layers.js"]);
+const ensureReadingCompareModuleLoaded = createLazyModuleLoader("AISystem6ReadingCompareLoaded", ["app/features/reading-compare.js"]);
+const ensureReadingBoundaryModuleLoaded = createLazyModuleLoader("AISystem6ReadingBoundaryLoaded", ["app/features/reading-boundary.js"]);
+const ensureSourceVersionsModuleLoaded = createLazyModuleLoader("AISystem6SourceVersionsLoaded", ["app/features/source-versions.js"]);
+const ensureReadingPackageModuleLoaded = createLazyModuleLoader("AISystem6ReadingPackageLoaded", ["app/features/reading-package.js"]);
+const ensureMediaReadingModuleLoaded = createLazyModuleLoader("AISystem6MediaReadingLoaded", ["app/features/media-reading.js"]);
+function ensureClioStageAuditModule() { return ensureClioStageAuditModuleLoaded(); }
+// The sheet travels with the module: DocMap's styles are lazy too.
+const ensureDocMapModuleLoaded = createLazyModuleLoader("AISystem6DocMapLoaded", ["app/features/docmap.js"], false, ["styles.docmap.css"]);
+function ensureDocMapModule() { return ensureDocMapModuleLoaded(); }
+
+// User-initiated lazy action: on load/install failure, show an understandable,
+// retryable error in the current window instead of writing only to the
+// console. Retrying re-runs the loader (its cache was cleared), so a later
+// fix can succeed without a reload. Cancelling rethrows the original error.
+async function ensureLazyModuleForUserAction(label, ensureModule) {
+  try {
+    return await ensureModule();
+  } catch (error) {
+    const detail = error && error.message ? error.message : String(error);
+    const choice = await showSystemModal(
+      t("lazy_load_failed", label, detail),
+      "confirm",
+      { defaultAction: "cancel", confirmKey: "retry" }
+    );
+    if (choice === "yes") return ensureLazyModuleForUserAction(label, ensureModule);
+    throw error;
+  }
+}
+
+// DocMap has two kinds of caller. Commands that summon the tool go through
+// withDocMap(); paths that can only run with the window already open (render,
+// canvas restore, zoom) guard on the loaded flag and no-op otherwise, so they
+// never drag 115 KB in behind an ordinary window redraw.
+function withDocMap(callback) {
+  if (window.AISystem6DocMapLoaded) return callback();
+  return ensureLazyModuleForUserAction(t("docmap"), ensureDocMapModule).then(callback);
+}
+
+function ensureScriptingModule() { return ensureLazySystemModule("app/core/scripting.js", "AISystem6ScriptingLoaded"); }
+// ensureLazySystemModule takes no stylesheet, so the Control Strip's sheet rode
+// in the boot bundle while its module was already lazy. createLazyModuleLoader
+// is the same mechanism the other lazy sheets use, and it loads both.
+const ensureControlStripModule = createLazyModuleLoader(
+  "AISystem6ControlStripLoaded",
+  ["app/features/control-strip.js"],
+  false,
+  ["styles.control-strip.css"],
+);
+function ensureControlStripModulesModule() {
+  return ensureLazySystemModule("app/features/control-strip-modules.js", "AISystem6ControlStripModulesLoaded");
+}
+function applyControlStripState(options = {}) {
+  if (!getControlStripState().enabled) { window.AISystem6ControlStrip?.disable(); return; }
+  const enable = () => ensureControlStripModule().then(() => window.AISystem6ControlStrip?.enable());
+  if (options.silent) {
+    enable().catch((error) => console.warn("Control Strip failed to load.", error));
+    return;
+  }
+  return ensureLazyModuleForUserAction(t("control_strip"), enable);
+}
+
+function withScripting(callback) {
+  if (window.AISystem6ScriptingLoaded) return callback();
+  return ensureLazyModuleForUserAction(t("droplet"), ensureScriptingModule).then(callback);
+}
+
+function scheduleDesktopMaintenance(reason = "event") {
+  ensureDesktopMaintenanceModule()
+    .then(() => window.AISystem6DesktopMaintenance?.schedule(reason))
+    .catch((error) => {
+      // Passive maintenance path degrades silently; it must not leave a Busy
+      // state or surface a modal at boot.
+      console.warn("Desktop maintenance unavailable.", error);
+    });
+}
+
+const passiveWritingFlowStubs = new Set([
+  "renderFlowProgress",
+  "renderPipeline",
+  "renderRebuildFlow",
+  "renderReaderTabs",
+  "savePipelineData",
+  "refreshTeachTextSurfacePreview",
+  "syncLinkedManuscriptScrollFrom",
+  "syncDraftsFromProjectOutline",
+  "syncOutlineDomFromProject",
+  "syncDraftDomFromProject",
+  "syncLinkedTeachTextFromProject",
+  "updateFlowGuideChecklist",
+]);
+
+const markdownOnlyModelInstruction = [
+  "Treat every model-facing input as Markdown.",
+  "Return Markdown only.",
+  "Never return JSON, JSON code fences, schemas, or machine-readable object literals.",
+].join(" ");
+
+// The shared wrapper every prose surface goes through. The defaults are what
+// they always were: Markdown-only, system integrity, the Humanizer. Dictation
+// is the one caller that asks for less — it wants the writer's spoken words
+// tidied, not restyled, and a Humanizer instruction is an instruction to change
+// how someone writes. It still keeps the integrity boundary.
+function withMarkdownModelMessages(messages = [], options = {}) {
+  const wantMarkdown = options.markdown !== false;
+  const wantHumanizer = options.humanizer !== false;
+  const wantIntegrity = options.integrity !== false;
+  const normalized = Array.isArray(messages) ? messages : [];
+  const systemIntegrity = window.AISystem6SystemIntegrity;
+  const systemIntegrityInstruction = wantIntegrity && systemIntegrity && !systemIntegrity.hasIntegrityInstruction(normalized)
+    ? systemIntegrity.instruction()
+    : "";
+  const humanizer = window.AISystem6Humanizer;
+  const humanizerInstruction = wantHumanizer && humanizer && !humanizer.hasHumanizerInstruction(normalized)
+    ? humanizer.instruction()
+    : "";
+  return [
+    ...(wantMarkdown ? [{ role: "system", content: markdownOnlyModelInstruction }] : []),
+    ...(systemIntegrityInstruction ? [{ role: "system", content: systemIntegrityInstruction }] : []),
+    ...(humanizerInstruction ? [{ role: "system", content: humanizerInstruction }] : []),
+    ...normalized,
+  ];
+}
+
+function installLazyWritingFlowStub(name) {
+  if (typeof window[name] === "function") return;
+  window[name] = async function lazyWritingFlowStub(...args) {
+    if (passiveWritingFlowStubs.has(name)) return undefined;
+    await ensureLazyModuleForUserAction("Writing Flow", ensureWritingFlowModule);
+    const fn = window[name];
+    if (fn === lazyWritingFlowStub) throw new Error(`Writing Flow did not install ${name}`);
+    return fn(...args);
+  };
+}
+
+[
+  "renderFlowProgress",
+  "renderPipeline",
+  "renderRebuildFlow",
+  "openRebuildFlow",
+  "runRebuildFlow",
+  "handInRebuildFlow",
+  "mergeRebuildSection",
+  "stopRebuildFlow",
+  "openWritingFlowHelp",
+  "openQuestionSheetSurface",
+  "openOutlineSurface",
+  "openSectionDrafts",
+  "openWritingFlowWindows",
+  "toggleTeachTextSurfacePreview",
+  "refreshTeachTextSurfacePreview",
+  "syncLinkedManuscriptScrollFrom",
+  "updateFlowGuideChecklist",
+  "insertQuestionTemplate",
+  "advanceQuestionSheetToOutline",
+  "advanceOutlineToSectionDrafts",
+  "savePipelineData",
+  "renderReaderTabs",
+  "syncDraftsFromProjectOutline",
+  "syncOutlineDomFromProject",
+  "syncDraftDomFromProject",
+  "syncLinkedTeachTextFromProject",
+  "addOutlineSection",
+  "draftSelectedOutlineSection",
+  "showAdjacentSectionDraft",
+  "createManualSectionDraft",
+  "advanceDraftsToManuscript",
+  "advanceManuscriptToReview",
+  "returnDocumentToSectionDrafts",
+].forEach(installLazyWritingFlowStub);
+
+[
+  "eli5RewriteSection",
+  "eli5ReviewSection",
+  "oneSentenceRewriteSection",
+  "oneSentenceCheckSection",
+].forEach((name) => installLazyFunctionStub(name, ensureWritingFlowModule));
+
+function installLazyMemoryCardsStub(name) {
+  if (typeof window[name] === "function") return;
+  window[name] = async function lazyMemoryCardsStub(...args) {
+    await ensureLazyModuleForUserAction("Memory Cards", ensureMemoryCardsModule);
+    const fn = window[name];
+    if (fn === lazyMemoryCardsStub) throw new Error(`Memory Cards did not install ${name}`);
+    return fn(...args);
+  };
+}
+
+[
+  "memoryCardsHasGame",
+  "newMemoryCardsGame",
+  "pauseMemoryCardsGame",
+  "renderMemoryCards",
+  "flipMemoryCard",
+].forEach(installLazyMemoryCardsStub);
+
+function installLazyFunctionStub(name, ensureModule) {
+  if (typeof window[name] === "function") return;
+  window[name] = async function lazyFunctionStub(...args) {
+    await ensureLazyModuleForUserAction(name, ensureModule);
+    const fn = window[name];
+    if (fn === lazyFunctionStub) throw new Error(`Lazy module did not install ${name}`);
+    return fn(...args);
+  };
+}
+
+[
+  "openPrintDirectoryPreview",
+  "downloadPrintedDirectoryMarkdown",
+].forEach((name) => installLazyFunctionStub(name, ensurePrintDirectoryModule));
+
+[
+  "openPageSetup",
+  "updatePageSetupFromControls",
+  "printSelectedProjectCdPdf",
+  "printCurrentTeachTextDocument",
+  "openWordExportPreview",
+  "exportActiveDocumentAsWord",
+  "exportSelectedProjectCdItemAsWord",
+  "openFinishingReceipt",
+  "openFinishingReceiptForSelection",
+  "showFinishingReceiptForBurn",
+].forEach((name) => installLazyFunctionStub(name, ensureProjectCdPrintModule));
+
+[
+  "openTranslationPad",
+  "openTranslationPadFromSelection",
+  "syncTranslationPadStateFromInputs",
+  "clearTranslationPad",
+  "translateTranslationPadSource",
+  "sendTranslationPad",
+].forEach((name) => installLazyFunctionStub(name, ensureTranslationPadModule));
+
+
+// Writing-route AI commands and Claim Check. Every one of these is summoned by
+// a menu item, a Review Desk button, or the live demo, so a stub that loads the
+// module first is invisible to the user. The synchronous half of the same
+// feature (section blocks, Review Desk rendering, shared Markdown helpers) is
+// eager in app/core/review-sections.js and must stay out of this list.
+[
+  "generateOutline",
+  "organizeQuestionSheet",
+  "organizeQuestionSheetCore",
+  "applyOrganizedQuestionSheet",
+  "expandOutline",
+  "runOutlineOperation",
+  "polishDraft",
+  "suggestDraft",
+  "runClaimCheck",
+  "readRebuildMarkdownPackStream",
+].forEach((name) => installLazyFunctionStub(name, ensureOutlineClaimModule));
+
+const ensureProjectBackupExportData = createLazyModuleLoader("AISystem6ProjectBackupExportData", ["app/features/project-backup-export-data.js"]);
+// The File Floppy's browser OCR / PDF readers and the webp/heic canvas
+// normalizer; export-import.js awaits this before every call into them.
+const ensureFileImportExtractors = createLazyModuleLoader("AISystem6FileImportExtractors", ["app/features/file-import-extractors.js"]);
+const ensureTinyShellModule = createLazyModuleLoader("AISystem6TinyShell", ["app/core/storage-fingerprint.js", "app/core/tinyjs-shell.js"]);

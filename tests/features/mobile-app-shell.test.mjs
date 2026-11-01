@@ -1,0 +1,659 @@
+// Mobile presentation contract. On a phone, every production window has one
+// deliberate role: application page, Finder page, dialog, system page, or Desk
+// Accessory. Full-screen presentation is a screen-size consequence, not a task
+// model — Finder / MultiFinder still governs how many apps run.
+// See .claude/plans and app/core/window-manager.js.
+
+import { admissionRows, createFeatureTest, read, windowRegistryRecords } from "../helpers/feature-test-harness.mjs";
+
+const test = createFeatureTest("mobile-app-shell");
+const foundation = read("styles/00-foundation.css");
+const responsive = read("styles/60-responsive.css");
+const windows = read("styles/10-windows.css");
+const apps = read("styles/50-apps.css");
+const chatMessages = read("app/core/chat-messages.js");
+const readerStyles = read("styles/20-reader-docmap.css");
+const windowManager = read("app/core/window-manager.js");
+const multiFinder = read("app/core/multi-finder.js");
+const workingSession = read("app/core/working-session.js");
+const wireup = read("app/core/wireup.js");
+const actions = read("app/core/actions.js");
+const html = read("index.html");
+const en = read("app/data/translations-en.js");
+const zh = read("app/data/translations-zh.js");
+const dictionary = read("app/data/system-dictionary.js");
+
+function declaredStringSet(source, setName) {
+  const body = source.match(new RegExp(`const ${setName} = new Set\\(\\[([\\s\\S]*?)\\]\\);`))?.[1] || "";
+  return new Set(Array.from(body.matchAll(/"([^"]+)"/g), (match) => match[1]));
+}
+
+// The full-screen shell figure keys off two classes the JS toggles.
+// Writer mode is included: the writing profile boots into is-writer-mode and
+// still needs the phone shell + keyboard inset for TeachText / route / ClioTalk.
+test.assertIncludes(
+  responsive,
+  "body.mobile-app-foreground .window.is-mobile-fullscreen:not(.is-collapsed) {",
+  "portrait shell pins a foregrounded app full-screen"
+);
+test.assertIncludes(
+  responsive,
+  "calc(var(--menu-bar-height) + var(--safe-area-top))",
+  "full-screen shell starts below the menu bar, clearing the status bar when standalone"
+);
+test.assertIncludes(
+  foundation,
+  "--safe-area-bottom: env(safe-area-inset-bottom, 0px);",
+  "the home-indicator inset has one foundation token"
+);
+test.assertIncludes(
+  responsive,
+  ".window.is-mobile-fullscreen:not(.assistant-window) {",
+  "the shared shell has a rule of its own for every non-ClioTalk app"
+);
+// One shorthand, all three edges. The sides were added for iPhone Duo, whose
+// outer display keeps the system's controls and camera down one SIDE, so
+// portrait reports a horizontal inset that this flow used to ignore. The
+// window material still reaches the true edge; only its content moves.
+const shellInset = "padding: 0 var(--safe-area-right) var(--safe-area-bottom) var(--safe-area-left);";
+test.assert(
+  responsive.split(shellInset).length - 1 >= 2,
+  "the shell and the composer both protect their interaction area on all three edges"
+);
+// The claim is the branch, not the whitespace: the window that takes over is
+// raised and given the keyboard (focusIntoWindow), and with no window left the
+// desk owns the app id. Written as a pattern because the second half of the
+// handoff was added after this contract was, and pinning exact indentation made
+// that read as a regression.
+test.assertMatches(
+  windowManager,
+  /if \(next\) \{[\s\S]{0,120}?focusWindow\(next\);[\s\S]{0,80}?focusIntoWindow\(next\);[\s\S]{0,60}?\} else \{[\s\S]{0,40}?activeAppId = "finder";/,
+  "closing a mobile overlay reactivates the full-screen app so its title controls and menus keep working"
+);
+// The flow rules must be scoped away so the shell wins without a forced override.
+test.assertIncludes(
+  responsive,
+  ".assistant-window:not(.is-collapsed):not(.is-mobile-fullscreen)",
+  "the portrait height cap is scoped off the full-screen state"
+);
+test.assertIncludes(
+  responsive,
+  ".window.is-mobile-work-area:not(.is-mobile-fullscreen)",
+  "the absolute-positioning flow rule is scoped off the full-screen state"
+);
+// The desktop launcher hides behind the foregrounded app; home reveals it.
+test.assertIncludes(
+  responsive,
+  "body.mobile-app-foreground:not(.is-writer-mode) .icon-column",
+  "the desktop launcher hides behind a foregrounded app"
+);
+test.assertIncludes(
+  responsive,
+  '.window:not(.is-mobile-fullscreen):not(.is-mobile-dialog):not(.is-mobile-system-page):not([data-app="accessories"]):not([data-app="system"])',
+  "background MultiFinder apps leave portrait layout without being marked hidden"
+);
+// Every label an indicator carries collapses to its icon on a narrow bar,
+// rather than any of them pushing MultiFinder off the end.
+test.assertIncludes(
+  responsive,
+  "#cloud-model-label,\n  #guest-indicator-label {\n    display: none;",
+  "the narrow menu bar collapses the redundant indicator labels before clipping MultiFinder"
+);
+test.assertIncludes(
+  responsive,
+  ".clio-stage-view-switcher {\n    grid-template-columns: repeat(4, minmax(0, 1fr));",
+  "ClioStage keeps its four mobile views in one compact control row"
+);
+test.assertIncludes(
+  responsive,
+  ".assistant-window.is-mobile-fullscreen .message-content",
+  "ClioTalk constrains generated content to the phone viewport"
+);
+test.assertIncludes(
+  read("styles/24-searcher.css"),
+  ".find-path-pane > .button-row:last-child {\n    display: grid;\n    grid-auto-columns: minmax(0, 1fr);\n    grid-auto-flow: column;",
+  "Searcher keeps handoff actions on one row so results remain the main surface"
+);
+test.assertIncludes(
+  readerStyles,
+  '.reader-pane[data-reader-state="loaded"]:not([data-reader-entry="open"]) > .reader-toolbar {',
+  "Reader removes source-entry chrome after a document is open on phone and desktop"
+);
+test.assertIncludes(
+  foundation,
+  "--touch-primary-min-height: 48px;",
+  "foundation owns the narrow/phone ≥48 primary touch floor"
+);
+test.assertIncludes(
+  foundation,
+  "--menu-bar-shadow: none;",
+  "Classic/System 6 menubar stays flat paper (no soft Platinum inset)"
+);
+test.assertIncludes(
+  responsive,
+  ".ask-bar-row input,\n  .ask-bar-row .btn {\n    min-height: var(--touch-primary-min-height);",
+  "every ask bar keeps a phone-sized ≥48 touch target in one shared rule"
+);
+test.assertIncludes(
+  foundation,
+  "--scrapbook-mobile-pane-rows: minmax(0, 1fr) auto auto;",
+  "Scrapbook gives its phone editor the space a hidden page-era list no longer needs"
+);
+test.assertIncludes(
+  responsive,
+  "grid-template-rows: var(--scrapbook-mobile-pane-rows);",
+  "the phone shell consumes the era-owned Scrapbook row contract"
+);
+// Owner decision 2026-10-19: an empty conversation names no file. The bar says
+// what the first message will do instead of inventing "Chat 08:10".
+test.assertIncludes(
+  chatMessages,
+  "const started = Array.isArray(conversation) && conversation.length > 0;",
+  "ClioTalk waits for the first message before naming the Chat file"
+);
+test.assertIncludes(
+  chatMessages,
+  'started ? getPendingClioTalkFileName() : t("clio_chat_file_waiting")',
+  "the empty file bar says what the first message will do, on phone and desktop"
+);
+test.assertIncludes(
+  dictionary,
+  "Across phone and desktop, controls with no current action collapse",
+  "System Help documents the content-first mobile control hierarchy"
+);
+test.assertIncludes(
+  html,
+  '<label class="visually-hidden" for="find-path-query"',
+  "Searcher keeps its accessible query name without spending desktop or phone content space on it"
+);
+test.assertIncludes(
+  responsive,
+  "--puzzle-board-width: 220px",
+  "Puzzle enlarges its board for touch instead of preserving desktop accessory dimensions"
+);
+test.assertIncludes(
+  dictionary,
+  "On a phone, Focus Root opens a readable branch-level view",
+  "System Help describes the live DocMap phone interaction"
+);
+
+// State toggles are class-based, not inline layout styles. Every real app uses
+// the page shell; Finder folders join it through an explicit window-name set.
+for (const appId of [
+  "clioTalk",
+  "quickDraft",
+  "lightroom",
+  "teachText",
+  "writingStudio",
+  "searcher",
+  "reader",
+  "timeMachine",
+  "endfield",
+  "docMap",
+  "clioStage",
+  "clioChart",
+  "clioWrite",
+  "liquidCover",
+  "cmfStudio",
+  "soundscape",
+  "scrapbook",
+  "bureaucracyMeme",
+]) {
+  test.assertIncludes(windowManager, `"${appId}",`, `the shell covers the ${appId} app`);
+}
+test.assertMatches(
+  windowManager,
+  /mobileFullScreenAppIds = new Set\(\[(?:(?!\]\))[\s\S])*\]\)/,
+  "the rolled-out app list is a single declared set"
+);
+test.assertIncludes(
+  windowManager,
+  "const activeAppWins = wins.filter((win) => getWindowAppId(win) === activeAppId);",
+  "restored phone sessions choose the MultiFinder foreground app before stale desktop z-order"
+);
+test.assertIncludes(
+  workingSession,
+  'if (typeof syncMobileAppForeground === "function") syncMobileAppForeground();',
+  "working-session restore reconciles the portrait shell after restoring the actual foreground app"
+);
+test.assert(
+  !/mobileFullScreenAppIds = new Set\(\[(?:(?!\]\))[\s\S])*"(accessories|system|finder)"/.test(windowManager),
+  "accessories, system windows, and Finder do not masquerade as application ids"
+);
+test.assertIncludes(windowManager, "const mobileFinderPageWindowNames = new Set([", "Finder pages have a declared mobile navigation role");
+test.assertIncludes(windowManager, "const mobileDialogWindowNames = new Set([", "dialogs have a declared mobile overlay role");
+test.assertIncludes(windowManager, "const mobileSystemPageWindowNames = new Set([", "system pages have a declared mobile overlay role");
+test.assertIncludes(windowManager, 'role === "finder-page"', "Finder pages can own the phone work area");
+test.assertIncludes(windowManager, "mobileFinderDesktopPreferred = true;", "the Finder switcher entry returns to the desktop launcher");
+test.assertIncludes(responsive, "body.mobile-finder-desktop:not(.is-writer-mode) .window.is-mobile-finder-page", "the desktop launcher backgrounds Finder's single current location");
+test.assertIncludes(responsive, ".window.is-mobile-dialog:not(.is-hidden):not(.is-collapsed)", "dialogs remain compact overlays on phone");
+test.assertIncludes(responsive, ".window.is-mobile-system-page:not(.is-hidden):not(.is-collapsed)", "system-owned pages use one phone presentation");
+
+// Inventory gate: a new window cannot ship without acquiring exactly one of
+// the system roles above (directly, through its app id, or as an accessory).
+// Apps declared whole in the admission table carry their phone role on the row.
+const admittedPhoneApps = Object.values(admissionRows()).filter((row) => row.phone >= 1).map((row) => row.app);
+const fullScreenApps = new Set([...declaredStringSet(windowManager, "mobileFullScreenAppIds"), ...admittedPhoneApps]);
+const finderPages = declaredStringSet(windowManager, "mobileFinderPageWindowNames");
+const dialogs = declaredStringSet(windowManager, "mobileDialogWindowNames");
+const systemPages = declaredStringSet(windowManager, "mobileSystemPageWindowNames");
+const appMap = Object.fromEntries(
+  Object.entries(windowRegistryRecords()).map(([name, record]) => [name, record.app]),
+);
+const productionWindows = Array.from(html.matchAll(/\bdata-window="([^"]+)"/g), (match) => match[1]);
+const uncoveredWindows = productionWindows.filter((name) => {
+  const appId = appMap[name] || "finder";
+  return !dialogs.has(name)
+    && !systemPages.has(name)
+    && !finderPages.has(name)
+    && appId !== "accessories"
+    && !fullScreenApps.has(appId);
+});
+test.assert(
+  uncoveredWindows.length === 0,
+  `all ${productionWindows.length} production windows have a mobile presentation role${uncoveredWindows.length ? `; missing: ${uncoveredWindows.join(", ")}` : ""}`
+);
+
+// Layout code that writes inline frames must stand down on the phone, or those
+// inline styles would outrank the shell.
+test.assertIncludes(
+  windowManager,
+  "arrangeMobileWritingForeground();",
+  "the writing-route pair split stands down on a phone (single-foreground model instead)"
+);
+test.assertIncludes(
+  windowManager,
+  "if (isPortraitDocumentFlow() || isNarrowViewport()) {\n    syncMobileAppForeground();\n    return true;\n  }",
+  "the SideAsk pair layout stands down on a phone"
+);
+test.assertIncludes(
+  windowManager,
+  '.forEach((prop) => { target.style[prop] = ""; })',
+  "stale inline desktop geometry is cleared when a window is maximized"
+);
+test.assertIncludes(windowManager, "function syncMobileAppForeground()", "a single sync point owns the foreground state");
+test.assertIncludes(windowManager, "function repairPortraitDeskAccessoryGeometry()", "portrait sync repairs stale desktop accessory coordinates");
+test.assertIncludes(windowManager, "function arrangePortraitDeskAccessories(", "one portrait arranger owns every visible Desk Accessory");
+test.assertIncludes(windowManager, "visiblePortraitDeskAccessories()", "the portrait arranger considers the complete open DA set");
+test.assertIncludes(windowManager, 'candidate.style.setProperty("--mobile-da-top"', "the portrait arranger assigns non-overlapping vertical slots");
+test.assertIncludes(responsive, "left: 50%;", "portrait Desk Accessories share one centered horizontal axis");
+test.assertIncludes(
+  windowManager,
+  'getPropertyValue("--safe-area-bottom")',
+  "the Desk Accessory arranger reads the shared home-indicator inset"
+);
+test.assertIncludes(
+  windowManager,
+  "viewportHeight - safeAreaBottom - margin",
+  "the complete Desk Accessory group stays above the home indicator"
+);
+test.assertIncludes(
+  responsive,
+  "calc(100vh - var(--system-menu-height, 26px) - var(--safe-area-bottom) - 24px)",
+  "the Desk Accessory CSS fallback also reserves the bottom safe area"
+);
+test.assertIncludes(dictionary, "Opening or closing another DA reflows the whole stack", "System Help documents mobile DA reflow and overlap prevention");
+test.assertIncludes(windowManager, "function foregroundMobileApp(", "the switcher re-foregrounds a running app");
+test.assertIncludes(windowManager, 'classList.toggle("mobile-app-foreground"', "the body foreground state is a class toggle");
+
+// Leaving: the System 6 close box quits; the switcher's Finder entry backgrounds
+// the app to the desktop (no redundant title-bar home button).
+test.assertIncludes(windowManager, "function mobileHomeToDesktop()", "backgrounding to the desktop is a single reusable path");
+test.assertNotIncludes(html, "home-box", "no redundant title-bar back-to-desktop button");
+test.assertNotIncludes(actions, "mobile-home", "no back-to-desktop action; the close box and switcher cover it");
+
+// Full-screen presentation is a screen-size consequence, NOT a task model: a
+// phone must still obey the Finder / MultiFinder choice. Finder = one app at a
+// time and no switcher (there is nothing to switch to; the close box is the way
+// back to the desktop). MultiFinder = apps stay running and the switcher moves
+// between them. An earlier build surfaced the switcher in portrait regardless of
+// mode, which put MultiFinder vocabulary (Hide Others / Quit / Bring All to
+// Front) inside single-task Finder.
+test.assertIncludes(
+  multiFinder,
+  "const showSwitcher = isMultiFinderMode();",
+  "the switcher stays MultiFinder-only on every screen size"
+);
+test.assert(
+  !multiFinder.includes("isMultiFinderMode() || isPortraitDocumentFlow()"),
+  "a phone never conjures the switcher in Finder mode"
+);
+test.assertIncludes(
+  wireup,
+  "if (isPortraitDocumentFlow()) foregroundMobileApp(appId);",
+  "the switcher click uses the mobile foreground path on a phone"
+);
+
+// The full-screen shell keeps the whole System 6 title bar: nothing in it is
+// force-hidden. The close box quits; the zoom box restores down.
+test.assertNotIncludes(
+  responsive,
+  ".window.is-mobile-fullscreen .title-bar > .close-box,",
+  "the close box is not force-hidden in the full-screen shell"
+);
+test.assertNotIncludes(
+  responsive,
+  ".window.is-mobile-fullscreen .title-bar > .resize-box {\n    display: none;",
+  "the zoom box is not force-hidden in the full-screen shell"
+);
+
+// The Zoom box owns maximize/restore. The grow box remains a separate manual
+// sizing control, but a grow drag first restores a maximized window down so it
+// has a real floating frame to resize.
+test.assertIncludes(
+  windowManager,
+  'win.dataset.mobileRestored !== "true"',
+  "a restored-down window is not re-maximized by the shell"
+);
+test.assertIncludes(
+  windowManager,
+  'win.dataset.mobileRestored = win.dataset.mobileRestored === "true" ? "false" : "true"',
+  "the zoom box toggles maximize/restore on a phone"
+);
+test.assertIncludes(
+  windowManager,
+  'if (win.classList.contains("is-mobile-fullscreen")) {\n    win.dataset.mobileRestored = "true";',
+  "dragging the grow box restores the window down first"
+);
+
+// Modals / desk accessories float above the full-screen app instead of
+// replacing it. The exemption is scoped to exactly those: another *real* app
+// must still single-task the running one away in Finder mode, or a phone
+// silently multitasks and the startup choice means nothing.
+test.assertIncludes(
+  windowManager,
+  '&& !isFinderModeSingleTaskApp(appId)\n      ) return false;',
+  "only a desk accessory / system window skips single-tasking the full-screen app"
+);
+
+// Backgrounding to the desktop is the switcher's Finder entry, so it is a
+// MultiFinder path: it must background every running app (MultiFinder's own
+// hide vocabulary, so they stay resumable) rather than hiding just the frontmost
+// one — which would only promote the next running app to full-screen.
+test.assertIncludes(
+  windowManager,
+  "appIds.forEach((appId) => hideApp(appId, { preserveActive: true }));",
+  "going home backgrounds every running app so the desktop actually shows"
+);
+
+// iOS keyboard: the shell reads a --keyboard-inset var (set from visualViewport)
+// so the composer stays above the keyboard, without inline layout styles.
+test.assertIncludes(
+  responsive,
+  "0\n      var(--keyboard-inset, 0px)\n      0;",
+  "the shell bottom lifts by the keyboard only; the window itself fills to the true edge at rest"
+);
+// Window material remains edge-to-edge. ClioTalk protects its own composer;
+// the shared non-assistant shell protects every other app's lowest controls.
+test.assertIncludes(
+  responsive,
+  shellInset,
+  "the composer insets its own content instead of the window stopping short of the edge"
+);
+test.assertIncludes(
+  responsive,
+  ":not(.is-collapsed):not(.is-mobile-fullscreen)",
+  "the assistant min-height flow rule is scoped off the full-screen state so it can shrink for the keyboard"
+);
+test.assertIncludes(
+  wireup,
+  'setProperty("--keyboard-inset"',
+  "the keyboard inset is published as a CSS custom property, not an inline layout style"
+);
+test.assertIncludes(
+  wireup,
+  'window.visualViewport.addEventListener("resize", () => scheduleKeyboardInset())',
+  "the keyboard inset tracks the visual viewport"
+);
+// iOS shrinks the visual viewport for its collapsing address bar as well, so a
+// shrunken viewport alone is not a keyboard. Without this gate every
+// full-screen app rests tens of pixels above the bottom edge and shows the
+// desktop pattern under itself.
+test.assertIncludes(
+  wireup,
+  "keyboardCapableFocus() ? covered : 0",
+  "the keyboard inset applies only while an editable element holds focus"
+);
+test.assertIncludes(
+  wireup,
+  'document.addEventListener("focusin", () => scheduleKeyboardInset({ reveal: true }))',
+  "moving focus re-decides whether the viewport shrink counts as a keyboard"
+);
+// Floating windows have no shell to read the inset, so the window that owns
+// the focused field is pulled above the keys while the keyboard is up and put
+// back when it closes. That is the iPad analogue of the phone shell's lift:
+// iPad Split View / Slide Over / landscape panes never get the full-screen
+// figure, but the composer must still clear the keys.
+test.assertIncludes(
+  windowManager,
+  "function syncKeyboardWindowFrame()",
+  "the window manager exposes a keyboard-aware frame sync for floating windows"
+);
+test.assertIncludes(
+  windowManager,
+  'getComputedStyle(document.documentElement).getPropertyValue("--keyboard-inset")',
+  "the window clamp reads the keyboard inset instead of assuming the full viewport"
+);
+test.assertIncludes(
+  windowManager,
+  "const vh = (window.innerHeight || document.documentElement.clientHeight) - keyboardInset - deskDockReserve();",
+  "the clamp's visible height ends above the keyboard, never under it"
+);
+test.assertIncludes(
+  windowManager,
+  'setInlineStyleValue(win, "max-height", maxH + "px")',
+  "the clamp writes the kebab-case property so the cap actually applies"
+);
+test.assertIncludes(
+  windowManager,
+  "restoreKeyboardWindowFrame(adjusted)",
+  "the previously adjusted window gets its frame back when focus moves or the keyboard closes"
+);
+test.assertIncludes(
+  wireup,
+  "syncKeyboardWindowFrame?.()",
+  "the keyboard inset update also re-fits the floating window that owns the focused field"
+);
+test.assertIncludes(
+  wireup,
+  "scheduleKeyboardInset",
+  "keyboard inset updates coalesce on animation frames instead of every visualViewport event"
+);
+test.assertIncludes(
+  wireup,
+  "syncKeyboardPortraitDeskAccessories?.()",
+  "portrait Desk Accessories re-rail when the soft keyboard inset changes"
+);
+test.assertIncludes(
+  wireup,
+  "revealFocusedFieldAboveKeyboard?.()",
+  "after the shell lifts, the caret/field scrolls into the visible band"
+);
+test.assertIncludes(
+  windowManager,
+  "function revealFocusedFieldAboveKeyboard()",
+  "the window manager exposes caret reveal for typing-lift"
+);
+test.assertIncludes(
+  windowManager,
+  "function syncKeyboardPortraitDeskAccessories()",
+  "portrait DA keyboard sync is owned beside the floating-window keyboard frame sync"
+);
+test.assertIncludes(
+  responsive,
+  "scroll-padding-bottom: 2.5em;",
+  "phone writing fields keep scroll padding so the caret clears the soft keyboard"
+);
+test.assertIncludes(
+  responsive,
+  "body.is-writer-mode :is(.teachtext-window, .question-sheet-window, .outline-window, .section-drafts-window) textarea",
+  "writer-mode writing-route fields get the same caret scroll-padding as the phone shell"
+);
+test.assertIncludes(
+  responsive,
+  ".assistant-window .composer textarea",
+  "ClioTalk compose keeps scroll-padding whether or not writer mode is on"
+);
+test.assertIncludes(
+  responsive,
+  "body.mobile-app-foreground .window.is-mobile-fullscreen:is(",
+  "writing-route fullscreen panes keep scroll-padding like Desk Accessory panes"
+);
+test.assertIncludes(
+  responsive,
+  ".find-path-window,\n    .reader-window,\n    .docmap-window,\n    .scrapbook-window,\n    .sideask-pad-window,\n    .dictionary-window",
+  "Searcher / Reader / DocMap / Scrapbook / Side Ask / Dictionary panes share the writing-route caret scroll-padding"
+);
+test.assertIncludes(
+  responsive,
+  "body.mobile-app-foreground .window.is-mobile-fullscreen:is(\n    .reader-window,\n    .docmap-window,\n    .find-path-window\n  ) .window-pane",
+  "phone shell keeps Reader / DocMap / Searcher panes from scrolling as one unit"
+);
+test.assertIncludes(
+  responsive,
+  "body.mobile-app-foreground .window.is-mobile-fullscreen.find-path-window .find-path-query-row",
+  "Searcher query row stays pinned above the soft keyboard like ClioTalk compose"
+);
+test.assertIncludes(
+  responsive,
+  "body.mobile-landscape-shell .window.is-mobile-fullscreen:is(\n    .reader-window,\n    .docmap-window,\n    .find-path-window,\n    .scrapbook-window,\n    .sideask-pad-window,\n    .dictionary-window\n  ) .window-pane",
+  "landscape shell mirrors the same Reader / DocMap / Searcher / Scrapbook typing-lift pin"
+);
+
+// Landscape is its own design, not a fallback to a cramped desktop. It used to
+// admit only the immersive class -- the games, whose content is the screen --
+// but a 912x420 display has no room for a floating window plus a desktop
+// either, so every app page takes the shell there too (2026-09-05). The zoom
+// box still restores the window down, which is what keeps this a maximize.
+// The immersive class survives with a smaller job: its artifact reaches the
+// safe-area edge instead of sitting inside the pane's reading padding.
+const windowManagerSource = read("app/core/window-manager.js");
+test.assertIncludes(
+  windowManagerSource,
+  "mobileImmersiveAppIds = new Set(window.AISystem6Admissions.phoneApps(2))",
+  "the immersive class is read from the admission rows"
+);
+test.assert(
+  // Mingwen joined the Games folder: the visual novel takes the whole phone
+  // page like the simulators beside it, so it declares the same phone contract.
+  Object.values(admissionRows()).filter((row) => row.phone === 2).map((row) => row.app).sort().join(",") === "bonsaiCity,doom,joyride,micropolis,mingwen,openttd,rootline",
+  "the immersive class is the games and the city simulator"
+);
+test.assertIncludes(
+  windowManagerSource,
+  "if (!isPortraitDocumentFlow() && !isLandscapeDocumentFlow()) return null;",
+  "both orientations of a phone hand the screen to one app page"
+);
+test.assertIncludes(
+  windowManagerSource,
+  '"mobile-immersive-app",',
+  "the immersive class still marks the apps whose artifact is the screen"
+);
+test.assertIncludes(
+  responsive,
+  "@media (orientation: landscape) and (max-width: 860px), (orientation: landscape) and (hover: none) and (pointer: coarse) and (max-height: 660px)",
+  "landscape phones own a full-screen block of their own, and a phone is a device class rather than a width"
+);
+test.assertIncludes(
+  responsive,
+  "var(--safe-area-right)",
+  "the landscape shell insets the notch side instead of running under it"
+);
+
+// Nothing may shift when the keyboard opens: the foregrounded app is fixed and
+// fills the screen, so the page is locked and any scroll iOS performs is undone.
+test.assertIncludes(
+  responsive,
+  "body.mobile-app-foreground {\n    overflow: hidden;",
+  "the page cannot scroll while an app is foregrounded"
+);
+test.assertIncludes(
+  wireup,
+  'document.addEventListener("focusin"',
+  "focus-driven scrolling is reset so the desk does not move"
+);
+
+// The Finder rubber band calls preventDefault on pointerdown, which froze any
+// pane a finger tried to scroll. Dragging is scrolling on a touch screen; mouse
+// and pen still get the marquee.
+test.assertIncludes(
+  read("app.js"),
+  'if (event.pointerType === "touch") return null;',
+  "a touch drag never starts a selection marquee"
+);
+
+test.assertIncludes(dictionary, 'id: "mobile-workspace"', "System Help exposes the current portrait workspace behavior");
+test.assertIncludes(dictionary, "Finder remains the launcher", "English help explains mobile navigation without inventing a second launcher");
+test.assertIncludes(dictionary, "新开或关闭 DA 时整组都会重新排布", "Chinese help explains centered Desk Accessory reflow");
+for (const helpId of ["multifinder", "desk-accessories", "puzzle", "shutdown-restart"]) {
+  test.assertIncludes(dictionary, `id: "${helpId}"`, `System Help exposes ${helpId}`);
+}
+test.assertIncludes(dictionary, "one horizontally centered column", "Desk Accessory help pins the non-overlapping mobile stack");
+test.assertIncludes(dictionary, "shows the safe-to-shut-down screen", "System Help matches the real shutdown ending");
+test.assertIncludes(wireup, "revealSelectOpenTapHint(desktopIconTarget", "the first touch tap on a desktop icon teaches the double-tap gesture");
+const balloonHelpSource = read("app/core/balloon-help.js");
+test.assertIncludes(balloonHelpSource, '"desktop_tap_hint"', "the shared select-open helper names the tap-again balloon key");
+test.assertIncludes(en, 'desktop_tap_hint: "Tap again to open."', "English names the touch hint");
+test.assertIncludes(zh, 'desktop_tap_hint: "再点一次打开。"', "Chinese names the touch hint");
+
+// A phone held sideways reports its sensor housing on ONE side edge — left or
+// right, depending on how the phone is rotated — and nothing on top. Padded by
+// design values alone, the Apple menu sat under a left-side island and the
+// whole desktop icon column sat under a right-side island — unreachable, on
+// the one surface that launches everything. The device states its own inset on
+// whichever side the housing is, so both edges must read the device instead of
+// assuming a single orientation.
+test.assertMatches(
+  foundation,
+  /\.menu-bar \{[^}]*padding: 0 max\(var\(--menu-bar-inline-padding\), var\(--safe-area-right\)\) 0 max\(var\(--menu-bar-inline-padding\), var\(--safe-area-left\)\)/,
+  "the menu bar's one padding rule clears the sensor housing on both edges"
+);
+test.assertMatches(
+  responsive,
+  /@media \(max-width: 860px\)[\s\S]*?\.menu-bar \{[^}]*--menu-bar-inline-padding: 3px/,
+  "a narrow screen tightens the bar through the token, not through a second copy of the rule"
+);
+// The launcher still clears the sensor housing and the home indicator. It
+// measures those insets from the display's own edge: the composition that once
+// inset both rails toward the middle was overturned on 2026-09-14, and the room
+// a wide display buys is the room between the rails.
+test.assertMatches(
+  apps,
+  /\.icon-column \{[^}]*right: max\(22px, var\(--safe-area-right\)\);[^}]*bottom: max\(22px, var\(--safe-area-bottom\)\)/,
+  "the desktop icon column clears the housing and the home indicator"
+);
+test.assertMatches(
+  apps,
+  /\.icon-column \{[^}]*flex-wrap: wrap-reverse;\s*align-content: flex-start/,
+  "a column with no room left starts another one instead of dropping icons off the bottom"
+);
+test.assertNotMatches(
+  apps + responsive,
+  /max-height: \d+px\) \{\s*\.icon-column/,
+  "the wrap is decided by the column running out of room, never by a guessed screen height"
+);
+
+// And when it does run out of room, the Trash is not the icon flung alone into
+// the second column. It is last and carries `margin-top: auto`, so at 1366x768
+// -- the most common laptop height -- exactly one icon overflowed and it was
+// always the Trash, which wrap-reverse then placed to the LEFT of everything.
+// The answer measures the actual outcome rather than naming a height: lay the
+// column out at its natural spacing, ask whether it wrapped, and only then
+// close the gap so all of them fit one column again.
+test.assertIncludes(windowManagerSource, "function syncIconColumnDensity(", "the column reports whether it actually wrapped");
+test.assertMatches(
+  windowManagerSource,
+  /syncIconColumnDensity\(\)[\s\S]{0,900}classList\.remove\("is-tight"\)/,
+  "it measures at the natural spacing, never at its own previous answer"
+);
+test.assertMatches(
+  windowManagerSource,
+  /syncIconColumnDensity\(\)[\s\S]{0,1200}lanes\.size > 1/,
+  "the condition is more than one lane, not a screen height"
+);
+test.assertMatches(apps, /\.icon-column\.is-tight \{[^}]*--desktop-icon-column-gap/, "the tightened column closes the gap through the token");
+test.assertMatches(apps, /\.icon-column\.is-tight \[data-open="trash"\] \{[^}]*margin-top: 0/, "and drops the anchor that made the Trash the overflowing icon");
+test.assertIncludes(read("app/core/boot.js"), "syncIconColumnDensity", "the measurement runs once the desktop is on screen");
+test.assertIncludes(read("app/core/wireup.js"), "syncIconColumnDensity", "and again whenever the viewport changes");
+
+test.finish();

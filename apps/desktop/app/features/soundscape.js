@@ -1,0 +1,2393 @@
+(function initSoundscapeFeature() {
+  "use strict";
+
+  const STORAGE_KEY = "ai-system-6-soundscape-v1";
+  const SCHEMA_VERSION = 2;
+  const MAX_SAVED_MOMENTS = 48;
+  const SYSTEM_POLL_MS = 1500;
+  const GAMDL_POLL_MS = 1500;
+  const REPEAT_MODES = Object.freeze(["off", "all", "one"]);
+  const PANELS = Object.freeze(["queue", "style", "saved"]);
+  const STYLE_PRESETS = Object.freeze({
+    standard: Object.freeze({ x: 50, y: 54, intensity: 24 }),
+    coldMist: Object.freeze({ x: 22, y: 74, intensity: 42 }),
+    warmWood: Object.freeze({ x: 78, y: 65, intensity: 48 }),
+    nightSail: Object.freeze({ x: 31, y: 28, intensity: 58 }),
+    sunlight: Object.freeze({ x: 84, y: 82, intensity: 56 }),
+    pulse: Object.freeze({ x: 68, y: 14, intensity: 76 }),
+  });
+
+  // The field draws a 34px grid over a 240px square, so seven bands per axis
+  // put every name change on a line the user can already see. Each cell is a
+  // real colour - hue from x, contour density from y - so it gets a real name
+  // instead of a coordinate. The six preset buttons are six landmarks on this
+  // chart, not a separate vocabulary: their coordinates land on their own
+  // cells, and they keep their existing translation keys.
+  const CHART_BANDS = 7;
+  const CHART_CELLS = Object.freeze([
+    // Row 1: densest contours, hardest colour.
+    ["cell_deep_sea", "cell_ink_blue", "cell_graphite", "cell_type_metal", "style_pulse", "cell_ochre", "cell_ember"],
+    ["cell_indigo", "cell_whetstone", "style_night_sail", "cell_charcoal", "cell_sealing_wax", "cell_brass", "cell_rust"],
+    ["cell_ice_lake", "cell_celadon", "cell_glass", "cell_inkstone", "cell_kraft", "cell_resin", "cell_amber"],
+    ["cell_steel", "cell_slate", "cell_lead", "style_standard", "cell_hemp", "cell_leather", "cell_honey"],
+    ["cell_snow_blue", "cell_washed_blue", "cell_thin_smoke", "cell_linen", "cell_bone", "style_warm_wood", "cell_hay"],
+    ["cell_thin_ice", "style_cold_mist", "cell_moonlight", "cell_xuan_paper", "cell_oat", "style_sunlight", "cell_dusk"],
+    // Row 7: sparsest contours, closest to paper.
+    ["cell_frost", "cell_breath", "cell_mica", "cell_chalk", "cell_eggshell", "cell_fine_sand", "cell_almond"],
+  ].map((row) => Object.freeze(row.map((key) => `soundscape_${key}`))));
+
+  const ENTER_SCENE_STEPS = Object.freeze([
+    Object.freeze({ key: "soundscape_style_whisper", fallback: "Touch" }),
+    Object.freeze({ key: "soundscape_style_present", fallback: "Present" }),
+    Object.freeze({ key: "soundscape_style_around", fallback: "Around" }),
+    Object.freeze({ key: "soundscape_style_immersive", fallback: "Immersed" }),
+  ]);
+
+  const localAudio = new Audio();
+  localAudio.preload = "metadata";
+  const sessionLocalUrls = new Map();
+
+  let initialized = false;
+  let runtimeInitialized = false;
+  let systemMusicConnected = false;
+  let systemRequestInFlight = false;
+  let systemPollTimer = 0;
+  let styleDragging = false;
+  let lastProgressRender = 0;
+  let searchResults = [];
+  let gamdlJobTimer = 0;
+  let activeGamdlJobId = "";
+  const playerListeners = new Set();
+  let playerNotifyFrame = 0;
+
+  const defaultState = () => ({
+    schemaVersion: SCHEMA_VERSION,
+    source: "none",
+    queue: [],
+    currentIndex: -1,
+    position: 0,
+    volume: 32,
+    muted: false,
+    shuffle: false,
+    shuffleKind: "songs",
+    repeat: "off",
+    playerState: "stopped",
+    activePanel: "queue",
+    style: { preset: "standard", ...STYLE_PRESETS.standard },
+    saved: [],
+    selectedSavedId: "",
+    projectLinks: {},
+  });
+
+  function clamp(value, min = 0, max = 100) {
+    return Math.min(max, Math.max(min, Number(value) || 0));
+  }
+
+  const SHUFFLE_KINDS = Object.freeze(["songs", "albums", "groupings"]);
+
+  function normalizeShuffleKind(value) {
+    return SHUFFLE_KINDS.includes(value) ? value : "songs";
+  }
+
+  function normalizeRepeat(value) {
+    return REPEAT_MODES.includes(value) ? value : "off";
+  }
+
+  function normalizeStyle(style, invertLegacyY = false) {
+    const fallback = STYLE_PRESETS.standard;
+    const y = clamp(style?.y ?? fallback.y);
+    return {
+      preset: style?.preset || "standard",
+      x: Math.round(clamp(style?.x ?? fallback.x)),
+      y: Math.round(invertLegacyY ? 100 - y : y),
+      intensity: Math.round(clamp(style?.intensity ?? fallback.intensity)),
+    };
+  }
+
+  function normalizeSource(value) {
+    return value === "apple" ? "system" : value;
+  }
+
+  function loadState() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+      if (!parsed || typeof parsed !== "object") return defaultState();
+      const fallback = defaultState();
+      const legacyStyleAxis = Number(parsed.schemaVersion) < SCHEMA_VERSION;
+      const queue = Array.isArray(parsed.queue)
+        ? parsed.queue.map((item) => ({
+          ...item,
+          source: normalizeSource(item.source),
+          url: "",
+          unavailable: item.source === "local" || (item.source === "gamdl" && !item.ref),
+        }))
+        : [];
+      const saved = Array.isArray(parsed.saved)
+        ? parsed.saved.slice(0, MAX_SAVED_MOMENTS).map((moment) => ({
+          ...moment,
+          source: normalizeSource(moment.source),
+          repeat: normalizeRepeat(moment.repeat),
+          style: normalizeStyle(moment.style, legacyStyleAxis),
+          queue: Array.isArray(moment.queue)
+            ? moment.queue.map((item) => ({ ...item, source: normalizeSource(item.source) }))
+            : [],
+        }))
+        : [];
+      return {
+        ...fallback,
+        ...parsed,
+        schemaVersion: SCHEMA_VERSION,
+        source: normalizeSource(parsed.source),
+        queue,
+        saved,
+        repeat: normalizeRepeat(parsed.repeat),
+        muted: Boolean(parsed.muted),
+        shuffle: Boolean(parsed.shuffle),
+        shuffleKind: normalizeShuffleKind(parsed.shuffleKind),
+        activePanel: PANELS.includes(parsed.activePanel) ? parsed.activePanel : "queue",
+        style: normalizeStyle(parsed.style, legacyStyleAxis),
+        projectLinks: parsed.projectLinks && typeof parsed.projectLinks === "object" ? parsed.projectLinks : {},
+      };
+    } catch {
+      return defaultState();
+    }
+  }
+
+  let state = loadState();
+
+  function ui(id) {
+    return document.getElementById(id);
+  }
+
+  function translate(key, fallback, ...args) {
+    if (typeof t !== "function") return fallback;
+    const value = t(key, ...args);
+    return value && value !== key ? value : fallback;
+  }
+
+  function setStatus(message) {
+    const target = ui("soundscape-status");
+    if (target) target.textContent = message;
+  }
+
+  function safeId() {
+    return window.crypto?.randomUUID?.() || `soundscape-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }
+
+  // System 6 has no slider. Position uses a dithered scroll-bar track and level
+  // uses the Sound control panel's segment cells, so both are drawn here rather
+  // than delegated to a browser-native range input. Both keep role="slider",
+  // aria-valuenow, and full keyboard control.
+
+  // Pointer capture throws when the id is no longer active; a dropped capture
+  // must not abort the drag handler.
+  function capturePointer(element, pointerId) {
+    try {
+      element.setPointerCapture?.(pointerId);
+    } catch {
+      /* the drag still works without capture */
+    }
+  }
+
+  function releasePointer(element, pointerId) {
+    try {
+      element.releasePointerCapture?.(pointerId);
+    } catch {
+      /* already released */
+    }
+  }
+
+  function isControlDisabled(element) {
+    return element.getAttribute("aria-disabled") === "true";
+  }
+
+  function pointerRatio(element, event) {
+    const rect = element.getBoundingClientRect();
+    if (!rect.width) return 0;
+    return clamp(((event.clientX - rect.left) / rect.width) * 100) / 100;
+  }
+
+  function bindDragControl(element, handlers) {
+    if (!element) return;
+    let dragging = false;
+    const apply = (event) => handlers.onInput(pointerRatio(element, event));
+    element.addEventListener("pointerdown", (event) => {
+      if (isControlDisabled(element)) return;
+      dragging = true;
+      capturePointer(element, event.pointerId);
+      apply(event);
+    });
+    element.addEventListener("pointermove", (event) => {
+      if (dragging) apply(event);
+    });
+    element.addEventListener("pointerup", (event) => {
+      if (!dragging) return;
+      dragging = false;
+      releasePointer(element, event.pointerId);
+      handlers.onCommit();
+    });
+    element.addEventListener("keydown", (event) => {
+      if (isControlDisabled(element)) return;
+      const step = event.shiftKey ? 0.1 : 0.02;
+      const delta = { ArrowLeft: -step, ArrowDown: -step, ArrowRight: step, ArrowUp: step }[event.key];
+      const jump = { Home: 0, End: 1 }[event.key];
+      if (delta === undefined && jump === undefined) return;
+      event.preventDefault();
+      handlers.onInput(jump === undefined ? clamp((handlers.ratio() + delta) * 100) / 100 : jump);
+      handlers.onCommit();
+    });
+  }
+
+  function renderTrack(element, ratio) {
+    if (!element) return;
+    element.style.setProperty("--system-track-position", `${clamp(ratio * 100)}%`);
+  }
+
+  function segmentCount(element) {
+    return Number(element.dataset.segments) || 12;
+  }
+
+  function renderSegments(element, value) {
+    if (!element) return;
+    const count = segmentCount(element);
+    if (element.childElementCount !== count) {
+      element.replaceChildren(...Array.from({ length: count }, () => document.createElement("span")));
+    }
+    const filled = Math.round((clamp(value) / 100) * count);
+    Array.from(element.children).forEach((cell, index) => {
+      cell.classList.toggle("is-on", index < filled);
+    });
+    element.setAttribute("aria-valuenow", String(Math.round(clamp(value))));
+    element.setAttribute("aria-valuetext", translate("soundscape_level_of", `${filled} of ${count}`, filled, count));
+  }
+
+  function segmentValueFromRatio(element, ratio) {
+    const count = segmentCount(element);
+    const index = Math.min(count, Math.max(0, Math.ceil(ratio * count)));
+    return clamp((index / count) * 100);
+  }
+
+  function formatDuration(seconds) {
+    const safeSeconds = Math.max(0, Math.floor(Number(seconds) || 0));
+    const minutes = Math.floor(safeSeconds / 60);
+    return `${minutes}:${String(safeSeconds % 60).padStart(2, "0")}`;
+  }
+
+  function formatMomentTime(value) {
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit" }).format(date);
+  }
+
+  function serializeQueue(queue = state.queue) {
+    return queue.map((item) => ({
+      id: item.id,
+      source: normalizeSource(item.source),
+      persistentId: item.persistentId || "",
+      title: item.title || "",
+      artist: item.artist || "",
+      album: item.album || "",
+      artwork: item.artwork || "",
+      duration: Number(item.duration) || 0,
+      query: item.query || "",
+      ...(item.source === "gamdl" ? { ref: item.ref || null, sourceUrl: item.sourceUrl || "" } : {}),
+      unavailable: item.source === "local" || (item.source === "gamdl" && !item.ref),
+    }));
+  }
+
+  function persist() {
+    const snapshot = {
+      ...state,
+      schemaVersion: SCHEMA_VERSION,
+      position: currentPosition(),
+      queue: serializeQueue(),
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+    window.AISystem6ControlStrip?.refreshStrip?.();
+    notifyPlayerListeners();
+  }
+
+  function currentItem() {
+    return state.queue[state.currentIndex] || null;
+  }
+
+  function hasQueue() {
+    return Boolean(currentItem() || state.queue.length || (state.source === "system" && systemMusicConnected));
+  }
+
+  function canSaveMoment() {
+    return Boolean(currentItem());
+  }
+
+  function selectedMoment() {
+    return state.saved.find((moment) => moment.id === state.selectedSavedId) || null;
+  }
+
+  function activeProject() {
+    if (typeof isProjectMounted !== "undefined" && !isProjectMounted) return null;
+    return typeof getActiveProject === "function" ? getActiveProject() : null;
+  }
+
+  function canLinkProject() {
+    return Boolean(selectedMoment() && activeProject());
+  }
+
+  function currentPosition() {
+    if (state.source === "local") return Number(localAudio.currentTime) || state.position || 0;
+    return state.position || 0;
+  }
+
+  function currentDuration() {
+    if (state.source === "local") return Number(localAudio.duration) || Number(currentItem()?.duration) || 0;
+    return Number(currentItem()?.duration) || 0;
+  }
+
+  function isPlaying() {
+    if (state.source === "local") return !localAudio.paused && !localAudio.ended;
+    if (state.source === "system") return state.playerState === "playing";
+    return false;
+  }
+
+  function sourceLabel() {
+    if (state.source === "system") return translate("soundscape_system_source", "Music on This Mac");
+    if (state.source === "local") return translate("soundscape_local_source", "Local Audio");
+    if (state.source === "gamdl") return translate("soundscape_gamdl_source", "Apple Music");
+    return translate("soundscape_no_source", "No source");
+  }
+
+  function updateSourceLabel() {
+    const target = ui("soundscape-source");
+    if (target) target.textContent = sourceLabel();
+  }
+
+  // Names change on a grid line, so a pointer resting exactly on one would
+  // flicker between two names. A band is only left once the value is past the
+  // shared edge by 1.5%.
+  const lastBand = { col: null, row: null, step: null };
+
+  function bandIndex(value, bands, slot) {
+    const width = 100 / bands;
+    const at = clamp(value);
+    const raw = Math.min(bands - 1, Math.max(0, Math.floor(at / width)));
+    const prev = lastBand[slot];
+    // Only a drag can rest on an edge. A preset button or a restored moment is
+    // a jump, and must land on the band it actually names.
+    if (!styleDragging || prev === null || prev === raw) {
+      lastBand[slot] = raw;
+      return raw;
+    }
+    const edge = Math.max(prev, raw) * width;
+    if (Math.abs(at - edge) < 1.5) return prev;
+    lastBand[slot] = raw;
+    return raw;
+  }
+
+  // Read-only band lookup for styles that are not the live one (saved moments).
+  function staticBand(value, bands) {
+    return Math.min(bands - 1, Math.max(0, Math.floor(clamp(value) / (100 / bands))));
+  }
+
+  function cellName(style = state.style, live = false) {
+    const col = live ? bandIndex(style.x, CHART_BANDS, "col") : staticBand(style.x, CHART_BANDS);
+    const row = live ? bandIndex(style.y, CHART_BANDS, "row") : staticBand(style.y, CHART_BANDS);
+    const key = CHART_CELLS[row][col];
+    return translate(key, key);
+  }
+
+  function enterSceneWord(style = state.style, live = false) {
+    const steps = ENTER_SCENE_STEPS.length;
+    const index = live
+      ? bandIndex(style.intensity, steps, "step")
+      : staticBand(style.intensity, steps);
+    const step = ENTER_SCENE_STEPS[index];
+    return translate(step.key, step.fallback);
+  }
+
+  function styleSummary(style = state.style, live = false) {
+    return `${cellName(style, live)} · ${enterSceneWord(style, live)}`;
+  }
+
+  // The colour name carries no information for a screen reader or a colour
+  // blind reader, so the axis words stay alive as the accessible description.
+  function styleWords(style = state.style) {
+    const temperature = style.x < 38
+      ? translate("soundscape_cold", "Cold")
+      : style.x > 62
+        ? translate("soundscape_warm", "Warm")
+        : translate("soundscape_style_neutral", "Neutral");
+    const energy = style.y < 34
+      ? translate("soundscape_tension", "Tension")
+      : style.y > 68
+        ? translate("soundscape_calm", "Calm")
+        : translate("soundscape_style_focus", "Focused");
+    return [temperature, energy, enterSceneWord(style)];
+  }
+
+  function styleDescription(style = state.style, live = false) {
+    const [temperature, energy] = styleWords(style);
+    return `${cellName(style, live)}（${temperature}、${energy}）· ${enterSceneWord(style, live)}`;
+  }
+
+  // The swatch walks the same cold -> paper -> warm ramp as the sensory field.
+  // Interpolating hue instead would pass through green and disagree with the
+  // field the user actually set the value in.
+  function mixChannels(from, to, ratio) {
+    return from.map((value, index) => Math.round(value + (to[index] - value) * ratio));
+  }
+
+  function styleColor(style = state.style) {
+    const [red, green, blue] = cellChannels(style);
+    return `rgb(${red} ${green} ${blue})`;
+  }
+
+  // A flat colour can only report x, so the swatch used to look identical all
+  // the way down the neutral column. The swatch is instead a crop of the field
+  // at this point - the same hue wash, the same contour density, the same mist
+  // - which is what the icon's square viewfinder already promises.
+  // One place computes a cell's colour, mirroring the field's own background in
+  // styles/88-soundscape.css: cold -> neutral mid -> warm across x, then a
+  // lightness wash toward paper down y. If these drift apart, the swatch stops
+  // being a crop of the field.
+  const FIELD_COLD = Object.freeze([88, 168, 236]);
+  const FIELD_MID = Object.freeze([172, 170, 162]);
+  const FIELD_WARM = Object.freeze([244, 168, 62]);
+  const FIELD_PAPER = Object.freeze([242, 242, 238]);
+
+  function overPaper(channels, alpha) {
+    return channels.map((value) => Math.round(255 - alpha * (255 - value)));
+  }
+
+  function cellChannels(style = state.style) {
+    const across = clamp(style.x) / 100;
+    const down = clamp(style.y) / 100;
+    const mid = overPaper(FIELD_MID, 0.85);
+    const hue = across < 0.5
+      ? mixChannels(mid, overPaper(FIELD_COLD, 0.8), 1 - across / 0.5)
+      : mixChannels(mid, overPaper(FIELD_WARM, 0.8), (across - 0.5) / 0.5);
+    return mixChannels(hue, FIELD_PAPER, 0.85 * down);
+  }
+
+  function fieldCrop(style = state.style) {
+    const [red, green, blue] = cellChannels(style);
+    const down = clamp(style.y) / 100;
+    const gap = (5 + 11 * down).toFixed(1);
+    const contour = (0.34 - 0.14 * down).toFixed(3);
+    return [
+      `repeating-linear-gradient(0deg, rgba(16, 17, 20, ${contour}) 0 1px, transparent 1px ${gap}px)`,
+      `rgb(${red} ${green} ${blue})`,
+    ].join(", ");
+  }
+
+  // Enter Scene decides how far the sensory colour reaches into the window:
+  // deck fills, then the drawer paper, then the window shell. Each stage is
+  // one quarter of the control, so the surface lights up on the same cell the
+  // word changes on.
+  function reachAt(intensity, from) {
+    return Math.min(1, Math.max(0, (clamp(intensity) - from) / 25)).toFixed(3);
+  }
+
+  function updateStyleVisuals() {
+    const root = document.querySelector(".soundscape-window");
+    if (!root) return;
+    root.style.setProperty("--ss-field-x", `${state.style.x}%`);
+    root.style.setProperty("--ss-field-y", `${state.style.y}%`);
+    root.style.setProperty("--ss-crop", fieldCrop());
+    root.style.setProperty("--ss-tint", styleColor());
+    root.style.setProperty("--ss-reach-deck", reachAt(state.style.intensity, 25));
+    root.style.setProperty("--ss-reach-drawer", reachAt(state.style.intensity, 50));
+    root.style.setProperty("--ss-reach-frame", reachAt(state.style.intensity, 75));
+
+    const words = ui("soundscape-style-words");
+    if (words) {
+      words.textContent = styleSummary(state.style, true);
+      words.setAttribute("aria-label", styleDescription(state.style, true));
+    }
+    const field = ui("soundscape-style-field");
+    if (field) field.setAttribute("aria-valuetext", styleDescription(state.style, true));
+    renderSegments(ui("soundscape-intensity"), state.style.intensity);
+    document.querySelectorAll("[data-soundscape-style]").forEach((button) => {
+      button.classList.toggle("is-active", button.dataset.soundscapeStyle === state.style.preset);
+    });
+  }
+
+  function setStyle(nextStyle, persistNow = true) {
+    state.style = normalizeStyle({ ...state.style, ...nextStyle });
+    updateStyleVisuals();
+    if (persistNow) persist();
+  }
+
+  function applyStylePreset(presetName) {
+    const preset = STYLE_PRESETS[presetName];
+    if (!preset) return;
+    setStyle({ preset: presetName, ...preset });
+  }
+
+  function resetStyle() {
+    applyStylePreset("standard");
+  }
+
+  function styleFromPointer(event) {
+    const field = ui("soundscape-style-field");
+    if (!field) return;
+    const rect = field.getBoundingClientRect();
+    setStyle({
+      preset: "custom",
+      x: ((event.clientX - rect.left) / rect.width) * 100,
+      y: ((event.clientY - rect.top) / rect.height) * 100,
+      intensity: state.style.intensity,
+    }, false);
+  }
+
+  function setActivePanel(panelName, focusTab = false, persistNow = true) {
+    const nextPanel = PANELS.includes(panelName) ? panelName : "queue";
+    state.activePanel = nextPanel;
+    document.querySelectorAll("[data-soundscape-panel-target]").forEach((button) => {
+      const active = button.dataset.soundscapePanelTarget === nextPanel;
+      button.setAttribute("aria-selected", String(active));
+      button.tabIndex = active ? 0 : -1;
+      if (active && focusTab) button.focus();
+    });
+    document.querySelectorAll("[data-soundscape-panel]").forEach((panel) => {
+      panel.hidden = panel.dataset.soundscapePanel !== nextPanel;
+    });
+    // The switch strip carries the active drawer's own action, so each panel
+    // holds content only.
+    document.querySelectorAll("[data-soundscape-action-for]").forEach((button) => {
+      button.hidden = button.dataset.soundscapeActionFor !== nextPanel;
+    });
+    if (persistNow) persist();
+  }
+
+  function updateProgress(force = false) {
+    const now = performance.now();
+    if (!force && now - lastProgressRender < 120) return;
+    lastProgressRender = now;
+    const position = currentPosition();
+    const duration = currentDuration();
+    state.position = position;
+    const track = ui("soundscape-progress");
+    if (track) {
+      track.setAttribute("aria-disabled", String(!duration));
+      track.tabIndex = duration ? 0 : -1;
+      track.setAttribute("aria-valuemax", String(Math.round(duration)));
+      track.setAttribute("aria-valuenow", String(Math.round(position)));
+      track.setAttribute("aria-valuetext", `${formatDuration(position)} / ${formatDuration(duration)}`);
+      renderTrack(track, duration ? position / duration : 0);
+    }
+    if (ui("soundscape-current-time")) ui("soundscape-current-time").textContent = formatDuration(position);
+    if (ui("soundscape-duration")) ui("soundscape-duration").textContent = formatDuration(duration);
+  }
+
+  function repeatLabel() {
+    const labels = {
+      off: translate("soundscape_repeat_off", "Repeat off"),
+      all: translate("soundscape_repeat_all", "Repeat all"),
+      one: translate("soundscape_repeat_one", "Repeat one"),
+    };
+    return labels[state.repeat];
+  }
+
+  function updateTransport() {
+    const playing = isPlaying();
+    const available = hasQueue();
+    // A grey transport still says why: with nothing queued, the next tap on
+    // Play, Shuffle, Repeat or Mute speaks the empty-queue sentence instead of
+    // doing nothing. One reason per control, shared with the empty state.
+    const emptyQueueReason = "soundscape_empty_queue";
+    const markTransport = (control, blocked, reasonKey) => {
+      if (!control) return;
+      if (typeof markGrayAffordance === "function") markGrayAffordance(control, blocked, reasonKey);
+      else {
+        control.disabled = blocked;
+        if (blocked && reasonKey) control.dataset.balloonHelpDisabled = reasonKey;
+        else delete control.dataset.balloonHelpDisabled;
+      }
+    };
+    const glyph = ui("soundscape-play-glyph");
+    const toggle = ui("soundscape-toggle-play");
+    const nextGlyph = playing ? "pause" : "play";
+    if (glyph && glyph.dataset.systemIcon !== nextGlyph) {
+      glyph.dataset.systemIcon = nextGlyph;
+      if (typeof hydrateSystemIcons === "function") hydrateSystemIcons(glyph.parentElement || document);
+    }
+    if (toggle) {
+      toggle.setAttribute("aria-label", playing ? translate("pause", "Pause") : translate("play", "Play"));
+      markTransport(toggle, !available, emptyQueueReason);
+    }
+    markTransport(ui("soundscape-previous"), !available, emptyQueueReason);
+    markTransport(ui("soundscape-next"), !available, emptyQueueReason);
+
+    const shuffle = ui("soundscape-shuffle");
+    if (shuffle) {
+      markTransport(shuffle, !available, emptyQueueReason);
+      shuffle.classList.toggle("is-active", state.shuffle);
+      shuffle.setAttribute("aria-pressed", String(state.shuffle));
+    }
+
+    const repeat = ui("soundscape-repeat");
+    if (repeat) {
+      markTransport(repeat, !available, emptyQueueReason);
+      repeat.classList.toggle("is-active", state.repeat !== "off");
+      repeat.dataset.repeat = state.repeat;
+      repeat.setAttribute("aria-pressed", String(state.repeat !== "off"));
+      repeat.setAttribute("aria-label", repeatLabel());
+    }
+    const repeatBadge = ui("soundscape-repeat-badge");
+    if (repeatBadge) repeatBadge.textContent = state.repeat === "one" ? "1" : state.repeat === "all" ? "∞" : "";
+
+    // Muted uses the native 1-bit inversion of the same speaker glyph rather
+    // than a second icon.
+    const mute = ui("soundscape-mute");
+    if (mute) {
+      markTransport(mute, state.source === "none", emptyQueueReason);
+      mute.classList.toggle("is-active", state.muted);
+      mute.setAttribute("aria-pressed", String(state.muted));
+    }
+    const volume = ui("soundscape-volume");
+    if (volume) {
+      volume.setAttribute("aria-disabled", String(state.source === "none"));
+      volume.tabIndex = state.source === "none" ? -1 : 0;
+      renderSegments(volume, state.muted ? 0 : state.volume);
+    }
+    updateProgress(true);
+  }
+
+  function renderArtwork(item) {
+    const image = ui("soundscape-artwork-image");
+    const fallback = ui("soundscape-artwork")?.querySelector(".sys-icon");
+    if (!image) return;
+    if (item?.artwork) {
+      image.src = item.artwork.replace("{w}", "500").replace("{h}", "500");
+      image.hidden = false;
+      if (fallback) fallback.hidden = true;
+    } else {
+      image.removeAttribute("src");
+      image.hidden = true;
+      if (fallback) fallback.hidden = false;
+    }
+  }
+
+  function updateMediaSession(item) {
+    if (!("mediaSession" in navigator) || !["local", "gamdl"].includes(state.source)) return;
+    if (!item) {
+      navigator.mediaSession.metadata = null;
+      return;
+    }
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: item.title || "",
+      artist: item.artist || "",
+      album: item.album || "",
+      artwork: item.artwork ? [{ src: item.artwork.replace("{w}", "512").replace("{h}", "512") }] : [],
+    });
+    navigator.mediaSession.playbackState = isPlaying() ? "playing" : "paused";
+  }
+
+  function renderNowPlaying() {
+    const item = currentItem();
+    const title = ui("soundscape-now-title");
+    const artist = ui("soundscape-now-artist");
+    if (title) title.textContent = item?.title || translate("soundscape_waiting", "Waiting for music");
+    if (artist) artist.textContent = item
+      ? [item.artist, item.album].filter(Boolean).join(" — ")
+      : translate("soundscape_pick_source", "Connect Music on this Mac or choose local audio.");
+    renderArtwork(item);
+    updateMediaSession(item);
+    if (ui("soundscape-save-moment")) ui("soundscape-save-moment").disabled = !item;
+    updateSourceLabel();
+    updateTransport();
+  }
+
+  function createTextPair(title, subtitle) {
+    const text = document.createElement("span");
+    const strong = document.createElement("strong");
+    const small = document.createElement("small");
+    strong.textContent = title;
+    small.textContent = subtitle;
+    text.append(strong, small);
+    return text;
+  }
+
+  function renderSearchResults() {
+    const list = ui("soundscape-search-results");
+    if (!list) return;
+    list.replaceChildren();
+    list.hidden = !searchResults.length;
+    searchResults.forEach((item, index) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "soundscape-search-result";
+      button.dataset.searchIndex = String(index);
+      const marker = document.createElement("span");
+      marker.className = "soundscape-queue-index";
+      marker.textContent = String(index + 1).padStart(2, "0");
+      button.append(marker, createTextPair(item.title, [item.artist, item.album].filter(Boolean).join(" — ")));
+      list.append(button);
+    });
+  }
+
+  function renderQueue() {
+    const list = ui("soundscape-queue");
+    const count = ui("soundscape-queue-count");
+    if (count) count.textContent = String(state.queue.length);
+    const clear = ui("soundscape-clear-queue");
+    if (clear) {
+      const clearBlocked = state.source === "system" || !state.queue.length;
+      if (typeof markGrayAffordance === "function") {
+        markGrayAffordance(clear, clearBlocked, "soundscape_empty_queue");
+      } else {
+        clear.disabled = clearBlocked;
+        if (clearBlocked) clear.dataset.balloonHelpDisabled = "soundscape_empty_queue";
+        else delete clear.dataset.balloonHelpDisabled;
+      }
+    }
+    if (!list) return;
+    list.replaceChildren();
+    if (!state.queue.length) {
+      const empty = document.createElement("p");
+      empty.className = "soundscape-empty";
+      empty.textContent = state.source === "system"
+        ? translate("soundscape_system_waiting", "Start something in Music; it will appear here.")
+        : translate("soundscape_empty_queue", "Choose music to begin.");
+      list.append(empty);
+      return;
+    }
+    state.queue.forEach((item, index) => {
+      const row = document.createElement("div");
+      row.className = "soundscape-queue-item";
+      row.classList.toggle("is-current", index === state.currentIndex);
+
+      const marker = document.createElement("span");
+      marker.className = "soundscape-queue-index";
+      marker.textContent = String(index + 1).padStart(2, "0");
+      row.append(marker);
+
+      const select = document.createElement("button");
+      select.type = "button";
+      select.className = "soundscape-queue-select";
+      select.dataset.queueIndex = String(index);
+      const title = document.createElement("span");
+      const artist = document.createElement("small");
+      title.textContent = item.title || translate("untitled", "Untitled");
+      artist.textContent = item.unavailable
+        ? translate("soundscape_track_unavailable", "Choose this file again to play it.")
+        : item.artist || sourceLabel();
+      select.append(title, artist);
+      row.append(select);
+
+      if (item.source !== "system") {
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "soundscape-queue-remove";
+        remove.dataset.removeQueueIndex = String(index);
+        remove.setAttribute("aria-label", translate("soundscape_remove_track", "Remove track"));
+        remove.textContent = "×";
+        row.append(remove);
+      }
+      list.append(row);
+    });
+  }
+
+  function momentTitle(moment) {
+    // The writer's own name always wins; the cell name is only the default for
+    // a moment saved with nothing playing.
+    const track = moment.queue[moment.currentIndex]?.title || cellName(moment.style || {});
+    return moment.name || `${track} · ${formatMomentTime(moment.createdAt)}`;
+  }
+
+  function renderSaved() {
+    const list = ui("soundscape-saved-list");
+    const count = ui("soundscape-saved-count");
+    if (count) count.textContent = String(state.saved.length);
+    if (!list) return;
+    list.replaceChildren();
+    if (!state.saved.length) {
+      // Goal #2/#6: empty Saved names Choose Music — switch to Queue and open
+      // the local picker so the step is tappable, not only descriptive.
+      const empty = document.createElement("div");
+      empty.className = "soundscape-empty empty-next-note";
+      const text = document.createElement("p");
+      text.textContent = translate("soundscape_no_saved", "Your saved listening moments will appear here.");
+      const choose = document.createElement("button");
+      choose.type = "button";
+      choose.className = "btn default";
+      choose.textContent = translate("soundscape_choose_local", "Choose Music");
+      choose.addEventListener("click", () => {
+        setActivePanel("queue", true);
+        const local = ui("soundscape-choose-local");
+        if (local && !local.disabled) local.click();
+        else local?.focus({ preventScroll: true });
+      });
+      empty.append(text, choose);
+      list.append(empty);
+    }
+    state.saved.forEach((moment) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "soundscape-saved-item";
+      button.classList.toggle("is-selected", moment.id === state.selectedSavedId);
+      button.dataset.savedId = moment.id;
+      const copy = document.createElement("span");
+      const title = document.createElement("strong");
+      const detail = document.createElement("small");
+      title.textContent = momentTitle(moment);
+      const momentSource = moment.source === "system"
+        ? translate("soundscape_system_source", "Music on This Mac")
+        : translate("soundscape_local_source", "Local Audio");
+      detail.textContent = `${momentSource} · ${styleSummary(moment.style)}`;
+      copy.append(title, detail);
+      // Saved rows stay a list: the crop reports the moment's own cell, but the
+      // reach tint never runs behind a row, or neighbouring moments would
+      // fight each other for the same paper.
+      const swatch = document.createElement("span");
+      swatch.className = "soundscape-saved-swatch";
+      swatch.style.setProperty("--soundscape-swatch", fieldCrop(moment.style));
+      swatch.title = styleDescription(moment.style);
+      button.append(copy, swatch);
+      list.append(button);
+    });
+    const selected = selectedMoment();
+    if (ui("soundscape-restore")) ui("soundscape-restore").disabled = !selected;
+    if (ui("soundscape-link-project")) ui("soundscape-link-project").disabled = !selected;
+    if (ui("soundscape-rename-moment")) ui("soundscape-rename-moment").disabled = !selected;
+    if (ui("soundscape-delete-moment")) ui("soundscape-delete-moment").disabled = !selected;
+    updateRecoverAction();
+  }
+
+  // Renaming already existed: Use This Style writes the name and the sentence
+  // back to the selected moment. It was only reachable from the Style panel,
+  // so from Saved there was no sign a moment could be renamed at all. This is
+  // the missing entrance, not a second way to write the name — and it loads
+  // the moment's own style first, so writing the name back cannot quietly
+  // replace the style the moment was saved with.
+  function renameSelectedMoment() {
+    const moment = selectedMoment();
+    if (!moment) return;
+    setStyle(moment.style || STYLE_PRESETS.standard, false);
+    setActivePanel("style");
+    const note = ui("soundscape-style-note");
+    if (note) {
+      note.hidden = false;
+      ui("soundscape-style-note-toggle")?.setAttribute("aria-expanded", "true");
+    }
+    const name = ui("soundscape-style-name");
+    if (name) name.value = moment.name || "";
+    if (ui("soundscape-style-sentence")) ui("soundscape-style-sentence").value = moment.sentence || "";
+    name?.focus();
+    name?.select?.();
+    setStatus(translate("soundscape_rename_hint", "Name it, then choose Use This Style."));
+  }
+
+  // Removing a saved moment is bookkeeping, not playback: nothing stops, and
+  // no audio file is touched. A project that pointed at this moment loses the
+  // link with it, or returning to that project's soundscape would keep naming
+  // a moment that is no longer there.
+  async function deleteSelectedMoment() {
+    const moment = selectedMoment();
+    if (!moment) return;
+    const title = momentTitle(moment);
+    if (typeof showSystemModal === "function") {
+      const answer = await showSystemModal(
+        translate("soundscape_delete_confirm", `Remove “${title}” from Saved? The music itself is untouched.`, title),
+        "confirm",
+        { confirmKey: "soundscape_delete_moment", defaultAction: "cancel", danger: true },
+      );
+      if (answer !== "yes") return;
+    }
+    const index = state.saved.findIndex((item) => item.id === moment.id);
+    state.saved = state.saved.filter((item) => item.id !== moment.id);
+    Object.keys(state.projectLinks || {}).forEach((projectId) => {
+      if (state.projectLinks[projectId] === moment.id) delete state.projectLinks[projectId];
+    });
+    const next = state.saved[Math.min(Math.max(index, 0), state.saved.length - 1)];
+    state.selectedSavedId = next?.id || "";
+    persist();
+    renderSaved();
+    setStatus(translate("soundscape_moment_deleted", "Removed from Saved. The music keeps playing."));
+  }
+
+  // A saved moment can outlive its source: a local file is gone after reload,
+  // and a Music track can be removed from the library. Recovery hands the user
+  // back to the real source instead of substituting similar music.
+  function momentUnavailable(moment = selectedMoment()) {
+    if (!moment) return false;
+    if (moment.source === "system") return false;
+    // Downloads made before refs were kept cannot be found again by path.
+    if (moment.source === "gamdl") return !moment.queue.some((item) => item.ref);
+    return !moment.queue.some((item) => sessionLocalUrls.get(item.id));
+  }
+
+  function updateRecoverAction() {
+    const button = ui("soundscape-recover-moment");
+    if (!button) return;
+    const moment = selectedMoment();
+    const needed = momentUnavailable(moment);
+    button.disabled = !needed;
+    if (moment?.source === "gamdl") {
+      button.textContent = translate("soundscape_gamdl_fetch_again", "Fetch the Link Again");
+      return;
+    }
+    button.textContent = moment?.source === "system"
+      ? translate("soundscape_find_again_music", "Find It in Music")
+      : translate("soundscape_choose_local_again", "Choose the Files Again");
+  }
+
+  function recoverSelectedMoment() {
+    const moment = selectedMoment();
+    if (!moment) return;
+    if (moment.source === "system") {
+      openSystemMusic();
+      return;
+    }
+    if (moment.source === "gamdl") {
+      const sourceUrl = moment.queue.find((item) => item.sourceUrl)?.sourceUrl || "";
+      if (sourceUrl) {
+        downloadFromAppleMusic(sourceUrl);
+      } else {
+        setActivePanel("queue");
+        ui("soundscape-gamdl-input")?.focus();
+      }
+      return;
+    }
+    promptSoundscapeLocalFiles();
+  }
+
+  function renderAll() {
+    renderQueue();
+    renderNowPlaying();
+    renderSaved();
+    updateStyleVisuals();
+    setActivePanel(state.activePanel, false, false);
+  }
+
+  function revokeLocalQueueUrls() {
+    sessionLocalUrls.forEach((url) => URL.revokeObjectURL(url));
+    sessionLocalUrls.clear();
+  }
+
+  function systemMusicError(error) {
+    const code = error?.code || "";
+    if (code === "automation_denied") {
+      return translate(
+        "soundscape_system_permission",
+        "Allow AI System 6 to control Music in System Settings, then try again."
+      );
+    }
+    if (code === "mac_only") {
+      return translate("soundscape_system_mac_only", "Music control is available on the host Mac only.");
+    }
+    if (code === "music_unavailable") {
+      return translate("soundscape_system_unavailable", "Open the Music app, then try again.");
+    }
+    if (code === "local_music_bridge_unavailable") {
+      return translate(
+        "soundscape_local_bridge_unavailable",
+        "Start AI System 6 on this Mac, then connect again."
+      );
+    }
+    return translate("soundscape_system_failed", "Music on this Mac did not respond.");
+  }
+
+  async function requestSystemMusic(action = "state", payload = {}) {
+    const publicWeb = window.AISystem6LocalLMStudio?.isPublicWebMode?.();
+    let response;
+    try {
+      response = await window.AISystem6Capabilities.requestService("system.music", {
+        action,
+        payload,
+        publicWeb,
+      });
+    } catch {
+      const error = new Error("Local Music bridge unavailable.");
+      error.code = "local_music_bridge_unavailable";
+      throw error;
+    }
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || data.available === false) {
+      const error = new Error(data.error || "Music command failed.");
+      error.code = data.code || "music_command_failed";
+      throw error;
+    }
+    return data;
+  }
+
+  function systemItem(track) {
+    return {
+      id: `system-${track.persistentId || track.id || safeId()}`,
+      source: "system",
+      persistentId: track.persistentId || "",
+      title: track.title || translate("untitled", "Untitled"),
+      artist: track.artist || "",
+      album: track.album || "",
+      artwork: "",
+      duration: Number(track.duration) || 0,
+      unavailable: false,
+    };
+  }
+
+  function applySystemSnapshot(snapshot, persistNow = true) {
+    systemMusicConnected = true;
+    localAudio.pause();
+    state.source = "system";
+    state.playerState = snapshot.playerState || "stopped";
+    state.position = Number(snapshot.position) || 0;
+    state.volume = clamp(snapshot.volume);
+    state.muted = Boolean(snapshot.muted);
+    state.shuffle = Boolean(snapshot.shuffle);
+    state.shuffleKind = normalizeShuffleKind(snapshot.shuffleMode);
+    state.repeat = normalizeRepeat(snapshot.repeat);
+    if (snapshot.track) {
+      state.queue = [systemItem(snapshot.track)];
+      state.currentIndex = 0;
+    } else {
+      state.queue = [];
+      state.currentIndex = -1;
+    }
+    renderAll();
+    if (persistNow) persist();
+    else notifyPlayerListeners();
+  }
+
+  async function connectSystemMusic(options = {}) {
+    if (window.AISystem6LocalLMStudio?.isSafariPublicWebUnsupported?.()) {
+      const capabilities = await window.AISystem6PublicAccess?.getCapabilities?.();
+      const origin = capabilities?.public_access?.safari_http_local_origin || "";
+      window.location.assign(window.AISystem6LocalLMStudio.httpLocalEntryUrl(origin));
+      return false;
+    }
+    if (!options.quiet) setStatus(translate("soundscape_system_connecting", "Connecting to Music on this Mac..."));
+    try {
+      const snapshot = await requestSystemMusic("state");
+      applySystemSnapshot(snapshot);
+      if (!options.quiet) {
+        setStatus(translate("soundscape_system_ready", "Music on this Mac is connected."));
+      }
+      return true;
+    } catch (error) {
+      if (!options.quiet) setStatus(systemMusicError(error));
+      return false;
+    }
+  }
+
+  async function syncSystemMusic() {
+    // The strip keeps playing status live after the window closes: the sync
+    // only requires a real system source, never a visible Soundscape window.
+    // (The old `is-hidden` check stopped polling as soon as the window was
+    // collapsed, so a closed window froze the strip's Play/Pause button.)
+    if (!systemMusicConnected || state.source !== "system" || systemRequestInFlight) return;
+    systemRequestInFlight = true;
+    try {
+      const snapshot = await requestSystemMusic("state");
+      applySystemSnapshot(snapshot, false);
+    } catch (error) {
+      systemMusicConnected = false;
+      setStatus(systemMusicError(error));
+      updateTransport();
+    } finally {
+      systemRequestInFlight = false;
+    }
+  }
+
+  async function runSystemAction(action, payload = {}) {
+    if (!systemMusicConnected && !await connectSystemMusic()) return null;
+    try {
+      const snapshot = await requestSystemMusic(action, payload);
+      applySystemSnapshot(snapshot);
+      return snapshot;
+    } catch (error) {
+      setStatus(systemMusicError(error));
+      return null;
+    }
+  }
+
+  async function openSystemMusic() {
+    try {
+      const snapshot = await requestSystemMusic("open");
+      applySystemSnapshot(snapshot);
+      setStatus(translate("soundscape_system_opened", "Music is open."));
+    } catch (error) {
+      setStatus(systemMusicError(error));
+    }
+  }
+
+  async function searchSystemLibrary(query) {
+    const term = String(query || "").trim();
+    if (!term) return;
+    if (!systemMusicConnected && !await connectSystemMusic()) return;
+    setStatus(translate("soundscape_searching", "Searching your Music library..."));
+    try {
+      const response = await requestSystemMusic("search-library", { query: term });
+      searchResults = (response.results || []).map((item) => ({
+        ...systemItem(item),
+        query: term,
+      })).filter((item) => item.persistentId);
+      renderSearchResults();
+      setStatus(searchResults.length
+        ? translate("soundscape_system_ready", "Music on this Mac is connected.")
+        : translate("soundscape_no_results", "No songs found in your library."));
+    } catch (error) {
+      searchResults = [];
+      renderSearchResults();
+      setStatus(systemMusicError(error));
+    }
+  }
+
+  // Apple Music links are fetched on the writer's own Mac: directly when this
+  // desk is served from it, through the loopback bridge from a public page
+  // (VPS or Pages). The browser sends a link and the formats it can play and
+  // gets finished audio back; cookies, tokens and tool output never reach it.
+  const GAMDL_SIGNATURE_REFRESH_MS = 11 * 60 * 60 * 1000;
+  const GAMDL_CACHE_NOTICE_KEY = "ai-system-6-soundscape-gamdl-cache-notice";
+  let gamdlPlayable = null;
+  const gamdlNoticesShown = new Set();
+
+  function gamdlPublicWeb() {
+    return window.AISystem6LocalLMStudio?.isPublicWebMode?.() === true;
+  }
+
+  // What this browser can play decides the quality; the writer never picks.
+  function gamdlPlayableFormats() {
+    if (gamdlPlayable) return gamdlPlayable;
+    let probe = null;
+    try {
+      probe = document.createElement("audio");
+    } catch {}
+    const can = (type) => {
+      try {
+        return Boolean(probe?.canPlayType?.(type));
+      } catch {
+        return false;
+      }
+    };
+    gamdlPlayable = { alac: can('audio/mp4; codecs="alac"'), flac: can("audio/flac"), aac: true };
+    return gamdlPlayable;
+  }
+
+  function gamdlCodeError(code) {
+    const error = new Error(code);
+    error.code = code;
+    return error;
+  }
+
+  async function gamdlRequest(input) {
+    let response;
+    try {
+      response = await window.AISystem6Capabilities.requestService("soundscape.gamdl", {
+        ...input,
+        publicWeb: gamdlPublicWeb(),
+      });
+    } catch {
+      throw gamdlCodeError("local_music_bridge_unavailable");
+    }
+    const data = await response.json().catch(() => ({}));
+    return { response, data };
+  }
+
+  function gamdlBridgeToken() {
+    try {
+      return localStorage.getItem(window.AISystem6LocalBridge?.tokenKey || "") || "";
+    } catch {
+      return "";
+    }
+  }
+
+  function forgetGamdlBridgeToken() {
+    try {
+      localStorage.removeItem(window.AISystem6LocalBridge?.tokenKey || "");
+    } catch {}
+  }
+
+  function gamdlMediaUrl(url) {
+    if (!url) return "";
+    return gamdlPublicWeb() && url.startsWith("/") ? `${window.AISystem6LocalBridge?.origin || ""}${url}` : url;
+  }
+
+  function localGamdlPath(ref) {
+    return `/api/music/gamdl/files/${ref.cacheKey}/${ref.quality}/${ref.file}`;
+  }
+
+  function gamdlError(code) {
+    const messages = {
+      gamdl_cookies_missing: ["soundscape_gamdl_cookies_missing", "Apple Music cookies are missing on this Mac."],
+      gamdl_cookies_expired: ["soundscape_gamdl_cookies_expired", "The Apple Music cookies on this Mac have expired. Export them again."],
+      gamdl_unavailable: ["soundscape_gamdl_unavailable", "No Apple Music download tool is installed on this Mac."],
+      gamdl_queue_full: ["soundscape_gamdl_busy", "Five downloads are already waiting."],
+      gamdl_invalid_url: ["soundscape_gamdl_invalid_url", "Paste an Apple Music album, song or playlist link."],
+      apple_music_unsupported_kind: ["soundscape_gamdl_unsupported_kind", "Soundscape takes album, song and playlist links, not videos, stations or artists."],
+      gamdl_too_many_tracks: ["soundscape_gamdl_too_many_tracks", "That link has more than 200 tracks."],
+      gamdl_library_full: ["soundscape_gamdl_library_full", "The Soundscape download folder on this Mac is full."],
+      bridge_rate_limited: ["soundscape_gamdl_rate_limited", "This page has started many downloads in the last hour. Try again later."],
+      bridge_downloads_disabled: ["soundscape_gamdl_bridge_disabled", "Downloads from web pages are turned off on this Mac."],
+      bridge_pairing_denied: ["soundscape_gamdl_pairing_denied", "Not allowed on the Mac. Nothing was downloaded."],
+      bridge_popup_blocked: ["soundscape_gamdl_popup_blocked", "Allow pop-ups for this page, then press Download again."],
+      bridge_safari_https: ["soundscape_gamdl_safari_https", "Safari cannot reach this Mac from here. Use the Mac app or Chrome."],
+      consent_declined: ["soundscape_gamdl_consent_declined", "Nothing was downloaded."],
+      local_music_bridge_unavailable: ["soundscape_local_bridge_unavailable", "Start AI System 6 on this Mac, then connect again."],
+    };
+    const [key, fallback] = messages[code] || ["soundscape_gamdl_failed", "The download did not complete."];
+    return translate(key, fallback);
+  }
+
+  function gamdlQualityLabel(quality, sample) {
+    if (quality === "aac") return "AAC";
+    const name = quality === "flac" ? "FLAC" : "ALAC";
+    const bits = sample?.bitDepth ? `${sample.bitDepth}-bit` : "";
+    const rate = sample?.sampleRate ? `${Number((sample.sampleRate / 1000).toFixed(1))} kHz` : "";
+    const detail = [bits, rate].filter(Boolean).join("/");
+    return `${translate("soundscape_gamdl_lossless", "Lossless", name)} ${name}${detail ? ` ${detail}` : ""}`;
+  }
+
+  function gamdlFallbackNote(reason) {
+    if (reason === "lossless_login_required") return translate("soundscape_gamdl_fallback_login", "the lossless engine is not signed in");
+    if (reason === "lossless_wake_timeout") return translate("soundscape_gamdl_fallback_wake", "the lossless engine did not start");
+    return translate("soundscape_gamdl_fallback_other", "lossless was not available");
+  }
+
+  function noticeOnce(key, message) {
+    if (gamdlNoticesShown.has(key) || typeof pushSystemNotification !== "function") return;
+    gamdlNoticesShown.add(key);
+    pushSystemNotification(message);
+  }
+
+  function gamdlNotices(code, fallbackReason) {
+    if (code === "gamdl_cookies_missing" || code === "gamdl_cookies_expired") {
+      noticeOnce("cookies", translate(
+        "soundscape_gamdl_cookies_steps",
+        "To fetch Apple Music links, export your Apple Music cookies on this Mac, then try again."
+      ));
+    }
+    if (fallbackReason === "lossless_login_required") {
+      noticeOnce("lossless-login", translate(
+        "soundscape_gamdl_login_steps",
+        "The lossless engine on this Mac has not signed in to an Apple ID, so this came in as AAC. Sign in once in Terminal with wrapper-lite's --login option; Soundscape never asks for your password."
+      ));
+    }
+  }
+
+  function gamdlCacheNoticeOnce() {
+    try {
+      if (localStorage.getItem(GAMDL_CACHE_NOTICE_KEY)) return;
+      localStorage.setItem(GAMDL_CACHE_NOTICE_KEY, "1");
+    } catch {
+      return;
+    }
+    if (typeof pushSystemNotification === "function") {
+      pushSystemNotification(translate(
+        "soundscape_gamdl_cache_notice",
+        "Downloaded music stays on this Mac in ~/.ai-system6/soundscape-gamdl. The same link plays again without downloading; delete that folder to free the space."
+      ));
+    }
+  }
+
+  function gamdlItem(item, sourceUrl) {
+    const ref = item.ref && typeof item.ref === "object" ? item.ref : null;
+    return {
+      id: `gamdl-${ref ? `${ref.cacheKey}-${ref.quality}-` : ""}${item.file}`,
+      source: "gamdl",
+      title: item.title || translate("untitled", "Untitled"),
+      artist: item.artist || translate("soundscape_gamdl_source", "Apple Music"),
+      album: item.album || "",
+      artwork: "",
+      duration: Number(item.duration) || 0,
+      url: gamdlMediaUrl(item.url),
+      urlSignedAt: Date.now(),
+      ref,
+      sourceUrl: sourceUrl || "",
+      unavailable: false,
+    };
+  }
+
+  // A restored queue keeps only each track's ref; the playable URL is built
+  // again here — a plain path on this Mac, a fresh signed URL from a public
+  // page (signatures last 12 hours and die with a server restart).
+  async function ensureGamdlUrls(items) {
+    const publicWeb = gamdlPublicWeb();
+    const stale = (item) => !item.url
+      || (publicWeb && Date.now() - (Number(item.urlSignedAt) || 0) > GAMDL_SIGNATURE_REFRESH_MS);
+    const missing = items.filter((item) => item?.source === "gamdl" && item.ref && stale(item));
+    if (!missing.length) return;
+    if (!publicWeb) {
+      missing.forEach((item) => {
+        item.url = localGamdlPath(item.ref);
+      });
+      return;
+    }
+    try {
+      const { response, data } = await gamdlRequest({ action: "sign", refs: missing.map((item) => item.ref) });
+      if (!response.ok) return;
+      missing.forEach((item, index) => {
+        const url = Array.isArray(data.urls) ? data.urls[index] : "";
+        if (url) {
+          item.url = gamdlMediaUrl(url);
+          item.urlSignedAt = Date.now();
+        }
+      });
+    } catch {}
+  }
+
+  function setGamdlBusy(busy) {
+    const submit = ui("soundscape-gamdl-submit");
+    if (submit) submit.disabled = busy;
+  }
+
+  function finishGamdlForm(clearInput = true) {
+    if (gamdlJobTimer) {
+      window.clearInterval(gamdlJobTimer);
+      gamdlJobTimer = 0;
+    }
+    activeGamdlJobId = "";
+    setGamdlBusy(false);
+    const input = ui("soundscape-gamdl-input");
+    if (input && clearInput) input.value = "";
+  }
+
+  function gamdlProgressStatus(data) {
+    if (data.status === "queued") return translate("soundscape_gamdl_queued", "Waiting for the download before it...");
+    if (data.status === "waking") return translate("soundscape_gamdl_waking", "Waking the lossless engine (about 1-2 minutes)...");
+    const done = Number(data.progress?.done) || 0;
+    const total = Number(data.progress?.total) || 0;
+    if (total > 0) return translate("soundscape_gamdl_progress", `Fetching ${done} of ${total}...`, done, total);
+    return translate("soundscape_gamdl_started", "Fetching from Apple Music...");
+  }
+
+  async function applyGamdlResults(data) {
+    const items = data.results.map((item) => gamdlItem(item, data.sourceUrl));
+    if (systemMusicConnected) await requestSystemMusic("pause").catch(() => {});
+    localAudio.pause();
+    revokeLocalQueueUrls();
+    state.source = "gamdl";
+    state.playerState = "stopped";
+    state.queue = items;
+    state.currentIndex = 0;
+    state.position = 0;
+    state.muted = false;
+    setActivePanel("queue");
+    const quality = gamdlQualityLabel(data.quality, data.results[0]);
+    const added = translate("soundscape_gamdl_done", `Added ${items.length} track(s)`, items.length);
+    const note = data.fallbackReason ? ` (${gamdlFallbackNote(data.fallbackReason)})` : "";
+    setStatus(`${added} · ${quality}${note}`);
+    gamdlNotices("", data.fallbackReason);
+    gamdlCacheNoticeOnce();
+    await playIndex(0);
+    setStatus(`${added} · ${quality}${note}`);
+    persist();
+    renderAll();
+  }
+
+  async function handleGamdlJobData(data) {
+    if (data.status === "done" && Array.isArray(data.results) && data.results.length) {
+      finishGamdlForm();
+      await applyGamdlResults(data);
+      return true;
+    }
+    if (data.status === "error" || data.status === "done") {
+      finishGamdlForm(false);
+      setStatus(gamdlError(data.code || "gamdl_failed"));
+      gamdlNotices(data.code, "");
+      return true;
+    }
+    setStatus(gamdlProgressStatus(data));
+    return false;
+  }
+
+  async function pollGamdlJob() {
+    if (!activeGamdlJobId) {
+      finishGamdlForm(false);
+      return;
+    }
+    try {
+      const { response, data } = await gamdlRequest({ jobId: activeGamdlJobId });
+      if (!response.ok) throw gamdlCodeError(data.code || "gamdl_failed");
+      await handleGamdlJobData(data);
+    } catch (error) {
+      finishGamdlForm(false);
+      setStatus(gamdlError(error?.code));
+    }
+  }
+
+  function openGamdlPairingWindow() {
+    const origin = window.AISystem6LocalBridge?.origin || "";
+    const lang = String(document.documentElement.lang || "").toLowerCase().startsWith("zh") ? "zh" : "en";
+    const url = `${origin}/bridge/pair?origin=${encodeURIComponent(window.location.origin)}&lang=${lang}`;
+    try {
+      return window.open(url, "ai-system6-bridge-pair", "popup,width=560,height=720");
+    } catch {
+      return null;
+    }
+  }
+
+  // The pairing page on this Mac answers with postMessage, from its own
+  // loopback origin only; anything else is ignored.
+  function waitForGamdlPairing(popup) {
+    return new Promise((resolve) => {
+      const origin = window.AISystem6LocalBridge?.origin || "";
+      let settled = false;
+      let closedTimer = 0;
+      let timeout = 0;
+      const finish = (outcome) => {
+        if (settled) return;
+        settled = true;
+        window.removeEventListener("message", onMessage);
+        window.clearInterval(closedTimer);
+        window.clearTimeout(timeout);
+        resolve(outcome);
+      };
+      const onMessage = (event) => {
+        if (event.origin !== origin || event.source !== popup) return;
+        if (event.data?.type === "ai-system6-bridge-paired" && typeof event.data.token === "string") {
+          try {
+            localStorage.setItem(window.AISystem6LocalBridge.tokenKey, event.data.token);
+          } catch {}
+          finish("paired");
+        } else if (event.data?.type === "ai-system6-bridge-denied") {
+          finish("denied");
+        }
+      };
+      window.addEventListener("message", onMessage);
+      closedTimer = window.setInterval(() => {
+        if (popup?.closed) window.setTimeout(() => finish("closed"), 400);
+      }, 800);
+      timeout = window.setTimeout(() => finish("timeout"), 10 * 60 * 1000);
+    });
+  }
+
+  async function readGamdlStatus() {
+    const { response, data } = await gamdlRequest({ action: "status" });
+    if (!response.ok) throw gamdlCodeError(data.code || "local_music_bridge_unavailable");
+    return data;
+  }
+
+  async function ensureGamdlConsent(status) {
+    if (status.consent) return true;
+    if (typeof showSystemModal !== "function") return false;
+    const answer = await showSystemModal(
+      translate(
+        "soundscape_gamdl_consent",
+        "This uses your own Apple Music subscription to save music you are entitled to listen to, on this Mac, for your personal listening. Follow the Apple Media Services terms and the law where you live; whether to use it is your decision and responsibility. AI System 6 is not affiliated with Apple and does not provide, host or distribute any audio. Downloads rely on third-party open-source tools whose behavior this project does not guarantee."
+      ),
+      "confirm",
+      { confirmKey: "soundscape_gamdl_consent_accept", defaultAction: "cancel" },
+    );
+    if (answer !== "yes") return false;
+    const { response } = await gamdlRequest({ action: "consent" });
+    return response.ok;
+  }
+
+  async function downloadFromAppleMusic(text) {
+    const link = String(text || "").trim();
+    if (!link || activeGamdlJobId) return;
+    const publicWeb = gamdlPublicWeb();
+    if (publicWeb && window.AISystem6LocalLMStudio?.isSafariPublicWebUnsupported?.()) {
+      setStatus(gamdlError("bridge_safari_https"));
+      return;
+    }
+    // A pop-up opens only inside the click that asked for it, so an unpaired
+    // public page opens the Mac's pairing page before waiting on anything.
+    let popup = publicWeb && !gamdlBridgeToken() ? openGamdlPairingWindow() : null;
+    setGamdlBusy(true);
+    setStatus(translate("soundscape_gamdl_checking", "Checking this Mac..."));
+    try {
+      let status = await readGamdlStatus();
+      if (publicWeb && (status.paired === false || status.consent === false)) {
+        if (!popup || popup.closed) popup = openGamdlPairingWindow();
+        if (!popup) throw gamdlCodeError("bridge_popup_blocked");
+        setStatus(translate("soundscape_gamdl_pairing", "Allow this page in the window that opened from this Mac."));
+        const outcome = await waitForGamdlPairing(popup);
+        if (outcome !== "paired") throw gamdlCodeError("bridge_pairing_denied");
+        status = await readGamdlStatus();
+        if (status.paired === false) throw gamdlCodeError("bridge_pairing_denied");
+      } else if (popup && !popup.closed) {
+        popup.close();
+      }
+      if (!publicWeb && !(await ensureGamdlConsent(status))) throw gamdlCodeError("consent_declined");
+      const { response, data } = await gamdlRequest({ url: link, playable: gamdlPlayableFormats() });
+      if (!response.ok) {
+        if (data.code === "bridge_pairing_required") forgetGamdlBridgeToken();
+        throw gamdlCodeError(data.code || "gamdl_failed");
+      }
+      if (await handleGamdlJobData(data)) return;
+      activeGamdlJobId = data.jobId || "";
+      if (!activeGamdlJobId) {
+        finishGamdlForm(false);
+        return;
+      }
+      if (!gamdlJobTimer) gamdlJobTimer = window.setInterval(pollGamdlJob, GAMDL_POLL_MS);
+    } catch (error) {
+      finishGamdlForm(false);
+      setStatus(gamdlError(error?.code));
+      gamdlNotices(error?.code, "");
+    }
+  }
+
+  // One Choose-button picker for the whole desktop, not a permanent hidden
+  // file input parked in the markup.
+  function promptSoundscapeLocalFiles() {
+    openTransientFilePicker({ accept: "audio/*", multiple: true, onSelect: chooseLocalFiles });
+  }
+
+  async function chooseLocalFiles(files) {
+    const audioFiles = Array.from(files || []).filter((file) => file.type.startsWith("audio/") || /\.(mp3|m4a|aac|wav|aiff|flac|ogg)$/i.test(file.name));
+    if (!audioFiles.length) return;
+    if (systemMusicConnected) await requestSystemMusic("pause").catch(() => {});
+    localAudio.pause();
+    revokeLocalQueueUrls();
+    state.source = "local";
+    state.playerState = "stopped";
+    state.queue = audioFiles.map((file) => {
+      const id = safeId();
+      const url = URL.createObjectURL(file);
+      sessionLocalUrls.set(id, url);
+      return {
+        id,
+        source: "local",
+        title: file.name.replace(/\.[^.]+$/, ""),
+        artist: translate("soundscape_local_source", "Local Audio"),
+        album: "",
+        artwork: "",
+        duration: 0,
+        url,
+        unavailable: false,
+      };
+    });
+    state.currentIndex = 0;
+    state.position = 0;
+    state.muted = false;
+    setStatus(translate("soundscape_local_ready", `${audioFiles.length} local tracks ready.`, audioFiles.length));
+    setActivePanel("queue");
+    await playIndex(0);
+    persist();
+    renderAll();
+  }
+
+  function missingItemMessage(item) {
+    return item?.source === "gamdl"
+      ? translate("soundscape_gamdl_missing", "This download is not on this Mac anymore. Fetch the link again.")
+      : translate("soundscape_local_missing", "Choose the local files again to resume this moment.");
+  }
+
+  async function playLocalIndex(index, startAt = 0, retried = false) {
+    const item = state.queue[index];
+    if (item?.source === "gamdl") await ensureGamdlUrls(state.queue);
+    if (!item?.url) {
+      setStatus(missingItemMessage(item));
+      return false;
+    }
+    state.source = item.source === "gamdl" ? "gamdl" : "local";
+    state.currentIndex = index;
+    state.playerState = "paused";
+    if (localAudio.src !== item.url) localAudio.src = item.url;
+    localAudio.volume = state.muted ? 0 : state.volume / 100;
+    if (startAt > 0) {
+      const seek = () => {
+        localAudio.currentTime = Math.min(startAt, Number(localAudio.duration) || startAt);
+        localAudio.removeEventListener("loadedmetadata", seek);
+      };
+      if (localAudio.readyState >= 1) seek();
+      else localAudio.addEventListener("loadedmetadata", seek);
+    }
+    try {
+      await localAudio.play();
+      state.playerState = "playing";
+      setStatus(translate("soundscape_playing", "Playing."));
+      return true;
+    } catch (error) {
+      // A download's URL can go stale: its signature expires, or the Mac's
+      // server restarted and signs with a new key. Sign again once and retry;
+      // a browser refusing autoplay is not that, so it is left alone.
+      if (item.source === "gamdl" && item.ref && !retried && error?.name !== "NotAllowedError") {
+        item.url = "";
+        return playLocalIndex(index, startAt, true);
+      }
+      setStatus(translate("soundscape_playback_failed", "Playback could not start."));
+      return false;
+    }
+  }
+
+  async function playSystemItem(item, startAt = 0) {
+    if (!item?.persistentId) {
+      setStatus(translate("soundscape_system_track_missing", "Find this track again in Music."));
+      return false;
+    }
+    const snapshot = await runSystemAction("play-library-track", { persistentId: item.persistentId });
+    if (!snapshot) return false;
+    if (startAt > 0) await runSystemAction("set-position", { position: startAt });
+    setStatus(translate("soundscape_playing", "Playing."));
+    return true;
+  }
+
+  async function playIndex(index, startAt = 0) {
+    const item = state.queue[index];
+    if (!item) return false;
+    state.currentIndex = index;
+    state.position = startAt;
+    renderQueue();
+    renderNowPlaying();
+    const played = item.source === "system"
+      ? await playSystemItem(item, startAt)
+      : await playLocalIndex(index, startAt);
+    renderAll();
+    persist();
+    return played;
+  }
+
+  async function togglePlay() {
+    if (state.source === "system") {
+      const snapshot = await runSystemAction("play-pause");
+      if (snapshot) {
+        setStatus(snapshot.playerState === "playing"
+          ? translate("soundscape_playing", "Playing.")
+          : translate("soundscape_paused", "Paused."));
+      }
+      return;
+    }
+    const item = currentItem();
+    if (!item) return;
+    if (isPlaying()) {
+      localAudio.pause();
+      state.playerState = "paused";
+      setStatus(translate("soundscape_paused", "Paused."));
+    } else if (localAudio.src) {
+      await localAudio.play().catch(() => setStatus(translate("soundscape_playback_failed", "Playback could not start.")));
+    } else {
+      await playIndex(state.currentIndex, state.position);
+    }
+    updateTransport();
+    persist();
+  }
+
+  function randomQueueIndex() {
+    if (state.queue.length < 2) return state.currentIndex;
+    let nextIndex = state.currentIndex;
+    while (nextIndex === state.currentIndex) nextIndex = Math.floor(Math.random() * state.queue.length);
+    return nextIndex;
+  }
+
+  async function moveTrack(delta) {
+    if (state.source === "system") {
+      await runSystemAction(delta > 0 ? "next" : "previous");
+      return;
+    }
+    if (!state.queue.length) return;
+    if (delta < 0 && localAudio.currentTime > 3) {
+      localAudio.currentTime = 0;
+      return;
+    }
+    let nextIndex = state.shuffle ? randomQueueIndex() : state.currentIndex + delta;
+    if (nextIndex >= state.queue.length) nextIndex = state.repeat === "all" ? 0 : -1;
+    if (nextIndex < 0) nextIndex = state.repeat === "all" ? state.queue.length - 1 : 0;
+    if (nextIndex >= 0) await playIndex(nextIndex);
+  }
+
+  async function cycleRepeat() {
+    await setRepeatMode(REPEAT_MODES[(REPEAT_MODES.indexOf(state.repeat) + 1) % REPEAT_MODES.length]);
+  }
+
+  // The deck key cycles; the menu names all three modes and picks one directly,
+  // the way a System 6 menu shows a closed set with the active row checked.
+  // The kind is Music's own setting. Choosing one never switches shuffle on:
+  // that is a separate row, exactly as Music separates the two groups.
+  async function setShuffleKind(kind) {
+    const next = normalizeShuffleKind(kind);
+    state.shuffleKind = next;
+    if (state.source === "system") await runSystemAction("set-shuffle-mode", { mode: next });
+    else persist();
+    setStatus(translate(`soundscape_shuffle_kind_${next}`, next));
+  }
+
+  async function setRepeatMode(mode) {
+    const next = normalizeRepeat(mode);
+    state.repeat = next;
+    if (state.source === "system") await runSystemAction("set-repeat", { mode: next });
+    else {
+      localAudio.loop = next === "one";
+      persist();
+      updateTransport();
+    }
+    setStatus(repeatLabel());
+  }
+
+  async function toggleShuffle() {
+    await setShuffle(!state.shuffle);
+  }
+
+  // Music names shuffle as a closed set too, so the menu picks a state instead
+  // of flipping whatever it currently is. Music's shuffle *kind* (songs, album,
+  // grouping) is not exposed here: the bridge only reads a boolean, and naming
+  // a mode Soundscape cannot read would be a claim it can't back.
+  async function setShuffle(enabled) {
+    const next = Boolean(enabled);
+    state.shuffle = next;
+    if (state.source === "system") await runSystemAction("set-shuffle", { enabled: next });
+    else {
+      persist();
+      updateTransport();
+    }
+    setStatus(next
+      ? translate("soundscape_shuffle_on", "Shuffle on.")
+      : translate("soundscape_shuffle_off", "Shuffle off."));
+  }
+
+  async function toggleMute() {
+    if (state.source === "system") {
+      await runSystemAction("toggle-mute");
+      return;
+    }
+    state.muted = !state.muted;
+    localAudio.volume = state.muted ? 0 : state.volume / 100;
+    persist();
+    updateTransport();
+  }
+
+  async function removeQueueIndex(index) {
+    if (!["local", "gamdl"].includes(state.source) || !state.queue[index]) return;
+    const wasCurrent = index === state.currentIndex;
+    const removed = state.queue.splice(index, 1)[0];
+    const url = sessionLocalUrls.get(removed.id);
+    if (url) URL.revokeObjectURL(url);
+    sessionLocalUrls.delete(removed.id);
+    if (!state.queue.length) {
+      localAudio.pause();
+      localAudio.removeAttribute("src");
+      state.currentIndex = -1;
+      state.position = 0;
+      state.playerState = "stopped";
+    } else if (wasCurrent) {
+      state.currentIndex = Math.min(index, state.queue.length - 1);
+      await playIndex(state.currentIndex);
+      return;
+    } else if (index < state.currentIndex) {
+      state.currentIndex -= 1;
+    }
+    persist();
+    renderAll();
+  }
+
+  function clearLocalQueue() {
+    if (!["local", "gamdl"].includes(state.source)) {
+      setStatus(translate("soundscape_system_queue_managed", "Manage the Apple Music queue in Music."));
+      return;
+    }
+    localAudio.pause();
+    localAudio.removeAttribute("src");
+    revokeLocalQueueUrls();
+    state.queue = [];
+    state.currentIndex = -1;
+    state.position = 0;
+    state.playerState = "stopped";
+    persist();
+    renderAll();
+    setStatus(translate("soundscape_queue_cleared", "Queue cleared."));
+  }
+
+  async function handleLocalEnded() {
+    if (state.repeat === "one") {
+      localAudio.currentTime = 0;
+      await localAudio.play().catch(() => {});
+      return;
+    }
+    if (state.queue.length > 1) {
+      if (state.shuffle) {
+        await playIndex(randomQueueIndex());
+        return;
+      }
+      if (state.currentIndex < state.queue.length - 1) {
+        await playIndex(state.currentIndex + 1);
+        return;
+      }
+      if (state.repeat === "all") {
+        await playIndex(0);
+        return;
+      }
+    } else if (state.repeat === "all" && state.queue.length === 1) {
+      await playIndex(0);
+      return;
+    }
+    state.position = 0;
+    state.playerState = "stopped";
+    updateTransport();
+    persist();
+    setStatus(translate("soundscape_finished", "Finished."));
+  }
+
+  function saveMoment() {
+    const item = currentItem();
+    if (!item) return;
+    const now = new Date();
+    const moment = {
+      id: safeId(),
+      createdAt: now.toISOString(),
+      name: ui("soundscape-style-name")?.value.trim() || "",
+      sentence: ui("soundscape-style-sentence")?.value.trim() || "",
+      source: state.source,
+      queue: serializeQueue(),
+      currentIndex: state.currentIndex,
+      position: currentPosition(),
+      volume: state.volume,
+      muted: state.muted,
+      shuffle: state.shuffle,
+      repeat: state.repeat,
+      style: { ...state.style },
+    };
+    state.saved.unshift(moment);
+    state.saved = state.saved.slice(0, MAX_SAVED_MOMENTS);
+    state.selectedSavedId = moment.id;
+    persist();
+    renderSaved();
+    setActivePanel("saved");
+    setStatus(translate("soundscape_moment_saved", "This moment is saved."));
+  }
+
+  async function restoreMoment(moment = selectedMoment()) {
+    if (!moment) return;
+    state.source = normalizeSource(moment.source);
+    state.queue = moment.queue.map((item) => {
+      const url = item.source === "local" ? sessionLocalUrls.get(item.id) || "" : "";
+      return {
+        ...item,
+        source: normalizeSource(item.source),
+        url,
+        unavailable: (item.source === "local" && !url) || (item.source === "gamdl" && !item.ref),
+      };
+    });
+    await ensureGamdlUrls(state.queue);
+    state.currentIndex = Math.max(0, Math.min(moment.currentIndex, state.queue.length - 1));
+    state.position = Number(moment.position) || 0;
+    state.volume = clamp(moment.volume);
+    state.muted = Boolean(moment.muted);
+    state.shuffle = Boolean(moment.shuffle);
+    state.repeat = normalizeRepeat(moment.repeat);
+    setStyle(moment.style || STYLE_PRESETS.standard, false);
+    localAudio.volume = state.muted ? 0 : state.volume / 100;
+    localAudio.loop = state.repeat === "one";
+    if (ui("soundscape-style-name")) ui("soundscape-style-name").value = moment.name || "";
+    if (ui("soundscape-style-sentence")) ui("soundscape-style-sentence").value = moment.sentence || "";
+    renderAll();
+    if (moment.source === "system") {
+      await playIndex(state.currentIndex, state.position);
+    } else if (currentItem()?.url) {
+      await playIndex(state.currentIndex, state.position);
+    } else {
+      setStatus(missingItemMessage(currentItem()));
+    }
+    persist();
+    if (moment.source === "system" || currentItem()?.url) {
+      setStatus(translate("soundscape_moment_restored", "You are back in this moment."));
+    }
+  }
+
+  function applyStyleToSelected() {
+    const moment = selectedMoment();
+    if (moment) {
+      moment.style = { ...state.style };
+      moment.name = ui("soundscape-style-name")?.value.trim() || moment.name || "";
+      moment.sentence = ui("soundscape-style-sentence")?.value.trim() || moment.sentence || "";
+      setStatus(translate("soundscape_moment_updated", "The saved style is updated."));
+      renderSaved();
+    }
+    persist();
+  }
+
+  function projectName(project) {
+    if (typeof projectDisplayName === "function") return projectDisplayName(project);
+    return project?.name || translate("projects", "Project");
+  }
+
+  function linkSelectedToProject() {
+    const moment = selectedMoment();
+    const project = activeProject();
+    if (!moment || !project) {
+      setStatus(translate("soundscape_project_missing", "Mount a project first."));
+      return;
+    }
+    state.projectLinks[project.id] = moment.id;
+    persist();
+    setStatus(translate("soundscape_project_linked", `Added to ${projectName(project)}.`, projectName(project)));
+  }
+
+  async function restoreProjectSoundscape() {
+    const project = activeProject();
+    if (!project) {
+      setStatus(translate("soundscape_project_missing", "Mount a project first."));
+      return;
+    }
+    const momentId = state.projectLinks[project.id];
+    const moment = state.saved.find((item) => item.id === momentId);
+    if (!moment) {
+      setStatus(translate("soundscape_project_no_soundscape", "This project has no saved soundscape."));
+      return;
+    }
+    state.selectedSavedId = moment.id;
+    await restoreMoment(moment);
+    setStatus(translate("soundscape_project_restored", "Project soundscape restored."));
+  }
+
+  function selectSavedMoment(momentId) {
+    state.selectedSavedId = momentId;
+    const moment = selectedMoment();
+    if (moment) {
+      setStyle(moment.style || STYLE_PRESETS.standard, false);
+      if (ui("soundscape-style-name")) ui("soundscape-style-name").value = moment.name || "";
+      if (ui("soundscape-style-sentence")) ui("soundscape-style-sentence").value = moment.sentence || "";
+    }
+    persist();
+    renderSaved();
+  }
+
+  function bindMediaSession() {
+    if (!("mediaSession" in navigator)) return;
+    navigator.mediaSession.setActionHandler("play", () => {
+      if (state.source === "local" && !isPlaying()) togglePlay();
+    });
+    navigator.mediaSession.setActionHandler("pause", () => {
+      if (state.source === "local" && isPlaying()) togglePlay();
+    });
+    navigator.mediaSession.setActionHandler("previoustrack", () => {
+      if (state.source === "local") moveTrack(-1);
+    });
+    navigator.mediaSession.setActionHandler("nexttrack", () => {
+      if (state.source === "local") moveTrack(1);
+    });
+  }
+
+  function bindDomEvents() {
+    ui("soundscape-connect-apple")?.addEventListener("click", () => connectSystemMusic());
+    ui("soundscape-open-music")?.addEventListener("click", openSystemMusic);
+    ui("soundscape-choose-local")?.addEventListener("click", promptSoundscapeLocalFiles);
+    ui("soundscape-search-form")?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      searchSystemLibrary(ui("soundscape-search-input")?.value);
+    });
+    ui("soundscape-gamdl-form")?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      downloadFromAppleMusic(ui("soundscape-gamdl-input")?.value);
+    });
+    ui("soundscape-search-results")?.addEventListener("click", async (event) => {
+      const button = event.target.closest("[data-search-index]");
+      if (!button) return;
+      const item = searchResults[Number(button.dataset.searchIndex)];
+      if (!item) return;
+      state.queue = [item];
+      state.currentIndex = 0;
+      await playIndex(0);
+    });
+    ui("soundscape-queue")?.addEventListener("click", (event) => {
+      const remove = event.target.closest("[data-remove-queue-index]");
+      if (remove) {
+        removeQueueIndex(Number(remove.dataset.removeQueueIndex));
+        return;
+      }
+      const select = event.target.closest("[data-queue-index]");
+      if (select) playIndex(Number(select.dataset.queueIndex));
+    });
+    ui("soundscape-clear-queue")?.addEventListener("click", clearLocalQueue);
+    ui("soundscape-toggle-play")?.addEventListener("click", togglePlay);
+    ui("soundscape-previous")?.addEventListener("click", () => moveTrack(-1));
+    ui("soundscape-next")?.addEventListener("click", () => moveTrack(1));
+    ui("soundscape-shuffle")?.addEventListener("click", toggleShuffle);
+    ui("soundscape-repeat")?.addEventListener("click", cycleRepeat);
+    ui("soundscape-mute")?.addEventListener("click", toggleMute);
+    ui("soundscape-save-moment")?.addEventListener("click", saveMoment);
+    const progress = ui("soundscape-progress");
+    bindDragControl(progress, {
+      ratio: () => {
+        const duration = currentDuration();
+        return duration ? currentPosition() / duration : 0;
+      },
+      onInput: (ratio) => {
+        const duration = currentDuration();
+        state.position = duration * ratio;
+        if (state.source === "local") localAudio.currentTime = state.position;
+        renderTrack(progress, ratio);
+        if (ui("soundscape-current-time")) ui("soundscape-current-time").textContent = formatDuration(state.position);
+      },
+      onCommit: async () => {
+        if (state.source === "system") await runSystemAction("set-position", { position: state.position });
+        persist();
+      },
+    });
+
+    const volume = ui("soundscape-volume");
+    bindDragControl(volume, {
+      ratio: () => (state.muted ? 0 : state.volume) / 100,
+      onInput: (ratio) => {
+        state.volume = segmentValueFromRatio(volume, ratio);
+        state.muted = false;
+        if (state.source === "local") localAudio.volume = state.volume / 100;
+        renderSegments(volume, state.volume);
+        updateTransport();
+      },
+      onCommit: async () => {
+        if (state.source === "system") await runSystemAction("set-volume", { volume: state.volume });
+        persist();
+      },
+    });
+    ui("soundscape-style-strip")?.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-soundscape-style]");
+      if (button) applyStylePreset(button.dataset.soundscapeStyle);
+    });
+    ui("soundscape-reset-style")?.addEventListener("click", resetStyle);
+    const intensity = ui("soundscape-intensity");
+    // Registered before the drag binding so the flag is already correct when
+    // the binding's own handler renders: only a live drag gets edge hysteresis.
+    intensity?.addEventListener("pointerdown", () => { styleDragging = true; });
+    intensity?.addEventListener("pointerup", () => { styleDragging = false; });
+    bindDragControl(intensity, {
+      ratio: () => state.style.intensity / 100,
+      onInput: (ratio) => {
+        setStyle({ ...state.style, preset: "custom", intensity: segmentValueFromRatio(intensity, ratio) }, false);
+      },
+      onCommit: persist,
+    });
+
+    const field = ui("soundscape-style-field");
+    field?.addEventListener("pointerdown", (event) => {
+      styleDragging = true;
+      capturePointer(field, event.pointerId);
+      styleFromPointer(event);
+    });
+    field?.addEventListener("pointermove", (event) => {
+      if (styleDragging) styleFromPointer(event);
+    });
+    field?.addEventListener("pointerup", (event) => {
+      styleDragging = false;
+      releasePointer(field, event.pointerId);
+      persist();
+    });
+    field?.addEventListener("keydown", (event) => {
+      const step = event.shiftKey ? 10 : 2;
+      const delta = {
+        ArrowLeft: [-step, 0],
+        ArrowRight: [step, 0],
+        ArrowUp: [0, -step],
+        ArrowDown: [0, step],
+      }[event.key];
+      if (!delta) return;
+      event.preventDefault();
+      setStyle({ ...state.style, preset: "custom", x: state.style.x + delta[0], y: state.style.y + delta[1] });
+    });
+
+    ui("soundscape-style-note-toggle")?.addEventListener("click", (event) => {
+      const note = ui("soundscape-style-note");
+      if (!note) return;
+      note.hidden = !note.hidden;
+      event.currentTarget.setAttribute("aria-expanded", String(!note.hidden));
+      if (!note.hidden) ui("soundscape-style-name")?.focus();
+    });
+    ui("soundscape-apply-style")?.addEventListener("click", applyStyleToSelected);
+    ui("soundscape-saved-list")?.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-saved-id]");
+      if (button) selectSavedMoment(button.dataset.savedId);
+    });
+    ui("soundscape-restore")?.addEventListener("click", () => restoreMoment());
+    ui("soundscape-link-project")?.addEventListener("click", linkSelectedToProject);
+    ui("soundscape-recover-moment")?.addEventListener("click", recoverSelectedMoment);
+    ui("soundscape-rename-moment")?.addEventListener("click", renameSelectedMoment);
+    ui("soundscape-delete-moment")?.addEventListener("click", deleteSelectedMoment);
+    ui("soundscape-restore-project")?.addEventListener("click", restoreProjectSoundscape);
+
+    const modeSwitch = document.querySelector(".soundscape-mode-switch");
+    modeSwitch?.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-soundscape-panel-target]");
+      if (button) setActivePanel(button.dataset.soundscapePanelTarget);
+    });
+    modeSwitch?.addEventListener("keydown", (event) => {
+      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      event.preventDefault();
+      const currentIndex = PANELS.indexOf(state.activePanel);
+      const nextIndex = event.key === "Home"
+        ? 0
+        : event.key === "End"
+          ? PANELS.length - 1
+          : (currentIndex + (event.key === "ArrowRight" ? 1 : -1) + PANELS.length) % PANELS.length;
+      setActivePanel(PANELS[nextIndex], true);
+    });
+
+    localAudio.addEventListener("timeupdate", updateProgress);
+    localAudio.addEventListener("durationchange", () => {
+      const item = currentItem();
+      if (item && Number.isFinite(localAudio.duration)) item.duration = localAudio.duration;
+      updateProgress(true);
+    });
+    localAudio.addEventListener("play", () => {
+      state.playerState = "playing";
+      updateTransport();
+    });
+    localAudio.addEventListener("pause", () => {
+      if (!localAudio.ended) state.playerState = "paused";
+      updateTransport();
+    });
+    localAudio.addEventListener("ended", handleLocalEnded);
+    localAudio.addEventListener("error", () => setStatus(translate("soundscape_playback_failed", "Playback could not start.")));
+
+    bindMediaSession();
+    window.addEventListener("beforeunload", revokeLocalQueueUrls, { once: true });
+  }
+
+  // Runtime (audio element defaults, the system-music poll) is separable from
+  // window DOM so the Control Strip can track and control playback without
+  // binding the Soundscape window's controls. attach() stays the full-window
+  // entry; ensureRuntime() is the light adapter the strip calls.
+  function ensureRuntime() {
+    if (!runtimeInitialized) {
+      runtimeInitialized = true;
+      localAudio.volume = state.muted ? 0 : state.volume / 100;
+      localAudio.loop = state.repeat === "one";
+      systemPollTimer = window.setInterval(syncSystemMusic, SYSTEM_POLL_MS);
+    }
+    if (state.source === "system" && !systemMusicConnected) {
+      connectSystemMusic({ quiet: true }).catch(() => {});
+    }
+    return Promise.resolve(true);
+  }
+
+  function attach() {
+    if (!initialized) {
+      initialized = true;
+      bindDomEvents();
+    }
+    ensureRuntime();
+    renderAll();
+  }
+
+  function runMenuCommand(command) {
+    const commands = {
+      "choose-local": promptSoundscapeLocalFiles,
+      "gamdl-download": () => ui("soundscape-gamdl-input")?.focus(),
+      "save-moment": saveMoment,
+      "toggle-play": togglePlay,
+      previous: () => moveTrack(-1),
+      next: () => moveTrack(1),
+      shuffle: toggleShuffle,
+      "shuffle-on": () => setShuffle(true),
+      "shuffle-off": () => setShuffle(false),
+      "shuffle-songs": () => setShuffleKind("songs"),
+      "shuffle-albums": () => setShuffleKind("albums"),
+      "shuffle-groupings": () => setShuffleKind("groupings"),
+      repeat: cycleRepeat,
+      "repeat-off": () => setRepeatMode("off"),
+      "repeat-all": () => setRepeatMode("all"),
+      "repeat-one": () => setRepeatMode("one"),
+      "reset-style": resetStyle,
+      "link-project": linkSelectedToProject,
+    };
+    return commands[command]?.();
+  }
+
+  function currentRepeatMode() {
+    return state.repeat;
+  }
+
+  function currentShuffleMode() {
+    return state.shuffle ? "on" : "off";
+  }
+
+  function currentShuffleKind() {
+    return state.shuffleKind;
+  }
+
+  // The Control Strip's volume module reads and sets the same app volume this
+  // window edits. The strip menu offers eight levels (OS 9's Sound Volume
+  // module); 0 maps to muted, 7 to full.
+  function getVolumeSnapshot() {
+    return { volume: state.volume, muted: state.muted };
+  }
+
+  function setVolumeLevel(level) {
+    const next = Math.max(0, Math.min(7, Math.round(Number(level) || 0)));
+    state.volume = Math.round((next / 7) * 100);
+    state.muted = next === 0;
+    if (state.source === "local" && typeof localAudio !== "undefined") localAudio.volume = state.volume / 100;
+    renderSegments(ui("soundscape-volume"), state.volume);
+    if (state.source === "system") runSystemAction("set-volume", { volume: state.volume });
+    persist();
+  }
+
+  // The Control Strip's Soundscape module reads playback state and lets the
+  // user toggle play and pick a scene, without opening the Soundscape window.
+  function getPlayerSnapshot() {
+    const item = currentItem();
+    return {
+      playerState: state.playerState,
+      isPlaying: isPlaying(),
+      source: state.source,
+      currentIndex: state.currentIndex,
+      currentTitle: item?.title || item?.name || "",
+      queue: (state.queue || []).map((entry, index) => ({
+        id: entry.id,
+        title: entry.title || entry.name || String(index + 1),
+        current: index === state.currentIndex,
+      })),
+    };
+  }
+
+  function playerSnapshotForSubscribers() {
+    return {
+      ...getPlayerSnapshot(),
+      volume: state.volume,
+      muted: state.muted,
+      shuffle: state.shuffle,
+      repeat: state.repeat,
+    };
+  }
+
+  // One subscription surface for the Control Strip's Soundscape and Volume
+  // modules. The listener gets the current snapshot immediately, and later
+  // updates are coalesced into one frame so a burst of state changes repaints
+  // once. A throwing listener never blocks the others.
+  function subscribePlayer(listener) {
+    if (typeof listener !== "function") return () => {};
+    playerListeners.add(listener);
+    try {
+      listener(playerSnapshotForSubscribers());
+    } catch (error) {
+      console.error("Soundscape subscriber failed on initial snapshot.", error);
+    }
+    return () => {
+      playerListeners.delete(listener);
+    };
+  }
+
+  function notifyPlayerListeners() {
+    if (playerNotifyFrame) return;
+    const scheduleFrame = typeof requestAnimationFrame === "function"
+      ? requestAnimationFrame
+      : (callback) => setTimeout(callback, 0);
+    playerNotifyFrame = scheduleFrame(() => {
+      playerNotifyFrame = 0;
+      const snapshot = playerSnapshotForSubscribers();
+      playerListeners.forEach((listener) => {
+        try {
+          listener(snapshot);
+        } catch (error) {
+          console.error("Soundscape subscriber failed.", error);
+        }
+      });
+    });
+  }
+
+  async function playSceneIndex(index) {
+    if (!Array.isArray(state.queue) || !state.queue[Number(index)]) return false;
+    await playIndex(Number(index));
+    return true;
+  }
+
+  // Suspending always stops the system-music poll — a background window has no
+  // reason to keep asking this Mac what is playing. Audio itself is the user's
+  // call: a music player that goes silent because you opened another window is
+  // usually wrong, so the pause is a Control Panel preference, default off.
+  let resumeLocalPlaybackOnReturn = false;
+
+  function shouldPauseAudioInBackground() {
+    return document.getElementById("pause-audio-in-background")?.checked === true;
+  }
+
+  window.AISystem6ApplicationRegistry?.registerApplicationLifecycle?.("soundscape", {
+    onSuspend: () => {
+      resumeLocalPlaybackOnReturn = false;
+      if (shouldPauseAudioInBackground() && state.source === "local" && isPlaying()) {
+        resumeLocalPlaybackOnReturn = true;
+        localAudio.pause();
+        state.playerState = "paused";
+        updateTransport();
+      }
+      // The Control Strip shows live transport state with no window open, so
+      // the poll only stops once nothing is moving for it to report.
+      if (systemPollTimer && !isPlaying()) {
+        window.clearInterval(systemPollTimer);
+        systemPollTimer = 0;
+      }
+    },
+    onResume: async () => {
+      if (runtimeInitialized && !systemPollTimer) {
+        systemPollTimer = window.setInterval(syncSystemMusic, SYSTEM_POLL_MS);
+      }
+      if (!resumeLocalPlaybackOnReturn) return;
+      resumeLocalPlaybackOnReturn = false;
+      await localAudio.play().catch(() => {});
+      updateTransport();
+    },
+    onDispose: () => {
+      if (systemPollTimer) {
+        window.clearInterval(systemPollTimer);
+        systemPollTimer = 0;
+      }
+      resumeLocalPlaybackOnReturn = false;
+      localAudio.pause();
+      state.playerState = "stopped";
+    },
+  });
+
+  window.AISystem6Soundscape = {
+    attach,
+    ensureRuntime,
+    runMenuCommand,
+    hasQueue,
+    canSaveMoment,
+    canLinkProject,
+    currentRepeatMode,
+    currentShuffleMode,
+    currentShuffleKind,
+    getVolumeSnapshot,
+    setVolumeLevel,
+    getPlayerSnapshot,
+    subscribePlayer,
+    playSceneIndex,
+  };
+  const SOUNDSCAPE_COMMAND_NAMES = [
+    "soundscape-choose-local",
+    "soundscape-gamdl-download",
+    "soundscape-save-moment",
+    "soundscape-toggle-play",
+    "soundscape-previous",
+    "soundscape-next",
+    "soundscape-shuffle",
+    "soundscape-repeat",
+    "soundscape-shuffle-on",
+    "soundscape-shuffle-off",
+    "soundscape-shuffle-songs",
+    "soundscape-shuffle-albums",
+    "soundscape-shuffle-groupings",
+    "soundscape-repeat-off",
+    "soundscape-repeat-all",
+    "soundscape-repeat-one",
+    "soundscape-reset-style",
+    "soundscape-link-project",
+  ];
+
+  function soundscapeCommandAvailable(action) {
+    if (action === "open-soundscape") return true;
+    const activeWindow = document.querySelector(".window.is-active");
+    if (activeWindow?.dataset.window !== "soundscape") return false;
+    if (action === "soundscape-save-moment") {
+      return !!window.AISystem6Soundscape?.canSaveMoment?.();
+    }
+    if (action === "soundscape-link-project") {
+      return !!window.AISystem6Soundscape?.canLinkProject?.();
+    }
+    if (
+      ["soundscape-choose-local", "soundscape-gamdl-download", "soundscape-reset-style"]
+        .includes(action)
+    ) {
+      return true;
+    }
+    return !!window.AISystem6Soundscape?.hasQueue?.();
+  }
+
+  window.AISystem6Runtime?.registerApplication({
+    id: "soundscape",
+    windowName: "soundscape",
+    mount: attach,
+    restore: attach,
+    commands: Object.fromEntries(
+      ["open-soundscape", ...SOUNDSCAPE_COMMAND_NAMES].map((action) => {
+        const command = action === "open-soundscape"
+          ? () => openWindow("soundscape")
+          : () => runMenuCommand(action.slice("soundscape-".length));
+        return [action, {
+          handler: command,
+          isAvailable: () => soundscapeCommandAvailable(action),
+        }];
+      })
+    ),
+  });
+  window.AISystem6SoundscapeLoaded = true;
+})();

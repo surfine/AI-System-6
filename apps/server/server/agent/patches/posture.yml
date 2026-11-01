@@ -1,0 +1,72 @@
+# ClioTalk engine posture for dsh 0.2.1-rc.3 (owner rulings 2026-10-24).
+# Mounted on every run, before the provider patch. The OS boundary is the
+# outer sandbox-exec profile (apps/server/server/agent/sandbox-profile.js);
+# this patch only decides which tools the model is offered.
+#
+# Never offered: a shell of any kind, background jobs, subagents, workflows,
+# autonomous goal rounds (they drive subagents) and the plugin manager.
+- id: tool-bash
+  disabled: true
+- id: tool-pwsh
+  disabled: true
+- id: bash-sandbox
+  disabled: true
+- id: pwsh-sandbox
+  disabled: true
+- id: tool-jobs
+  disabled: true
+- id: subagent
+  disabled: true
+- id: subagent-spawn-in-process
+  disabled: true
+- id: subagent-fork-in-process
+  disabled: true
+- id: tool-subagent-control
+  disabled: true
+- id: tool-subagent-list-agents
+  disabled: true
+- id: tool-subagent
+  disabled: true
+- id: tool-subagent-fork
+  disabled: true
+- id: ptc-runtime
+  disabled: true
+- id: workflow-ptc
+  disabled: true
+- id: tool-workflow
+  disabled: true
+- id: goal
+  disabled: true
+- id: goal-round-driver
+  disabled: true
+- id: command-goal
+  disabled: true
+- id: tool-goal
+  disabled: true
+- id: plugin-manager
+  disabled: true
+- id: tool-plugin-manager
+  disabled: true
+# No live reload of profile or patch files during a run (dsh-acp-app already
+# switches it off; kept here so a bundle change cannot turn it back on).
+- id: hmr
+  disabled: true
+# Escalation never reaches the writer: dsh's only escalation target is
+# danger-full-access, and the outer sandbox would refuse it anyway.
+- id: approval
+  config:
+    policy: never
+- id: sandbox-policy
+  config:
+    mode: workspace-write
+# Nothing about a writer's session leaves the Mac as telemetry.
+- id: session-telemetry-otel
+  disabled: true
+- id: otel
+  disabled: true
+# Web search and fetch stay on (ruling 2026-10-24). Search is DeepSeek's and
+# needs DEEPSEEK_API_KEY; the host passes it when the Keychain has one.
+- id: tool-web
+  config:
+    fetch: true
+    searchTimeoutMs: 60000

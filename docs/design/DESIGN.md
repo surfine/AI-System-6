@@ -1,0 +1,631 @@
+# AI System 6 Design Contract
+
+<!-- doc-claims: mixed | audited: 2026-09-18 -->
+
+`CLAUDE.md` remains the top-level source of truth. This file is the design
+operating contract for UI, CSS, visual review, and agent-generated interface
+work. Read it before changing windows, controls, themes, layout, icons, motion,
+or user-facing visual copy.
+
+This contract adapts the useful parts of `external/taste-skill` and
+`external/impeccable` to this product. Do not copy their default landing-page
+or brand-site aesthetics into AI System 6.
+
+For the normative application shell, typography roles, status-bar slots, TDI
+adaptation, responsive priorities, and new-app checklist, follow
+[HIG.md](HIG.md). Its machine-readable window registry is enforced alongside
+the feature contracts; it does not create a second component library.
+
+## Product Register
+
+AI System 6 is product UI, not a marketing site. Design serves a writer who is
+reading sources, sorting evidence, drafting, saving, reviewing, and exporting.
+Familiarity is a feature. Surprise is allowed only when it clarifies object
+identity or feedback.
+
+Before adding a visible capability, answer three completion questions: does it
+make the first finished work easier, make existing work safer, or make the next
+session easier to resume? A change that answers no to all three is feature
+inventory, not product completion, and stays out of the current Beta.
+
+The Macintosh System 6 desktop metaphor is a constraint, not decoration:
+
+- Visible objects beat abstract AI controls.
+- One writing route beats a visible inventory of tools.
+- AI output is temporary until the user saves, clips, inserts, or exports it.
+- TeachText is the manuscript surface. Clio is conversation.
+- Reader clips source material. Scrapbook holds curated user selections.
+- File Floppy is temporary context. Project Hard Disk is durable project state.
+
+## Historical Vocabulary: System 6 Baseline, Classic Mac OS Library
+
+System 6 is the product's visual and object-grammar baseline, not a historical
+cutoff date. The full Classic Mac OS lineage is an available vocabulary library.
+MultiFinder, Balloon Help, WindowShade, Apple Guide, and other later Classic Mac
+OS ideas may be introduced, digested, and adapted when they improve the product.
+Chronology is evidence to record, not a reason to reject a useful idea.
+
+Adopting a historical element requires all of the following:
+
+- Inspect the native resource or era-appropriate runtime behavior first. Record
+  which system version supplied the evidence; do not present a later feature as
+  native System 6 behavior.
+- Preserve its original role and state transitions. Similar-looking controls
+  are not interchangeable merely because they occupy the same chrome.
+- Adapt the idea for web, pointer, keyboard, touch, narrow screens, and
+  accessibility instead of reproducing an obsolete input limitation.
+- Keep the default experience quiet. Later-system features should appear on
+  demand or at the moment they become relevant, not as a feature inventory.
+- Keep one semantic DOM and state model across all twelve appearances. Each era
+  changes material and optical geometry, not the object's meaning.
+
+Control meanings are load-bearing:
+
+- The title-bar Zoom box chooses a window's standard size and position.
+- The bottom-right grow box manually changes a resizable window's dimensions.
+- WindowShade, a later Classic Mac OS behavior, collapses a window to its title
+  bar and remains a separate double-click action; Zoom must never fall back to it.
+- Minimize (the yellow lamp, NeXTSTEP's miniaturize button) puts the whole
+  window away to a known place: the era's Dock, NeXTSTEP's miniwindow row along
+  the bottom edge, or, with the Dock switched off, the Apple menu's
+  Miniaturized windows list. It is a third verb beside WindowShade (roll up in
+  place) and Hide (per application, which borrows WindowShade); none of the
+  three stands in for another, and the title-bar double-click is WindowShade in
+  every era. A Mac OS X era draws the lamp only once its own Dock ships
+  (left two, right one: red and yellow at the left, Zoom at the right edge).
+  Lion is the one owner-approved exception (2026-09-25): its right edge is the
+  real full-screen button, so Zoom is the third lamp at the left.
+  In the Mac OS X eras the Dock and minimize are preferences that start off
+  (owner, 2026-09-25) and are switched on in the Control Panel; NeXTSTEP starts
+  with both on because they are its own shell. With the Dock off every era
+  still launches from the desk icons, switches from the menu bar and lists
+  put-away windows in the Apple menu, so hiding it never strands a window.
+  Listing windows in the Apple menu is the product's adaptation: Mac OS X's
+  Apple menu never listed windows. All Windows is the desk's cross-application
+  overview, so it lives on Special in every era that has one, alongside the
+  arrangement popover; desktop NeXTSTEP carries both in its Windows palette
+  instead. The Mac OS X-era Window menu ends with this application's own open
+  windows, the list macOS puts in that position, drawn from the same
+  projection. A Window menu in Mac OS X appearances carries Minimize, Zoom and
+  Bring All to Front, which is why the Apple menu's MultiFinder section stands
+  down where one is on the bar; applications without a Window menu keep the
+  Special fallback. Browse and Dock restore the registered
+  window itself, preserving its content, scroll position and manual shade.
+- Arrangement uses one measured desktop area, including the menu bar, Dock,
+  NeXTSTEP icon regions and existing desktop avoidance. Tile excludes hidden,
+  minimized and manually shaded windows. It computes every frame before writing;
+  if minimum or fixed sizes cannot fit, it leaves the entire layout unchanged.
+  A successful tile is one operation in the existing arrangement undo ledger.
+- Dock favorites are local shortcuts, not running state. Removing a running
+  application keeps it visible until it exits; Finder stays first. Closing the
+  Dock preserves favorites and order. Context menus expose explicit choices;
+  opening a menu never changes a pin or restores a window by itself.
+- Full application and document windows may expose Zoom and grow. Fixed system
+  windows and Desk Accessories generally omit them unless native evidence or a
+  deliberate product contract says otherwise.
+
+Progressive discovery divides responsibility instead of building one tutorial:
+
+- On a true first use with no Working Session to resume, boot says
+  “Welcome to AI System 6.” and opens one window: About AI System 6 on its
+  “First time here” face. It offers three equal doors, not steps: pick a Mac
+  (switches the appearance at once), write one line (it lands as a Note Pad
+  slip that AI has not touched), and watch the film. Any door completes the
+  introduction (the film counts once play is pressed), and so does an ordinary
+  exchange in Clio. A “Show this window at startup” checkbox clears itself
+  when a door is done; the Apple menu always reaches About. Clio opens with
+  its normal welcome, not a first-run greeting. OOBE never becomes a wizard and
+  never leads with provider fields, project setup, or a feature inventory; a
+  door that needs a model or the network says why when it cannot run.
+- Clio introduces named objects only when the current task reaches them. It may
+  offer an existing application action for Project Hard Disk, Scrapbook,
+  Question Sheet, TeachText, Review Desk, or AI Settings, but it does not
+  reproduce those applications inside conversation or make model output saved
+  work. Start Here and Replay Introduction open About on “First time here”;
+  the deterministic 30-second tour lives in About's “This Desk” chapter, is
+  optional, and is never a boot step.
+- About AI System 6 is an ordinary non-modal window built on demand. Its first
+  chapter is an instrument (version, where your words live, this project's AI
+  runs and adoptions from run receipts, the current model); the other chapters
+  are generated from the official site and every button in them opens a real
+  window or switches a real setting.
+- MultiFinder is discovered through the startup environment: briefly explain
+  Finder versus MultiFinder where that choice is made, then teach the real
+  menu-bar switcher only after MultiFinder is enabled.
+- System Help remains the browsable, version-controlled catalog of product
+  objects and actions. Clio reuses that local knowledge for task-oriented
+  questions and does not search the web for product help unless the user
+  explicitly asks it to. System Help is not a second onboarding flow.
+- [Balloon Help](https://en.wikipedia.org/wiki/Balloon_help) is a state-aware
+  help mode, discoverable by default on hover-capable devices so new users meet
+  it, and user-toggleable with the choice persisted. It answers “What is this?”
+  and “Why is this unavailable?” in one or two actionable sentences. It must not
+  become an automatic OOBE tour or replace task-oriented System Help.
+- Balloon Help targets unfamiliar icons, system objects, and disabled-state
+  reasons. It does not repeat visible button labels. Pointer hover or keyboard
+  focus can reveal it; touch uses an explicit help mode followed by a tap.
+- Where a balloon stands is part of what it says, in this order: its tail points
+  at the object it explains; it never covers that object; it never covers what
+  the object opens, including a menu that has not been pulled down yet; it
+  leaves the object's peers alone — the next icon in the column, the next title
+  in the bar; and only then is it as near as it can be. It re-places itself when
+  a panel opens or closes under it, and it gets narrower before it gets far.
+
+In short: **System 6 is the grammar; Classic Mac OS is the vocabulary library.**
+
+## Design Dials
+
+Default design settings for this product:
+
+| Dial | Value | Meaning |
+| --- | --- | --- |
+| Design variance | 3 / 10 | Predictable System 6 object grammar. No arbitrary expressive layouts. |
+| Motion intensity | 2 / 10 | State feedback only. No decorative choreography. |
+| Visual density | 7 / 10 | Dense, scannable tool surfaces. Air is reserved for writing and reading. |
+
+Exceptions must be named in the feature contract. `Cover Glass` (file name
+`liquid-cover.js`), `CMF Studio`, `ClioStage`, and media creation tools may
+carry more visual range, but they still reuse the same window, control, state,
+and theme contracts.
+
+## Shared Controls: Prevention Before Visual Review
+
+New features reuse the existing window, button, field, select and panel primitives.
+Feature CSS owns arrangement; shared primitives own control rendering; appearance
+blocks own material tokens. A repeated defect is fixed at that owner and checked
+across its theme counterparts, including controls inserted after initialization.
+
+| Invariant | Implementation discipline |
+| --- | --- |
+| One visible indicator and label | A select arrow has exactly one painter: native picker, control background or wrapper pseudo-element. A harness-owned native select stays invisible even when disabled. Preserve the indicator image when changing state fills: use `background-color`, not a clearing `background` shorthand. Shared arrow assets have transparent surroundings. |
+| Theme typography | Controls and options consume `--ui-font`, `--system-control-size` and their shared weight role. Content/editor fonts stay on content/editor surfaces. Check both native and harness paths with Chinese and Latin text; a feature must not invent a competing control font or weight. |
+| Theme shape | Buttons and framed surfaces consume semantic radius tokens. Liquid Glass keeps nonzero corners and concentric nesting; historical geometry remains theme-owned. Pixel artwork, separators and intentional circular controls retain their distinct roles. Do not exempt a whole window to hide a failing control. |
+| State continuity | Default, hover, keyboard focus and disabled controls keep the same label/indicator ownership. Opening, selecting and dynamically mounting a control must use the shared harness lifecycle. |
+
+`verify:css`, including scoped `verify:quick -- --css-file ...`, automatically runs
+`node tooling/verify-liquid-shapes.mjs --primitives`. This small browser fixture
+loads production source CSS (including lazy sheets), the theme registry and the
+actual select functions. It checks six appearances, control typography, arrow
+ownership/transparency, hidden native ink and Liquid Glass control/panel corners.
+It needs neither an application server nor a build, and writes an isolated report
+under `dist/verification/liquid-shapes/`. Failures stop the CSS gate. The
+`visual-primitives` feature test reintroduces known defects to prove detection.
+
+Add a fixture when introducing a new primitive or a feature-specific control
+context that existing fixtures do not exercise. Reusing an unchanged primitive
+needs no new screenshot matrix. New layout/overflow, business interactions and
+mobile behavior still need their own scoped evidence; passing this fixture is
+not a claim that every application screen is visually correct. Use the existing
+full `--url` window audit for broad Liquid Glass geometry changes, and the
+`--url ... --select-only` mode to compare controls in a running build.
+
+## Twelve Appearances, One Object Grammar
+
+System 6, System 7, Platinum, Drawing Board, Aqua, Tiger, Snow Leopard, Lion,
+Yosemite, Big Sur, Liquid Glass, and NeXTSTEP are material skins over the same
+desktop language. They share object names, DOM structure, task flow, copy,
+state model, keyboard behavior, and feature contracts. Computed-style and
+screenshot instrumentation for the twelve is catalogued in
+[APPEARANCE-QA.md](APPEARANCE-QA.md) (“Twelve-appearance instrumentation”);
+Theme Lab Surfaces polish boards productize key-window / vibrancy / grayscale /
+quiet-focus measures without clearing open `polishTodos`.
+
+The maintenance lineage has four deliberate branches:
+
+- Classic → System 7 / Platinum → Drawing Board
+- Aqua → Tiger / Snow Leopard / Lion
+- Liquid Glass → Yosemite / Big Sur
+- NeXTSTEP (independent material adaptation; dedicated icons deferred; Classic art retained)
+
+`recipeBase` names the comparison and authoring baseline; it does not activate a
+second theme class. Each child owns a reviewable delta, so Aqua candy does not
+leak into Snow Leopard and Liquid Glass refraction does not leak into Yosemite.
+`family` is only for genuinely shared internal primitives.
+
+Theme changes may alter:
+
+- Material: bitmap paper, solid chrome, translucent glass, blur, rim light.
+- Border and shadow tokens.
+- Radius tokens.
+- Icon rendering inside the same semantic icon id.
+- Small optical spacing where the material requires it.
+
+Theme changes must not alter without a documented reason:
+
+- The user's task sequence.
+- Which controls exist.
+- Object names or verbs.
+- Saved state semantics.
+- Window ownership boundaries.
+- Reading, writing, clipping, saving, or export rules.
+
+Appearance work should be token-first:
+
+1. Add the default token in `apps/desktop/styles/00-foundation.css`.
+2. Put historical parameter-table deltas in `apps/desktop/styles/65-appearance-themes.css`,
+   or Liquid Glass values in `apps/desktop/styles/70-liquid-glass.css`.
+3. Compare child work against its registry `recipeBase` and override only the
+   semantic values or small structural recipes that truly differ.
+4. Consume the token from the shared base selector.
+5. Avoid application-specific theme selectors and new Liquid Glass twins.
+
+If a Liquid Glass twin is structurally necessary, add a short comment explaining
+why a token cannot carry the difference.
+
+### Liquid Glass shape system
+
+Liquid Glass uses rounded visible UI surfaces throughout: buttons (including
+selected, disabled, and focus states), fields, tabs, list highlights, cards,
+menus, dialogs, and window frames. Lazy application styles consume the same
+shape tokens. Do not reintroduce a square control or a square corner on a framed
+panel. Artwork, document glyphs, canvas pixels, and invisible layout boxes do
+not acquire decorative clipping.
+
+The shape ladder in `70-liquid-glass.css` is 4px for micro details, 8px for
+compact controls, 12px for regular controls/insets, 16px for panels, and 24px
+for windows. Capsules and circles have separate tokens. These are this
+product's calibrated values, not Apple-mandated measurements. Component tokens
+map to the ladder; shared square defaults live in `00-foundation.css` so other
+appearances retain their geometry. Small checkboxes keep a 4px curve so their
+shape remains distinct from radio buttons.
+
+Nested surfaces subtract their inset from the parent radius at the consuming
+element, with a 4px floor. Use compact rounded rectangles for dense desktop
+controls and capsules for prominent actions. Keep focus rings on the same
+outline. Rounded content frames do not add extra glass or blur behind text.
+
+After building and starting the app, run
+`node tooling/verify-liquid-shapes.mjs --url http://127.0.0.1:4173` to check
+registered windows, lazy styles, menu/dialog surfaces, control states, native
+and custom select arrows, and phone portrait/landscape controls.
+
+This follows Apple's [HIG hierarchy, harmony, and consistency principles](https://developer.apple.com/design/human-interface-guidelines/),
+the fixed/capsule/concentric shapes in [Get to know the new design system](https://developer.apple.com/videos/play/wwdc2025/356/),
+and the separation of controls from content in [Meet Liquid Glass](https://developer.apple.com/videos/play/wwdc2025/219/).
+
+### Appearance evidence ledger
+
+Historical themes require a reviewable source chain. Reference code establishes
+geometry and state coverage; it does not donate selectors, DOM, or redistributable
+artwork.
+
+| Theme target | Primary implementation evidence | Secondary evidence | Final calibration |
+| --- | --- | --- | --- |
+| Platinum — Mac OS 9 | MIT-licensed [`classic-stylesheets` Mac OS 9 recipes at `9ebd2d8`](https://github.com/nielssp/classic-stylesheets/tree/9ebd2d84664095345097a71e1a137f985d03d4f2/themes/macos9): window, button, input, tab, list, menu, and 16px scrollbar geometry plus state SVGs | Apple's [Mac OS 8 HIG](https://dev.os9.ca/techpubs/mac/pdf/HIGOS8Guidelines.pdf) supplies the 19px title bar, 20×58px standard button, 22px edit field, dialog spacing, and control semantics; [Classicy](https://github.com/robbiebyrd/classicy/tree/ca8c0ae294b5a289aa5a69cc223c152b55672d35) and [platinum.css](https://github.com/mat-sz/platinum.css/tree/d3f345731f886c7dc767be5877f10db14f11ead4) only cross-check missing geometry | Real Mac OS 9 Finder, Appearance, Open dialog, menu, SimpleText, and alert captures from the [GUIdebook Mac OS 9 gallery](https://guidebookgallery.org/screenshots/macos90) |
+| Aqua — Mac OS X 10.2 Jaguar | [Quaqua 9.1 nested package](https://www.randelshofer.ch/quaqua/files/quaqua-9.1.nested.zip): `Quaqua15JaguarLookAndFeel.java`, its `jaguar/` resources, common push/default/field/choice/popup/scrollbar assets, and the [Jaguar wrap-tab contract](https://www.randelshofer.ch/quaqua/guide/jtabbedpane.html) | Apple's archived [Aqua HIG](https://developer.apple.com/library/archive/documentation/UserExperience/Conceptual/OSXHIGuidelines/) supplies control roles and interaction semantics, not Jaguar pixel values | Real 10.2 Finder, System Preferences, open/save panels, Mail, and dialogs in the [512 Pixels Jaguar library](https://512pixels.net/projects/aqua-screenshot-library/mac-os-x-10-2-jaguar/) |
+| Snow Leopard — Mac OS X 10.6 | Quaqua 9.1: `Quaqua16SnowLeopardLookAndFeel.java`, Snow resources, active/inactive title bars and toolbars, source-list states, and size variants; the [Quaqua changelog](https://www.randelshofer.ch/quaqua/changes.html) records the Snow LAF arriving in 6.0 | Chromium's period [`platform-mac-snowleopard` Inspector CSS](https://chromium.googlesource.com/chromium/reference_builds/chrome_linux/+/f108f78bd628aceeb5d44dcaaac401a2a2e97a9d/resources/inspector/inspector.css) supplies Web-toolbar, search-field, status-bar, and compact custom-scrollbar evidence | Real 10.6 Finder, System Preferences, open/save panels, Mail, and dialogs in the [512 Pixels Snow Leopard library](https://512pixels.net/projects/aqua-screenshot-library/mac-os-x-10-6-snow-leopard/) |
+| Yosemite — OS X 10.10 | [Yosemite-gtk-theme `03b6f721`](https://github.com/vinceliuice/Yosemite-gtk-theme/tree/03b6f721): checkbox/radio/titlebutton asset geometry and `gtk-light.css` control values, plus period pure-CSS window studies for the shell hierarchy | Apple's archived [OS X HIG](https://developer.apple.com/library/archive/documentation/UserExperience/Conceptual/OSXHIGuidelines/) supplies control roles; the maintainer's own 10.10 captures calibrate Finder, System Preferences, and Apple-menu translucency | Real 10.10 Finder, System Preferences, open/save panels, menus, toolbar, sidebar, controls, and scrollbar, pinned in the maintainer fidelity baseline |
+
+Resolve conflicts in that order of authority: a native screenshot from the target
+OS wins; Quaqua supplies missing geometry, repeatable states, and regular/small/mini
+relationships; period Web CSS only governs comparable Web-owned surfaces. Thus
+Chromium's 11px gray Inspector scrollbar is a compact Web variant, while the Snow
+Leopard system scrollbar remains the 15px blue Aqua control shown by Quaqua and
+native open panels. External selectors, component DOM, and Apple-owned artwork
+must not enter the repository.
+
+Yosemite is the Liquid-Glass-family descendant for maintenance lineage only:
+it owns an independent 10.10 painter under `body[data-theme="yosemite"]` and
+must never be implemented as "Liquid Glass minus glass overrides" (see
+[THEME-FAMILY-CONTRACT.md](THEME-FAMILY-CONTRACT.md)).
+
+Platinum typography has an explicit licensing boundary: Charcoal and Charcoal
+CY remain local system-font names; the OFL-licensed [Asap variable face at
+`2de32f2`](https://github.com/Omnibus-Type/Asap/tree/2de32f20d7a0d48d4084adcf4bd6ac8115cf2f1a)
+is the measured cross-platform fallback, followed by installed Geneva. Do not
+redistribute an extracted Apple font or an unlicensed lookalike merely to make
+a snapshot report the canonical face. Theme Lab reports “Charcoal” as the
+historical target, not as a claim that the Apple binary has been bundled.
+
+## Object Vocabulary
+
+Agents must choose one of these object roles before inventing UI:
+
+| Role | Use For | Default Shape |
+| --- | --- | --- |
+| Writing route window | Question Sheet, Outline, Section Drafts, TeachText, Review Desk, Project CD | Full application window with `.window`, `.title-bar`, `.window-pane` |
+| Finder surface | Project Hard Disk, Applications, Trash, folders | Icon grid or list, object-first verbs |
+| Reader surface | Source reading, extraction, clipping | Reading pane plus clipping controls |
+| Sidecar Desk Accessory | Dictation Pad, Translation Pad, small helpers | Compact or sidecar DA near the supported work |
+| Utility window | Searcher, DocMap, ClioStage, System Help | Task-specific window using shared chrome |
+| Modal | Destructive confirmation, import/export operation, required setup | Short, blocking decision only |
+| Status surface | Model state, save state, OCR/search/import progress | Visible feedback tied to a real operation |
+| Creative lab | Cover Glass, CMF Studio, media tools, separate experiments | May be more expressive, still bounded by controls and states |
+
+Prefer existing primitives before adding classes:
+
+- `.window`, `.title-bar`, `.window-pane`
+- `.btn`, `.mini-btn`, `.button-row`
+- the custom System 6 select harness for finite dropdowns
+- Finder items and list rows for objects
+- shared empty, loading, error, selected, hover, focus, active, and disabled states
+- existing system icon ids through `apps/desktop/app/core/system-icons.js`
+
+Do not add a new component shape because it looks modern. Add one only when an
+existing object role cannot express the task.
+
+**These primitives carry all eight appearances already.** An application built
+from them inherits every era without writing a line of theme CSS, which is the
+whole reason the list above is a list and not a suggestion:
+
+| Primitive | Carries |
+| --- | --- |
+| `.window`, `.title-bar`, `.details-bar`, `.window-pane` | Window frame, its controls, the status strip |
+| `.btn`, `.mini-btn`, `.button-row` | Every push control and its states |
+| `.field-row`, `.control-field`, `.select-wrap` | Choice controls, text fields, the System 6 select harness |
+| `.system-tabs`, `.system-tab`, `.system-tab-panel` | The tab strip and the panel it opens |
+| `.view-controls`, `.view-btn` | The view switcher |
+| `.menu-popover`, `.balloon-help`, `.finder-operation-modal` | Menus, the temporary explanatory surface, modals |
+| `.finder-item`, `.sys-icon` | Objects and their icons |
+
+The reverse is the rule Theme Lab enforces: a control that is **not** on this
+list has no era wardrobe to inherit, so building one for a specimen means
+paying for six eras of dressing that no user interface ever benefits from.
+Theme Lab shows these primitives and nothing else; `verify:css` ratchets what
+it costs the appearance sheets (`themeLabReplicaMentions`).
+
+## Layout And Geometry
+
+Window and panel geometry is tokenized. New repeated values belong in
+`apps/desktop/styles/00-foundation.css`, not in scattered selectors.
+
+Use:
+
+- Fixed rem or px scales for product UI controls.
+- CSS Grid for two-dimensional panes.
+- Flexbox for one-dimensional rows and button groups.
+- `gap` for sibling spacing.
+- Component-scoped tokens for repeated geometry.
+
+Avoid:
+
+- Landing-page hero structures.
+- Feature-card rows.
+- Nested cards.
+- Arbitrary `z-index` values.
+- New layout `!important`.
+- New JS inline styles for layout decisions.
+- Layout animation on `top`, `left`, `width`, `height`, `padding`, or `margin`.
+
+Dense tool surfaces should use panes, rows, dividers, and object lists. Cards
+are reserved for repeated items, modals, and genuinely framed tools.
+
+Layering uses the named `--z-*` vocabulary from `apps/desktop/styles/00-foundation.css`.
+Global layers are ordered as windows, pinned windows, system modals, boot/shutdown,
+demo overlays, then system menus. Window-internal controls, scrollbars, select
+menus, and command popovers must use local `--z-local-*` tokens inside their
+window stacking context; do not fix an internal overlap by jumping to a global
+menu or demo layer.
+
+## Material Rules
+
+Classic theme:
+
+- Black, white, shade, and desktop gray carry the interface.
+- Sharp corners are the default.
+- Borders and insets should feel like System 6 controls.
+- Bitmap/System-style icon language wins over decorative illustration.
+
+Platinum derives from Classic:
+
+- Keep Classic density and object grammar.
+- Add neutral gray depth, compact bevels, striped active title bars, and
+  Mac OS 8/9 controls without turning them into Windows 95 chrome.
+
+Aqua is the second recipe root:
+
+- Use early Jaguar-era pinstripes, plastic depth, blue focus, candy default
+  controls, and solid windows.
+
+Snow Leopard derives from Aqua:
+
+- Preserve the Aqua control skeleton while reducing candy gloss.
+- Prefer unified silver chrome, tighter density, mature sidebars, and quieter
+  shadows.
+
+Yosemite derives from Liquid Glass:
+
+- Retain the modern window structure while flattening it into thin, cold,
+  compact 10.10-era planes and restrained vibrancy.
+- Do not inherit Liquid Glass refraction, large radii, or card-like depth.
+
+Liquid Glass theme:
+
+- Glass is a material for the same objects, not a license for generic
+  glassmorphism.
+- Use existing glass tokens for surface, rim, highlight, tint, shadow, and
+  radius.
+- Keep translucency readable. Text contrast still has to work.
+- Prefer token swaps over selector duplication.
+- Provide reduced-transparency or solid-fill behavior where the surface would
+  become illegible.
+- For hover previews, relative surfaces, control continuity, motion families,
+  and control-specific acceptance criteria, follow
+  [LIQUID-GLASS-CONTROLS.md](LIQUID-GLASS-CONTROLS.md).
+
+All appearances:
+
+- One icon family per object id.
+- One state vocabulary for controls.
+- Text must fit in English and Chinese.
+- No visual state may imply save, memory, network, indexing, check, or export
+  unless that operation actually happened.
+
+## Interaction And Motion
+
+Product motion is feedback:
+
+- Hover, focus, active, selected, disabled, loading, empty, and error states are
+  required for interactive components.
+- Most transitions should be 150 to 250 ms.
+- Animate transform and opacity by default.
+- Honor `prefers-reduced-motion`.
+- No page-load choreography for ordinary product windows.
+- No perpetual motion unless it communicates live state.
+
+Use the project's native patterns before adding animation libraries.
+
+For the shared state contract, behavior kernel, appearance ownership, and native
+boundary, follow [Architecture](../ARCHITECTURE.md). Phased migrations remain
+maintainer plans rather than a second public design authority.
+
+### Editing kernel and round trips
+
+Every editor that keeps a document of its own (ClioChart's table and canvas,
+ClioStage, Cover Glass, ClioPaint, ClioProject, DocMap's maps, Review Desk's
+comments, the darkroom's settings) shares one editing kernel instead of a
+private copy of each habit:
+
+- **One history per editor**, registered by window (`registerEditHistory`,
+  `app/core/edit-history.js`). Edit ▸ Undo / Redo and the step named in the menu
+  ("Undo Move") come from it whenever no text field is focused; a focused field
+  keeps its own undo. A drag or a scrub is one step; a run of typing in one
+  field is one step. Editors do not answer ⌘Z themselves.
+- **Commands are read from the menus.** Key Caps opens on a command sheet (⌘/)
+  listing the front application's menu commands with their keys, searchable
+  and runnable. A shortcut belongs to one row of the shortcut table; two rows
+  may share a key only when no application reaches both.
+- **Snapping and arranging** follow `app/core/edit-snap.js`: edges and centres
+  of the other objects and the frame, then an existing gap; ⌥ held moves
+  freely. Align uses the object clicked last as the reference.
+- **Layers and Get Info** use the shared panel and inspector
+  (`app/core/edit-layers.js`): eye, lock, name, drag to restack; selecting is
+  not an edit.
+- **An embed is a copy with a link back** (`app/core/edit-embeds.js`): the
+  picture plus one `clio-embed` comment carrying the editable copy. Double-click
+  edits the copy in the application that made it and redraws the page as one
+  step. When the original changes, the page offers Sync or Keep; it never
+  updates itself.
+- **Working pictures are staged** in the picture store until the document they
+  belong to is saved, and stay out of the Picture Album and backups until then.
+
+### WindowShade multitasking
+
+WindowShade extends the existing window model on the wide desktop. All twelve
+appearances expose the same arrangement commands and gesture target previews;
+the appearance owns their material. Narrow screens, writing focus and system
+modals retain their own layout ownership. Zoom, grow, roll-up, minimize and
+application Hide keep the distinct meanings defined above.
+
+- All Windows is one searchable projection of real windows and their states.
+  Its preview shows a captured image of the actual window when available. A
+  hidden, minimized, rolled-up or tucked-away window uses its last real capture,
+  marked as previous; without one, show title/state and unavailable feedback.
+  Never fabricate document contents or restore a window just to photograph it.
+  Captures are optional memory-only data, released when the window closes.
+- Side placement keeps one window at each edge, with a tab to tuck it away and
+  reveal it. Replacing an occupant returns it to its prior frame; Exit does the
+  same unless an explicit manual move keeps the new position. Split pairs two
+  windows with a draggable separator: arrows adjust 16 px, Shift-arrows 48 px,
+  and Home restores equal shares. Use top/bottom splits in a taller work area.
+- Arrangement admission checks usable space, minimum dimensions and aspect
+  ratios before writing. Paired operations and undo are atomic and scoped to
+  their members; cancellation preserves document nodes, contents and prior
+  undo. Closing, hiding or minimizing a member ends its temporary relation.
+  Viewport and appearance changes must not leave unreachable windows or a
+  half-updated pair. Side/Split relations do not survive session restoration.
+- Pinning remains a window-layer action. The pinned list, suspend, restore and
+  clear commands use that owner; restore respects intervening individual pin
+  choices and skips windows no longer eligible. Suspension is memory-only.
+- Dock hover previews and edge-triggered side placement start enabled and have
+  separate Control Panel preferences. Their saved booleans do not persist
+  previews or temporary relationships. Dock hover waits for intent and yields
+  to click, drag and context menu; touch and keyboard retain explicit entries.
+- Title-bar gestures use observable pointer movement and wheel deltas, with
+  target feedback before commitment and cancellation on interrupted interaction.
+  They do not claim native finger counts, Force Touch, pinch identity, or native
+  operating-system window control. Menu and keyboard routes remain available.
+
+## Copy Rules
+
+UI copy should be direct and object-specific:
+
+- Verb plus object for actions: "Save draft", "Delete project", "Export PNG".
+- Links must make sense out of context.
+- Error messages should state what failed and the next possible action.
+- Empty states should tell the user how to create or add the missing object.
+- Avoid generic AI-product language such as "elevate", "seamless",
+  "next-generation", "unleash", "game-changer", or vague "AI-powered" claims.
+
+Chinese UI must preserve the naming rules in `CLAUDE.md`. `Scrapbook` and
+`TeachText` stay untranslated.
+
+## Agent Preflight
+
+Before changing a UI surface, identify its object role, reused primitives,
+owning tokens and affected states. Apply the shared-control invariants above
+whenever a control is added or changed. Explain a new primitive's need and add
+its fixture; ordinary reuse does not require a fixed questionnaire or report.
+Choose evidence for the changed behavior. A local control correction does not
+restart the six-era application or phone/tablet matrix; layout changes still
+check the affected surface in the relevant themes and orientations.
+
+## Forbidden Defaults
+
+These patterns are rejected unless the feature contract explicitly needs them:
+
+- Centered marketing hero.
+- Three equal feature cards.
+- Thick side accent stripe on cards or rows.
+- Gradient text.
+- Decorative glass cards.
+- Generic dashboard card grid.
+- Nested cards.
+- Native finite dropdowns instead of the System 6 select harness.
+- New `!important`.
+- New arbitrary `z-index`.
+- New layout inline styles from JS.
+- Sketchy decorative SVG scenes.
+- Fake precision numbers.
+- Placeholder names, fake logos, or lorem ipsum.
+- Motion added because it looks impressive rather than because state changed.
+
+## Review Gates
+
+Use the existing scoped development command for owned CSS and behavior:
+
+```sh
+npm run verify:quick -- --feature <affected-contract> --css-file apps/desktop/styles/<owned-file>.css
+```
+
+Repeat `--css-file` for each owned sheet. Its CSS check automatically includes
+source-only shared-control browser checks. Omit `--feature` when no behavior
+contract applies; use `--no-build` only when the application sources are already
+built or the task changes documentation/tooling alone. A documentation-only
+change uses `npm run verify:docs` and `git diff --check`.
+
+For a layout/material change, capture the affected surface once before and once
+after the batch using the CSS skill's scoped snapshot command. Expand coverage
+only for changed behavior, a reproduced failure or an unresolved concern.
+Reuse unchanged evidence. Broad appearance changes and release/packaging work
+use the full gates defined in `CLAUDE.md`; do not run Theme Lab, global visual
+diff, smoke and release suites automatically for every small visual correction.
+The existing `npm run visual:eval` and `npm run visual:diff -- <snapshot-file>`
+remain diagnostics when a comparison is needed.
+
+Optional design anti-pattern scan:
+
+```sh
+node external/impeccable/skill/scripts/detect.mjs --json apps/desktop/index.html apps/desktop/app apps/desktop/styles
+```
+
+Treat third-party and generated findings as signals, not automatic blockers.
+Local product rules win when they are more specific.
+
+`npm run verify:design` is the local blocker. Its counts live in
+`tooling/design-budget.json` and may only increase with explicit justification.
+
+## Migration Priorities
+
+1. Fix the owning primitive or token when its behavior changes; migrate a
+   theme twin only with cascade evidence, not merely because it is nearby.
+2. Grow a small System 6 component kit from existing primitives.
+3. Add visual snapshot coverage for any new recurring window/control pattern.
+4. Reduce inline JS layout decisions by moving stable geometry into tokens or
+   classes.
+5. Add project-specific detector rules for the forbidden defaults above.
+
+The goal is not more decoration. The goal is that every agent reaches for the
+same object grammar before it reaches for taste.
+
+<!-- claim-check: npm run verify:css + tooling/style-manifest.mjs (ownership) | node external/impeccable/skill/scripts/detect.mjs --help | the 512 Pixels Aqua library stops at 10.7 Lion, so the dead 10.10 citation was removed 2026-09-18 -->

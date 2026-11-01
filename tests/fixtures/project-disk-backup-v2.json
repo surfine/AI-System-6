@@ -1,0 +1,141 @@
+{
+  "format": "ai-system-6-project-disk",
+  "formatVersion": 2,
+  "exportedAt": "2026-07-28T09:30:00.000Z",
+  "project": {
+    "id": "project-v2",
+    "name": "Legacy V2 Project",
+    "activeTextFileId": "file-child",
+    "archived": false,
+    "createdAt": "2026-05-01T00:00:00.000Z",
+    "updatedAt": "2026-07-28T09:00:00.000Z"
+  },
+  "folders": [
+    {
+      "id": "folder-root",
+      "projectId": "project-v2",
+      "name": "Drafts",
+      "parentId": null,
+      "createdAt": "2026-05-01T00:00:00.000Z",
+      "updatedAt": "2026-05-01T00:00:00.000Z"
+    },
+    {
+      "id": "folder-sub",
+      "projectId": "project-v2",
+      "name": "Archive",
+      "parentId": "folder-root",
+      "createdAt": "2026-05-02T00:00:00.000Z",
+      "updatedAt": "2026-05-02T00:00:00.000Z"
+    }
+  ],
+  "files": [
+    {
+      "id": "file-root",
+      "projectId": "project-v2",
+      "name": "Root Chat.md",
+      "folderId": "folder-root",
+      "type": "text",
+      "body": "# Root Chat\n\nOriginal launch-day notes from the first pass.",
+      "source": "ClioTalk",
+      "createdAt": "2026-05-03T00:00:00.000Z",
+      "updatedAt": "2026-05-03T00:00:00.000Z"
+    },
+    {
+      "id": "file-child",
+      "projectId": "project-v2",
+      "name": "Child Manuscript.md",
+      "folderId": "folder-sub",
+      "type": "text",
+      "parentChatId": "file-root",
+      "sourceDocumentId": "file-root",
+      "body": "# Child Manuscript\n\nThe body that later became the manuscript.",
+      "source": "Quick Draft",
+      "createdAt": "2026-05-04T00:00:00.000Z",
+      "updatedAt": "2026-07-01T00:00:00.000Z"
+    },
+    {
+      "id": "file-alias",
+      "projectId": "project-v2",
+      "name": "Alias to Clip",
+      "folderId": "folder-root",
+      "type": "alias",
+      "aliasTarget": {
+        "id": "scrap-clip",
+        "kind": "scrap"
+      },
+      "createdAt": "2026-05-05T00:00:00.000Z",
+      "updatedAt": "2026-05-05T00:00:00.000Z"
+    }
+  ],
+  "scraps": [
+    {
+      "id": "scrap-clip",
+      "projectId": "project-v2",
+      "title": "Key Evidence",
+      "body": "Quoted evidence the writer clipped from the chat.",
+      "sourceFileId": "file-root",
+      "sourceReferenceId": "reference-source",
+      "createdAt": "2026-05-06T00:00:00.000Z",
+      "updatedAt": "2026-05-06T00:00:00.000Z"
+    }
+  ],
+  "trash": [
+    {
+      "id": "trash-old",
+      "projectId": "project-v2",
+      "title": "Deleted Note",
+      "deletedAt": "2026-06-01T00:00:00.000Z",
+      "originalType": "file",
+      "originalData": {
+        "id": "file-deleted",
+        "projectId": "project-v2",
+        "name": "Deleted Note.md",
+        "folderId": "folder-root",
+        "type": "text",
+        "body": "A note that was deleted before the backup."
+      }
+    }
+  ],
+  "projectCdItems": [
+    {
+      "id": "cd-item",
+      "projectId": "project-v2",
+      "title": "Final.md",
+      "body": "# Final\n\nThe finished text.",
+      "sourceDocumentId": "file-child",
+      "claimCheckId": "file-root",
+      "createdAt": "2026-07-20T00:00:00.000Z",
+      "updatedAt": "2026-07-20T00:00:00.000Z"
+    }
+  ],
+  "references": [
+    {
+      "id": "reference-source",
+      "projectId": "project-v2",
+      "name": "Source Article",
+      "sourceUrl": "https://example.com/source",
+      "chunks": [
+        {
+          "id": "chunk-1",
+          "projectId": "project-v2",
+          "referenceId": "reference-source",
+          "content": "The original article paragraph used as evidence."
+        }
+      ],
+      "createdAt": "2026-05-07T00:00:00.000Z",
+      "updatedAt": "2026-05-07T00:00:00.000Z"
+    }
+  ],
+  "counts": {
+    "folders": 2,
+    "files": 3,
+    "scraps": 1,
+    "trash": 1,
+    "projectCdItems": 1,
+    "references": 1
+  },
+  "integrity": {
+    "algorithm": "SHA-256",
+    "contentHash": "5907c2c31f2b04e88685dde488482074247910192472cf80b2e94775aeb55023"
+  }
+}

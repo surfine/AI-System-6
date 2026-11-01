@@ -1,0 +1,168 @@
+/* About This Mac (app/features/about-this-mac.js): the Apple menu's first
+   row, the agent-era 「关于本机」. Built on demand, so this sheet travels with
+   its loader (styles.about-this-mac.css) and never rides the boot. Every
+   selector is scoped to .about-this-mac-*; colours and lines are the
+   foundation's tokens, so each era dresses them. The layout is the
+   2026-10-30 board's: a System 6 masthead (the machine beside the name),
+   the facts in ruled sections, and Project Hard Disk drawn as the board's
+   usage bar. Type holds to four sizes: 24 masthead, 16 section titles,
+   14 build line, 12 everything else. */
+
+.about-this-mac-window {
+  width: min(560px, calc(100vw - 32px));
+}
+
+.about-this-mac-pane {
+  padding: 12px 14px 14px;
+  font-size: 12px;
+  /* The facts read on the pane's own sheet, not on the window material: an
+     era whose material is glass names an opaque value for this hook instead
+     of letting the window behind smear through the rows. */
+  background-color: var(--about-this-mac-pane-bg, var(--pane-bg));
+}
+
+/* The board's masthead: the machine, its name, its build. */
+.about-this-mac-masthead {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin: 0 0 12px;
+}
+
+.about-this-mac-machine {
+  flex: none;
+  color: var(--ink);
+}
+
+.about-this-mac-machine svg {
+  display: block;
+}
+
+.about-this-mac-masthead-words {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.about-this-mac-heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 0;
+  font-family: var(--ui-font, inherit);
+  font-size: 24px;
+  line-height: 1.15;
+}
+
+.about-this-mac-subline {
+  margin: 0;
+  font-family: var(--text-font, inherit);
+  font-size: 14px;
+  color: var(--shade-dark, #555);
+}
+
+/* The board's ruled sections: title, then rows between ink rules. */
+.about-this-mac-rows {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+/* One rule per boundary: each section opens with the ink rule and the last
+   one closes the facts against the note. A section used to carry both rules,
+   so between two sections the previous bottom rule and the next top rule
+   stacked into two lines. */
+.about-this-mac-section {
+  border-top: 1px solid var(--surface-rule, var(--ink));
+  padding: 6px 0 8px;
+}
+
+.about-this-mac-section:last-child {
+  border-bottom: 1px solid var(--surface-rule, var(--ink));
+}
+
+.about-this-mac-section-title {
+  margin: 0 0 4px;
+  font-family: var(--ui-font, inherit);
+  font-size: 16px;
+  font-weight: var(--system-strong-weight, normal);
+}
+
+.about-this-mac-row {
+  display: grid;
+  grid-template-columns: minmax(96px, 140px) minmax(0, 1fr);
+  gap: 2px 12px;
+  align-items: baseline;
+  padding: 5px 0;
+}
+
+.about-this-mac-row + .about-this-mac-row {
+  border-top: 1px solid var(--rule);
+}
+
+.about-this-mac-label {
+  color: var(--ink);
+}
+
+.about-this-mac-value {
+  margin: 0;
+  font-family: var(--text-font, inherit);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.5;
+}
+
+.about-this-mac-value > span {
+  display: block;
+}
+
+/* The board's usage bar: the era's own progress meter (the --progress-*
+   tokens every appearance answers), the figures in the text beside it. */
+.about-this-mac-value > .about-this-mac-bar-line {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.about-this-mac-bar {
+  flex: none;
+  width: 180px;
+  max-width: 50%;
+  box-sizing: border-box;
+  height: var(--progress-height);
+  padding: var(--progress-padding);
+  border: 1px solid var(--progress-border-color);
+  border-radius: var(--progress-radius);
+  background: var(--progress-bg);
+}
+
+.about-this-mac-bar-fill {
+  display: block;
+  width: var(--about-this-mac-fill, 0%);
+  height: 100%;
+  border-radius: var(--progress-fill-radius);
+  background: var(--progress-fill-bg);
+}
+
+.about-this-mac-quiet {
+  color: var(--shade-dark, #555);
+}
+
+.about-this-mac-note {
+  margin: 10px 0 0;
+  color: var(--shade-dark, #555);
+}
+
+/* Liquid Glass answers the hook with the opaque white the rows read on: its
+   window material let the window behind come through as a blurred dark smear
+   across the facts. This is the one place the sheet names an appearance, and
+   it only re-values the pane's own token — the rules above stay era-blind. */
+body[data-theme="liquid-glass"] .about-this-mac-pane {
+  --about-this-mac-pane-bg: #ffffff;
+}
+
+/* Yosemite's hairline and fill for utility surfaces; in this sheet, not the era
+   file, which rides the boot floppy. Other eras take the ink fallback. */
+body[data-lineage~="yosemite"] {
+  --surface-rule: rgba(0, 0, 0, 0.18);
+  --surface-fill: var(--selection-bg);
+}

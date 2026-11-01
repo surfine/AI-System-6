@@ -1,0 +1,5 @@
+# DeepSeek official API; key arrives as DEEPSEEK_API_KEY from the Keychain.
+- id: acp
+  config:
+    provider: deepseek-official
+    model: deepseek-v4-flash

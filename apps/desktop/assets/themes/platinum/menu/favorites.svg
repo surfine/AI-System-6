@@ -1,0 +1,9 @@
+<!-- AI System 6 hand-drawn 16px reconstruction from the Mac OS 9 menu reference; no embedded source pixels. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" shape-rendering="crispEdges">
+  <path fill="#222" d="M2 1h5v1h2V1h4v2h2v11h-2v2H2z"/>
+  <path fill="#63c" d="M3 2h4v2h2V2h3v2h2v9h-2v1H3z"/>
+  <path fill="#f0f" d="M3 4h3v9H3zM10 4h3v9h-3z"/>
+  <path fill="#f9f" d="M4 3h2v2H4zM10 3h2v2h-2z"/>
+  <path fill="#99f" d="M7 4h3v10H7z"/>
+  <path fill="#555" d="M12 14h3v1h-3z"/>
+</svg>

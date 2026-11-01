@@ -1,0 +1,812 @@
+/* ClioWrite: the docx editing window (S11 M3). The document bar (S1) is the
+   desk's own .details-bar.app-status-bar (three slots: view and zoom pop-ups,
+   the margin-notes rail's slot, the save state); the ruler shows the paper's
+   margins in the flowing view; the foot is the state-only status bar (⑤); the document flows on the desk's
+   paper. The text inside the document is the file's own (the vendored Quire
+   renderer draws its runs inline), so no appearance restyles a writer's words.
+   Every selector is scoped to .clio-write-window or the window's pop-up menus
+   (.cw-menu); tokens only. */
+
+.clio-write-window {
+  width: min(720px, calc(100vw - 72px));
+  height: min(560px, calc(100vh - 96px));
+}
+
+.clio-write-window .cw-status {
+  flex: none;
+  gap: 10px;
+}
+
+.clio-write-window .cw-receipt {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clio-write-window .cw-context {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* The slots clip their text; the pop-up buttons' focus rings stay visible. */
+.clio-write-window .cw-status > .cw-context,
+.clio-write-window .cw-status > .cw-trailing {
+  overflow: visible;
+}
+
+.clio-write-window .cw-pop {
+  flex: none;
+  width: auto;
+}
+
+.clio-write-window .cw-pop[hidden] {
+  display: none;
+}
+
+/* The ruler (flowing view): two pop-ups, then the page's width with its margins
+   shaded and this paragraph's indents marked. Shown as the file has it, never dragged. */
+.clio-write-window .cw-ruler {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 8px;
+  border-bottom: 1px solid var(--details-bar-border, var(--ink));
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.clio-write-window .cw-ruler[hidden] {
+  display: none;
+}
+
+.clio-write-window .cw-ruler-pops {
+  display: flex;
+  flex: none;
+  gap: 6px;
+}
+
+.clio-write-window .cw-ruler-strip {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 80px;
+  height: 14px;
+  border: 1px solid var(--ink);
+  background: repeating-linear-gradient(90deg, var(--ink) 0 1px, transparent 1px 10%) 0 100% / 100% 4px no-repeat, var(--paper);
+}
+
+.clio-write-window .cw-mark {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+.clio-write-window .cw-mark.is-margin-left {
+  left: 0;
+  width: var(--cw-margin-left, 0%);
+  background: var(--shade-light, var(--paper));
+  border-right: 1px solid var(--ink);
+}
+
+.clio-write-window .cw-mark.is-margin-right {
+  left: var(--cw-margin-right, 100%);
+  right: 0;
+  background: var(--shade-light, var(--paper));
+  border-left: 1px solid var(--ink);
+}
+
+.clio-write-window .cw-mark.is-indent-first,
+.clio-write-window .cw-mark.is-indent-left,
+.clio-write-window .cw-mark.is-indent-right {
+  width: 8px;
+  height: 5px;
+  background: var(--ink);
+  clip-path: polygon(0 100%, 50% 0, 100% 100%);
+  transform: translateX(-4px);
+}
+
+.clio-write-window .cw-mark.is-indent-first {
+  left: var(--cw-indent-first, 0%);
+  bottom: auto;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+.clio-write-window .cw-mark.is-indent-left {
+  left: var(--cw-indent-left, 0%);
+  top: auto;
+}
+
+.clio-write-window .cw-mark.is-indent-right {
+  left: var(--cw-indent-right, 100%);
+  top: auto;
+}
+
+/* The pane: the document (or the empty note), the caption, and the alert layer. */
+.clio-write-window .clio-write-pane {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--glass-reading-surface, var(--paper));
+  color: var(--ink);
+}
+
+.clio-write-window .cw-scroller {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  /* The 「AI 字」 tag (below) is absolutely placed against this box. */
+  position: relative;
+  background: var(--glass-reading-surface, var(--paper));
+}
+
+.clio-write-window .cw-scroller[hidden],
+.clio-write-window .cw-empty[hidden] {
+  display: none;
+}
+
+/* The flow wraps to the window (Express and full editing alike): never wider than the
+   scroller and centred by the layer's own sizer. The flow box itself is never capped in CSS:
+   quire sets its inline width and lays every table, tab stop and picture against that width. The
+   page box is as wide as its column, not its container, so each redraw measures the same. */
+.clio-write-window .cw-scroller .sizer {
+  max-inline-size: 100%;
+}
+
+/* The document's own text is drawn black on white, as the file has it. */
+.clio-write-window .cw-scroller .pages {
+  position: relative;
+  inline-size: fit-content;
+  outline: none;
+  color: #000000;
+  background: #ffffff;
+}
+
+/* Reached by keyboard (Tab), the editing area shows the desk's focus ring; mouse and touch keep only the caret. */
+.clio-write-window .cw-scroller .pages:focus-visible {
+  outline: var(--system-focus-outline, 1px dotted var(--ink));
+  outline-offset: -3px;
+}
+
+.clio-write-window .cw-scroller .flow {
+  box-sizing: border-box;
+  padding: 16px 20px;
+}
+
+/* An inline picture keeps the size the file gives it. */
+.clio-write-window .cw-scroller .img {
+  display: inline-block;
+  vertical-align: bottom;
+}
+
+.clio-write-window .cw-scroller [contenteditable="false"] {
+  cursor: default;
+}
+
+.clio-write-window .cw-empty {
+  flex: 1 1 auto;
+  padding: 24px;
+  max-width: 44em;
+}
+
+.clio-write-window .cw-empty p {
+  margin: 8px 0 0;
+}
+
+.clio-write-window .cw-caption {
+  display: flex;
+  gap: 8px;
+  flex: none;
+  margin: 0;
+  padding: 2px 8px;
+  border-top: 1px solid var(--details-bar-border, var(--ink));
+  font-size: var(--system-caption-size, 11px);
+}
+
+/* The first-save list: a fixed alert, double border, no title bar, cannot be moved. */
+.clio-write-window .cw-layer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clio-write-window .cw-layer[hidden] {
+  display: none;
+}
+
+.clio-write-window .cw-alert {
+  max-width: min(440px, 92%);
+  padding: 1px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.clio-write-window .cw-alert-in {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 2px solid var(--ink);
+}
+
+.clio-write-window .cw-alert p,
+.clio-write-window .cw-alert ul {
+  margin: 0;
+}
+
+.clio-write-window .cw-alert ul {
+  padding-inline-start: 18px;
+}
+
+.clio-write-window .cw-alert-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.menu-popover.cw-menu {
+  display: block;
+  position: fixed;
+  top: var(--cw-menu-y, 0);
+  left: var(--cw-menu-x, 0);
+}
+
+.cw-menu .cw-menu-label small {
+  display: block;
+  font-size: var(--system-caption-size, 11px);
+  white-space: normal;
+}
+
+.cw-menu button.is-disabled {
+  color: var(--shade-dark, var(--ink));
+}
+
+.cw-menu kbd {
+  font: inherit;
+}
+
+/* S6 (board ⑤): a phone shows the flowing view only. The view and zoom
+   pop-ups are not offered (查看 › 页面视图 stays grey and says why), and a
+   table wider than the screen scrolls inside its own frame (frameWideTables in
+   clio-write.js builds it only on a phone), one line under it saying so, so the
+   page itself never scrolls sideways. The query is the desk's phone
+   (window-manager.js phoneViewportQuery), repeated verbatim. */
+@media (max-width: 860px), (hover: none) and (pointer: coarse) and (max-height: 660px) {
+  .clio-write-window .cw-status .cw-view-pop,
+  .clio-write-window .cw-status .cw-zoom-pop {
+    display: none;
+  }
+}
+
+.clio-write-window .cw-table-frame {
+  max-inline-size: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.clio-write-window .cw-table-hint {
+  margin: 4px 0 10px;
+  font-family: var(--ui-font);
+  font-size: var(--system-caption-size, 11px);
+  text-align: center;
+  user-select: none;
+}
+
+/* Touch: the status bar, the ruler's pop-ups and the menus grow to 44px. */
+@media (hover: none) and (pointer: coarse) {
+  .clio-write-window .cw-status .cw-pop,
+  .clio-write-window .cw-status .cw-font-note,
+  .clio-write-window .cw-ruler .cw-pop,
+  .cw-menu button {
+    min-height: 44px;
+  }
+}
+
+/* N13a: the revisions list, in the 旁注栏's 修订 panel (D2) or a floating
+   windoid where the rail is absent; it rides the windoid's list parts
+   (84-windoid.css). 1-bit: no reviewer colours — the kind word names the
+   revision, inserted text shows underlined and deleted text struck through,
+   the same marks the document itself draws, at reading size in the
+   document's own face (Write board ③), never caption-small. The entry under
+   review is framed; its 接受 is the default button. */
+:is(.cw-revisions-windoid, .cw-revisions-panel) .cw-rev-commands {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--ink);
+}
+
+:is(.cw-revisions-windoid, .cw-revisions-panel) .cw-rev-kind {
+  font-weight: 700;
+}
+
+:is(.cw-revisions-windoid, .cw-revisions-panel) .cw-rev .cw-rev-text {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  font-family: var(--editor-font);
+  font-size: var(--writing-editor-font-size, 14px);
+  line-height: 1.5;
+}
+
+:is(.cw-revisions-windoid, .cw-revisions-panel) .cw-rev .cw-rev-text:is(ins, del) {
+  font-style: normal;
+  color: inherit;
+}
+
+:is(.cw-revisions-windoid, .cw-revisions-panel) .cw-rev.is-current {
+  padding: 4px 6px;
+  border: 2px solid var(--ink);
+}
+
+.cw-revisions-panel .cw-rev-list:focus-visible {
+  outline: var(--system-focus-outline, 1px dotted var(--ink));
+  outline-offset: 2px;
+}
+
+/* D2: the small 「AI 字」 tag beside the first highlighted ledger range
+   (clio-write-agent-delivery paint()). The scroller is its containing block;
+   paint only feeds --cw-ai-tag-top / --cw-ai-tag-left, the layout lives here. */
+.clio-write-window .cw-scroller .cw-ai-text-tag {
+  position: absolute;
+  top: var(--cw-ai-tag-top, auto);
+  left: var(--cw-ai-tag-left, auto);
+}
+
+/* N3: the shared 查找 / 替换 windoid (features/clioworks-find.js), one window
+   over whichever Office editor is in front. MacWrite II style: it floats at the
+   pane's top right, drags by its title bar (the drag writes --find-x / --find-y),
+   and collapses to the title bar (the shade box) and is kept around. Painted
+   below the host's alert layer by DOM order, so no z number of its own. */
+.clioworks-find-windoid {
+  position: absolute;
+  top: var(--find-y, 8px);
+  right: var(--find-right, 8px);
+  left: var(--find-x, auto);
+  width: min(348px, calc(100% - 16px));
+  max-height: calc(100% - 16px);
+}
+
+.clioworks-find-windoid .windoid-titlebar {
+  cursor: move;
+}
+
+.clioworks-find-windoid .windoid-title {
+  max-width: calc(100% - 64px);
+}
+
+.clioworks-find-windoid.is-collapsed .windoid-body {
+  display: none;
+}
+
+.clioworks-find-grid {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 6px 8px;
+  align-items: center;
+}
+
+.clioworks-find-grid > label {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.clioworks-find-grid .windoid-input {
+  width: 100%;
+  resize: none;
+}
+
+.clioworks-find-scope,
+.clioworks-find-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  align-items: baseline;
+}
+
+.clioworks-find-choice {
+  display: inline-flex;
+  gap: 4px;
+  align-items: baseline;
+  white-space: nowrap;
+}
+
+.clioworks-find-choice input {
+  width: var(--system-radio-size);
+  height: var(--system-radio-size);
+  margin: 0;
+  accent-color: var(--ink);
+}
+
+.clioworks-find-choice input[type="checkbox"] {
+  width: var(--system-check-size);
+  height: var(--system-check-size);
+}
+
+.clioworks-find-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.clioworks-find-actions .btn:disabled {
+  color: var(--shade-dark, var(--ink));
+}
+
+.clioworks-find-status,
+.clioworks-find-note {
+  margin: 0;
+  min-height: 1em;
+}
+
+.clioworks-find-note {
+  font-weight: 700;
+}
+
+.clioworks-find-docs {
+  margin: 0;
+  padding-left: 1.4em;
+}
+
+.clioworks-find-docs[hidden] {
+  display: none;
+}
+
+/* S6 (board ⑤): the phone drawer (.is-drawer, set by clioworks-find.js on the
+   desk's phone): along the editor's foot, never taller than half of it, so the
+   top half of the text stays in view (held sideways, the left half); two
+   large fields, each with its own 听写 inside its right end (never over the
+   label), and large buttons. */
+.clioworks-find-windoid.is-drawer {
+  top: auto;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: auto;
+  max-height: 50%;
+  border-width: 1px 0 0;
+  box-shadow: none;
+}
+
+/* Held sideways a phone is short: the drawer stands along the right half
+   instead, full height, and the left half of the text stays in view. */
+@media (orientation: landscape) {
+  .clioworks-find-windoid.is-drawer {
+    top: 0;
+    left: auto;
+    width: 50%;
+    max-height: none;
+    border-width: 0 0 0 1px;
+  }
+
+  /* Folded by the shade, it shrinks to its title bar at the top of that half. */
+  .clioworks-find-windoid.is-drawer.is-collapsed {
+    bottom: auto;
+  }
+}
+
+.clioworks-find-windoid.is-drawer .windoid-titlebar {
+  cursor: default;
+}
+
+.clioworks-find-field {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+
+.clioworks-find-windoid.is-drawer .windoid-input {
+  box-sizing: border-box;
+  min-height: 44px;
+  padding-inline-end: 76px;
+}
+
+.clioworks-find-windoid.is-drawer .clioworks-find-dictate {
+  position: absolute;
+  inset-block: 4px;
+  inset-inline-end: 4px;
+  min-height: 0;
+}
+
+.clioworks-find-windoid.is-drawer .clioworks-find-actions .btn {
+  flex: 1 1 auto;
+  min-height: 44px;
+}
+
+/* N12: the substituted-fonts note in the status bar and the list windoid it
+   opens. Quiet: the note is plain status text with a dotted underline (it is a
+   real button, keyboard-reachable), no colour anywhere. */
+.clio-write-window .cw-font-note {
+  flex: none;
+  max-width: 24ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.cw-fonts-windoid .windoid-note {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--ink);
+}
+
+.cw-fonts-windoid .cw-fonts-row {
+  border-bottom: none;
+  padding-bottom: 0;
+  overflow-wrap: anywhere;
+}
+
+/* N2b: 页面视图 — Word 5.1 print-preview pages over the desk's gray, read-only.
+   The upstream layer owns the pagination (layout.js's Print-Layout pass) and
+   sizes each page box from the file's own sect properties; these are the host
+   styles it expects: the paper, its stacked layout, and the absolutely-placed
+   page parts whose coordinates the layout writes inline. */
+.clio-write-window[data-view="pages"] .cw-scroller {
+  background: var(--shade);
+}
+
+.clio-write-window[data-view="pages"] .cw-scroller .pages {
+  background: transparent;
+  /* The layer scales the pages from their top left and centres them itself
+     (layout.js fitSizer); scaled from the middle, 整页 and 页宽 would open
+     with gray above page 1 and the page pushed off its centre. */
+  transform-origin: 0 0;
+}
+
+/* S3 整页 in a wide window: the layer's own two-up row (setMultiPage(2) sets
+   the row's width); the pages stand side by side, page 1 on the left. */
+.clio-write-window[data-view="pages"] .cw-scroller .pages.multi {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0 16px;
+}
+
+.clio-write-window .cw-scroller .pg {
+  position: relative;
+  box-sizing: border-box;
+  display: block;
+  flex: none;
+  margin: 0 0 18px;
+  background: #ffffff;
+  border: 1px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--shade-dark);
+  overflow: hidden;
+}
+
+/* The page's parts carry their coordinates inline (layout.js newPage /
+   newRegion); the host only places them and draws the two marks Word draws. */
+.clio-write-window .cw-scroller .pg-body,
+.clio-write-window .cw-scroller .pg-hdr,
+.clio-write-window .cw-scroller .pg-ftr,
+.clio-write-window .cw-scroller .pg-reg,
+.clio-write-window .cw-scroller .pg-col,
+.clio-write-window .cw-scroller .pg-fn,
+.clio-write-window .cw-scroller .pgb,
+.clio-write-window .cw-scroller .crop,
+.clio-write-window .cw-scroller .colsep {
+  position: absolute;
+}
+
+.clio-write-window .cw-scroller .crop {
+  border: 1px dashed var(--shade-dark);
+  pointer-events: none;
+}
+
+.clio-write-window .cw-scroller .colsep {
+  border-inline-start: 1px solid var(--shade-dark);
+  pointer-events: none;
+}
+
+.clio-write-window .cw-scroller .fnsep-line {
+  border-top: 1px solid #000000;
+  width: 2em;
+}
+
+/* The page view's strip: page count, the paper with its 按本机排版 note, the
+   substituted-fonts note (N12), then 打印… and the ⌘. close. */
+.clio-write-window .cw-pagebar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+  padding: 3px 8px;
+  border-bottom: 1px solid var(--details-bar-border, var(--ink));
+  background: var(--paper);
+  color: var(--ink);
+  font-size: var(--system-caption-size, 11px);
+}
+
+.clio-write-window .cw-pagebar[hidden] {
+  display: none;
+}
+
+.clio-write-window .cw-pagebar .cw-page-fonts {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clio-write-window .cw-pagebar .cw-page-fonts[hidden] {
+  display: none;
+}
+
+/* N2c: the 文稿设置 margins span truncates the same way the fonts note does —
+   its full numbers stay on the span's title (clio-write.js sets it). */
+.clio-write-window .cw-pagebar .cw-page-margins {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clio-write-window .cw-pagebar-actions {
+  display: flex;
+  flex: none;
+  gap: 6px;
+  margin-inline-start: auto;
+}
+
+.clio-write-window .cw-pagebar-actions .btn {
+  min-height: 20px;
+  padding: 1px 10px;
+  font-size: inherit;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .clio-write-window .cw-pagebar-actions .btn {
+    min-height: 44px;
+  }
+}
+
+/* N2b: printing (and 导出为 PDF — the same road) sends only the page view's
+   paper to the printer. The document's own sect margins are already inside each
+   page box, so the sheet adds none of its own (@page below); text stays vector
+   (selectable, searchable); the strip, the bars and the rest of the desk stay
+   on screen. */
+@media print {
+  @page {
+    margin: 0;
+  }
+
+  body.is-cw-printing,
+  body.is-cw-printing .desktop {
+    background: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    transform: none !important;
+  }
+
+  body.is-cw-printing > *:not(.desktop) {
+    display: none !important;
+  }
+
+  body.is-cw-printing .desktop > *:not([data-window="clioWrite"]) {
+    display: none !important;
+  }
+
+  body.is-cw-printing [data-window="clioWrite"] {
+    position: static !important;
+    inset: auto !important;
+    display: block !important;
+    width: auto !important;
+    height: auto !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    transform: none !important;
+    z-index: auto !important;
+    background: none !important;
+    overflow: visible !important;
+  }
+
+  body.is-cw-printing [data-window="clioWrite"] > *:not(.clio-write-pane) {
+    display: none !important;
+  }
+
+  body.is-cw-printing .clio-write-pane {
+    display: block !important;
+    position: static !important;
+    overflow: visible !important;
+    background: none !important;
+  }
+
+  body.is-cw-printing .clio-write-pane > *:not(.cw-scroller) {
+    display: none !important;
+  }
+
+  body.is-cw-printing .cw-scroller {
+    display: block !important;
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    background: none !important;
+  }
+
+  body.is-cw-printing .cw-scroller .sizer {
+    width: auto !important;
+    height: auto !important;
+    max-inline-size: none !important;
+  }
+
+  body.is-cw-printing .cw-scroller .pages {
+    position: static !important;
+    left: 0 !important;
+    inline-size: auto !important;
+    transform: none !important;
+    background: none !important;
+    outline: none !important;
+  }
+
+  body.is-cw-printing .cw-scroller .pg {
+    margin: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+    break-after: page;
+  }
+
+  body.is-cw-printing .cw-scroller .pg:last-child {
+    break-after: auto;
+  }
+
+  /* 邮件合并 (features/clioworks-mailmerge.js): the same one road to paper,
+     over a hidden stack the merge renders one copy per section into. Only
+     the stack reaches the printer — the desk, its scrims and the merge's own
+     modal stay on screen — and each copy ends on its own page break, so the
+     spool is one stack in row order the printer collates itself. */
+  body.is-cw-mailmerge-printing,
+  body.is-cw-mailmerge-printing .desktop {
+    background: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    transform: none !important;
+  }
+
+  body.is-cw-mailmerge-printing > *:not(#cw-mailmerge-print) {
+    display: none !important;
+  }
+
+  body.is-cw-mailmerge-printing .desktop {
+    display: none !important;
+  }
+
+  body.is-cw-mailmerge-printing #cw-mailmerge-print {
+    display: block !important;
+  }
+
+  #cw-mailmerge-print .cw-mailmerge-copy {
+    break-after: page;
+  }
+
+  #cw-mailmerge-print .cw-mailmerge-copy:last-child {
+    break-after: auto;
+  }
+}
+
+/* The merge's print stack lives off-screen the whole time the desk is up;
+   only the print rules above ever show it. */
+#cw-mailmerge-print {
+  display: none;
+}

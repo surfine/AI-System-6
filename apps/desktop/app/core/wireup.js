@@ -1,0 +1,1875 @@
+// Event binding for app.js.
+
+// Session aliases for harvest-ux contracts; both share revealSelectOpenTapHint's
+// one-shot flag so desktop and Finder never nag twice for the same gesture.
+let desktopTapHintShown = false;
+let finderTapHintShown = false;
+
+function liquidTintLabelKey(value) {
+  if (value < 0.34) return "liquid_tint_clear";
+  if (value > 0.67) return "liquid_tint_tinted";
+  return "liquid_tint_balance";
+}
+
+function applyLiquidTintLevel(value) {
+  if (!liquidTintLevelInput) return;
+  const raw = Number.isFinite(Number(value)) ? Number(value) : Number(liquidTintLevelInput.value);
+  const numeric = Math.min(1, Math.max(0, raw || 0));
+  liquidTintLevelInput.value = String(numeric);
+  document.documentElement.style.setProperty("--liquid-tint-level", String(numeric));
+  if (liquidTintLevelOutput) {
+    const key = liquidTintLabelKey(numeric);
+    liquidTintLevelOutput.dataset.i18n = key;
+    liquidTintLevelOutput.textContent = typeof t === "function" ? t(key) : key;
+  }
+  ensureLazySystemModule("app/core/liquid-glass-overlay.js", "AISystem6LiquidGlassOverlayLoaded")
+    .then(() => window.AISystem6LiquidGlassOverlay?.refresh?.())
+    .catch(() => {});
+}
+
+// The tint control belongs to one appearance. applyTheme() calls this on
+// every path, because the boot, restore, and launch-intent paths all apply a
+// theme without announcing a change — listening for the event alone left the
+// slider sitting on a System 6 desk.
+function syncLiquidTintVisibility() {
+  const field = liquidTintLevelInput?.closest?.(".liquid-tint-field");
+  if (!field) return;
+  field.hidden = window.AISystem6Theme?.getCurrentTheme?.() !== "liquid-glass";
+}
+
+function syncAppearanceColorModeControl() {
+  const input = document.querySelector("#appearance-color-mode");
+  if (!input) return;
+  const registry = window.AISystem6Theme;
+  const field = input.closest(".appearance-color-mode-field");
+  if (field) field.hidden = registry?.getTheme?.().colorModes !== true;
+  input.value = registry?.getColorMode?.() || "system";
+  input.dispatchEvent(new Event("system-select-sync"));
+}
+
+function wireAppEvents() {
+  // The spatial desk loads only once the writer has placed an icon.
+  try {
+    if (localStorage.getItem("ais6.desktop.systemIconPositions")) ensureFinderDeskModule().catch(() => {});
+  } catch {}
+  installDesktopScrollLock();
+  installHeldPlaceTracking();
+  initializeBalloonHelp();
+  const clearLiquidPress = () => document.querySelectorAll(".is-glass-pressed").forEach((node) => node.classList.remove("is-glass-pressed"));
+  addEventListener("pointerdown", (event) => {
+    if (event.pointerType === "touch") {
+      const target = event.target instanceof Element ? event.target.closest(".btn") : null;
+      if (target) target.classList.add("is-glass-pressed");
+    }
+  });
+  addEventListener("pointerup", (event) => {
+    const target = event.target instanceof Element ? event.target.closest(".is-glass-pressed") : null;
+    if (target) target.classList.remove("is-glass-pressed");
+  });
+  addEventListener("pointercancel", clearLiquidPress);
+  addEventListener("orientationchange", clearLiquidPress);
+  addEventListener("resize", clearLiquidPress);
+
+  findPathResultsEl.addEventListener("click", (event) => {
+    const translateButton = event.target.closest("[data-find-path-translate]");
+    if (!translateButton) return;
+  
+    event.preventDefault();
+    event.stopPropagation();
+    translateFindPathResult(Number(translateButton.dataset.findPathTranslate));
+  });
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (composerSubmitButton.dataset.mode === "stop") {
+      stopGeneration();
+      return;
+    }
+    // Agent mode (代理) sends the prompt to the engine host instead. Boot may
+    // have restored 代理 before the lazy module loaded: the first send loads
+    // it and waits for that restore to settle before the run starts.
+    if (clioTalkAgentModeActive()) {
+      await ensureClioTalkAgentModule();
+      await window.AISystem6ClioTalkAgent.restoredMode();
+      if (window.AISystem6ClioTalkAgent.isActive()) return window.AISystem6ClioTalkAgent.submit(promptInput.value);
+    }
+    await submitUserText(promptInput.value.trim());
+  });
+
+  promptInput.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" || eventIsTextComposition(event)) return;
+    if (event.shiftKey) return;
+    if (composerSubmitButton.dataset.mode === "stop") return;
+    event.preventDefault();
+    if (form.requestSubmit) {
+      form.requestSubmit();
+    } else {
+      form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    }
+  });
+  promptInput.addEventListener("input", () => {
+    // Typing is what turns Send from unavailable to available, so the button
+    // has to be re-synced here. Only "focus" used to sync it, which left the
+    // button one interaction stale: you typed and it stayed dim, then it woke
+    // up when you tapped away and back.
+    if (typeof syncClioTalkSendButton === "function") syncClioTalkSendButton();
+    requestAnimationFrame(renderClioTalkRunAssembly);
+  });
+  promptInput.addEventListener("focus", () => {
+    if (typeof syncClioTalkSendButton === "function") syncClioTalkSendButton();
+  });
+
+  // Selecting a turn brings its verbs back to it. Both events are needed:
+  // pointer users never fire focusin on the article, keyboard users never
+  // fire click.
+  const selectClioTalkTurn = (event) => {
+    const turn = event.target.closest?.(".message");
+    if (turn) markClioTalkCurrentTurn(turn);
+  };
+  messagesEl?.addEventListener("click", selectClioTalkTurn);
+  messagesEl?.addEventListener("focusin", selectClioTalkTurn);
+  messagesEl?.addEventListener("scroll", handleClioTalkMessagesScroll, { passive: true });
+  clioScrollLatestButton?.addEventListener("click", () => {
+    scrollMessagesToLatest({ force: true });
+    promptInput.focus();
+  });
+
+  document.getElementById("compose-tools-menu")?.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-quick-draft-chat-action]");
+    if (!button) return;
+    const action = button.dataset.quickDraftChatAction || "";
+    document.getElementById("compose-tools-menu")?.classList.add("is-hidden");
+    document.getElementById("compose-tools-toggle")?.setAttribute("aria-expanded", "false");
+    await submitUserText(button.textContent.trim(), { quickDraftAction: action, skipQuickDraftVent: true });
+  });
+
+  document.getElementById("compose-tools-menu")?.addEventListener("keydown", (event) => {
+    const items = [...event.currentTarget.querySelectorAll('button[role="menuitem"]:not(.is-hidden):not([hidden]):not(:disabled)')];
+    if (!items.length) return;
+    const current = Math.max(0, items.indexOf(document.activeElement));
+    let next = current;
+    if (event.key === "ArrowDown") next = (current + 1) % items.length;
+    else if (event.key === "ArrowUp") next = (current - 1 + items.length) % items.length;
+    else if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = items.length - 1;
+    else if (event.key === "Escape") {
+      event.preventDefault();
+      closeComposeToolsMenu();
+      composeToolsToggleButton?.focus();
+      return;
+    } else {
+      return;
+    }
+    event.preventDefault();
+    items[next].focus();
+  });
+
+  composerSubmitButton.addEventListener("click", (event) => {
+    if (composerSubmitButton.dataset.mode !== "stop") return;
+    event.preventDefault();
+    stopGeneration();
+  });
+
+  scrapBodyInput.addEventListener("input", updateSelectedScrapMetadata);
+
+  scrapStackSelect?.addEventListener("change", () => {
+    selectedScrapStack = scrapStackSelect.value || "all";
+    selectedScrapIds.clear();
+    renderScraps();
+  });
+
+  teachTextForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    saveTextDocument();
+  });
+
+  teachTextSaveCopyButton?.addEventListener("click", () => {
+    saveTextDocument({ asCopy: true });
+  });
+
+  teachTextLabelSelect?.addEventListener("change", () => {
+    setTeachTextFileLabel(teachTextLabelSelect.value, { announce: true, persist: true });
+  });
+
+  [outlinePipelineLabelSelect, draftPipelineLabelSelect].forEach((select) => {
+    select?.addEventListener("change", () => {
+      setTeachTextFileLabel(select.value === "ai" ? "ai" : "draft", { announce: true, persist: true });
+    });
+  });
+
+  // 写 | 读 | 并排 is the writing editor's; before it loads the button is the
+  // old one-way toggle.
+  teachTextTogglePreviewButton.addEventListener("click", (event) => {
+    const editor = window.AISystem6WritingEditor;
+    if (editor) editor.chooseMode(teachTextBodyInput, event.target.closest?.("[data-mode]")?.dataset.mode);
+    else toggleTeachTextPreview();
+  });
+
+  const syncMdeFocusButton = (button, mode) => {
+    const keys = {
+      off: "teachtext_focus_off",
+      typewriter: "teachtext_focus_typewriter",
+      sentence: "teachtext_focus_sentence",
+    };
+    const key = keys[mode] || keys.off;
+    const longLabel = button.querySelector(".mobile-control-long");
+    if (longLabel) {
+      longLabel.dataset.i18n = key;
+      longLabel.textContent = t(key);
+      button.dataset.i18nAriaLabel = key;
+      button.setAttribute("aria-label", t(key));
+    } else {
+      button.dataset.i18n = key;
+      button.textContent = t(key);
+    }
+    button.classList.toggle("is-active", mode !== "off");
+  };
+
+  document.querySelectorAll("[data-mde-focus-cycle]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const textarea = document.querySelector(button.dataset.mdeTarget || "");
+      if (!textarea) return;
+      const container = textarea.closest(".teachtext-editor-container");
+      const preview = container?.querySelector(".teachtext-preview");
+      if (container?.classList.contains("is-previewing")) {
+        container.classList.remove("is-previewing");
+        preview?.classList.add("is-hidden");
+        textarea.classList.remove("is-hidden");
+      }
+      const mode = typeof mdeCycleFocusMode === "function" ? mdeCycleFocusMode(textarea) : "off";
+      syncMdeFocusButton(button, mode);
+      textarea.focus();
+    });
+    // Focus is how the writer works, not a property of one document, so it
+    // survives the session. The button has to open saying so.
+    const restored = typeof mdeStoredFocusMode === "function" ? mdeStoredFocusMode() : "off";
+    if (restored !== "off") syncMdeFocusButton(button, restored);
+  });
+  if (typeof mdeSyncWritingFocusDesk === "function") {
+    mdeSyncWritingFocusDesk(typeof mdeStoredFocusMode === "function" ? mdeStoredFocusMode() : "off");
+  }
+  window.AISystem6JourneyGates?.syncDeskProbe?.();
+
+  // One preference, every writing surface: the menu command cycles whichever
+  // surface the writer is in, and every button that points at it follows.
+  window.AISystem6WritingFocus = {
+    syncButtons(mode) {
+      document.querySelectorAll("[data-mde-focus-cycle]").forEach((button) => {
+        syncMdeFocusButton(button, mode);
+      });
+      if (typeof mdeSyncWritingFocusDesk === "function") mdeSyncWritingFocusDesk(mode);
+    },
+  };
+
+  teachTextImageInput?.addEventListener("change", async () => {
+    await addTeachTextImageAttachments(teachTextImageInput.files);
+    teachTextImageInput.value = "";
+  });
+
+  teachTextTranslateButton?.addEventListener("click", translateTeachTextDocument);
+
+  teachTextDocMapButton?.addEventListener("click", () => withDocMap(() => makeDocMapFromCurrentSource()));
+
+  teachTextClipSelectionButton?.addEventListener("click", clipTeachTextSelectionToScrapbook);
+
+  teachTextDownloadMarkdownButton?.addEventListener("click", downloadTeachTextMarkdown);
+
+  teachTextDownloadBilingualButton?.addEventListener("click", downloadTeachTextBilingualMarkdown);
+
+  document.querySelectorAll(".teachtext-command-popover").forEach((popover) => {
+    popover.addEventListener("click", (event) => {
+      const button = event.target.closest("button");
+      if (button) {
+        button.closest(".teachtext-command-submenu")?.removeAttribute("open");
+        button.closest(".teachtext-command-menu")?.removeAttribute("open");
+      }
+    });
+  });
+
+  styleSheetResultsEl?.addEventListener("click", (event) => {
+    const jumpButton = event.target.closest("[data-style-jump]");
+    if (jumpButton) {
+      jumpToStyleFinding(Number(jumpButton.dataset.styleJump));
+      return;
+    }
+    const copyButton = event.target.closest("[data-style-copy]");
+    if (copyButton) {
+      copyStyleFinding(Number(copyButton.dataset.styleCopy));
+    }
+  });
+
+  // Shared markdown editing shortcuts (bold/italic/link, smart list
+  // continuation, Tab indent) for every markdown textarea surface.
+  [
+    teachTextBodyInput,
+    reviewDeskBodyInput,
+    questionSheetBodyInput,
+    outlineContentEl,
+    draftBodyInput,
+    // Note Pad holds slips that get sent on to TeachText and Scrapbook, so it
+    // is writing too — it gets the shortcuts. It does NOT get the highlight
+    // overlay below: that carries the shared paper measure, which belongs to a
+    // writing window and not to a 320px Desk Accessory.
+    notePadTextInput,
+  ].forEach((el) => attachMarkdownEditor(el));
+
+  // Live markdown highlight overlay. All Markdown writing surfaces share the
+  // same 28-em editor measure, typewriter mode, and focus mode implementation.
+  [
+    teachTextBodyInput,
+    reviewDeskBodyInput,
+    questionSheetBodyInput,
+    outlineContentEl,
+    draftBodyInput,
+  ].forEach((el) => attachMarkdownHighlight(el));
+
+  teachTextBodyInput.addEventListener("input", () => {
+    markTeachTextModified();
+    if (typeof noteWritingSurfaceEdit === "function") noteWritingSurfaceEdit("manuscript");
+    if (typeof syncTeachTextToLinkedProjectMarkdown === "function") {
+      syncTeachTextToLinkedProjectMarkdown();
+    }
+    syncReviewDeskFromTeachText({ force: true });
+    renderClaimCheckSections();
+    renderStyleCheckSections();
+    // N15a: 第一次输入把「自动存档 + 链接跟随」的懒载模块带进来；之后它自己听。
+    if (typeof ensureWritingSafetyModule === "function" && !window.AISystem6WritingSafety) ensureWritingSafetyModule().catch(() => {});
+  });
+
+  ["select", "click", "keyup"].forEach((eventName) => {
+    teachTextBodyInput.addEventListener(eventName, () => {
+      updateTeachTextTranslateButton();
+      updateTeachTextDeskState();
+      updateDocMapEntryButtons();
+      rememberSelectionServiceContext(undefined, { clearMissing: true });
+      updateMenuState();
+      scheduleTeachTextTabSave();
+    });
+  });
+
+  teachTextBodyInput.addEventListener("scroll", () => {
+    scheduleTeachTextTabSave();
+    syncLinkedManuscriptScrollFrom(teachTextBodyInput, "teachtext");
+    syncReviewDeskScrollFrom(teachTextBodyInput);
+  });
+
+  teachTextPreviewEl?.addEventListener("scroll", () => {
+    syncLinkedManuscriptScrollFrom(teachTextPreviewEl, "teachtext-preview");
+  });
+
+  [teachTextNameInput, teachTextFolderInput].forEach((input) => {
+    input.addEventListener("input", () => {
+      markTeachTextModified();
+      updateQuestionSheetManuscriptTitle?.();
+      updateReviewDeskStatusTitle?.();
+    });
+  });
+
+  saveChatForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (saveDialogMode === "teachtext") {
+      const options = pendingTeachTextSaveOptions || {};
+      pendingTeachTextSaveOptions = null;
+      teachTextNameInput.value = getTeachTextDocumentName({ fallback: chatFileNameInput.value.trim() || t("untitled") });
+      teachTextFolderInput.value = chatFolderNameInput.value.trim() || preferredFolderName();
+      const saved = await saveTextDocument({ ...options, promptForFolder: false });
+      if (saved) {
+        closeWindow("saveChat");
+        saveDialogMode = "chat";
+        const saveWindow = getWindow("saveChat");
+        if (saveWindow) saveWindow.dataset.app = "clioTalk";
+        openWindow("teachText");
+      }
+      return;
+    }
+  
+    saveCurrentChatAsFile(chatFileNameInput.value, chatFolderNameInput.value);
+  });
+
+  newFolderButton.addEventListener("click", () => {
+    const folder = ensureFolder(newFolderNameInput.value);
+    selectedChatFileId = null;
+    selectedDocumentFolderId = folder.id;
+    saveDeskState();
+    renderDocuments();
+  });
+
+  newProjectDiskButton.addEventListener("click", createProjectFromInput);
+
+  projectDiskNameInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && !eventIsTextComposition(event)) {
+      event.preventDefault();
+      if (isPreparingProjectDisk) {
+        createProjectFromInput();
+      } else {
+        renameSelectedProject();
+      }
+    }
+  });
+
+  projectDiskUpButton?.addEventListener("click", openProjectFinderParentFolder);
+
+  document.querySelector("#trash-more-go")?.addEventListener("click", () => {
+    if (typeof runTrashMoreAction === "function") runTrashMoreAction();
+  });
+  document.querySelector("#trash-more")?.addEventListener("change", () => {
+    if (typeof syncTrashActionControls === "function") syncTrashActionControls();
+  });
+
+  document.querySelector("#project-disk-more-go")?.addEventListener("click", () => {
+    if (typeof runProjectDiskMoreAction === "function") runProjectDiskMoreAction();
+  });
+  document.querySelector("#project-disk-more")?.addEventListener("change", () => {
+    if (typeof syncProjectDiskMoreActions === "function") syncProjectDiskMoreActions();
+  });
+
+  document.querySelector("#text-disk-more-go")?.addEventListener("click", () => {
+    if (typeof runTextDiskMoreAction === "function") runTextDiskMoreAction();
+  });
+  document.querySelector("#text-disk-more")?.addEventListener("change", () => {
+    if (typeof syncTextDiskActionControls === "function") syncTextDiskActionControls();
+  });
+
+  document.querySelector("#chat-file-more-go")?.addEventListener("click", () => {
+    if (typeof runChatFileMoreAction === "function") runChatFileMoreAction();
+  });
+  document.querySelector("#chat-file-more")?.addEventListener("change", () => {
+    if (typeof syncChatFileActionControls === "function") syncChatFileActionControls();
+  });
+
+  printDirectoryDownloadButton?.addEventListener("click", downloadPrintedDirectoryMarkdown);
+
+  findFileForm?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    await ensureDeskFindModule();
+    // Return opens the highlighted hit; the list is already live.
+    if (!getSelectedFindFileResult()) await runFindFileSearch();
+    openSelectedFindFileResult();
+  });
+
+  findPathForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const query = findPathQueryInput.value.trim();
+    if (!query) return;
+    // Everything below this line lives in the lazy Searcher module.
+    await ensureFindPathModule();
+
+    findPathResultsEl.replaceChildren();
+    findPathResults.length = 0;
+    selectedFindPathIndex = null;
+    if (typeof markFindPathSearched === "function") markFindPathSearched();
+    findPathSummaryEl.classList.add("is-hidden");
+    findPathSummaryEl.textContent = "";
+  
+    const waiting = document.createElement("div");
+    waiting.className = "empty-folder-note";
+    waiting.textContent = t("searching_web", getSearchProviderLabel());
+    findPathResultsEl.append(waiting);
+    updateFindPathStatusBar();
+  
+    try {
+      const results = searchProviderInput?.value === "deepseek"
+        ? await runWebAnswerSearch(query)
+        : await searchFindPath(query);
+      findPathResults.length = 0;
+      findPathResults.push(...results);
+      selectedFindPathIndex = results.length ? 0 : null;
+      renderFindPathResults();
+    } catch (error) {
+      findPathResults.length = 0;
+      selectedFindPathIndex = null;
+      renderFindPathResults();
+      const message = normalizeFindPathErrorMessage(error);
+      findPathResultsEl.replaceChildren();
+      renderFindPathNotice(`${t("find_path_error", message)} ${t("searcher_error_help")}`, "error");
+      setStatus(t("find_path_error", message));
+    }
+  });
+
+  document.addEventListener("selectionchange", () => {
+    updateReaderTranslationClipButton();
+    rememberSelectionServiceContext(undefined, { clearMissing: false });
+    updateMenuState();
+    // Reader and Time Machine narrow a question to the current selection, so
+    // the scope rows have to follow it.
+    refreshAskBars();
+  });
+
+  document.addEventListener("select", (event) => {
+    if (!textControlContextFromElement(event.target)) return;
+    rememberSelectionServiceContext(undefined, { clearMissing: false });
+    updateMenuState();
+  });
+
+  questionSheetBodyInput.addEventListener("input", () => {
+    // Question Sheet is not an Outline truth surface, but mark the edit so a
+    // stale Manuscript/Draft marker can't make a later command read the wrong
+    // surface. The resolver maps "questionSheet" to the Outline default.
+    if (typeof noteWritingSurfaceEdit === "function") noteWritingSurfaceEdit("questionSheet");
+    // Dirty at the keystroke, not when a timer expires. The guard that decides
+    // whether another window's version may replace this record asks the
+    // record, and a keystroke the save has not carried yet is exactly the
+    // state it has to see.
+    if (typeof markActiveProjectDirty === "function") markActiveProjectDirty();
+    savePipelineData();
+    refreshTeachTextSurfacePreview("questionSheet");
+  });
+
+  outlineContentEl.addEventListener("input", () => {
+    if (typeof noteWritingSurfaceEdit === "function") noteWritingSurfaceEdit("outline");
+    if (typeof markActiveProjectDirty === "function") markActiveProjectDirty();
+    savePipelineData();
+    refreshTeachTextSurfacePreview("outline");
+  });
+
+  outlineContentEl.addEventListener("scroll", () => {
+    syncLinkedManuscriptScrollFrom(outlineContentEl, "outline");
+  });
+
+  outlinePreviewEl?.addEventListener("scroll", () => {
+    syncLinkedManuscriptScrollFrom(outlinePreviewEl, "outline-preview");
+  });
+
+  draftTitleInput?.addEventListener("input", savePipelineData);
+
+  draftSectionSelectEl?.addEventListener("change", () => {
+    if (typeof selectSectionDraft === "function") selectSectionDraft(Number(draftSectionSelectEl.value));
+  });
+
+  draftBodyInput.addEventListener("input", () => {
+    if (typeof noteWritingSurfaceEdit === "function") noteWritingSurfaceEdit("draft");
+    if (typeof markActiveProjectDirty === "function") markActiveProjectDirty();
+    savePipelineData();
+    updateDraftVoiceStats();
+    refreshTeachTextSurfacePreview("sectionDrafts");
+  });
+
+  if (reviewSectionSelectEl) {
+    reviewSectionSelectEl.addEventListener("change", () => {
+      const index = Number(reviewSectionSelectEl.value || 0);
+      selectStyleCheckSection(index);
+      selectClaimCheckSection(index);
+    });
+    reviewDeskBodyInput?.addEventListener("input", () => {
+      reviewDeskDirty = true;
+      syncReviewDeskToTeachText();
+      syncReviewDeskPreview();
+      updateReviewDeskStats();
+      updateMenuState();
+    });
+    reviewDeskBodyInput?.addEventListener("scroll", () => {
+      syncReviewDeskScrollFrom(reviewDeskBodyInput);
+    });
+    reviewDeskSplitterEl?.addEventListener("pointerdown", startReviewDeskSplitterDrag);
+    reviewDeskSplitterEl?.addEventListener("dblclick", () => setReviewDeskSourceRatio(0.5));
+    document.querySelector("#review-lens")?.addEventListener("change", (event) => {
+      const lens = event.target?.value || "style";
+      if (typeof setReviewDeskMode === "function") setReviewDeskMode(lens);
+    });
+    document.querySelector('[data-action="review-export"]')?.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      exportReviewDeskReport();
+    });
+  } else {
+    claimSectionSelectEl?.addEventListener("change", () => {
+      selectClaimCheckSection(Number(claimSectionSelectEl.value || 0));
+    });
+    styleSectionSelectEl?.addEventListener("change", () => {
+      selectStyleCheckSection(Number(styleSectionSelectEl.value || 0));
+    });
+  }
+
+  docMapTreeEl?.addEventListener("click", (event) => {
+    const jumpButton = event.target.closest("[data-video-docmap-jump]");
+    if (jumpButton) {
+      const node = (currentDocMap?.nodes || []).find((item) => item.id === jumpButton.dataset.videoDocmapJump);
+      selectedDocMapNodeId = node?.id || selectedDocMapNodeId;
+      const fileName = currentDocMap?.sourceMeta?.fileName || "";
+      if (node && fileName && typeof revealReaderVideoTranscriptRange === "function") {
+        revealReaderVideoTranscriptRange(fileName, node.blockIds || []);
+      }
+      return;
+    }
+    const button = event.target.closest("[data-docmap-node]");
+    if (!button) return;
+    selectedDocMapNodeId = button.dataset.docmapNode;
+    renderDocMap();
+  });
+
+  docMapFitViewButton?.addEventListener("click", () => {
+    const docMapWindow = getWindow("docMap");
+    // In a SideAsk split the DocMap window already owns its pane; maximizing
+    // it would cover the paired assistant. Fit the canvas to the pane.
+    if (docMapWindow?.dataset.sideaskRestoreActive !== "true") {
+      maximizeWindow(docMapWindow);
+    }
+    requestAnimationFrame(() => fitDocMapCanvasToView());
+  });
+
+  docMapFocusRootButton?.addEventListener("click", () => focusDocMapRootForCompactView());
+
+  docMapZoomOutButton?.addEventListener("click", () => zoomDocMapOut());
+
+  docMapZoomInButton?.addEventListener("click", () => zoomDocMapIn());
+
+  docMapCommandSummary?.addEventListener("click", (event) => {
+    if (!docMapCommandMenu?.classList.contains("is-disabled")) return;
+    event.preventDefault();
+  });
+
+  docMapSendQuestionButton?.addEventListener("click", () => {
+    docMapCommandMenu?.removeAttribute("open");
+    sendDocMapNodeToQuestionSheet();
+  });
+
+  docMapAskHkrrButton?.addEventListener("click", () => {
+    docMapCommandMenu?.removeAttribute("open");
+    askDocMapHkrrTheoryReview();
+  });
+
+  docMapInsertOutlineButton?.addEventListener("click", () => {
+    docMapCommandMenu?.removeAttribute("open");
+    insertDocMapNodeAsOutline();
+  });
+
+  docMapSaveButton?.addEventListener("click", () => {
+    docMapCommandMenu?.removeAttribute("open");
+    saveCurrentDocMap();
+  });
+
+  docMapPrintPdfButton?.addEventListener("click", () => {
+    docMapCommandMenu?.removeAttribute("open");
+    printCurrentDocMapPdf();
+  });
+
+  docMapAskForm?.addEventListener("submit", (event) => askDocMapQuestion(event));
+  registerAskBarSource("docMap", (...args) => describeDocMapAskScope(...args));
+
+  window.addEventListener("resize", () => {
+    syncStandaloneSurface();
+    if (currentDocMap && !document.querySelector('[data-window="docMap"]')?.classList.contains("is-hidden")) {
+      requestAnimationFrame(() => restoreDocMapCanvasView());
+    }
+    // Entering/leaving the phone portrait breakpoint flips the full-screen app
+    // shell on or off.
+    syncMobileAppForeground();
+    syncMobileWorkAreaFrames?.();
+    syncIconColumnDensity?.();
+    requestAnimationFrame(() => reconcileVisibleSystemWindowsToViewport());
+    renderMultiFinderMenu();
+    updateMenuState();
+  });
+  window.addEventListener("orientationchange", () => {
+    syncStandaloneSurface();
+    requestAnimationFrame(() => requestAnimationFrame(() => reconcileVisibleSystemWindowsToViewport()));
+  });
+
+  // The installed web app is its own surface (DEBT-AUDIT §11): the platform's
+  // signal hooks the root, and the sheets size the phone's window chrome for a
+  // thumb rather than for the 11-15px an era draws.
+  function syncStandaloneSurface() {
+    const installed = navigator.standalone === true || matchMedia("(display-mode: standalone)").matches;
+    const root = document.documentElement;
+    if (installed) root.setAttribute("data-installed", "");
+    else root.removeAttribute("data-installed");
+  }
+  syncStandaloneSurface();
+
+  // Track how much the on-screen keyboard covers, exposed as a CSS custom
+  // property (not an inline layout style) that the full-screen app shell reads
+  // to keep its composer above the keyboard. visualViewport reports the visible
+  // area; the layout viewport (window.innerHeight) does not shrink on iOS.
+  // A shrunken visual viewport is not proof of a keyboard: iOS shrinks it for
+  // its own collapsing address bar too. Without that check every full-screen
+  // app on a phone floats tens of pixels off the bottom edge at rest, showing
+  // the desktop pattern underneath it.
+  function keyboardCapableFocus() {
+    const el = document.activeElement;
+    if (!el || el === document.body) return false;
+    if (el.isContentEditable) return true;
+    if (el.tagName === "TEXTAREA") return true;
+    if (el.tagName !== "INPUT") return false;
+    return !/^(?:button|submit|reset|checkbox|radio|file|range|color|image|hidden)$/i
+      .test(el.getAttribute("type") || "text");
+  }
+
+  let keyboardInsetFrame = 0;
+  let keyboardInsetRevealPending = false;
+  let lastPublishedKeyboardInset = -1;
+  function updateKeyboardInset({ reveal = false } = {}) {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const covered = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+    const keyboard = keyboardCapableFocus() ? covered : 0;
+    document.documentElement.style.setProperty("--keyboard-inset", `${keyboard}px`);
+    // Floating windows re-fit the one owning the focused field above the keys.
+    syncKeyboardWindowFrame?.();
+    // Portrait DAs are CSS-slotted (is-mobile-*); re-rail when the inset moves
+    // enough that Note Pad / Clipboard would otherwise sit under the keys.
+    const insetMoved = Math.abs(keyboard - lastPublishedKeyboardInset) >= 12
+      || (keyboard === 0) !== (lastPublishedKeyboardInset <= 0);
+    if (insetMoved) {
+      lastPublishedKeyboardInset = keyboard;
+      syncKeyboardPortraitDeskAccessories?.();
+      reveal = true;
+    }
+    // Reveal only on focus or a real inset step — not on every visualViewport
+    // tick, which would fight a writer scrolling the field while the keyboard
+    // is up.
+    if (reveal && keyboard > 0) revealFocusedFieldAboveKeyboard?.();
+  }
+  function scheduleKeyboardInset(options = {}) {
+    if (options.reveal) keyboardInsetRevealPending = true;
+    if (keyboardInsetFrame) return;
+    keyboardInsetFrame = requestAnimationFrame(() => {
+      keyboardInsetFrame = 0;
+      const reveal = keyboardInsetRevealPending;
+      keyboardInsetRevealPending = false;
+      updateKeyboardInset({ reveal });
+    });
+  }
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", () => scheduleKeyboardInset());
+    window.visualViewport.addEventListener("scroll", () => scheduleKeyboardInset());
+    updateKeyboardInset();
+  }
+  // Focus decides whether the shrink counts, so recompute when focus moves.
+  document.addEventListener("focusin", () => scheduleKeyboardInset({ reveal: true }));
+  document.addEventListener("focusout", () => setTimeout(() => scheduleKeyboardInset(), 0));
+  // iOS still nudges the page to reveal a focused field even when the shell has
+  // already made room for it. The app is fixed and fills the screen, so any
+  // scroll here is displacement, not navigation: undo it. Caret reveal lives in
+  // the field/pane scrollers (revealFocusedFieldAboveKeyboard), not here.
+  document.addEventListener("focusin", () => {
+    if (!document.body.classList.contains("mobile-app-foreground")) return;
+    requestAnimationFrame(() => {
+      if (window.scrollY !== 0 || window.scrollX !== 0) window.scrollTo(0, 0);
+    });
+  });
+
+  dictionaryForm?.addEventListener("submit", async (event) => {
+    // This behavior lives in the lazy Dictionary/Help module. Cancel the form
+    // synchronously, then load it before resolving the global entrypoint.
+    event.preventDefault();
+    await ensureDictionaryHelpModule();
+    window.lookupDictionaryInput?.(event);
+  });
+
+  systemHelpQueryInput?.addEventListener("input", async () => {
+    await ensureDictionaryHelpModule();
+    window.renderSystemHelp?.();
+  });
+
+  systemHelpGroupSelect?.addEventListener("change", async () => {
+    selectedSystemHelpGroup = systemHelpGroupSelect.value || "all";
+    await ensureDictionaryHelpModule();
+    window.renderSystemHelp?.();
+  });
+
+  characterMapEl.addEventListener("click", (event) => {
+    const character = event.target.closest("[data-character]")?.dataset.character;
+    if (character) insertCharacter(character);
+  });
+
+  document.querySelectorAll(".view-controls").forEach((controls) => {
+    controls.addEventListener("click", (event) => {
+      const button = event.target.closest(".view-btn");
+      if (!button) return;
+      toggleViewMode(controls.dataset.viewWindow, button.dataset.view);
+    });
+  });
+
+  fileInfoCommentsEl.addEventListener("input", () => {
+    if (!fileInfoItem || fileInfoItem.readOnly === true) return;
+    fileInfoItem.comments = fileInfoCommentsEl.value;
+    fileInfoItem.updatedAt = new Date().toISOString();
+    saveDeskState();
+  });
+
+  fileInfoStationeryEl.addEventListener("change", () => {
+    if (!fileInfoItem || fileInfoItem.readOnly === true || fileInfoStationeryEl.disabled) return;
+    fileInfoItem.stationery = fileInfoStationeryEl.checked;
+    fileInfoItem.updatedAt = new Date().toISOString();
+    saveDeskState();
+    setStatus(fileInfoStationeryEl.checked
+      ? t("stationery_enabled", fileInfoItem.name)
+      : t("stationery_disabled", fileInfoItem.name));
+  });
+
+  fileInfoDownloadMarkdownButton.addEventListener("click", () => {
+    if (fileInfoItem) downloadMarkdown(formatInfoItemMarkdown(fileInfoItem), fileInfoItem.name || fileInfoItem.title || t("untitled"));
+  });
+
+  document.addEventListener("focusin", (event) => {
+    rememberTextTarget(event.target);
+    showDictationFieldButtonForTarget(event.target);
+  });
+
+  document.addEventListener("focusout", () => {
+    scheduleDictationFieldButtonHide();
+  });
+
+  document.addEventListener("keyup", (event) => {
+    rememberTextTarget(event.target);
+    positionDictationFieldButton();
+  });
+
+  document.addEventListener("pointerup", (event) => {
+    rememberTextTarget(event.target);
+    showDictationFieldButtonForTarget(event.target);
+  });
+
+  window.addEventListener("resize", () => positionDictationFieldButton());
+
+  window.addEventListener("scroll", () => positionDictationFieldButton(), true);
+
+  [endpointInput, localApiTokenInput, modelInput, searchProviderInput, importerModeInput, ocrEngineInput, contextLengthInput, embeddingModelInput].filter(Boolean).forEach((input) => {
+    input.addEventListener("input", scheduleSettingsSave);
+    input.addEventListener("change", scheduleSettingsSave);
+  });
+
+  // Prompt editing lives in the visible files on the Startup Disk and Project
+  // Hard Disk; the Advanced panel points there instead of duplicating the
+  // editor (which used to silently scope to the active project).
+  document.getElementById("open-ai-prompts-folder")?.addEventListener("click", () => {
+    navigateSystemFolderPath("ai-prompts");
+    openWindow("finder");
+  });
+
+  searchProviderInput?.addEventListener("change", () => {
+    // The status bar belongs to the lazy Searcher module. Before it loads there
+    // is no bar to refresh, and `?.()` would still throw on the bare name — so
+    // test the identifier itself. The popover label is eager and always runs.
+    if (typeof updateFindPathStatusBar === "function") updateFindPathStatusBar();
+    updateSearchProviderLabels();
+  });
+
+  importerModeInput?.addEventListener("change", refreshImporterStatus);
+
+  const handleModelNameChanged = () => {
+    activeChatModelIdentifier = "";
+    updateContextMaxForCurrentModel();
+    updateLocalModelState({ selected: !!modelInput.value.trim(), loaded: false, ready: false });
+  };
+  document.getElementById("model-select")?.addEventListener("change", (event) => {
+    modelInput.value = event.target.value || "";
+    handleModelNameChanged();
+    scheduleSettingsSave();
+  });
+  document.getElementById("embedding-model-select")?.addEventListener("change", (event) => {
+    embeddingModelInput.value = event.target.value || "";
+    scheduleSettingsSave();
+  });
+  document.getElementById("manual-model-fields")?.addEventListener("change", () => {
+    syncLocalModelControls();
+    if (typeof syncCloudModelControls === "function") syncCloudModelControls();
+    scheduleSettingsSave();
+  });
+  document.getElementById("clio-web-search")?.addEventListener("change", () => {
+    if (typeof refreshClioTalkWebSearchToggle === "function") {
+      refreshClioTalkWebSearchToggle();
+    }
+    scheduleSettingsSave();
+  });
+  document.getElementById("clio-web-search-toggle")?.addEventListener("click", (event) => {
+    const toggle = event.currentTarget;
+    const expanded = toggle.getAttribute("aria-expanded") === "true";
+    toggle.setAttribute("aria-expanded", String(!expanded));
+    if (typeof renderClioTalkRunAssembly === "function") renderClioTalkRunAssembly();
+    if (typeof syncClioTalkSendButton === "function") syncClioTalkSendButton();
+  });
+  modelInput?.addEventListener("input", handleModelNameChanged);
+  modelInput?.addEventListener("change", handleModelNameChanged);
+
+  const invalidateLocalConnection = () => {
+    localLmStudioConnectionEnabled = false;
+    renderLocalConnectionStatus("local_connection_waiting");
+    updateLocalModelState({ server: false, models: false, loaded: false, ready: false });
+  };
+  endpointInput?.addEventListener("input", invalidateLocalConnection);
+  localApiTokenInput?.addEventListener("input", invalidateLocalConnection);
+  localApiTokenInput?.addEventListener("input", saveLocalApiTokenForSession);
+  connectLocalModelButton?.addEventListener("click", async () => {
+    await ensureClioProviderResolver().catch(() => {});
+    window.AISystem6ClioProvider?.setPreference?.("local");
+    connectOrLaunchLocalModel();
+  });
+
+  contextLengthInput?.addEventListener("input", () => {
+    rememberContextLengthForCurrentModel(true);
+    renderContextLengthPresets();
+    updateLocalModelState({ loaded: false, ready: false });
+  });
+
+  contextLengthInput?.addEventListener("change", () => {
+    rememberContextLengthForCurrentModel(true);
+    normalizeContextLengthInput();
+    renderContextLengthPresets();
+    updateLocalModelState({ loaded: false, ready: false });
+  });
+
+  document.getElementById("context-length-preset")?.addEventListener("change", (event) => {
+    const value = event.target.value;
+    if (!value) return;
+    contextLengthInput.value = value;
+    rememberContextLengthForCurrentModel(true);
+    normalizeContextLengthInput();
+    updateLocalModelState({ loaded: false, ready: false });
+    scheduleSettingsSave();
+  });
+
+  setupLocalModelButton?.addEventListener("click", setupLocalLmStudioModel);
+
+  findModelsButton?.addEventListener("click", findLmStudioModels);
+  document.getElementById("detect-local-models")?.addEventListener("click", async () => {
+    await ensureClioProviderResolver().catch(() => {});
+    window.AISystem6ClioProvider?.setPreference?.("local");
+    detectLocalModelConnection();
+  });
+  document.getElementById("reset-ai-connection")?.addEventListener("click", resetAiConnection);
+
+  loadModelButton.addEventListener("click", loadSelectedLmStudioModel);
+  localProviderEl?.addEventListener("change", async () => {
+    await ensureClioProviderResolver().catch(() => {});
+    window.AISystem6ClioProvider?.setPreference?.("local");
+    const p = localProviderEl.value;
+    const localHttp = `http:${String.fromCharCode(47, 47)}127.0.0.1:`;
+    endpointInput.value = p === "lm-studio" ? `${localHttp}1234` : p === "ollama" ? `${localHttp}11434` : `${localHttp}1234`;
+    localLmStudioConnectionEnabled = false;
+    renderLocalConnectionStatus("local_connection_waiting");
+    const lmStudio = p === "lm-studio";
+    loadModelButton.disabled = !lmStudio;
+    loadModelButton.dataset.balloonHelpDisabled = "balloon_load_model_needs_lm_studio";
+    loadModelStatusEl.textContent = t(lmStudio ? "load_model_hint" : p === "ollama" ? "ollama_auto_load_hint" : "custom_auto_load_hint");
+    syncLocalProviderUi();
+    scheduleSettingsSave();
+  });
+
+  rememberInput.addEventListener("change", saveDeskState);
+
+  // A real double click delivers the second click (detail 2) and then its own
+  // dblclick, and both open the row. Windows open twice to the same place, but
+  // the two Play/Stop rows in Applications do not: the gesture started the
+  // demo and stopped it again before the first frame, which is what left the
+  // row looking pressed-then-idle. One gesture, one action.
+  let staticFinderOpenAction = "";
+  let staticFinderOpenedAt = 0;
+  const openStaticFinderTarget = (target) => {
+    const action = target.dataset.staticFinderAction;
+    const now = Date.now();
+    if (action === staticFinderOpenAction && now - staticFinderOpenedAt < 250) return;
+    staticFinderOpenAction = action;
+    staticFinderOpenedAt = now;
+    handleAction(action);
+  };
+
+  document.addEventListener("click", (event) => {
+    // The click that ends a menu press was already handled by the press.
+    if (menuPressKeep) { menuPressKeep = false; return; }
+    if (!event.target.closest(".select-wrap.has-system-select")) {
+      closeSystemSelectMenus();
+    }
+  
+    if (!event.target.closest(".teachtext-command-menu")) {
+      closeTeachTextCommandMenus();
+    }
+  
+    if (!event.target.closest(".compose-tools-anchor")) {
+      closeComposeToolsMenu();
+    }
+  
+    const subMenuItem = event.target.closest(".menu-item-with-sub");
+    const subMenuButton = subMenuItem?.querySelector(":scope > button");
+    if (subMenuItem && event.target.closest("button") === subMenuButton) {
+      event.preventDefault();
+      toggleMenuSubItem(subMenuItem);
+      return;
+    }
+  
+    const menuButton = event.target.closest(".menu > button");
+    if (menuButton) {
+      // The application-owned eras draw an indicator at the right end, not a
+      // menu. Apple's 1988 guide: clicking it brings forward each open
+      // application in succession. Nothing drops down.
+      //
+      // Ask the era rather than the rendered attribute: a theme preview can
+      // change the era without redrawing the bar, and a stale attribute must
+      // never be what decides whether a menu opens.
+      if (menuButton.id === "multifinder-button" && usesApplicationOwnedMenuBar() && !usesApplicationMenuSwitcher()) {
+        closeMenus();
+        cycleToNextApp();
+        menuButton.blur();
+        return;
+      }
+      const menu = menuButton.closest(".menu");
+      const isOpen = menu.classList.contains("is-open");
+      closeMenus();
+      if (!isOpen) {
+        updateMenuState();
+        menu.classList.add("is-open");
+        positionOpenMenu(menu);
+      }
+      return;
+    }
+  
+    const projectSwitchTarget = event.target.closest("[data-switch-project]");
+    if (projectSwitchTarget) {
+      const projectId = projectSwitchTarget.dataset.switchProject;
+      if (!projectSwitchTarget.disabled && projectId) {
+        handleProjectSwitcherChoice(projectId);
+      }
+      projectSwitchTarget.blur();
+      closeMenus();
+      return;
+    }
+  
+    const appSwitchTarget = event.target.closest("[data-switch-app]");
+    if (appSwitchTarget) {
+      const appId = appSwitchTarget.dataset.switchApp;
+      if (!appSwitchTarget.disabled && appId) {
+        if (isPortraitDocumentFlow()) foregroundMobileApp(appId);
+        else activateApplicationRow(appId);
+      }
+      appSwitchTarget.blur();
+      closeMenus();
+      return;
+    }
+  
+    const desktopIconTarget = event.target.closest(".icon-column .desktop-icon");
+    if (desktopIconTarget) {
+      event.preventDefault();
+      closeMenus();
+      const alreadySelected = selectedDesktopIconEl === desktopIconTarget;
+      // Coarse pointers rarely synthesize detail=2; a second tap on the same
+      // desktop icon is the open step (select-then-open), matching Finder.
+      if (
+        alreadySelected
+        && typeof window.matchMedia === "function"
+        && !window.matchMedia("(hover: hover) and (pointer: fine)").matches
+      ) {
+        openDesktopIcon(desktopIconTarget);
+        return;
+      }
+      selectDesktopIcon(desktopIconTarget);
+      if (revealSelectOpenTapHint(desktopIconTarget, { detail: event.detail })) {
+        desktopTapHintShown = true;
+      }
+      return;
+    }
+  
+    const openTarget = event.target.closest("[data-open]");
+    if (openTarget) {
+      closeMenus();
+      openWindow(openTarget.dataset.open);
+      return;
+    }
+  
+    const staticFinderTarget = event.target.closest("[data-static-finder-action]");
+    if (staticFinderTarget) {
+      if (event.detail >= 2) {
+        openStaticFinderTarget(staticFinderTarget);
+        return;
+      }
+      const winName = staticFinderTarget.dataset.staticFinderWindow;
+      const action = staticFinderTarget.dataset.staticFinderAction;
+      const alreadySelected = selectedStaticFinderWindowName === winName && selectedStaticFinderAction === action;
+      // Coarse pointers rarely synthesize detail=2; a second tap on the same
+      // object is the open step (select-then-open), matching desktop icons.
+      if (
+        alreadySelected
+        && typeof window.matchMedia === "function"
+        && !window.matchMedia("(hover: hover) and (pointer: fine)").matches
+      ) {
+        openStaticFinderTarget(staticFinderTarget);
+        return;
+      }
+      selectStaticFinderItem(winName, action);
+      if (revealSelectOpenTapHint(staticFinderTarget, { detail: event.detail })) {
+        finderTapHintShown = true;
+      }
+      return;
+    }
+  
+    const disabledSubmenuTarget = event.target.closest("[data-submenu-action].is-disabled");
+    if (disabledSubmenuTarget) {
+      closeMenus();
+      return;
+    }
+  
+    const actionTarget = event.target.closest("[data-action]");
+    if (actionTarget) {
+      if (
+        actionTarget.disabled
+        || actionTarget.classList.contains("is-disabled")
+        || actionTarget.getAttribute("aria-disabled") === "true"
+      ) {
+        // Gray primary: one tap names why (shared shell helper). Not a second live action.
+        if (typeof revealUnavailableControlWhy === "function") {
+          revealUnavailableControlWhy(actionTarget);
+        }
+        closeMenus();
+        return;
+      }
+      const action = actionTarget.dataset.action;
+      // Choosing a menu command is one mechanical step, distinct from a
+      // toolbar or window-internal button press.
+      const isMenuCommand = Boolean(
+        actionTarget.closest(".menu-popover, .menu-submenu-popover, .menu-sub-popover")
+      );
+      handleAction(action);
+      if (isMenuCommand) playSystemSound("menu");
+      if (action !== "toggle-compose-tools") {
+        closeComposeToolsMenu();
+      }
+      actionTarget.blur();
+      closeMenus();
+      return;
+    }
+  
+    closeMenus();
+  });
+
+  document.addEventListener("pointerdown", startFinderMarquee);
+
+  // Press-drag-release, the menu-bar gesture since 1984: press a title, drag to
+  // an item, release to choose it. Click-to-open, click-to-choose is unchanged.
+  // Moving onto another title while a menu is open switches menus with no click.
+  // menuPressKeep eats the click after a press: touch captures the pointer, so
+  // that click lands on the pressed title and would toggle the menu again.
+  let menuPress = null;
+  let menuPressKeep = false;
+  // The open popover can overlap the row it hangs from (touch layout, and
+  // mid-animation), so the open menu's own title also answers by its rectangle.
+  const menuTitleAt = (x, y) => {
+    let b = document.elementFromPoint?.(x, y)?.closest(".menu-bar .menu > button");
+    const r = (b = b || document.querySelector(".menu.is-open > button"))?.getBoundingClientRect();
+    return r && x >= r.left && x < r.right && y >= r.top && y < r.bottom
+      && !(b.id === "multifinder-button" && usesApplicationOwnedMenuBar() && !usesApplicationMenuSwitcher()) ? b : null;
+  };
+  const menuItemLive = (b) => b && !b.matches(":disabled, .is-disabled, [aria-disabled=true]");
+  const endMenuPress = () => {
+    document.querySelector(".is-press-target")?.classList.remove("is-press-target");
+    menuPress = false;
+  };
+  const openMenuOf = (title) => {
+    if (title.closest(".menu").classList.contains("is-open")) return false;
+    // updateMenuState can redraw the bar, so find the menu again afterwards.
+    const slot = Array.from(document.querySelectorAll(".menu-bar .menu")).indexOf(title.closest(".menu"));
+    closeMenus();
+    updateMenuState();
+    const menu = document.querySelectorAll(".menu-bar .menu")[slot];
+    menu.classList.add("is-open");
+    positionOpenMenu(menu);
+    return true;
+  };
+  document.addEventListener("pointerdown", (event) => {
+    endMenuPress();
+    const title = event.button ? null : menuTitleAt(event.clientX, event.clientY);
+    if (title) menuPress = { opened: openMenuOf(title) };
+  });
+  document.addEventListener("pointermove", (event) => {
+    if (!menuPress && (event.pointerType !== "mouse" || !document.querySelector(".menu.is-open"))) return;
+    const under = document.elementFromPoint?.(event.clientX, event.clientY);
+    const title = menuTitleAt(event.clientX, event.clientY);
+    if (title && openMenuOf(title) && menuPress) menuPress.opened = true;
+    if (!menuPress) return;
+    const item = under?.closest(".menu-popover button");
+    const lit = menuItemLive(item) ? item : null;
+    const prev = document.querySelector(".is-press-target");
+    if (prev !== lit) {
+      prev?.classList.remove("is-press-target");
+      lit?.classList.add("is-press-target");
+    }
+    const sub = lit?.parentElement;
+    if (sub?.matches(".menu-item-with-sub:not(.is-open)") && lit === sub.firstElementChild) toggleMenuSubItem(sub);
+  });
+  document.addEventListener("pointerup", (event) => {
+    if (!menuPress) return;
+    const { opened } = menuPress;
+    endMenuPress();
+    const under = document.elementFromPoint?.(event.clientX, event.clientY);
+    // Released on a title: a press that opened the menu leaves it open; a
+    // press on an open menu is a plain click and the click closes it.
+    if (menuTitleAt(event.clientX, event.clientY)) menuPressKeep = opened;
+    else {
+      const item = under?.closest(".menu-popover button");
+      if (menuItemLive(item) && !item.matches(".menu-submenu-trigger, .menu-item-with-sub > button")) item.click();
+      else closeMenus();
+      menuPressKeep = true;
+    }
+    if (menuPressKeep) setTimeout(() => { menuPressKeep = false; }, 60);
+  });
+  document.addEventListener("pointercancel", endMenuPress);
+
+  // Opening is the second act: the first click selects, the second opens. A
+  // gesture that wandered between the two clicks is not that gesture.
+  const DOUBLE_CLICK_SLOP_PX = 8;
+  let lastPointerDown = null;
+  document.addEventListener("pointerdown", (event) => {
+    lastPointerDown = { x: event.clientX, y: event.clientY };
+    // A mouse selects an icon on press, as the Finder does; touch keeps
+    // select-on-tap because its second tap is the open step.
+    if (event.pointerType !== "mouse" || event.button !== 0) return;
+    const icon = event.target.closest?.(".icon-column .desktop-icon");
+    if (icon && selectedDesktopIconEl !== icon) selectDesktopIcon(icon);
+  }, true);
+  const steadyDoubleClick = (event) => {
+    if (!lastPointerDown) return true;
+    const drift = Math.hypot(event.clientX - lastPointerDown.x, event.clientY - lastPointerDown.y);
+    if (drift <= DOUBLE_CLICK_SLOP_PX) return true;
+    lastPointerDown = null;
+    return false;
+  };
+
+  document.addEventListener("dblclick", (event) => {
+    if (!steadyDoubleClick(event)) return;
+    const desktopIconTarget = event.target.closest(".icon-column .desktop-icon");
+    if (desktopIconTarget) {
+      event.preventDefault();
+      closeMenus();
+      openDesktopIcon(desktopIconTarget);
+      return;
+    }
+  
+    const staticFinderTarget = event.target.closest("[data-static-finder-action]");
+    if (!staticFinderTarget) return;
+    openStaticFinderTarget(staticFinderTarget);
+  });
+
+  // The Writing Flow palette reports content, so it follows typing rather than
+  // waiting for the next command that happens to refresh the menus. One frame's
+  // coalescing keeps it off the keystroke path.
+  // Moving the caret between writing surfaces re-homes the status line, so the
+  // receipt for the step you just took is readable where that step landed you.
+  document.addEventListener("focusin", (event) => {
+    if (!event.target?.matches?.("#question-sheet-body, #outline-content, #draft-body, #teachtext-body, #review-desk-body")) return;
+    syncStatusHost();
+    renderWritingSpineState();
+  }, true);
+
+  let writingSpineStateFrame = 0;
+  document.addEventListener("input", (event) => {
+    if (!event.target?.matches?.("#question-sheet-body, #outline-content, #draft-body, #teachtext-body, #review-desk-body")) return;
+    // Typing is the only signal that progress exists; the commit and the mirror
+    // both hang off it, debounced inside noteWorkingProgress.
+    noteWorkingProgress();
+    if (writingSpineStateFrame) return;
+    writingSpineStateFrame = requestAnimationFrame(() => {
+      writingSpineStateFrame = 0;
+      renderWritingSpineState();
+    });
+  }, true);
+
+  // <details> does not bubble its toggle event, so the listener runs in the
+  // capture phase - one place for every command menu, including the ones later
+  // features add.
+  document.addEventListener("toggle", (event) => {
+    const details = event.target;
+    if (!details?.matches?.(".teachtext-command-menu, .teachtext-command-submenu, .tdi-document-stack")) return;
+    if (details.open) positionCommandPopover(details);
+    else clearCommandPopoverPlacement(details);
+  }, true);
+
+  window.addEventListener("resize", () => {
+    document.querySelectorAll(".menu.is-open").forEach(positionOpenMenu);
+    document.querySelectorAll(
+      ".teachtext-command-menu[open], .teachtext-command-submenu[open], .tdi-document-stack[open]"
+    ).forEach(positionCommandPopover);
+  });
+
+  document.querySelector(".menu-bar")?.addEventListener("scroll", () => {
+    document.querySelectorAll(".menu.is-open").forEach(positionOpenMenu);
+  });
+
+  // Arrow-key menu navigation. Menus open on click / Enter / Space; once open,
+  // Down / Up walk the items (with the existing visible focus ring), Right
+  // opens a submenu, Left closes it, and Home / End jump to the ends. Arrows
+  // are only captured while focus is on the open menu or its bar button, so
+  // typing elsewhere with a menu open is never hijacked.
+  function menuPopoverButtons(popover) {
+    const direct = Array.from(popover.querySelectorAll(":scope > button"));
+    const submenuTriggers = Array.from(popover.querySelectorAll(":scope > .menu-item-with-sub > .menu-submenu-trigger"));
+    return [...direct, ...submenuTriggers].filter((button) =>
+      !button.disabled
+      && !button.classList.contains("is-disabled")
+      && button.getBoundingClientRect().width > 0
+    );
+  }
+
+  function handleMenuArrowKey(event) {
+    const active = document.activeElement;
+    const focusedPopover = active instanceof Element
+      ? active.closest(".menu-sub-popover") || active.closest(".menu-submenu-popover") || active.closest(".menu-popover")
+      : null;
+    const popover = focusedPopover
+      || Array.from(document.querySelectorAll(".menu-popover, .menu-sub-popover, .menu-submenu-popover"))
+        .filter((el) => el.getBoundingClientRect().width > 0)
+        .pop()
+      || null;
+    if (!popover) return false;
+
+    if (event.key === "ArrowRight" && active instanceof Element && active.classList.contains("menu-submenu-trigger")) {
+      const item = active.closest(".menu-item-with-sub");
+      if (item) {
+        event.preventDefault();
+        if (!item.classList.contains("is-open")) toggleMenuSubItem(item);
+        const first = menuPopoverButtons(item.querySelector(".menu-sub-popover"))[0];
+        if (first) first.focus();
+        return true;
+      }
+    }
+
+    if (event.key === "ArrowLeft") {
+      const sub = active instanceof Element ? active.closest(".menu-sub-popover") : null;
+      if (sub) {
+        event.preventDefault();
+        const item = sub.closest(".menu-item-with-sub");
+        if (item) {
+          item.classList.remove("is-open");
+          item.querySelector(":scope > .menu-submenu-trigger")?.focus();
+        }
+        return true;
+      }
+      const menu = popover.closest(".menu");
+      const trigger = menu?.querySelector(":scope > button");
+      if (trigger && active instanceof Element && popover.contains(active)) {
+        event.preventDefault();
+        trigger.focus();
+        return true;
+      }
+    }
+
+    const buttons = menuPopoverButtons(popover);
+    if (!buttons.length) return false;
+    const currentIndex = buttons.indexOf(active);
+    let nextIndex = -1;
+    if (event.key === "ArrowDown") nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % buttons.length;
+    else if (event.key === "ArrowUp") nextIndex = currentIndex < 0 ? buttons.length - 1 : (currentIndex - 1 + buttons.length) % buttons.length;
+    else if (event.key === "Home") nextIndex = 0;
+    else if (event.key === "End") nextIndex = buttons.length - 1;
+    if (nextIndex >= 0 && nextIndex !== currentIndex) {
+      event.preventDefault();
+      buttons[nextIndex].focus();
+      return true;
+    }
+    return false;
+  }
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      const composeMenuWasOpen = composeToolsMenuEl && !composeToolsMenuEl.classList.contains("is-hidden");
+      const anyMenuWasOpen = composeMenuWasOpen || !!document.querySelector(".menu.is-open");
+      closeMenus();
+      closeTeachTextCommandMenus();
+      closeComposeToolsMenu();
+      if (composeMenuWasOpen) composeToolsToggleButton?.focus();
+      // Escape means "let me out of here" (1992 HIG p.277). An open menu is
+      // the nearer thing to get out of; with none open, it is the run that is
+      // still going. Deliberately not suppressed while typing — mid-sentence
+      // is exactly when a writer wants the brake.
+      if (!anyMenuWasOpen && stopRunningTaskFromKeyboard()) event.preventDefault();
+      return;
+    }
+
+    // Command-period is Table 4-1's reserved "Terminate an operation" and had
+    // no assignment here. It brakes from anywhere, including a text field,
+    // which is what makes it the panic key rather than a second Stop button.
+    if (event.key === "." && (event.metaKey || event.ctrlKey) && !event.altKey) {
+      if (stopRunningTaskFromKeyboard()) event.preventDefault();
+      return;
+    }
+
+    if (["ArrowDown", "ArrowUp", "ArrowRight", "ArrowLeft", "Home", "End"].includes(event.key)) {
+      const openMenu = document.querySelector(".menu.is-open");
+      const onOpenMenuButton = event.target.closest?.(".menu.is-open > button");
+      const active = document.activeElement;
+      const insidePopover = active instanceof Element && !!active.closest(".menu-popover, .menu-sub-popover, .menu-submenu-popover");
+      if (openMenu && (insidePopover || onOpenMenuButton) && handleMenuArrowKey(event)) {
+        return;
+      }
+    }
+  
+    const desktopIconTarget = event.target.closest?.(".icon-column .desktop-icon");
+    if (event.key === "Enter" && desktopIconTarget) {
+      event.preventDefault();
+      closeMenus();
+      openDesktopIcon(desktopIconTarget);
+      return;
+    }
+  
+    if ((event.key === "Delete" || event.key === "Backspace") && !event.metaKey && !event.ctrlKey && !event.altKey && !getActiveEditableElement()) {
+      const activeName = document.querySelector(".window.is-active:not(.is-hidden)")?.dataset.window || "";
+      if (["documents", "projects", "projectCd", "textDisk", "scrapbook"].includes(activeName)) {
+        event.preventDefault();
+        closeMenus();
+        if (activeName === "textDisk") removeSelectedMountedFile();
+        else if (activeName === "scrapbook") deleteSelectedScrap();
+        else handleAction("move-file-trash");
+        return;
+      }
+    }
+  
+    runShortcut(event);
+  });
+
+  // Title-bar chrome for one window. Lazy modules that inject their own
+  // window after boot must call window.AISystem6WireWindowChrome on it —
+  // this loop only ever sees the windows that exist in index.html, and a
+  // window whose close box does nothing is not a window.
+  const chromeWiredWindows = new WeakSet();
+  // wireTitleBarChrome reads this set. Declared here, before the boot loop
+  // calls wireWindowChrome: a `const` after that call sits in its temporal
+  // dead zone and the ReferenceError kills boot.
+  const titleBarsWired = new WeakSet();
+  function wireWindowChrome(win) {
+    // The guard is runtime state, not document state: a data attribute here
+    // would land in every window's markup and move the Theme Lab DOM
+    // fingerprints.
+    if (!win || chromeWiredWindows.has(win)) return;
+    chromeWiredWindows.add(win);
+    const standardControls = document.getElementById("standard-window-controls");
+    win.querySelectorAll(".title-bar[data-standard-controls]").forEach((bar) => {
+      // The production document carries the shared template. Small boot/test
+      // harnesses can omit it; keep their existing chrome usable instead of
+      // aborting the entire application wiring pass.
+      if (!standardControls?.content) {
+        bar.removeAttribute("data-standard-controls");
+        return;
+      }
+      bar.append(standardControls.content.cloneNode(true));
+      bar.prepend(bar.querySelector(".close-box"));
+      bar.removeAttribute("data-standard-controls");
+      bar.querySelectorAll("[data-i18n-aria-label]").forEach((button) => button.setAttribute("aria-label", t(button.dataset.i18nAriaLabel)));
+    });
+    win.dataset.app = getWindowAppId(win);
+    win.addEventListener("pointerdown", (event) => {
+      if (getCurrentTheme() === "nextstep" && event.target.closest(".title-bar button")) {
+        event.preventDefault();
+        return;
+      }
+      focusWindow(win);
+    });
+    window.AISystem6NextstepShell?.wire(win);
+    win.querySelectorAll(".title-bar").forEach((bar) => wireTitleBarChrome(bar));
+
+    win.querySelector(".close-box")?.addEventListener("click", (event) => {
+      // Option-click closes every Finder window.
+      const all = event.altKey && viewWindowNames.includes(win.dataset.window)
+        ? [...document.querySelectorAll(".window:not(.is-hidden)")].filter((w) => viewWindowNames.includes(w.dataset.window)) : [win];
+      all.forEach((w) => closeWindow(w.dataset.window, false, w.dataset.windowInstance));
+    });
+
+    win.querySelector(".resize-box")?.addEventListener("click", () => {
+      zoomWindow(win);
+    });
+
+    // The Platinum collapse box is the click form of WindowShade. It shares
+    // toggleCollapsed with the title-bar double-click and never calls Zoom.
+    win.querySelector(".shade-box")?.addEventListener("click", () => {
+      toggleCollapsed(win);
+    });
+  }
+
+  window.AISystem6WireWindowChrome = wireWindowChrome;
+  document.querySelectorAll(".window[data-window]").forEach(wireWindowChrome);
+
+  const documentVersionsDialog = document.querySelector("#document-versions-modal");
+  documentVersionsDialog?.addEventListener("close", () => {
+    modalScrim.classList.add("is-hidden");
+    document.body.classList.remove("has-system-modal");
+  });
+  document.querySelector("#versions-compare")?.addEventListener("click", () => compareSelectedDocumentVersions());
+  document.querySelector("#versions-restore")?.addEventListener("click", () => restoreSelectedDocumentVersion());
+
+  const roleModelFields = document.querySelector("[data-role-models]");
+  const manualModelFieldsInput = document.getElementById("manual-model-fields");
+  const syncRoleModelVisibility = () => {
+    if (roleModelFields) roleModelFields.hidden = !manualModelFieldsInput?.checked;
+    window.AISystem6ModelRoles?.syncSelects?.();
+  };
+  manualModelFieldsInput?.addEventListener("change", syncRoleModelVisibility);
+  ["researcher", "writer", "critic", "utility", "fallback"].forEach((role) => {
+    document.getElementById(`role-model-${role}`)?.addEventListener("change", (event) => {
+      window.AISystem6ModelRoles?.setRoleModel(role, event.target.value);
+    });
+  });
+  syncRoleModelVisibility();
+
+  startupSettingsModal?.addEventListener("close", handleStartupSettingsClose);
+
+  startupModeInputs.forEach((input) => {
+    input.addEventListener("change", () => syncStartupOpenOptions(input.value));
+  });
+
+  installGrowBoxes();
+  syncWindowBalloonHelpTargets();
+  installWindowFrameBars();
+  syncMobileWorkAreaFrames?.();
+  wireControlTabs();
+  // One wiring for every title bar, whenever the bar is born. The boot loop
+  // below covers index.html; a module-built window reaches this through
+  // wireWindowChrome, so a window that can close can also move — the drag
+  // used to bind only at boot, which left every lazy window nailed down.
+  function wireTitleBarChrome(bar) {
+    if (!bar || titleBarsWired.has(bar)) return;
+    titleBarsWired.add(bar);
+    // The appearance decides whether this bar carries a real minimize lamp;
+    // the lamp's command belongs to the shared window manager, not to the bar.
+    syncWindowMinimizeLamp(bar.closest(".window[data-window]"));
+    bar.addEventListener("dblclick", (event) => {
+      if (event.target.closest("button")) return;
+      if (bar.closest(".writing-spine-panel")) {
+        toggleWritingToolsShade();
+        return;
+      }
+      // WindowShade is a later-Mac convenience kept as an enhancement. It is
+      // deliberately separate from System 6's right-side Zoom box.
+      const win = bar.closest(".window");
+      if (win) toggleCollapsed(win, true);
+    });
+  
+    bar.addEventListener("pointerdown", (event) => {
+      if (event.target.closest("button")) return;
+      const win = bar.closest(".window");
+      if (win?.dataset.window === "saveChat") return;
+      if (!win) return;
+      // Writing-mode split panes are CSS-owned fixed columns (60vw / 33vw):
+      // a drag would leave inline left/top behind that beats the non-!important
+      // rules, so they stay pinned like they did under the old !important CSS.
+      if (typeof writerMode !== "undefined" && writerMode
+          && typeof writerModeCssOwnedWindows !== "undefined"
+          && writerModeCssOwnedWindows.has(win.dataset.window)) return;
+      // Portrait is a presentation system: mobile roles own window placement
+      // and the phone screen has no room for free title-bar dragging.
+      if (isPortraitDocumentFlow()) return;
+      const compactViewport = isNarrowViewport();
+      const allowCompactDrag = typeof isDeskAccessoryPlacementWindow === "function"
+        ? isDeskAccessoryPlacementWindow(win)
+        : getWindowAppId(win) === "accessories";
+      if (compactViewport && !allowCompactDrag) return;
+  
+      // This press is a window drag, so it must not also be the start of a
+      // text selection. `user-select: none` stops the title from being the
+      // selection's own content, but it does not cancel pointerdown's default
+      // action: WebKit still opens a selection anchored here, and the drag then
+      // sweeps a blue band across the title. Cancelling the default action is
+      // what actually stops it, in every engine. The title bar holds no field
+      // and buttons returned above, so nothing here needs the default focus.
+      event.preventDefault();
+      if (typeof cancelAllWindowPeeks === "function") cancelAllWindowPeeks();
+      focusWindow(win);
+      // WM0: this press owns the frame now; any pending spine alignment for the
+      // previous frame is stale and must not move the window mid-drag.
+      if (typeof window.AISystem6InvalidateWindowAutoLayout === "function") {
+        window.AISystem6InvalidateWindowAutoLayout(win);
+      }
+      const rect = win.getBoundingClientRect();
+      const offsetX = event.clientX - rect.left;
+      const offsetY = event.clientY - rect.top;
+      // Drag math is viewport-based, but an absolutely positioned window is
+      // measured from its offset parent (the desktop, which starts below the
+      // menu bar). Resolve the offset once so a click or release never
+      // re-anchors the window by the desktop's position.
+      const base = win.offsetParent?.getBoundingClientRect() || { left: 0, top: 0 };
+      let didMove = false;
+  
+      bar.setPointerCapture(event.pointerId);
+
+      // Classic drags the dotted outline and moves the window on release — the
+      // same primitive the grow box and the selection marquee use. Liquid Glass
+      // follows the pointer live.
+      const outline = compactViewport || !themeHasCapability("native-window-outline")
+        ? null
+        : createWindowOutline(rect);
+      let pendingLeft = rect.left;
+      let pendingTop = rect.top;
+
+      function applyWindowPosition(left, top) {
+        win.style.left = `${Math.round(left - base.left)}px`;
+        win.style.top = `${Math.round(top - base.top)}px`;
+        win.style.right = "auto";
+        win.style.transform = "none";
+      }
+
+      function moveWindow(moveEvent) {
+        const maxLeft = window.innerWidth - 80;
+        const maxTop = window.innerHeight - 50;
+        const left = Math.min(Math.max(0, moveEvent.clientX - offsetX), maxLeft);
+        // The desktop starts below the menu bar; a title bar parked under it
+        // could never be grabbed again.
+        const top = Math.min(Math.max(base.top, moveEvent.clientY - offsetY), maxTop);
+        if (Math.abs(moveEvent.clientX - event.clientX) > 1
+          || Math.abs(moveEvent.clientY - event.clientY) > 1) {
+          didMove = true;
+        }
+
+        pendingLeft = left;
+        pendingTop = top;
+        if (outline) {
+          positionWindowOutline(outline, left, top);
+          return;
+        }
+        applyWindowPosition(left, top);
+      }
+
+      function stopMove(stopEvent) {
+        bar.removeEventListener("pointermove", moveWindow);
+        bar.removeEventListener("pointerup", stopMove);
+        bar.removeEventListener("pointercancel", stopMove);
+        bar.removeEventListener("lostpointercapture", stopMove);
+        window.removeEventListener("pointerup", stopMove);
+        window.removeEventListener("pointercancel", stopMove);
+        // W07: the desk losing focus mid-drag (a browser switch, a devtools
+        // focus grab) is the case pointerup never arrives for — the grow box
+        // already ends on blur; the move path must too, or the dotted ghost
+        // outlives the gesture with nothing left able to clear it.
+        window.removeEventListener("blur", stopMove);
+        // A click that never moved is not a drag: leave the window exactly
+        // where it is and keep it system-positioned.
+        if (!didMove) {
+          if (outline) outline.remove();
+          return;
+        }
+        // A drag that emitted no move event still lands where it was released.
+        if (stopEvent?.type === "pointerup" && typeof stopEvent.clientX === "number") {
+          moveWindow(stopEvent);
+        }
+        if (outline) {
+          outline.remove();
+          applyWindowPosition(pendingLeft, pendingTop);
+        }
+        avoidWritingSpineOverlap?.(win);
+        markWindowUserPositioned?.(win);
+        scheduleWorkingSessionSave?.();
+      }
+
+      bar.addEventListener("pointermove", moveWindow);
+      bar.addEventListener("pointerup", stopMove);
+      bar.addEventListener("pointercancel", stopMove);
+      // The title bar only hears the release while it still holds the pointer.
+      // Losing capture mid-drag left the dotted ghost on the desk with nothing
+      // able to clear it, so end the drag on that too, and let the window hear
+      // a release that never came back to the bar. Resize already does this.
+      bar.addEventListener("lostpointercapture", stopMove);
+      window.addEventListener("pointerup", stopMove);
+      window.addEventListener("pointercancel", stopMove);
+      window.addEventListener("blur", stopMove);
+    });
+  }
+
+  document.querySelectorAll(".title-bar").forEach(wireTitleBarChrome);
+
+  indexFilesButton.addEventListener("click", async () => {
+    await insertFilesIntoFileFloppy(Array.from(filesInput.files || []), { source: "fileFloppy", openAfter: "textDisk" });
+  });
+
+  // DocMap and ClioStage take outside files through the shared external-drop
+  // surface, so the drag feedback, the internal mounted-file passthrough, and
+  // the "this window wants a file" refusal all come from one place.
+  registerExternalFileDropSurface(docMapDropZoneEl, {
+    onFiles: (files) => importDocMapDroppedFiles(files),
+    onMountedFiles: (fileNames) => makeDocMapFromMountedFileDrop(fileNames),
+  });
+
+  registerExternalFileDropSurface(clioStageViewportEl, {
+    onFiles: (files) => importClioStageDroppedFiles(files),
+    internalDropEffect: () => "copy",
+  });
+
+  // One Choose-button picker, no permanent hidden file input in the markup.
+  clioStageImportFilesButton?.addEventListener("click", () => {
+    openTransientFilePicker({
+      accept: importableFileAccept,
+      multiple: true,
+      onSelect: (files) => importClioStageDroppedFiles(files),
+    });
+  });
+
+  // The Dictation Pad's interior is a lazy module. These listeners are bound at
+  // boot, so each one must resolve its function at click time, behind the
+  // ensure — a bare reference would throw the moment the button is pressed.
+  dictationRecordButton.addEventListener("click", () => withDictationPad(() => startDictation()));
+
+  dictationStopButton.addEventListener("click", () => withDictationPad(() => stopDictation()));
+
+  dictationShapeButton.addEventListener("click", () => withDictationPad(() => shapeDictationTranscript()));
+
+  dictationCleanButton.addEventListener("click", () => withDictationPad(() => dictationCleanOrCancel()));
+
+  dictationClearButton.addEventListener("click", () => withDictationPad(() => clearDictationTranscript()));
+
+  dictationSendButton.addEventListener("click", () => withDictationPad(() => sendTranscript()));
+
+  dictationRawInput.addEventListener("input", () => withDictationPad(() => updateDictationTranscriptButtons()));
+
+  dictationCleanedInput.addEventListener("input", () => withDictationPad(() => updateDictationTranscriptButtons()));
+
+  downloadProjectCdButton?.addEventListener("click", downloadSelectedProjectCdItem);
+
+  printProjectCdPdfButton?.addEventListener("click", printSelectedProjectCdItem);
+
+  pageSetupInputs.forEach((input) => input.addEventListener("change", updatePageSetupFromControls));
+
+  clearProjectCdButton?.addEventListener("click", clearProjectCd);
+
+  exportProjectDiskButton?.addEventListener("click", exportActiveProjectDisk);
+
+  shareProjectDiskButton?.addEventListener("click", shareActiveProjectDisk);
+
+  filesInput?.addEventListener("change", updateFilePickerLabels);
+
+  importFilesButton?.addEventListener("click", () => {
+    openTransientFilePicker({
+      accept: importableFileAccept,
+      multiple: true,
+      onSelect(files) {
+        selectedImportFiles = files;
+        updateFilePickerLabels();
+        previewImportFiles();
+      },
+    });
+  });
+
+  importDocumentsButton?.addEventListener("click", importReadyFilesToDocuments);
+
+  projectBackupFileButton?.addEventListener("click", () => {
+    openTransientFilePicker({
+      accept: ".json,application/json",
+      onSelect(files) {
+        selectedProjectBackupFile = files[0] || null;
+        updateFilePickerLabels();
+        previewProjectBackupFile();
+      },
+    });
+  });
+
+  // Called through a wrapper: the handler takes the backup to import as its
+  // first parameter, so passing it to addEventListener directly handed it the
+  // click event instead — and every press of Import reported "Choose a valid
+  // Project Hard Disk backup first." while the preview beside it showed a
+  // perfectly valid one.
+  importProjectBackupButton?.addEventListener("click", () => importProjectBackupAsNewProject());
+
+  modernFontsInput.addEventListener("change", () => {
+    applyModernFonts();
+    // Quiet feedback: the font strategy must paint immediately, not only
+    // persist for the next launch.
+    if (typeof updateMenuState === "function") updateMenuState();
+  });
+
+  appearanceThemeInput?.addEventListener("change", () => applyTheme(appearanceThemeInput.value));
+  document.querySelector("#appearance-color-mode")?.addEventListener("change", (event) => {
+    window.AISystem6Theme?.applyColorMode?.(event.target.value);
+  });
+  document.addEventListener("ai-system6-colormodechange", syncAppearanceColorModeControl);
+  syncAppearanceColorModeControl();
+
+  liquidTintLevelInput?.addEventListener("input", () => {
+    applyLiquidTintLevel();
+    scheduleSettingsSave();
+  });
+
+  soundEffectsInput.addEventListener("change", () => {
+    saveDeskState();
+    if (typeof setStatus === "function") {
+      setStatus(t(soundEffectsInput.checked ? "sound_effects_on" : "sound_effects_off"), { notify: false });
+    }
+  });
+
+  classicLineIconsInput?.addEventListener("change", () => {
+    setClassicLineArtEverywhere(classicLineIconsInput.checked);
+    hydrateSystemIcons();
+    if (typeof renderProjectDiskDesktopIcons === "function") renderProjectDiskDesktopIcons();
+    window.AISystem6ControlStrip?.refreshStrip?.("appearance");
+    saveDeskState();
+  });
+
+  // The writing surfaces type with a quiet mechanical tick. It is throttled
+  // so a paste or fast keystroke produces one click, not a burst, and it is
+  // skipped during IME composition so a single composed character never
+  // double-clicks.
+  let lastTypeSoundAt = 0;
+  const TYPE_SOUND_MIN_GAP_MS = 45;
+  document.addEventListener("input", (event) => {
+    const target = event.target;
+    if (!target || target.isComposing) return;
+    if (target.id !== "teachtext-body" && target.id !== "quick-draft-draft") return;
+    const now = performance.now();
+    if (now - lastTypeSoundAt < TYPE_SOUND_MIN_GAP_MS) return;
+    lastTypeSoundAt = now;
+    playSystemSound("type");
+  });
+
+  menuClockInput.addEventListener("change", applyMenuClock);
+  showUnmountedDisksInput?.addEventListener("change", () => applyShowUnmountedDisks());
+
+  // One switch, in the Control Strip's own control panel — the way Mac OS 8/9
+  // shipped it. General used to carry a second checkbox writing the same
+  // `enabled` field, so the desk asked the same question in two places.
+  controlStripShowInput?.addEventListener("change", () => {
+    setControlStripState({ enabled: controlStripShowInput.checked });
+    applyControlStripState();
+  });
+
+  // The Control Strip settings panel is lazy-owned: opening the tab loads the
+  // feature (registry + module descriptors) so the module list and controls
+  // render, without enabling the strip itself.
+  document.querySelector("#control-tab-strip")?.addEventListener("click", () => {
+    ensureControlStripModule()
+      .then(() => window.AISystem6ControlStrip?.renderSettings?.())
+      .catch((error) => console.warn("Control Strip settings unavailable.", error));
+  });
+
+  [
+    [controlStripHotkeyRecordButton, () => window.AISystem6ControlStrip?.beginHotkeyRecording?.()],
+    [controlStripHotkeyClearButton, () => window.AISystem6ControlStrip?.clearHotkey?.()],
+    [controlStripMoveUpButton, () => window.AISystem6ControlStrip?.moveModuleInSettings?.(-1)],
+    [controlStripMoveDownButton, () => window.AISystem6ControlStrip?.moveModuleInSettings?.(1)],
+    [controlStripEnableButton, () => window.AISystem6ControlStrip?.setModuleEnabledFromSettings?.(true)],
+    [controlStripDisableButton, () => window.AISystem6ControlStrip?.setModuleEnabledFromSettings?.(false)],
+    [controlStripResetButton, () => window.AISystem6ControlStrip?.resetToDefaults?.()],
+  ].forEach(([handle, invoke]) => {
+    handle?.addEventListener("click", () => {
+      ensureControlStripModule()
+        .then(() => invoke())
+        .catch((error) => console.warn("Control Strip settings unavailable.", error));
+    });
+  });
+
+  controlStripModuleList?.addEventListener("click", (event) => {
+    const row = event.target.closest("[data-control-strip-settings-module]");
+    if (!row) return;
+    ensureControlStripModule()
+      .then(() => window.AISystem6ControlStrip?.selectModuleInSettings?.(row.dataset.controlStripSettingsModule))
+      .catch((error) => console.warn("Control Strip settings unavailable.", error));
+  });
+
+  controlStripModuleList?.addEventListener("dblclick", (event) => {
+    const row = event.target.closest("[data-control-strip-settings-module]");
+    if (!row) return;
+    ensureControlStripModule()
+      .then(() => window.AISystem6ControlStrip?.openModuleOwner?.(row.dataset.controlStripSettingsModule))
+      .catch((error) => console.warn("Control Strip settings unavailable.", error));
+  });
+
+  controlStripHotkeyInput?.addEventListener("keydown", (event) => {
+    ensureControlStripModule()
+      .then(() => window.AISystem6ControlStrip?.captureHotkey?.(event))
+      .catch(() => {});
+  });
+
+  docMapLayoutButtons?.forEach((button) => {
+    button.addEventListener("click", () => withDocMap(() => setCurrentDocMapLayout(button.dataset.docmapLayoutOption)));
+  });
+
+  performanceMeterInput.addEventListener("change", () => {
+    updateModelMeterVisibility();
+    saveDeskState();
+  });
+
+  showResetSystemMenuInput?.addEventListener("change", () => {
+    updateMenuState();
+    saveDeskState();
+  });
+}

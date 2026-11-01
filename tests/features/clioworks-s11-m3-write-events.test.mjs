@@ -1,0 +1,819 @@
+// ClioWorks S11 M3 contract: the single-writer gate, driven through the REAL event path.
+//
+// clio-write.js promises that nothing reaches the document except through its gate. This file
+// loads the real Quire editing layer (layout.js, drawing.js, editor.js) and the real
+// clio-write.js over a linkedom document (tests/helpers/quire-editor-vm.mjs) and dispatches
+// beforeinput / keydown / mousedown / pointerdown / composition events at the editor's own host,
+// capture phase and all, so the upstream listeners run exactly as in the browser. Each case
+// states what a writer does and what the file must still hold afterwards.
+// N10 boundary held here: the words inside a table cell are typed through the same
+// gate as body text; a click on a picture selects it (upstream handles, one-step
+// resize) while shapes and floating objects stay swallowed and never selected.
+import { readFileSync } from "node:fs";
+import { createFeatureTest, resolveProjectPath } from "../helpers/feature-test-harness.mjs";
+import { createQuireEditorVm } from "../helpers/quire-editor-vm.mjs";
+
+const test = createFeatureTest("clioworks-s11-m3-write-events");
+const DOCX = new Uint8Array(readFileSync(resolveProjectPath("tests/fixtures/clioworks-s11/quire-s11.docx")));
+
+const v = await createQuireEditorVm({ docx: DOCX, name: "搬家清单.docx" });
+const w = v.window;
+const doc = v.document;
+const api = w.AISystem6ClioWrite;
+const tick = async () => { for (let i = 0; i < 6; i += 1) { await Promise.resolve(); await new Promise((r) => setImmediate(r)); } v.flush(); };
+const saves = [];
+const hold = { promise: null };
+const realHost = w.AISystem6ClioWorks;   // the real native host (saveNativeDocument / revertNativeDocument)
+Object.defineProperty(w, "AISystem6ClioWorks", { configurable: true, writable: true, value: {
+  saveNativeDocument: async (name) => { saves.push(name); if (hold.promise) await hold.promise; return { ok: true }; },
+  revertNativeDocument: async () => ({ ok: true }),
+} });
+
+// The browser's CompositionEvent constructor (the surface hands a held compositionend on with it).
+w.CompositionEvent = function CompositionEvent(type, init = {}) { return v.make(type, { ...init }); };
+const byText = (adapter, text) => adapter.paragraphs().find((p) => p.text.startsWith(text));
+const snapshot = (adapter) => JSON.stringify(adapter.paragraphs().map((p) => [p.id, p.text, p.runs && p.runs.length]));
+const E = () => v.run("L.ed");
+const D = () => v.run("L.D");
+const scroller = () => doc.querySelector(".cw-scroller");
+const host = () => doc.querySelector("#pages");
+const live = () => v.record.liveAdapter;
+
+// Open a fresh copy of the document (D1: one editing mode, nothing to switch).
+async function fresh() {
+  v.modal.answers.length = 0;
+  if (api.current()) { if (api.current().dirty) v.modal.answers.push("no"); await api.close(); }
+  v.record.liveAdapter = await v.openAdapter();
+  const out = await api.open(v.record, {});
+  if (!out.ok) throw new Error("open failed: " + JSON.stringify(out));
+  return live();
+}
+const caretAt = (adapter, text, from, to = from) => {
+  const p = D().byId(adapter.document(), byText(adapter, text).id);
+  E().setSel(D().pos(p, from), D().pos(p, to));
+  return p;
+};
+const beforeinput = (inputType, data, extra) => v.fire(host(), "beforeinput", { inputType, data, ...extra });
+const keydown = (key, extra) => v.fire(host(), "keydown", { key, ...extra });
+
+const run = async () => {
+  // ---- the harness is the real thing ----
+  {
+    const adapter = await fresh();
+    test.assert(v.run("typeof L.ed.typeText === 'function' && typeof L.drawing.nudge === 'function'") && !!host() && !!doc.querySelector("#pages .img"),
+      "the real editor, drawing layer and a document with a picture are mounted");
+    caretAt(adapter, "最后一段", 0);
+    beforeinput("insertText", "好");
+    test.assert(byText(adapter, "好最后一段") && adapter.isDirty(), "baseline: typing at a paragraph's start reaches the model through the gate and the editor");
+    test.assert(host().getAttribute("tabindex") === "0" && scroller().getAttribute("tabindex") === null,
+      "the scrolling document is reachable from the keyboard as the scroller's one tab stop (axe scrollable-region-focusable)");
+  }
+
+  // ---- the window's chrome (owner rulings D1 / S1 / ⑤, 2026-10-29) ----
+  {
+    await fresh();
+    const win = doc.querySelector('[data-window="clioWrite"]');
+    test.assert(doc.querySelector("#clio-write-title").textContent === "搬家清单.docx", "S1: the title names the document only");
+    const bar = win.querySelector(".details-bar");
+    test.assert(!!bar.querySelector(".cw-view-pop") && !!bar.querySelector(".cw-zoom-pop") && !!bar.querySelector('[data-margin-rail-slot="clioWrite"]') && !!bar.querySelector(".cw-receipt"),
+      "S1: one document bar — view and zoom pop-ups, the margin-notes rail's named slot, the save state");
+    test.assert(bar.querySelectorAll(".cw-pop").length === 2 && ![...win.querySelectorAll("button")].some((button) => /clio_stage_native_commands|clio_write_mode_/.test(button.textContent)),
+      "D1: no mode switch and no in-window 「命令…」 pop-up anywhere in the window");
+    const caption = win.querySelector(".cw-caption");
+    test.assert(/^clio_write_status_words:\d+$/.test(caption.querySelector(".cw-caption-text").textContent)
+      && !/caption_express|caption_full|caption_flow/.test(caption.textContent) && caption.dataset.balloonHelp === "clio_write_balloon_status",
+      `⑤: the status bar says state only (${caption.textContent}); its how-to is Balloon Help`);
+    const pictures = [...doc.querySelectorAll("#pages .img")];
+    test.assert(pictures.length > 0 && pictures.every((node) => node.dataset.balloonHelp === "clio_write_lock_picture"),
+      "D1: a part ClioWrite cannot type into carries its lock in place (Balloon Help), not a mode");
+  }
+
+  // ---- pictures (N10): a click selects, the upstream handles appear, a corner
+  //      drag resizes as one named step; other objects stay swallowed ----
+  {
+    const adapter = await fresh();
+    const pp = D().byId(adapter.document(), byText(adapter, "新书架").id);
+    const picture = () => { const it = pp.runs.find((r) => r.t === "img"); return { w: it.w, h: it.h }; };
+    const before = picture();
+    const rev = adapter.getEditRevision();
+    const img = doc.querySelector("#pages .img");
+    v.fire(img, "mousedown", { button: 0, clientX: 4, clientY: 4 });
+    v.fire(img, "pointerdown", { button: 0, clientX: 4, clientY: 4 });
+    v.flush();
+    const handle = doc.querySelector(".obj-handles .oh-se");
+    test.assert(!!handle && !!E().objSel && E().objSel.it && E().objSel.it.t === "img" && !E().objSel.float,
+      "a click on a picture selects it and shows the upstream resize handles");
+    test.assert(adapter.getEditRevision() === rev && !adapter.isDirty(), "the click alone changes nothing in the file");
+    if (handle) {
+      v.fire(handle, "pointerdown", { button: 0, clientX: 10, clientY: 10 });
+      v.fire(doc, "pointermove", { clientX: 400, clientY: 400, buttons: 1 });
+      v.fire(doc, "pointerup", { button: 0, clientX: 400, clientY: 400 });
+    }
+    v.flush();
+    const after = picture();
+    test.assert(after.w > before.w && after.h > before.h && Math.abs(after.w / after.h - before.w / before.h) < 0.01,
+      `dragging a corner handle resizes the picture with the aspect locked (${before.w}×${before.h} → ${after.w}×${after.h})`);
+    test.assert(api.editHistory().undoLabel() === "clio_write_step_resize_picture",
+      `the resize is one named undo step 「调整图片大小」 (${api.editHistory().undoLabel()})`);
+    api.editHistory().undo();
+    const restored = picture();
+    test.assert(restored.w === before.w && restored.h === before.h, "one Undo takes the size back");
+  }
+  {
+    const adapter = await fresh();
+    const rev = adapter.getEditRevision();
+    const paraEl = host().querySelector(".p");
+    const shape = doc.createElement("span");
+    shape.className = "shp";
+    paraEl.append(shape);
+    v.fire(shape, "mousedown", { button: 0, clientX: 2, clientY: 2 });
+    v.fire(shape, "pointerdown", { button: 0, clientX: 2, clientY: 2 });
+    beforeinput("insertText", "形");
+    const shapeReceipt = doc.querySelector(".cw-receipt").textContent;
+    test.assert(E().objSel === null && adapter.getEditRevision() === rev && shapeReceipt.startsWith("clio_write_receipt_refused:clio_write_reason_image"),
+      `a press on a shape (.shp) is still swallowed: nothing selected, typing names the object (${shapeReceipt})`);
+    v.fire(doc, "pointerup", { button: 0, clientX: 2, clientY: 2 });
+    shape.remove();
+  }
+
+  // ---- floating object: arrow keys do not nudge, a press does not start a move ----
+  {
+    const adapter = await fresh();
+    const rev = adapter.getEditRevision();
+    let nudged = 0;
+    const original = v.run("L.drawing.nudge");
+    v.run("globalThis.__nudge = (key, pt) => { globalThis.__nudged = (globalThis.__nudged || 0) + 1; }");
+    v.run("L.drawing.nudge = globalThis.__nudge");
+    const p = caretAt(adapter, "最后一段", 0);
+    E().objSel = { p, o: 0, it: { float: true }, el: null, float: true };
+    keydown("ArrowRight");
+    nudged = v.run("globalThis.__nudged || 0");
+    v.context.__restore = original;
+    v.run("L.drawing.nudge = globalThis.__restore");
+    test.assert(nudged === 0 && adapter.getEditRevision() === rev, "arrow keys over a selected floating object do not nudge it");
+    E().objSel = null;
+  }
+
+  // ---- ⌃/⌘⇧Space and Insert ----
+  {
+    const adapter = await fresh();
+    const cell = adapter.tables()[0].rows[0][0].paragraphIds[0];
+    E().setSel(D().pos(D().byId(adapter.document(), cell), 0));
+    keydown(" ", { ctrlKey: true, shiftKey: true });
+    let cellText = adapter.tables()[0].rows[0][0].text;
+    const one = cellText.length === 3 && /^\s/.test(cellText) && adapter.isDirty();
+    keydown(" ", { metaKey: true, shiftKey: true });
+    cellText = adapter.tables()[0].rows[0][0].text;
+    test.assert(one && cellText.length === 4 && adapter.tables()[0].rows[1][0].text === "纸箱",
+      `⌃⇧Space and ⌘⇧Space type the narrow space into the cell's words (N10); the rest of the table stands (${JSON.stringify(cellText)})`);
+
+    const across = await fresh();
+    const a = D().byId(across.document(), byText(across, "这个周末").id);
+    const b = D().byId(across.document(), byText(across, "先装箱").id);
+    const paragraphsBefore = across.paragraphs().length;
+    E().setSel(D().pos(a, 1), D().pos(b, 1));
+    keydown(" ", { ctrlKey: true, shiftKey: true });
+    test.assert(across.paragraphs().length === paragraphsBefore - 1 && across.isDirty(),
+      "⌃⇧Space over a selection across paragraphs replaces it like typing: the two paragraphs join (one editing mode)");
+
+    const full = await fresh();
+    const pp = D().byId(full.document(), byText(full, "新书架").id);
+    const pictures = () => pp.runs.filter((r) => r.t === "img").length;
+    const had = pictures();
+    E().setSel(D().pos(pp, 0));
+    keydown("Insert");
+    E().setSel(D().pos(pp, 0));
+    beforeinput("insertText", "字");
+    test.assert(had === 1 && E().overtype === false, "the Insert key does not switch on overwrite mode");
+    test.assert(pictures() === had, "typing in front of a picture after Insert leaves the picture in the file");
+  }
+
+  // ---- Option+Backspace is delete-word on macOS, never Undo ----
+  {
+    const adapter = await fresh();
+    caretAt(adapter, "最后一段，什么格式都没有", 12);
+    const original = byText(adapter, "最后一段").text;
+    beforeinput("insertText", "X");
+    const typed = byText(adapter, "最后一段").text;
+    keydown("Backspace", { altKey: true });
+    const after = byText(adapter, "最后一段").text;
+    test.assert(typed !== original && after !== original && after.length < typed.length, `Option+Backspace deletes the word before the caret (not undo): "${after}"`);
+  }
+
+  // ---- Edit › Paste is execCommand('insertText'): beforeinput carries the newline ----
+  {
+    const full = await fresh();
+    caretAt(full, "最后一段，什么格式都没有", 0);
+    const n = full.paragraphs().length;
+    beforeinput("insertText", "甲\n乙");
+    test.assert(full.paragraphs().length === n + 1 && !/\n/.test(full.paragraphs().map((p) => p.text).join("")), "a two-line menu paste in the body splits into two paragraphs");
+
+    // In a table cell the lines are the table's structure: they join into the one cell paragraph.
+    const cellDoc = await fresh();
+    const cellPara = D().byId(cellDoc.document(), Number(cellDoc.tables()[0].rows[1][0].paragraphIds[0]));
+    E().setSel(D().pos(cellPara, 0), D().pos(cellPara, 0));
+    const rows = cellDoc.tables()[0].rows.length;
+    beforeinput("insertText", "甲\n乙");
+    const cellText = cellDoc.tables()[0].rows[1][0].text;
+    test.assert(cellDoc.tables()[0].rows.length === rows && /^甲 乙纸箱/.test(cellText) && !/\n/.test(cellText),
+      `a two-line paste into a table cell is flattened into the cell's one paragraph ("${cellText.slice(0, 8)}")`);
+  }
+
+  // ---- Safari: the Enter that confirms an IME candidate comes after compositionend ----
+  {
+    const mode = "one editing mode";
+    const adapter = await fresh();
+    caretAt(adapter, "最后一段，什么格式都没有", 0);
+    const count = adapter.paragraphs().length;
+    v.fire(host(), "compositionstart", { data: "" });
+    v.fire(host(), "compositionend", { data: "你好" });
+    const enter = keydown("Enter", { keyCode: 229, isComposing: false });
+    v.flush();
+    test.assert(adapter.paragraphs().length === count && enter.defaultPrevented, `${mode}: the Enter that confirms an input-method candidate (keyCode 229) does not split the paragraph`);
+    keydown("Enter", { keyCode: 13 });
+    const split = adapter.paragraphs().length;
+    test.assert(split === count + 1, `${mode}: a later real Enter splits the paragraph as usual`);
+  }
+
+  // ---- a refused composition keeps the upstream editor's state in step with the DOM ----
+  {
+    // A selection that holds the picture: typing over it is refused (READ_ONLY_IMAGE).
+    const adapter = await fresh();
+    const a = D().byId(adapter.document(), byText(adapter, "新书架").id);
+    E().setSel(D().pos(a, 0), D().pos(a, 2));
+    const before = snapshot(adapter);
+    const from = { a: { ...E().sel.a }, f: { ...E().sel.f } };
+    v.fire(host(), "compositionstart", { data: "" });
+    test.assert(E().composing === true && api.current() !== null, "a refused composition still marks the upstream editor as composing, so selectionchange cannot re-read a mutated DOM");
+    v.fire(doc, "selectionchange", {});
+    v.fire(host(), "compositionend", { data: "你" });
+    await tick();
+    test.assert(E().composing === false && snapshot(adapter) === before, "after it ends the document is untouched and the editor is no longer composing");
+    test.assert(E().sel && E().sel.a.p === from.a.p && E().sel.a.o === from.a.o && E().sel.f.p === from.f.p && E().sel.f.o === from.f.o, "the caret is back where the writer started");
+  }
+
+  // ---- composition that never ends (blur, element removed) ----
+  {
+    const adapter = await fresh();
+    caretAt(adapter, "最后一段，什么格式都没有", 3);
+    v.fire(host(), "compositionstart", { data: "" });
+    test.assert(E().composing === true, "an allowed composition is under way");
+    v.fire(host(), "blur", { bubbles: false });
+    v.fire(host(), "focusout", {});
+    v.flush();
+    test.assert(E().composing === false, "losing focus mid-composition releases the editor");
+    const answer = await api.close();
+    test.assert(answer === "clean", `the window can close afterwards (${answer})`);
+
+    // The element goes while the input method is open: no blur, no compositionend.
+    const again = await fresh();
+    caretAt(again, "最后一段，什么格式都没有", 3);
+    v.fire(host(), "compositionstart", { data: "" });
+    test.assert(E().composing === true, "(setup) a second composition is open");
+    const removed = scroller();
+    removed.remove();
+    const closed = await api.close();
+    test.assert(closed === "clean" && E().composing === false, `a window taken out of the page mid-composition still closes (${closed}) and leaves the editor idle`);
+    doc.querySelector('[data-window="clioWrite"] .clio-write-pane').append(removed);
+    const next = await fresh();
+    caretAt(next, "最后一段，什么格式都没有", 0);
+    beforeinput("insertText", "新");
+    test.assert(!!byText(next, "新最后一段") && api.current().dirty === true, "the next session types normally: nothing of the old composition is left");
+  }
+
+  // ---- a second docx opened elsewhere must not hijack this window's document ----
+  {
+    const adapter = await fresh();
+    const other = await v.openAdapter();   // binds the shared D.doc / D.hist to the other file
+    test.assert(D().doc === other.document() && D().doc !== adapter.document(), "(setup) another docx now owns the shared model");
+    const otherBefore = snapshot(other);
+    caretAt(adapter, "最后一段，什么格式都没有", 0);
+    beforeinput("insertText", "我");
+    test.assert(byText(adapter, "我最后一段") && snapshot(other) === otherBefore && D().doc === adapter.document(),
+      "typing here edits this window's file, never the other, and the shared model is bound back to it");
+    const text = host().textContent;
+    await v.openAdapter();
+    v.flush();
+    v.fire(host(), "keydown", { key: "ArrowLeft" });
+    test.assert(host().textContent === text || host().textContent.includes("我最后一段"), "the window still shows its own document after another file bound the model");
+  }
+
+  // ---- opening another file over a dirty one: Cancel keeps this window's own document ----
+  {
+    const adapter = await fresh();
+    caretAt(adapter, "最后一段，什么格式都没有", 0);
+    beforeinput("insertText", "改");
+    const second = { liveAdapter: await v.openAdapter(), mountedName: "另一份.docx", fileName: "另一份.docx" };
+    test.assert(D().doc === second.liveAdapter.document(), "(setup) the other file's adapter has bound the shared model");
+    v.modal.answers.push("cancel");
+    const out = await api.open(second, {});
+    test.assert(out.ok === false && out.reason === "cancelled" && D().doc === adapter.document() && api.current().mountedName === "搬家清单.docx",
+      "Cancel on the unsaved-edits question keeps the first file mounted and the shared model bound to it");
+    const before = snapshot(second.liveAdapter);
+    beforeinput("insertText", "再");
+    test.assert(!!byText(adapter, "改再最后一段") && snapshot(second.liveAdapter) === before, "and the next keystroke lands in the first file only");
+  }
+
+  // ---- the first-save list open, or a save in flight, when the window closes ----
+  {
+    const adapter = await fresh();
+    adapter.exportReport = async () => ({ converted: [], lost: [{ kind: "chart", detail: "一张图表 将丢失" }] });
+    caretAt(adapter, "最后一段，什么格式都没有", 0);
+    beforeinput("insertText", "存");
+    saves.length = 0;
+    v.fire(scroller(), "keydown", { key: "s", metaKey: true });
+    await tick();
+    const layer = doc.querySelector(".cw-layer");
+    test.assert(layer && !layer.hidden && !!layer.querySelector(".cw-alert"), "(setup) ⌘S with something to lose opens the first-save list");
+    v.modal.answers.push("no");
+    const answer = await api.close();
+    await tick();
+    test.assert(answer === "discarded" && layer.hidden === true && !layer.querySelector(".cw-alert"), "closing with 不存储 while the list is open removes the list and hides its layer");
+    test.assert(saves.length === 0, "and nothing is saved after the writer said 不存储");
+
+    const next = await fresh();
+    caretAt(next, "最后一段，什么格式都没有", 0);
+    beforeinput("insertText", "续");
+    const paragraphs = next.paragraphs().length;
+    keydown("Enter", {});
+    test.assert(v.run("!(L.ui.dialogOpen())") && byText(next, "续") && byText(next, "续").text === "续" && next.paragraphs().length === paragraphs + 1,
+      "the next document is not stuck behind a stale dialog (the editor's keys still work: Enter splits after 续)");
+  }
+  {
+    const adapter = await fresh();
+    caretAt(adapter, "最后一段，什么格式都没有", 0);
+    beforeinput("insertText", "飞");
+    let release;
+    hold.promise = new Promise((resolve) => { release = resolve; });
+    saves.length = 0;
+    v.fire(scroller(), "keydown", { key: "s", metaKey: true });
+    await tick();
+    test.assert(saves.length === 1, "(setup) a save is in flight");
+    v.modal.answers.push("no");
+    const answer = await api.close();
+    test.assert(answer === "cancelled" && api.current() !== null, `a window with a save in flight does not discard under it (${answer})`);
+    release();
+    hold.promise = null;
+    await tick();
+    v.modal.answers.push("no");
+    await api.close();
+  }
+
+  /* ================= M3 round 3: errors, IME and undo (S11-C2 / S11-C5 / S11-C8) ================= */
+  const receiptKey = () => doc.querySelector(".cw-receipt").textContent;
+  const reread = () => v.openAdapter(v.working().slice(), "reread.docx");
+  const bytesOf = (u8) => Array.from(u8).join(",");
+  const withRealHost = async (body) => {
+    const stub = w.AISystem6ClioWorks;
+    w.AISystem6ClioWorks = realHost;
+    try { return await body(); } finally { w.AISystem6ClioWorks = stub; }
+  };
+  const LAST = "最后一段，什么格式都没有";
+  const settle = async (done) => { for (let i = 0; i < 200 && !done(); i += 1) await tick(); };
+  const saveSettled = () => settle(() => !/saving$/.test(receiptKey()));
+
+  // C1 / C1b / C1c: typing while a save runs; a second ⌘S while it runs.
+  await withRealHost(async () => {
+    const adapter = await fresh();
+    caretAt(adapter, LAST, 0);
+    beforeinput("insertText", "甲");
+    const original = adapter.save.bind(adapter);
+    let calls = 0;
+    let release;
+    const held = new Promise((resolve) => { release = resolve; });
+    adapter.save = async () => { calls += 1; const out = await original(); await held; return out; };
+    keydown("s", { metaKey: true });
+    await tick();
+    test.assert(receiptKey() === "clio_write_receipt_saving" && calls === 1, `C1: ⌘S starts one save and the status bar says it is saving (${receiptKey()})`);
+    keydown("s", { metaKey: true });
+    await tick();
+    test.assert(calls === 1 && receiptKey() === "clio_write_receipt_saving", `C1c: a second ⌘S while saving is refused; adapter.save ran once (${calls})`);
+    caretAt(adapter, "甲最后", 1);
+    beforeinput("insertText", "乙");
+    test.assert(!!byText(adapter, "甲乙最后") && receiptKey() === "clio_write_receipt_saving", "C1b: typing during the save reaches the model and the receipt stays 「存储中，仍可输入」");
+    release();
+    await saveSettled();
+    test.assert(receiptKey() === "clio_write_receipt_saved_older" && adapter.isDirty() && api.current().dirty === true,
+      `C1: after the save the receipt reads 「已存储较早的修改，还有新修改」 and the document stays dirty (${receiptKey()})`);
+    const back = await reread();
+    test.assert(!!byText(back, "甲最后一段") && !byText(back, "甲乙"), "C1: the stored bytes are the snapshot taken when the save started (甲 in, 乙 not)");
+    test.assert(!!byText(adapter, "甲乙最后"), "C1: the typing done during the save is still in the window");
+    adapter.save = original;
+  });
+
+  // C5: the save fails.
+  await withRealHost(async () => {
+    const adapter = await fresh();
+    caretAt(adapter, LAST, 0);
+    beforeinput("insertText", "败");
+    adapter.save = async () => { throw new Error("synthetic encode failure"); };
+    const before = bytesOf(v.working());
+    v.modal.asked.length = 0;
+    keydown("s", { metaKey: true });
+    await saveSettled();
+    const alert = v.modal.asked.find((entry) => entry.kind === "alert");
+    test.assert(!!alert && /^clio_stage_native_save_failed/.test(alert.message), `C5: an alert says the save failed and the original is unchanged (${alert && alert.message})`);
+    test.assert(receiptKey() === "clio_write_receipt_failed" && adapter.isDirty() && bytesOf(v.working()) === before && !!byText(adapter, "败最后"),
+      `C5: receipt 「没能存储——修改还在窗口里」, still dirty, stored bytes unchanged, the edit still in the window (${receiptKey()})`);
+  });
+
+  // C2: while the first-save list is open nothing reaches the document.
+  {
+    const adapter = await fresh();
+    adapter.exportReport = async () => ({ converted: [], lost: [{ kind: "chart", detail: "一张图表 将丢失" }] });
+    caretAt(adapter, LAST, 0);
+    beforeinput("insertText", "清");
+    keydown("m", { metaKey: true });   // the 批注 panel is open behind the list (D2: in the rail)
+    test.assert(!!doc.querySelector(".doc-rail:not([hidden]) .cw-comments-panel:not([hidden]) .windoid-composer"), "(setup) the rail's 批注 panel is open");
+    saves.length = 0;
+    keydown("s", { metaKey: true });
+    await tick();
+    const layer = doc.querySelector(".cw-layer");
+    test.assert(!layer.hidden && !!layer.querySelector(".cw-alert"), "(setup) the first-save list is open");
+    const rev = adapter.getEditRevision();
+    const before = snapshot(adapter);
+    caretAt(adapter, "清最后", 1, 3);
+    const tries = {
+      typing: () => beforeinput("insertText", "X"),
+      paste: () => v.fire(host(), "paste", { clipboardData: { getData: () => "贴" } }),
+      "⌘Z": () => keydown("z", { metaKey: true }),
+      historyUndo: () => beforeinput("historyUndo"),
+      "⌘B": () => keydown("b", { metaKey: true }),
+      formatBold: () => beforeinput("formatBold"),
+      Enter: () => keydown("Enter", {}),
+      composition: async () => { v.fire(host(), "compositionstart", { data: "" }); v.fire(host(), "compositionend", { data: "你" }); await tick(); },
+      resolve: () => { const btn = doc.querySelector(".cw-comments-panel .windoid-thread .windoid-actions .btn:not(.windoid-reply)"); test.assert(!!btn, "(setup) the thread has its 解决 button"); if (btn) btn.dispatchEvent(v.make("click")); },
+      "⌘S": async () => { keydown("s", { metaKey: true }); await tick(); },
+    };
+    const changed = [];
+    for (const [name, action] of Object.entries(tries)) {
+      const at = adapter.getEditRevision();
+      await action();
+      if (adapter.getEditRevision() !== at) changed.push(name);
+    }
+    test.assert(changed.length === 0 && adapter.getEditRevision() === rev && snapshot(adapter) === before && adapter.comments().every((c) => !c.done),
+      `C2: typing, paste, ⌘Z / historyUndo, ⌘B / formatBold, Enter, an IME composition and a comment's 解决 change nothing while the list is open${changed.length ? ` — changed by: ${changed.join(", ")}` : ""}`);
+    test.assert(["edit.undo", "file.save", "format.bold", "format.heading.1", "file.revert"].every((id) => api.commandState(id).enabled === false) && saves.length === 0 && layer.querySelectorAll(".cw-alert").length === 1,
+      "C2: Undo, Save, Format and Revert are grey; a second ⌘S neither saves nor opens a second list");
+    layer.querySelector('[data-choice="cancel"]').dispatchEvent(v.make("click"));
+    await tick();
+    test.assert(layer.hidden && receiptKey() === "clio_write_receipt_not_saved" && adapter.isDirty(), "C2: Cancel closes the list; nothing stored, the edits kept");
+    if (!doc.querySelector(".doc-rail").hidden) doc.querySelector(".doc-rail-toggle").dispatchEvent(v.make("click"));
+  }
+
+  // D16 (N10 boundary): typing in a cell lands in its words; a press on a picture selects
+  // it, so typing then names the picture until an arrow key gives the caret back.
+  {
+    const adapter = await fresh();
+    const cell = adapter.tables()[0].rows[0][0].paragraphIds[0];
+    const cellPara = D().byId(adapter.document(), cell);
+    E().setSel(D().pos(cellPara, 0), D().pos(cellPara, 0));
+    beforeinput("insertText", "表");
+    test.assert(adapter.tables()[0].rows[0][0].text === "表项目" && adapter.isDirty(),
+      `D16: typing in a table cell lands in the cell's words (${adapter.tables()[0].rows[0][0].text})`);
+    api.editHistory().undo();
+    test.assert(adapter.tables()[0].rows[0][0].text === "项目", "D16: one Undo takes the cell's typing back");
+    const img = doc.querySelector("#pages .img");
+    v.fire(img, "mousedown", { button: 0, clientX: 4, clientY: 4 });
+    beforeinput("insertText", "图");
+    test.assert(receiptKey().startsWith("clio_write_receipt_refused:clio_write_reason_image") && adapter.tables()[0].rows[0][0].text === "项目",
+      `D16: typing after a click on a picture names the picture, not the cell caret (${receiptKey()})`);
+    v.fire(doc.querySelector("#pages"), "keydown", { key: "ArrowRight" });
+    test.assert(E().objSel === null && E().sel && E().sel.a.o === E().sel.f.o, "D16: an arrow key ends the picture selection and gives the caret back");
+    v.fire(doc, "pointerup", { button: 0, clientX: 4, clientY: 4 });
+  }
+
+  // D17: the editing area is a Tab stop, so keyboard focus is shown with the desk's ring (a whole shorthand, never a colour slot).
+  {
+    const css = readFileSync(resolveProjectPath("apps/desktop/styles/84-clio-write.css"), "utf8");
+    const rule = /\.clio-write-window \.cw-scroller \.pages:focus-visible\s*\{([^}]*)\}/.exec(css);
+    test.assert(!!rule && /outline:\s*var\(--system-focus-outline,\s*1px dotted var\(--ink\)\)\s*;/.test(rule[1]), "D17: #pages has a :focus-visible outline using --system-focus-outline as the whole shorthand");
+    test.assert(!/(?:color|background)[^;{}]*--system-focus-outline/.test(css), "D17: --system-focus-outline never sits inside a colour slot");
+  }
+
+  // B9: the first-save list for quire-convert-s11.docx names WHAT and WHERE in plain words, and a
+  // cancelled list (Esc, or Return on the default 取消 button) leaves 「没有存储」 until the next edit.
+  {
+    const CONVERT = new Uint8Array(readFileSync(resolveProjectPath("tests/fixtures/clioworks-s11/quire-convert-s11.docx")));
+    for (const route of ["Return", "Escape"]) {
+      v.modal.answers.length = 0;
+      if (api.current()) { if (api.current().dirty) v.modal.answers.push("no"); await api.close(); }
+      v.record.liveAdapter = await v.openAdapter(CONVERT.slice(), "quire-convert-s11.docx");
+      const out = await api.open(v.record, {});
+      test.assert(out.ok, `B9 ${route}: the convert fixture opens`);
+      const adapter = live();
+      caretAt(adapter, "这个周末要把东西搬到新家", 0);
+      beforeinput("insertText", "（周六）");
+      saves.length = 0;
+      keydown("s", { metaKey: true });
+      await tick();
+      const layer = doc.querySelector(".cw-layer");
+      const lines = [...layer.querySelectorAll(".cw-alert li")].map((li) => li.textContent);
+      if (route === "Return") {
+        test.assert(lines.length === 3 && lines.every((t) => /^clio_write_loss_line:/.test(t)), `B9b: every item has a where and a what (${JSON.stringify(lines)})`);
+        test.assert(lines.some((t) => /^clio_write_loss_line:clio_write_loss_at_table\|clio_write_loss_table_widths$/.test(t)) && lines.some((t) => /^clio_write_loss_line:clio_write_loss_at_paragraph:1\|搬家清单\|clio_write_loss_bookmark$/.test(t)) && lines.some((t) => /^clio_write_loss_line:clio_write_loss_at_document\|clio_write_loss_bookmarks:1$/.test(t)), `B9b: the table width change says 表格, the dropped bookmark says paragraph 1 and its words, and the document-wide bookmark tidy says 全文 (${JSON.stringify(lines)})`);
+        test.assert(!lines.some((t) => /lost_kind_|word\/|table-grid|range:/.test(t)), "B9b: no vague kind names, part paths or internal ids");
+      }
+      const cancel = layer.querySelector('[data-choice="cancel"]');
+      const before = snapshot(adapter);
+      if (route === "Escape") v.fire(layer.querySelector(".cw-alert"), "keydown", { key: "Escape" });
+      else cancel.dispatchEvent(v.make("click"));
+      await tick();
+      // Focus returning to the document moves the caret: that must not wash the receipt away.
+      caretAt(adapter, "最后一段", 0);
+      v.fire(doc, "selectionchange", {});
+      await tick();
+      test.assert(layer.hidden && saves.length === 0 && adapter.isDirty() && snapshot(adapter) === before, `B9a ${route}: cancel writes nothing and keeps the edits`);
+      test.assert(receiptKey() === "clio_write_receipt_not_saved", `B9a ${route}: the receipt still reads 没有存储 after the caret moved (${receiptKey()})`);
+      beforeinput("insertText", "续");
+      test.assert(receiptKey() === "clio_write_receipt_dirty", `B9a ${route}: the next edit returns the receipt to 有未保存的修改 (${receiptKey()})`);
+    }
+  }
+
+  // C3: an input method composing (synthetic composition events; real IME is a manual check, S11-C8).
+  {
+    const adapter = await fresh();
+    caretAt(adapter, LAST, 0, 2);
+    keydown("b", { metaKey: true });   // a step before the composition, so Undo has something to take
+    caretAt(adapter, LAST, 2);
+    const text = byText(adapter, LAST).text;
+    const count = adapter.paragraphs().length;
+    const nodes = [...host().querySelectorAll(".p")];
+    const sel = { a: { ...E().sel.a }, f: { ...E().sel.f } };
+    saves.length = 0;
+    v.fire(host(), "compositionstart", { data: "" });
+    v.fire(host(), "compositionupdate", { data: "n" });
+    v.fire(host(), "compositionupdate", { data: "ni" });
+    const keys = [
+      keydown("Enter", { isComposing: true, keyCode: 229 }),
+      keydown("s", { metaKey: true, isComposing: true, keyCode: 229 }),
+      keydown("e", { metaKey: true, isComposing: true, keyCode: 229 }),
+      keydown("z", { metaKey: true, isComposing: true, keyCode: 229 }),
+    ];
+    const undoMenu = api.editHistory();
+    const undone = undoMenu.undo();
+    v.selection.collapse(host(), 0);
+    v.fire(doc, "selectionchange", {});
+    await tick();
+    test.assert(keys.every((event) => !event.defaultPrevented) && saves.length === 0 && adapter.paragraphs().length === count,
+      "C3: during a composition Enter, ⌘S, ⌘E and ⌘Z are not intercepted: no split, no save");
+    test.assert(undone === false && undoMenu.canUndo() === false && byText(adapter, LAST).runs[0].b === true, "C3: Edit › Undo is unavailable while composing (the bold step before it stays)");
+    const same = [...host().querySelectorAll(".p")];
+    test.assert(same.length === nodes.length && same.every((node, i) => node === nodes[i]), "C3: the document DOM is not rebuilt while composing");
+    test.assert(E().sel && E().sel.a.p === sel.a.p && E().sel.a.o === sel.a.o && E().sel.f.o === sel.f.o, "C3: a selectionchange while composing does not move the caret");
+    v.fire(host(), "compositionend", { data: "你好" });
+    await tick();
+    test.assert(byText(adapter, LAST.slice(0, 2) + "你好") && api.editHistory().undoLabel() === "clio_write_step_typing", "C3: the committed text lands once, named 「键入」");
+    test.assert(api.editHistory().undo() === true && byText(adapter, LAST).text === text && api.editHistory().undoLabel() === "clio_write_step_bold", "C3: a composition is ONE undo step (the next Undo is the bold before it)");
+
+    // Blur mid-composition: the half-composed text never reaches the model, even if compositionend comes late.
+    const rev = adapter.getEditRevision();
+    caretAt(adapter, LAST, 2);
+    v.fire(host(), "compositionstart", { data: "" });
+    v.fire(host(), "compositionupdate", { data: "ban" });
+    const para = host().querySelector(".p");
+    if (para) para.append(doc.createTextNode("ban"));   // what the input method drew
+    v.fire(host(), "focusout", {});
+    v.flush();
+    v.fire(host(), "compositionend", { data: "半" });
+    await tick();
+    test.assert(adapter.getEditRevision() === rev && byText(adapter, LAST).text === text && !/ban/.test(host().textContent), "C3: blurring mid-composition commits nothing, and a late compositionend is dropped");
+  }
+
+  // F2: Chrome ends a composition on blur by firing compositionend (with its data) FIRST and
+  // focusout after it, in the same task. A blur mid-composition still commits nothing (S11-C8).
+  {
+    const adapter = await fresh();
+    caretAt(adapter, LAST, 2);
+    const rev = adapter.getEditRevision();
+    const text = byText(adapter, LAST).text;
+    v.fire(host(), "compositionstart", { data: "" });
+    v.fire(host(), "compositionupdate", { data: "ban" });
+    const para = host().querySelector(".p");
+    if (para) para.append(doc.createTextNode("ban"));   // what the input method drew
+    v.fire(host(), "compositionend", { data: "半" });   // Chrome commits first...
+    v.fire(host(), "focusout", {});                     // ...then the focus leaves
+    await tick();
+    test.assert(adapter.getEditRevision() === rev && byText(adapter, LAST).text === text && !/ban|半/.test(host().textContent) && E().composing === false,
+      `F2: compositionend then focusout (Chrome's blur order) commits nothing (rev ${rev} → ${adapter.getEditRevision()}, ${JSON.stringify((adapter.paragraphs().find((p) => p.text.includes("什么格式")) || {}).text)})`);
+    caretAt(adapter, LAST, 2);
+    v.fire(host(), "compositionstart", { data: "" });
+    v.fire(host(), "compositionend", { data: "好" });
+    await tick();
+    test.assert(!!byText(adapter, LAST.slice(0, 2) + "好") && api.editHistory().undoLabel() === "clio_write_step_typing",
+      "F2: an ordinary compositionend with the focus staying commits the text once, named 「键入」");
+  }
+
+  // C4: a system dialog is up (the close box's three choices): the surface's shortcuts do not fire.
+  {
+    const adapter = await fresh();
+    caretAt(adapter, LAST, 0);
+    beforeinput("insertText", "关");
+    const win = doc.querySelector('[data-window="clioWrite"]');
+    win.classList.add("window", "is-active");
+    let answer;
+    const original = w.showSystemModal;
+    w.showSystemModal = (message, kind) => { v.modal.asked.push({ message, kind }); doc.body.classList.add("has-system-modal"); return new Promise((resolve) => { answer = resolve; }); };
+    const closing = api.close();
+    await tick();
+    test.assert(doc.body.classList.contains("has-system-modal"), "(setup) the unsaved-close dialog is open");
+    const rev = adapter.getEditRevision();
+    saves.length = 0;
+    const railState = () => `${doc.querySelector(".doc-rail")?.hidden}|${doc.querySelector(".doc-rail-tab.is-active")?.dataset.railTab}`;
+    const railBefore = railState();
+    for (const target of [host(), doc.body]) {
+      for (const key of ["e", "s", "z", "m", "b"]) v.fire(target, "keydown", { key, metaKey: true });
+    }
+    beforeinput("insertText", "Y");
+    await tick();
+    test.assert(!("mode" in api.current()) && saves.length === 0 && adapter.getEditRevision() === rev && railState() === railBefore && !doc.querySelector(".windoid.cw-comments-windoid"),
+      `C4: with the dialog open ⌘E / ⌘S / ⌘Z / ⌘M / ⌘B and typing do nothing behind it (rev ${rev} → ${adapter.getEditRevision()})`);
+    // F1: the desk's Edit › Undo / Redo (registerEditHistory('clioWrite') → editHistory().undo()) is a
+    // second route to the same history; it too stands down behind the dialog.
+    const history = api.editHistory();
+    const undone = history ? history.undo() : null;
+    const redone = history ? history.redo() : null;
+    await tick();
+    test.assert(undone === false && redone === false && history.canUndo() === false && api.commandState("edit.undo").enabled === false
+      && adapter.getEditRevision() === rev && !!byText(adapter, "关" + LAST),
+      `F1: with the dialog open Edit › Undo from the menu bar does nothing (undo ${undone}, rev ${rev} → ${adapter.getEditRevision()})`);
+    test.assert(api.commandState("edit.undo").reason === "clio_write_reason_dialog", `F1: the disabled Undo says why (${api.commandState("edit.undo").reason})`);
+    doc.body.classList.remove("has-system-modal");
+    answer("cancel");
+    test.assert(await closing === "cancelled" && api.current().dirty, "C4: Cancel keeps the window and its edits");
+    test.assert(api.editHistory().canUndo() === true, "F1: once the dialog is gone Edit › Undo is offered again");
+    w.showSystemModal = original;
+    win.classList.remove("is-active");
+  }
+
+  // S11-C2: undo is the codec's own history, step by named step.
+  await withRealHost(async () => {
+    const adapter = await fresh();
+    const text = byText(adapter, LAST).text;
+    caretAt(adapter, LAST, 0);
+    for (const ch of ["一", "二", "三"]) beforeinput("insertText", ch);
+    test.assert(byText(adapter, "一二三最后") && api.editHistory().undoLabel() === "clio_write_step_typing", "S11-C2: three keystrokes in one paragraph are one step named 「键入」");
+    api.editHistory().undo();
+    test.assert(byText(adapter, LAST).text === text && api.editHistory().canUndo() === false, "S11-C2: one Undo takes back the whole run of typing");
+    api.editHistory().redo();
+    caretAt(adapter, "一二三最后", 0, 3);
+    keydown("b", { metaKey: true });
+    test.assert(api.editHistory().undoLabel() === "clio_write_step_bold", "S11-C2: ⌘B is its own step, 「粗体」");
+    v.fire(doc.querySelector(".cw-ruler-pops .cw-pop"), "click");
+    const heading = doc.querySelector('.cw-menu [data-menu-command="format.heading.1"]');
+    heading.dispatchEvent(v.make("click"));
+    test.assert(byText(adapter, "一二三最后").headingLevel === 1 && api.editHistory().undoLabel() === "clio_write_step_heading_1", "S11-C2: Heading 1 from the ruler is its own step, 「标题 1」");
+
+    // Save mid-way through a run of typing: Undo takes back only what came after the save.
+    caretAt(adapter, "一二三最后", 3);
+    beforeinput("insertText", "四");
+    keydown("s", { metaKey: true });
+    await saveSettled();
+    test.assert(!adapter.isDirty() && api.editHistory().canUndo(), "S11-C2: saving keeps the undo history");
+    beforeinput("insertText", "五");   // same paragraph, same caret, straight after the save
+    test.assert(adapter.isDirty() && byText(adapter, "一二三四五最后"), "(setup) typing goes on after the save");
+    api.editHistory().undo();
+    test.assert(byText(adapter, "一二三四最后") && !byText(adapter, "一二三四五"),
+      `S11-C2: the first Undo after a save takes back only the typing done since the save (${byText(adapter, "一二三").text.slice(0, 6)})`);
+    test.assert(adapter.isDirty() && api.current().dirty === true, "S11-C2: dirty follows the revision, not the text: after Undo the document is dirty");
+    api.editHistory().undo();
+    test.assert(byText(adapter, "一二三最后") && !byText(adapter, "一二三四"), "S11-C2: Undo goes on past the save point");
+
+    // Revert to Saved: a fresh model from the stored bytes; nothing to undo.
+    const before = v.record.liveAdapter;
+    v.modal.answers.push("yes");
+    // D1: 复原到上次存储… is the File menu's row (the in-window 命令… pop-up is gone).
+    v.menu("clio-write-revert").run();
+    await settle(() => v.record.liveAdapter !== before);
+    test.assert(v.record.liveAdapter !== before && !api.current().dirty && api.editHistory().canUndo() === false && !!byText(v.record.liveAdapter, "一二三四最后"),
+      "S11-C2: 复原到上次存储 reads the stored bytes back and leaves nothing to undo");
+  });
+
+  // S11-C8: a command from the ruler checks the selection it was opened on.
+  {
+    const adapter = await fresh();
+    caretAt(adapter, LAST, 0, 2);
+    v.fire(doc.querySelector(".cw-ruler-pops .cw-pop"), "click");
+    const sel = { a: { ...E().sel.a }, f: { ...E().sel.f } };
+    doc.querySelector('.cw-menu [data-menu-command="format.heading.2"]').dispatchEvent(v.make("click"));
+    test.assert(byText(adapter, LAST).headingLevel === 2 && E().sel && E().sel.a.p === sel.a.p && E().sel.a.o === sel.a.o && E().sel.f.o === sel.f.o,
+      "S11-C8: a heading chosen from the ruler applies to the selection it was opened on, and the selection is the same afterwards");
+
+    caretAt(adapter, LAST, 0, 2);
+    v.fire(doc.querySelector(".cw-ruler-pops .cw-pop"), "click");
+    test.assert(!!doc.querySelector(".cw-menu"), "(setup) the style pop-up is open");
+    beforeinput("insertText", "换");   // the document changes while the pop-up is open
+    const rev = adapter.getEditRevision();
+    const level = byText(adapter, "换").headingLevel;
+    const item = doc.querySelector('.cw-menu [data-menu-command="format.heading.3"]');
+    if (item) item.dispatchEvent(v.make("click"));
+    test.assert(adapter.getEditRevision() === rev && byText(adapter, "换").headingLevel === level && receiptKey() === "clio_write_receipt_refused:clio_write_reason_reselect",
+      `S11-C8: a selection that the document has changed under is not guessed: the command does nothing and asks to select again (${receiptKey()})`);
+  }
+
+  // D2 / S2: one 旁注栏 per window — 修订 · 批注 · 比较 · 字数 · 字体 as the desk's
+  // tablist, one panel at a time, following the window's current document. The
+  // review side path's lists ride their own lazy loader; this contract loads it
+  // the way config.js does, after ClioWrite.
+  {
+    v.load(["app/vendor/clioworks-v3/quire-review.js", "app/features/clio-write-review.js", "app/features/clio-write-word-count.js", "app/core/word-diff.js", "app/features/clio-write-compare.js"]);
+    const adapter = await fresh();
+    const win = doc.querySelector('[data-window="clioWrite"]');
+    const rails = win.querySelectorAll(".doc-rail");
+    const rail = rails[0];
+    const toggle = win.querySelector('[data-margin-rail-slot="clioWrite"] .doc-rail-toggle');
+    test.assert(rails.length === 1 && !!toggle && !win.querySelector('[data-margin-rail-slot="clioWrite"]').hidden && rail.parentNode === win.querySelector(".clio-write-pane"),
+      "D2: one rail in the window, on the document pane, its toggle in the document bar's named slot");
+    const tabs = () => [...rail.querySelectorAll('.system-tabs[role="tablist"] > .system-tab[role="tab"]')];
+    test.assert(tabs().map((tab) => tab.dataset.railTab).join(" ") === "revisions comments compare words fonts",
+      `D2: the rail's tabs are 修订 · 批注 · 比较 · 字数 · 字体, in that order (${tabs().map((tab) => tab.dataset.railTab).join(" ")})`);
+    if (!rail.hidden) toggle.dispatchEvent(v.make("click"));   // an earlier case left it open
+    test.assert(rail.hidden && toggle.getAttribute("aria-expanded") === "false" && !win.querySelector(".clio-write-pane").classList.contains("is-doc-rail-open"),
+      "D2: collapsed, only the toggle is left");
+    const shown = () => [...rail.querySelectorAll(".doc-rail-panel")].filter((panel) => !panel.hidden);
+    const current = () => tabs().find((tab) => tab.getAttribute("aria-selected") === "true")?.dataset.railTab;
+    // 审阅's rows open the rail on the matching tab, one panel at a time.
+    const rows = [["clio-write-revisions", "revisions", ".cw-rev-commands"], ["clio-write-comment", "comments", ".windoid-composer"], ["clio-write-compare", "compare", "input[data-compare-pick]"], ["clio-write-word-count", "words", ".windoid-count"]];
+    for (const [action, tab, part] of rows) {
+      v.menu(action).run();
+      await tick();
+      const panels = shown();
+      test.assert(!rail.hidden && current() === tab && panels.length === 1 && panels[0].dataset.railPanel === tab && !!panels[0].querySelector(part),
+        `D2: 审阅 › ${action} opens the rail on its own tab (${current()}), the one panel showing, with its list drawn (${panels.map((panel) => panel.dataset.railPanel).join(",")})`);
+    }
+    test.assert(!doc.querySelector(".windoid.cw-comments-windoid, .windoid.cw-revisions-windoid, .windoid.cw-word-count-windoid"),
+      "D2: nothing of the four opens as a floating windoid any more");
+    const revPanel = rail.querySelector('[data-rail-panel="revisions"]');
+    test.assert(revPanel.classList.contains("cw-revisions-panel") && revPanel.querySelectorAll(".cw-rev-commands .btn").length >= 4,
+      "the 修订 panel carries the list's command row (接受全部 · 拒绝全部 · ↑ · ↓ · 署名…)");
+    // A tab press shows its panel; the tab strip's arrows walk the tabs.
+    tabs().find((tab) => tab.dataset.railTab === "fonts").dispatchEvent(v.make("click"));
+    test.assert(current() === "fonts" && shown().length === 1 && shown()[0].dataset.railPanel === "fonts" && shown()[0].querySelector(".windoid-empty, .cw-fonts-list"),
+      "D2: the 字体 tab shows the substituted fonts (or says there are none)");
+    v.fire(rail.querySelector(".doc-rail-tabs"), "keydown", { key: "ArrowLeft" });
+    test.assert(current() === "words" && shown()[0].dataset.railPanel === "words", "D2: ← moves to the tab before");
+    test.assert(rail.querySelector(".doc-rail-caption").textContent === "clioworks_rail_follows:搬家清单.docx", "D2: the rail names the file it follows");
+    // Rebind swaps the content: the word count now counts the reverted document.
+    const line = () => rail.querySelector('[data-rail-panel="words"] .windoid-count')?.textContent || "";
+    caretAt(adapter, LAST, 0);
+    for (const ch of "增加一些字") beforeinput("insertText", ch);
+    await tick();
+    const edited = line();
+    v.record.liveAdapter = await v.openAdapter();
+    v.modal.answers.push("yes");
+    await v.menu("clio-write-revert").run();
+    await tick();
+    test.assert(!!edited && !!line() && line() !== edited && current() === "words" && !rail.hidden,
+      `D2: a rebind swaps the panel to the new document's numbers, the rail still on 字数 (${edited} → ${line()})`);
+    // The toggle folds the rail away; the document takes the width back.
+    toggle.dispatchEvent(v.make("click"));
+    test.assert(rail.hidden && shown().length === 1 && toggle.getAttribute("aria-expanded") === "false", "D2: the toggle collapses the rail to itself");
+    // A half-typed reply survives the rail's own tabs and toggle: the 批注 panel is
+    // not drawn again under it, so the text never moves into the new-comment box.
+    tabs().find((tab) => tab.dataset.railTab === "comments").dispatchEvent(v.make("click"));
+    const commentsPanel = rail.querySelector('[data-rail-panel="comments"]');
+    const replyBtn = commentsPanel.querySelector(".windoid-thread .windoid-reply");
+    test.assert(!!replyBtn, "(setup) the 批注 panel lists a thread with its 回复 button");
+    if (replyBtn) {
+      replyBtn.dispatchEvent(v.make("click"));
+      const field = commentsPanel.querySelector(".windoid-thread .windoid-composer textarea");
+      field.value = "半句回复";
+      v.fire(field, "input");
+      const replyKept = () => commentsPanel.querySelector(".windoid-thread .windoid-composer textarea")?.value === "半句回复"
+        && commentsPanel.querySelectorAll(".windoid-composer").length === 1;
+      tabs().find((tab) => tab.dataset.railTab === "words").dispatchEvent(v.make("click"));
+      tabs().find((tab) => tab.dataset.railTab === "comments").dispatchEvent(v.make("click"));
+      const afterTabs = replyKept();
+      toggle.dispatchEvent(v.make("click"));
+      toggle.dispatchEvent(v.make("click"));
+      test.assert(afterTabs && replyKept() && !rail.hidden,
+        "D2: a half-typed reply stays in its thread's composer across a tab switch and a fold of the rail (no new-comment box takes it)");
+      commentsPanel.querySelector(".windoid-thread .windoid-composer .btn:not(.default)")?.dispatchEvent(v.make("click"));
+    }
+    if (!rail.hidden) toggle.dispatchEvent(v.make("click"));
+  }
+
+  // The first-save list names what is lost in plain words, never the codec's kind codes.
+  {
+    const adapter = await fresh();
+    adapter.exportReport = async () => ({ converted: [{ kind: "formatting", what: "formatting", detail: "Some text formatting could not be retained: x" }], lost: [{ kind: "object", what: "object", detail: "" }, { kind: "part", what: "part", detail: "customXml" }] });
+    caretAt(adapter, LAST, 0);
+    beforeinput("insertText", "词");
+    v.fire(scroller(), "keydown", { key: "s", metaKey: true });
+    await tick();
+    const shown = [...doc.querySelectorAll(".cw-layer .cw-alert li")].map((li) => li.textContent);
+    test.assert(shown.length === 3 && !shown.some((text) => /\b(object|part|formatting)\b/.test(text))
+      && shown.join("|") === "clio_write_loss_line:clio_write_loss_at_document|clio_write_lost_kind_formatting|clio_write_loss_line:clio_write_loss_at_document|clio_write_lost_kind_object|clio_write_loss_line:clio_write_loss_at_document|clio_write_lost_kind_part",
+      `the first-save list says what kind of thing in the writer's words (${shown.join(" | ")})`);
+    const cancel = doc.querySelector('.cw-alert [data-choice="cancel"]');
+    if (cancel) cancel.dispatchEvent(v.make("click"));
+    await tick();
+  }
+};
+
+try {
+  await run();
+} catch (error) {
+  test.assert(false, `the contract ran to the end: ${error && error.stack || error}`);
+}
+test.finish();

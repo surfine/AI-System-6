@@ -1,0 +1,193 @@
+// Unified model failure → user-facing recovery mapping.
+//
+// Raw HTTP codes, fetch failures and stack traces belong in the console and
+// System Status detail, never in ordinary UI. Every user-visible model error
+// is a pair: what happened, then what to do next, and the recovery action must
+// actually execute (a shared notification action, not a text-only hint).
+
+const modelRecoveryKinds = Object.freeze({
+  invalidCredentials: Object.freeze({
+    messageKey: "ai_error_invalid_credentials",
+    actionKey: "ai_action_reconnect",
+    actionId: "open-cloud-ai-settings",
+    diagnosticCode: "invalid-credentials",
+  }),
+  modelUnavailable: Object.freeze({
+    messageKey: "ai_error_model_unavailable",
+    actionKey: "ai_action_choose_model",
+    actionId: "open-cloud-ai-settings",
+    diagnosticCode: "model-unavailable",
+  }),
+  busy: Object.freeze({
+    messageKey: "ai_error_busy",
+    actionKey: "ai_action_retry",
+    actionId: "retry-current-ai-action",
+    diagnosticCode: "service-busy",
+  }),
+  connectionFailed: Object.freeze({
+    messageKey: "ai_error_connection_failed",
+    actionKey: "ai_action_check_local",
+    actionId: "open-local-ai-settings",
+    diagnosticCode: "connection-failed",
+  }),
+  timeout: Object.freeze({
+    messageKey: "ai_error_timeout",
+    actionKey: "ai_action_retry",
+    actionId: "retry-current-ai-action",
+    diagnosticCode: "timeout",
+  }),
+  unknown: Object.freeze({
+  messageKey: "ai_error_unknown",
+    actionKey: "ai_action_view_connection",
+    actionId: "open-cloud-ai-settings",
+    diagnosticCode: "unknown",
+  }),
+  // The site allowance running out is not a failure to retry: it is the point
+  // where a writer who kept asking has shown they want more, and the next step
+  // is their own key or a local model. Both live behind the same settings.
+  // Subscription CLIs (docs/SUBSCRIPTION-CLI.md): missing or signed out, a used-up
+  // plan, or an image it cannot take. The next step is always a switch.
+  subscriptionUnavailable: Object.freeze({
+    messageKey: "ai_error_subscription_cli_unavailable",
+    actionKey: "ai_action_switch_ai",
+    actionId: "open-cloud-ai-settings",
+    diagnosticCode: "subscription-cli-unavailable",
+  }),
+  subscriptionQuota: Object.freeze({
+    messageKey: "ai_error_subscription_cli_quota",
+    actionKey: "ai_action_switch_ai",
+    actionId: "open-cloud-ai-settings",
+    diagnosticCode: "subscription-cli-quota",
+  }),
+  subscriptionImages: Object.freeze({
+    messageKey: "ai_error_subscription_cli_images",
+    actionKey: "ai_action_switch_ai",
+    actionId: "open-cloud-ai-settings",
+    diagnosticCode: "subscription-cli-images",
+  }),
+  quotaExhausted: Object.freeze({
+    messageKey: "cloud_shared_limit",
+    actionKey: "ai_action_bring_own_ai",
+    actionId: "open-cloud-ai-settings",
+    diagnosticCode: "allowance-exhausted",
+  }),
+});
+
+function classifyModelFailure(error, context = {}) {
+  const status = Number(
+    context.status ?? error?.status ?? error?.statusCode ?? error?.response?.status ?? 0
+  );
+  const code = String(error?.code || error?.cause?.code || error?.cause?.cause?.code || "").toUpperCase();
+  const message = String(error?.message || "").toLowerCase();
+  const detail = String(error?.cause?.message || "").toLowerCase();
+  const combined = `${message} ${detail}`;
+
+  if (/subscription_cli_(?:unavailable|auth)/.test(combined) || /SUBSCRIPTION_CLI_(?:UNAVAILABLE|AUTH)/.test(code)) return "subscriptionUnavailable";
+  if (/subscription_cli_quota/.test(combined) || code === "SUBSCRIPTION_CLI_QUOTA") return "subscriptionQuota";
+  if (/subscription_cli_images_unsupported/.test(combined) || code === "SUBSCRIPTION_CLI_IMAGES_UNSUPPORTED") return "subscriptionImages";
+  if (status === 401 || status === 403) return "invalidCredentials";
+  if (/shared_cloud_(?:session_limit|daily_request_limit|daily_token_limit)/.test(combined)) return "quotaExhausted";
+  if (status === 404 || /unknown model|no such model|model ["']?[\w.-]+["']? not found/.test(combined)) {
+    return "modelUnavailable";
+  }
+  if (status === 429 || /rate.?limit|too many requests|quota exceeded/.test(combined)) return "busy";
+  if (
+    code === "ECONNREFUSED"
+    || code === "ECONNRESET"
+    || code === "ENOTFOUND"
+    || code === "ENETUNREACH"
+    || /fetch failed|failed to fetch|networkerror|network error|offline|no internet|econnrefused|econnreset|enotfound/.test(combined)
+  ) {
+    return "connectionFailed";
+  }
+  if (code === "ETIMEDOUT" || /timeout|timed out|aborted|did not respond/.test(combined) || context.timeout === true) {
+    return "timeout";
+  }
+  return "unknown";
+}
+
+function modelConnectionFailure(error, context = {}) {
+  const kind = classifyModelFailure(error, context);
+  const recovery = modelRecoveryKinds[kind];
+  if (!recovery) return recovery;
+  if (kind === "busy" || kind === "timeout") return recovery;
+  // Settings recovery routes by the failing route: local model failures open
+  // Local AI settings, cloud / Website AI failures open Cloud settings.
+  const routed = {
+    ...recovery,
+    actionId: context.kind === "local" ? "open-local-ai-settings" : "open-cloud-ai-settings",
+  };
+  if (kind === "connectionFailed") {
+    routed.actionKey = context.kind === "local" ? "ai_action_check_local" : "ai_action_check_connection";
+  }
+  return routed;
+}
+
+// Owner-aware retry registry: the global retry action re-runs the actual
+// failing AI action (Draft Desk request, adjustment apply, ClioTalk submit),
+// never a fixed window. Registration carries the owner project / conversation
+// so a stale context can never re-run an old prompt in a new project.
+let lastRetryableAiAction = null;
+let retryInFlight = false;
+
+function registerRetryableAiAction({ owner = "", projectId = "", conversationId = "", callback } = {}) {
+  lastRetryableAiAction = { owner, projectId, conversationId, callback };
+}
+
+function clearRetryableAiAction(owner = "") {
+  if (!owner || lastRetryableAiAction?.owner === owner) lastRetryableAiAction = null;
+}
+
+function retryContextIsStillValid(action) {
+  const activeProject = typeof getActiveProject === "function" ? getActiveProject() : null;
+  if (action.projectId && action.projectId !== activeProject?.id) return false;
+  if (action.conversationId && typeof activeConversationFile !== "undefined" && activeConversationFile?.id !== action.conversationId) {
+    return false;
+  }
+  return true;
+}
+
+async function runRetryableAiAction() {
+  if (retryInFlight) return false;
+  const action = lastRetryableAiAction;
+  if (!action || typeof action.callback !== "function") return false;
+  if (!retryContextIsStillValid(action)) {
+    if (typeof setStatus === "function") setStatus(t("retry_context_stale"));
+    return false;
+  }
+  retryInFlight = true;
+  try {
+    const result = await action.callback();
+    if (result !== false) clearRetryableAiAction(action.owner);
+    return result !== false;
+  } catch (error) {
+    // A rejected callback must never surface as an unhandled rejection; the
+    // failure presenter re-registers the recovery path.
+    console.warn("Retryable AI action failed.", error);
+    return false;
+  } finally {
+    retryInFlight = false;
+  }
+}
+
+function pushModelRecoveryNotification(error, context = {}) {
+  const recovery = modelConnectionFailure(error, context);
+  if (!recovery || typeof t !== "function") return "";
+  const text = `${t(recovery.messageKey)} ${t(recovery.actionKey)}`;
+  if (typeof pushSystemNotification !== "function") return "";
+  return pushSystemNotification(text, {
+    actionId: recovery.actionId,
+    actionLabelKey: recovery.actionKey,
+    state: "error",
+  });
+}
+
+window.AISystem6ModelUserErrors = Object.freeze({
+  kinds: modelRecoveryKinds,
+  classify: classifyModelFailure,
+  failure: modelConnectionFailure,
+  notify: pushModelRecoveryNotification,
+  registerRetryable: registerRetryableAiAction,
+  clearRetryable: clearRetryableAiAction,
+  runRetryable: runRetryableAiAction,
+});

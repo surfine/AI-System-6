@@ -1,0 +1,541 @@
+// Startup orchestration for app.js.
+
+let bootInProgress = false;
+
+function registerRuntimeRenderTasks() {
+  const tasks = {
+    // The window name is optional and is what lets a hidden window keep its
+    // pending repaint until it is shown again; a task with no owner runs as
+    // before.
+    projectLabels: [updateProjectLabels, "projects"],
+    projectDisks: [renderProjectDisks, "projects"],
+    documents: [renderDocuments, "documents"],
+    scraps: [renderScraps, "scrapbook"],
+    trash: [renderTrash, "trash"],
+    projectCd: [renderProjectCd, "projectCd"],
+    projectReferences: [renderProjectReferences, "projects"],
+    mountedTextDisk: renderMountedTextDisk,
+    contextPanel: renderContextPanel,
+    pipeline: renderPipeline,
+    readerTabs: renderReaderTabs,
+    menuState: updateMenuState,
+    menuStatus: updateMenuStatus,
+    aboutMacintosh: renderAboutMacintosh,
+    localModelState: renderLocalModelState,
+  };
+  Object.entries(tasks).forEach(([task, entry]) => {
+    const [handler, windowName] = Array.isArray(entry) ? entry : [entry, ""];
+    if (typeof handler === "function") {
+      window.AISystem6Runtime?.registerRenderTask?.(task, handler, windowName ? { windowName } : {});
+    }
+  });
+}
+
+// Sad Mac recovery must work even while boot() is still awaiting a hung
+// promise. Guarding on bootInProgress left Retry / Start-without-windows as
+// dead controls on iPhone (stall → Sad Mac → taps do nothing).
+const BOOT_SKIP_SESSION_KEY = "ai-system6-boot-skip-session";
+
+function forceBootReload() {
+  try {
+    bootInProgress = false;
+  } catch {}
+  window.location.reload();
+}
+
+async function retryBoot() {
+  // A fresh runtime is the only reliable retry: partial boot state, listeners,
+  // timers and lazy-module state are discarded by reloading.
+  forceBootReload();
+  return true;
+}
+
+// Safe-mode-lite: clear only the Working Session (windows, cursor, scroll
+// scene), never projects, files, or IndexedDB data, then retry startup.
+async function startBootWithoutSession() {
+  try {
+    sessionStorage.setItem(BOOT_SKIP_SESSION_KEY, "1");
+  } catch {}
+  try {
+    // IndexedDB can be the hang that put us on Sad Mac — do not wait on it.
+    await Promise.race([
+      clearWorkingSession().catch(() => {}),
+      new Promise((resolve) => setTimeout(resolve, 1200)),
+    ]);
+  } catch (error) {
+    console.warn("Could not clear the Working Session for safe startup.", error);
+  }
+  forceBootReload();
+  return true;
+}
+
+function consumeBootSkipSessionFlag() {
+  try {
+    if (sessionStorage.getItem(BOOT_SKIP_SESSION_KEY) === "1") {
+      sessionStorage.removeItem(BOOT_SKIP_SESSION_KEY);
+      return true;
+    }
+  } catch {}
+  return false;
+}
+
+function wireBootFailureActions() {
+  const retryControl = document.getElementById("boot-retry");
+  if (!retryControl || retryControl.dataset.wired === "true") return;
+  retryControl.dataset.wired = "true";
+  retryControl.addEventListener("click", () => retryBoot());
+  document.getElementById("boot-without-session")?.addEventListener("click", () => startBootWithoutSession());
+  document.getElementById("boot-recovery")?.addEventListener("click", () => openBootRecovery());
+}
+
+async function bootRecoveryStatus() {
+  let storage = "unavailable";
+  let session = "unavailable";
+  let aiConfig = "unavailable";
+  let projectsCount = 0;
+  try {
+    await ensureRecoveryStorage().catch(() => {});
+    const status = await window.AISystem6RecoveryStorage?.recoveryStorageStatus?.() || { readable: false, projectCount: 0 };
+    storage = status.readable ? "readable" : "unavailable";
+    projectsCount = status.projectCount;
+  } catch {
+    storage = "unavailable";
+  }
+  try {
+    const platform = await window.AISystem6WebPlatform?.projectStorageSnapshot?.();
+    if (platform?.supported) {
+      storage = platform.persistent ? "persistent" : "managed";
+    }
+  } catch {}
+  try {
+    // Any disk's scene counts, not just the mounted one.
+    await migrateWorkingSessionStorage();
+    session = (await listWorkingSessionScopeKeys()).length ? "available" : "unavailable";
+  } catch {}
+  try {
+    aiConfig = localStorage.getItem("ai-system6-cloud-config") ? "available" : "unavailable";
+  } catch {}
+  return {
+    storage,
+    projectsCount,
+    session,
+    aiConfig,
+  };
+}
+
+let recoveryProjectsCache = [];
+let selectedRecoveryProjectId = "";
+
+async function renderRecoveryProjectList() {
+  const list = document.getElementById("boot-recovery-projects-list");
+  if (!list) return;
+  await ensureRecoveryStorage().catch(() => {});
+  recoveryProjectsCache = await window.AISystem6RecoveryStorage?.listRecoverableProjects?.() || [];
+  list.replaceChildren();
+  if (!recoveryProjectsCache.length) {
+    const empty = document.createElement("p");
+    empty.className = "finder-operation-lede";
+    empty.textContent = t("boot_recovery_no_projects");
+    list.append(empty);
+    selectedRecoveryProjectId = "";
+    return;
+  }
+  if (!selectedRecoveryProjectId || !recoveryProjectsCache.some((project) => project.id === selectedRecoveryProjectId)) {
+    selectedRecoveryProjectId = recoveryProjectsCache[0].id;
+  }
+  recoveryProjectsCache.forEach((project) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "finder-operation-item btn";
+    button.dataset.recoveryProjectId = project.id;
+    button.setAttribute("aria-pressed", String(project.id === selectedRecoveryProjectId));
+    const copy = document.createElement("span");
+    copy.className = "finder-operation-item-copy";
+    const name = document.createElement("b");
+    name.textContent = project.name;
+    const meta = document.createElement("small");
+    meta.textContent = project.updatedAt || "";
+    copy.append(name, meta);
+    button.append(copy);
+    button.addEventListener("click", () => {
+      selectedRecoveryProjectId = project.id;
+      renderRecoveryProjectList();
+    });
+    list.append(button);
+  });
+}
+
+function openBootRecovery() {
+  const dialog = document.getElementById("boot-recovery-modal");
+  if (!dialog || typeof dialog.showModal !== "function") return;
+  const note = document.getElementById("boot-recovery-note");
+  const label = (available) => t(available ? "boot_recovery_available" : "boot_recovery_unavailable");
+  const storageLabel = (status) => ({
+    persistent: t("project_storage_persistent"),
+    managed: t("project_storage_managed"),
+    unavailable: t("project_storage_unavailable"),
+  }[status.storage] || t("boot_recovery_available"));
+  const renderStatus = async () => {
+    const status = await bootRecoveryStatus();
+    document.getElementById("boot-recovery-storage").textContent = storageLabel(status);
+    document.getElementById("boot-recovery-projects").textContent = String(status.projectsCount);
+    document.getElementById("boot-recovery-session").textContent = label(status.session === "available");
+    document.getElementById("boot-recovery-ai").textContent = label(status.aiConfig === "available");
+    const exportBtn = document.getElementById("boot-recovery-export");
+    const resetSession = document.getElementById("boot-recovery-reset-session");
+    const resetAi = document.getElementById("boot-recovery-reset-ai");
+    if (exportBtn) {
+      exportBtn.disabled = !selectedRecoveryProjectId && !(status.projectsCount > 0);
+      exportBtn.dataset.balloonHelpDisabled = "balloon_recovery_needs_project";
+    }
+    if (resetSession) {
+      resetSession.disabled = status.session !== "available";
+      resetSession.dataset.balloonHelpDisabled = "balloon_recovery_no_session";
+    }
+    if (resetAi) {
+      resetAi.disabled = status.aiConfig !== "available";
+      resetAi.dataset.balloonHelpDisabled = "balloon_recovery_no_ai";
+    }
+    await renderRecoveryProjectList();
+  };
+  const setNote = (message) => {
+    if (note) note.textContent = message;
+  };
+  document.getElementById("boot-recovery-export").onclick = async () => {
+    if (!selectedRecoveryProjectId) {
+      setNote(t("boot_recovery_export_failed"));
+      return;
+    }
+    try {
+      const bundle = await window.AISystem6RecoveryStorage?.exportRecoveryProjectBackup?.(selectedRecoveryProjectId);
+      if (!bundle) {
+        setNote(t("boot_recovery_export_unverified"));
+        return;
+      }
+      const project = recoveryProjectsCache.find((entry) => entry.id === selectedRecoveryProjectId);
+      // "Backup verified." is true as soon as the bundle passes above - but
+      // downloadJsonFile's own dispatch is a separate step that can still
+      // refuse (e.g. no File constructor), so check it before staying silent
+      // about a download that never started.
+      const dispatched = downloadJsonFile(bundle, `${project?.name || "Project"} Project Hard Disk Backup`);
+      setNote(dispatched ? t("boot_recovery_exported") : t("boot_recovery_export_failed"));
+    } catch {
+      setNote(t("boot_recovery_export_failed"));
+    }
+  };
+  document.getElementById("boot-recovery-reset-session").onclick = async () => {
+    try {
+      await clearWorkingSession();
+      setNote(t("boot_recovery_session_reset"));
+      await renderStatus();
+    } catch {
+      setNote(t("boot_recovery_export_failed"));
+    }
+  };
+  document.getElementById("boot-recovery-reset-ai").onclick = () => {
+    try {
+      handleAction("reset-ai-connection");
+    } catch {}
+  };
+  const retryButton = document.getElementById("boot-recovery-retry");
+  retryButton.onclick = () => {
+    dialog.close();
+    window.location.reload();
+  };
+  renderStatus();
+  if (typeof playSystemSound === "function") playSystemSound("alert");
+  dialog.showModal();
+  // Native initial focus lands on the first button in the row (Export),
+  // not the one marked default (Retry) — see the same fix in
+  // write-lease.js and modal.js's showSystemModal.
+  retryButton.focus();
+}
+
+function startupTaskWithTimeout(promise, label, ms = 1600) {
+  let timeoutId = null;
+  const timeout = new Promise((resolve) => {
+    timeoutId = setTimeout(() => {
+      console.warn(`${label} timed out during startup.`);
+      resolve(null);
+    }, ms);
+  });
+  return Promise.race([
+    Promise.resolve(promise).catch((error) => {
+      console.warn(`${label} failed during startup.`, error);
+      return null;
+    }),
+    timeout,
+  ]).finally(() => {
+    clearTimeout(timeoutId);
+    markBootProgress(label);
+  });
+}
+
+// Non-essential boot step: a per-feature initializer (one window's render,
+// one Desk Accessory, one UI wiring call) must not blank the rest of the
+// desk if it throws. This runs the step, and on failure records the failure
+// where a person can read it (Notification Center) and where a developer can
+// grep it (console.error) instead of letting the throw escape to boot()'s
+// outer catch, which would abort every step after it. Write-lease and desk
+// state now degrade inside boot() (timeout / in-memory desk) so iOS first
+// paint is a desk; Sad Mac remains for a throw the rest of boot cannot
+// recover from, and for the safety-net stall/ceiling.
+// `notify` defaults to the real Notification Center push, but loadDeskState()
+// restores the persisted notification list wholesale (a splice-replace, not a
+// merge) — a notification pushed before that point is silently overwritten a
+// moment later. Steps that run earlier than loadDeskState() pass a queuing
+// notify instead (see earlyBootFailures below) so their trace survives.
+async function runBootStep(label, fn, notify = defaultBootStepNotify) {
+  try {
+    return await fn();
+  } catch (error) {
+    console.error(`AI System 6 boot: "${label}" failed and was skipped.`, error);
+    notify(t("lazy_load_failed", label, error?.message || String(error)));
+    return undefined;
+  } finally {
+    markBootProgress(label);
+  }
+}
+
+function defaultBootStepNotify(message) {
+  if (typeof pushSystemNotification === "function") pushSystemNotification(message, { state: "failed" });
+}
+
+// Tells the boot safety net (boot-safety-net.js) that boot is still moving.
+// The net treats twenty seconds without any step as a hang; a slow machine
+// that keeps finishing steps is only slow.
+function markBootProgress(step) {
+  try {
+    window.AISystem6BootProgress?.(step);
+  } catch {}
+}
+
+async function boot() {
+  if (bootInProgress) return false;
+  bootInProgress = true;
+  markBootProgress("boot");
+  try {
+    registerRuntimeRenderTasks();
+    // Single-writer lease: acquire before any durable write can run. A second
+    // instance starts read-only and gets the conflict dialog after first paint.
+    window.AISystem6WriteLease?.initUi?.();
+    await startupTaskWithTimeout(window.AISystem6WriteLease?.acquireAtBoot?.(), "write lease", 3500);
+    markBootProgress("write lease");
+    // Sad Mac recovery controls (wired once; handlers must force-reload even
+    // when boot is still hung — see forceBootReload).
+    wireBootFailureActions();
+    // Every step until loadDeskState() runs before that call restores the
+    // persisted Notification Center list wholesale, which would otherwise
+    // erase a notification pushed here a moment after it lands — so these
+    // steps queue their failure and it is pushed for real right after.
+    const earlyBootFailures = [];
+    const queueEarlyBootFailure = (message) => earlyBootFailures.push(message);
+    await runBootStep("Clock", () => updateClock(), queueEarlyBootFailure);
+    // Each of these is one feature's own preload; one failing (a bad script,
+    // an offline fetch) must not stall the others or abort boot, so every
+    // entry carries its own catch that still leaves a trace.
+    await Promise.all([
+      runBootStep(t("alarm_clock"), () => ensureAlarmClockModule(), queueEarlyBootFailure),
+      // Not deferrable after all: applySettings() restores the saved Page Setup
+      // through this module while loadDeskState() runs, so the print module has
+      // to be present before the desk state is applied. Measuring first is what
+      // caught it - a deferred preload here left restorePageSetupState undefined
+      // and boot failed outright in the browser.
+      runBootStep(t("project_cd"), () => ensureProjectCdPrintModule(), queueEarlyBootFailure),
+      ...[ensureContextGistModule, ensureDocMapSourcePolicyModule, ensureUserRecoveryMessagesModule, ensureDocumentRolePolicyModule]
+        .map((load) => load().catch((error) => console.warn("AI System 6 boot: a context/policy module failed to load.", error))),
+      ensurePromptFilesData().catch((error) => console.warn("AI System 6 boot: prompt files data failed to load.", error)),
+      ensureLanguageFor(currentLanguage).catch((error) => console.warn("AI System 6 boot: language table failed to load.", error)),
+    ]);
+    markBootProgress("preloads");
+    // Clio's static first paint is plain HTML; load Markdown in the background
+    // and rely on the escaped-text fallback until it arrives.
+    ensureMarkdownParser().catch(() => {});
+    await runBootStep(t("alarm_clock"), () => initializeAlarmClock(), queueEarlyBootFailure);
+    await runBootStep("Version", () => loadAppVersion(), queueEarlyBootFailure);
+    {
+      // openAppDb already has a 15s guard; a wedged transaction must not sit
+      // past the safety-net stall with bootInProgress still true.
+      let deskTimeoutId = null;
+      const deskOutcome = await Promise.race([
+        loadDeskState()
+          .then((value) => ({ ok: true, value }))
+          .catch((error) => ({ ok: false, error })),
+        new Promise((resolve) => {
+          deskTimeoutId = setTimeout(() => resolve({ ok: false, timeout: true }), 8000);
+        }),
+      ]).finally(() => {
+        clearTimeout(deskTimeoutId);
+        markBootProgress("desk state");
+      });
+      if (!deskOutcome.ok) {
+        // IndexedDB hang/timeout/throw used to abort the whole boot and leave
+        // the iPhone on Sad Mac. Durable storage stays off; the desk paints.
+        deskPersistenceWritable = false;
+        if (deskOutcome.timeout) {
+          console.warn("AI System 6 boot: desk state timed out; continuing without durable storage.");
+        } else {
+          console.error("AI System 6 boot: desk state failed; continuing without durable storage.", deskOutcome.error);
+        }
+        try {
+          if (typeof ensureActiveProject === "function") ensureActiveProject();
+          if (typeof assignProjectScope === "function") assignProjectScope(typeof activeProjectId === "undefined" ? "" : activeProjectId);
+        } catch (nested) {
+          console.warn("AI System 6 boot: could not assemble an in-memory Project Hard Disk.", nested);
+        }
+        queueEarlyBootFailure(t("project_storage_unavailable_message"));
+      }
+    }
+    earlyBootFailures.forEach(defaultBootStepNotify);
+    // A saved setting may have switched the active language away from the
+    // system default; make sure its table is present before the first paint.
+    // A failed fetch degrades to key fallbacks rather than stalling boot.
+    await ensureLanguageFor(currentLanguage).catch(() => {});
+    markBootProgress("language");
+    applyLanguage();
+    await startupTaskWithTimeout(applyDeploymentWorkspaceDefault(), "deploymentWorkspaceDefault", 3500);
+    if (window.AISystem6DerivedIndexQueue) {
+      await startupTaskWithTimeout(window.AISystem6DerivedIndexQueue.restore(), "derivedIndexQueue", 3500);
+    }
+    await runBootStep(t("local_model"), () => configurePublicLmStudioControls());
+    if (window.AISystem6DocMapLoaded) await runBootStep(t("docmap"), () => syncDocMapLayoutControls());
+    applyLanguage();
+    await runBootStep("System controls", () => initSystemSelectControls());
+    // Control Panel text size: --ui-text-scale zooms every window pane's content (10-windows.css).
+    await runBootStep("Text size", () => {
+      const s = document.querySelector("#ui-text-scale"), go = () => document.documentElement.style.setProperty("--ui-text-scale", s.value);
+      if (!s) return;
+      try { s.value = localStorage.getItem("ais6.textScale") || "1"; } catch {}
+      go();
+      s.dispatchEvent(new Event("system-select-sync"));
+      s.onchange = () => { go(); try { localStorage.setItem("ais6.textScale", s.value); } catch {} };
+    });
+    // Loopback only; a public page never subscribes. Approvals were applied
+    // with the settings above, so the first guest call can be answered.
+    await runBootStep("Guest bridge", () => localStorage.getItem("ai-system6-mcp") === "on" && window.AISystem6GuestExecutor?.start?.());
+    await runBootStep("System controls", () => initSharedControlBehaviors());
+    await runBootStep("System icons", () => hydrateSystemIcons());
+    // Each Finder-style window paints on its own: a corrupt record in one
+    // (say, Trash) must not blank the others, so every render call is its own
+    // step rather than one shared try/catch around the whole list.
+    await runBootStep(t("projects"), () => renderProjectDisks());
+    await runBootStep(t("references"), () => renderProjectReferences());
+    await runBootStep(t("scrapbook"), () => renderScraps());
+    await runBootStep(t("trash"), () => renderTrash());
+    await runBootStep(t("documents"), () => renderDocuments());
+    await runBootStep(t("mounted_text_disk"), () => renderMountedTextDisk());
+    await runBootStep(t("project_cd"), () => renderProjectCd());
+    // Searcher paints itself when its window opens (openWindow loads the lazy
+    // module first); startup must not reach into it, or the module is no longer
+    // lazy.
+    // Each of these can open IndexedDB; a wedged open must not occupy the
+    // whole stall window with no progress mark (iPhone Sad Mac mid-boot).
+    await startupTaskWithTimeout(runBootStep(t("references"), () => loadActiveProjectReferences()), "project references", 5000);
+    await runBootStep("Writing Flow pipeline", () => renderPipeline());
+    await runBootStep(t("writing_tools"), () => applyWritingToolsViewMode());
+    await runBootStep(t("local_model"), () => updateLocalModelState({ selected: !!modelInput.value.trim() }));
+    if (localLmStudioConnectionEnabled) {
+      startupTaskWithTimeout(connectLocalLmStudio({ toggle: false, silent: true }), "connectLocalLmStudio");
+    } else {
+      renderLocalConnectionStatus("local_connection_waiting");
+    }
+    await startupTaskWithTimeout(runBootStep("File Floppy import status", () => refreshImporterStatus()), "importer status", 3500);
+    await runBootStep("Drag and drop", () => initDragAndDrop());
+
+    // A true first launch opens ClioTalk, but recoverable work still wins.
+    // Restored chat history re-renders Markdown messages, so the parser must
+    // be present before any restored message paints. If it cannot load, the
+    // escaped-text fallback still paints usable messages.
+    await ensureMarkdownParser().catch(() => {});
+    markBootProgress("markdown parser");
+    // One localStorage read puts the ClioTalk window back in 代理 if that was
+    // the last mode; the agent module itself stays lazy (Mode at boot).
+    restoreClioTalkAgentModeSelection();
+    // The writer's words are not part of onboarding. A snapshot exists only if
+    // someone already worked here, so resuming one cannot disturb a true first
+    // launch. The persisted onboarding bit is deliberately independent from
+    // the Working Session snapshot. Sad Mac "Start without restoring windows"
+    // sets a one-shot skip so a hung clearWorkingSession cannot leave restore on.
+    const skipWorkingSession = consumeBootSkipSessionFlag();
+    const resumedWorkingSession = !writerMode && !skipWorkingSession
+      && await startupTaskWithTimeout(restoreWorkingSession(), "restoreWorkingSession", 3500);
+    // The saved scene has now had its chance to come back (Writer Mode skips
+    // restore, and that counts as its chance), so the desk may write scenes
+    // again. Until this line every save is suppressed, or boot's own window
+    // moves would capture the un-booted markup and overwrite the record this
+    // very line just read. Everything after it — startup items, Writer Mode,
+    // the writer's own work — saves normally.
+    settleWorkingSessionRestore();
+    // Someone who wrote a paragraph is not on first launch, whatever the flag
+    // says. Replay remains available later without replacing the saved scene.
+    if (!clioOnboardingCompleted && !resumedWorkingSession) {
+      await runBootStep("Startup items", () => openStartupItems());
+    } else if (writerMode) {
+      await runBootStep("Writer Mode", () => enterWriterMode());
+    } else if (!resumedWorkingSession) {
+      await runBootStep("Startup items", () => openStartupItems());
+    }
+    if (window.AISystem6LocalLMStudio?.isSafariHttpLocalMode?.()) {
+      await runBootStep(t("local_model"), () => {
+        openWindow("control");
+        setControlTab("local");
+      });
+    }
+
+    updateMenuState();
+    refreshSystemSelectControls();
+    installWorkingSessionAutosave();
+    installApplicationLifecycleWatch();
+    markBootProgress("boot sequence");
+    await runBootSequence();
+    markBootProgress("boot sequence done");
+    if (bootDebugTheme && developmentPreviewAllowed) await window.AISystem6Theme.previewExperimentalTheme(bootDebugTheme.id);
+    await startupTaskWithTimeout(window.AISystem6Theme?.whenReady?.(), "appearance", 8000);
+    markBootProgress("appearance");
+    // The appearance is final only now (boot passes through the release theme
+    // on its way to a preview), so this is where a restored miniwindow learns
+    // whether the desk it woke on can show the way back to it.
+    if (typeof releaseOrphanedMiniwindows === "function") releaseOrphanedMiniwindows();
+    document.body.dataset.appReady = "ready";
+    if (window.tiny?.api) {
+      ensureTinyShellModule().then(() => window.AISystem6TinyShell.init())
+        .catch((error) => setStatus(t("native_operation_failed", error.message)));
+    } else {
+      // A page has no OS link handler; the URL it was opened with is its front
+      // door, and it reaches the same targets the shell's route does.
+      const search = window.location?.search || "";
+      if (search.includes("open=")) {
+        await runBootStep("Deep link", async () => {
+          await ensureLazySystemModule("app/core/launch-intent.js", "AISystem6LaunchIntentLoaded");
+          const intent = window.AISystem6LaunchIntent?.deskIntent?.(search);
+          if (intent) await openDeepLink(intent.target, intent.id);
+        });
+      }
+    }
+    // This timer fires after boot() has already returned, so nothing here is
+    // inside boot()'s own try/catch any more — an uncaught throw in this
+    // callback would be genuinely invisible. Each step gets its own
+    // runBootStep for the same reason the steps above do.
+    setTimeout(() => {
+      runBootStep("Desktop maintenance", () => scheduleDesktopMaintenance("boot"));
+      runBootStep(t("control_strip"), () => applyControlStripState({ silent: true }));
+      runBootStep("Applications window", () => ensureScriptingModule().then(() => {
+        if (!getWindow("applications")?.classList.contains("is-hidden")) renderStaticFinderWindow("applications");
+      }));
+    }, 8000);
+    if (typeof revealMultiFinderSwitcherHint === "function") revealMultiFinderSwitcherHint();
+    // Once the desktop is actually on screen: this one measures whether the
+    // icon column wrapped, so it needs the column placed, not merely present.
+    await runBootStep("Desktop icon layout", () => syncIconColumnDensity?.());
+    // The clock face is hours and minutes, so it ticks on the minute instead
+    // of repainting the same two digits every second.
+    startSystemClock();
+    startLocalModelMonitor();
+  } catch (error) {
+    console.error("AI System 6 boot failed", error);
+    document.body.dataset.appReady = "error";
+    showBootFailure(error);
+  } finally {
+    bootInProgress = false;
+  }
+}

@@ -1,0 +1,337 @@
+import { copyFileSync, cpSync, existsSync, mkdirSync, readdirSync, rmSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join, resolve } from "node:path";
+import { execFileSync } from "node:child_process";
+
+import {
+  MAC_APP_ICONSET_SIZES,
+  renderVersionedMacAppIcon,
+} from "./lib/mac-app-icon.mjs";
+
+const repoRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
+const packagePath = join(repoRoot, "platform", "macos", "shell", "macos-webview");
+const packageManifestPath = join(repoRoot, "package.json");
+const buildInfoPath = join(repoRoot, "build-info.json");
+const generatedBuildInfoPath = join(repoRoot, "apps/desktop/app/generated/build-info.json");
+const appDisplayName = process.env.AI_SYSTEM6_APP_DISPLAY_NAME || "AI System 6 Beta";
+const appName = `${appDisplayName}.app`;
+const legacyAppNames = ["AI System 6 Shell.app"];
+const distDir = join(repoRoot, "dist");
+// AI_SYSTEM6_APP_OUTPUT_DIR lets a second build line (the Intel/Monterey
+// legacy app) write its bundle without replacing the one in dist/.
+const appDir = join(process.env.AI_SYSTEM6_APP_OUTPUT_DIR ? resolve(repoRoot, process.env.AI_SYSTEM6_APP_OUTPUT_DIR) : distDir, appName);
+const contentsDir = join(appDir, "Contents");
+const macOsDir = join(contentsDir, "MacOS");
+const resourcesDir = join(contentsDir, "Resources");
+const frameworksDir = join(contentsDir, "Frameworks");
+const binaryName = "AISystem6Shell";
+const iconName = "AppIcon";
+const iconSource = join(repoRoot, "vendor", "system.css-reference", "docs", "icon.png");
+const builtBinary = process.env.AI_SYSTEM6_SHELL_BINARY
+  ? resolve(repoRoot, process.env.AI_SYSTEM6_SHELL_BINARY)
+  : join(packagePath, ".build", "debug", binaryName);
+const appBinary = join(macOsDir, binaryName);
+const args = process.argv.slice(2);
+const serverArgIndex = args.indexOf("--server");
+const explicitServerPayload = serverArgIndex >= 0 ? args[serverArgIndex + 1] : "";
+const defaultServerPayload = join(distDir, "mac-server-payload");
+const serverPayload = explicitServerPayload
+  ? resolve(repoRoot, explicitServerPayload)
+  : defaultServerPayload;
+const skipSwiftBuild = process.env.AI_SYSTEM6_SKIP_SWIFT_BUILD === "1";
+const allowStaleShell = process.env.AI_SYSTEM6_ALLOW_STALE_SHELL === "1";
+const macosDeploymentTarget = process.env.AI_SYSTEM6_MACOS_DEPLOYMENT_TARGET || "13.0";
+const macosTargetTriple = process.env.AI_SYSTEM6_MACOS_TARGET_TRIPLE || "";
+const swiftCpu = process.env.AI_SYSTEM6_SWIFT_MCPU || "";
+const embedSwiftRuntime = process.env.AI_SYSTEM6_EMBED_SWIFT_RUNTIME === "1";
+const shellSourcesDir = join(packagePath, "Sources");
+let packageVersion = "0.1.0";
+let bundleBuild = "1";
+
+// The generated identity (apps/desktop/app/generated/build-info.json) is the single
+// source; package.json / build-info.json only backstop an unbuilt checkout.
+let generatedBuildInfo = null;
+try {
+  generatedBuildInfo = JSON.parse(readFileSync(generatedBuildInfoPath, "utf8"));
+} catch {
+  generatedBuildInfo = null;
+}
+
+try {
+  const manifest = JSON.parse(readFileSync(packageManifestPath, "utf8"));
+  if (!generatedBuildInfo && typeof manifest.version === "string") {
+    packageVersion = manifest.version;
+  }
+} catch {
+  // keep default version if package.json is temporarily unavailable
+}
+
+try {
+  const buildInfo = JSON.parse(readFileSync(buildInfoPath, "utf8"));
+  if (!generatedBuildInfo && typeof buildInfo.build === "string") {
+    bundleBuild = buildInfo.build;
+  }
+} catch {
+  // keep default build marker if build-info.json is temporarily unavailable
+}
+
+if (generatedBuildInfo && typeof generatedBuildInfo.version === "string") {
+  packageVersion = generatedBuildInfo.version;
+}
+if (generatedBuildInfo && typeof generatedBuildInfo.build === "string") {
+  bundleBuild = generatedBuildInfo.build;
+}
+
+function buildIcon(resourcesDir) {
+  if (!existsSync(iconSource)) {
+    return false;
+  }
+
+  const iconsetDir = join(resourcesDir, `${iconName}.iconset`);
+  rmSync(iconsetDir, { recursive: true, force: true });
+  mkdirSync(iconsetDir, { recursive: true });
+
+  try {
+    // Paint the release version onto every iconset tier in International
+    // Orange so each beta is visually distinct in Finder and the Dock.
+    for (const [fileName, size] of MAC_APP_ICONSET_SIZES) {
+      writeFileSync(
+        join(iconsetDir, fileName),
+        renderVersionedMacAppIcon({
+          sourcePath: iconSource,
+          version: packageVersion,
+          size,
+        }),
+      );
+    }
+
+    execFileSync("/usr/bin/iconutil", ["-c", "icns", iconsetDir, "-o", join(resourcesDir, `${iconName}.icns`)], {
+      stdio: "inherit",
+    });
+    console.log(`AppIcon.icns labeled ${packageVersion} (International Orange)`);
+    return true;
+  } catch (error) {
+    console.warn(`Failed to generate AppIcon.icns, continuing without icon.\n${error?.message || error}`);
+    return false;
+  } finally {
+    rmSync(iconsetDir, { recursive: true, force: true });
+  }
+}
+
+function newestSourceMtimeMs(dir) {
+  let newest = 0;
+  for (const relativePath of readdirSync(dir, { recursive: true })) {
+    const fullPath = join(dir, String(relativePath));
+    const stats = statSync(fullPath);
+    if (stats.isFile() && stats.mtimeMs > newest) {
+      newest = stats.mtimeMs;
+    }
+  }
+  return newest;
+}
+
+function embedBackDeployedSwiftRuntime() {
+  if (!embedSwiftRuntime) return;
+
+  mkdirSync(frameworksDir, { recursive: true });
+  const swiftCompiler = execFileSync("/usr/bin/xcrun", ["--find", "swiftc"], { encoding: "utf8" }).trim();
+  const toolchainDir = dirname(dirname(dirname(swiftCompiler)));
+  const backDeploymentConcurrency = join(
+    toolchainDir,
+    "usr",
+    "lib",
+    "swift-5.5",
+    "macosx",
+    "libswift_Concurrency.dylib"
+  );
+  const swiftConcurrency = join(frameworksDir, "libswift_Concurrency.dylib");
+  if (!existsSync(backDeploymentConcurrency)) {
+    throw new Error(`Missing back-deployed Swift concurrency runtime: ${backDeploymentConcurrency}`);
+  }
+  copyFileSync(backDeploymentConcurrency, swiftConcurrency);
+  const shellArch = macosTargetTriple.split("-")[0] || process.arch.replace("x64", "x86_64");
+  execFileSync("/usr/bin/lipo", [swiftConcurrency, "-verify_arch", shellArch], { stdio: "inherit" });
+
+  execFileSync(
+    "/usr/bin/install_name_tool",
+    [
+      "-change",
+      "@rpath/libswift_Concurrency.dylib",
+      "@executable_path/../Frameworks/libswift_Concurrency.dylib",
+      appBinary,
+    ],
+    { stdio: "inherit" }
+  );
+  execFileSync("/usr/bin/codesign", ["--force", "--deep", "--sign", "-", appDir], { stdio: "inherit" });
+}
+
+if (!skipSwiftBuild) {
+  try {
+    const swiftBuildArgs = ["swift", "build", "--package-path", packagePath];
+    if (macosTargetTriple) {
+      swiftBuildArgs.push("--triple", macosTargetTriple);
+    }
+    if (swiftCpu) {
+      swiftBuildArgs.push("-Xswiftc", "-Xllvm", "-Xswiftc", `-mcpu=${swiftCpu}`);
+    }
+    execFileSync("/usr/bin/xcrun", swiftBuildArgs, {
+      cwd: repoRoot,
+      stdio: "inherit",
+    });
+  } catch (error) {
+    if (!existsSync(builtBinary)) {
+      throw error;
+    }
+    const binaryIsStale = statSync(builtBinary).mtimeMs < newestSourceMtimeMs(shellSourcesDir);
+    if (binaryIsStale && !allowStaleShell) {
+      console.error(`swift build failed and ${builtBinary} is older than the newest file under ${shellSourcesDir}.`);
+      console.error("Refusing to package a stale shell binary. Fix the swift build, or set AI_SYSTEM6_ALLOW_STALE_SHELL=1 to package it anyway.");
+      throw error;
+    }
+    if (binaryIsStale) {
+      console.warn("AI_SYSTEM6_ALLOW_STALE_SHELL=1: swift build failed; packaging stale shell binary despite newer sources.");
+    } else {
+      console.warn("swift build was blocked, reusing existing shell binary (no newer sources detected).");
+    }
+    console.warn(`Using existing binary: ${builtBinary}`);
+  }
+} else {
+  console.warn("AI_SYSTEM6_SKIP_SWIFT_BUILD=1, skipping swift build.");
+}
+
+if (!existsSync(builtBinary)) {
+  throw new Error(`Missing built shell binary: ${builtBinary}`);
+}
+
+rmSync(appDir, { recursive: true, force: true });
+for (const legacyAppName of legacyAppNames) {
+  rmSync(join(distDir, legacyAppName), { recursive: true, force: true });
+}
+mkdirSync(macOsDir, { recursive: true });
+mkdirSync(resourcesDir, { recursive: true });
+copyFileSync(builtBinary, appBinary);
+// The macOS 26 document reader for the server's OCR ladder; the shell tells
+// the server where it is (AI_SYSTEM6_VISION_HELPER). Absent, OCR uses the
+// other engines.
+// AISystem6Intelligence (Apple's model and MLX) lives in its own package,
+// platform/macos/shell/macos-intelligence, and needs its SwiftPM resource
+// bundles; tooling/build-tinyjs-shell-app.mjs builds and ships it. This
+// legacy WKWebView shell copies it only if it was built beside the shell
+// binary, and an absent helper is skipped, never an error.
+for (const helperName of ["AISystem6Vision", "AISystem6Intelligence"]) {
+  const helperBinary = join(dirname(builtBinary), helperName);
+  if (existsSync(helperBinary)) {
+    copyFileSync(helperBinary, join(macOsDir, helperName));
+    console.log(`Bundled ${helperName}.`);
+  } else if (helperName === "AISystem6Vision") {
+    console.warn(`No ${helperBinary}; the app's OCR will not use Apple's document recognition.`);
+  } else {
+    console.log(`Skipped ${helperName}: not built next to the shell binary.`);
+  }
+}
+// uBlock Origin Lite's Safari build, loaded by Time Machine's native engine
+// (GPL-3.0, unmodified; see vendor/ubol/PROVENANCE.md).
+try {
+  const pin = JSON.parse(readFileSync(join(repoRoot, "vendor", "ubol", "PIN.json"), "utf8"));
+  const ubolSafari = join(repoRoot, ".cache", "ubol", pin.version, "safari");
+  if (existsSync(join(ubolSafari, "manifest.json"))) {
+    // Bundled as a ZIP archive: one resource file, and the same native
+    // WKWebExtension form either way (see TimeMachineBrowser.loadAdBlocker).
+    const archivePath = join(resourcesDir, "ubol-safari.zip");
+    execFileSync("/usr/bin/zip", ["-q", "-r", archivePath, "."], { cwd: ubolSafari });
+    console.log(`Bundled uBlock Origin Lite ${pin.version} (Safari ZIP).`);
+  } else {
+    console.warn("uBlock Origin Lite is not fetched (npm run browse:fetch-filters); Time Machine will not block ads.");
+  }
+} catch {
+  console.warn("No vendor/ubol/PIN.json; Time Machine will not block ads.");
+}
+const hasIcon = buildIcon(resourcesDir);
+if (existsSync(serverPayload)) {
+  // The payload is a repo-shaped tree with its own Node runtime (see
+  // tooling/build-mac-server-payload.mjs). The Swift shell keeps launching
+  // Resources/ai-system-6-server, which now execs into the payload.
+  const bundledPayload = join(resourcesDir, "server-payload");
+  // npm's .bin entries are relative symlinks inside the payload. Node's
+  // default cpSync behavior resolves them and writes absolute links pointing
+  // back into dist/mac-server-payload, which makes the app non-portable and
+  // invalidates its signature as soon as it leaves this checkout.
+  cpSync(serverPayload, bundledPayload, { recursive: true, verbatimSymlinks: true });
+  const bundledServer = join(resourcesDir, "ai-system-6-server");
+  writeFileSync(
+    bundledServer,
+    `#!/bin/sh
+DIR="$(cd "$(dirname "$0")" && pwd)"
+exec "$DIR/server-payload/node" "$DIR/server-payload/apps/server/server.js"
+`
+  );
+  execFileSync("/bin/chmod", ["755", bundledServer]);
+  console.log(`Bundled server payload: ${serverPayload}`);
+} else {
+  console.warn(`No server payload found at ${serverPayload}; app will fall back to npm start from the repo.`);
+}
+
+writeFileSync(
+  join(contentsDir, "Info.plist"),
+  `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleDevelopmentRegion</key>
+  <string>en</string>
+  <key>CFBundleExecutable</key>
+  <string>${binaryName}</string>
+  ${hasIcon ? `<key>CFBundleIconFile</key>
+  <string>${iconName}</string>` : ""}
+  <key>CFBundleIdentifier</key>
+  <string>local.aisystem6.beta.shell</string>
+  <key>CFBundleInfoDictionaryVersion</key>
+  <string>6.0</string>
+  <key>CFBundleName</key>
+  <string>${appDisplayName}</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>CFBundleShortVersionString</key>
+  <string>${packageVersion}</string>
+  <key>CFBundleVersion</key>
+  <string>${bundleBuild}</string>
+  <key>LSMinimumSystemVersion</key>
+  <string>${macosDeploymentTarget}</string>
+  <key>LSApplicationCategoryType</key>
+  <string>public.app-category.productivity</string>
+  <key>NSHighResolutionCapable</key>
+  <true/>
+  <key>CFBundleURLTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleURLName</key>
+      <string>local.aisystem6.beta.shell</string>
+      <key>CFBundleURLSchemes</key>
+      <array>
+        <string>aisystem6</string>
+      </array>
+    </dict>
+  </array>
+</dict>
+</plist>
+`
+);
+
+writeFileSync(join(contentsDir, "PkgInfo"), "APPL????");
+writeFileSync(
+  join(resourcesDir, "README.txt"),
+  [
+    appDisplayName,
+    "",
+    "This is a minimal macOS app shell for the current web beta.",
+    existsSync(serverPayload)
+      ? "It starts the bundled AI System 6 server on its bundled Node runtime and opens http://localhost:4173 in WKWebView."
+      : "It starts npm from the repository root and opens http://localhost:4173 in WKWebView.",
+    "It is a bridge, not the final Swift-native app.",
+  ].join("\n")
+);
+
+embedBackDeployedSwiftRuntime();
+
+console.log(`Built ${appDir}`);
+console.log(`Run: open ${JSON.stringify(appDir)}`);

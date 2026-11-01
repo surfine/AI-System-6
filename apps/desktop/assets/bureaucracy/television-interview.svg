@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900" role="img" aria-labelledby="title desc">
+  <title id="title">Original television interview</title>
+  <desc id="desc">A generic official in a fictional 1980s television interview frame, with no recognizable actor or real show reference.</desc>
+  <defs>
+    <linearGradient id="room" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#75654a"/>
+      <stop offset="0.45" stop-color="#363227"/>
+      <stop offset="1" stop-color="#171714"/>
+    </linearGradient>
+    <radialGradient id="window" cx="24%" cy="23%" r="34%">
+      <stop offset="0" stop-color="#fff7d7" stop-opacity="0.86"/>
+      <stop offset="1" stop-color="#fff7d7" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="grain">
+      <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="2" stitchTiles="stitch"/>
+      <feComponentTransfer>
+        <feFuncA type="table" tableValues="0 0.075"/>
+      </feComponentTransfer>
+    </filter>
+  </defs>
+  <rect width="1200" height="900" fill="#10100e"/>
+  <rect x="58" y="52" width="1084" height="796" rx="16" fill="url(#room)"/>
+  <rect x="58" y="52" width="1084" height="796" rx="16" fill="url(#window)"/>
+  <rect x="112" y="90" width="245" height="520" fill="#e9dfc4" opacity="0.58"/>
+  <path d="M178 92v517M278 92v517M112 225h245M112 382h245" stroke="#6f6c58" stroke-width="10" opacity="0.34"/>
+  <rect x="650" y="112" width="330" height="260" fill="#171613" stroke="#5f503b" stroke-width="12"/>
+  <rect x="690" y="150" width="250" height="180" fill="#27231b"/>
+  <path d="M718 294h176M715 188h168M738 235h126" stroke="#776447" stroke-width="10" opacity="0.65"/>
+
+  <ellipse cx="770" cy="426" rx="150" ry="48" fill="#111" opacity="0.32"/>
+  <path d="M598 760c23-201 105-302 246-303 132 25 210 126 235 303z" fill="#14181b"/>
+  <path d="M710 752l86-275h88l104 275z" fill="#d8d1c4"/>
+  <path d="M798 491l86 4 43 122-88 126-82-126z" fill="#303f5b"/>
+  <ellipse cx="840" cy="360" rx="89" ry="105" fill="#c4a484"/>
+  <path d="M752 344c30-92 108-129 196-56-4-76-52-120-129-118-75 7-104 68-67 174z" fill="#756f62"/>
+  <path d="M792 382h37M864 382h37" stroke="#2b251e" stroke-width="9" stroke-linecap="round"/>
+  <path d="M811 430c41 22 82 21 126-4" stroke="#493124" stroke-width="8" stroke-linecap="round" fill="none"/>
+  <path d="M742 535c-77 12-138 44-182 95" stroke="#0e1011" stroke-width="34" stroke-linecap="round"/>
+
+  <rect x="102" y="708" width="440" height="78" fill="#281f17" opacity="0.82"/>
+  <rect x="138" y="734" width="180" height="18" fill="#c5b88e" opacity="0.74"/>
+  <rect x="340" y="734" width="135" height="18" fill="#b2c7bf" opacity="0.62"/>
+  <rect width="1200" height="900" filter="url(#grain)"/>
+  <path d="M70 782h1060" stroke="#fff3d5" stroke-width="3" opacity="0.16"/>
+  <rect width="1200" height="900" fill="none" stroke="#080808" stroke-width="28" opacity="0.24"/>
+</svg>

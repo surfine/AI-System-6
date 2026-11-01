@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28">
+  <defs>
+    <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#fff6ce"/>
+      <stop offset="1" stop-color="#d3a45e"/>
+    </linearGradient>
+    <linearGradient id="roof" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#ff9d67"/>
+      <stop offset="1" stop-color="#9d3826"/>
+    </linearGradient>
+  </defs>
+  <path d="M4 12.5 14 3l10 9.5-2.4 2.2L14 7.4l-7.6 7.3z" fill="url(#roof)" stroke="#743126"/>
+  <path d="M7 12.2 14 6l7 6.2v11.3H7z" fill="url(#wall)" stroke="#7b674b"/>
+  <rect x="11.3" y="15.2" width="5.4" height="8.3" fill="#7f4a35" stroke="#563124"/>
+  <rect x="8.5" y="11.5" width="4" height="4" fill="#9fdcff" stroke="#55798f"/>
+  <path d="M8.8 12h3.4" stroke="#fff" opacity=".85"/>
+  <ellipse cx="14" cy="25.2" rx="8.4" ry="1.2" fill="#000" opacity=".16"/>
+</svg>

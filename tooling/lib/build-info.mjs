@@ -1,0 +1,157 @@
+/**
+ * Single source of release identity for AI System 6.
+ *
+ * Every surface that reports or caches the version, build, or source commit
+ * reads from the artifacts this module produces at build time:
+ *
+ *   - app/generated/build-info.js   browser global loaded by index.html
+ *   - app/generated/build-info.json server (/api/version) + native shell
+ *   - index.html ?v= cache-busters  stamped in place, never hand-edited
+ *
+ * Identity is deliberately split into stable and runtime halves:
+ *
+ *   version        package.json (npm identity)
+ *   build          build-info.json YYYYMMDD.N stamp
+ *   sourceCommit   the PRIVATE source commit this snapshot was built from;
+ *                  passed explicitly by the release/snapshot pipeline through
+ *                  AI_SYSTEM6_SOURCE_COMMIT, never derived from the public
+ *                  snapshot HEAD (a self-referential hash loop)
+ *   snapshotCommit never written into git-tracked generated files; the public
+ *                  commit is already known by git (GITHUB_SHA / deploy env /
+ *                  runtime git read)
+ *   generatedAt    never written by ordinary dev builds (npm start /
+ *                  build:app would otherwise churn tracked files on every
+ *                  run); computed at runtime by the server instead
+ *
+ * The generated JS file uses a JSON body so it stays parseable by the
+ * consistency gate; do not reformat it by hand.
+ */
+
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { desktopRoot, repositoryRoot } from "./paths.mjs";
+
+export const repoRoot = repositoryRoot;
+
+/**
+ * Assets in index.html whose ?v= query must carry the current build stamp.
+ *
+ * The stamp is what makes an immutable cache safe: a versioned URL dies with
+ * its build number, so a bad build can never outlive its own release. Every
+ * URL the serving layer marks immutable must appear here — the lazy module
+ * loader stamps its own requests (app/core/config.js lazyScriptUrl), but the
+ * head references are stamped here or not at all.
+ */
+export const stampedIndexAssets = [
+  "styles.bundle.css",
+  "app.bundle.js",
+  // Hand-stamped in index.html by the ClioWorks v3 fixture gate; listed here
+  // so a release rewrites its stamp like every other immutable app/ reference.
+  "app/vendor/clioworks-v3/fixture.js",
+  "app/generated/build-info.js",
+  "app/core/theme-registry.js",
+  "app/core/theme-body-init.js",
+  "app/core/boot-safety-net.js",
+  "assets/app-icon/manifest.json",
+  "assets/app-icon/app-icon-180.png",
+  "assets/app-icon/app-icon-192.png",
+];
+
+export const generatedJsPath = "app/generated/build-info.js";
+export const generatedJsonPath = "app/generated/build-info.json";
+
+/**
+ * Write only when the bytes differ. An identical rewrite is invisible in
+ * content but not to a watcher, a mtime, or a build cache keyed on the tree —
+ * and every ordinary `npm start` used to touch both generated files.
+ */
+function writeIfChanged(absPath, text) {
+  let current = null;
+  try {
+    current = readFileSync(absPath, "utf8");
+  } catch {
+    current = null;
+  }
+  if (current === text) return false;
+  writeFileSync(absPath, text, "utf8");
+  return true;
+}
+
+function readJsonSafe(absPath) {
+  try {
+    return JSON.parse(readFileSync(absPath, "utf8"));
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Resolve the release identity from package.json + build-info.json. The
+ * source commit is the one value that must come from outside the built tree:
+ * the release/snapshot pipeline passes AI_SYSTEM6_SOURCE_COMMIT explicitly.
+ * Missing or malformed inputs degrade to explicit dev markers, never to a
+ * fake release number.
+ */
+export function resolveBuildInfo({ root = repoRoot, env = process.env } = {}) {
+  const pkg = readJsonSafe(join(root, "package.json"));
+  const buildInfo = readJsonSafe(join(root, "build-info.json"));
+  return {
+    version:
+      typeof pkg.version === "string" && pkg.version
+        ? pkg.version
+        : "0.0.0-dev",
+    build:
+      typeof buildInfo.build === "string" && buildInfo.build
+        ? buildInfo.build
+        : "dev",
+    sourceCommit: String(env.AI_SYSTEM6_SOURCE_COMMIT || "").trim(),
+  };
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Rewrite the ?v= cache-busters of the stamped assets in index.html. The
+ * file keeps its generated stamp in the tree so a release checkout serves
+ * cache-busted bundles without extra infrastructure.
+ */
+export function stampIndexHtml({ root = desktopRoot, build }) {
+  const indexPath = join(root, "index.html");
+  if (!existsSync(indexPath)) return null;
+  const source = readFileSync(indexPath, "utf8");
+  let output = source;
+  for (const asset of stampedIndexAssets) {
+    const pattern = new RegExp(
+      `((?:href|src)="${escapeRegExp(asset)})\\?v=[^"]*"`,
+      "g"
+    );
+    output = output.replace(pattern, `$1?v=${encodeURIComponent(build)}"`);
+  }
+  if (output !== source) writeFileSync(indexPath, output, "utf8");
+  return output;
+}
+
+/**
+ * Write the browser JS + server JSON artifacts, then stamp index.html.
+ * Returns the resolved identity. Runs before bundle assembly so every build
+ * path (npm run build:app, verify:release, deploy) is self-consistent.
+ */
+export function generateBuildInfo({ root = repoRoot, outputRoot = desktopRoot } = {}) {
+  const info = resolveBuildInfo({ root });
+  const jsonBody = JSON.stringify(info, null, 2);
+  writeIfChanged(
+    join(outputRoot, generatedJsPath),
+    [
+      `// Generated by tooling/lib/build-info.mjs. Do not edit by hand.`,
+      `// Single source of version/build/sourceCommit for browser, server, shell and`,
+      `// index.html cache-busters.`,
+      `window.AISystem6BuildInfo = Object.freeze(${jsonBody});`,
+      ``,
+    ].join("\n"),
+  );
+  writeIfChanged(join(outputRoot, generatedJsonPath), `${jsonBody}\n`);
+  stampIndexHtml({ root: outputRoot, build: info.build });
+  return info;
+}

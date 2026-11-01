@@ -1,0 +1,358 @@
+# Bonsai City — Original City Simulator
+
+<!-- doc-claims: mixed | audited: 2026-09-18 -->
+
+Official product name: **Bonsai City / 盆景城市**.
+
+Bonsai City is an original, MIT-clean isometric city-building simulator inside
+AI System 6. It shares the long-term shape of classic city-builder experiences
+— layered tile grids, altitude, zoning, and RCI demand feedback — but it is
+written from first principles. No code, art, sound, copy, data, or fixtures
+come from SimCity 2000, Maxis, EA, OpenSC2K, Micropolis, or OpenTTD.
+
+**Inspiration anchor:** the public design ideas of SimCity 2000 — layered tile
+grids, altitude and isometric terrain, RCI demand feedback, power grids, and
+growth milestones. Only public ideas are borrowed; nothing from Maxis or EA
+enters the code, data, art, sound, or copy.
+
+## Current visual pipeline (2026-09-11)
+
+The visual remaster keeps Canvas 2D as the default view, with optional lazy
+three.js 3D and Canvas fallback when WebGL is unavailable. Both use shared
+`createAssetBlocks` / `blockFaces` building definitions, including gabled and
+hipped roofs and faceted broadleaf/conifer crowns. Four-direction 2D sprites
+are rendered offline by deterministic CPU orthographic rasterization of those
+same shapes; simulation and save formats are unchanged.
+
+The reviewed, original material plate was made with the subscription's built-in
+`image_gen.imagegen` tool. Its exact model version is not exposed; the requested
+GPT Image 2.5 version is not asserted. Checked-in source art and prompts feed
+an offline build of 48 colour texture tiles and a separate glass/emission mask.
+Road markings, windows and seasonal colours retain their semantic recipes.
+Half-texel UV insets and disabling cross-tile mipmaps prevent atlas bleeding;
+independent water textures retain mipmaps. Source hashes and per-material
+assignments make the generated outputs reviewable and reproducible.
+
+This describes the implementation, not a browser acceptance receipt. The
+remaster does not change simulation rules or saves and does not include deployment.
+
+## Phase 0 scope (historical)
+
+Phase 0 establishes the foundation and construction rules only:
+
+- three-layer architecture boundary;
+- determinism, tick, seed, command, and event contracts;
+- versioned save-format contract and migration policy;
+- AI System 6 shell decisions (window role, status, responsive, lazy load,
+  lifecycle);
+- license and provenance rules;
+- a machine-readable foundation contract, a scoped AGENTS file, this
+  documentation set, an implementation-status file, and an executable
+  foundation test.
+
+Phase 0 does **not** implement gameplay, map rendering, a window, a
+persistence store, or dependencies.
+
+## Implementation milestones
+
+These entries record earlier phase deliveries. Current rendering and asset
+choices are stated above; superseded dimensions and authoring methods remain
+here only as history.
+
+- A headless simulation core exists at
+  `apps/desktop/app/features/bonsai-city-sim.js` (64/96/128 tile grids, seeded
+  terrain presets, independent networks and zoning, construction, utilities,
+  services, population/demand/finance, integer ticks, and v5
+  `serialize`/`deserialize`). It is wired through the lazy Applications →
+  Games window and ships in the curated public beta snapshot.
+- The core's seed policy is now contract-enforced: the shell must provide an
+  integer seed; the core never falls back to `Math.random()`.
+- The kernel now carries a versioned command layer (immediate and
+  future-dated queued commands with monotonic sequences), a versioned event
+  stream, and canonical checkpoint serialization; determinism is pinned by
+  `tests/features/bonsai-kernel.test.mjs`.
+- Phase 2 adds the portable save envelope (`encodeSave`/`decodeSave` with
+  SHA-256 integrity over canonical JSON, pure migration chain) and an
+  in-memory city repository (`createCityRepository`) with an injectable clock;
+  both are pinned by `tests/features/bonsai-save.test.mjs`.
+- Phase 3 wires the lazy System 6 shell: the `bonsaiCity` creative-lab window
+  opens from Applications, runs the core at a 20 Hz pacing loop with
+  pause/slow/normal/fast, turns pointer input into previews and commands, and
+  persists cities to the dedicated
+  `bonsaiCities` IndexedDB store through the shared write-fence helper. Pinned
+  by `tests/features/bonsai-shell.test.mjs`.
+- Phase 4 replaces the preview with the original isometric renderer: 2:1
+  diamond projection, altitude lift, painter-order draw, and camera pan/zoom
+  as pure view state. Pointer input maps through the inverse projection into
+  commands only. Pinned by `tests/features/bonsai-renderer.test.mjs`.
+- Phase 5 is the playable vertical slice: new city, build roads/zones/power,
+  run at 20 Hz with speed control, query tiles, save/load through the
+  integrity envelope, and an Open Cities list. Closing the window saves.
+  Pinned by `tests/features/bonsai-slice.test.mjs`.
+- Phase 6 lands the SimCity 2000-inspired systems: police/fire stations with
+  funding-scaled coverage, traffic and congestion that stalls growth, land
+  value, a deterministic economy cycle, and a city report with a mayor
+  rating. Pinned by `tests/features/bonsai-systems.test.mjs`.
+- Historically, Phase 8 replaced the rejected voxel showcase with the single production
+  Canvas 2D renderer: 48x24 isometric tiles, four quarter-turn views, six
+  composited layers, visible-diagonal culling, 16x16 static chunk caches, and
+  deterministic original sprite atlases. The renderer consumes a pure
+  `buildRenderSnapshot`; pointer, keyboard, and touch input still emit commands
+  only. Pinned by `tests/features/bonsai-renderer.test.mjs`,
+  `tests/features/bonsai-atlas.test.mjs`, and the real-browser
+  `audit:bonsai-acceptance` gate.
+- The atlas family grows a night variant set (M5-2c): every growable
+  building, facility, and catalog special gains a dimmed lit-window frame,
+  and the Canvas renderer's time-of-day gate swaps to those frames at dusk,
+  with the recorded window rects drawn bright on the lighting layer — the
+  SimCity 2000 night signature, generated entirely from the original
+  project recipes.
+- Historically, the voxel backend gained its first micro-voxel texture atlas (M5-2d):
+  a power-of-two 512px sheet of 40 procedural 64px tiles, loaded lazily
+  with nearest magnification and mipmaps for Retina and mobile. Paths
+  (road, rail, pipe, wire, highway, bridge, tunnel) draw direction-aware
+  continuous strips, and buildings get per-zone walls, per-variant roof
+  details, and per-facility surfaces.
+- The voxel world extrapolates the SimCity 2000 benchmark (M5-2e): three
+  tree shapes (broadleaf, conifer, sapling), gabled houses and setback
+  high-rises, bespoke landmark silhouettes (domes, civic towers, stadium
+  tiers, cranes, piers), beach-lined coasts, shimmering animated water,
+  continuous road curbs, and two-tone cars.
+- Water and disaster signatures (M5-2f): waterfalls render where water
+  meets high land, animated on both backends from the snapshot clock, and
+  active tornado and monster disasters get visible funnels and monsters.
+- Special-zone ground visuals (M5-2g): military, airport, and seaport zones
+  render as installation, runway, and dock ground — with continuous runway
+  markings on the Canvas pad — instead of invisible grass.
+
+### Tile scale
+
+Both backends use 64×32-pixel diamonds, a 10-pixel altitude step and default
+zoom 0.5, on four fixed zoom steps 0.25 / 0.5 / 1 / 2 (SC2K opens on its
+32-pixel overview). These are the current source constants, superseding the
+earlier 48×24 / 8-pixel / 0.82 baseline, the later 0.7 default and the
+pending-retune proposal. Projection,
+pointer math, atlas output and acceptance checks must use the current values;
+the historical phase descriptions below do not override them.
+
+- The Canvas 2D view gains SC2000-style 2.5D depth (M5-2h): lit roof
+  parapets, facade floor lines, front doors, two-tone trees with shadows,
+  richer terrain (speckle, blades, water sheen, coast foam), and soft
+  ground shadows under every building and landmark.
+- Terrain depth, water life, and zone claim (M5-2i): cliff shadow bands
+  where ground steps down (both backends), shimmering animated water on the
+  Canvas lighting layer, and a subtle hatch on R/C/I zones.
+- A zen-clean Japanese-Minecraft atmosphere (M5-2j): muted moss/ink/paper
+  palette, calmed terrain and water detail, one pale moon with sparse paper
+  lanterns at night, a tiered pagoda temple landmark, an elevation-tinted
+  SC2000 minimap, and tick-swinging construction cranes.
+- Water-edge torii on piers and marinas, a zen-garden corner in park
+  textures, and snow-capped peaks above the snow line (M5-2k) — the
+  OpenTTD benchmark is met on principles (clean terrain, one quiet detail
+  per surface), never by copying its GPL assets.
+- 2D path continuity reaches 3D parity (M5-2l): highways, onramps, and
+  bridges over water draw direction-aware mask frames that turn corners and
+  continue across tile edges, and road bores get dark tunnel overlays with
+  portal frames — the OpenTTD approach on our own original recipes.
+- Maple accents and 2D power poles (M5-2m): roughly one in five trees is a
+  red maple in both backends, and wire frames carry poles with crossarms.
+- Port signatures and moon water (M5-2n): sparse control towers on airport
+  pads, dock cranes on seaport pads, and a faint moon reflection on water
+  at night.
+- Road curbs in 2D and seasonal maples (M5-2o): streets gain quiet curb
+  edges in the atlas, and in autumn the maple share rises to about half the
+  canopy in both backends.
+- The four seasons (M5-2p): sakura blossom crowns in spring, deep greens in
+  summer, the maple forest in autumn, and snow-dusted crowns in winter —
+  cycling purely from the snapshot calendar in both backends.
+- Winter ground snow (M5-2q): in the fourth season the whole lowland snows
+  over in both backends, melting back to moss in spring.
+- Seasonal water (M5-2r): lakes freeze to pale ice in winter and brighten
+  in spring, across both backends and the minimap.
+- A warm UX pass (M5-2u): guiding bilingual copy, a gentle first-run hint
+  that fades after the player's first move, and scoped theme-token CSS.
+- Sakura petals drift in spring (M5-2s), and highways and onramps are now
+  real: divided carriageways and wide-to-narrow ramps in both backends
+  (M5-2t).
+- The simulation/save contract advances to v2: 64/96 maps, independent
+  terrain/transport/power/water/zone/building layers, atomic path and area
+  commands with pure previews, five ticks per game day, density and
+  construction states, water and service systems, policy/history/loan state,
+  and a pure v1-to-v2 migration. Existing `bonsaiCities` records remain in the
+  dedicated store; the IndexedDB schema does not change.
+- Two fixed recipes (`starter-town` and `troubled-mid-size`) replay original
+  v2 command logs through the real simulation and save codec. Their final
+  checkpoints are pinned so examples cannot drift into static scenery.
+- The GPL games (Micropolis, OpenTTD, DOOM) are separate shipped products and
+  share no code with the Bonsai path.
+- Phase 9 opens the **SC2000 parity program** (owner directive, 2026-08-23):
+  Bonsai City grows into full SimCity 2000 gameplay parity with bidirectional
+  `.sc2` save compatibility (clean-room codec from attributed public format
+  facts; synthetic fixtures only), a lazy three.js voxel renderer backend
+  (Canvas 2D retained as the WebGL-unavailable fallback; both read the same
+  render snapshot), original Minecraft-style micro-voxel art generated from
+  project recipes, and original synthesized music and sound. EA expression
+  (code, art, sound, text, city files) stays fully prohibited; see
+  [LEGAL-AND-PROVENANCE.md](LEGAL-AND-PROVENANCE.md).
+- Completion program, lane B (2026-09-03/04), toward the owner's
+  OpenTTD-level acceptance:
+  - No dead ends: `tests/features/bonsai-no-dead-ends.test.mjs` boots the
+    shell in the app harness, founds a city through the real setup form,
+    and runs every menu command (each must change the DOM, the shell state,
+    or the city checkpoint), arms every rail tool through the rail click
+    path, checks the core understands every tool command, and requires every
+    reachable `bonsai_*` key in both languages. 自动预算 (auto-budget) ships:
+    off by default, January holds the clock with the budget pane open; on,
+    the previous budget lines roll on. A disaster chosen from the menu now
+    reports in the status line.
+  - Two hours without a stall: `npm run audit:bonsai-playthrough` runs a
+    deterministic scripted mayor on the headless core (lattice, zoning by
+    demand, plants and waterworks, services and transit, bonds, ordinances,
+    one disaster per decade, rewards) and refuses on a stall, a reward left
+    unplaced, a missing story key, or twelve months in the red. Its first
+    run found the core oscillating (a serviced 6 000-resident city fell to
+    16 in two months); oversupply now has to hold for three settled months
+    before a working building declines. The mayor reaches 50 000 residents
+    in game year 1909 and plateaus near 68 000 on a 128-square map. It is an
+    on-demand audit (`npm run audit:bonsai-playthrough`).
+  - SC2K parity: a coal plant takes the 4×4 pad (save rule 3.1, older
+    plants keep 2×2 and the query balloon says so), `sc2DerivedGrids` reads
+    the 64×64 / 32×32 grids, the EQ/LE ordinance hooks are confirmed live,
+    and [SC2-COMPAT.md](SC2-COMPAT.md) carries the owner's certification
+    run sheet.
+  - Integration at OpenTTD's level: a saved-N-s-ago line in the gauge bar,
+    the pagehide flush confirmed through the application registry, the
+    window already in the mobile full-screen and immersive sets, and one
+    synthesized sound per simulation event.
+- Ruleset 5, the playable pass
+  (BONSAI-PLAYABLE-SPEC):
+  - Whole buildings on lots: a persistent `lot` layer holds 1×1, 2×2 and 3×3
+    buildings that go through foundation, construction, working, declining,
+    abandoned and recovering; small buildings are replaced by bigger ones
+    when demand, land value and water allow. Save v5 carries the lot layer
+    and the monthly environment; v4 cities migrate by grouping their
+    buildings into lots.
+  - Land value picks each building's look: low under 58, middle below the
+    city's tower line, high above it. The line is the land value the
+    city's dearest 3% of dry land reaches (never below 66), so every city
+    grows a downtown on its own dearest streets. Only a lot with a road
+    along a side reaches the high tier, and within it land value ranks the
+    height, so towers line streets and step down from the core. A working
+    lot whose land rises over the line, or a tower whose land rises two
+    ranks, is rebuilt while its zone has demand. Towers come as slab
+    blocks, podium towers and stepped landmarks, each on a podium built to
+    the street line with the shaft set back, and every building turns to
+    face its street (the 2D art, one view at a time, is mirrored toward
+    east and west streets). The tier is the look only: every tier houses
+    the same number of people, as every lot always has.
+  - Every building stands on a street: a lot grows, and keeps working,
+    only while a street (road, bridge or onramp; a highway is no way in)
+    runs along its footprint, since that is how the fire engine and the
+    police car reach it. A block's inner cells go up only as part of a 2×2
+    or 3×3 lot that reaches the street; the scripted mayor turns whatever
+    inside a block is still unbuilt five years on into a courtyard park.
+    Airports and seaports work within three tiles of a street.
+  - A lot grows only when its road reaches jobs (or homes) within the
+    commute limit over roads, rail and subway; traffic follows that route.
+    A blackout takes buildings down gradually (a small chance at every look,
+    certain after ninety dark days), and a lost road or a lost commute
+    brings a building down; no water caps it at 1×1. Demand, taxes, upkeep and bonds run on SC2K
+    scale, and land value, crime and pollution are monthly fields.
+  - Level plains with terraces, and pads that level themselves for a fee.
+  - Networks drawn the SC2K way: roads, railways and power lines lie on the
+    slope they climb instead of stepping; bridges run level with their banks
+    on piers; highways stand one step up on piers with streets passing under,
+    onramps climb from the street to the deck, and two crossing highways make
+    a two-level interchange; water pipes, like the subway, show on the
+    underground view only. Both backends draw it so (the 3D one gained the
+    underground view), and zone tints lie on the slope too.
+  - The 3D backend carries SimCity 3000's density of detail in its own
+    micro-voxel style: sidewalks, zebra crossings, street lamps, sleepers
+    and lattice pylons; towers on dear 2×2 and 3×3 street lots with helipads, roof tanks
+    and striped parking; water that deepens away from a surf-lined shore;
+    rooms lit floor by floor at night, round lamp pools and a golden hour;
+    cars, buses and lorries in their lanes as dense as each street's
+    traffic, pedestrians on the sidewalks and trains along the track. It
+    reads the same render snapshot, and the simulation is unchanged.
+  - New tools (hospital, university, library, museum, prison, zoo, stadium,
+    marina, big and small parks), blinking problem flags, an Advisors
+    window with Locate, a query balloon that says what a lot lacks, and
+    disasters that need their cause on the map.
+  - `tooling/play-bonsai-two-hours.mjs` plays 30 years as a scripted and a
+    laissez-faire mayor, on 128², 96² and 64² with a pace table per size
+    (a mayor who loses every plant rebuilds one before anything else);
+    `tooling/probe-bonsai-sim-cost.mjs` times a mature
+    128² city; `tooling/play-bonsai-browser.mjs` plays a new city through the
+    real UI. Acceptance evidence is in
+    `internal/plans/BONSAI-PLAYABLE-REPORT.zh-CN.md`.
+- Ruleset 6, the underwater subway (owner decision 2026-10-02,
+  `internal/plans/BASIN-WORLD.zh-CN.md`, open question 3, option A):
+  - A subway line may cross water as a tunnel under the bed, at $300 a
+    water tile (four rail bridge tiles; $100 on land). It is the same
+    subway layer, carries commuters like any other subway tile, and pays the
+    same monthly subway upkeep; the drag preview names the tunnel's share.
+    Subway stations, pipes, parks and onramps stay on land.
+  - Saves keep format v5: the rule adds nothing to the file, so a ruleset-5
+    city lifts to ruleset 6 with only its version stamp changed.
+- Ruleset 6, the avenue (Aaron 2026-10-02, relayed by the Joyride session:
+  Yichang- and Guangzhou-style right of way, the BRT lanes and their island
+  platforms in the middle of the road, with sidewalks and a lane for
+  bicycles and e-bikes; the data convention is in
+  `internal/plans/BASIN-WORLD.zh-CN.md`, 公交、快速公交与慢行):
+  - An avenue is two road tiles side by side, one carriageway each way. The
+    durable `avenue` layer holds each half's direction of travel (1 north,
+    2 east, 4 south, 8 west); the median is on the driver's left and the
+    other half is the tile there. Both halves stay road, so commutes route
+    as before. Each half, from the centre line out, is median 1.5 m, BRT
+    lane 3.5, barrier 0.5, two general lanes 2 × 3.0, non-motorised lane
+    1.5, sidewalk 2 and verge 1.
+  - `build-path` with `network: "avenue"` lays one straight run two tiles
+    wide along the drag: $25 a new tile on land, $15 to widen a road tile,
+    $60 a new bridge deck. It lays road where there is none under a road's
+    rules, leaves a pair that is already this avenue alone, keeps a crossing
+    avenue's halves at the junction, and refuses to take half of another
+    avenue. Bulldozing either half brings the pair down; undo restores both.
+    The avenue opens in 1920 with the BRT that runs on it (the world core's
+    `transit.MODES.brt`).
+  - An avenue tile congests at twice a street's traffic (two general lanes a
+    half); the BRT lane carries no commuters and never congests. What a BRT
+    line does on its lanes arrives with transit lines.
+  - The 2D map paints the cross-section — the red BRT lanes either side of a
+    hedged median, white lane lines, the green slow lane at each kerb, the
+    sidewalk and verge — with mouths for side streets, zebras at crossings,
+    a kerbed end, a bridge parapet, and median lamps at night. The whole
+    avenue is laid as one surface: where its halves stand a level apart on a
+    hill, or its land meets a bridge deck, each corner the halves share takes
+    one height, so the median and lanes run on without a step.
+
+## Document map
+
+- [ARCHITECTURE.md](ARCHITECTURE.md) — layers, determinism, command/event
+  interfaces, shell and lifecycle contracts.
+- [SAVE-FORMAT.md](SAVE-FORMAT.md) — the versioned save format and the future
+  integrity/migration chain.
+- [LEGAL-AND-PROVENANCE.md](LEGAL-AND-PROVENANCE.md) — MIT boundary, GPL
+  separation, and asset provenance rules.
+- [OPENSC2K-RESEARCH.md](OPENSC2K-RESEARCH.md) — pinned research notes and
+  what may and may not be adopted.
+- [SC2-COMPAT.md](SC2-COMPAT.md) — the `.sc2` import/export status, known
+  approximations, fixture policy, and the owner's manual check protocol.
+- [SC2K-SYSTEMS-STUDY.md](SC2K-SYSTEMS-STUDY.md) — clean-room system study
+  from the published save spec: what SC2K does as systems, what Bonsai has,
+  and the gaps (weather, underground crossovers, military base, arco family).
+- [AGENTS.md](AGENTS.md) — scoped working rules for agents.
+- `foundation-contract.json` — the machine-readable Phase 0 contract enforced
+  by `tests/features/city-simulator-foundation.test.mjs`.
+- CITY-SIMULATOR-IMPLEMENTATION-STATUS.md
+  — implementation status and open decisions.
+
+## Verification
+
+```sh
+npm run verify:quick -- --feature city-simulator-foundation --docs --no-build
+npm run verify:feature -- city-simulator-foundation
+npm run verify:docs
+npm run audit:bonsai-playthrough   # the scripted two-hour mayor (on-demand audit)
+```
+
+Repo-wide release gates are documented in [DEVELOPMENT.md](../DEVELOPMENT.md).

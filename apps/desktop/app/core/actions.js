@@ -1,0 +1,2252 @@
+// Core runtime module: actions.
+
+// Loaded before app.js as a classic script; shares the AI System 6 global scope.
+
+let reviewDeskMode = "style";
+
+const keyboardShortcutRegistry = [
+  { id: "new-document", key: "n", action: "new-document", display: "⌘N", labelKey: "new_document", keyCaps: true, scope: ["teachText", "quickDraft"] },
+  { id: "new-folder", key: "n", shift: true, action: "new-folder", display: "⇧⌘N", labelKey: "new_folder", keyCaps: true, suppressInEditable: true, scope: ["finder"] },
+  { id: "new-folder-classic", key: "n", action: "new-folder", display: "⌘N", labelKey: "new_folder", keyCaps: true, suppressInEditable: true, scope: ["finder"] },
+  // ⌘O means "open what this application opens", so each application claims
+  // the key for its own Open command. One shared entry used to cover Finder and
+  // TeachText, which meant TeachText's "Open… ⌘O" row printed a key that
+  // dispatched Finder's open-menu-selection. Scopes stay disjoint: two entries
+  // may share a combination only when no application can reach both.
+  // Only Finder suppresses ⌘O while a field is editable: its rows compete with
+  // an inline rename box. TeachText and Reader must answer the key with the
+  // caret in the document, the way ⌘S already does — getActiveEditableElement()
+  // reports TeachText's body whenever that window is in front, so a suppressed
+  // ⌘O there would never fire at all.
+  { id: "open", key: "o", action: "open-menu-selection", display: "⌘O", labelKey: "open", keyCaps: true, suppressInEditable: true, scope: ["finder"] },
+  { id: "open-text-document", key: "o", action: "open-text-document", display: "⌘O", labelKey: "open", scope: ["teachText"] },
+  { id: "reader-open-source", key: "o", action: "reader-open-source", display: "⌘O", labelKey: "open_source", scope: ["reader"] },
+  { id: "blog-sync", key: "r", action: "blog-sync", display: "⌘R", labelKey: "refresh", scope: ["aaronBlog"] },
+  { id: "blog-search", key: "f", action: "blog-search", display: "⌘F", labelKey: "aaron_blog_search", scope: ["aaronBlog"] },
+  { id: "start-new-clio-chat", key: "n", action: "start-new-clio-chat", display: "⌘N", labelKey: "new_conversation", scope: ["clioTalk"] },
+  { id: "clio-search", key: "k", action: "clio-search", display: "⌘K", labelKey: "clio_search", scope: ["clioTalk"] },
+  { id: "new-office-document", key: "n", action: "new-office-document", display: "⌘N", labelKey: "new_office_document", keyCaps: true, scope: ["clioWrite", "clioChart", "clioStage"] },
+  { id: "save", key: "s", action: "save-current", display: "⌘S", labelKey: "save_current", keyCaps: true, scope: ["teachText", "clioTalk", "quickDraft"] },
+  { id: "save-copy", key: "s", shift: true, action: "save-copy", display: "⇧⌘S", labelKey: "save_copy", keyCaps: true, scope: ["teachText"] },
+  { id: "close-window", key: "w", action: "close-active-window", display: "⌘W", labelKey: "close_window", keyCaps: true, scope: "global" },
+  // The desk's windows, in the order Mac OS X walks them: front-most first,
+  // backwards with Shift. A browser can claim ⌘` for its own windows before the
+  // page ever sees it (98.js hit the same wall with Alt+Tab and had to choose
+  // another combination), which is why the same list is reachable from the
+  // right end without the key.
+  // Pinned by physical key: with Shift held, `event.key` is "~" on most
+  // layouts, so the shifted row would never match on `key` alone.
+  // Display only: window-minimize.js owns the key (it knows which era draws
+  // the lamp and which window takes it), so this row prints ⌘M beside
+  // "Minimize Window" and in Key Caps without dispatching a second minimize.
+  { id: "minimize-window", key: "m", code: "KeyM", action: "minimize-window", display: "⌘M", labelKey: "minimize_window_command", keyCaps: true, dispatch: false, scope: "global" },
+  // Sierra's tab walking (WINDOW-TABS-SPEC §6, option (i)): global scope, the
+  // capability gate lives in the commands' own availability, and Key Caps greys
+  // by the same table. ⌃Tab is macOS's own combination; a browser that claims
+  // it keeps it and the desk says nothing — the same honest limit ⌘` lives with.
+  { id: "show-next-tab-key", key: "tab", ctrl: true, action: "show-next-tab", display: "⌃⇥", labelKey: "tabs_next", keyCaps: true, scope: "global" },
+  { id: "show-previous-tab-key", key: "tab", ctrl: true, shift: true, action: "show-previous-tab", display: "⌃⇧⇥", labelKey: "tabs_previous", keyCaps: true, scope: "global" },
+  { id: "cycle-window", key: "`", code: "Backquote", action: "cycle-window", display: "⌘`", labelKey: "cycle_window", keyCaps: true, scope: "global" },
+  { id: "cycle-window-back", key: "`", code: "Backquote", shift: true, action: "cycle-window-back", display: "⇧⌘`", labelKey: "cycle_window_back", keyCaps: true, scope: "global" },
+  // NeXTSTEP 3.3's within-tier reorder (Window chapter: ⌘↑ sends the tier's
+  // backmost window to its front, ⌘↓ the frontmost to its back). runShortcut
+  // has no era scope, so the key is global and the command carries the era gate
+  // (§6B). suppressInEditable is load-bearing: in a text field both
+  // combinations are macOS's caret-to-start/end, and a global entry without it
+  // would swallow that in every era.
+  { id: "nextstep-window-front", key: "arrowup", action: "nextstep-window-front", display: "⌘↑", labelKey: "nextstep_window_front", keyCaps: true, suppressInEditable: true, scope: "global" },
+  { id: "nextstep-window-back", key: "arrowdown", action: "nextstep-window-back", display: "⌘↓", labelKey: "nextstep_window_back", keyCaps: true, suppressInEditable: true, scope: "global" },
+  // Holding a thought has to work while the writer is typing, so it is
+  // deliberately NOT suppressed in an editable — mid-sentence is exactly when
+  // the door goes — and it claims nothing a text field already uses. It matches
+  // on `code`: with Option held, `key` is whatever the layout composes, which
+  // is not "n" everywhere. One key for the whole movement; coming back is never
+  // urgent, and one key equivalent is one chance to collide with the browser's.
+  { id: "hold-that-thought", key: "n", code: "KeyN", option: true, action: "hold-that-thought", display: "⌥⌘N", labelKey: "hold_that_thought", keyCaps: true, scope: "global" },
+  { id: "undo", key: "z", action: "undo", display: "⌘Z / ⇧⌘Z", menuDisplay: "⌘Z", labelKey: "undo_redo", keyCaps: true, scope: "application" },
+  { id: "redo", key: "z", shift: true, action: "redo", display: "⇧⌘Z", labelKey: "redo", scope: "application" },
+  // display is the Key Caps summary for the whole cut/copy/paste/select-all
+  // family; menuDisplay is what the Edit menu's own Cut item shows.
+  { id: "cut", key: "x", action: "cut", display: "⌘X/C/V/A", menuDisplay: "⌘X", labelKey: "edit_basics", keyCaps: true, scope: "application" },
+  { id: "copy", key: "c", action: "copy", display: "⌘C", labelKey: "copy", scope: "application" },
+  { id: "paste", key: "v", action: "paste", display: "⌘V", labelKey: "paste", scope: "application" },
+  { id: "select-all", key: "a", action: "select-all", display: "⌘A", labelKey: "select_all", scope: "application" },
+  { id: "format-writing", key: "b", display: "⌘B/I/K", labelKey: "format_basics", keyCaps: true, dispatch: false },
+  // The Format menu's key equivalents, display-only: the editor answers these
+  // keys itself (tooling/vendor/writing-editor/entry.mjs). Each row is the key,
+  // then o for ⌥⌘ or s for ⇧⌘.
+  ...Object.entries({ "heading-0": "0o", "heading-1": "1o", "heading-2": "2o", "heading-3": "3o", bold: "b", italic: "i", strike: "xs", code: "e", link: "k", quote: "'", bullet: "7s", numbered: "9s", task: "ls", indent: "]", outdent: "[", table: "to", "code-block": "co" })
+    .map(([id, [key, mod]]) => ({ id: `format-${id}`, key, display: (mod === "o" ? "⌥⌘" : mod ? "⇧⌘" : "⌘") + key.toUpperCase(), dispatch: false })),
+  { id: "get-info", key: "i", action: "open-file-info", display: "⌘I", labelKey: "get_info", keyCaps: true, suppressInEditable: true, scope: ["finder"] },
+  { id: "duplicate", key: "d", action: "duplicate-selection", display: "⌘D", labelKey: "duplicate", suppressInEditable: true, scope: ["finder"] },
+  { id: "move-to-trash", key: "backspace", action: "move-file-trash", display: "⌘⌫", labelKey: "move_to_trash", suppressInEditable: true, scope: ["finder"] },
+  { id: "move-to-trash-delete", key: "delete", action: "move-file-trash", display: "⌘⌫", labelKey: "move_to_trash", suppressInEditable: true, scope: ["finder"] },
+  { id: "eject", key: "e", action: "eject-menu-selection", display: "⌘E", labelKey: "eject", suppressInEditable: true, scope: ["finder"] },
+  // Find… is the desk-wide search. ⌘F belongs to whichever window owns it
+  // (Find/Change, the blog's search, the ClioWorks editors' own 查找); everywhere
+  // else it opens Find…, and ⇧⌘F always does. ⌥⌘F is not the fallback: it is writing-focus's in the writing
+  // windows, which are the very windows that own ⌘F.
+  { id: "find-desk", key: "f", action: "open-find-file", display: "⌘F", labelKey: "find_file", scope: "global", unlessScope: ["teachText", "aaronBlog", "clioWrite", "clioChart", "clioStage"] },
+  { id: "find-desk-owned", key: "f", shift: true, action: "open-find-desk", display: "⇧⌘F", labelKey: "find_file", keyCaps: true, scope: "global" },
+  { id: "key-caps", key: "/", action: "open-key-caps", display: "⌘/", labelKey: "command_sheet", keyCaps: true, scope: "global" },
+  { id: "system-help", key: "?", shift: true, action: "open-system-help", display: "⌘?", labelKey: "system_help", keyCaps: true, scope: "global" },
+  { id: "control-panel", key: ",", action: "open-control", display: "⌘,", labelKey: "control_panel", keyCaps: true, scope: "global" },
+  // The writing route is the product's core and had no Command keys at all,
+  // while ClioChart - a side tool - had five. These deliberately do NOT set
+  // suppressInEditable: moving between stops has to work with the caret in the
+  // text, which is where a writer always is. Scope "teachText" covers the whole
+  // Writing Studio (runShortcut maps writingStudio onto it).
+  { id: "find-change", key: "f", action: "open-find-change", display: "⌘F", labelKey: "find_change_ellipsis", keyCaps: true, scope: ["teachText"] },
+  { id: "find-change-next", key: "g", action: "find-change-next", display: "⌘G", labelKey: "find_next", scope: ["teachText"] },
+  { id: "route-question-sheet", key: "1", action: "open-question-sheet", display: "⌘1", labelKey: "question_sheet", keyCaps: true, scope: ["teachText"] },
+  { id: "route-outline", key: "2", action: "open-outline", display: "⌘2", labelKey: "outline", scope: ["teachText"] },
+  { id: "route-section-drafts", key: "3", action: "open-section-drafts", display: "⌘3", labelKey: "section_drafts", scope: ["teachText"] },
+  { id: "route-manuscript", key: "4", action: "open-teachtext-manuscript", display: "⌘4", labelKey: "manuscript", scope: ["teachText"] },
+  { id: "route-review-desk", key: "5", action: "open-review-desk", display: "⌘5", labelKey: "review_desk", scope: ["teachText"] },
+  { id: "route-advance", key: "arrowright", shift: true, action: "advance-writing-route", display: "⇧⌘→", labelKey: "advance_writing_route", keyCaps: true, scope: ["teachText"] },
+  { id: "writing-preview", key: "p", shift: true, action: "toggle-writing-preview", display: "⇧⌘P", labelKey: "preview", keyCaps: true, scope: ["teachText", "quickDraft"] },
+  { id: "writing-focus", key: "f", option: true, action: "cycle-writing-focus", display: "⌥⌘F", labelKey: "focus_mode_cycle", scope: ["teachText", "quickDraft"] },
+  // 文字亮室. The three views take the scoped number keys ClioChart already
+  // uses; suppressInEditable is load-bearing here because the FatBits cells in
+  // the grain view are editable, and ⌘1 inside one must type nothing.
+  { id: "lightroom-view-grain", key: "1", action: "quick-draft-view-grain", display: "⌘1/2/3", menuDisplay: "⌘1", labelKey: "lightroom_views", keyCaps: true, suppressInEditable: true, scope: ["lightroom"] },
+  { id: "lightroom-view-read", key: "2", action: "quick-draft-view-read", display: "⌘2", labelKey: "quick_draft_composite", suppressInEditable: true, scope: ["lightroom"] },
+  { id: "lightroom-view-listen", key: "3", action: "quick-draft-view-listen", display: "⌘3", labelKey: "quick_draft_listen", suppressInEditable: true, scope: ["lightroom"] },
+  { id: "lightroom-apply", key: "y", action: "quick-draft-apply", display: "⌘Y", labelKey: "quick_draft_preview_adjustments", keyCaps: true, suppressInEditable: true, scope: ["lightroom"] },
+  { id: "lightroom-develop", key: "d", action: "quick-draft-develop", display: "⌘D", labelKey: "quick_draft_develop", keyCaps: true, suppressInEditable: true, scope: ["lightroom"] },
+  { id: "lightroom-save-version", key: "s", action: "lightroom-save-version", display: "⌘S", labelKey: "lightroom_save_version", suppressInEditable: true, scope: ["lightroom"] },
+  { id: "lightroom-undo-develop", key: "z", code: "KeyZ", option: true, action: "lightroom-undo-develop", display: "⌥⌘Z", labelKey: "lightroom_undo_develop", suppressInEditable: true, scope: ["lightroom"] },
+  { id: "lightroom-listen-toggle", key: "r", action: "lightroom-listen-toggle", display: "⌘R", labelKey: "quick_draft_listen_play", suppressInEditable: true, scope: ["lightroom"] },
+  { id: "clio-chart-view-1", key: "1", action: "clio-chart-bars", display: "⌘1", labelKey: "clio_chart_bars", suppressInEditable: true, scope: ["clioChart"] },
+  { id: "clio-chart-view-2", key: "2", action: "clio-chart-matrix", display: "⌘2", labelKey: "clio_chart_matrix", suppressInEditable: true, scope: ["clioChart"] },
+  { id: "clio-chart-view-3", key: "3", action: "clio-chart-trace", display: "⌘3", labelKey: "clio_chart_trace", suppressInEditable: true, scope: ["clioChart"] },
+  { id: "clio-chart-view-4", key: "4", action: "clio-chart-grid", display: "⌘4", labelKey: "clio_chart_grid", suppressInEditable: true, scope: ["clioChart"] },
+  { id: "clio-chart-view-5", key: "5", action: "clio-chart-score", display: "⌘5", labelKey: "clio_chart_score", suppressInEditable: true, scope: ["clioChart"] },
+  { id: "clio-chart-view-6", key: "6", action: "clio-chart-compare", display: "⌘6", labelKey: "clio_chart_compare", suppressInEditable: true, scope: ["clioChart"] },
+  { id: "clio-chart-reverse", key: "r", action: "clio-chart-reverse-sort", display: "⌘R", labelKey: "clio_chart_reverse_sort", suppressInEditable: true, scope: ["clioChart"] },
+  // N6: the show. ⇧⌘P starts presenting the deck in front (⌘P stays the
+  // browser's print; ClioWrite's page view owns it in its own scope). Ending
+  // is ⌘., handled by the show layer itself, the key the page view closes with.
+  { id: "clio-stage-present", key: "p", shift: true, action: "clio-stage-present", display: "⇧⌘P", labelKey: "clio_stage_present", keyCaps: true, scope: ["clioStage"] },
+];
+
+// Action-level write contract: these commands mutate durable / project state
+// and are rejected by the router before their handler runs when this window
+// cannot write (read-only or mid-handoff). The UI layer uses
+// `data-requires-write` and the storage fence uses assertCanWrite — three
+// layers, same boundary.
+const writeRequiredActions = new Set([
+  "save-current",
+  "save-copy",
+  "save-chat",
+  "save-conversation",
+  "rename-active-chat",
+  "new-document",
+  "new-folder",
+  "new-office-document",
+  "office-save-as-stationery",
+  "new-project-disk",
+  "rename-project-disk",
+  "rename-file",
+  "duplicate-selection",
+  "move-file-trash",
+  "empty-trash",
+  "put-away",
+  "erase-disk",
+  "quick-draft-save-project",
+  "quick-draft-send-teachtext",
+  "quick-draft-send-review",
+  "insert-text-disk",
+  "eject-text-disk",
+  "add-text-disk-project",
+  "dictionary-keep-word",
+  "dictionary-delete-word",
+]);
+
+function finderCommand(name, ctx = {}) { return ensureFinderOpsModule().then(() => window.AISystem6FinderOps.run(name, ctx)); }
+const fclip = (p) => window.AISystem6FinderOps?.clipReady(p);
+function keyboardShortcutById(id) {
+  return keyboardShortcutRegistry.find((shortcut) => shortcut.id === id) || null;
+}
+
+function shortcutUsesCommandKey() {
+  const platform = String(
+    (typeof navigator !== "undefined"
+      && (navigator.userAgentData?.platform || navigator.platform || ""))
+    || ""
+  ).toLowerCase();
+  return platform.includes("mac")
+    || platform.includes("iphone")
+    || platform.includes("ipad")
+    || platform.includes("ipod");
+}
+
+function shortcutModifierPressed(event) {
+  // Exactly one modifier family passes on command-key platforms: ⌘-combos as
+  // always, and ⌃-combos (⌃⇥ tab walking is macOS's own) — the registry
+  // lookup below is the real gate, so an unmatched ⌃-combo falls through to
+  // the browser untouched, exactly as an unmatched ⌘-combo always has.
+  return shortcutUsesCommandKey() ? event.metaKey !== event.ctrlKey : event.ctrlKey && !event.metaKey;
+}
+
+function shortcutDisplayLabel(shortcut) {
+  const label = shortcut.menuDisplay || shortcut.display || "";
+  return shortcutUsesCommandKey() ? label : label.replace(/⌘/g, "Ctrl");
+}
+
+// The visible "⌘S" in a menu row is a child span, not part of the row's own
+// text. Two code paths write menu rows — applyLanguage() on a language switch
+// and renderAppMenuBar() on every application switch — so the span has to come
+// from one shared writer. While only applyLanguage() painted it, the first
+// application switch replaced every row with plain text and the menu bar
+// stopped teaching its own keys until the next language switch.
+function writeShortcutRowLabel(element, text) {
+  const shortcut = element.dataset.shortcut;
+  if (!shortcut) return false;
+  const display = document.createElement("span");
+  display.className = "shortcut";
+  display.textContent = shortcut;
+  element.replaceChildren(document.createTextNode(`${text} `), display);
+  return true;
+}
+
+function shortcutRowText(element) {
+  if (element.dataset.i18n && typeof t === "function") return t(element.dataset.i18n);
+  const painted = element.querySelector(".shortcut");
+  const own = painted ? element.firstChild?.textContent : element.textContent;
+  return String(own || "").trim();
+}
+
+function syncKeyboardShortcutLabels() {
+  const appId = activeAppId === "writingStudio" ? "teachText" : activeAppId;
+  const commandFOwned = !!keyboardShortcutById("find-desk")?.unlessScope?.includes(appId);
+  document.querySelectorAll("[data-shortcut-id]").forEach((element) => {
+    const shortcutId = element.dataset.shortcutId === "find-desk" && commandFOwned ? "find-desk-owned" : element.dataset.shortcutId;
+    const shortcut = keyboardShortcutById(shortcutId);
+    if (!shortcut) return;
+    element.dataset.shortcut = shortcutDisplayLabel(shortcut);
+    writeShortcutRowLabel(element, shortcutRowText(element));
+  });
+}
+
+// Key Caps' shortcut grid is app/features/command-sheet.js's (lazy): it is
+// only on screen while that window is open, so nothing here renders it.
+
+
+// The Window menu's Dock switch. The preference and the Control Panel row are
+// window-minimize.js's; this only flips the same preference from the menu and
+// loads the module if the era has not pulled it in yet.
+async function toggleDockFromMenu() {
+  if (!window.AISystem6WindowMinimize && typeof ensureLazySystemModule === "function") {
+    await ensureLazySystemModule("app/core/window-minimize.js", "AISystem6WindowMinimizeLoaded").catch(() => {});
+  }
+  const api = window.AISystem6WindowMinimize;
+  if (!api?.setDockVisible) return false;
+  const visible = api.setDockVisible(!api.dockVisible());
+  if (typeof setStatus === "function") setStatus(t(visible ? "dock_shown_status" : "dock_hidden_status"));
+  if (typeof updateMenuState === "function") updateMenuState();
+  return true;
+}
+
+function createFolderFromMenu() {
+  if (!isProjectMounted) {
+    openWindow("projects");
+    setStatus(t("no_project_mounted"));
+    return;
+  }
+
+  const active = document.querySelector(".window.is-active:not(.is-hidden)");
+  const activeName = active?.dataset.window;
+  const canCreateHere = activeName === "documents"
+    || getFinderVolumeCapabilities(activeName)?.canCreateFolder;
+  if (!canCreateHere) {
+    setStatus(t("new_folder_project_disk_only"));
+    return;
+  }
+  const parentId = (activeName === "projects" || activeName === "documents")
+    ? (selectedFolderId === "all" ? null : selectedFolderId)
+    : null;
+  const folder = createFinderFolder(t("empty_folder_name"), parentId);
+  selectedChatFileId = null;
+  selectedDocumentFolderId = folder.id;
+  selectedProjectRootItemId = null;
+  markDeskDirty("chatFolders", folder.id);
+  saveDeskState();
+  if (activeName === "documents") {
+    renderDocuments();
+  } else {
+    openWindow("projects");
+    renderProjectDisks();
+  }
+  setStatus(t("folder_created", displayFolderName(folder.name)));
+  finderCommand("begin-rename", { key: `folder:${folder.id}`, selectAll: true, created: true });
+}
+
+function openFinderMenuSelection() {
+  const active = document.querySelector(".window.is-active:not(.is-hidden)");
+  const activeName = active?.dataset.window;
+  const volume = typeof getFinderVolumeDefinition === "function"
+    ? getFinderVolumeDefinition(activeName)
+    : null;
+
+  if (volume) {
+    const item = getFinderVolumeSelectedItem(activeName);
+    if (typeof item?.open === "function") {
+      item.open();
+      return;
+    }
+    if (item?.action) {
+      handleAction(item.action);
+      return;
+    }
+  } else if (finderContainerWindowNames.includes(activeName)) {
+    const item = getSelectedStaticFinderItem(activeName);
+    if (item) {
+      handleAction(item.action);
+      return;
+    }
+  }
+
+  if (activeName === "projects") {
+    openProjectRootItem();
+    return;
+  }
+
+  if (activeName === "documents") {
+    openSelectedDocumentItem();
+    return;
+  }
+
+  if (isProjectMounted) {
+    openWindow("projects");
+    return;
+  }
+
+  openWindow("projects");
+  setStatus(t("no_project_mounted"));
+}
+
+function duplicateFinderMenuSelection() {
+  duplicateActiveFile();
+}
+
+function getFinderSelectedTeachTextFile() {
+  const item = getCurrentFinderSelection();
+  if (!item || item.type !== "text") return null;
+  return chatFiles.find((file) => file.id === item.id && file.type === "text" && isInActiveProject(file)) || null;
+}
+
+function openFinderSelectedTeachTextFile() {
+  const file = getFinderSelectedTeachTextFile();
+  if (!file) return false;
+  selectedChatFileId = file.id;
+  openTextFile(file.id);
+  return true;
+}
+
+function makeDocMapFromFinderOrCurrent() {
+  const file = getFinderSelectedTeachTextFile();
+  if (file?.body?.trim()) {
+    const dispatch = window.AISystem6ApplicationRegistry?.dispatchApplicationIntent;
+    if (typeof dispatch === "function") {
+      return dispatch("docMap", { intent: "map", items: [file], sourceAppId: "finder" });
+    }
+    return withDocMap(() => makeDocMapFromCurrentSource({
+      text: file.body.trim(),
+      label: file.name,
+      scope: "documents",
+      meta: { fileId: file.id, fileType: file.type },
+      threshold: docMapMinDocumentChars,
+    }));
+  }
+  return withDocMap(() => makeDocMapFromCurrentSource());
+}
+
+// ClioChart and ClioStage take text the way DocMap does: the same readiness
+// rules choose the selection or the whole source, then the lazy tool runs.
+function oneClickSourceContext(rangeMode, preferredContext) {
+  return preferredContext
+    || (rangeMode === "selection" ? (getSelectionServiceContext() || lastSelectionServiceContext) : null);
+}
+
+// The source is read at the click, before the tool loads: loading a module
+// can bring another window forward, and the text the writer was looking at is
+// the text they asked for.
+async function makeClioChartForRange(rangeMode = "auto", preferredContext = null) {
+  const context = oneClickSourceContext(rangeMode, preferredContext);
+  const readiness = resolveDocMapReadiness(context, { rangeMode, minSelectionChars: clioChartMinSourceChars, minDocumentChars: clioChartMinSourceChars });
+  await ensureLazyModuleForUserAction(t("clio_chart_label"), ensureClioChartModule);
+  return window.AISystem6ClioChart?.makeFromSource?.(context, { rangeMode, readiness });
+}
+
+async function makeClioStageDeckForRange(rangeMode = "auto", preferredContext = null) {
+  const context = oneClickSourceContext(rangeMode, preferredContext);
+  const readiness = resolveDocMapReadiness(context, { rangeMode, minSelectionChars: clioStageMinSourceChars, minDocumentChars: clioStageMinSourceChars });
+  await ensureLazyModuleForUserAction(t("clio_stage_label"), ensureSlidesExportModule);
+  return makeClioStageDeckFromSource(context, { rangeMode, readiness });
+}
+
+function makeDocMapForRange(rangeMode = "auto", preferredContext = null) {
+  const context = preferredContext
+    || (rangeMode === "selection"
+      ? (getSelectionServiceContext() || lastSelectionServiceContext)
+      : null);
+  return withDocMap(() => makeDocMapFromCurrentSource(context, { rangeMode }));
+}
+
+// One key for "next stop" across the whole route. The Writing menu already
+// carries a per-surface advance command; this resolves which one applies from
+// the surface in front, so the writer does not have to remember five names.
+const writingRouteAdvanceActions = Object.freeze({
+  questionSheet: "advance-question-to-outline",
+  outline: "advance-outline-to-drafts",
+  sectionDrafts: "advance-drafts-to-manuscript",
+  teachText: "advance-manuscript-to-review",
+});
+
+function writingRouteAdvanceActionForCurrentStop() {
+  return writingRouteAdvanceActions[currentWritingRouteStop()] || "";
+}
+
+function advanceWritingRouteFromCurrentStop() {
+  const active = currentWritingRouteStop();
+  if (active === "reviewDesk") {
+    // The Review Desk is the last stop. Say so rather than doing something
+    // adjacent and surprising.
+    setStatus(t("writing_route_last_stop"));
+    return;
+  }
+  const action = writingRouteAdvanceActionForCurrentStop();
+  if (!action) {
+    // "Open a writing-route window" was the wrong sentence for the person who
+    // needed it most: they WERE in TeachText, holding a scratch file, so the
+    // stop resolver did not recognise the document and the product told them
+    // to open a window they already had open. Name the real reason instead.
+    const frontmost = typeof getWindow === "function"
+      && ["teachText", "questionSheet", "outline", "sectionDrafts", "reviewDesk"]
+        .find((name) => getWindow(name)?.classList.contains("is-active"));
+    setStatus(t(frontmost ? "writing_route_not_route_document" : "writing_route_no_stop"));
+    return;
+  }
+  return handleAction(action);
+}
+
+function runStyleCheckFromMenu() {
+  openFinderSelectedTeachTextFile();
+  openWindow("teachText");
+  runTeachTextStyleCheck();
+}
+
+function runClaimCheckFromMenu() {
+  const file = getFinderSelectedTeachTextFile();
+  const dispatch = window.AISystem6ApplicationRegistry?.dispatchApplicationIntent;
+  if (file && typeof dispatch === "function") {
+    dispatch("reviewDesk", { intent: "review", items: [file], sourceAppId: "finder" });
+    return;
+  }
+  openFinderSelectedTeachTextFile();
+  runClaimCheck();
+}
+
+function normalizeReviewDeskLens(mode = "style") {
+  return ["facts", "hkrr", "guests", "comments", "mingming", "luoluo"].includes(mode) ? mode : "style";
+}
+
+function getReviewDeskLens() {
+  return normalizeReviewDeskLens(reviewDeskMode);
+}
+
+function reviewDeskLensCopyKeys(lens = getReviewDeskLens()) {
+  const table = {
+    style: {
+      title: "style_sheet",
+      hint: "review_lens_hint_style",
+      empty: "review_lens_empty_style",
+      balloon: "balloon_review_lens_style",
+      panelEmpty: "style_sheet_empty",
+    },
+    facts: {
+      title: "claim_check",
+      hint: "review_lens_hint_facts",
+      empty: "review_lens_empty_facts",
+      balloon: "balloon_review_lens_facts",
+      panelEmpty: "claim_check_empty",
+    },
+    hkrr: {
+      title: "quick_draft_chip_hkrr",
+      hint: "review_lens_hint_hkrr",
+      empty: "review_lens_empty_hkrr",
+      balloon: "balloon_review_lens_hkrr",
+      panelEmpty: "review_lens_empty_hkrr",
+    },
+    mingming: {
+      title: "quick_draft_chip_mingming",
+      hint: "review_lens_hint_mingming",
+      empty: "review_lens_empty_mingming",
+      balloon: "balloon_review_lens_mingming",
+      panelEmpty: "review_lens_empty_mingming",
+    },
+    luoluo: {
+      title: "quick_draft_chip_luoluo",
+      hint: "review_lens_hint_luoluo",
+      empty: "review_lens_empty_luoluo",
+      balloon: "balloon_review_lens_luoluo",
+      panelEmpty: "review_lens_empty_luoluo",
+    },
+    guests: {
+      title: "guest_reviews",
+      hint: "review_lens_hint_guests",
+      empty: "guest_reviews_empty",
+      balloon: "balloon_review_desk",
+      panelEmpty: "guest_reviews_empty",
+    },
+    comments: {
+      title: "review_comments",
+      hint: "review_lens_hint_comments",
+      empty: "review_comments_empty",
+      balloon: "balloon_review_desk",
+      panelEmpty: "review_comments_empty",
+    },
+  };
+  return table[normalizeReviewDeskLens(lens)] || table.style;
+}
+
+function reviewDeskResultPanelForLens(lens = getReviewDeskLens()) {
+  const normalized = normalizeReviewDeskLens(lens);
+  if (normalized === "style") return "style";
+  if (normalized === "guests") return "guests";
+  if (normalized === "comments") return "comments";
+  return "facts";
+}
+
+function syncReviewDeskLensEmptyPanel(panel, emptyKey) {
+  if (!panel) return;
+  const note = panel.querySelector(":scope > .empty-folder-note");
+  if (!note || panel.children.length !== 1) return;
+  note.dataset.i18n = emptyKey;
+  note.textContent = t(emptyKey);
+}
+
+function syncReviewDeskLensCopy(lens = getReviewDeskLens()) {
+  const normalized = normalizeReviewDeskLens(lens);
+  const keys = reviewDeskLensCopyKeys(normalized);
+  const win = typeof getWindow === "function" ? getWindow("reviewDesk") : document.querySelector('[data-window="reviewDesk"]');
+  win?.setAttribute("data-review-lens", normalized);
+
+  const select = document.querySelector("#review-lens");
+  if (select) {
+    // Guest Reviews and Comments stay Commands destinations; the closed-set
+    // select only carries the writer-facing lenses, so leave its value alone.
+    if (normalized !== "guests" && normalized !== "comments" && select.value !== normalized) select.value = normalized;
+    select.dataset.balloonHelp = keys.balloon;
+  }
+
+  const title = document.querySelector("#review-result-title");
+  if (title) {
+    title.dataset.i18n = keys.title;
+    title.textContent = t(keys.title);
+  }
+
+  const hint = document.querySelector("#review-lens-hint");
+  if (hint) {
+    hint.dataset.i18n = keys.hint;
+    hint.textContent = t(keys.hint);
+  }
+
+  const emptyFollow = document.querySelector("#review-lens-empty-follow");
+  if (emptyFollow) {
+    emptyFollow.dataset.i18n = keys.empty;
+    emptyFollow.textContent = t(keys.empty);
+  }
+
+  if (normalized === "style") {
+    syncReviewDeskLensEmptyPanel(styleSheetResultsEl, keys.panelEmpty);
+  } else if (normalized === "guests") {
+    syncReviewDeskLensEmptyPanel(document.querySelector("#guest-review-results"), keys.panelEmpty);
+  } else if (normalized === "comments") {
+    // The comments panel draws its own empty state (features/review-comments.js).
+  } else {
+    syncReviewDeskLensEmptyPanel(claimResultsEl, keys.panelEmpty);
+  }
+}
+
+function setReviewDeskMode(mode = "style") {
+  const normalizedMode = normalizeReviewDeskLens(mode);
+  reviewDeskMode = normalizedMode;
+  const resultMode = reviewDeskResultPanelForLens(normalizedMode);
+  document.querySelectorAll("[data-review-result]").forEach((panel) => {
+    panel.classList.toggle("is-hidden", panel.dataset.reviewResult !== resultMode);
+  });
+  syncReviewDeskLensCopy(normalizedMode);
+}
+
+function clearReviewFeedbackSlot(mode = getReviewDeskLens(), message = "") {
+  const lens = normalizeReviewDeskLens(mode);
+  const resultMode = reviewDeskResultPanelForLens(lens);
+  const emptyKey = reviewDeskLensCopyKeys(lens).panelEmpty;
+  setReviewDeskMode(lens);
+  if (styleSheetResultsEl) {
+    styleSheetResultsEl.innerHTML = resultMode === "style"
+      ? `<p class="empty-folder-note">${escapeHtml(message || t(emptyKey))}</p>`
+      : "";
+  }
+  if (claimResultsEl) {
+    claimResultsEl.innerHTML = resultMode === "facts"
+      ? `<p class="empty-folder-note">${escapeHtml(message || t(emptyKey))}</p>`
+      : "";
+  }
+}
+
+function updateReviewDeskStatusTitle() {
+  if (!reviewStatusTitleEl) return;
+  reviewStatusTitleEl.textContent = getTeachTextDocumentName({
+    fallback: teachTextNameInput?.value?.trim() || t("untitled"),
+  });
+}
+
+function formatReviewVoiceStats(text = "") {
+  const body = String(text || "").trim();
+  const words = countTextWords(body);
+  const seconds = typeof estimateVoiceoverSeconds === "function" ? estimateVoiceoverSeconds(body) : estimateBilibiliVoiceoverSeconds(body);
+  if (!words) return t("draft_voice_stats_empty");
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  if (minutes <= 0) return t("draft_voice_stats_seconds", words, seconds);
+  if (remainingSeconds === 0) return t("draft_voice_stats_minutes", words, minutes);
+  return t("draft_voice_stats_minutes_seconds", words, minutes, remainingSeconds);
+}
+
+function estimateBilibiliVoiceoverSeconds(text) {
+  const body = String(text || "");
+  const cjkCharsPerMinute = 240;
+  const latinWordsPerMinute = 150;
+  const cjk = body.match(/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu)?.length || 0;
+  const latin = body
+    .replace(/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu, " ")
+    .match(/[\p{L}\p{N}]+/gu)?.length || 0;
+  return Math.ceil((cjk / cjkCharsPerMinute + latin / latinWordsPerMinute) * 60);
+}
+
+function updateReviewDeskStats() {
+  if (!styleSheetCountEl) return;
+  const source = reviewDeskBodyInput?.value || "";
+  styleSheetCountEl.textContent = formatReviewVoiceStats(source);
+}
+
+function setReviewDeskSourceRatio(ratio = 0.5) {
+  const container = reviewDeskSplitterEl?.closest(".review-desk-results");
+  if (!container) return;
+  const next = Math.max(0.25, Math.min(0.75, Number(ratio) || 0.5));
+  container.style.setProperty("--review-source-ratio", String(next));
+}
+
+function startReviewDeskSplitterDrag(event) {
+  const container = reviewDeskSplitterEl?.closest(".review-desk-results");
+  if (!container || event.button > 0) return;
+  event.preventDefault();
+  event.stopPropagation();
+  container.classList.add("is-resizing");
+  reviewDeskSplitterEl.setPointerCapture?.(event.pointerId);
+
+  const update = (clientY) => {
+    const rect = container.getBoundingClientRect();
+    const splitter = reviewDeskSplitterEl?.getBoundingClientRect().height || 10;
+    const usableHeight = Math.max(1, rect.height - splitter);
+    setReviewDeskSourceRatio((clientY - rect.top - splitter / 2) / usableHeight);
+  };
+  const move = (moveEvent) => update(moveEvent.clientY);
+  const stop = () => {
+    container.classList.remove("is-resizing");
+    reviewDeskSplitterEl.releasePointerCapture?.(event.pointerId);
+    window.removeEventListener("pointermove", move);
+    window.removeEventListener("pointerup", stop);
+    window.removeEventListener("pointercancel", stop);
+  };
+
+  update(event.clientY);
+  window.addEventListener("pointermove", move);
+  window.addEventListener("pointerup", stop, { once: true });
+  window.addEventListener("pointercancel", stop, { once: true });
+}
+
+function isReviewDeskLinkedToFinal() {
+  return !!teachTextReviewLabel() && !!teachTextBodyInput?.value.trim();
+}
+
+// The Review Desk body has its own lock (nothing to review until the manuscript
+// is Final) and the instance may separately hold no write lease. Both are
+// reasons, registered in one place, so neither can unlock the other's surface.
+let reviewDeskBodyLocked = true;
+
+function setReviewDeskBodyLocked(locked) {
+  reviewDeskBodyLocked = locked !== false;
+  window.AISystem6WriteLease?.syncReadOnlySurface?.();
+}
+
+window.AISystem6WriteLease?.registerReadOnlyRule?.(
+  (element) => element === reviewDeskBodyInput && reviewDeskBodyLocked,
+);
+
+function syncReviewDeskAvailability() {
+  const ready = isReviewDeskLinkedToFinal();
+  const reviewWin = getWindow("reviewDesk");
+  reviewWin?.classList.toggle("is-review-locked", !ready);
+  // Goal #2 empty-next: locked desk marks one next step; lens chrome stays
+  // secondary until a final manuscript is linked.
+  if (ready) reviewWin?.removeAttribute("data-empty");
+  else reviewWin?.setAttribute("data-empty", "");
+  if (reviewDeskBodyInput) {
+    setReviewDeskBodyLocked(!ready);
+    reviewDeskBodyInput.classList.toggle("is-hidden", !ready);
+    if (!ready) {
+      reviewDeskBodyInput.value = "";
+      reviewDeskDirty = false;
+    }
+  }
+  reviewDeskPreviewEl?.classList.add("is-hidden");
+  reviewDeskEmptyNoteEl?.classList.toggle("is-hidden", ready);
+  reviewDeskEmptyNoteEl?.classList.add("empty-next-note");
+  if (reviewDeskEmptyNoteEl) reviewDeskEmptyNoteEl.dataset.emptyNext = ready ? "0" : "1";
+  const startButton = reviewDeskEmptyNoteEl?.querySelector("button");
+  const hasManuscript = typeof isTeachTextManuscriptRole === "function" && isTeachTextManuscriptRole() && !!teachTextBodyInput?.value.trim();
+  if (startButton) {
+    startButton.dataset.action = hasManuscript ? "advance-manuscript-to-review" : "open-teachtext";
+    startButton.dataset.i18n = hasManuscript ? "to_review" : "to_manuscript";
+    startButton.textContent = t(startButton.dataset.i18n);
+    startButton.classList.add("default");
+  }
+  const emptyMessage = reviewDeskEmptyNoteEl?.querySelector("p:not(.review-lens-empty-follow)");
+  if (emptyMessage) {
+    emptyMessage.dataset.i18n = hasManuscript ? "review_desk_requires_final" : "writing_review_needs_text";
+    emptyMessage.textContent = t(emptyMessage.dataset.i18n);
+  }
+  // A rebuild waiting for the writer shows through the lock; the guest tools
+  // draw its card, so they load only when one is waiting.
+  if (!ready && window.AISystem6RunReceipts?.queryReceipts?.({ projectId: activeProjectId, limit: 50, includeRunning: true })
+    ?.some((file) => file.rebuildPack && file.runReceipt?.checkpointState === "awaitingCommit")) {
+    ensureGuestToolsModule().then(() => window.AISystem6GuestTools?.renderGuestReviews?.()).catch(() => {});
+  }
+  updateReviewDeskStatusTitle();
+  updateReviewDeskStats();
+  syncReviewDeskLensCopy(getReviewDeskLens());
+  updateMenuState();
+}
+
+function syncReviewDeskFromTeachText({ force = false } = {}) {
+  if (!teachTextReviewLabel()) return;
+  if (!reviewDeskBodyInput || (!force && reviewDeskDirty)) return;
+  const section = currentReviewDeskSectionBlock();
+  const sectionText = section?.text || teachTextBodyInput.value || "";
+  if (reviewDeskBodyInput.value !== sectionText) {
+    reviewDeskBodyInput.value = sectionText;
+  }
+  reviewDeskDirty = false;
+  reviewDeskBodyInput.scrollTop = 0;
+  updateReviewDeskStats();
+  syncReviewDeskPreview({ force: true });
+}
+
+function appendReviewFeedbackToBody(markdown) {
+  const clean = stripRebuildMarkdownFence(String(markdown || "")).trim();
+  if (!clean) return;
+  // Keep the active lens (Reader's Eye / Listener's Ear / …); do not collapse
+  // it back to the shared facts panel label.
+  setReviewDeskMode(getReviewDeskLens());
+  const target = getReviewDeskMode() === "style" ? styleSheetResultsEl : claimResultsEl;
+  if (target) target.innerHTML = markdownToSystemHtml(clean);
+  updateMenuState();
+}
+
+function syncReviewDeskToTeachText() {
+  if (!teachTextReviewLabel()) {
+    setStatus(t("teachtext_review_requires_final"));
+    return false;
+  }
+  if (!reviewDeskBodyInput) return;
+  const fullText = teachTextBodyInput.value || "";
+  const section = currentReviewDeskSectionBlock(fullText);
+  const sectionText = reviewDeskBodyInput.value || "";
+  const start = Math.max(0, section?.offset || 0);
+  const end = section ? Math.min(fullText.length, start + section.text.length) : fullText.length;
+  const nextText = section
+    ? `${fullText.slice(0, start)}${sectionText}${fullText.slice(end)}`
+    : sectionText;
+  if (teachTextBodyInput.value !== nextText) {
+    teachTextBodyInput.value = nextText;
+  }
+  reviewDeskDirty = false;
+  markTeachTextModified();
+  if (typeof syncTeachTextToLinkedProjectMarkdown === "function") {
+    syncTeachTextToLinkedProjectMarkdown();
+  }
+  renderClaimCheckSections();
+  renderStyleCheckSections();
+  updateReviewDeskStatusTitle();
+  updateReviewDeskStats();
+  updateTeachTextBoundaries();
+  updateTeachTextTranslateButton();
+  updateTeachTextBilingualExportButton();
+  updateTeachTextDeskState();
+  scheduleTeachTextTabSave();
+  updateMenuState();
+  return true;
+}
+
+function currentReviewDeskSectionIndex(sections = getTeachTextSectionBlocks()) {
+  const activeIndex = Number.isFinite(selectedStyleSectionIndex) ? selectedStyleSectionIndex : selectedClaimSectionIndex;
+  return Math.max(0, Math.min(Math.max(0, sections.length - 1), Number(activeIndex) || 0));
+}
+
+function currentReviewDeskSectionBlock(body = teachTextBodyInput?.value || "") {
+  const sections = getTeachTextSectionBlocks(body);
+  if (!sections.length) return null;
+  return sections[currentReviewDeskSectionIndex(sections)] || sections[0];
+}
+
+function textareaLineHeight(element) {
+  if (!element) return 20;
+  const styles = window.getComputedStyle(element);
+  const parsedLineHeight = Number.parseFloat(styles.lineHeight);
+  const fontSize = Number.parseFloat(styles.fontSize) || 16;
+  return Number.isFinite(parsedLineHeight) ? parsedLineHeight : fontSize * 1.4;
+}
+
+function textareaOffsetForScroll(element) {
+  if (!element) return 0;
+  const lineIndex = Math.max(0, Math.floor(element.scrollTop / textareaLineHeight(element)));
+  const lines = String(element.value || "").split("\n");
+  let offset = 0;
+  for (let index = 0; index < Math.min(lineIndex, lines.length); index += 1) {
+    offset += lines[index].length + 1;
+  }
+  return Math.max(0, Math.min(String(element.value || "").length, offset));
+}
+
+function scrollTextareaToOffset(element, offset = 0) {
+  if (!element) return;
+  const source = String(element.value || "");
+  const target = Math.max(0, Math.min(source.length, Number(offset) || 0));
+  const lineIndex = source.slice(0, target).split("\n").length - 1;
+  element.scrollTop = Math.max(0, lineIndex * textareaLineHeight(element) - element.clientHeight * 0.18);
+}
+
+function sectionIndexForOffset(sections, offset = 0) {
+  if (!sections.length) return 0;
+  const target = Math.max(0, Number(offset) || 0);
+  let selected = 0;
+  sections.forEach((section, index) => {
+    if ((section.offset || 0) <= target) selected = index;
+  });
+  return selected;
+}
+
+function syncReviewDeskScrollFrom(element) {
+  if (reviewDeskScrollSyncing || !teachTextReviewLabel()) return;
+  if (!teachTextBodyInput || !reviewDeskBodyInput) return;
+  const sections = getTeachTextSectionBlocks(teachTextBodyInput.value || "");
+  if (!sections.length) return;
+
+  reviewDeskScrollSyncing = true;
+  if (element === teachTextBodyInput) {
+    const fullOffset = textareaOffsetForScroll(teachTextBodyInput);
+    const index = sectionIndexForOffset(sections, fullOffset);
+    const section = sections[index];
+    selectedStyleSectionIndex = index;
+    selectedClaimSectionIndex = index;
+    renderStyleCheckSections();
+    renderClaimCheckSections();
+    syncReviewDeskFromTeachText({ force: true });
+    scrollTextareaToOffset(reviewDeskBodyInput, Math.max(0, fullOffset - (section?.offset || 0)));
+  } else {
+    const section = currentReviewDeskSectionBlock(teachTextBodyInput.value || "");
+    const sectionOffset = (section?.offset || 0) + textareaOffsetForScroll(reviewDeskBodyInput);
+    scrollTextareaToOffset(teachTextBodyInput, sectionOffset);
+  }
+  requestAnimationFrame(() => {
+    reviewDeskScrollSyncing = false;
+  });
+}
+
+function syncReviewDeskPreview({ force = false } = {}) {
+  if (!reviewDeskPreviewEl || !reviewDeskBodyInput) return;
+  if (!force && reviewDeskPreviewEl.classList.contains("is-hidden")) return;
+  const value = reviewDeskBodyInput.value.trim();
+  reviewDeskPreviewEl.innerHTML = value
+    ? markdownToSystemHtml(resolveTeachTextImageMarkdown(reviewDeskBodyInput.value, { preview: true }))
+    : `<p class="empty-folder-note">${escapeHtml(t("teachtext_preview_empty"))}</p>`;
+}
+
+function toggleReviewDeskPreview() {
+  if (!reviewDeskBodyInput || !reviewDeskPreviewEl) return;
+  const showPreview = reviewDeskPreviewEl.classList.contains("is-hidden");
+  if (showPreview) {
+    syncReviewDeskPreview({ force: true });
+    reviewDeskPreviewEl.classList.remove("is-hidden");
+    enterPreviewAtCaret(reviewDeskBodyInput, reviewDeskPreviewEl);
+    reviewDeskBodyInput.classList.add("is-hidden");
+  } else {
+    leavePreviewToCaret(reviewDeskBodyInput, reviewDeskPreviewEl);
+    reviewDeskPreviewEl.classList.add("is-hidden");
+    reviewDeskBodyInput.classList.remove("is-hidden");
+    reviewDeskBodyInput.focus();
+  }
+}
+
+async function openReviewDesk(mode = "style") {
+  // Awaited so a caller that opens a companion window right after (the
+  // manuscript beside Review Desk) does not race this window's own open+focus
+  // sequence — two un-awaited openWindow calls settle their internal lazy
+  // loads in whichever order finishes first, so the "companion" can win focus
+  // instead of the surface the writer actually asked for.
+  await openWindow("reviewDesk");
+  if (ensureTeachTextReviewState({ promoteSavedFinal: true, openTeachText: false })) {
+    syncReviewDeskFromTeachText({ force: true });
+  } else {
+    setStatus(t("teachtext_review_requires_final"));
+  }
+  renderStyleCheckSections();
+  renderClaimCheckSections();
+  setReviewDeskMode(mode);
+  syncReviewDeskAvailability();
+}
+
+// The comments lens and the version compare share one panel. The module loads
+// the first time either is asked for; until then the Review Desk carries none
+// of it.
+async function openReviewComments(tab = "comments") {
+  await openReviewDesk("comments");
+  try {
+    await ensureLazyModuleForUserAction(t("review_comments"), ensureReviewCommentsModule);
+  } catch {
+    return;
+  }
+  // The threads need more of the window than the section text above them, the
+  // first time the writer comes here; a split they drag themselves is kept.
+  if (!reviewCommentsSplitSet) {
+    reviewCommentsSplitSet = true;
+    setReviewDeskSourceRatio(0.3);
+  }
+  return window.AISystem6ReviewDeskPanel?.show(tab);
+}
+let reviewCommentsSplitSet = false;
+
+async function openReviewDeskDocument({ documentId, mode = "facts" } = {}) {
+  const file = chatFiles.find((item) => item.id === documentId && item.type === "text" && isInActiveProject(item));
+  if (!file) return false;
+  window.AISystem6TeachText?.openDocument?.(documentId);
+  await openWindow("reviewDesk");
+  getWindow("reviewDesk")?.classList.remove("is-review-locked");
+  if (reviewDeskBodyInput) {
+    setReviewDeskBodyLocked(false);
+    reviewDeskBodyInput.classList.remove("is-hidden");
+    reviewDeskBodyInput.value = String(file.body || "");
+    reviewDeskBodyInput.scrollTop = 0;
+    reviewDeskDirty = true;
+  }
+  reviewDeskPreviewEl?.classList.add("is-hidden");
+  reviewDeskEmptyNoteEl?.classList.add("is-hidden");
+  setReviewDeskMode(mode);
+  updateReviewDeskStats();
+  updateReviewDeskStatusTitle();
+  renderStyleCheckSections();
+  renderClaimCheckSections();
+  updateMenuState();
+  return true;
+}
+
+window.AISystem6ReviewDesk = Object.freeze({
+  openDocument: openReviewDeskDocument,
+});
+
+function getReviewDeskMode() {
+  const lens = getReviewDeskLens();
+  if (lens === "style") return "style";
+  if (lens === "hkrr") return "hkrr";
+  if (lens === "guests") return "guests";
+  return "facts";
+}
+
+function runReviewDeskStyleSectionCheck() {
+  if (!isReviewDeskLinkedToFinal()) return syncReviewDeskAvailability();
+  if (!syncReviewDeskToTeachText()) return;
+  setReviewDeskMode("style");
+  clearReviewFeedbackSlot("style", t("checking_style"));
+  runTeachTextStyleCheck({ sectionOnly: true });
+}
+
+function runReviewDeskFactSectionCheck() {
+  if (!isReviewDeskLinkedToFinal()) return syncReviewDeskAvailability();
+  if (!syncReviewDeskToTeachText()) return;
+  setReviewDeskMode("facts");
+  clearReviewFeedbackSlot("facts", t("running_check"));
+  runClaimCheck({ sectionOnly: true });
+}
+
+function runReviewDeskHkrrSectionCheck() {
+  if (!isReviewDeskLinkedToFinal()) return syncReviewDeskAvailability();
+  if (!syncReviewDeskToTeachText()) return;
+  setReviewDeskMode("hkrr");
+  clearReviewFeedbackSlot("hkrr", currentLanguage === "zh" ? "正在用 HKRR 审视..." : "Reviewing with HKRR...");
+  // A load failure must not leave the panel stuck on "Reviewing..." forever
+  // with no trace — ensureLazyModuleForUserAction already offers the
+  // retry/cancel modal used for every other lazy command, and a cancel still
+  // needs the slot put back into an honest, readable state.
+  ensureLazyModuleForUserAction(t("quick_draft_chip_hkrr"), ensureHkrrReviewModule)
+    .then(() => runHkrrReview({ sectionOnly: true }))
+    .catch((error) => clearReviewFeedbackSlot("hkrr", t("lazy_load_failed", t("quick_draft_chip_hkrr"), error?.message || String(error))));
+}
+
+function runReviewDeskMingmingHandoffReview() {
+  if (!isReviewDeskLinkedToFinal()) return syncReviewDeskAvailability();
+  if (!syncReviewDeskToTeachText()) return;
+  setReviewDeskMode("luoluo");
+  clearReviewFeedbackSlot("luoluo", currentLanguage === "zh" ? "正在生成听者会怎么接..." : "Generating How a Listener Would Receive It...");
+  ensureLazyModuleForUserAction(t("review_mingming_handoff"), ensureMingmingHandoffReviewModule)
+    .then(() => runMingmingHandoffReview({ mode: "card", sectionOnly: true }))
+    .catch((error) => clearReviewFeedbackSlot("luoluo", t("lazy_load_failed", t("review_mingming_handoff"), error?.message || String(error))));
+}
+
+function runReviewDeskMingmingHandoffBackstageReview() {
+  if (!isReviewDeskLinkedToFinal()) return syncReviewDeskAvailability();
+  if (!syncReviewDeskToTeachText()) return;
+  setReviewDeskMode("facts");
+  clearReviewFeedbackSlot("facts", currentLanguage === "zh" ? "正在生成交付后台审校..." : "Generating backstage handoff review...");
+  ensureLazyModuleForUserAction(t("review_mingming_handoff_backstage"), ensureMingmingHandoffReviewModule)
+    .then(() => runMingmingHandoffReview({ mode: "backstage", sectionOnly: true }))
+    .catch((error) => clearReviewFeedbackSlot("facts", t("lazy_load_failed", t("review_mingming_handoff_backstage"), error?.message || String(error))));
+}
+
+async function viewReviewDeskManuscript({ edit = false } = {}) {
+  if (!ensureTeachTextReviewState({ promoteSavedFinal: true, openTeachText: false })) {
+    await openWindow("teachText");
+    setStatus(t("teachtext_review_requires_final"));
+    return;
+  }
+  syncReviewDeskToTeachText();
+  await openWindow("teachText");
+  await openWindow("reviewDesk");
+  syncReviewDeskFromTeachText({ force: true });
+  const section = currentReviewDeskSectionBlock(teachTextBodyInput.value || "");
+  if (section) {
+    scrollTextareaToOffset(teachTextBodyInput, section.offset || 0);
+  }
+  if (edit) {
+    showTeachTextEditor({ focus: false });
+    if (section) {
+      teachTextBodyInput.setSelectionRange(section.offset || 0, section.offset || 0);
+      scrollTextareaToOffset(teachTextBodyInput, section.offset || 0);
+    }
+    await openWindow("teachText");
+    teachTextBodyInput.focus();
+    return;
+  }
+  showTeachTextPreview({ focus: false, preserveScroll: false });
+  if (section && teachTextPreviewEl && typeof scrollRatioForElement === "function" && typeof setElementScrollRatio === "function") {
+    setElementScrollRatio(teachTextPreviewEl, scrollRatioForElement(teachTextBodyInput));
+  }
+  layoutReviewDeskWithManuscript();
+  requestAnimationFrame(layoutReviewDeskWithManuscript);
+  clearStatus();
+}
+
+function layoutReviewDeskWithManuscript() {
+  const teachWin = getWindow("teachText");
+  const reviewWin = getWindow("reviewDesk");
+  const desktop = document.querySelector(".desktop");
+  if (!teachWin || !reviewWin || !desktop) return;
+
+  const padding = 18;
+  const gap = 12;
+  const top = 28;
+  const bottom = 18;
+  const avoidance = typeof getDesktopAvoidanceInsets === "function"
+    ? getDesktopAvoidanceInsets({ margin: padding, iconGap: 48 })
+    : { left: padding, right: padding };
+  const iconColumn = document.querySelector(".icon-column");
+  const iconRect = iconColumn?.getBoundingClientRect();
+  const iconGutter = iconRect && iconRect.width > 0 ? iconRect.width + 48 : 0;
+  const availableWidth = Math.max(320, desktop.clientWidth - avoidance.left - avoidance.right - iconGutter - padding);
+  const availableHeight = Math.max(360, desktop.clientHeight - top - bottom);
+  const left = avoidance.left;
+  const sideBySide = availableWidth >= 980;
+
+  [teachWin, reviewWin].forEach((win) => {
+    win.classList.remove("is-collapsed");
+    win.style.right = "auto";
+    win.style.maxWidth = "";
+    win.style.maxHeight = "";
+    win.style.transform = "none";
+    win.dataset.zoomed = "false";
+  });
+
+  if (sideBySide) {
+    const width = Math.floor((availableWidth - gap) / 2);
+    Object.assign(teachWin.style, {
+      left: `${left}px`,
+      top: `${top}px`,
+      width: `${width}px`,
+      height: `${availableHeight}px`,
+    });
+    Object.assign(reviewWin.style, {
+      left: `${left + width + gap}px`,
+      top: `${top}px`,
+      width: `${width}px`,
+      height: `${availableHeight}px`,
+    });
+  } else {
+    const height = Math.floor((availableHeight - gap) / 2);
+    Object.assign(teachWin.style, {
+      left: `${left}px`,
+      top: `${top}px`,
+      width: `${availableWidth}px`,
+      height: `${height}px`,
+    });
+    Object.assign(reviewWin.style, {
+      left: `${left}px`,
+      top: `${top + height + gap}px`,
+      width: `${availableWidth}px`,
+      height: `${height}px`,
+    });
+  }
+}
+
+function reviewDeskReportMarkdown() {
+  const markdown = (teachTextBodyInput.value || reviewDeskBodyInput?.value || "").trim();
+  if (!markdown) return null;
+  const baseName = teachTextNameInput.value || markdownDocumentTitle(markdown) || t("review_desk");
+  return { markdown, name: `${baseName} Reviewed` };
+}
+
+// Every successful burn leaves a durable trace in System Messages, so the
+// finish survives the receipt window and a reload.
+function receiptProjectCdBurn(item) {
+  if (typeof pushSystemNotification !== "function" || !item) return;
+  pushSystemNotification(t("project_cd_burn_receipt", item.title), {
+    state: "done",
+    windowName: "projectCd",
+    messageKey: "project_cd_burn_receipt",
+    messageArgs: [item.title],
+  });
+}
+
+async function exportReviewDeskReport() {
+  if (!ensureTeachTextReviewState({ promoteSavedFinal: true, openTeachText: false })) {
+    if ((reviewDeskBodyInput?.value || teachTextBodyInput?.value || "").trim()) {
+      setTeachTextWorkflowState("final");
+      syncTeachTextLabelControl();
+    } else {
+      setStatus(t("review_export_empty"));
+      return;
+    }
+  }
+  if (!syncReviewDeskToTeachText()) return;
+  const report = reviewDeskReportMarkdown();
+  if (!report) {
+    setStatus(t("review_export_empty"));
+    return;
+  }
+
+  const item = await addProjectCdItem(report.markdown, report.name, {
+    sourceDocumentId: activeTextFileId || "",
+    sourceKind: "markdown",
+  });
+  if (!item) return;
+  markTeachTextExported("markdown");
+  receiptProjectCdBurn(item);
+  await openWindow("projectCd");
+  setStatus(t("export_saved", item.title));
+  await showFinishingReceiptForBurn(item);
+}
+
+async function exportTeachTextToProjectCd() {
+  const isSlidesMarkdown = typeof readerHasMarpFrontmatter === "function" && readerHasMarpFrontmatter(teachTextBodyInput?.value || "");
+  const finalManuscript = typeof teachTextWorkflowState !== "undefined"
+    && teachTextWorkflowState === "final"
+    && String(teachTextBodyInput?.value || "").trim().length > 0;
+  if (
+    !isSlidesMarkdown
+    && typeof isTeachTextManuscriptRole === "function"
+    && !isTeachTextManuscriptRole()
+    && !finalManuscript
+  ) {
+    setStatus(t("teachtext_manuscript_required"));
+    return;
+  }
+  const { markdown, name } = getTeachTextMarkdown({ originalImages: true });
+  if (!markdown.trim()) {
+    setStatus(t("teachtext_empty"));
+    return;
+  }
+  const item = await addProjectCdItem(markdown, name, {
+    sourceDocumentId: activeTextFileId || "",
+    sourceKind: "markdown",
+  });
+  if (!item) return;
+  markTeachTextExported("markdown");
+  receiptProjectCdBurn(item);
+  await openWindow("projectCd");
+  setStatus(t("export_saved", item.title));
+  // The writing route ends at the burn, so this is where the work is
+  // receipted. The receipt opens last, on top of the disc it describes, and a
+  // receipt that cannot be assembled leaves the finished burn alone.
+  await showFinishingReceiptForBurn(item);
+}
+
+async function printMarkdownToSlidesFromMenu() {
+  await ensureSlidesExportModule();
+  await printSlidesWithSetup();
+}
+
+async function printMarkdownToSlidesAiFromMenu() {
+  await ensureSlidesExportModule();
+  printActiveMarkdownToSlidesAi();
+}
+
+async function generateMarpAndOpenClioStageFromMenu() {
+  await ensureSlidesExportModule();
+  generateMarpMarkdownAndOpenClioStage();
+}
+
+async function openClioStageApp(source = null) {
+  await ensureClioStageModule();
+  let clioSource = source;
+  if (!clioSource) {
+    const activeName = document.querySelector(".window.is-active:not(.is-hidden)")?.dataset.window || "";
+    if (activeName === "teachText" && readerHasMarpFrontmatter(teachTextBodyInput?.value || "")) {
+      clioSource = {
+        title: getTeachTextDocumentName({ fallback: t("clio_stage_label") }),
+        markdown: teachTextBodyInput.value,
+        sourceKind: "teachText",
+        sourceItemId: activeTextFileId || "",
+      };
+    } else if (activeName === "reader" && currentReaderPage?.text && readerHasMarpFrontmatter(currentReaderPage.text)) {
+      clioSource = {
+        title: currentReaderPage.fileName || currentReaderPage.title || t("clio_stage_label"),
+        markdown: currentReaderPage.text,
+        sourceKind: "reader",
+        sourceItemId: currentReaderPage.fileName || currentReaderPage.url || "",
+      };
+    } else if (activeName === "projectCd" && typeof getSelectedProjectCdItem === "function") {
+      const item = getSelectedProjectCdItem();
+      if (item?.body && readerHasMarpFrontmatter(item.body)) {
+        clioSource = {
+          title: item.title || "slides.md",
+          markdown: item.body,
+          sourceKind: "projectCd",
+          sourceItemId: item.id,
+        };
+      }
+    }
+  }
+  window.AISystem6ClioStage?.open(clioSource || null);
+}
+
+async function openMicropolisApp() {
+  if (typeof ensureMicropolisModule === "function") {
+    await ensureMicropolisModule();
+  }
+  await window.AISystem6Micropolis?.open?.();
+}
+
+async function openTextDocumentFromDisk() {
+  if (typeof openTransientFilePicker !== "function" || typeof extractFileText !== "function") return;
+  openTransientFilePicker({
+    accept: ".txt,.text,.md,.markdown,.mdown,.mkd,text/plain,text/markdown",
+    onSelect: async (files) => {
+      const file = files[0];
+      if (!file) return;
+      const extracted = await extractFileText(file);
+      await newTextDocument();
+      teachTextNameInput.value = file.name.replace(/\.(?:txt|text|md|markdown|mdown|mkd)$/i, "") || t("untitled");
+      teachTextBodyInput.value = String(extracted?.text || extracted || "");
+      refreshTeachTextDocumentState();
+      setTeachTextStatus("modified");
+      teachTextBodyInput.focus();
+    },
+  });
+}
+
+function cycleWritingFocusMode() {
+  const active = document.activeElement;
+  const textarea = active?.classList?.contains("mde-input")
+    ? active
+    : document.querySelector(".window.is-active:not(.is-hidden) .mde-input:not(.is-hidden)");
+  if (!textarea) return;
+
+  const mode = mdeCycleFocusMode(textarea);
+  window.AISystem6WritingFocus?.syncButtons?.(mode);
+  textarea.focus();
+}
+
+function toggleWritingPreviewForActiveWindow() {
+  const name = document.querySelector(".window.is-active:not(.is-hidden)")?.dataset.window;
+  if (name === "quickDraft") return window.AISystem6QuickDraft?.togglePreview?.();
+  if (name === "questionSheet") return toggleTeachTextSurfacePreview("questionSheet");
+  if (name === "outline") return toggleTeachTextSurfacePreview("outline");
+  if (name === "sectionDrafts") return toggleTeachTextSurfacePreview("sectionDrafts");
+  if (name === "reviewDesk") return toggleReviewDeskPreview();
+  if (name === "teachText") return toggleTeachTextPreview();
+}
+
+async function openSystemConceptDocMap() {
+  try {
+    setStatus(t("concept_docmap_opening"));
+    const concepts = await ensureSystemConceptsData();
+    await ensureDocMapModule();
+    await ensureDocMapMarkmap();
+    if (typeof concepts.buildDocMap !== "function") throw new Error("concept_docmap_generator_missing");
+    const map = await concepts.buildDocMap(currentLanguage);
+    showDocMap(map, {
+      focus: true,
+      statusMessage: t("concept_docmap_opened"),
+    });
+  } catch (error) {
+    console.warn("AI System 6 offline concept DocMap could not open", error);
+    setStatus(t("concept_docmap_unavailable"));
+  }
+}
+
+async function openSystemConceptClioStage() {
+  try {
+    setStatus(t("concept_slides_opening"));
+    const concepts = await ensureSystemConceptsData();
+    if (typeof concepts.buildSlides !== "function") throw new Error("concept_slides_generator_missing");
+    const slides = await concepts.buildSlides(currentLanguage);
+    await openClioStageApp(slides);
+    setStatus(t("concept_slides_opened"));
+  } catch (error) {
+    console.warn("AI System 6 offline concept slides could not open", error);
+    setStatus(t("concept_slides_unavailable"));
+  }
+}
+
+async function playWritingDemoFromGuide() {
+  // The demo is optional help, then runs inside Writing Studio.
+  if (typeof activateWorkspaceProfile === "function") {
+    await activateWorkspaceProfile(workspaceProfileWriting, { openDefault: false, persist: false });
+  }
+  await ensureWritingDemoModule();
+  await window.AISystem6WritingDemo?.play?.();
+}
+
+async function playWelcomeTour() {
+  // The optional tour is seeded and deterministic: it needs no model,
+  // network, or profile switch, and always restores the user's desk. Its own
+  // files still have to arrive: a desk served from an offline cache that
+  // lacks them says so instead of doing nothing.
+  try {
+    await ensureWritingDemoModule();
+  } catch {
+    setStatus(t("about_tour_offline"), { notify: true });
+    return false;
+  }
+  await window.AISystem6WritingDemo?.playTeaser?.();
+}
+
+let applicationActionHandlersCache = null;
+let applicationCommandRegistryCache = null;
+let applicationCommandRegistryRuntimeCount = -1;
+
+function getApplicationActionHandlers() {
+  return applicationActionHandlersCache ||= {
+    "close-about": () => closeWindow("about"),
+    "close-print-directory": () => closeWindow("printDirectory", true),
+    "close-page-setup": () => closeWindow("pageSetup", true),
+    "page-setup": () => openPageSetup(),
+    "print-current": () => printCurrentTeachTextDocument(),
+    // Arrow-wrapped on purpose. Both names are lazy stubs that config.js
+    // installs, and a bare reference here would capture the value the name
+    // held when this table was built, which is undefined.
+    "export-document-word": () => exportActiveDocumentAsWord(),
+    // N14 来回: both halves load with the round-trip module, engine first.
+    "send-manuscript-review": async () => {
+      await ensureLazyModuleForUserAction(t("send_manuscript_review"), ensureManuscriptRoundTripModule);
+      return window.AISystem6ManuscriptRoundTripUI?.openSendReview?.();
+    },
+    "import-manuscript-return": async () => {
+      await ensureLazyModuleForUserAction(t("roundtrip_return_title"), ensureManuscriptRoundTripModule);
+      return window.AISystem6ManuscriptRoundTripUI?.openReturnImport?.();
+    },
+    "export-project-cd-word": () => exportSelectedProjectCdItemAsWord(),
+    "install-web-app": () => window.AISystem6WebPlatform?.installWebApp?.(),
+    "export-project-backup": exportActiveProjectDisk,
+    "reveal-active-chat-file": () => {
+      const fileId = activeChatFileId || selectedChatFileId;
+      if (!fileId || !revealChatFileInFinder(fileId)) setStatus(t("no_project_mounted"));
+    },
+    "start-new-clio-chat": startNewClioTalkConversation,
+    "clio-search": () => window.AISystem6ClioTalkShell?.search(),
+    "start-temporary-clio-chat": startTemporaryClioTalkConversation,
+    "replay-clio-introduction": () => openAboutFirstTime(),
+    "skip-clio-introduction": () => completeClioOnboarding("skipped"),
+    "use-this-window-for-clio": useThisWindowForClio,
+    "remember-chat-as-project-memory": async () => {
+      const file = await createProjectMemoryDraft();
+      if (file) setStatus(t("project_memory_confirmed_and_saved"));
+    },
+    "toggle-project-memory": () => {
+      if (!toggleSelectedProjectMemory()) setStatus(t("select_finder_item_first"));
+    },
+    "attach-retrospective-next-task": () => {
+      if (!attachSelectedRetrospectiveToNextTask()) return setStatus(t("select_finder_item_first"));
+      setStatus(t("retrospective_attached_to_the_next_task"));
+    },
+    "create-skill-draft-from-retrospective": async () => {
+      if (!selectedChatFileId) return setStatus(t("select_finder_item_first"));
+      await createSkillDraftFromSelectedRetrospective();
+    },
+    "create-project-skill-from-draft": async () => {
+      if (!await createProjectSkillFromSelectedDraft()) setStatus(t("select_finder_item_first"));
+    },
+    "toggle-project-skill": () => {
+      if (!toggleSelectedProjectSkill()) setStatus(t("select_finder_item_first"));
+    },
+    "configure-skill-auto-call": async () => {
+      if (!await configureSkillAutoCall()) setStatus(t("no_project_mounted"));
+    },
+    "disable-auto-called-skill": async () => {
+      if (!await disableAutoCalledSkillFromSelectedReceipt()) setStatus(t("select_finder_item_first"));
+    },
+    "view-modification-suggestion-diff": async () => {
+      if (!await viewSelectedTeachTextModificationSuggestionDiff()) setStatus(t("select_finder_item_first"));
+    },
+    "accept-modification-suggestion": async () => {
+      if (!await acceptSelectedTeachTextModificationSuggestion()) setStatus(t("select_finder_item_first"));
+    },
+    "reject-modification-suggestion": () => {
+      if (!rejectSelectedTeachTextModificationSuggestion()) setStatus(t("select_finder_item_first"));
+    },
+    "create-task-config-from-draft": () => {
+      if (!createTaskConfigFromSelectedDraft()) setStatus(t("select_finder_item_first"));
+    },
+    "run-task-config": async () => {
+      if (!await runSelectedTaskConfig()) setStatus(t("task_config_is_invalid_missing_files"));
+    },
+    "pause-task-config": () => { if (!setTaskConfigLifecycle("paused")) setStatus(t("select_finder_item_first")); },
+    "complete-task-config": async () => {
+      if (!setTaskConfigLifecycle("completed")) return setStatus(t("select_finder_item_first"));
+      await saveClioTalkRetrospective();
+    },
+    "resume-task-config": () => { if (!resumeSelectedTaskConfig()) setStatus(t("select_finder_item_first")); },
+    "cancel-task-config": () => { if (!setTaskConfigLifecycle("cancelled")) setStatus(t("select_finder_item_first")); },
+    "create-task-checkpoint": () => { if (!createTaskCheckpoint()) setStatus(t("select_finder_item_first")); },
+    "restore-task-checkpoint": async () => { if (!await restoreSelectedTaskCheckpoint()) setStatus(t("select_finder_item_first")); },
+    "install-mounted-skill": async () => {
+      if (!await installMountedSkillPackage()) setStatus(t("skill_package_is_invalid_or_not"));
+    },
+    "preview-mounted-skill": async () => {
+      if (!await previewMountedSkillPackage()) setStatus(t("skill_package_is_invalid_or_not"));
+    },
+    "eject-menu-selection": ejectMenuSelection,
+    "set-startup-project": setStartupProjectFromSelection,
+    "new-project-disk": prepareNewProjectDisk,
+    "duplicate-project-disk": duplicateSelectedProjectDisk,
+    "archive-project-disk": archiveSelectedProjectDisk,
+    "rename-project-disk": renameSelectedProject,
+    "play-writing-demo": playWritingDemoFromGuide,
+    "play-teaser-demo": playWelcomeTour,
+    "new-document": () => {
+      // Draft Desk is a first-class application: its commands enter through
+      // its public API, never through another app's internal functions.
+      const activeWin = document.querySelector(".window.is-active:not(.is-hidden)");
+      if (activeWin?.dataset.window === "quickDraft") {
+        return window.AISystem6QuickDraft?.newDocument?.() || newTextDocument();
+      }
+      return newTextDocument();
+    },
+    "new-folder": createFolderFromMenu,
+    // N4: ⌘N/new dispatches eagerly so the key works before office-new loads;
+    // the module takes the command over (with its own availability) once in.
+    "new-office-document": () => ensureLazyModuleForUserAction(t("new_office_document"), ensureOfficeNewModule).then(() => window.AISystem6OfficeNew.open()),
+    "duplicate-selection": duplicateFinderMenuSelection,
+    // The Apple menu's "Start Writing Route" carries its own id because
+    // balloon help and the workspace-capability gate both address it by name.
+    // Without an entry here it dispatched into nothing: the item looked live,
+    // took the click, and did nothing at all. Three feature tests pinned the
+    // markup and none of them pressed it.
+    "guide-start-route": openWritingStudio,
+    "minimize-window": () => {
+      const win = document.querySelector(".window.is-active[data-window]");
+      if (win) minimizeWindow(win);
+    },
+    // NeXTSTEP 3.3's three window verbs are runtime commands registered in
+    // windowshade-entry.js, not entries here: their implementations live in the
+    // lazy nextstep-menus.js (the floppy budget asks an era-only verb to stay
+    // off the boot bundle), and a runtime command resolves from boot regardless.
+    // Zoom and full screen are window verbs, not arrangements: they keep their
+    // own engines (zoomWindow, window-fullscreen.js) and answer for themselves
+    // in the availability map, so they register here beside Minimize.
+    "zoom-window": () => {
+      const win = document.querySelector(".window.is-active[data-window]");
+      if (win) zoomWindow(win);
+    },
+    "toggle-full-screen-window": () => {
+      const win = document.querySelector(".window.is-active[data-window]");
+      if (win) window.AISystem6WindowFullscreen?.toggle?.(win);
+    },
+    // The Option variants macOS puts beside Minimize and Zoom. They act on the
+    // front application's own windows, the scope those two verbs already use.
+    "minimize-all-windows": () => {
+      const windows = typeof applicationWindowOrder === "function" ? applicationWindowOrder() : [];
+      windows.forEach((win) => minimizeWindow(win));
+      return windows.length > 0;
+    },
+    "zoom-all-windows": () => {
+      const windows = (typeof applicationWindowOrder === "function" ? applicationWindowOrder() : [])
+        .filter((win) => typeof isZoomableWindow !== "function" || isZoomableWindow(win));
+      windows.forEach((win) => zoomWindow(win));
+      return windows.length > 0;
+    },
+    "close-writing-flow": () => setWritingFlowClosed(true),
+    "show-writing-flow": () => setWritingFlowClosed(false),
+    "toggle-writing-flow-shade": toggleWritingToolsShade,
+    "exit-writing-studio": exitWritingStudio,
+    // The way back does not open the accessory to do its job: the menu row
+    // already names the place, so pressing it should land you in the sentence
+    // and nowhere else. It still needs the lazy half, which owns the caret
+    // restore, so the module is ensured rather than referenced bare.
+    "resume-my-place": async () => { await ensureTodoDaModule(); await resumeMyPlace(); },
+    "clear-notifications": clearSystemNotifications,
+    "run-rebuild-flow": () => runRebuildFlow(),
+    "hand-in-rebuild-flow": () => handInRebuildFlow(),
+    "rebuild-merge-section": () => mergeRebuildSection(),
+    "rebuild-stop": () => stopRebuildFlow(),
+    "close-rebuild-flow": () => closeWindow("rebuildFlow", true),
+    "toggle-compose-tools": toggleComposeToolsMenu,
+    "versions-compare": () => compareSelectedDocumentVersions(),
+    "versions-restore": () => restoreSelectedDocumentVersion(),
+    // Wrapped, not bare: the Dictionary module is lazy, so a bare reference
+    // resolves at boot into nothing and takes the whole registry down with it.
+    "dictionary-keep-word": () => keepDictionaryWord(),
+    "dictionary-delete-word": () => deleteDictionaryWord(),
+    // Capture is eager and runs before anything is loaded; opening the window
+    // is what pulls the accessory in, through the lazy-window map.
+    "hold-that-thought": () => holdThatThought(),
+    // The menu's third row is the other moment: it goes straight to the pile
+    // rather than catching something new.
+    "open-hold-thought": async () => { await ensureTodoDaModule(); await openStickies("held"); },
+    // Bare references to lazy-stubbed functions freeze whatever the name held
+    // when this table was built, so the stub that loads the module never runs
+    // and the command dies without a word. Call through the name instead.
+    "generate-outline": () => generateOutline(),
+    "organize-question-sheet": () => organizeQuestionSheet(),
+    "toggle-writing-eli5": () => { void toggleWritingExplanationLens(); },
+    "add-question-sheet-photo": () => addQuestionSheetPhotos(),
+    "scrapbook-clip-picture": () => clipPictureToScrapbookFromPicker(),
+    "scrapbook-read-picture": () => readSelectedScrapPicture(),
+    // S03: only the user's acceptance moves an open question's status.
+    "scrapbook-mark-open-question": () => markSelectedScrapAsOpenQuestion(),
+    "scrapbook-keep-reading": () => keepScrapReadingProposal(),
+    "scrapbook-discard-reading": () => discardScrapReadingProposal(),
+    "toggle-question-preview": () => toggleTeachTextSurfacePreview("questionSheet"),
+    "toggle-writing-preview": toggleWritingPreviewForActiveWindow,
+    "cycle-writing-focus": cycleWritingFocusMode,
+    // MacWrite's ruler, narrowed to the one thing Aaron kept: line spacing.
+    // Applies to every writing surface's paper and preview alike; see
+    // mdeSetLineSpacing in markdown-editor.js.
+    "set-line-spacing-compact": () => mdeSetLineSpacing("compact"),
+    "set-line-spacing-standard": () => mdeSetLineSpacing("standard"),
+    "set-line-spacing-relaxed": () => mdeSetLineSpacing("relaxed"),
+    "insert-question-template": () => insertQuestionTemplate(),
+    "advance-question-to-outline": () => advanceQuestionSheetToOutline(),
+    "add-outline-section": () => addOutlineSection(),
+    "toggle-outline-tree": () => toggleOutlineTreeView(),
+    "toggle-outline-cards": () => toggleOutlineCardsView(),
+    "question-sheet-view-page": () => setQuestionSheetView("page"),
+    "question-sheet-view-cards": () => setQuestionSheetView("cards"),
+    "outline-tree-up": () => outlineTreeCommand((tree, id) => outlineTreeMove(tree, id, -1)),
+    "outline-tree-down": () => outlineTreeCommand((tree, id) => outlineTreeMove(tree, id, 1)),
+    "outline-tree-promote": () => outlineTreeCommand(outlineTreePromote),
+    "outline-tree-demote": () => outlineTreeCommand(outlineTreeDemote),
+    "outline-tree-write": () => writeSelectedOutlineSection(),
+    "expand-outline": () => expandOutline(),
+    "mingming-outline": () => runOutlineOperation("mingming"),
+    "reduce-outline": () => runOutlineOperation("reduce"),
+    "structure-outline": () => runOutlineOperation("structure"),
+    "advance-outline-to-drafts": () => advanceOutlineToSectionDrafts(),
+    "toggle-outline-preview": () => toggleTeachTextSurfacePreview("outline"),
+    "draft-selected-section": () => draftSelectedOutlineSection(),
+    "draft-current-section": () => draftSelectedOutlineSection(),
+    "toggle-draft-preview": () => toggleTeachTextSurfacePreview("sectionDrafts"),
+    "previous-section-draft": () => showAdjacentSectionDraft(-1),
+    "next-section-draft": () => showAdjacentSectionDraft(1),
+    "polish-draft": () => polishDraft(),
+    "suggest-draft": () => suggestDraft(),
+    // Every other cross-module action awaits its lazy module before touching
+    // the global it registers (find-change, docmap, …). These two skipped
+    // that guard: if Section Drafts' window-registry lazy.ensure has not
+    // resolved yet for any reason, window.AISystem6QuickDraftAI is
+    // undefined and the optional-chain calls below silently do nothing.
+    "eli5-rewrite-section": async () => {
+      if (typeof ensureWritingFlowModule === "function") await ensureWritingFlowModule();
+      if (typeof eli5RewriteSection === "function") return eli5RewriteSection();
+      return window.AISystem6QuickDraftAI?.requestEli5Rewrite?.();
+    },
+    "eli5-review-section": async () => {
+      if (typeof ensureWritingFlowModule === "function") await ensureWritingFlowModule();
+      if (typeof eli5ReviewSection === "function") return eli5ReviewSection();
+      return window.AISystem6QuickDraftAI?.requestEli5Review?.();
+    },
+    "one-sentence-rewrite-section": async () => {
+      if (typeof ensureWritingFlowModule === "function") await ensureWritingFlowModule();
+      if (typeof oneSentenceRewriteSection === "function") return oneSentenceRewriteSection();
+      return window.oneSentenceRewriteSection?.();
+    },
+    "one-sentence-check-section": async () => {
+      if (typeof ensureWritingFlowModule === "function") await ensureWritingFlowModule();
+      if (typeof oneSentenceCheckSection === "function") return oneSentenceCheckSection();
+      return window.oneSentenceCheckSection?.();
+    },
+    // Find/Change loads with its first use. Availability stays true so ⌘F can
+    // summon it from any writing surface; the panel itself reports what it can
+    // act on rather than being greyed for a reason the writer cannot see.
+    "open-find-change": async () => {
+      await ensureFindChangeModule();
+      return window.AISystem6FindChange?.open?.();
+    },
+    "find-change-next": async () => {
+      await ensureFindChangeModule();
+      return window.AISystem6FindChange?.next?.();
+    },
+    "find-change-current": async () => {
+      await ensureFindChangeModule();
+      return window.AISystem6FindChange?.changeCurrent?.();
+    },
+    "find-change-all": async () => {
+      await ensureFindChangeModule();
+      return window.AISystem6FindChange?.changeAll?.();
+    },
+    "advance-writing-route": advanceWritingRouteFromCurrentStop,
+    "advance-drafts-to-manuscript": () => advanceDraftsToManuscript(),
+    "advance-manuscript-to-review": () => advanceManuscriptToReview(),
+    "return-document-to-section-drafts": () => returnDocumentToSectionDrafts(),
+    "run-claim-check-section": () => runClaimCheck({ sectionOnly: true }),
+    "review-style-section": runReviewDeskStyleSectionCheck,
+    "review-facts-section": runReviewDeskFactSectionCheck,
+    "review-facts-section-online": () => runClaimCheck({ sectionOnly: true, online: true }),
+    "review-facts-online": () => runClaimCheck({ online: true }),
+    "review-hkrr-section": runReviewDeskHkrrSectionCheck,
+    "review-mingming-section": reviewSectionAsMingming,
+    "review-mingming-handoff": runReviewDeskMingmingHandoffReview,
+    "review-mingming-handoff-backstage": runReviewDeskMingmingHandoffBackstageReview,
+    "review-view-manuscript": viewReviewDeskManuscript,
+    "review-edit-manuscript": () => viewReviewDeskManuscript({ edit: true }),
+    "review-export": exportReviewDeskReport,
+    "open-review-comments": () => openReviewComments("comments"),
+    "open-review-compare": () => openReviewComments("compare"),
+    "previous-claim-section": () => showAdjacentClaimCheckSection(-1),
+    "next-claim-section": () => showAdjacentClaimCheckSection(1),
+    "ai-praise": () => getWindow("reviewDesk")?.classList.contains("is-active") ? praiseReviewDeskText() : printTeachTextToAi("praise"),
+    "ai-describe-change": () => printTeachTextToAi("describeChange"),
+    "ai-proofread": () => printTeachTextToAi("proofread"),
+    "ai-rewrite": () => printTeachTextToAi("rewrite"),
+    "ai-friendly": () => printTeachTextToAi("friendly"),
+    "ai-professional": () => printTeachTextToAi("professional"),
+    "ai-concise": () => printTeachTextToAi("concise"),
+    "ai-summary": () => printTeachTextToAi("summary"),
+    "ai-key-points": () => printTeachTextToAi("keyPoints"),
+    "ai-list": () => printTeachTextToAi("list"),
+    "ai-table": () => printTeachTextToAi("table"),
+    "print-to-ai": () => printTeachTextToAi("proofread"),
+    "rename-file": renameActiveFile,
+    "move-file-trash": moveActiveFileToTrash,
+    "copy-active-markdown": copyActiveMarkdown,
+    "download-active-markdown": downloadActiveMarkdown,
+    "share-active-markdown": shareActiveMarkdown,
+    "download-active-bilingual-markdown": downloadActiveBilingualMarkdown,
+    "print-to-slides": printMarkdownToSlidesFromMenu,
+    "ai-print-to-slides": printMarkdownToSlidesAiFromMenu,
+    "generate-marp-open-clio-stage": generateMarpAndOpenClioStageFromMenu,
+    "export-teachtext-project-cd": exportTeachTextToProjectCd,
+    // Handing a manuscript to 文字亮室 goes through the application registry, so
+    // Writing Studio never calls into the darkroom directly.
+    "develop-in-lightroom": () => window.AISystem6Runtime?.dispatchCommand?.("develop-in-lightroom"),
+    "open-lightroom": () => openWindow("lightroom"),
+    "toggle-review-preview": toggleReviewDeskPreview,
+    "translate-teachtext": () => {
+      openWindow("teachText");
+      translateTeachTextDocument();
+    },
+    "selection-look-up": (context) => runSelectionServiceCommand("lookup", context?.selection),
+    "selection-find-sources": (context) => runSelectionServiceCommand("find", context?.selection),
+    "selection-clip": (context) => runSelectionServiceCommand("clip", context?.selection),
+    "selection-clip-file": (context) => runSelectionServiceCommand("clip-file", context?.selection),
+    "selection-translate": (context) => runSelectionServiceCommand("translate", context?.selection),
+    "make-alias": () => withFinderObjects(() => makeAliasForFinderSelection()),
+    "make-docmap": makeDocMapFromFinderOrCurrent,
+    // DocMap is lazy: resolve at click time, never as a bare reference.
+    "docmap-from-picture": () => withDocMap(() => makeDocMapFromPicture()),
+    "docmap-map-picture-reading": () => withDocMap(() => mapDocMapPictureReading()),
+    "docmap-discard-picture-reading": () => withDocMap(() => discardDocMapPictureReading()),
+    "make-docmap-selection": (context) => makeDocMapForRange("selection", context?.selection || null),
+    "make-docmap-source": () => makeDocMapForRange("source"),
+    "make-chart": () => makeClioChartForRange("auto"),
+    "make-chart-selection": (context) => makeClioChartForRange("selection", context?.selection || null),
+    "make-slides": () => makeClioStageDeckForRange("auto"),
+    "make-slides-selection": (context) => makeClioStageDeckForRange("selection", context?.selection || null),
+    "style-check-section": () => runTeachTextStyleCheck({ sectionOnly: true }),
+    "style-check-manuscript": () => runTeachTextStyleCheck({ fullDocument: true }),
+    "previous-style-section": () => showAdjacentStyleCheckSection(-1),
+    "next-style-section": () => showAdjacentStyleCheckSection(1),
+    "clip-teachtext-selection": () => {
+      openWindow("teachText");
+      clipTeachTextSelectionToScrapbook();
+    },
+    "copy-project-cd-markdown": copySelectedProjectCdMarkdown,
+    "share-project-cd-markdown": shareSelectedProjectCdMarkdown,
+    // Download and Print to PDF reached their handlers through a bare click
+    // listener on a button id, so nothing outside the Project CD window could
+    // dispatch them and Get Info could not offer a burned item its own verbs.
+    // Both handlers already refuse an empty selection with a status line.
+    "download-project-cd-item": () => downloadSelectedProjectCdItem(),
+    "print-project-cd-item": () => printSelectedProjectCdItem(),
+    // Lazy module: the identifier must be resolved at dispatch time, not at
+    // registry-build time, or the whole registry throws before first use.
+    "retry-current-ai-action": () => (
+      typeof window.AISystem6ModelUserErrors?.runRetryable === "function"
+        ? window.AISystem6ModelUserErrors.runRetryable()
+        : false
+    ),
+    // Searcher and Find File live in a lazy module, so every handler below has
+    // to be an arrow that loads it first: a bare reference here is resolved
+    // when this registry object is built at boot, and one ReferenceError takes
+    // the whole registry with it. openWindow does the loading and the paint.
+    // Find… is desk-wide: the window's own loader brings the module in. ⇧⌘F is
+    // the same verb for the windows that own ⌘F.
+    "open-find-file": openDeskFind,
+    "open-find-desk": openDeskFind,
+    "reveal-selected-find-file": async () => {
+      await ensureDeskFindModule();
+      revealSelectedFindFileResult();
+    },
+    "clip-selected-find-path": async () => {
+      await ensureFindPathModule();
+      clipSelectedFindPath();
+    },
+    "find-path-to-floppy": async () => {
+      await ensureFindPathModule();
+      await putFindPathOnFileFloppy();
+    },
+    "focus-search-query": () => findPathQueryInput?.focus(),
+    "synthesize-search-results": async () => {
+      await ensureFindPathModule();
+      await synthesizeFindPath();
+    },
+    "copy-search-result-markdown": async () => {
+      await ensureFindPathModule();
+      copySelectedFindPath();
+    },
+    "insert-search-result": async () => {
+      await ensureFindPathModule();
+      insertFindPathIntoTeachText();
+    },
+    "save-current": saveCurrentWork,
+    "save-conversation": openSaveChatDialog,
+    "rename-active-chat": renameActiveClioTalkConversation,
+    "copy-current-chat-markdown": copyCurrentClioTalkMarkdown,
+    "download-current-chat-markdown": downloadCurrentClioTalkMarkdown,
+    "find-in-cliotalk": () => findInClioTalkConversation(),
+    "find-next-in-cliotalk": findNextInClioTalkConversation,
+    "paste-clio-interview": () => {
+      promptInput?.focus();
+      return runEditCommand("paste");
+    },
+    "save-clio-harness": saveClioTalkHarness,
+    "save-clio-skill": saveClioTalkSkillDraft,
+    "use-project-skill-next-task": async () => {
+      if (!await selectProjectSkillForNextTask()) setStatus(t("no_enabled_project_skill_is_available"));
+    },
+    "suggest-project-skill": async () => {
+      await confirmSuggestedProjectSkill(promptInput?.value || lastUserText || "");
+    },
+    "save-clio-retrospective": saveClioTalkRetrospective,
+    "new-note": () => createScrap(null, ""),
+    "clip-last-reply": () => ensureTeachtextWritingModule().then(() => clipLastReplyToScrapbook()),
+    "insert-last-reply": () => ensureTeachtextWritingModule().then(() => insertLastReplyIntoTeachText()),
+    "clip-assistant-selection": clipAssistantSelection,
+    "retry-last-message": () => {
+      if (lastUserText) submitUserText(lastUserText);
+    },
+    "clear-attached-clips": () => {
+      attachedClipIds.clear();
+      window.AISystem6ClioImages?.clear?.();
+      renderAttachedClips();
+      setStatus(t("context_cleared"));
+    },
+    "empty-trash": emptyActiveProjectTrash,
+    "show-clipboard": () => handleAction("open-clipboard"),
+    "finder-clean-up": () => finderCommand("clean-up", { option: !!window.event?.altKey }),
+    "put-away": () => document.querySelector(".desktop-object.is-selected") ? finderCommand("put-away-desktop") : putAwaySelectedTrashItem(),
+    "print-directory": () => openPrintDirectoryPreview(),
+    "erase-disk": eraseSelectedProjectDisk,
+    "reset-system": resetSystemStorage,
+    "close-active-window": async () => {
+      const active = document.querySelector(".window.is-active:not(.is-hidden):not(.is-app-hidden)");
+      if (active) {
+        // ⌘W with a shown tab bar closes the CURRENT TAB (WINDOW-TABS-SPEC
+        // §7B) — its own close button is the one path that knows the save
+        // rules; a DISABLED one (non-closable tab) and every other case
+        // closes the window as it always did.
+        const tabClose = window.AISystem6Theme?.hasCapability?.("window-tabs")
+          && active.querySelector(".tdi-tab.is-active .tdi-tab-close");
+        if (tabClose && !tabClose.disabled) { tabClose.click(); return; }
+        const closed = await closeWindow(active.dataset.window, false, active.dataset.windowInstance);
+        // A blocked close (unsaved save prompt, failed flush) keeps the window
+        // foreground; never hand focus to another window over it.
+        if (closed === false) return;
+        const next = Array.from(document.querySelectorAll(".window[data-window]:not(.is-hidden):not(.is-app-hidden)"))
+          .sort((a, b) => Number(b.style.zIndex) - Number(a.style.zIndex))[0];
+        if (next) focusWindow(next);
+      }
+    },
+    "save-copy": () => saveTextDocument({ asCopy: true }),
+    "undo": () => window.AISystem6Stickies?.undo() || runEditCommand("undo"),
+    "redo": () => runEditCommand("redo"),
+    "cut": () => runEditCommand("cut"),
+    "copy": () => fclip() ? finderCommand("copy-items") : runEditCommand("copy"),
+    "paste": () => fclip(1) ? finderCommand("paste-items") : runEditCommand("paste"),
+    "open-with": () => finderCommand("open-with"),
+    "clear-edit": () => runEditCommand("delete"),
+    "select-all": () => runEditCommand("select-all"),
+    "insert-text-disk": insertFileFloppyFromWindow,
+    "eject-text-disk": ejectTextDisk,
+    "add-text-disk-project": addMountedTextDiskToProject,
+    "switch-language": switchLanguage,
+    "view-small-icons": () => setActiveViewMode("small-icon"),
+    "view-icons": () => setActiveViewMode("icon"),
+    "view-by-name": () => setActiveViewMode("name"),
+    "view-by-date": () => setActiveViewMode("date"),
+    "view-by-size": () => setActiveViewMode("size"),
+    "view-by-kind": () => setActiveViewMode("kind"),
+    "tile-windows": tileWindows,
+    "hide-sidebars": hideSidebars,
+    "toggle-sideask": toggleSideAsk,
+    // Wrapped, not bare: these resolve at boot into the lazy module's stub and
+    // a bare reference would throw once the module moved out of the bundle.
+    "focus-sideask-source": focusSideAskSource,
+    // Register every Appearance row from the boot-safe registry. Release-ready
+    // eras switch the desk; unfinished ones stay click-safe and name why they
+    // are grey instead of silently no-opping if a disabled row is forced.
+    ...Object.fromEntries((window.AISystem6Theme.themes || window.AISystem6Theme.getReleaseReadyThemes() || []).map(({ id, releaseReady, polishPending }) => [
+      `set-theme-${id}`, () => {
+        if (releaseReady === false) {
+          if (typeof setStatus === "function") setStatus(typeof t === "function" ? t("appearance_not_ready") : "Not ready");
+          return false;
+        }
+        const applied = applyTheme(id);
+        if (polishPending && typeof setStatus === "function") {
+          setStatus(typeof t === "function" ? t("appearance_polish_pending_status") : "Appearance applied; polish todos remain.");
+        }
+        return applied;
+      },
+    ])),
+    "toggle-balloon-help": toggleBalloonHelp,
+    "restart-system": restartSystem,
+    "shut-down-system": shutDownSystem,
+    "hide-active-app": () => hideApp(activeAppId),
+    "hide-other-apps": hideOtherApps,
+    "show-all-apps": showAllApps,
+    "bring-app-front": () => bringAppToFront(activeAppId),
+    // The desk-wide version, for Special: every window, not one application's.
+    "bring-all-windows-to-front": () => bringAllWindowsToFront(),
+    // One row of the Window menu's own list. Raising a window that is already
+    // in front changes nothing, which is what restoreApplicationWindow already
+    // reports, so the row reuses it rather than re-raising by hand.
+    // windowName may be kind:instance; a bare kind is the main instance
+    // (getWindowInstance's own default).
+    "window-list-row": ({ windowName } = {}) => {
+      const [kind, instance] = windowName.split(":");
+      const win = getWindowInstance(kind, instance);
+      if (win) restoreApplicationWindow(win);
+    },
+    // The window half of the same question: ⌘` walks the application's own
+    // windows, front-most first.
+    "cycle-window": () => cycleApplicationWindows(1),
+    "cycle-window-back": () => cycleApplicationWindows(-1),
+    "quit-active-app": () => quitApp(activeAppId),
+    "close-save-chat": closeSaveChatDialog,
+  };
+
+}
+
+// The cache folds in the runtime's commands once. A lazily loaded module
+// registers its commands when it loads, which is always *after* the first
+// dispatch has built this — so every command a lazy window owns was invisible
+// to handleAction, which then found nothing and returned in silence. That is
+// how a button with a data-action can do nothing at all and say nothing.
+//
+// Commands are only ever added, never removed, so the runtime map's size is a
+// sound key: it changes exactly when there is something new to fold in.
+function getApplicationCommandRegistry() {
+  const runtimeCommandCount = window.AISystem6Runtime?.commandCount?.() || 0;
+  if (applicationCommandRegistryCache && applicationCommandRegistryRuntimeCount === runtimeCommandCount) {
+    return applicationCommandRegistryCache;
+  }
+  applicationCommandRegistryRuntimeCount = runtimeCommandCount;
+  applicationCommandRegistryCache = new Map(
+    Object.entries(getApplicationActionHandlers()).map(([action, handler]) => [action, Object.freeze({
+      id: action,
+      handler,
+      isAvailable: () => isWorkspaceActionAllowed(action) && getActionAvailability()[action] !== false,
+      shortcut: () => keyboardShortcutRegistry.find((entry) => entry.action === action) || null,
+    })])
+  );
+  window.AISystem6Runtime?.forEachCommand?.((command, action) => applicationCommandRegistryCache.set(action, Object.freeze({ id: action, handler: (context) => command.handler(context), isAvailable: () => isWorkspaceActionAllowed(action) && command.isAvailable() !== false, shortcut: () => keyboardShortcutRegistry.find((entry) => entry.action === action) || null })));
+  return applicationCommandRegistryCache;
+};
+
+// The window takes focus after it opens, so the field asks for it then.
+async function openDeskFind() {
+  await openWindow("findFile");
+  const focusField = () => { findFileQueryInput?.focus?.(); findFileQueryInput?.select?.(); };
+  focusField();
+  requestAnimationFrame(focusField);
+}
+
+async function handleAction(action, commandContext = {}) {
+  if (String(action).startsWith("open-system-folder-path:")) {
+    commandContext = { ...commandContext, systemFolderPath: String(action).slice("open-system-folder-path:".length) };
+    action = "open-system-folder-path";
+  }
+  if (String(action).startsWith("peek-project-disk:")) {
+    commandContext = { ...commandContext, peekProjectId: String(action).slice("peek-project-disk:".length) };
+    action = "peek-project-disk";
+  }
+  if (String(action).startsWith("open-applications-folder-path:")) {
+    commandContext = { ...commandContext, applicationsFolderPath: String(action).slice("open-applications-folder-path:".length) };
+    action = "open-applications-folder-path";
+  }
+  if (String(action).startsWith("open-system-prompt-file:")) {
+    commandContext = { ...commandContext, promptId: String(action).slice("open-system-prompt-file:".length) };
+    action = "open-system-prompt-file";
+  }
+  if (String(action).startsWith("open-chat-file:")) {
+    commandContext = { ...commandContext, fileId: String(action).slice("open-chat-file:".length) };
+    action = "open-chat-file";
+  }
+  // The Window menu's own rows name a window the way the chat list names a
+  // file: a menu click carries nothing else, so the identity travels in the
+  // action — kind:instance, where the bare kind is the main instance.
+  if (String(action).startsWith("window-list-row:")) {
+    commandContext = { ...commandContext, windowName: String(action).slice("window-list-row:".length) };
+    action = "window-list-row";
+  }
+  if (String(action).startsWith("open-droplet:")) {
+    commandContext = { ...commandContext, dropletId: String(action).slice("open-droplet:".length) };
+    action = "open-droplet";
+  }
+  // 文字亮室 rows that name their object: a layer, a strength, a version, a
+  // document, a voice. The name travels in the action string because a menu
+  // click carries nothing else, and the handler reads it back as arguments.
+  if (/^lightroom-[a-z0-9-]+:/.test(String(action))) {
+    const parts = String(action).split(":");
+    commandContext = { ...commandContext, lightroomArgs: parts.slice(1) };
+    action = parts[0];
+  }
+  if (String(action).startsWith("open-control-strip-module:")) {
+    commandContext = { ...commandContext, controlStripModuleId: String(action).slice("open-control-strip-module:".length) };
+    action = "open-control-strip-module";
+  }
+  let command = getApplicationCommandRegistry().get(action);
+  if (!command) {
+    const lazy = window.AISystem6Runtime?.getLazyCommand?.(action);
+    if (lazy) {
+      try {
+        await lazy.ensure();
+        applicationCommandRegistryCache = null;
+        command = getApplicationCommandRegistry().get(action);
+        // A retry that finally works must not leave the command greyed with
+        // a stale "failed" balloon.
+        failedLazyCommandActions.delete(action);
+      } catch (error) {
+        // This module's window/command is the only thing that goes dark —
+        // the rest of the desk keeps working. A console.warn alone left no
+        // trace a user could ever see; the label reuses whatever the menu
+        // button already renders, so it is honest in whichever language is
+        // active.
+        console.error(`AI System 6: lazy command "${action}" failed to load.`, error);
+        const label = document.querySelector(`[data-action="${CSS.escape(action)}"]`)?.textContent?.trim() || action;
+        const message = t("lazy_load_failed", label, error?.message || String(error));
+        failedLazyCommandActions.set(action, message);
+        if (typeof pushSystemNotification === "function") pushSystemNotification(message, { state: "failed" });
+        updateMenuState();
+        return;
+      }
+    }
+  }
+  if (!command?.isAvailable() || commandContext.isCurrent?.() === false) {
+    updateMenuState();
+    const reasonKey = typeof actionUnavailableReasonKey === "function"
+      ? actionUnavailableReasonKey(action)
+      : "";
+    // S4: one line naming the command, the reason and the way out; repeats
+    // replace the earlier notification instead of stacking a count.
+    if (typeof announceRefusedCommand === "function") announceRefusedCommand(action, reasonKey);
+    else if (reasonKey && typeof setStatus === "function") setStatus(t(reasonKey));
+    return;
+  }
+  // A write-required command used to have to win the lease first, and was
+  // refused outright when another window held it. The write now travels to
+  // whichever window holds the connection, so the command just runs. Reconcile
+  // anyway: a backgrounded tab's heartbeat lapses while it is still the stored
+  // owner, and the cheapest moment to notice is the one where it is used again.
+  if (writeRequiredActions.has(action) || command?.writeRequired === true) {
+    if (window.AISystem6WriteLease?.canMutate?.() !== true) {
+      await window.AISystem6WriteLease?.reconcile?.().catch?.(() => null);
+    }
+  }
+  if (commandContext.isCurrent?.() === false) return;
+  const result = command.handler(commandContext);
+  updateMenuState();
+  return result;
+}
+
+function closeMenus() {
+  document.querySelectorAll(".menu.is-open").forEach((menu) => {
+    menu.classList.remove("is-open");
+  });
+  document.querySelectorAll(".menu-item-with-sub.is-open").forEach((item) => {
+    item.classList.remove("is-open");
+  });
+  if (typeof refreshBalloonHelpPlacement === "function") refreshBalloonHelpPlacement();
+}
+
+function closeTeachTextCommandMenus() {
+  document.querySelectorAll(".teachtext-command-menu[open]").forEach((menu) => {
+    menu.removeAttribute("open");
+  });
+}
+
+function runShortcut(event) {
+  if (event.defaultPrevented || eventIsTextComposition(event) || !shortcutModifierPressed(event)) return;
+
+  const key = event.key.toLowerCase();
+  const shortcutAppId = activeAppId === "writingStudio" ? "teachText" : activeAppId;
+  const command = [...getApplicationCommandRegistry().values()].find((record) => {
+    const candidate = record.shortcut();
+    return candidate
+      && candidate.dispatch !== false
+      // A key some applications own is offered desk-wide only to the rest.
+      && !(candidate.unlessScope && candidate.unlessScope.includes(shortcutAppId))
+      // A shortcut may pin the physical key. Option composes a different
+      // character on many layouts, so `key` alone would miss ⌥⌘N.
+      && (candidate.code ? candidate.code === event.code : candidate.key === key)
+      && !!candidate.shift === !!event.shiftKey
+      && !!candidate.option === !!event.altKey
+      // Which command modifier the row means. The gate above admits ⌘-combos
+      // and (on a command-key keyboard) ⌃-combos, so the match has to name one:
+      // ⌘ unless the row declares `ctrl`, which is how the desk's single ⌃
+      // family — ⌃⇥ tab walking — stays the only thing ⌃ reaches. Without
+      // this, ⌃S would fire the ⌘S verb.
+      && (candidate.ctrl ? event.ctrlKey : shortcutUsesCommandKey() ? event.metaKey : event.ctrlKey)
+      && (
+        candidate.scope === "global"
+        || candidate.scope === "application"
+        || (Array.isArray(candidate.scope) && candidate.scope.includes(shortcutAppId))
+      );
+  });
+  // A classic Finder's New Folder is ⌘N (System 6), not ⇧⌘N.
+  const shortcut = command ? command.shortcut() : key === "n" && !event.shiftKey && !event.altKey && shortcutAppId === "finder" && isClassicFinderEra() && keyboardShortcutById("new-folder-classic");
+  if (!shortcut) return;
+  if (shortcut.suppressInEditable && getActiveEditableElement()) return;
+
+  event.preventDefault();
+  closeMenus();
+  handleAction(command ? command.id : "new-folder");
+}
+
+// Key Caps opens on the command sheet for the application behind it
+// (app/features/command-sheet.js).
+window.AISystem6Runtime?.registerApplication({id:"keyCaps",windowName:"keyCaps",commands:{"open-key-caps":{handler:()=>{openWindow("keyCaps");ensureCommandSheetModule().then(()=>window.AISystem6CommandSheet.render({focus:!0}),()=>{})},isAvailable:()=>!0}}});
+window.AISystem6Runtime?.registerLazyCommand?.("open-window-instance",{ensure:()=>ensureLazySystemModule("app/core/window-instances.js","AISystem6WinInst")});
+window.AISystem6Runtime?.registerLazyCommand?.("see-as-chart",{ensure:ensureClioChartModule});
+window.AISystem6Runtime?.registerLazyCommand?.("clio-project-reset-layout",{ensure:ensureClioProjectModule});
+// N4: the command registers itself when office-new.js loads (it is menu-only).
+window.AISystem6Runtime?.registerLazyCommand?.("office-save-as-stationery",{ensure:ensureOfficeNewModule});
+// N5b: the workbook tools register their real handlers when they load (menu-only rows).
+["chart","paste-function","convert-text-number","convert-text-date","convert-number-text","chart-delete"].forEach((command)=>window.AISystem6Runtime?.registerLazyCommand?.(`clio-chart-workbook-${command}`,{ensure:ensureClioChartWorkbookToolsLoaded}));
+window.AISystem6Runtime?.registerCommand?.("peek-project-disk",{handler:async({peekProjectId=""}={})=>{await ensureProjectPeekModule();await openProjectPeek(peekProjectId);},isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-project-overview",{handler:async()=>{await ensureProjectPeekModule();await openProjectOverview();},isAvailable:()=>!0});
+// Every lazy opener comes from one table (app/core/app-admissions.js): the
+// window, the command it answers to and the loader that opens it are declared
+// there, and this is the one call that puts them in the registry.
+window.AISystem6Admissions?.registerOpeners?.();
+
+// A command whose whole job is to open a window is one shape, so it is one
+// registration loop rather than sixteen lines that differ only in their
+// strings. The ids are unchanged: the menus, desk icons and Help Balloons
+// dispatch exactly these. Adding the next such window is one entry here.
+Object.entries({
+  "open-about":"about",
+  "open-extensions":"extensions",
+  "open-about-this-mac":"aboutThisMac",
+  "open-applications":"applications",
+  "open-help-folder":"helpFolder",
+  "open-chooser":"chooser",
+  "open-context-panel":"contextPanel",
+  "open-image-manager":"imageManager",
+  "open-system-status":"systemStatus",
+  "open-notification-center":"notificationCenter",
+  "open-project-cd":"projectCd",
+  "open-import-utility":"importUtility",
+  "open-trash":"trash",
+  "open-control":"control",
+  "open-assistant":"assistant",
+}).forEach(([commandId,windowName])=>window.AISystem6Runtime?.registerCommand?.(commandId,{handler:()=>openWindow(windowName),isAvailable:()=>!0}));
+// The tok/s chip opens System Status at its Model Meter section.
+window.AISystem6Runtime?.registerCommand?.("open-model-meter",{handler:async()=>{await openWindow("systemStatus");document.getElementById("model-meter-section")?.scrollIntoView({block:"start"});},isAvailable:()=>!0});
+// The Format menu: one command per Markdown edit, all acting on the writing
+// surface in front (markdown-editor.js decides which one that is).
+["heading-0","heading-1","heading-2","heading-3","bold","italic","strike","code","link","quote","bullet","numbered","task","indent","outdent","table","rule","code-block"]
+  .forEach((command)=>window.AISystem6Runtime?.registerCommand?.(`format-${command}`,{handler:()=>mdeRunFormat(command),isAvailable:()=>!!mdeFormatTarget()}));
+// N15a: 打开链接 —— Format 菜单的跟随动词。链接解析、白名单与 window.open
+// 都在懒载的 writing-safety 模块里（config.js 的 ensureWritingSafetyModule）；
+// 这里只登记 lazy 命令，第一次点击把模块带进来后由模块注册真身接管。
+window.AISystem6Runtime?.registerLazyCommand?.("format-open-link",{
+  ensure:()=>ensureWritingSafetyModule(),
+  isAvailable:()=>!!mdeFormatTarget(false),
+});
+window.AISystem6Runtime?.registerCommand?.("open-heading-navigator",{handler:mdeOpenHeadings,isAvailable:()=>!!mdeFormatTarget(false),unavailableReason:()=>"balloon_disabled_menu_headings"});
+window.AISystem6Runtime?.registerCommand?.("open-project-info",{handler:openProjectInfo,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-file-info",{handler:openFileInfo,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-project-disks",{handler:()=>{openWindow("projects");if(!isProjectMounted)setStatus(t("no_project_mounted"));},isAvailable:()=>!0});
+// open-rag is the Insert File Floppy window's old name; both open the one File Floppy window.
+window.AISystem6Runtime?.registerCommand?.("open-text-disk",{handler:()=>{renderMountedTextDisk();openWindow("textDisk");},isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-rag",{handler:()=>{renderMountedTextDisk();openWindow("textDisk");},isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-finder",{handler:()=>{openWindow("finder");navigateSystemFolderPath("");},isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-documents",{handler:()=>{renderDocuments();openWindow("documents");},isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-github-repo",{handler:()=>window.open("https://github.com/surfine/AI-System-6","_blank","noopener"),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-project-site",{handler:async()=>{await ensureAboutModule();return window.AISystem6About.openProjectSite()},isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-guide-promo",{handler:async()=>{await ensureAboutModule();return window.AISystem6About.open({face:"overview",play:!0})},isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-about-multifinder",{handler:showAboutMultiFinder,isAvailable:()=>typeof isMultiFinderMode==="function"&&isMultiFinderMode(),unavailableReason:()=>"balloon_disabled_menu_multifinder"});
+window.AISystem6Runtime?.registerCommand?.("replay-clio-introduction",{handler:()=>openAboutFirstTime(),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-clio-model-settings",{handler:openModelSettings,isAvailable:()=>!0});
+// The 说明 folder's four documents are one shape — a key, an id, and the same
+// opener — so they are one registration rather than four near-identical lines.
+// "shared" is the demonstration-disk page the window's own button opens.
+Object.entries({"open-read-me":"readMe","open-flow-readme":"flow","open-memory-readme":"memory","open-demo-disks-readme":"shared"})
+  .forEach(([commandId,documentKey])=>window.AISystem6Runtime?.registerCommand?.(commandId,{handler:()=>openSystemFolderDocument(documentKey),isAvailable:()=>!0}));
+window.AISystem6Runtime?.registerCommand?.("open-system-concepts-docmap",{handler:openSystemConceptDocMap,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-system-concepts-clio-stage",{handler:openSystemConceptClioStage,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-text-document",{handler:openTextDocumentFromDisk,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-writing-studio",{handler:openWritingStudio,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-question-sheet",{handler:openQuestionSheetSurface,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-teachtext-manuscript",{handler:openTeachTextManuscriptWindow,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-document-versions",{handler:()=>openDocumentVersions(),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-outline",{handler:openOutlineSurface,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-section-drafts",{handler:openSectionDrafts,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-claim-check",{handler:()=>openReviewDesk("facts"),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-style-sheet",{handler:()=>openReviewDesk("style"),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-writing-flow-windows",{handler:openWritingFlowWindows,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-teachtext",{handler:openTeachTextForWorkspace,isAvailable:()=>!0});
+// Shared Project Hard Disk links. The commands are eager -- the DISK is the
+// lazy part, loaded inside the handler -- and the handler is an arrow, so the
+// reference resolves when the command runs rather than when this table is
+// built. One row per route: a fifth disk is a string in this list, not a fifth
+// registration, which is what makes the writing route's advice ("adding a disk
+// is one entry") true of the boot payload too.
+"dtk ipad1 m5ipad iphone17e bongo glass ipad97 airbattery pm17 sympathy ceramic macpro19 pocket iphone6sp sleeve pm12 pm11 m5mba mbneo mini7 mkb sd ios19 ipada4 ip16p mgscrap t2nic airtrans ip4sdemo airact touch2 noport cdma4 iphone17 windowshade ipadpro18".split(" ").forEach((route)=>window.AISystem6Runtime?.registerCommand?.(`open-shared-disk-${route}`,{handler:()=>openSharedProjectDisk(route),isAvailable:()=>!0}));
+window.AISystem6Runtime?.registerCommand?.("open-finishing-receipt",{handler:()=>openFinishingReceiptForSelection(),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-clio-attachment-picker",{handler:beginClioTalkAttachmentPicker,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-clio-image-picker",{handler:openClioImagePicker,isAvailable:()=>!0});
+function syncEndfieldSourceButton(enabled) {
+  const button = document.getElementById("compose-endfield-source");
+  const help = document.getElementById("compose-endfield-source-help");
+  if (!button) return;
+  button.setAttribute("aria-pressed", enabled ? "true" : "false");
+  const key = enabled ? "compose_endfield_source_help_on" : "compose_endfield_source_help_off";
+  if (help) {
+    help.dataset.i18n = key;
+    help.textContent = t(key);
+  }
+}
+window.AISystem6Runtime?.registerCommand?.("toggle-endfield-source",{
+  handler: async () => {
+    if (typeof ensureLazySystemModule === "function") {
+      await ensureLazySystemModule("app/core/endfield-grounding.js", "AISystem6EndfieldGroundingLoaded").catch(() => {});
+    }
+    const api = window.AISystem6EndfieldGrounding;
+    if (!api) return false;
+    const enabled = api.setSourceEnabled(!api.isSourceEnabled());
+    syncEndfieldSourceButton(enabled);
+    setStatus(t(enabled ? "endfield_source_on" : "endfield_source_off"));
+    return enabled;
+  },
+  isAvailable: () => true,
+});
+window.AISystem6Runtime?.registerCommand?.("open-local-ai-settings",{handler:()=>{openWindow("control");if(typeof setControlTab==="function")setControlTab("local");return true;},isAvailable:()=>!0});
+// The model popover offers a "Control Panel" row in every application's own
+// menu, and it was wired only to the popover's private click listener -- so
+// the row worked under the pointer and dispatched nothing through any other
+// path, in 26 application contexts at once. It answers by name now, like
+// every other command.
+window.AISystem6Runtime?.registerCommand?.("open-model-settings",{handler:()=>{openWindow("control");return true;},isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-cloud-ai-settings",{handler:()=>{openWindow("control");if(typeof setControlTab==="function")setControlTab("cloud");return true;},isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-menu-selection",{handler:openFinderMenuSelection,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-project-disk",{handler:openSelectedProject,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-rebuild-flow",{handler:openRebuildFlow,isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-review-desk",{handler:()=>openReviewDesk("style"),isAvailable:()=>!0});
+// Review Desk is a writing-route surface: in the desktop profile it stays
+// unavailable, so the notification falls back to opening the receipt itself.
+// activate(): never toggles a restored 代理 off.
+window.AISystem6Runtime?.registerCommand?.("toggle-cliotalk-agent",{handler:async()=>{await ensureClioTalkAgentModule();await window.AISystem6ClioTalkAgent.activate();},isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-guest-reviews",{handler:async()=>{await openReviewDesk("guests");await ensureGuestToolsModule();window.AISystem6GuestTools?.renderGuestReviews?.();const win=getWindow("reviewDesk");if(win&&!win.classList.contains("is-hidden"))return;const latest=(window.AISystem6RunReceipts?.queryReceipts?.({limit:50,includeRunning:!0})||[]).find((file)=>String(file.runReceipt?.sourceAppId||"").startsWith("guest:"));if(latest)await window.AISystem6ApplicationRegistry?.openProjectObject?.(latest,"open");},isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-project-backup",{handler:openProjectBackupPanel,isAvailable:()=>!0});
+// "open-project-disks" is already taken by the mounted Project Hard Disk, so
+// the demonstration list gets its own id rather than shadowing that row.
+// Saying "not openable" is the whole answer; it needs no OK button.
+window.AISystem6Runtime?.registerCommand?.("open-system-file-system",{handler:()=>setStatus(t("system_file_not_openable")),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-system-file-finder",{handler:()=>setStatus(t("system_file_not_openable")),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-system-file-multifinder",{handler:()=>setStatus(t("system_file_not_openable")),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-system-file-da-handler",{handler:()=>setStatus(t("system_file_not_openable")),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-system-folder-path",{handler:({systemFolderPath=""}={})=>navigateSystemFolderPath(systemFolderPath),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-applications-folder-path",{handler:({applicationsFolderPath=""}={})=>navigateApplicationsFolderPath(applicationsFolderPath),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-system-prompt-file",{
+  handler:({promptId="writing-tools.proofread"}={})=>{
+    const runtime=window.AISystem6PromptFilesRuntime;
+    const systemDocument=runtime?.promptDocument?.(promptId,currentLanguage);
+    if(!systemDocument){setStatus(t("system_prompt_missing"));return}
+    if(systemDocument.editable!=="project"){
+      openTeachTextStateInTab({
+        title:systemDocument.name,
+        backing:{type:"systemPrompt",id:systemDocument.promptId,locale:systemDocument.language},
+        state:{name:systemDocument.name,folder:systemDocument.path,body:systemDocument.body,statusKey:"viewing_help"},
+        helpDocument:true,
+        preview:false,
+      });
+      teachTextBodyInput.readOnly=true;
+      setStatus(t("system_prompt_read_only_opened",systemDocument.name));
+      return;
+    }
+    if(!activeProjectId){setStatus(t("no_project_mounted"));openWindow("projects");return}
+    const file=runtime?.ensureProjectPromptOverrideForEditing(activeProjectId,promptId,currentLanguage);
+    if(!file){setStatus(t("system_prompt_missing"));return}
+    selectedChatFileId=file.id;activeTextFileId=file.id;openTextFile(file.id);saveDeskState?.();
+  },
+  isAvailable:()=>!0
+});
+// One entry for "open this file", shared with the Finder's own double-click and
+// the Open Recent rows. Availability is answered by the same resolver the
+// execution uses, so a row that names a file another window has deleted (or one
+// from a project the writer has left) is refused with a reason instead of
+// opening an empty window.
+window.AISystem6Runtime?.registerCommand?.("open-chat-file",{
+  handler:({fileId=""}={})=>{
+    const registry = window.AISystem6ApplicationRegistry;
+    if (typeof registry?.openProjectObject === "function") return registry.openProjectObject(fileId, "open");
+    return { ok: false, reason: "no-registry" };
+  },
+  isAvailable:({fileId=""}={})=>{
+    const registry = window.AISystem6ApplicationRegistry;
+    if (typeof registry?.applicationObjectAvailability !== "function") return true;
+    return registry.applicationObjectAvailability(fileId, "open").available === true;
+  },
+});
+// The explainer still has to be readable: it rides a notification instead.
+window.AISystem6Runtime?.registerCommand?.("open-droplet",{handler:({dropletId=""}={})=>{const command=typeof getScriptableCommand==="function"?getScriptableCommand(dropletId):null;const name=command&&typeof dropletName==="function"?dropletName(command):t("droplet");pushSystemNotification(t("droplet_open_explainer",name));},isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-control-strip-module",{handler:({controlStripModuleId})=>{ensureControlStripModule().then(()=>window.AISystem6ControlStrip?.openModuleOwner?.(controlStripModuleId)).catch(error=>console.warn("Control Strip unavailable.",error));},isAvailable:()=>!0});
+// The Control Strip Modules folder is the Control Panel's Control Strip tab now.
+window.AISystem6Runtime?.registerCommand?.("open-control-strip-modules",{handler:async()=>{await openWindow("control");if(typeof setControlTab==="function")setControlTab("strip");},isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-ai-connection-settings",{handler:()=>handleAction("open-cloud-ai-settings"),isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-selected-find-file",{handler:async()=>{await ensureDeskFindModule();openSelectedFindFileResult();},isAvailable:()=>!0});
+window.AISystem6Runtime?.registerCommand?.("open-selected-in-reader",{handler:()=>{if(selectedFindPathIndex===null){setStatus(t("select_find_path_first"));return}const result=findPathResults[selectedFindPathIndex];if(!result?.url)return;readerUrlInput.value=result.url;openWindow("reader");fetchReaderPage();},isAvailable:()=>selectedFindPathIndex!==null&&!!findPathResults[selectedFindPathIndex]?.url});

@@ -1,0 +1,19 @@
+# Template: the shared LM Studio on loopback as an OpenAI-compatible route.
+# The host renders {{MODEL}} into a per-run copy (pi-ai needs the model
+# declared) and passes a placeholder key, because pi-ai refuses a keyless
+# route ("No API key for provider: lmstudio"); LM Studio ignores it.
+- id: llm-pi-ai
+  config:
+    providers:
+      lmstudio:
+        apiKeyEnv: AIS6_AGENT_LMSTUDIO_KEY
+        api: openai-completions
+        baseURL: {{BASE_URL}}
+        models:
+          - id: {{MODEL}}
+            contextWindow: 32768
+            maxTokens: 4096
+- id: acp
+  config:
+    provider: lmstudio
+    model: {{MODEL}}

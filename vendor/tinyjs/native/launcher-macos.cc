@@ -1,0 +1,9326 @@
+// tinyjs window launcher.
+//
+// A dumb window process: it renders HTML in a native webview and shuttles
+// JSON-RPC messages between the page and the backend over a Unix domain
+// socket. No TCP, no ports; the socket lives in a private temp directory.
+// The backend (txiki.js) creates the socket, then spawns this as a child.
+//
+// Protocol (newline-delimited; payloads are JSON so never contain raw \n).
+// Call/window routing: page-call ids are "<winid>:<seq>"; window-targeted
+// commands use CMD@<winid> (no suffix = main); EVAL@* broadcasts. Windows:
+//   backend -> launcher:  WINOPEN <id>\t<page>\t<title>\t<WxH> (create/focus)
+//                         WINCLOSE <id>
+//   launcher -> backend:  WINCLOSED <id>
+//                         WINSTATE <id> <json>  {fullscreen,maximized,
+//                                               minimized,focused} — deduped
+//                                               snapshot on any transition
+//
+//   launcher -> backend:  CALL <winid>:<seq> <json-args-array>
+//   backend -> launcher:  RET <id> <status> <json>   resolve/reject a call
+//                         EVAL <js>                  run JS in the page
+//                                                    (js is esc()-escaped;
+//                                                    wire_unescape restores it)
+//                         TITLE <text>               set window title
+//                         SIZE <w> <h>               resize window
+//                         DLG <id> <op>              run a native dialog on the
+//                                                    UI thread and answer the
+//                                                    call directly via
+//                                                    webview_return; op is one
+//                                                    of open|openmulti|dir|save
+//                         RELOAD                     re-read the HTML file and
+//                                                    re-render (dev hot-reload)
+//                         MENUBEGIN / MENU <title> /
+//                         ITEM <id>\t<label>\t<key>\t<flags c|d> /
+//                         SUB <id>\t<label> … SUBEND /
+//                         SEP / ROLEITEM <role> /
+//                         MENUROLE <role>[\tnostd] /
+//                         MENUEND                    declare custom menu bar
+//                                                    menus (MENUBEGIN@<win>
+//                                                    declares that WINDOW's
+//                                                    own bar, up while it has
+//                                                    focus; MENURESET@<win>
+//                                                    drops it. Applied on
+//                                                    MENUEND;
+//                                                    flags: c=checked,
+//                                                    d=disabled; SUB nests;
+//                                                    MENUROLE edit places the
+//                                                    standard Edit menu (its
+//                                                    ITEMs append below
+//                                                    Select All; ROLEITEMs
+//                                                    among them — undo, redo,
+//                                                    cut, copy, paste,
+//                                                    selectAll, standard —
+//                                                    set the whole order;
+//                                                    nostd drops the stock
+//                                                    group);
+//                                                    MENUROLE app + ITEMs puts
+//                                                    them in the APPLICATION
+//                                                    menu, between About and
+//                                                    Quit — where Settings…
+//                                                    goes)
+//                         MENUUPD[@<win>] <id>\t<label>\t<checked>\t<enabled>
+//                                                    patch a live item ('' =
+//                                                    leave unchanged); @<win>
+//                                                    patches only that
+//                                                    window's copy
+//                         GET <qid> <what>           read-back query; what =
+//                                                    win | item:<id> | mouse |
+//                                                    clipboard[:count]
+//                         TRAYBEGIN <title>\t<icon>\t<template01>\t<tooltip>\t<primary01> /
+//                         ITEM / SEP / TRAYEND       declare a menu bar status
+//                                                    item (applied on TRAYEND;
+//                                                    icon: png path or
+//                                                    sf:<sfsymbol-name>;
+//                                                    primary=1: left click
+//                                                    sends TRAYCLICK, the menu
+//                                                    opens on right-click)
+//                         TRAYREMOVE                 remove the status item
+//                         WINOP <op> [args]          window ops: hide (main:
+//                                                    NSApp hide — focus returns
+//                                                    to the previous app),
+//                                                    show [0|1] (0 = don't
+//                                                    steal focus), center,
+//                                                    minimize,
+//                                                    fullscreen [0|1], restore,
+//                                                    ontop 0|1,
+//                                                    resizable 0|1, pos <x> <y>,
+//                                                    presence 0|1 (0 = no
+//                                                    Dock icon / menu-bar app),
+//                                                    hideonclose 0|1
+//                         CTXBEGIN / ITEM / SEP /
+//                         CTXEND / CTXCLEAR          replace or restore the
+//                                                    right-click menu
+//                         CTXSUPPRESS <0|1>          suppress WebKit's default
+//                                                    right-click menu
+//                         ABOUTHOOK <0|1>            1: the About menu item
+//                                                    reports `MENU about`
+//                                                    instead of showing the
+//                                                    standard panel
+//                         HKREG <id>\t<combo> /
+//                         HKUNREG <id>               global hotkeys
+//                         AUDIOTAP <qid> <scope>\t<excludeSelf>\t<interval> /
+//                         AUDIOTAP STOP              read output PCM (reply GOT)
+//                         NOTIFY <id>\t<title>\t<body>\t<subtitle>\t<snd01>
+//                                       [\t<actions-json>]
+//                                                    notification (bundle mode:
+//                                                    Notification Center);
+//                                                    actions-json = [{id,
+//                                                    title, reply?,
+//                                                    placeholder?, destructive?}]
+//                                                    → buttons / a reply field
+//                         NOWPLAYING <json> | clear  set the Now Playing info
+//                                                    (title/artist/album/
+//                                                    duration/elapsed/playing)
+//                                                    + arm the media keys
+//                         SAY <qid> <text>\t<voice>\t<rate>
+//                                                    speak via AVSpeech; GOT
+//                                                    {ok} when done
+//                         SAYSTOP                    stop speaking
+//                         VOICES <qid>               list installed voices;
+//                                                    GOT {ok, voices}
+//                         WINCTRL <qid> <pid>\t<x>\t<y>\t<w>\t<h>
+//                                                    move/resize another app's
+//                                                    frontmost window
+//                                                    (Accessibility); GOT {ok,
+//                                                    error}. Reads: GET
+//                                                    selectedtext, otherwindows,
+//                                                    traypos.
+//                         RECORD start <qid> <display>\t<path>
+//                         RECORD stop <qid>          record a display to an
+//                                                    .mp4 (SCStream →
+//                                                    AVAssetWriter; macOS 14 +
+//                                                    the 'screen' permission);
+//                                                    start answers GOT {ok,
+//                                                    error} once capturing,
+//                                                    stop answers GOT {ok,
+//                                                    path, duration, error}
+//                         CHROME <frame>\t<traffic>\t<transp>\t<vibrancy>
+//                                                    window chrome ('' = keep;
+//                                                    0|1 flags; vibrancy =
+//                                                    material name | none)
+//                         DRAGWIN[@win]              start a native window drag
+//                                                    (page drag regions)
+//                         RESIZEWIN[@win] <edge>     start a resize from an
+//                                                    edge (n/ne/e/se/s/sw/w/nw)
+//                                                    for a page-drawn grip
+//                         DRAGOUT[@win] <image>\t<path>… start dragging real
+//                                                    files OUT of the window
+//                                                    (from a page mousedown;
+//                                                    image: optional drag-image
+//                                                    png, '' = file icons)
+//                         CLIPWRITE <text>\t<html>\t<image>\t<color>\t<path>…
+//                                                    write the clipboard (fields
+//                                                    wire-escaped: \n \t \r \\;
+//                                                    empty = skip; image = png
+//                                                    path or base64/data-url)
+//                         CLIPWATCH <ms>             poll the clipboard change
+//                                                    count every <ms> (0 = stop)
+//                         KEYSTROKE <qid> <combo>    post a CGEvent keystroke
+//                                                    (e.g. cmd+v); answers
+//                                                    GOT <qid> {ok, trusted}
+//                         PERMCHK <qid> <name> /
+//                         PERMREQ <qid> <name>       check/request a TCC
+//                                                    permission (accessibility,
+//                                                    screen, notifications,
+//                                                    microphone, camera,
+//                                                    automation[:<bundle-id>]);
+//                                                    answers GOT <qid> {status}
+//                         SHELL <qid> <op>\t<target> open a URL/path with the
+//                                                    default app (open), reveal
+//                                                    in Finder (reveal), or move
+//                                                    to Trash (trash); answers
+//                                                    GOT <qid> {ok, error}
+//                         LOGIN <qid> get|set 0|1    launch-at-login status /
+//                                                    register (SMAppService —
+//                                                    bundle mode + macOS 13;
+//                                                    else "unsupported");
+//                                                    answers GOT <qid>
+//                                                    {status, ok, error}
+//                         BADGE <text>               Dock badge ('' clears)
+//                         ATTENTION <critical01>     bounce the Dock icon
+//                         PROGRESS <0..1|-1>         progress bar on the Dock
+//                                                    tile (-1 clears)
+//                         POWER <qid> on\t<display01>\t<reason> / off
+//                                                    prevent/allow idle sleep
+//                                                    (IOPMAssertion — dies
+//                                                    with the process, unlike
+//                                                    a spawned caffeinate);
+//                                                    answers GOT <qid>
+//                                                    {ok, active}
+//                         SOUND <qid> <target>       beep ('' ), a system
+//                                                    sound name ('Ping'), or
+//                                                    an audio file path;
+//                                                    answers GOT <qid> {ok}
+//                         SHARE[@win] <x>\t<y>\t<text>\t<url>\t<path>…
+//                                                    native share sheet
+//                                                    anchored at page coords
+//                         QUICKLOOK [<path>\t…]      Quick Look panel for the
+//                                                    file(s); bare = close
+//                         PICKCOLOR <qid>            system eyedropper; GOT
+//                                                    {ok, color '#rrggbb' |
+//                                                    null on cancel}
+//                         OCR <qid> <image-path>     on-device Vision OCR;
+//                                                    GOT {ok, text, blocks}
+//                         THUMB <qid> <path>\t<size> thumbnail png for ANY
+//                                                    file type; GOT {ok,
+//                                                    path, width, height}
+//                         SECRET <qid> get|set|del\t<service>\t<account>[\t<value>]
+//                                                    Keychain generic
+//                                                    password; GOT {ok,
+//                                                    value|null}
+//                         AUTH <qid> <reason>        Touch ID / password
+//                                                    sheet; GOT {ok, error}
+//                         OSA <qid> <source>         run AppleScript
+//                                                    in-process (no
+//                                                    osascript); GOT {ok,
+//                                                    result, error}
+//                         CAPTURE <qid> <displayId>  screenshot a display
+//                                                    (0 = primary; needs the
+//                                                    'screen' permission +
+//                                                    macOS 14); answers GOT
+//                                                    <qid> {ok, path (png),
+//                                                    width, height, error}
+//                         PRINT                      native print panel
+//                         PDF <qid> <path>           render the page to a PDF;
+//                                                    GOT {ok, path, error}
+//                         APPICON <path>             set the app icon from a
+//                                                    png ('' = reset)
+//                         SPOTLIGHT <qid> <query>    find files by content
+//                                                    (NSMetadataQuery); GOT
+//                                                    {ok, paths}
+//                                                    Reads: GET battery, wifi.
+//                         AI available <qid> /
+//                         AI generate <qid> <prompt>\t<instructions>\t<toolsJson>
+//                         AITOOLRESULT <id> <json>   answer a tool call.
+//                         Out: AITOOL <id> <name>\t<argsJson> — the model
+//                         wants a tool run; the backend replies with the above.
+//                                                    on-device LLM
+//                                                    (FoundationModels; only
+//                                                    when built TINYJS_AI=1 on
+//                                                    macOS 26); GOT {ok, text |
+//                                                    status, error}
+//                         QUIT                       close the window
+//   launcher -> backend:  MENU <id>                  a custom menu item was
+//                                                    clicked
+//                         CTX <id>                   a context menu item was
+//                                                    clicked
+//                         HOTKEY <id>                a global hotkey fired
+//                         AUDIOTAP <b64>\t<sr>\t<ch>\t<frames>\t<t>
+//                                                    a tap PCM chunk
+//                         SYSLOCALE <json>           language/region changed.
+//                         GET locale                 -> { language, languages,
+//                         system, region, timeZone }.
+//                         SYS theme dark|light /
+//                         SYS sleep / SYS wake       system events (theme also
+//                                                    sent once at startup)
+//                         TRAY <id>                  a tray menu item was
+//                                                    clicked
+//                         TRAYCLICK                  the tray icon itself was
+//                                                    clicked (no menu set, or
+//                                                    left click in primary-
+//                                                    action mode)
+//                         DROP <json-paths>          files dragged onto the
+//                                                    window (real paths)
+//                         GOT <qid> <json>           read-back answer
+//                         CLIPCHANGE <count> <self01> the clipboard changed
+//                                                    (self=1: our own CLIPWRITE)
+//                         NOTIFYCLICK <id>           a notification banner was
+//                                                    clicked
+//                         NOTIFYACTION <id>\t<action>\t<reply>
+//                                                    an action button / reply
+//                                                    field on a notification
+//                         MEDIAKEY <name>[\t<secs>]  a media key / Control
+//                                                    Center transport fired
+//                                                    (play/pause/toggle/next/
+//                                                    previous/seek)
+//
+// A default app menu (About + Quit) is always present; About shows the
+// standard panel with the app name, version, and a tinyjs credit — unless
+// ABOUTHOOK 1 arrived, in which case the click reports `MENU about` and the
+// app draws its own. `MENUROLE app` adds the app's own items between the
+// two (Settings…, ⌘,).
+//
+// Built as Objective-C++ on macOS (needs AppKit for NSOpenPanel/NSSavePanel).
+//
+// Usage: launcher <html-file-or-url> <socket-path> [title] [WxH] [version]
+
+#include "webview.h"
+
+#ifdef __APPLE__
+#import <AVFoundation/AVFoundation.h>
+#import <AppKit/AppKit.h>
+#import <LocalAuthentication/LocalAuthentication.h> // Touch ID (AUTH)
+#import <MediaPlayer/MediaPlayer.h>  // Now Playing + media keys
+#import <Quartz/Quartz.h>             // QLPreviewPanel (Quick Look)
+#import <QuickLookThumbnailing/QuickLookThumbnailing.h> // THUMB
+#import <Security/Security.h>         // Keychain (SECRET)
+#import <Vision/Vision.h>             // on-device OCR
+#import <ScreenCaptureKit/ScreenCaptureKit.h> // weak-linked; macOS 14+ used
+#import <ServiceManagement/ServiceManagement.h>
+#import <UniformTypeIdentifiers/UniformTypeIdentifiers.h> // file-picker type filters
+#import <UserNotifications/UserNotifications.h>
+#import <WebKit/WebKit.h>
+#import <CoreWLAN/CoreWLAN.h> // Wi-Fi info
+#import <CoreAudio/CoreAudio.h>              // process taps (tiny.audioTap)
+#import <CoreAudio/AudioHardwareTapping.h>   // AudioHardwareCreateProcessTap (14.2+)
+#import <CoreAudio/CATapDescription.h>       // CATapDescription (14.2+)
+#import <AudioToolbox/AudioToolbox.h>        // AudioDeviceCreateIOProcIDWithBlock
+#include <Carbon/Carbon.h> // RegisterEventHotKey (global hotkeys)
+#include <IOKit/pwr_mgt/IOPMLib.h> // IOPMAssertion (prevent sleep)
+#include <IOKit/ps/IOPowerSources.h> // battery
+#include <IOKit/ps/IOPSKeys.h>
+#include <objc/message.h>
+#include <objc/runtime.h>
+#include "tiny_client.h" // generated from runtime/tiny.js (gen-client.sh)
+#endif
+
+#include <map>
+
+#include <cstdio>
+#include <atomic> // audio.filters: handing coefficients to the IOProc thread
+#include <cstdlib>
+#include <cstring>
+#include <cerrno>
+#include <cmath> // lrintf (audioTap float->int16)
+#include <ctime> // clock_gettime_nsec_np (audioTap chunk timestamps)
+#include <condition_variable>
+#include <fstream>
+#include <map>
+#include <mutex>
+#include <set>
+#include <sstream>
+#include <string>
+#include <thread>
+
+#include <spawn.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <unistd.h>
+
+#include <vector>
+
+extern char **environ;
+
+static webview_t g_w = nullptr;
+static int g_sock = -1;
+static int g_listen_fd = -1;   // bundle mode: launcher listens, backend attaches
+static std::string g_sock_dir; // bundle mode: private socket dir, cleaned at exit
+static std::mutex g_write_mutex;
+static std::string g_html_path; // empty when target is an http(s) URL
+static std::string g_app_name = "tinyjs";
+static std::string g_app_version = "0.0.0";
+// ABOUTHOOK: About reports `MENU about` instead of the standard panel.
+// Written by the socket reader thread, read on the main thread at click time.
+static std::atomic<bool> g_about_to_app{false};
+static bool g_bundle_mode = false; // launcher IS the .app executable (attach mode)
+#ifdef __APPLE__
+// Secondary windows (the main window lives in the webview library).
+struct TinyWindow {
+  NSWindow *win = nil;
+  WKWebView *wv = nil;
+  NSObject *handler = nil;   // TinyMsgHandler
+  NSObject *wdelegate = nil; // TinyWinDelegate
+  NSVisualEffectView *effect = nil;
+};
+static std::map<std::string, TinyWindow> g_windows;
+#endif
+
+// Window chrome state (set by CHROME, reported by GET win).
+static int g_resizable_override = -1; // -1 default, 0 forced off, 1 forced on
+static bool g_chrome_frameless = false;
+static bool g_chrome_traffic = true;
+static bool g_chrome_transparent = false;
+static bool g_chrome_square = false;  // borderless: square corners, no titlebar
+static std::string g_chrome_vibrancy; // empty = none
+// Extra directory the page may read file:// assets from (readAccess option) —
+// widens WebKit's default (the page's own folder) so <audio>/<img>/fetch can
+// reach files elsewhere. Empty = default (page dir only).
+static std::string g_read_access;
+static std::string g_user_agent; // custom UA (devUrl-wrapping sniffer-sensitive sites)
+// Wrapped-site affordances (dev via env, packaged via Tinyjs* plist keys):
+// document-start user JS, download policy, popup (window.open) policy.
+static std::string g_inject_js;       // TINYJS_INJECT / Resources/app/inject.js
+static std::string g_downloads_mode;  // "" = auto | ask | deny  (TinyjsDownloads)
+static std::string g_popup_mode;      // "" = external | window | deny (TinyjsPopups)
+// tinyjs.json "debug": dev via TINYJS_DEBUG env, packaged via the TinyjsDebug
+// plist key. Absent = no inspector anywhere (right-click Inspect gone),
+// "1"/"true" = F12 / Cmd+Opt+I open it detached, "open" = every window
+// auto-opens its inspector at creation. `tinyjs dev` seeds TINYJS_DEBUG=1.
+static bool g_debug = false;
+static bool g_debug_open = false;
+static void open_inspector_for_key_window(); // defined with the win lookups
+// Lines produced before the backend is connected (bundle mode: Apple Events
+// and page calls can arrive before the spawned backend attaches). Flushed by
+// sock_set_connected().
+static std::vector<std::string> g_pending_out;
+
+static void sock_write_raw(const std::string &msg) {
+  const char *p = msg.data();
+  size_t left = msg.size();
+  while (left > 0) {
+    ssize_t n = write(g_sock, p, left);
+    if (n <= 0)
+      return;
+    p += n;
+    left -= (size_t)n;
+  }
+}
+
+static void sock_write_line(const std::string &line) {
+  // One line per message, always (#30.6). Every field that can carry a line
+  // break is escaped before it gets here, so a raw CR/LF means a field
+  // slipped through unescaped — and splitting it would hand the backend
+  // lines nobody wrote. Drop the whole line instead.
+  if (line.find_first_of("\r\n") != std::string::npos) {
+    fprintf(stderr, "tinyjs: dropped a wire line with a raw line break\n");
+    return;
+  }
+  std::lock_guard<std::mutex> lock(g_write_mutex);
+  if (g_sock < 0) {
+    if (g_pending_out.size() < 512)
+      g_pending_out.push_back(line);
+    return;
+  }
+  sock_write_raw(line + "\n");
+}
+
+static void sock_set_connected(int fd) {
+  std::lock_guard<std::mutex> lock(g_write_mutex);
+  g_sock = fd;
+  for (const std::string &line : g_pending_out)
+    sock_write_raw(line + "\n");
+  g_pending_out.clear();
+}
+
+static std::string json_escape(const std::string &s) {
+  std::string out = "\"";
+  for (char c : s) {
+    switch (c) {
+    case '"': out += "\\\""; break;
+    case '\\': out += "\\\\"; break;
+    case '\n': out += "\\n"; break;
+    case '\r': out += "\\r"; break;
+    case '\t': out += "\\t"; break;
+    default:
+      if ((unsigned char)c < 0x20) {
+        char buf[8];
+        std::snprintf(buf, sizeof(buf), "\\u%04x", c);
+        out += buf;
+      } else {
+        out += c;
+      }
+    }
+  }
+  out += "\"";
+  return out;
+}
+
+static void do_eval(webview_t w, void *arg) {
+  std::string *js = static_cast<std::string *>(arg);
+  webview_eval(w, js->c_str());
+  delete js;
+}
+
+static void do_title(webview_t w, void *arg) {
+  std::string *t = static_cast<std::string *>(arg);
+  webview_set_title(w, t->c_str());
+  delete t;
+}
+
+struct SizeReq {
+  int width, height;
+  std::string win = "main";
+};
+
+static void reapply_window_overrides(webview_t w); // defined with chrome ops
+#ifdef __APPLE__
+static NSWindow *window_for_id(webview_t w, const std::string &id); // below
+static WKWebView *webview_for_id(webview_t w, const std::string &id); // below
+static std::string traffic_pos_json(const std::string &wid); // below
+#endif
+
+static void do_size(webview_t w, void *arg) {
+  SizeReq *s = static_cast<SizeReq *>(arg);
+#ifdef __APPLE__
+  // CONTENT size — the page's own box, which is what win.open's `size` and
+  // setMinSize have always meant and what getState now reports back. Sizes
+  // round-trip: read getState, hand width/height straight back to setSize,
+  // and nothing moves. (They used to disagree by the title bar, and a window
+  // that re-asserted its own size ratcheted 32pt taller every pass; the fix
+  // then was to make BOTH ends frame units, which left creation — content —
+  // as the odd one out and macOS 32pt shorter than Windows and Linux for the
+  // same declared size.)
+  //
+  // Main goes through the same path as every satellite. webview_set_size sets
+  // the FRAME, rewrites the styleMask wholesale (wiping frameless chrome) and
+  // re-centers the window, none of which belongs in a resize.
+  NSWindow *win = window_for_id(w, s->win);
+  if (win && s->width > 0 && s->height > 0) {
+    NSRect f = win.frame;
+    CGFloat top = NSMaxY(f); // keep the top-left anchored, as users expect
+    f.size =
+        [win frameRectForContentRect:NSMakeRect(0, 0, s->width, s->height)].size;
+    f.origin.y = top - f.size.height;
+    [win setFrame:f display:YES];
+  }
+#else
+  if (s->win == "main") {
+    webview_set_size(w, s->width, s->height, WEBVIEW_HINT_NONE);
+    reapply_window_overrides(w);
+  }
+#endif
+  delete s;
+}
+
+
+static void do_terminate(webview_t w, void *) { webview_terminate(w); }
+
+// Load a local HTML file. On macOS this must go through
+// loadFileURL:allowingReadAccessToURL: rather than webview_set_html:
+// loadHTMLString (what set_html uses) gives the page an opaque about:blank
+// origin, which is not a secure context, and WebKit hides SecureContext-only
+// APIs like navigator.gpu (WebGPU) there. A file:// document is a secure
+// context, and read access to the containing directory lets the page load
+// sibling assets.
+// The read root for loadFileURL:allowingReadAccessToURL:. WebKit refuses to
+// load the page at all unless the page itself sits UNDER that root, so a
+// readAccess directory that doesn't contain the page can't simply be used as
+// given — the app comes up blank with nothing saying why. That happens
+// whenever the page lives somewhere else: TINYJS_HTML points at a page in a
+// temp dir while readAccess names the home directory, which is exactly the
+// documented headless-testing recipe. Widen to the nearest common ancestor of
+// the two instead; the app asked for the wider of them anyway.
+static NSURL *tiny_read_access_url(NSURL *pageURL) {
+  NSURL *pageDir = [pageURL URLByDeletingLastPathComponent];
+  if (g_read_access.empty())
+    return pageDir;
+  NSString *want = [[NSString stringWithUTF8String:g_read_access.c_str()]
+      stringByStandardizingPath];
+  NSString *have = [[pageDir path] stringByStandardizingPath];
+  if ([have isEqualToString:want] ||
+      [have hasPrefix:[want hasSuffix:@"/"] ? want : [want stringByAppendingString:@"/"]])
+    return [NSURL fileURLWithPath:want isDirectory:YES];
+  NSArray *a = [want pathComponents], *b = [have pathComponents];
+  NSMutableArray *common = [NSMutableArray array];
+  for (NSUInteger i = 0; i < a.count && i < b.count; i++) {
+    if (![a[i] isEqualToString:b[i]]) break;
+    [common addObject:a[i]];
+  }
+  NSString *anc = common.count ? [NSString pathWithComponents:common] : @"/";
+  return [NSURL fileURLWithPath:anc isDirectory:YES];
+}
+
+static bool load_html_file(webview_t w, const std::string &path) {
+  std::ifstream f(path, std::ios::binary);
+  if (!f)
+    return false;
+#ifdef __APPLE__
+  WKWebView *wv = (WKWebView *)webview_get_native_handle(
+      w, WEBVIEW_NATIVE_HANDLE_KIND_BROWSER_CONTROLLER);
+  if (wv) {
+    NSURL *url =
+        [NSURL fileURLWithPath:[NSString stringWithUTF8String:path.c_str()]];
+    [wv loadFileURL:url allowingReadAccessToURL:tiny_read_access_url(url)];
+    return true;
+  }
+#endif
+  std::stringstream ss;
+  ss << f.rdbuf();
+  const std::string html = ss.str();
+  webview_set_html(w, html.c_str());
+  return true;
+}
+
+static void do_reload(webview_t w, void *) {
+#ifdef __APPLE__
+  // reloadFromOrigin bypasses WebKit's caches, so edited subresources
+  // (css/js/images) are re-read from disk, not just the main document. It
+  // also covers "url" apps (remote main page, g_html_path empty) — reload
+  // there means the live URL, not a file.
+  WKWebView *wv = (WKWebView *)webview_get_native_handle(
+      w, WEBVIEW_NATIVE_HANDLE_KIND_BROWSER_CONTROLLER);
+  if (wv && wv.URL != nil) {
+    [wv reloadFromOrigin];
+    return;
+  }
+#endif
+  if (g_html_path.empty())
+    return;
+  load_html_file(w, g_html_path);
+}
+
+// --- native dialogs (macOS) -------------------------------------------------
+// Runs on the UI thread via webview_dispatch; answers the pending page call
+// directly with webview_return, so the backend never sees a reply line.
+
+// CLIPWRITE/DRAGOUT payload fields escape \n \t \r \\ so multi-line clipboard
+// text survives the newline-delimited, tab-separated wire; this reverses
+// runtime/bridge.js esc().
+static std::string wire_unescape(const std::string &s) {
+  std::string out;
+  out.reserve(s.size());
+  for (size_t i = 0; i < s.size(); i++) {
+    if (s[i] == '\\' && i + 1 < s.size()) {
+      char c = s[++i];
+      out += c == 'n' ? '\n' : c == 't' ? '\t' : c == 'r' ? '\r' : c;
+    } else {
+      out += s[i];
+    }
+  }
+  return out;
+}
+
+// Reverse of wire_unescape / the bridge's esc(): make text safe to carry in
+// a tab-separated wire field (the bridge unescapes it on the way in).
+static std::string wire_escape(const std::string &s) {
+  std::string out;
+  out.reserve(s.size());
+  for (char c : s) {
+    if (c == '\\') out += "\\\\";
+    else if (c == '\n') out += "\\n";
+    else if (c == '\t') out += "\\t";
+    else if (c == '\r') out += "\\r";
+    else out += c;
+  }
+  return out;
+}
+
+static std::vector<std::string> split_tabs(const std::string &s) {
+  std::vector<std::string> out;
+  size_t start = 0, tab;
+  while ((tab = s.find('\t', start)) != std::string::npos) {
+    out.push_back(s.substr(start, tab - start));
+    start = tab + 1;
+  }
+  out.push_back(s.substr(start));
+  return out;
+}
+
+static void reply_to_call(webview_t w, const std::string &composite, int status,
+                          const std::string &json); // unified RPC (below)
+
+struct DlgReq {
+  std::string id;
+  std::string op;                 // open | openmulti | dir | save | alert | confirm | prompt
+  std::vector<std::string> args;  // op-specific, tab-separated on the wire
+};
+
+#ifdef __APPLE__
+static NSString *ns(const std::string &s) {
+  return [NSString stringWithUTF8String:s.c_str()];
+}
+
+// Comma-separated extensions (bridge sends them pre-normalized: lowercase, no
+// dots) → allowedContentTypes. Unknown extensions still filter — UTType mints
+// a dynamic type for them. NSOpenPanel subclasses NSSavePanel, so this covers
+// open/openmulti/save alike. Empty csv leaves the panel unrestricted.
+static void apply_type_filter(NSSavePanel *panel, const std::string &csv) {
+  if (csv.empty())
+    return;
+  NSMutableArray<UTType *> *types = [NSMutableArray array];
+  size_t start = 0;
+  while (start <= csv.size()) {
+    size_t comma = csv.find(',', start);
+    std::string ext = csv.substr(
+        start, comma == std::string::npos ? std::string::npos : comma - start);
+    if (!ext.empty()) {
+      UTType *t = [UTType typeWithFilenameExtension:ns(ext)];
+      if (t)
+        [types addObject:t];
+    }
+    if (comma == std::string::npos)
+      break;
+    start = comma + 1;
+  }
+  if (types.count)
+    panel.allowedContentTypes = types;
+}
+#endif
+
+static void tiny_test_autodlg_arm(); // test hook, defined with the JS dialogs
+static void do_dialog(webview_t w, void *arg) {
+  DlgReq *req = static_cast<DlgReq *>(arg);
+  std::string json = "null";
+  auto a = [&](size_t i) { return i < req->args.size() ? req->args[i] : std::string(); };
+#ifdef __APPLE__
+  @autoreleasepool {
+    if (req->op == "save") {
+      // args: typeFilter (comma-separated extensions, may be empty),
+      // suggested file name (optional)
+      NSSavePanel *panel = [NSSavePanel savePanel];
+      apply_type_filter(panel, a(0));
+      if (!a(1).empty()) panel.nameFieldStringValue = ns(a(1));
+      tiny_test_autodlg_arm();
+      if ([panel runModal] == NSModalResponseOK && panel.URL != nil) {
+        json = json_escape([panel.URL.path UTF8String]);
+      }
+    } else if (req->op == "alert" || req->op == "confirm") {
+      // args: message, detail, okLabel, cancelLabel
+      NSAlert *alert = [[NSAlert alloc] init];
+      alert.messageText = ns(a(0).empty() ? g_app_name : a(0));
+      if (!a(1).empty()) alert.informativeText = ns(a(1));
+      [alert addButtonWithTitle:ns(a(2).empty() ? "OK" : a(2))];
+      if (req->op == "confirm") {
+        [alert addButtonWithTitle:ns(a(3).empty() ? "Cancel" : a(3))];
+      }
+      NSModalResponse r = [alert runModal];
+      json = (req->op == "alert") ? "true"
+                                  : (r == NSAlertFirstButtonReturn ? "true" : "false");
+    } else if (req->op == "prompt") {
+      // args: message, defaultValue, okLabel, cancelLabel
+      NSAlert *alert = [[NSAlert alloc] init];
+      alert.messageText = ns(a(0).empty() ? g_app_name : a(0));
+      NSTextField *field =
+          [[NSTextField alloc] initWithFrame:NSMakeRect(0, 0, 260, 24)];
+      field.stringValue = ns(a(1));
+      alert.accessoryView = field;
+      alert.window.initialFirstResponder = field;
+      [alert addButtonWithTitle:ns(a(2).empty() ? "OK" : a(2))];
+      [alert addButtonWithTitle:ns(a(3).empty() ? "Cancel" : a(3))];
+      if ([alert runModal] == NSAlertFirstButtonReturn) {
+        json = json_escape([field.stringValue UTF8String]);
+      }
+    } else {
+      // args (open/openmulti): typeFilter (comma-separated extensions)
+      NSOpenPanel *panel = [NSOpenPanel openPanel];
+      panel.canChooseFiles = (req->op != "dir");
+      panel.canChooseDirectories = (req->op == "dir");
+      panel.allowsMultipleSelection = (req->op == "openmulti");
+      if (req->op != "dir")
+        apply_type_filter(panel, a(0));
+      if ([panel runModal] == NSModalResponseOK && panel.URLs.count > 0) {
+        if (req->op == "openmulti") {
+          json = "[";
+          for (NSUInteger i = 0; i < panel.URLs.count; i++) {
+            if (i)
+              json += ",";
+            json += json_escape([[panel.URLs[i] path] UTF8String]);
+          }
+          json += "]";
+        } else {
+          json = json_escape([[panel.URLs[0] path] UTF8String]);
+        }
+      }
+    }
+  }
+#endif
+  reply_to_call(w, req->id, 0, json);
+  delete req;
+}
+
+// --- menu bar (macOS) --------------------------------------------------------
+// A default app menu (About + Quit) is always installed; MENUBEGIN…MENUEND
+// declares additional custom menus. Item clicks are reported to the backend
+// as `MENU <id>` lines — including clicks on items the app put INSIDE the
+// application menu with `MENUROLE app`, which is the slot macOS reserves for
+// Settings… and which setMenu had no way to reach before.
+//
+// The standard Edit menu is installed too — the webview needs its key
+// equivalents for ⌘C/⌘V to work — and it goes first unless a MENUROLE edit
+// line says where it belongs instead ({ role: 'edit' } in setMenu). What it
+// holds is the app's call too (stock roles, `nostd`); install_stock_key_fallback
+// keeps the shortcuts alive whatever it leaves out.
+
+struct MenuItemSpec {
+  std::string id, label, key;
+  bool separator = false;
+  bool checked = false;   // ITEM flags field: 'c'
+  bool disabled = false;  // ITEM flags field: 'd'
+  std::vector<MenuItemSpec> submenu; // SUB <id>\t<label> … SUBEND nesting
+  std::string role;       // ROLEITEM line: a stock item (copy, standard, …)
+};
+struct MenuSpec {
+  std::string title;
+  std::vector<MenuItemSpec> items;
+  std::string role;       // MENUROLE line: a standard menu, built by us
+  bool no_standard = false; // MENUROLE edit\tnostd: no implicit stock group
+};
+
+#ifdef __APPLE__
+static void send_open_urls(NSArray *urls); // defined below
+
+// Tray globals live up here because TinyMenuTarget's click handlers use them;
+// they are managed in the tray section below. g_tray_menu is set only in
+// primary-action mode, where a left click on the icon is an event and the
+// menu is popped up on right-click.
+static NSStatusItem *g_status_item = nil;
+static NSMenu *g_tray_menu = nil;
+
+@interface TinyMenuTarget : NSObject
+- (void)itemClicked:(NSMenuItem *)sender;
+- (void)trayItemClicked:(NSMenuItem *)sender;
+- (void)ctxItemClicked:(NSMenuItem *)sender;
+- (void)trayClicked:(id)sender;
+- (void)showAbout:(id)sender;
+- (void)showDevTools:(id)sender;
+- (void)doQuit:(id)sender;
+@end
+
+static const NSInteger kTinyItemDisabled = 1;  // NSMenuItem.tag: app said disabled
+
+@implementation TinyMenuTarget
+- (void)itemClicked:(NSMenuItem *)sender {
+  NSString *mid = (NSString *)sender.representedObject;
+  if (mid)
+    sock_write_line(std::string("MENU ") + [mid UTF8String]);
+}
+- (void)trayItemClicked:(NSMenuItem *)sender {
+  NSString *mid = (NSString *)sender.representedObject;
+  if (mid)
+    sock_write_line(std::string("TRAY ") + [mid UTF8String]);
+}
+- (void)ctxItemClicked:(NSMenuItem *)sender {
+  NSString *mid = (NSString *)sender.representedObject;
+  if (mid)
+    sock_write_line(std::string("CTX ") + [mid UTF8String]);
+}
+// Only consulted in menus that autoenable — the ones holding stock items,
+// which need the responder chain to grey Copy out with nothing selected. Our
+// own items there keep the app's enabled flag in their tag (see
+// build_menu_into and MENUUPD), since autoenabling overwrites .enabled.
+- (BOOL)validateMenuItem:(NSMenuItem *)item {
+  return item.tag != kTinyItemDisabled;
+}
+- (void)showDevTools:(id)sender {
+  (void)sender;
+  open_inspector_for_key_window();
+}
+- (void)handleGetURL:(NSAppleEventDescriptor *)event
+           withReply:(NSAppleEventDescriptor *)reply {
+  NSString *url = [[event paramDescriptorForKeyword:keyDirectObject] stringValue];
+  NSURL *u = url ? [NSURL URLWithString:url] : nil;
+  if (u)
+    send_open_urls(@[ u ]);
+}
+- (void)handleOpenDocs:(NSAppleEventDescriptor *)event
+             withReply:(NSAppleEventDescriptor *)reply {
+  NSAppleEventDescriptor *list = [event paramDescriptorForKeyword:keyDirectObject];
+  NSMutableArray *urls = [NSMutableArray array];
+  for (NSInteger i = 1; i <= [list numberOfItems]; i++) {
+    NSURL *u = [[list descriptorAtIndex:i] fileURLValue];
+    if (u)
+      [urls addObject:u];
+  }
+  send_open_urls(urls);
+}
+- (void)trayClicked:(id)sender {
+  NSEvent *ev = [NSApp currentEvent];
+  bool secondary = ev && (ev.type == NSEventTypeRightMouseUp ||
+                          ([ev modifierFlags] & NSEventModifierFlagControl));
+  if (secondary && g_tray_menu && g_status_item) {
+    // Attach the menu just for this tracking session so plain left clicks
+    // keep firing the action (a set menu swallows all button clicks).
+    g_status_item.menu = g_tray_menu;
+    [g_status_item.button performClick:nil];
+    g_status_item.menu = nil;
+    return;
+  }
+  sock_write_line("TRAYCLICK");
+}
+- (void)showAbout:(id)sender {
+  if (g_about_to_app) {
+    sock_write_line("MENU about");
+    return;
+  }
+  // AppKit shows Resources/Credits.html only when no Credits key is passed
+  // (#8) — defer to a bundled one. Otherwise the manifest "attribution"
+  // string (dev via TINYJS_ATTRIBUTION env, packaged via the
+  // TinyjsAttribution plist key, like TinyjsUserAgent) replaces the tinyjs
+  // credit line for white-labeled apps.
+  NSString *attribution = nil;
+  const char *attr = getenv("TINYJS_ATTRIBUTION");
+  if (attr && *attr) attribution = [NSString stringWithUTF8String:attr];
+  if (!attribution)
+    attribution = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"TinyjsAttribution"];
+  NSMutableDictionary *about = [NSMutableDictionary dictionaryWithDictionary:@{
+    @"ApplicationName" : ns(g_app_name),
+    @"ApplicationVersion" : ns("Version " + g_app_version),
+    @"Version" : @"",
+  }];
+  if ([[NSBundle mainBundle] pathForResource:@"Credits" ofType:@"html"]) {
+    // no Credits key → AppKit shows the bundled Credits.html
+  } else if (attribution.length) {
+    about[@"Credits"] = [[NSAttributedString alloc] initWithString:attribution];
+  } else {
+    about[@"Credits"] = [[NSAttributedString alloc]
+        initWithString:@"Made with tinyjs — https://tinyjs.app"];
+  }
+  [NSApp orderFrontStandardAboutPanelWithOptions:about];
+}
+- (void)doQuit:(id)sender {
+  webview_terminate(g_w);
+}
+@end
+
+static TinyMenuTarget *g_menu_target = nil;
+
+// Live NSMenuItems by id, per container, rebuilt on each apply — MENUUPD
+// patches and `GET item:<id>` reads go through these. The menu-bar ones now
+// live on each MacBar (one per menu source: the app menu, plus any window
+// that declared its own); the tray keeps a registry of its own.
+static NSMutableDictionary *g_reg_tray = nil;
+
+// A menu key is ⌘ plus the character — "s" is ⌘S and an uppercase "S" is ⌘⇧S,
+// because AppKit reads the shift out of the character itself. Anything more
+// than that is spelled with prefixes: "alt+p" is ⌥⌘P, "alt+shift+f" is ⌥⇧⌘F.
+// ⌘ is always in, since a menu bar without it isn't a menu bar.
+static NSEventModifierFlags split_accel(const std::string &spec, std::string &key) {
+  NSEventModifierFlags mask = NSEventModifierFlagCommand;
+  key = spec;
+  for (;;) {
+    size_t plus = key.find('+');
+    if (plus == std::string::npos || plus == 0) break;
+    std::string mod = key.substr(0, plus);
+    for (auto &c : mod) c = (char)tolower((unsigned char)c);
+    if (mod == "alt" || mod == "opt" || mod == "option") mask |= NSEventModifierFlagOption;
+    else if (mod == "ctrl" || mod == "control") mask |= NSEventModifierFlagControl;
+    else if (mod == "shift") mask |= NSEventModifierFlagShift;
+    else if (mod == "cmd" || mod == "command" || mod == "meta" || mod == "super") { /* already in */ }
+    else break;                                   // not a modifier — it's the key
+    key = key.substr(plus + 1);
+  }
+  return mask;
+}
+
+// Recursively fill `menu` from specs. autoenablesItems=NO so `disabled`
+// sticks (AppKit would otherwise re-enable anything with a live target).
+// Stock editing items, by role. Target nil: they go to the first responder
+// (the webview, or a field in a sheet), which is what makes ⌘C/⌘V work at
+// all — see kStockKeys and the fallback in main() for when an app leaves
+// them out. 'standard' is the whole group, as the default Edit menu has it.
+static void add_stock_items(NSMenu *menu, const std::string &role) {
+  if (role == "standard") {
+    for (const char *r : {"undo", "redo", "-", "cut", "copy", "paste", "selectAll"})
+      if (r[0] == '-') [menu addItem:[NSMenuItem separatorItem]];
+      else add_stock_items(menu, r);
+    return;
+  }
+  NSString *title = nil, *key = nil;
+  SEL action = nullptr;
+  if (role == "undo")           { title = @"Undo";       action = @selector(undo:);      key = @"z"; }
+  else if (role == "redo")      { title = @"Redo";       action = @selector(redo:);      key = @"Z"; }
+  else if (role == "cut")       { title = @"Cut";        action = @selector(cut:);       key = @"x"; }
+  else if (role == "copy")      { title = @"Copy";       action = @selector(copy:);      key = @"c"; }
+  else if (role == "paste")     { title = @"Paste";      action = @selector(paste:);     key = @"v"; }
+  else if (role == "selectAll") { title = @"Select All"; action = @selector(selectAll:); key = @"a"; }
+  else return;                                               // unknown: ignored
+  [menu addItemWithTitle:title action:action keyEquivalent:key];
+}
+
+static void build_menu_into(NSMenu *menu, const std::vector<MenuItemSpec> &items,
+                            SEL action, NSMutableDictionary *registry) {
+  menu.autoenablesItems = NO;
+  for (const MenuItemSpec &it : items) {
+    if (!it.role.empty()) {
+      // The tray has no text field to edit — skipped there, as elsewhere.
+      if (action == @selector(trayItemClicked:)) continue;
+      // A menu holding stock items autoenables, so Copy greys out with
+      // nothing selected; our items keep their flag via validateMenuItem.
+      add_stock_items(menu, it.role);
+      menu.autoenablesItems = YES;
+      continue;
+    }
+    if (it.separator) {
+      [menu addItem:[NSMenuItem separatorItem]];
+      continue;
+    }
+    std::string key;
+    NSEventModifierFlags mask = split_accel(it.key, key);
+    NSMenuItem *mi = [[[NSMenuItem alloc] initWithTitle:ns(it.label)
+                                                 action:action
+                                          keyEquivalent:ns(key)] autorelease];
+    if (!key.empty()) mi.keyEquivalentModifierMask = mask;
+    mi.target = g_menu_target;
+    mi.representedObject = ns(it.id);
+    mi.state = it.checked ? NSControlStateValueOn : NSControlStateValueOff;
+    mi.enabled = it.disabled ? NO : YES;
+    mi.tag = it.disabled ? kTinyItemDisabled : 0;
+    if (!it.submenu.empty()) {
+      NSMenu *sub = [[[NSMenu alloc] initWithTitle:ns(it.label)] autorelease];
+      build_menu_into(sub, it.submenu, action, registry);
+      mi.submenu = sub;
+    }
+    if (registry && !it.id.empty())
+      registry[ns(it.id)] = mi;
+    [menu addItem:mi];
+  }
+}
+
+// One bar per menu SOURCE: the app menu, plus any window that declared its
+// own with MENUBEGIN@<win>. macOS has a single bar for the whole app, so the
+// source belonging to the KEY window is the one installed — swap on focus and
+// per-window menus mean the same thing here as on Windows and Linux, where
+// each window draws its own.
+struct MacBar {
+  std::vector<MenuSpec> spec;
+  NSMenu *bar = nil;               // built from spec, lazily
+  NSMutableDictionary *reg = nil;  // live NSMenuItems by id
+  bool built = false;
+};
+static MacBar g_app_bar;                          // the app menu
+static std::map<std::string, MacBar> g_win_bars;  // windows with their own
+static std::string g_key_win = "main";            // window the bar belongs to
+static std::string g_bar_showing;                 // source installed ("" = app)
+
+static void build_bar(MacBar &mb) {
+  @autoreleasepool {
+    std::vector<MenuSpec> *menus = &mb.spec;
+    if (!g_menu_target)
+      g_menu_target = [[TinyMenuTarget alloc] init];
+
+    NSMenu *bar = [[NSMenu alloc] init];
+
+    // The id→NSMenuItem registry, emptied HERE rather than just before the
+    // custom menus below: items in the application menu (`MENUROLE app`) are
+    // built first, and resetting after them would throw their registrations
+    // away — leaving a Settings… that clicks perfectly well (the id rides on
+    // representedObject) but that getMenuItem and MENUUPD cannot see.
+    [mb.reg release];
+    mb.reg = [[NSMutableDictionary alloc] init];
+
+    // Default app menu: About + Quit, with whatever the app asked to put
+    // between them.
+    NSMenuItem *appItem = [[NSMenuItem alloc] init];
+    [bar addItem:appItem];
+    NSMenu *appMenu = [[NSMenu alloc] init];
+    NSMenuItem *about =
+        [[NSMenuItem alloc] initWithTitle:ns("About " + g_app_name)
+                                   action:@selector(showAbout:)
+                            keyEquivalent:@""];
+    about.target = g_menu_target;
+    [appMenu addItem:about];
+    [appMenu addItem:[NSMenuItem separatorItem]];
+
+    // `MENUROLE app` + ITEMs: the application menu is the one slot in the bar
+    // an app could not previously reach, and it is where macOS keeps
+    // Settings… (⌘,). The items land between About and Quit — the place the
+    // platform puts them — and go through the same build_menu_into as any
+    // other menu, so ids, key equivalents, ticks and MENUUPD all work here
+    // exactly as they do elsewhere. One slot only: a second `app` block is a
+    // mistake, and appending it would silently double the items.
+    for (const MenuSpec &m : *menus) {
+      if (m.role != "app") continue;
+      if (!m.items.empty()) {
+        build_menu_into(appMenu, m.items, @selector(itemClicked:), mb.reg);
+        [appMenu addItem:[NSMenuItem separatorItem]];
+      }
+      break;
+    }
+
+    NSMenuItem *quit =
+        [[NSMenuItem alloc] initWithTitle:ns("Quit " + g_app_name)
+                                   action:@selector(doQuit:)
+                            keyEquivalent:@"q"];
+    quit.target = g_menu_target;
+    [appMenu addItem:quit];
+    appItem.submenu = appMenu;
+
+    // The Edit menu. Its stock items are what make ⌘C/⌘V/⌘Z work in the
+    // webview (key equivalents ride menu items) — but the fallback in main()
+    // covers any the app leaves out, so the app decides what shows:
+    //   no slot / bare `MENUROLE edit` — the stock group, as always;
+    //   + ITEMs            — the stock group, a separator, then those items;
+    //   + ITEMs with ROLEITEMs — exactly those, in that order (a `standard`
+    //                        ROLEITEM is the whole group, placed there);
+    //   `MENUROLE edit\tnostd` — the app's items only; none = no Edit menu.
+    // WHERE it sits: a slot puts it between custom menus, so File can come
+    // first; no slot, straight after the app menu. First edit block only,
+    // like `app` — a second would double the items.
+    bool edit_placed = false;
+    auto add_edit_menu = [&]() {
+      if (edit_placed) return;
+      edit_placed = true;
+      const MenuSpec *spec = nullptr;
+      if (menus)
+        for (const MenuSpec &m : *menus)
+          if (m.role == "edit") { spec = &m; break; }
+      std::vector<MenuItemSpec> items;
+      bool places_roles = false;
+      if (spec)
+        for (const MenuItemSpec &it : spec->items)
+          if (!it.role.empty()) places_roles = true;
+      if (!places_roles && !(spec && spec->no_standard)) {
+        MenuItemSpec std_group;
+        std_group.role = "standard";
+        items.push_back(std_group);
+        if (spec && !spec->items.empty()) {
+          MenuItemSpec sep;
+          sep.separator = true;
+          items.push_back(sep);
+        }
+      }
+      if (spec) items.insert(items.end(), spec->items.begin(), spec->items.end());
+      if (items.empty()) return;                   // nostd and nothing of its own
+      NSMenuItem *editItem = [[[NSMenuItem alloc] init] autorelease];
+      [bar addItem:editItem];
+      NSMenu *editMenu = [[[NSMenu alloc] initWithTitle:@"Edit"] autorelease];
+      build_menu_into(editMenu, items, @selector(itemClicked:), mb.reg);
+      editItem.submenu = editMenu;
+    };
+
+    bool has_edit_slot = false;
+    if (menus) {
+      for (const MenuSpec &m : *menus)
+        if (m.role == "edit") has_edit_slot = true;
+    }
+    if (!has_edit_slot) add_edit_menu();
+
+    // Custom menus from the backend. (The registry was emptied at the top —
+    // the application menu's items are already in it.)
+    if (menus) {
+      for (const MenuSpec &m : *menus) {
+        if (!m.role.empty()) {
+          if (m.role == "edit") add_edit_menu();
+          // "app" was placed inside the application menu above, before this
+          // loop ran — it claims a slot in the SPEC, never one in the bar.
+          continue;                          // unknown roles are ignored
+        }
+        NSMenuItem *holder = [[NSMenuItem alloc] init];
+        [bar addItem:holder];
+        NSMenu *menu = [[NSMenu alloc] initWithTitle:ns(m.title)];
+        build_menu_into(menu, m.items, @selector(itemClicked:), mb.reg);
+        holder.submenu = menu;
+      }
+    }
+
+    // Develop menu only with tinyjs.json "debug" (dev forces it): Cmd+Opt+I
+    // matching Safari; the cross-platform F12 rides an NSEvent local monitor
+    // installed in main(). Rebuilt with the bar, so it survives bar swaps.
+    if (g_debug) {
+      NSMenuItem *devHolder = [[[NSMenuItem alloc] init] autorelease];
+      [bar addItem:devHolder];
+      NSMenu *devMenu = [[[NSMenu alloc] initWithTitle:@"Develop"] autorelease];
+      NSMenuItem *insp =
+          [[[NSMenuItem alloc] initWithTitle:@"Show Web Inspector"
+                                      action:@selector(showDevTools:)
+                               keyEquivalent:@"i"] autorelease];
+      insp.keyEquivalentModifierMask =
+          NSEventModifierFlagCommand | NSEventModifierFlagOption;
+      insp.target = g_menu_target;
+      [devMenu addItem:insp];
+      devHolder.submenu = devMenu;
+    }
+
+    [mb.bar release];
+    mb.bar = bar;
+    mb.built = true;
+  }
+}
+
+// The bar a window shows: its own if it declared one, else the app menu.
+static MacBar &bar_source_for(const std::string &winid) {
+  auto it = g_win_bars.find(winid);
+  return it == g_win_bars.end() ? g_app_bar : it->second;
+}
+
+// Put that window's bar up. Cheap and idempotent — called on every focus
+// change, so it returns early when the right one is already showing.
+static void install_bar_for(const std::string &winid, bool force = false) {
+  const std::string src = g_win_bars.count(winid) ? winid : std::string();
+  MacBar &mb = bar_source_for(winid);
+  g_key_win = winid;
+  if (!force && src == g_bar_showing && mb.built)
+    return;
+  if (!mb.built)
+    build_bar(mb);
+  g_bar_showing = src;
+  [NSApp setMainMenu:mb.bar];
+}
+
+// Which tinyjs window is this NSWindow? "" when it isn't one of ours — a
+// save panel or an alert taking key must not swap the bar out from under the
+// window behind it.
+static std::string winid_for_window(NSWindow *win) {
+  if (!win)
+    return "";
+  if (g_w && win == (NSWindow *)webview_get_native_handle(
+                        g_w, WEBVIEW_NATIVE_HANDLE_KIND_UI_WINDOW))
+    return "main";
+  for (auto &kv : g_windows)
+    if (kv.second.win == win)
+      return kv.first;
+  return "";
+}
+
+// macOS shows ONE bar, so "this window's menu" means "the menu that goes up
+// while this window has focus". Watching key changes app-wide (rather than
+// hanging it off each window's delegate) covers main — whose window the
+// webview library owns — with the same three lines.
+static void install_key_window_observer() {
+  [[NSNotificationCenter defaultCenter]
+      addObserverForName:NSWindowDidBecomeKeyNotification
+                  object:nil
+                   queue:nil
+              usingBlock:^(NSNotification *n) {
+                std::string id = winid_for_window((NSWindow *)n.object);
+                if (!id.empty())
+                  install_bar_for(id);
+              }];
+}
+
+// Rebuild whatever is on screen after a spec changed.
+static void reinstall_current_bar() { install_bar_for(g_key_win, true); }
+
+static void apply_menus(webview_t, void *arg) {
+  std::vector<MenuSpec> *menus = static_cast<std::vector<MenuSpec> *>(arg);
+  g_app_bar.spec = *menus;
+  // Build now even when another window's bar is the one on screen: MENUUPD
+  // and `item:` reads go through the live NSMenuItems, and those questions
+  // get asked about windows that don't have focus.
+  build_bar(g_app_bar);
+  // Windows showing a menu of their own are unaffected.
+  if (g_bar_showing.empty())
+    [NSApp setMainMenu:g_app_bar.bar];
+  delete menus;
+}
+
+// MENUBEGIN@<win> — this window's own menu, up right away if it has focus.
+// MENURESET@<win> drops it again (back to inheriting the app menu).
+static void apply_win_menu(const std::string &winid,
+                           const std::vector<MenuSpec> &menus, bool own) {
+  if (own) {
+    MacBar &mb = g_win_bars[winid];
+    mb.spec = menus;
+    build_bar(mb);
+  } else {
+    auto it = g_win_bars.find(winid);
+    if (it == g_win_bars.end())
+      return;
+    [it->second.bar release];
+    [it->second.reg release];
+    g_win_bars.erase(it);
+  }
+  if (winid == g_key_win)
+    reinstall_current_bar();
+}
+#else
+static void apply_menus(webview_t, void *arg) {
+  delete static_cast<std::vector<MenuSpec> *>(arg);
+}
+static void apply_win_menu(const std::string &, const std::vector<MenuSpec> &,
+                           bool) {}
+static void install_key_window_observer() {}
+#endif
+
+// --- tray / status item (macOS) ----------------------------------------------
+// TRAYBEGIN <title>\t<icon>\t<template01>\t<tooltip>\t<primary01>, then
+// ITEM/SEP lines, then TRAYEND. icon is a png path or sf:<name> (SF Symbol).
+// With menu items the icon opens the menu (clicks -> `TRAY <id>`); without,
+// clicking the icon sends `TRAYCLICK`. primary=1 splits the two: left click
+// sends `TRAYCLICK`, right/ctrl-click opens the menu (Caffeine-style toggles).
+
+struct TraySpec {
+  std::string title, icon, tooltip;
+  bool template_icon = true;
+  bool primary = false;
+  std::vector<MenuItemSpec> items;
+  bool remove = false;
+};
+
+#ifdef __APPLE__
+static void apply_tray(webview_t, void *arg) {
+  TraySpec *spec = static_cast<TraySpec *>(arg);
+  @autoreleasepool {
+    if (spec->remove) {
+      if (g_status_item) {
+        [[NSStatusBar systemStatusBar] removeStatusItem:g_status_item];
+        [g_status_item release];
+        g_status_item = nil;
+      }
+      [g_tray_menu release];
+      g_tray_menu = nil;
+      delete spec;
+      return;
+    }
+    if (!g_menu_target)
+      g_menu_target = [[TinyMenuTarget alloc] init];
+    if (!g_status_item) {
+      g_status_item = [[[NSStatusBar systemStatusBar]
+          statusItemWithLength:NSVariableStatusItemLength] retain];
+    }
+    NSStatusBarButton *btn = g_status_item.button;
+    NSImage *img = nil;
+    if (spec->icon.rfind("sf:", 0) == 0) {
+      // SF Symbol by name — crisp and menu-bar-templating with no shipped
+      // assets. Unknown names resolve to nil and fall through to the title.
+      if (@available(macOS 11.0, *)) {
+        img = [NSImage imageWithSystemSymbolName:ns(spec->icon.substr(3))
+                        accessibilityDescription:nil];
+        NSImageSymbolConfiguration *conf = [NSImageSymbolConfiguration
+            configurationWithPointSize:15
+                                weight:NSFontWeightRegular];
+        NSImage *sized = img ? [img imageWithSymbolConfiguration:conf] : nil;
+        if (sized)
+          img = sized;
+      }
+    } else if (!spec->icon.empty()) {
+      img = [[[NSImage alloc] initWithContentsOfFile:ns(spec->icon)] autorelease];
+      if (img) {
+        // Scale to the menu-bar height (18pt) while preserving aspect ratio, so
+        // wide "pill"/wordmark icons aren't squished into a square. Derive the
+        // aspect from the image's own size, which already honors DPI (pHYs on a
+        // 2x PNG reports point size, not pixels). Guard against a degenerate
+        // height so a malformed rep can't divide by zero.
+        NSSize orig = img.size;
+        CGFloat h = 18.0;
+        CGFloat aspect = orig.height > 0 ? (orig.width / orig.height) : 1.0;
+        [img setSize:NSMakeSize(h * aspect, h)];
+      }
+    }
+    if (img)
+      [img setTemplate:spec->template_icon ? YES : NO];
+    btn.image = img;
+    btn.title = ns(spec->title);
+    btn.toolTip = spec->tooltip.empty() ? nil : ns(spec->tooltip);
+
+    [g_reg_tray release];
+    g_reg_tray = [[NSMutableDictionary alloc] init];
+    [g_tray_menu release];
+    g_tray_menu = nil;
+    if (!spec->items.empty() && !spec->primary) {
+      NSMenu *menu = [[[NSMenu alloc] init] autorelease];
+      build_menu_into(menu, spec->items, @selector(trayItemClicked:), g_reg_tray);
+      g_status_item.menu = menu;
+    } else {
+      if (!spec->items.empty()) {
+        // Primary-action mode: hold the menu aside; trayClicked: pops it on
+        // right-click and reports left clicks as TRAYCLICK.
+        NSMenu *menu = [[NSMenu alloc] init];
+        build_menu_into(menu, spec->items, @selector(trayItemClicked:), g_reg_tray);
+        g_tray_menu = menu;
+      }
+      g_status_item.menu = nil;
+      btn.target = g_menu_target;
+      btn.action = @selector(trayClicked:);
+      [btn sendActionOn:(g_tray_menu
+                             ? (NSEventMaskLeftMouseUp | NSEventMaskRightMouseUp)
+                             : NSEventMaskLeftMouseUp)];
+    }
+  }
+  delete spec;
+}
+#else
+static void apply_tray(webview_t, void *arg) {
+  delete static_cast<TraySpec *>(arg);
+}
+#endif
+
+// --- window ops (macOS) --------------------------------------------------------
+// WINOP hide | show | center | minimize | fullscreen | ontop 0|1 |
+//       resizable 0|1 | pos <x> <y> | presence 0|1 | hideonclose 0|1 |
+//       clickthrough 0|1 | level <band> | allspaces 0|1 | minsize <W>x<H> |
+//       zoomfactor <f>
+
+static bool g_hide_on_close = false;
+
+// Accessory activation ("activation": "accessory" — menu-bar agents): while
+// set, attempts to make the app Regular are coerced back to Accessory and the
+// startup order-front is swallowed, so neither a Dock icon nor a window ever
+// flashes. Installed in install_accessory_mode() below; WINOP presence 1
+// lifts it.
+static bool g_accessory = false;
+static bool g_suppress_order_front = false;
+
+#ifdef __APPLE__
+// Installed on the webview library's window delegate class; consulted on every
+// close click. When hide-on-close is on, the window just orders out (tray apps
+// keep running); otherwise the normal close/quit path proceeds.
+static BOOL tiny_windowShouldClose(id, SEL, id sender) {
+  if (!g_hide_on_close)
+    return YES;
+  [(NSWindow *)sender orderOut:nil];
+  return NO;
+}
+
+static void install_close_hook(webview_t w) {
+  NSWindow *win = (NSWindow *)webview_get_native_handle(
+      w, WEBVIEW_NATIVE_HANDLE_KIND_UI_WINDOW);
+  id delegate = win ? [win delegate] : nil;
+  if (!delegate)
+    return;
+  // Adds only if the delegate class doesn't implement it (webview's doesn't).
+  class_addMethod(object_getClass(delegate), @selector(windowShouldClose:),
+                  (IMP)tiny_windowShouldClose, "c@:@");
+}
+#endif
+
+struct WinopReq {
+  std::string win, opstr;
+};
+
+#ifdef __APPLE__
+// A window nobody can see or grab is a lost window: apps restore saved
+// positions blindly, and coordinates from an unplugged external display land
+// the window in empty space (macOS only migrates windows when a display goes
+// away WHILE the app runs — a stale frame applied at launch stays wherever it
+// points). Rule: if less than a 24pt-square sliver of the window overlaps any
+// screen's visible area, pull it onto the nearest screen, titlebar first.
+// Windows deliberately parked half-off-screen keep more than a sliver and are
+// never touched.
+//
+// WHEN it runs is the bridge's call, not ours — some apps (coo3d) fling
+// windows off-screen on purpose, so nothing here fires on ordinary pos/show.
+// Triggers: the `onscreen` op (sent by the bridge on a boot whose screen
+// fingerprint changed, and by win.ensureOnScreen()), and a display-topology
+// change while running (below), gated by `rescue 0|1` ("offscreenRescue" in
+// tinyjs.json, default on).
+static bool g_rescue_on = true;
+static void rescue_offscreen(NSWindow *win) {
+  if (!win)
+    return;
+  NSRect f = win.frame;
+  for (NSScreen *s in [NSScreen screens]) {
+    NSRect r = NSIntersectionRect(f, s.visibleFrame);
+    if (r.size.width >= 24 && r.size.height >= 24)
+      return; // reachable — leave it exactly where the app put it
+  }
+  NSScreen *best = nil;
+  CGFloat bestD = CGFLOAT_MAX;
+  NSPoint c = NSMakePoint(NSMidX(f), NSMidY(f));
+  for (NSScreen *s in [NSScreen screens]) {
+    NSPoint sc = NSMakePoint(NSMidX(s.visibleFrame), NSMidY(s.visibleFrame));
+    CGFloat d = (c.x - sc.x) * (c.x - sc.x) + (c.y - sc.y) * (c.y - sc.y);
+    if (d < bestD) {
+      bestD = d;
+      best = s;
+    }
+  }
+  if (!best)
+    return; // no screens at all (headless): nothing sane to do
+  NSRect v = best.visibleFrame;
+  // wider than the screen pins the LEFT edge; taller pins the TOP (titlebar)
+  f.origin.x = fmax(v.origin.x, fmin(f.origin.x, NSMaxX(v) - f.size.width));
+  CGFloat topY = fmin(NSMaxY(f), NSMaxY(v));
+  if (topY - f.size.height < v.origin.y && f.size.height <= v.size.height)
+    topY = v.origin.y + f.size.height;
+  f.origin.y = topY - f.size.height;
+  [win setFrame:f display:YES];
+}
+#endif
+
+#ifdef __APPLE__
+// Whether a window belongs in Mission Control / Exposé is decided by what
+// the window IS, not asked of the app: desktop-level windows (wallpaper
+// pets), overlay-level ones (draw-on-screen HUDs) and click-through windows
+// (can't take the click Exposé would hand them) stay out; everything else —
+// including borderless squareCorners windows, which macOS would otherwise
+// silently exclude — participates like a normal document window. Re-derived
+// whenever level, clickthrough or squareness changes; the allspaces bits
+// live in a different group and are left alone.
+static void apply_expose_policy(NSWindow *win) {
+  bool out = win.ignoresMouseEvents || win.level < NSNormalWindowLevel ||
+             win.level > NSFloatingWindowLevel;
+  NSWindowCollectionBehavior b = win.collectionBehavior;
+  b &= ~(NSWindowCollectionBehaviorManaged |
+         NSWindowCollectionBehaviorParticipatesInCycle |
+         NSWindowCollectionBehaviorTransient |
+         NSWindowCollectionBehaviorIgnoresCycle);
+  b |= out ? (NSWindowCollectionBehaviorTransient |
+              NSWindowCollectionBehaviorIgnoresCycle)
+           : (NSWindowCollectionBehaviorManaged |
+              NSWindowCollectionBehaviorParticipatesInCycle);
+  win.collectionBehavior = b;
+}
+#endif
+
+static void do_winop(webview_t w, void *arg) {
+  WinopReq *wr = static_cast<WinopReq *>(arg);
+  std::string *op = &wr->opstr;
+#ifdef __APPLE__
+  @autoreleasepool {
+    NSWindow *win = window_for_id(w, wr->win);
+    bool is_main = wr->win == "main";
+    if (!win) {
+      delete wr;
+      return;
+    }
+    if (*op == "hide") {
+      // Main-window hide means "get out of the way": NSApp hide deactivates
+      // the app, so macOS hands focus back to the previously active app on
+      // its own (palette apps paste into it with no frontmost-pid dance).
+      // Secondary windows just order out.
+      if (is_main)
+        [NSApp hide:nil];
+      else
+        [win orderOut:nil];
+    } else if (*op == "hidewin") {
+      // hide({ app: false }): this window only, whoever it is. An app whose
+      // main window is a launcher screen wants it out of the way while its
+      // document windows are up — without deactivating the app around them.
+      [win orderOut:nil];
+    } else if (*op == "show" || *op == "show 1") {
+      [NSApp unhide:nil];
+      [NSApp activateIgnoringOtherApps:YES];
+      [win makeKeyAndOrderFront:nil];
+    } else if (*op == "show 0") {
+      // Show without stealing focus (overlay/HUD panels): the window appears
+      // but the active app keeps keyboard focus; clicking it activates
+      // normally. (True non-activating click-through needs an NSPanel with
+      // NSWindowStyleMaskNonactivatingPanel — not what webview creates.)
+      [NSApp unhideWithoutActivation];
+      [win orderFrontRegardless];
+    } else if (*op == "presence 0") {
+      if (is_main)
+        [NSApp setActivationPolicy:NSApplicationActivationPolicyAccessory];
+    } else if (*op == "presence 1" && is_main) {
+      g_accessory = false; // lift the accessory-mode coercion, if any
+      [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
+      [NSApp activateIgnoringOtherApps:YES];
+    } else if (*op == "hideonclose 1") {
+      g_hide_on_close = true;
+    } else if (*op == "hideonclose 0") {
+      g_hide_on_close = false;
+    } else if (*op == "center") {
+      [win center];
+    } else if (*op == "minimize") {
+      [win miniaturize:nil];
+    } else if (*op == "restore") {
+      [win deminiaturize:nil];
+    } else if (*op == "zoom") {
+      [win zoom:nil];
+    } else if (*op == "fullscreen") {
+      [win toggleFullScreen:nil];
+    } else if (*op == "fullscreen 1" || *op == "fullscreen 0") {
+      bool want = op->back() == '1';
+      bool is = (win.styleMask & NSWindowStyleMaskFullScreen) != 0;
+      if (want != is)
+        [win toggleFullScreen:nil];
+    } else if (*op == "ontop 1") {
+      win.level = NSFloatingWindowLevel;
+    } else if (*op == "ontop 0") {
+      win.level = NSNormalWindowLevel;
+    } else if (*op == "resizable 1") {
+      if (is_main)
+        g_resizable_override = 1;
+      win.styleMask |= NSWindowStyleMaskResizable;
+    } else if (*op == "resizable 0") {
+      if (is_main)
+        g_resizable_override = 0;
+      win.styleMask &= ~NSWindowStyleMaskResizable;
+    } else if (*op == "clickthrough 1") {
+      // Mouse events pass straight through to whatever is behind the window
+      // (draw-on-screen overlays, HUDs that must not intercept clicks).
+      win.ignoresMouseEvents = YES;
+      apply_expose_policy(win);   // unclickable → out of Mission Control
+    } else if (*op == "clickthrough 0") {
+      win.ignoresMouseEvents = NO;
+      apply_expose_policy(win);
+    } else if (op->rfind("level ", 0) == 0) {
+      // Stack the window in a whole band of the screen. 'desktop' pins it
+      // behind normal windows (wallpaper/pets); 'overlay' floats above
+      // almost everything incl. most fullscreen apps; 'floating' = ontop;
+      // 'normal' resets.
+      std::string lv = op->substr(6);
+      win.level = lv == "desktop"  ? kCGDesktopWindowLevel
+                  : lv == "overlay" ? kCGScreenSaverWindowLevel
+                  : lv == "floating" ? NSFloatingWindowLevel
+                                     : NSNormalWindowLevel;
+      apply_expose_policy(win);   // desktop/overlay bands sit Exposé out
+    } else if (*op == "allspaces 1") {
+      // Follow the user onto every Space (and appear over fullscreen apps).
+      win.collectionBehavior |= NSWindowCollectionBehaviorCanJoinAllSpaces |
+                                NSWindowCollectionBehaviorFullScreenAuxiliary;
+    } else if (*op == "allspaces 0") {
+      win.collectionBehavior &= ~(NSWindowCollectionBehaviorCanJoinAllSpaces |
+                                  NSWindowCollectionBehaviorFullScreenAuxiliary);
+    } else if (op->rfind("minsize ", 0) == 0) {
+      // win.setMinSize — a floor under user resizes. CONTENT size, not frame:
+      // the page lays out in CSS px and the title bar isn't part of that.
+      // AppKit only applies the floor to the next resize, so a window already
+      // below it would sit there looking like the call did nothing — pull it
+      // up now, keeping the top-left where the user left it.
+      int mw = 0, mh = 0;
+      if (std::sscanf(op->c_str() + 8, "%dx%d", &mw, &mh) == 2 && mw > 0 &&
+          mh > 0) {
+        win.contentMinSize = NSMakeSize(mw, mh);
+        NSSize cur = [win contentRectForFrameRect:win.frame].size;
+        if (cur.width < mw || cur.height < mh) {
+          NSRect want = NSMakeRect(0, 0, std::max((CGFloat)mw, cur.width),
+                                   std::max((CGFloat)mh, cur.height));
+          NSRect f = win.frame;
+          CGFloat top = NSMaxY(f);
+          f.size = [win frameRectForContentRect:want].size;
+          f.origin.y = top - f.size.height;
+          [win setFrame:f display:YES];
+        }
+      }
+    } else if (op->rfind("zoomfactor ", 0) == 0) {
+      // win.setZoom — native page zoom, so a "double size" mode stays crisp
+      // instead of scaling a bitmap. Distinct from the "zoom" op above, which
+      // is the green-button maximize. The page keeps laying out in CSS px.
+      double f = std::atof(op->c_str() + 11);
+      WKWebView *wv = webview_for_id(w, wr->win);
+      if (wv && f >= 0.25 && f <= 5.0)
+        wv.pageZoom = f;
+    } else if (op->rfind("pos ", 0) == 0) {
+      // Top-left origin in screen points (y grows downward, CSS-style).
+      int x = 0, y = 0;
+      if (std::sscanf(op->c_str() + 4, "%d %d", &x, &y) == 2 && win) {
+        CGFloat screenTop = NSMaxY([[NSScreen screens][0] frame]);
+        [win setFrameTopLeftPoint:NSMakePoint(x, screenTop - y)];
+      }
+    } else if (*op == "onscreen") {
+      rescue_offscreen(win); // the bridge (or the app) decided this window
+                             // must be reachable — see the note on the helper
+    } else if (*op == "rescue 0" || *op == "rescue 1") {
+      g_rescue_on = op->back() == '1';
+    }
+  }
+#endif
+  delete wr;
+}
+
+// --- file drag & drop (macOS) -------------------------------------------------
+// HTML5 drop events expose File objects but never filesystem paths, and a
+// page that doesn't call preventDefault() on dragover rejects file drags
+// entirely. Swizzle WKWebView's NSDraggingDestination methods so file drags
+// are always accepted and dropped file paths are reported over the socket
+// (`DROP <json-array>`). The original implementations still run, so in-page
+// HTML5 drag & drop keeps working for pages that use it.
+
+#ifdef __APPLE__
+typedef BOOL (*DragPerformIMP)(id, SEL, id);
+typedef NSUInteger (*DragUpdateIMP)(id, SEL, id);
+static DragPerformIMP g_orig_performDragOperation = nullptr;
+static DragUpdateIMP g_orig_draggingEntered = nullptr;
+static DragUpdateIMP g_orig_draggingUpdated = nullptr;
+
+static NSArray *drag_file_urls(id info) {
+  NSPasteboard *pb = [(id<NSDraggingInfo>)info draggingPasteboard];
+  return [pb readObjectsForClasses:@[ [NSURL class] ]
+                           options:@{NSPasteboardURLReadingFileURLsOnlyKey : @YES}];
+}
+
+static NSUInteger tiny_draggingEntered(id self, SEL cmd, id info) {
+  NSUInteger op = g_orig_draggingEntered ? g_orig_draggingEntered(self, cmd, info)
+                                         : NSDragOperationNone;
+  if (op == NSDragOperationNone && drag_file_urls(info).count > 0)
+    op = NSDragOperationCopy;
+  return op;
+}
+
+static NSUInteger tiny_draggingUpdated(id self, SEL cmd, id info) {
+  NSUInteger op = g_orig_draggingUpdated ? g_orig_draggingUpdated(self, cmd, info)
+                                         : NSDragOperationNone;
+  if (op == NSDragOperationNone && drag_file_urls(info).count > 0)
+    op = NSDragOperationCopy;
+  return op;
+}
+
+static BOOL tiny_performDragOperation(id self, SEL cmd, id info) {
+  @autoreleasepool {
+    NSArray *urls = drag_file_urls(info);
+    if (urls.count > 0) {
+      std::string json = "[";
+      for (NSUInteger i = 0; i < urls.count; i++) {
+        if (i) json += ",";
+        json += json_escape([[(NSURL *)urls[i] path] UTF8String]);
+      }
+      json += "]";
+      sock_write_line("DROP " + json);
+    }
+    BOOL handled = g_orig_performDragOperation
+                       ? g_orig_performDragOperation(self, cmd, info)
+                       : NO;
+    // The page rejected the HTML5 drop but we delivered the paths: report
+    // success so the drag doesn't animate back to Finder.
+    return handled || urls.count > 0;
+  }
+}
+
+// Replace-or-add: patches the direct implementation when the class has one,
+// otherwise installs an override that falls back to the inherited IMP.
+static IMP swizzle(Class cls, SEL sel, IMP imp, const char *types) {
+  Method m = class_getInstanceMethod(cls, sel);
+  IMP orig = m ? method_getImplementation(m) : nullptr;
+  if (!class_addMethod(cls, sel, imp, types))
+    method_setImplementation(m, imp);
+  return orig;
+}
+
+static void install_drop_hook() {
+  Class cls = [WKWebView class];
+  g_orig_draggingEntered = (DragUpdateIMP)swizzle(
+      cls, @selector(draggingEntered:), (IMP)tiny_draggingEntered, "L@:@");
+  g_orig_draggingUpdated = (DragUpdateIMP)swizzle(
+      cls, @selector(draggingUpdated:), (IMP)tiny_draggingUpdated, "L@:@");
+  g_orig_performDragOperation = (DragPerformIMP)swizzle(
+      cls, @selector(performDragOperation:), (IMP)tiny_performDragOperation,
+      "c@:@");
+}
+
+// --- accessory activation (macOS) ----------------------------------------------
+// Menu-bar agents come up with no Dock icon and no window, with no flash of
+// either. Packaged apps get LSUIElement in the plist (the system starts them
+// as an accessory already); this hook keeps the webview library from undoing
+// it: its startup path forces NSApplicationActivationPolicyRegular +
+// activation for non-bundled processes (dev mode) and orders the window front
+// unconditionally, so both are swizzled and neutered while the flags are set.
+// The order-front suppression only spans webview_create (cleared in main
+// before the socket loop starts, so WINOP show works normally); the policy
+// coercion stays until the backend calls app.presence('normal').
+
+typedef BOOL (*SetPolicyIMP)(id, SEL, NSInteger);
+static SetPolicyIMP g_orig_setActivationPolicy = nullptr;
+typedef void (*OrderFrontIMP)(id, SEL, id);
+static OrderFrontIMP g_orig_makeKeyAndOrderFront = nullptr;
+
+static BOOL tiny_setActivationPolicy(id self, SEL cmd, NSInteger policy) {
+  if (g_accessory && policy == NSApplicationActivationPolicyRegular)
+    policy = NSApplicationActivationPolicyAccessory;
+  return g_orig_setActivationPolicy
+             ? g_orig_setActivationPolicy(self, cmd, policy)
+             : NO;
+}
+
+static void tiny_makeKeyAndOrderFront(id self, SEL cmd, id sender) {
+  if (g_suppress_order_front)
+    return;
+  if (g_orig_makeKeyAndOrderFront)
+    g_orig_makeKeyAndOrderFront(self, cmd, sender);
+}
+
+static void install_accessory_mode() {
+  g_accessory = true;
+  g_suppress_order_front = true;
+  g_orig_setActivationPolicy = (SetPolicyIMP)swizzle(
+      [NSApplication class], @selector(setActivationPolicy:),
+      (IMP)tiny_setActivationPolicy, "c@:q");
+  g_orig_makeKeyAndOrderFront = (OrderFrontIMP)swizzle(
+      [NSWindow class], @selector(makeKeyAndOrderFront:),
+      (IMP)tiny_makeKeyAndOrderFront, "v@:@");
+  [[NSApplication sharedApplication]
+      setActivationPolicy:NSApplicationActivationPolicyAccessory];
+}
+#endif
+
+// --- global hotkeys (macOS) ----------------------------------------------------
+// HKREG <id>\t<combo> registers a system-wide hotkey (combo like
+// "cmd+shift+k"); presses arrive as `HOTKEY <id>`. HKUNREG <id> removes it.
+
+struct HotkeyReq {
+  std::string id, combo; // combo empty = unregister
+};
+
+#ifdef __APPLE__
+static std::map<std::string, EventHotKeyRef> g_hotkeys;
+static std::map<UInt32, std::string> g_hotkey_ids;
+static UInt32 g_hotkey_seq = 1;
+
+static int keycode_for(const std::string &k) {
+  static const std::map<std::string, int> m = {
+    {"a",0},{"s",1},{"d",2},{"f",3},{"h",4},{"g",5},{"z",6},{"x",7},{"c",8},
+    {"v",9},{"b",11},{"q",12},{"w",13},{"e",14},{"r",15},{"y",16},{"t",17},
+    {"1",18},{"2",19},{"3",20},{"4",21},{"6",22},{"5",23},{"9",25},{"7",26},
+    {"8",28},{"0",29},{"o",31},{"u",32},{"i",34},{"p",35},{"l",37},{"j",38},
+    {"k",40},{"n",45},{"m",46},{"space",49},{"tab",48},{"return",36},
+    {"enter",36},{"escape",53},{"esc",53},{"left",123},{"right",124},
+    {"down",125},{"up",126},{"f1",122},{"f2",120},{"f3",99},{"f4",118},
+    {"f5",96},{"f6",97},{"f7",98},{"f8",100},{"f9",101},{"f10",109},
+    {"f11",103},{"f12",111},{"minus",27},{"equal",24},{"comma",43},
+    {"period",47},{"slash",44},{"semicolon",41},{"quote",39},
+    {"bracketleft",33},{"bracketright",30},{"backslash",42},{"grave",50},
+    {"delete",51},
+  };
+  auto it = m.find(k);
+  return it == m.end() ? -1 : it->second;
+}
+
+static OSStatus hotkey_handler(EventHandlerCallRef, EventRef event, void *) {
+  EventHotKeyID hkid;
+  GetEventParameter(event, kEventParamDirectObject, typeEventHotKeyID, NULL,
+                    sizeof(hkid), NULL, &hkid);
+  auto it = g_hotkey_ids.find(hkid.id);
+  if (it != g_hotkey_ids.end())
+    sock_write_line("HOTKEY " + it->second);
+  return noErr;
+}
+
+static void ensure_hotkey_handler() {
+  static bool installed = false;
+  if (installed)
+    return;
+  installed = true;
+  EventTypeSpec spec = {kEventClassKeyboard, kEventHotKeyPressed};
+  InstallEventHandler(GetApplicationEventTarget(), hotkey_handler, 1, &spec,
+                      NULL, NULL);
+}
+
+static void do_hotkey(webview_t, void *arg) {
+  HotkeyReq *req = static_cast<HotkeyReq *>(arg);
+  // Re-registering or unregistering an existing id removes the old binding.
+  auto existing = g_hotkeys.find(req->id);
+  if (existing != g_hotkeys.end()) {
+    UnregisterEventHotKey(existing->second);
+    g_hotkeys.erase(existing);
+  }
+  if (!req->combo.empty()) {
+    UInt32 mods = 0;
+    std::string key;
+    std::stringstream ss(req->combo);
+    std::string part;
+    while (std::getline(ss, part, '+')) {
+      for (auto &c : part) c = (char)tolower(c);
+      if (part == "cmd" || part == "command" || part == "meta") mods |= cmdKey;
+      else if (part == "ctrl" || part == "control") mods |= controlKey;
+      else if (part == "alt" || part == "opt" || part == "option") mods |= optionKey;
+      else if (part == "shift") mods |= shiftKey;
+      else key = part;
+    }
+    int code = keycode_for(key);
+    if (code >= 0) {
+      ensure_hotkey_handler();
+      EventHotKeyID hkid = {'tnyj', g_hotkey_seq++};
+      EventHotKeyRef ref = NULL;
+      if (RegisterEventHotKey((UInt32)code, mods, hkid,
+                              GetApplicationEventTarget(), 0, &ref) == noErr) {
+        g_hotkeys[req->id] = ref;
+        g_hotkey_ids[hkid.id] = req->id;
+      }
+    }
+  }
+  delete req;
+}
+#else
+static void do_hotkey(webview_t, void *arg) { delete static_cast<HotkeyReq *>(arg); }
+#endif
+
+// --- system events (macOS) ------------------------------------------------------
+// Pushed as `SYS theme dark|light` (also once at startup), `SYS sleep`,
+// `SYS wake`.
+
+#ifdef __APPLE__
+static void send_theme() {
+  NSAppearance *ap = [NSApp effectiveAppearance];
+  NSString *best = [ap bestMatchFromAppearancesWithNames:@[
+    NSAppearanceNameAqua, NSAppearanceNameDarkAqua
+  ]];
+  bool dark = [best isEqualToString:NSAppearanceNameDarkAqua];
+  sock_write_line(std::string("SYS theme ") + (dark ? "dark" : "light"));
+}
+
+// GET locale -> the user's language preferences and time zone, read from the
+// OS rather than from environment variables (there is no LANG on Windows, and
+// an inherited one says what the PARENT process had, not what the user wants).
+//
+// Two lists, because they answer different questions and can disagree:
+//   languages  — NSLocale.preferredLanguages, FILTERED to the localizations
+//                the app bundle declares. What the app should render.
+//   system     — the raw AppleLanguages preference. What the user actually
+//                reads, whether or not this app speaks it.
+// An app shipping only English on a French Mac gets ["en"] in the first and
+// ["fr-FR", ...] in the second, and picking the wrong one is how you either
+// render mojibake or fail to notice you should offer a translation.
+static std::string locale_json() {
+  @autoreleasepool {
+    NSArray<NSString *> *pref = [NSLocale preferredLanguages];
+    NSArray *raw = [[NSUserDefaults standardUserDefaults]
+        stringArrayForKey:@"AppleLanguages"] ?: pref;
+    NSLocale *cur = [NSLocale currentLocale];
+    auto list = [](NSArray *a) {
+      std::string out = "[";
+      bool first = true;
+      for (id v in a) {
+        if (![v isKindOfClass:[NSString class]]) continue;
+        if (!first) out += ",";
+        first = false;
+        out += json_escape([(NSString *)v UTF8String]);
+      }
+      return out + "]";
+    };
+    NSString *lang = pref.count ? pref[0] : @"en";
+    NSString *region = [cur objectForKey:NSLocaleCountryCode];
+    return std::string("{\"language\":") + json_escape([lang UTF8String]) +
+           ",\"languages\":" + list(pref) +
+           ",\"system\":" + list(raw) +
+           ",\"region\":" +
+           (region ? json_escape([region UTF8String]) : "null") +
+           ",\"timeZone\":" +
+           json_escape([[[NSTimeZone systemTimeZone] name] UTF8String]) + "}";
+  }
+}
+
+static void install_system_observers() {
+  // The language/region change lands as a distributed notification; the app's
+  // own NSLocale caches until the next runloop turn, same as the theme one.
+  [[NSDistributedNotificationCenter defaultCenter]
+      addObserverForName:(NSString *)NSCurrentLocaleDidChangeNotification
+                  object:nil
+                   queue:[NSOperationQueue mainQueue]
+              usingBlock:^(NSNotification *) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                  sock_write_line("SYSLOCALE " + locale_json());
+                });
+              }];
+  [[NSDistributedNotificationCenter defaultCenter]
+      addObserverForName:@"AppleInterfaceThemeChangedNotification"
+                  object:nil
+                   queue:[NSOperationQueue mainQueue]
+              usingBlock:^(NSNotification *) {
+                // NSApp's effectiveAppearance updates a beat after the
+                // notification; read it on the next runloop turn.
+                dispatch_async(dispatch_get_main_queue(), ^{ send_theme(); });
+              }];
+  NSNotificationCenter *wsnc = [[NSWorkspace sharedWorkspace] notificationCenter];
+  [wsnc addObserverForName:NSWorkspaceWillSleepNotification
+                    object:nil
+                     queue:[NSOperationQueue mainQueue]
+                usingBlock:^(NSNotification *) { sock_write_line("SYS sleep"); }];
+  [wsnc addObserverForName:NSWorkspaceDidWakeNotification
+                    object:nil
+                     queue:[NSOperationQueue mainQueue]
+                usingBlock:^(NSNotification *) { sock_write_line("SYS wake"); }];
+  // A display departing mid-session can strand windows in space AppKit
+  // doesn't reclaim (it migrates some, not all — especially frameless ones).
+  // Half a second after the topology settles, rescue whatever is VISIBLE and
+  // lost; hidden windows get their chance from the bridge when shown.
+  [[NSNotificationCenter defaultCenter]
+      addObserverForName:NSApplicationDidChangeScreenParametersNotification
+                  object:nil
+                   queue:[NSOperationQueue mainQueue]
+              usingBlock:^(NSNotification *) {
+                dispatch_after(
+                    dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)),
+                    dispatch_get_main_queue(), ^{
+                      if (!g_rescue_on)
+                        return;
+                      NSWindow *main = (NSWindow *)webview_get_native_handle(
+                          g_w, WEBVIEW_NATIVE_HANDLE_KIND_UI_WINDOW);
+                      if (main && [main isVisible])
+                        rescue_offscreen(main);
+                      for (auto &kv : g_windows)
+                        if (kv.second.win && [kv.second.win isVisible])
+                          rescue_offscreen(kv.second.win);
+                    });
+              }];
+  send_theme(); // initial state
+}
+#endif
+
+// --- clipboard (macOS) ------------------------------------------------------------
+// Native NSPasteboard in this long-lived process: reads answer `GET <qid>
+// clipboard[:count]`, writes arrive as CLIPWRITE (multiple file URLs flush
+// reliably here — the short-lived-writer race osascript/pbcopy tricks hit
+// doesn't exist), and CLIPWATCH polls changeCount in-process (~free) instead
+// of apps spawning pbpaste/osascript.
+
+struct ClipWriteReq {
+  std::string text, html, image, color;
+  std::vector<std::string> paths;
+};
+
+#ifdef __APPLE__
+static NSTimer *g_clip_timer = nil;
+static NSInteger g_clip_seen = -1;
+static NSInteger g_clip_self = -1;    // changeCount produced by our own CLIPWRITE
+static NSInteger g_clip_png_count = -1;
+static std::string g_clip_png_path;   // materialized image, one per changeCount
+static long g_clip_png_w = 0, g_clip_png_h = 0;
+static NSInteger g_clip_src_count = -1;
+static std::string g_clip_src_json;   // {"name":…,"bundleId":…} for that count
+
+// Pasteboards don't record their writer, so attribute a fresh changeCount to
+// the frontmost app the moment it's first noticed — exact from the watch
+// timer, best-effort from a later read(). Our own CLIPWRITEs are attributed
+// to this app: the palette scenario writes while some other app is frontmost.
+static void clip_note_source(NSInteger count) {
+  if (count == g_clip_src_count)
+    return;
+  NSRunningApplication *ra =
+      count == g_clip_self
+          ? [NSRunningApplication currentApplication]
+          : [[NSWorkspace sharedWorkspace] frontmostApplication];
+  std::string name = ra.localizedName ? [ra.localizedName UTF8String] : "";
+  std::string bid = ra.bundleIdentifier ? [ra.bundleIdentifier UTF8String] : "";
+  g_clip_src_json = "{\"name\":" + (name.empty() ? "null" : json_escape(name)) +
+                    ",\"bundleId\":" + (bid.empty() ? "null" : json_escape(bid)) +
+                    "}";
+  g_clip_src_count = count;
+}
+
+// image field: absolute png path, data: URL, or raw base64.
+static NSData *decode_image_field(const std::string &image) {
+  if (image.empty())
+    return nil;
+  if (image[0] == '/' || image[0] == '~')
+    return [NSData dataWithContentsOfFile:ns(image)];
+  std::string b64 = image;
+  size_t comma = image.find(',');
+  if (image.rfind("data:", 0) == 0 && comma != std::string::npos)
+    b64 = image.substr(comma + 1);
+  return [[[NSData alloc] initWithBase64EncodedString:ns(b64)
+                                              options:NSDataBase64DecodingIgnoreUnknownCharacters]
+      autorelease];
+}
+
+static bool parse_hex_color(const std::string &hex, CGFloat out[4]) {
+  std::string h = hex[0] == '#' ? hex.substr(1) : hex;
+  if (h.size() != 6 && h.size() != 8)
+    return false;
+  unsigned v = 0;
+  if (std::sscanf(h.c_str(), "%x", &v) != 1)
+    return false;
+  bool alpha = h.size() == 8;
+  out[0] = ((v >> (alpha ? 24 : 16)) & 0xff) / 255.0;
+  out[1] = ((v >> (alpha ? 16 : 8)) & 0xff) / 255.0;
+  out[2] = ((v >> (alpha ? 8 : 0)) & 0xff) / 255.0;
+  out[3] = alpha ? (v & 0xff) / 255.0 : 1.0;
+  return true;
+}
+
+static void do_clip_write(webview_t, void *arg) {
+  ClipWriteReq *req = static_cast<ClipWriteReq *>(arg);
+  @autoreleasepool {
+    NSPasteboard *pb = [NSPasteboard generalPasteboard];
+    [pb clearContents];
+    NSMutableArray *objs = [NSMutableArray array];
+    for (const std::string &p : req->paths) {
+      NSURL *u = [NSURL fileURLWithPath:ns(p)];
+      if (u)
+        [objs addObject:u];
+    }
+    NSData *png = decode_image_field(req->image);
+    if (png) {
+      NSPasteboardItem *pi = [[[NSPasteboardItem alloc] init] autorelease];
+      [pi setData:png forType:NSPasteboardTypePNG];
+      // TIFF alongside PNG: plenty of apps only look for TIFF.
+      NSBitmapImageRep *rep = [NSBitmapImageRep imageRepWithData:png];
+      NSData *tiff = rep ? [rep TIFFRepresentation] : nil;
+      if (tiff)
+        [pi setData:tiff forType:NSPasteboardTypeTIFF];
+      [objs addObject:pi];
+    }
+    if (!req->text.empty() || !req->html.empty()) {
+      NSPasteboardItem *pi = [[[NSPasteboardItem alloc] init] autorelease];
+      if (!req->text.empty())
+        [pi setString:ns(req->text) forType:NSPasteboardTypeString];
+      if (!req->html.empty())
+        [pi setString:ns(req->html) forType:NSPasteboardTypeHTML];
+      [objs addObject:pi];
+    }
+    CGFloat rgba[4];
+    if (!req->color.empty() && parse_hex_color(req->color, rgba)) {
+      NSColor *c = [NSColor colorWithSRGBRed:rgba[0] green:rgba[1] blue:rgba[2]
+                                       alpha:rgba[3]];
+      if (c)
+        [objs addObject:c];
+    }
+    if (objs.count)
+      [pb writeObjects:objs];
+    // Lets the watcher tag the resulting CLIPCHANGE as self-inflicted.
+    g_clip_self = [pb changeCount];
+    clip_note_source(g_clip_self);
+  }
+  delete req;
+}
+
+static void do_clip_watch(webview_t, void *arg) {
+  int ms = *static_cast<int *>(arg);
+  delete static_cast<int *>(arg);
+  if (g_clip_timer) {
+    [g_clip_timer invalidate];
+    g_clip_timer = nil;
+  }
+  if (ms <= 0)
+    return;
+  if (ms < 100)
+    ms = 100;
+  g_clip_seen = [[NSPasteboard generalPasteboard] changeCount];
+  g_clip_timer = [NSTimer
+      scheduledTimerWithTimeInterval:ms / 1000.0
+                             repeats:YES
+                               block:^(NSTimer *) {
+                                 NSInteger c =
+                                     [[NSPasteboard generalPasteboard] changeCount];
+                                 if (c == g_clip_seen)
+                                   return;
+                                 g_clip_seen = c;
+                                 clip_note_source(c);
+                                 sock_write_line(
+                                     "CLIPCHANGE " + std::to_string((long)c) +
+                                     (c == g_clip_self ? " 1" : " 0"));
+                               }];
+}
+
+static std::string clipboard_json(bool count_only) {
+  NSPasteboard *pb = [NSPasteboard generalPasteboard];
+  NSInteger count = [pb changeCount];
+  if (count_only)
+    return "{\"changeCount\":" + std::to_string((long)count) + "}";
+
+  // files
+  NSArray *urls = [pb readObjectsForClasses:@[ [NSURL class] ]
+                                    options:@{NSPasteboardURLReadingFileURLsOnlyKey : @YES}];
+  std::string paths = "[";
+  bool has_paths = false;
+  for (NSURL *u in urls) {
+    if (![u isFileURL])
+      continue;
+    if (has_paths)
+      paths += ",";
+    has_paths = true;
+    paths += json_escape([[u path] UTF8String]);
+  }
+  paths += "]";
+
+  NSString *text = [pb stringForType:NSPasteboardTypeString];
+  NSString *html = [pb stringForType:NSPasteboardTypeHTML];
+
+  // image → materialized as a png temp file, rewritten only when the
+  // clipboard actually changed (changeCount-keyed).
+  NSData *png = [pb dataForType:NSPasteboardTypePNG];
+  if (!png) {
+    NSData *tiff = [pb dataForType:NSPasteboardTypeTIFF];
+    if (tiff) {
+      NSBitmapImageRep *rep = [NSBitmapImageRep imageRepWithData:tiff];
+      png = rep ? [rep representationUsingType:NSBitmapImageFileTypePNG
+                                    properties:@{}]
+                : nil;
+    }
+  }
+  std::string image;
+  if (png) {
+    if (count != g_clip_png_count) {
+      if (!g_clip_png_path.empty())
+        unlink(g_clip_png_path.c_str());
+      std::string p = std::string([NSTemporaryDirectory() UTF8String]) +
+                      "tinyjs-clip-" + std::to_string(getpid()) + "-" +
+                      std::to_string((long)count) + ".png";
+      if ([png writeToFile:ns(p) atomically:YES]) {
+        g_clip_png_path = p;
+        g_clip_png_count = count;
+        NSBitmapImageRep *ir = [NSBitmapImageRep imageRepWithData:png];
+        g_clip_png_w = ir ? (long)ir.pixelsWide : 0;
+        g_clip_png_h = ir ? (long)ir.pixelsHigh : 0;
+      }
+    }
+    if (count == g_clip_png_count)
+      image = g_clip_png_path;
+  }
+
+  std::string color;
+  NSArray *colors = [pb readObjectsForClasses:@[ [NSColor class] ] options:@{}];
+  if (colors.count) {
+    NSColor *c = [(NSColor *)colors[0]
+        colorUsingColorSpace:[NSColorSpace sRGBColorSpace]];
+    if (c) {
+      char buf[16];
+      if (c.alphaComponent < 1.0)
+        std::snprintf(buf, sizeof(buf), "#%02x%02x%02x%02x",
+                      (int)(c.redComponent * 255 + 0.5),
+                      (int)(c.greenComponent * 255 + 0.5),
+                      (int)(c.blueComponent * 255 + 0.5),
+                      (int)(c.alphaComponent * 255 + 0.5));
+      else
+        std::snprintf(buf, sizeof(buf), "#%02x%02x%02x",
+                      (int)(c.redComponent * 255 + 0.5),
+                      (int)(c.greenComponent * 255 + 0.5),
+                      (int)(c.blueComponent * 255 + 0.5));
+      color = buf;
+    }
+  }
+
+  // Password managers mark secrets with the nspasteboard.org types; apps
+  // that persist clipboard history must skip both concealed and transient.
+  NSArray *types = [pb types];
+  bool concealed = [types containsObject:@"org.nspasteboard.ConcealedType"] ||
+                   [types containsObject:@"org.nspasteboard.TransientType"];
+  // Chromium browsers stamp the page a copy came from.
+  NSString *surl = [pb stringForType:@"org.chromium.source-url"];
+  clip_note_source(count); // best-effort if the watcher didn't see it first
+
+  const char *kind = has_paths                       ? "files"
+                     : !image.empty()                ? "image"
+                     : !color.empty()                ? "color"
+                     : (text.length || html.length)  ? "text"
+                                                     : "empty";
+  std::string json = std::string("{\"kind\":\"") + kind + "\"";
+  json += ",\"changeCount\":" + std::to_string((long)count);
+  json += ",\"text\":" + (text.length ? json_escape([text UTF8String]) : "null");
+  json += ",\"html\":" + (html.length ? json_escape([html UTF8String]) : "null");
+  json += ",\"paths\":" + paths;
+  json += ",\"image\":" + (image.empty() ? "null" : json_escape(image));
+  if (!image.empty() && g_clip_png_w > 0)
+    json += ",\"imageSize\":{\"width\":" + std::to_string(g_clip_png_w) +
+            ",\"height\":" + std::to_string(g_clip_png_h) + "}";
+  else
+    json += ",\"imageSize\":null";
+  json += ",\"color\":" + (color.empty() ? "null" : json_escape(color));
+  json += ",\"concealed\":" + std::string(concealed ? "true" : "false");
+  json += ",\"sourceApp\":" +
+          (count == g_clip_src_count ? g_clip_src_json : std::string("null"));
+  json += ",\"sourceURL\":" + (surl.length ? json_escape([surl UTF8String]) : "null");
+  json += "}";
+  return json;
+}
+#else
+static void do_clip_write(webview_t, void *arg) { delete static_cast<ClipWriteReq *>(arg); }
+static void do_clip_watch(webview_t, void *arg) { delete static_cast<int *>(arg); }
+#endif
+
+// --- drag-out (macOS) -------------------------------------------------------------
+// DRAGOUT[@win] starts a native NSDraggingSession carrying real file URLs, so
+// a page mousedown can drag files into Finder/Slack/anywhere. Must arrive
+// while the mouse button is still down (same latency budget as DRAGWIN).
+
+struct DragOutReq {
+  std::string win, image;
+  std::vector<std::string> paths;
+};
+
+#ifdef __APPLE__
+static WKWebView *webview_for_id(webview_t w, const std::string &id); // below
+static bool get_accepts_first_mouse(WKWebView *wv);                   // below
+
+@interface TinyDragSource : NSObject <NSDraggingSource>
+@end
+@implementation TinyDragSource
+- (NSDragOperation)draggingSession:(NSDraggingSession *)session
+    sourceOperationMaskForDraggingContext:(NSDraggingContext)context {
+  return NSDragOperationCopy;
+}
+@end
+
+static TinyDragSource *g_drag_source = nil;
+
+static void do_dragout(webview_t w, void *arg) {
+  DragOutReq *req = static_cast<DragOutReq *>(arg);
+  @autoreleasepool {
+    WKWebView *wv = webview_for_id(w, req->win);
+    NSEvent *ev = [NSApp currentEvent];
+    // beginDraggingSession needs a live mouse-down; by the time the page's
+    // call crosses the bridge the latest event is usually LeftMouseDragged.
+    bool mouse_ok = ev && (ev.type == NSEventTypeLeftMouseDown ||
+                           ev.type == NSEventTypeLeftMouseDragged);
+    if (wv && mouse_ok && !req->paths.empty()) {
+      NSPoint at = [wv convertPoint:ev.locationInWindow fromView:nil];
+      NSImage *custom = nil;
+      if (!req->image.empty())
+        custom = [[[NSImage alloc] initWithContentsOfFile:ns(req->image)] autorelease];
+      NSMutableArray *items = [NSMutableArray array];
+      CGFloat off = 0;
+      for (const std::string &p : req->paths) {
+        NSURL *u = [NSURL fileURLWithPath:ns(p)];
+        if (!u)
+          continue;
+        NSDraggingItem *di =
+            [[[NSDraggingItem alloc] initWithPasteboardWriter:u] autorelease];
+        NSImage *img = custom ?: [[NSWorkspace sharedWorkspace] iconForFile:ns(p)];
+        NSSize sz = custom ? custom.size : NSMakeSize(32, 32);
+        if (sz.width > 160 || sz.height > 160) {
+          CGFloat s = 160 / (sz.width > sz.height ? sz.width : sz.height);
+          sz = NSMakeSize(sz.width * s, sz.height * s);
+        }
+        [di setDraggingFrame:NSMakeRect(at.x - sz.width / 2 + off,
+                                        at.y - sz.height / 2 + off, sz.width,
+                                        sz.height)
+                    contents:img];
+        custom = nil; // custom image decorates the top item only
+        off += 4;     // cascade the rest so a multi-file drag reads as a stack
+        [items addObject:di];
+      }
+      if (!g_drag_source)
+        g_drag_source = [[TinyDragSource alloc] init];
+      @try {
+        [wv beginDraggingSessionWithItems:items event:ev source:g_drag_source];
+      } @catch (NSException *) {
+      }
+    }
+  }
+  delete req;
+}
+#else
+static void do_dragout(webview_t, void *arg) { delete static_cast<DragOutReq *>(arg); }
+#endif
+
+// --- keystroke + permissions (macOS) ------------------------------------------------
+// KEYSTROKE posts a CGEvent from this process — one Accessibility grant that
+// names the app, instead of osascript→System Events (Automation +
+// Accessibility, spawn latency, prompts naming osascript/the terminal).
+// PERMCHK/PERMREQ let apps build onboarding instead of failing at first use.
+
+struct KeystrokeReq {
+  std::string qid, combo;
+};
+struct PermReq {
+  std::string qid, name;
+  bool request;
+};
+
+#ifdef __APPLE__
+static void do_keystroke(webview_t, void *arg) {
+  KeystrokeReq *req = static_cast<KeystrokeReq *>(arg);
+  CGEventFlags flags = 0;
+  std::string key;
+  std::stringstream ss(req->combo);
+  std::string part;
+  while (std::getline(ss, part, '+')) {
+    for (auto &c : part) c = (char)tolower(c);
+    if (part == "cmd" || part == "command" || part == "meta") flags |= kCGEventFlagMaskCommand;
+    else if (part == "ctrl" || part == "control") flags |= kCGEventFlagMaskControl;
+    else if (part == "alt" || part == "opt" || part == "option") flags |= kCGEventFlagMaskAlternate;
+    else if (part == "shift") flags |= kCGEventFlagMaskShift;
+    else key = part;
+  }
+  int code = keycode_for(key);
+  bool trusted = AXIsProcessTrusted();
+  if (code >= 0) {
+    CGEventRef down = CGEventCreateKeyboardEvent(NULL, (CGKeyCode)code, true);
+    CGEventRef up = CGEventCreateKeyboardEvent(NULL, (CGKeyCode)code, false);
+    CGEventSetFlags(down, flags);
+    CGEventSetFlags(up, flags);
+    CGEventPost(kCGHIDEventTap, down);
+    CGEventPost(kCGHIDEventTap, up);
+    CFRelease(down);
+    CFRelease(up);
+  }
+  sock_write_line("GOT " + req->qid + " {\"ok\":" +
+                  (code >= 0 && trusted ? "true" : "false") +
+                  ",\"trusted\":" + (trusted ? "true" : "false") + "}");
+  delete req;
+}
+
+static void perm_reply(const std::string &qid, const char *status) {
+  sock_write_line("GOT " + qid + " {\"status\":\"" + status + "\"}");
+}
+
+static void do_perm(webview_t, void *arg) {
+  PermReq *req = static_cast<PermReq *>(arg);
+  std::string name = req->name, qid = req->qid;
+  bool ask = req->request;
+  delete req;
+
+  if (name == "accessibility") {
+    bool trusted;
+    if (ask) {
+      NSDictionary *opts = @{(NSString *)kAXTrustedCheckOptionPrompt : @YES};
+      trusted = AXIsProcessTrustedWithOptions((CFDictionaryRef)opts);
+    } else {
+      trusted = AXIsProcessTrusted();
+    }
+    perm_reply(qid, trusted ? "granted" : "denied");
+  } else if (name == "screen" || name == "screen-recording") {
+    bool ok = ask ? CGRequestScreenCaptureAccess() : CGPreflightScreenCaptureAccess();
+    perm_reply(qid, ok ? "granted" : "denied");
+  } else if (name == "notifications") {
+    // UNUserNotificationCenter needs a real bundle (see the notify section).
+    if (!g_bundle_mode) {
+      perm_reply(qid, "unsupported");
+      return;
+    }
+    UNUserNotificationCenter *nc = [UNUserNotificationCenter currentNotificationCenter];
+    if (ask) {
+      [nc requestAuthorizationWithOptions:(UNAuthorizationOptionAlert |
+                                           UNAuthorizationOptionSound |
+                                           UNAuthorizationOptionBadge)
+                        completionHandler:^(BOOL granted, NSError *) {
+                          perm_reply(qid, granted ? "granted" : "denied");
+                        }];
+    } else {
+      [nc getNotificationSettingsWithCompletionHandler:^(UNNotificationSettings *s) {
+        perm_reply(qid,
+                   s.authorizationStatus == UNAuthorizationStatusNotDetermined
+                       ? "undetermined"
+                   : s.authorizationStatus == UNAuthorizationStatusDenied
+                       ? "denied"
+                       : "granted");
+      }];
+    }
+  } else if (name == "microphone" || name == "camera") {
+    // The TCC layer under getUserMedia. Bundled apps also need the usage
+    // string in Info.plist and — under the hardened runtime — the device
+    // entitlement, both injected by `tinyjs build` from cfg.permissions.
+    AVMediaType type = name == "camera" ? AVMediaTypeVideo : AVMediaTypeAudio;
+    AVAuthorizationStatus st =
+        [AVCaptureDevice authorizationStatusForMediaType:type];
+    if (ask && st == AVAuthorizationStatusNotDetermined) {
+      [AVCaptureDevice requestAccessForMediaType:type
+                               completionHandler:^(BOOL granted) {
+                                 perm_reply(qid, granted ? "granted" : "denied");
+                               }];
+      return;
+    }
+    perm_reply(qid, st == AVAuthorizationStatusAuthorized ? "granted"
+               : st == AVAuthorizationStatusNotDetermined ? "undetermined"
+                                                          : "denied");
+  } else if (name == "automation" || name.rfind("automation:", 0) == 0) {
+    // Per-target: automation:<bundle-id>; bare = System Events. The consent
+    // dialog (and a possible target launch) can block, so ask off-main.
+    std::string bid = name == "automation" ? "com.apple.systemevents"
+                                           : name.substr(11);
+    dispatch_async(
+        dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+          AEAddressDesc addr;
+          OSStatus st = AECreateDesc(typeApplicationBundleID, bid.c_str(),
+                                     bid.size(), &addr);
+          if (st != noErr) {
+            perm_reply(qid, "undetermined");
+            return;
+          }
+          st = AEDeterminePermissionToAutomateTarget(&addr, typeWildCard,
+                                                     typeWildCard, ask);
+          AEDisposeDesc(&addr);
+          perm_reply(qid, st == noErr                              ? "granted"
+                          : st == errAEEventNotPermitted           ? "denied"
+                          : st == errAEEventWouldRequireUserConsent
+                              ? "undetermined"
+                              : "undetermined");
+        });
+  } else {
+    perm_reply(qid, "unsupported");
+  }
+}
+#else
+static void do_keystroke(webview_t, void *arg) {
+  KeystrokeReq *req = static_cast<KeystrokeReq *>(arg);
+  sock_write_line("GOT " + req->qid + " {\"ok\":false,\"trusted\":false}");
+  delete req;
+}
+static void do_perm(webview_t, void *arg) {
+  PermReq *req = static_cast<PermReq *>(arg);
+  sock_write_line("GOT " + req->qid + " {\"status\":\"unsupported\"}");
+  delete req;
+}
+#endif
+
+// --- media capture (macOS) ---------------------------------------------------
+// getUserMedia asks the WKUIDelegate per-origin before macOS asks TCC. For the
+// app's own pages that origin prompt is pure noise (it names file:// or the
+// dev server) and would double up with the system dialog, so those are
+// granted and the one TCC prompt naming the app is the real consent. But the
+// TCC grant names the APP, not the site — so anything else (a wrapped site, a
+// page it redirected to, a third-party iframe) gets WebKit's own prompt
+// naming its origin, unless the manifest explicitly trusts that origin
+// (#24). The bridge hands the trusted set over as TINYJS_MEDIA_ORIGINS
+// ("<kind> <pattern>" lines, see mediaTrustLines) — or, in a packaged .app,
+// as the TinyjsMediaOrigins plist key; file:// is always trusted.
+// Both the origin WebKit passes and the requesting frame's own origin must
+// be trusted. The vendored delegate class is registered at runtime, so the
+// handler (macOS 12+ selector, never called on older systems) is added here
+// instead of patching the header.
+#ifdef __APPLE__
+static std::string media_origin_str(WKSecurityOrigin *so) {
+  if (!so || !so.protocol.length) return "null";
+  std::string o = std::string([so.protocol UTF8String]) + "://";
+  if (so.host.length) o += [so.host UTF8String];
+  NSInteger port = so.port;
+  if (port && !((port == 80 && [so.protocol isEqualToString:@"http"]) ||
+                (port == 443 && [so.protocol isEqualToString:@"https"])))
+    o += ":" + std::to_string((long)port);
+  return o;
+}
+
+// Same spelling for a plain URL (the tiny-media proxy's fallback requester):
+// file:// for file URLs, scheme://host[:port] otherwise, "null" when absent.
+static std::string url_origin_str(NSURL *u) {
+  NSString *sch = u.scheme.lowercaseString;
+  if (!sch.length) return "null";
+  if ([sch isEqualToString:@"file"]) return "file://";
+  std::string o = std::string(sch.UTF8String) + "://";
+  if (u.host.length) o += u.host.lowercaseString.UTF8String;
+  NSNumber *port = u.port;
+  if (port && !((port.intValue == 80 && [sch isEqualToString:@"http"]) ||
+                (port.intValue == 443 && [sch isEqualToString:@"https"])))
+    o += ":" + std::to_string(port.intValue);
+  return o;
+}
+
+// '*' matches any run of characters, everything else literally — the same
+// globs the bridge's api gate compiles to regexes.
+static bool media_glob(const char *p, const char *s) {
+  if (!*p) return !*s;
+  if (*p == '*') {
+    for (const char *t = s;; t++) {
+      if (media_glob(p + 1, t)) return true;
+      if (!*t) return false;
+    }
+  }
+  return *s && *p == *s && media_glob(p + 1, s + 1);
+}
+
+static bool media_trusted(const std::string &kind, const std::string &origin) {
+  if (origin == "file://") return true;
+  static std::vector<std::pair<std::string, std::string>> rules = [] {
+    std::vector<std::pair<std::string, std::string>> r;
+    // dev: the bridge's env; a packaged .app: Info.plist (LaunchServices
+    // starts the launcher, so the bridge's env never reaches it)
+    const char *env = getenv("TINYJS_MEDIA_ORIGINS");
+    NSString *plist = env ? nil
+                          : [[NSBundle mainBundle]
+                                objectForInfoDictionaryKey:@"TinyjsMediaOrigins"];
+    std::string all = env ? env : plist.length ? [plist UTF8String] : "", line;
+    for (size_t i = 0; i <= all.size(); i++) {
+      if (i < all.size() && all[i] != '\n') { line += all[i]; continue; }
+      size_t sp = line.find(' ');
+      if (sp != std::string::npos)
+        r.push_back({line.substr(0, sp), line.substr(sp + 1)});
+      line.clear();
+    }
+    return r;
+  }();
+  for (auto &r : rules)
+    if (r.first == kind && media_glob(r.second.c_str(), origin.c_str()))
+      return true;
+  return false;
+}
+
+static void install_media_capture_hook() {
+  Class cls = objc_lookUpClass("WebviewWKUIDelegate");
+  if (!cls) return;
+  SEL sel = sel_registerName("webView:requestMediaCapturePermissionForOrigin:"
+                             "initiatedByFrame:type:decisionHandler:");
+  if (class_getInstanceMethod(cls, sel)) return;
+  class_addMethod(
+      cls, sel,
+      (IMP)(+[](id, SEL, id, WKSecurityOrigin *origin, WKFrameInfo *frame,
+                NSInteger type, void (^decision)(NSInteger)) {
+        // WKMediaCaptureType: 0 camera, 1 microphone, 2 both
+        std::string a = media_origin_str(origin);
+        std::string b = media_origin_str(frame.securityOrigin);
+        auto ok = [&](const char *kind) {
+          return media_trusted(kind, a) && media_trusted(kind, b);
+        };
+        bool trusted = type == 0   ? ok("camera")
+                       : type == 1 ? ok("microphone")
+                                   : ok("camera") && ok("microphone");
+        // 1 = WKPermissionDecisionGrant, 0 = WKPermissionDecisionPrompt
+        decision(trusted ? 1 : 0);
+      }),
+      "v@:@@@q@?");
+}
+#endif
+
+// --- shell, launch-at-login, dock (macOS) ------------------------------------------
+// SHELL wraps the NSWorkspace verbs apps otherwise spawn `open` for; trash
+// uses NSFileManager so the file is recoverable (vs tjs.remove). LOGIN wraps
+// SMAppService (macOS 13+, needs a real bundle identity — dev-mode's bare
+// launcher answers "unsupported"). BADGE/ATTENTION are fire-and-forget.
+
+struct ShellReq {
+  std::string qid, op, target;
+};
+struct LoginReq {
+  std::string qid;
+  int set; // -1 = get, 0 = unregister, 1 = register
+};
+
+#ifdef __APPLE__
+static void do_shell(webview_t, void *arg) {
+  ShellReq *req = static_cast<ShellReq *>(arg);
+  @autoreleasepool {
+    bool ok = false;
+    std::string err;
+    NSString *t = ns(req->target);
+    // Anything that parses with a scheme is a URL; everything else is a
+    // file path (~ expanded). file:// URLs are folded back to paths so
+    // reveal/trash accept both spellings.
+    NSURL *url = [NSURL URLWithString:t];
+    bool is_url = url && url.scheme.length > 0;
+    NSString *path = [t stringByExpandingTildeInPath];
+    if (is_url && url.fileURL) {
+      path = url.path;
+      is_url = req->op == "open"; // reveal/trash want the path form
+    }
+    NSFileManager *fm = [NSFileManager defaultManager];
+    if (req->op == "open") {
+      if (is_url) {
+        ok = [[NSWorkspace sharedWorkspace] openURL:url];
+        if (!ok)
+          err = "no application registered for URL";
+      } else if ([fm fileExistsAtPath:path]) {
+        ok = [[NSWorkspace sharedWorkspace]
+            openURL:[NSURL fileURLWithPath:path]];
+        if (!ok)
+          err = "open failed";
+      } else {
+        err = "no such file";
+      }
+    } else if (req->op == "reveal") {
+      if ([fm fileExistsAtPath:path]) {
+        [[NSWorkspace sharedWorkspace] activateFileViewerSelectingURLs:@[
+          [NSURL fileURLWithPath:path]
+        ]];
+        ok = true;
+      } else {
+        err = "no such file";
+      }
+    } else if (req->op == "trash") {
+      NSError *e = nil;
+      ok = [fm trashItemAtURL:[NSURL fileURLWithPath:path]
+              resultingItemURL:nil
+                         error:&e];
+      if (!ok)
+        err = e ? [e.localizedDescription UTF8String] : "trash failed";
+    } else {
+      err = "unknown shell op";
+    }
+    sock_write_line("GOT " + req->qid + " {\"ok\":" + (ok ? "true" : "false") +
+                    ",\"error\":" +
+                    (err.empty() ? "null" : json_escape(err)) + "}");
+  }
+  delete req;
+}
+
+static void do_login(webview_t, void *arg) {
+  LoginReq *req = static_cast<LoginReq *>(arg);
+  std::string qid = req->qid;
+  int set = req->set;
+  delete req;
+  @autoreleasepool {
+    if (@available(macOS 13.0, *)) {
+      if ([[NSBundle mainBundle] bundleIdentifier]) {
+        SMAppService *svc = [SMAppService mainAppService];
+        bool ok = true;
+        std::string err;
+        if (set == 1 && svc.status != SMAppServiceStatusEnabled) {
+          NSError *e = nil;
+          ok = [svc registerAndReturnError:&e];
+          if (!ok && e)
+            err = [e.localizedDescription UTF8String];
+        } else if (set == 0 && (svc.status == SMAppServiceStatusEnabled ||
+                                svc.status ==
+                                    SMAppServiceStatusRequiresApproval)) {
+          NSError *e = nil;
+          ok = [svc unregisterAndReturnError:&e];
+          if (!ok && e)
+            err = [e.localizedDescription UTF8String];
+        }
+        const char *st =
+            svc.status == SMAppServiceStatusEnabled ? "enabled"
+            : svc.status == SMAppServiceStatusRequiresApproval
+                ? "requires-approval"
+                : "disabled"; // notRegistered / notFound
+        sock_write_line("GOT " + qid + " {\"status\":\"" + st +
+                        "\",\"ok\":" + (ok ? "true" : "false") + ",\"error\":" +
+                        (err.empty() ? "null" : json_escape(err)) + "}");
+        return;
+      }
+    }
+    sock_write_line("GOT " + qid +
+                    " {\"status\":\"unsupported\",\"ok\":false,"
+                    "\"error\":null}");
+  }
+}
+
+static void do_badge(webview_t, void *arg) {
+  std::string *text = static_cast<std::string *>(arg);
+  [NSApp dockTile].badgeLabel = text->empty() ? nil : ns(*text);
+  delete text;
+}
+
+static void do_attention(webview_t, void *arg) {
+  int *critical = static_cast<int *>(arg);
+  [NSApp requestUserAttention:*critical ? NSCriticalRequest
+                                        : NSInformationalRequest];
+  delete critical;
+}
+#else
+static void do_shell(webview_t, void *arg) {
+  ShellReq *req = static_cast<ShellReq *>(arg);
+  sock_write_line("GOT " + req->qid +
+                  " {\"ok\":false,\"error\":\"unsupported\"}");
+  delete req;
+}
+static void do_login(webview_t, void *arg) {
+  LoginReq *req = static_cast<LoginReq *>(arg);
+  sock_write_line("GOT " + req->qid +
+                  " {\"status\":\"unsupported\",\"ok\":false,\"error\":null}");
+  delete req;
+}
+static void do_badge(webview_t, void *arg) { delete static_cast<std::string *>(arg); }
+static void do_attention(webview_t, void *arg) { delete static_cast<int *>(arg); }
+#endif
+
+// --- power, sound, share (macOS) ----------------------------------------------------
+// POWER holds a single IOPMAssertion (replacing spawned `caffeinate` — the
+// assertion dies with the launcher, so a crashed app never wedges sleep).
+// SOUND plays a beep, a system sound by name, or an audio file. SHARE shows
+// NSSharingServicePicker anchored at page coordinates.
+
+struct PowerReq {
+  std::string qid, reason;
+  bool on, display;
+};
+struct SoundReq {
+  std::string qid, target;
+};
+struct ShareReq {
+  std::string win, text, url;
+  std::vector<std::string> paths;
+  int x, y;
+};
+
+#ifdef __APPLE__
+static IOPMAssertionID g_power_assertion = kIOPMNullAssertionID;
+
+static void do_power(webview_t, void *arg) {
+  PowerReq *req = static_cast<PowerReq *>(arg);
+  bool ok = true;
+  if (g_power_assertion != kIOPMNullAssertionID) {
+    IOPMAssertionRelease(g_power_assertion);
+    g_power_assertion = kIOPMNullAssertionID;
+  }
+  if (req->on) {
+    CFStringRef reason = CFStringCreateWithCString(
+        NULL, req->reason.empty() ? "tinyjs app" : req->reason.c_str(),
+        kCFStringEncodingUTF8);
+    ok = IOPMAssertionCreateWithName(
+             req->display ? kIOPMAssertionTypePreventUserIdleDisplaySleep
+                          : kIOPMAssertionTypePreventUserIdleSystemSleep,
+             kIOPMAssertionLevelOn, reason,
+             &g_power_assertion) == kIOReturnSuccess;
+    CFRelease(reason);
+    if (!ok)
+      g_power_assertion = kIOPMNullAssertionID;
+  }
+  sock_write_line("GOT " + req->qid + " {\"ok\":" + (ok ? "true" : "false") +
+                  ",\"active\":" +
+                  (g_power_assertion != kIOPMNullAssertionID ? "true"
+                                                             : "false") +
+                  "}");
+  delete req;
+}
+
+// NSSound stops when released; hold the last one until the next play. We own
+// exactly one reference to it — see the ownership note in do_sound.
+static NSSound *g_sound = nil;
+
+static void do_sound(webview_t, void *arg) {
+  SoundReq *req = static_cast<SoundReq *>(arg);
+  @autoreleasepool {
+    bool ok = true;
+    if (req->target.empty()) {
+      NSBeep();
+    } else {
+      // Both branches must hand back an AUTORELEASED sound, so the single
+      // retain below is the only reference we hold. initWithContentsOfFile:
+      // is +1 and soundNamed: is +0, and storing the +0 one straight into
+      // g_sound was a use-after-free: this pool drains when do_sound returns,
+      // freeing the sound, and the NEXT play's [g_sound stop] messaged dead
+      // memory. It only aborted once that memory had been reused, so it read
+      // as an intermittent crash on the second play rather than a leak.
+      NSSound *snd =
+          req->target[0] == '/'
+              ? [[[NSSound alloc] initWithContentsOfFile:ns(req->target)
+                                             byReference:YES] autorelease]
+              : [NSSound soundNamed:ns(req->target)];
+      ok = snd != nil;
+      if (snd) {
+        // Retain first: replaying the same named sound gives back the same
+        // cached instance, and releasing before retaining could free it.
+        [snd retain];
+        [g_sound stop];
+        [g_sound release];
+        g_sound = snd;
+        [snd play];
+      }
+    }
+    sock_write_line("GOT " + req->qid + " {\"ok\":" + (ok ? "true" : "false") +
+                    "}");
+  }
+  delete req;
+}
+
+// The picker dismisses itself; keep it alive while it's up.
+static NSSharingServicePicker *g_share_picker = nil;
+
+static void do_share(webview_t w, void *arg) {
+  ShareReq *req = static_cast<ShareReq *>(arg);
+  @autoreleasepool {
+    NSMutableArray *items = [NSMutableArray array];
+    if (!req->text.empty())
+      [items addObject:ns(req->text)];
+    if (!req->url.empty()) {
+      NSURL *u = [NSURL URLWithString:ns(req->url)];
+      if (u)
+        [items addObject:u];
+    }
+    for (auto &p : req->paths)
+      [items addObject:[NSURL fileURLWithPath:ns(p)]];
+    WKWebView *wv = webview_for_id(w, req->win);
+    if (wv && items.count) {
+      g_share_picker =
+          [[NSSharingServicePicker alloc] initWithItems:items];
+      // Page coords are top-left of the content area; WKWebView is flipped,
+      // but convert defensively.
+      CGFloat y = wv.isFlipped ? req->y : wv.bounds.size.height - req->y;
+      [g_share_picker
+          showRelativeToRect:NSMakeRect(req->x, y, 1, 1)
+                      ofView:wv
+               preferredEdge:NSMinYEdge];
+    }
+  }
+  delete req;
+}
+#else
+static void do_power(webview_t, void *arg) {
+  PowerReq *req = static_cast<PowerReq *>(arg);
+  sock_write_line("GOT " + req->qid + " {\"ok\":false,\"active\":false}");
+  delete req;
+}
+static void do_sound(webview_t, void *arg) {
+  SoundReq *req = static_cast<SoundReq *>(arg);
+  sock_write_line("GOT " + req->qid + " {\"ok\":false}");
+  delete req;
+}
+static void do_share(webview_t, void *arg) { delete static_cast<ShareReq *>(arg); }
+#endif
+
+// --- quick look + screen capture (macOS) --------------------------------------------
+// QUICKLOOK drives the shared QLPreviewPanel (the Finder-spacebar preview,
+// no qlmanage spawn). CAPTURE screenshots a display via ScreenCaptureKit
+// (weak-linked; macOS 14+ and the 'screen' permission — errors cleanly
+// otherwise) and materializes a png in the temp dir, named per request:
+// the caller owns the file.
+
+struct QLReq {
+  std::vector<std::string> paths;
+};
+struct CaptureReq {
+  std::string qid;
+  long display; // CGDirectDisplayID; 0 = primary
+};
+
+#ifdef __APPLE__
+@interface TinyQLSource : NSObject <QLPreviewPanelDataSource>
+@property(strong) NSMutableArray<NSURL *> *items;
+@end
+@implementation TinyQLSource
+- (NSInteger)numberOfPreviewItemsInPreviewPanel:(QLPreviewPanel *)panel {
+  return (NSInteger)self.items.count;
+}
+- (id<QLPreviewItem>)previewPanel:(QLPreviewPanel *)panel
+              previewItemAtIndex:(NSInteger)idx {
+  return self.items[(NSUInteger)idx];
+}
+@end
+
+static TinyQLSource *g_ql_source = nil;
+
+static void do_quicklook(webview_t, void *arg) {
+  QLReq *req = static_cast<QLReq *>(arg);
+  @autoreleasepool {
+    if (!g_ql_source) {
+      g_ql_source = [[TinyQLSource alloc] init];
+      g_ql_source.items = [NSMutableArray array];
+    }
+    [g_ql_source.items removeAllObjects];
+    for (auto &p : req->paths)
+      [g_ql_source.items addObject:[NSURL fileURLWithPath:ns(p)]];
+    if (req->paths.empty()) {
+      if ([QLPreviewPanel sharedPreviewPanelExists] &&
+          [QLPreviewPanel sharedPreviewPanel].visible)
+        [[QLPreviewPanel sharedPreviewPanel] orderOut:nil];
+    } else {
+      QLPreviewPanel *panel = [QLPreviewPanel sharedPreviewPanel];
+      panel.dataSource = g_ql_source;
+      [panel reloadData];
+      [panel makeKeyAndOrderFront:nil];
+    }
+  }
+  delete req;
+}
+
+static void capture_fail(const std::string &qid, const std::string &err) {
+  sock_write_line("GOT " + qid + " {\"ok\":false,\"error\":" +
+                  json_escape(err) + "}");
+}
+
+static void do_capture(webview_t, void *arg) {
+  CaptureReq *req = static_cast<CaptureReq *>(arg);
+  std::string qid = req->qid;
+  long want = req->display;
+  delete req;
+  if (@available(macOS 14.0, *)) {
+    [SCShareableContent
+        getShareableContentWithCompletionHandler:^(SCShareableContent *content,
+                                                   NSError *error) {
+          if (!content) {
+            capture_fail(qid, error ? [error.localizedDescription UTF8String]
+                                    : "no shareable content "
+                                      "(screen-recording permission?)");
+            return;
+          }
+          SCDisplay *disp = nil;
+          for (SCDisplay *d in content.displays)
+            if (!want || (long)d.displayID == want) {
+              disp = d;
+              break;
+            }
+          if (!disp) {
+            capture_fail(qid, "no such display");
+            return;
+          }
+          CGFloat scale = 1;
+          for (NSScreen *s in [NSScreen screens])
+            if ([s.deviceDescription[@"NSScreenNumber"] longValue] ==
+                (long)disp.displayID) {
+              scale = s.backingScaleFactor;
+              break;
+            }
+          SCContentFilter *filter =
+              [[SCContentFilter alloc] initWithDisplay:disp
+                                      excludingWindows:@[]];
+          SCStreamConfiguration *cfg = [[SCStreamConfiguration alloc] init];
+          cfg.width = (size_t)(disp.width * scale);
+          cfg.height = (size_t)(disp.height * scale);
+          cfg.showsCursor = NO;
+          [SCScreenshotManager
+              captureImageWithFilter:filter
+                        configuration:cfg
+                    completionHandler:^(CGImageRef img, NSError *err2) {
+                      if (!img) {
+                        capture_fail(
+                            qid, err2 ? [err2.localizedDescription UTF8String]
+                                      : "capture failed");
+                        return;
+                      }
+                      NSBitmapImageRep *rep =
+                          [[NSBitmapImageRep alloc] initWithCGImage:img];
+                      NSData *png = [rep
+                          representationUsingType:NSBitmapImageFileTypePNG
+                                       properties:@{}];
+                      std::string p =
+                          std::string([NSTemporaryDirectory() UTF8String]) +
+                          "tinyjs-shot-" + std::to_string(getpid()) + "-" +
+                          qid + ".png";
+                      if (!png || ![png writeToFile:ns(p) atomically:YES]) {
+                        capture_fail(qid, "png write failed");
+                        return;
+                      }
+                      sock_write_line(
+                          "GOT " + qid + " {\"ok\":true,\"path\":" +
+                          json_escape(p) +
+                          ",\"width\":" + std::to_string((long)rep.pixelsWide) +
+                          ",\"height\":" +
+                          std::to_string((long)rep.pixelsHigh) + "}");
+                    }];
+        }];
+  } else {
+    capture_fail(qid, "needs macOS 14");
+  }
+}
+#else
+static void do_quicklook(webview_t, void *arg) { delete static_cast<QLReq *>(arg); }
+static void do_capture(webview_t, void *arg) {
+  CaptureReq *req = static_cast<CaptureReq *>(arg);
+  sock_write_line("GOT " + req->qid + " {\"ok\":false,\"error\":\"unsupported\"}");
+  delete req;
+}
+#endif
+
+// --- Mac superpowers: eyedropper, OCR, thumbnails, Keychain, Touch ID, ---------------
+// --- AppleScript (macOS) -------------------------------------------------------------
+// PICKCOLOR: NSColorSampler — the system-wide eyedropper, notably WITHOUT
+// needing the screen-recording permission. OCR: Vision, on-device. THUMB:
+// QLThumbnailGenerator — a preview png for any file type Quick Look knows.
+// SECRET: Keychain generic passwords (the keytar/safeStorage role). AUTH:
+// LocalAuthentication (Touch ID, falls back to the account password). OSA:
+// NSAppleScript in-process — Apple Events fire under the same 'automation'
+// TCC the permissions api already covers, with no osascript spawn.
+
+struct OcrReq {
+  std::string qid, path;
+};
+struct ThumbReq {
+  std::string qid, path;
+  int size;
+};
+struct SecretReq {
+  std::string qid, op, service, account, value;
+};
+struct AuthReq {
+  std::string qid, reason;
+};
+struct OsaReq {
+  std::string qid, source;
+};
+
+#ifdef __APPLE__
+static NSColorSampler *g_sampler = nil; // alive while the loupe is up
+
+static void do_pickcolor(webview_t, void *arg) {
+  std::string *qidp = static_cast<std::string *>(arg);
+  std::string qid = *qidp;
+  delete qidp;
+  if (@available(macOS 10.15, *)) {
+    g_sampler = [[NSColorSampler alloc] init];
+    [g_sampler showSamplerWithSelectionHandler:^(NSColor *c) {
+      if (!c) {
+        sock_write_line("GOT " + qid + " {\"ok\":true,\"color\":null}");
+        return;
+      }
+      NSColor *s = [c colorUsingColorSpace:[NSColorSpace sRGBColorSpace]] ?: c;
+      char buf[48];
+      std::snprintf(buf, sizeof(buf), "\"#%02x%02x%02x\"",
+                    (int)lround(s.redComponent * 255),
+                    (int)lround(s.greenComponent * 255),
+                    (int)lround(s.blueComponent * 255));
+      sock_write_line("GOT " + qid + " {\"ok\":true,\"color\":" + buf + "}");
+    }];
+  } else {
+    sock_write_line("GOT " + qid + " {\"ok\":false,\"error\":\"unsupported\"}");
+  }
+}
+
+static void do_ocr(webview_t, void *arg) {
+  OcrReq *req = static_cast<OcrReq *>(arg);
+  std::string qid = req->qid, path = req->path;
+  delete req;
+  // Vision takes ~100ms+; keep it off the UI thread.
+  dispatch_async(
+      dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        @autoreleasepool {
+          VNRecognizeTextRequest *r = [[VNRecognizeTextRequest alloc] init];
+          r.recognitionLevel = VNRequestTextRecognitionLevelAccurate;
+          r.usesLanguageCorrection = YES;
+          VNImageRequestHandler *h = [[VNImageRequestHandler alloc]
+              initWithURL:[NSURL fileURLWithPath:ns(path)]
+                  options:@{}];
+          NSError *e = nil;
+          if (![h performRequests:@[ r ] error:&e]) {
+            sock_write_line(
+                "GOT " + qid + " {\"ok\":false,\"error\":" +
+                json_escape(e ? [e.localizedDescription UTF8String]
+                              : "ocr failed") +
+                "}");
+            return;
+          }
+          std::string text, blocks = "[";
+          bool first = true;
+          for (VNRecognizedTextObservation *o in r.results) {
+            VNRecognizedText *t = [[o topCandidates:1] firstObject];
+            if (!t)
+              continue;
+            if (!text.empty())
+              text += "\n";
+            text += [t.string UTF8String];
+            // boundingBox is normalized with a bottom-left origin; flip to
+            // the top-left convention everything else in tinyjs uses.
+            CGRect b = o.boundingBox;
+            char geo[128];
+            std::snprintf(geo, sizeof(geo),
+                          ",\"confidence\":%.3f,\"box\":{\"x\":%.4f,"
+                          "\"y\":%.4f,\"width\":%.4f,\"height\":%.4f}}",
+                          (double)t.confidence, b.origin.x,
+                          1.0 - b.origin.y - b.size.height, b.size.width,
+                          b.size.height);
+            if (!first)
+              blocks += ",";
+            first = false;
+            blocks += "{\"text\":" + json_escape([t.string UTF8String]) + geo;
+          }
+          blocks += "]";
+          sock_write_line("GOT " + qid + " {\"ok\":true,\"text\":" +
+                          json_escape(text) + ",\"blocks\":" + blocks + "}");
+        }
+      });
+}
+
+static void do_thumb(webview_t, void *arg) {
+  ThumbReq *req = static_cast<ThumbReq *>(arg);
+  std::string qid = req->qid, path = req->path;
+  int size = req->size > 0 ? req->size : 256;
+  delete req;
+  // Check existence ourselves. With representationTypes:...Thumbnail the
+  // generator failed a missing path for us; with ...TypeAll it happily hands
+  // back a generic document ICON instead, so `thumbnail('/nope')` would
+  // resolve as though it had worked. Callers branch on this rejection.
+  if (![[NSFileManager defaultManager] fileExistsAtPath:ns(path)]) {
+    sock_write_line("GOT " + qid + " {\"ok\":false,\"error\":" +
+                    json_escape("no such file: " + path) + "}");
+    return;
+  }
+  if (@available(macOS 10.15, *)) {
+    QLThumbnailGenerationRequest *r = [[QLThumbnailGenerationRequest alloc]
+        initWithFileAtURL:[NSURL fileURLWithPath:ns(path)]
+                     size:CGSizeMake(size, size)
+                    scale:2.0
+      // ...TypeAll, not ...TypeThumbnail. A content preview only exists for
+      // file types Quick Look has a generator for, so asking for Thumbnail
+      // alone made folders, .app bundles, .css and .wasm all fail with
+      // "QLThumbnailErrorDomain error 0" — while .js, .md, .html and images
+      // worked, which reads as random from the outside. Measured 2026-07-27.
+      // ...TypeAll lets generateBestRepresentation fall back to the document
+      // ICON, which always exists — so the call now delivers what the API
+      // promises: a picture for ANY path, best available quality.
+      representationTypes:
+          QLThumbnailGenerationRequestRepresentationTypeAll];
+    [[QLThumbnailGenerator sharedGenerator]
+        generateBestRepresentationForRequest:r
+                           completionHandler:^(
+                               QLThumbnailRepresentation *rep, NSError *e) {
+                             if (!rep) {
+                               sock_write_line(
+                                   "GOT " + qid + " {\"ok\":false,\"error\":" +
+                                   json_escape(
+                                       e ? [e.localizedDescription UTF8String]
+                                         : "no thumbnail") +
+                                   "}");
+                               return;
+                             }
+                             NSBitmapImageRep *bm = [[NSBitmapImageRep alloc]
+                                 initWithCGImage:rep.CGImage];
+                             NSData *png = [bm
+                                 representationUsingType:
+                                     NSBitmapImageFileTypePNG
+                                              properties:@{}];
+                             std::string p =
+                                 std::string(
+                                     [NSTemporaryDirectory() UTF8String]) +
+                                 "tinyjs-thumb-" + std::to_string(getpid()) +
+                                 "-" + qid + ".png";
+                             if (!png ||
+                                 ![png writeToFile:ns(p) atomically:YES]) {
+                               sock_write_line("GOT " + qid +
+                                               " {\"ok\":false,\"error\":"
+                                               "\"png write failed\"}");
+                               return;
+                             }
+                             sock_write_line(
+                                 "GOT " + qid + " {\"ok\":true,\"path\":" +
+                                 json_escape(p) + ",\"width\":" +
+                                 std::to_string((long)bm.pixelsWide) +
+                                 ",\"height\":" +
+                                 std::to_string((long)bm.pixelsHigh) + "}");
+                           }];
+  } else {
+    sock_write_line("GOT " + qid + " {\"ok\":false,\"error\":\"unsupported\"}");
+  }
+}
+
+static void do_secret(webview_t, void *arg) {
+  SecretReq *req = static_cast<SecretReq *>(arg);
+  @autoreleasepool {
+    NSMutableDictionary *q = [@{
+      (__bridge id)kSecClass : (__bridge id)kSecClassGenericPassword,
+      (__bridge id)kSecAttrService : ns(req->service),
+      (__bridge id)kSecAttrAccount : ns(req->account),
+    } mutableCopy];
+    std::string out;
+    if (req->op == "get") {
+      q[(__bridge id)kSecReturnData] = @YES;
+      q[(__bridge id)kSecMatchLimit] = (__bridge id)kSecMatchLimitOne;
+      CFTypeRef data = NULL;
+      OSStatus st = SecItemCopyMatching((__bridge CFDictionaryRef)q, &data);
+      if (st == errSecSuccess && data) {
+        // No ARC here, so __bridge_transfer would be a no-op and leak the
+        // +1 ref SecItemCopyMatching hands back. Autorelease it instead —
+        // we're inside this function's @autoreleasepool.
+        NSData *d = [(NSData *)data autorelease];
+        NSString *s = [[NSString alloc] initWithData:d
+                                            encoding:NSUTF8StringEncoding];
+        out = "{\"ok\":true,\"value\":" +
+              (s ? json_escape([s UTF8String]) : std::string("null")) + "}";
+      } else if (st == errSecItemNotFound) {
+        out = "{\"ok\":true,\"value\":null}";
+      } else {
+        out = "{\"ok\":false,\"error\":\"keychain error " +
+              std::to_string((long)st) + "\"}";
+      }
+    } else if (req->op == "set") {
+      SecItemDelete((__bridge CFDictionaryRef)q); // replace semantics
+      q[(__bridge id)kSecValueData] =
+          [ns(req->value) dataUsingEncoding:NSUTF8StringEncoding];
+      OSStatus st = SecItemAdd((__bridge CFDictionaryRef)q, NULL);
+      out = st == errSecSuccess
+                ? "{\"ok\":true}"
+                : "{\"ok\":false,\"error\":\"keychain error " +
+                      std::to_string((long)st) + "\"}";
+    } else if (req->op == "del") {
+      OSStatus st = SecItemDelete((__bridge CFDictionaryRef)q);
+      out = (st == errSecSuccess || st == errSecItemNotFound)
+                ? "{\"ok\":true}"
+                : "{\"ok\":false,\"error\":\"keychain error " +
+                      std::to_string((long)st) + "\"}";
+    } else {
+      out = "{\"ok\":false,\"error\":\"unknown secret op\"}";
+    }
+    sock_write_line("GOT " + req->qid + " " + out);
+  }
+  delete req;
+}
+
+static void do_auth(webview_t, void *arg) {
+  AuthReq *req = static_cast<AuthReq *>(arg);
+  std::string qid = req->qid, reason = req->reason;
+  delete req;
+  @autoreleasepool {
+    LAContext *ctx = [[LAContext alloc] init];
+    NSError *e = nil;
+    // DeviceOwnerAuthentication = Touch ID when available, else the account
+    // password sheet — both count as "the user proved it's them".
+    if (![ctx canEvaluatePolicy:LAPolicyDeviceOwnerAuthentication error:&e]) {
+      sock_write_line("GOT " + qid + " {\"ok\":false,\"error\":" +
+                      json_escape(e ? [e.localizedDescription UTF8String]
+                                    : "authentication unavailable") +
+                      "}");
+      return;
+    }
+    [ctx evaluatePolicy:LAPolicyDeviceOwnerAuthentication
+        localizedReason:ns(reason.empty() ? "authenticate" : reason)
+                  reply:^(BOOL ok, NSError *err) {
+                    sock_write_line(
+                        "GOT " + qid + " {\"ok\":" + (ok ? "true" : "false") +
+                        ",\"error\":" +
+                        (err ? json_escape(
+                                   [err.localizedDescription UTF8String])
+                             : "null") +
+                        "}");
+                  }];
+  }
+}
+
+static void do_osa(webview_t, void *arg) {
+  OsaReq *req = static_cast<OsaReq *>(arg);
+  @autoreleasepool {
+    // NSAppleScript is main-thread-only; long-running scripts briefly block
+    // the UI (typical Apple Events round-trips are milliseconds).
+    NSAppleScript *scr =
+        [[NSAppleScript alloc] initWithSource:ns(req->source)];
+    NSDictionary *err = nil;
+    NSAppleEventDescriptor *d = [scr executeAndReturnError:&err];
+    if (!d) {
+      NSString *msg = err[NSAppleScriptErrorMessage]
+                          ?: err[NSAppleScriptErrorBriefMessage];
+      sock_write_line("GOT " + req->qid + " {\"ok\":false,\"error\":" +
+                      json_escape(msg ? [msg UTF8String] : "script error") +
+                      "}");
+    } else {
+      NSString *s = [d stringValue];
+      sock_write_line("GOT " + req->qid + " {\"ok\":true,\"result\":" +
+                      (s ? json_escape([s UTF8String]) : "null") + "}");
+    }
+  }
+  delete req;
+}
+#else
+static void unsupported_reply(const std::string &qid) {
+  sock_write_line("GOT " + qid + " {\"ok\":false,\"error\":\"unsupported\"}");
+}
+static void do_pickcolor(webview_t, void *arg) {
+  std::string *q = static_cast<std::string *>(arg);
+  unsupported_reply(*q);
+  delete q;
+}
+static void do_ocr(webview_t, void *arg) {
+  OcrReq *r = static_cast<OcrReq *>(arg);
+  unsupported_reply(r->qid);
+  delete r;
+}
+static void do_thumb(webview_t, void *arg) {
+  ThumbReq *r = static_cast<ThumbReq *>(arg);
+  unsupported_reply(r->qid);
+  delete r;
+}
+static void do_secret(webview_t, void *arg) {
+  SecretReq *r = static_cast<SecretReq *>(arg);
+  unsupported_reply(r->qid);
+  delete r;
+}
+static void do_auth(webview_t, void *arg) {
+  AuthReq *r = static_cast<AuthReq *>(arg);
+  unsupported_reply(r->qid);
+  delete r;
+}
+static void do_osa(webview_t, void *arg) {
+  OsaReq *r = static_cast<OsaReq *>(arg);
+  unsupported_reply(r->qid);
+  delete r;
+}
+#endif
+
+// --- screen recording to .mp4 (macOS) -----------------------------------------------
+// SCStream feeds screen CMSampleBuffers into an AVAssetWriterInput. All
+// recorder state lives on one serial queue (g_rec_queue) — the sample
+// handler runs there, and start/stop hop onto it — so nothing races. Needs
+// macOS 14 and the 'screen' permission; ScreenCaptureKit is weak-linked so
+// older systems still launch. Video-only for now (no audio track).
+
+struct RecordReq {
+  std::string qid, path;
+  long display;
+  bool start;
+};
+
+#ifdef __APPLE__
+static dispatch_queue_t g_rec_queue = nullptr;
+static SCStream *g_rec_stream = nil;
+static AVAssetWriter *g_rec_writer = nil;
+static AVAssetWriterInput *g_rec_input = nil;
+static bool g_rec_session = false;
+static CMTime g_rec_first, g_rec_last;
+static std::string g_rec_path;
+
+@interface TinyRecOutput : NSObject <SCStreamOutput>
+@end
+@implementation TinyRecOutput
+- (void)stream:(SCStream *)stream
+    didOutputSampleBuffer:(CMSampleBufferRef)sb
+                   ofType:(SCStreamOutputType)type
+    API_AVAILABLE(macos(14.0)) {
+  if (type != SCStreamOutputTypeScreen || !CMSampleBufferIsValid(sb))
+    return;
+  // SCStream emits idle/duplicate frames too; only append complete ones.
+  NSArray *att = (__bridge NSArray *)CMSampleBufferGetSampleAttachmentsArray(
+      sb, false);
+  NSDictionary *info = att.firstObject;
+  if (info) {
+    NSNumber *st = info[SCStreamFrameInfoStatus];
+    if (st && st.intValue != SCFrameStatusComplete)
+      return;
+  }
+  if (!g_rec_writer || g_rec_writer.status != AVAssetWriterStatusWriting)
+    return;
+  CMTime pts = CMSampleBufferGetPresentationTimeStamp(sb);
+  if (!g_rec_session) {
+    [g_rec_writer startSessionAtSourceTime:pts];
+    g_rec_first = pts;
+    g_rec_session = true;
+  }
+  if (g_rec_input.isReadyForMoreMediaData) {
+    [g_rec_input appendSampleBuffer:sb];
+    g_rec_last = pts;
+  }
+}
+@end
+
+static TinyRecOutput *g_rec_output = nil;
+
+static void rec_reset() {
+  g_rec_stream = nil;
+  g_rec_writer = nil;
+  g_rec_input = nil;
+  g_rec_session = false;
+  g_rec_path.clear();
+}
+
+API_AVAILABLE(macos(14.0))
+static void rec_start(const std::string &qid, long want,
+                      const std::string &path) {
+  if (g_rec_stream) {
+    capture_fail(qid, "already recording");
+    return;
+  }
+  // Fail fast when the screen-recording permission is missing:
+  // getShareableContent's completion handler is unreliable when TCC has
+  // denied us (it can neither error nor fire), which would hang start().
+  if (!CGPreflightScreenCaptureAccess()) {
+    CGRequestScreenCaptureAccess(); // adds us to System Settings for next time
+    capture_fail(qid, "screen recording permission required "
+                      "(System Settings > Privacy > Screen Recording)");
+    return;
+  }
+  [SCShareableContent
+      getShareableContentWithCompletionHandler:^(SCShareableContent *content,
+                                                 NSError *error) {
+        dispatch_async(g_rec_queue, ^{
+          if (!content) {
+            capture_fail(qid,
+                         error ? [error.localizedDescription UTF8String]
+                               : "no shareable content (screen permission?)");
+            return;
+          }
+          SCDisplay *disp = nil;
+          for (SCDisplay *d in content.displays)
+            if (!want || (long)d.displayID == want) {
+              disp = d;
+              break;
+            }
+          if (!disp) {
+            capture_fail(qid, "no such display");
+            return;
+          }
+          CGFloat scale = 1;
+          for (NSScreen *s in [NSScreen screens])
+            if ([s.deviceDescription[@"NSScreenNumber"] longValue] ==
+                (long)disp.displayID)
+              scale = s.backingScaleFactor;
+          size_t w = (size_t)(disp.width * scale), h = (size_t)(disp.height * scale);
+
+          NSError *werr = nil;
+          [[NSFileManager defaultManager] removeItemAtPath:ns(path) error:nil];
+          AVAssetWriter *writer = [[AVAssetWriter alloc]
+              initWithURL:[NSURL fileURLWithPath:ns(path)]
+                 fileType:AVFileTypeMPEG4
+                    error:&werr];
+          if (!writer) {
+            capture_fail(qid, werr ? [werr.localizedDescription UTF8String]
+                                   : "cannot create the mp4");
+            return;
+          }
+          AVAssetWriterInput *input = [AVAssetWriterInput
+              assetWriterInputWithMediaType:AVMediaTypeVideo
+                             outputSettings:@{
+                               AVVideoCodecKey : AVVideoCodecTypeH264,
+                               AVVideoWidthKey : @(w),
+                               AVVideoHeightKey : @(h),
+                             }];
+          input.expectsMediaDataInRealTime = YES;
+          if (![writer canAddInput:input]) {
+            capture_fail(qid, "cannot add the video track");
+            return;
+          }
+          [writer addInput:input];
+          if (![writer startWriting]) {
+            capture_fail(qid, "asset writer refused to start");
+            return;
+          }
+
+          SCContentFilter *filter =
+              [[SCContentFilter alloc] initWithDisplay:disp
+                                      excludingWindows:@[]];
+          SCStreamConfiguration *cfg = [[SCStreamConfiguration alloc] init];
+          cfg.width = w;
+          cfg.height = h;
+          cfg.showsCursor = YES;
+          cfg.minimumFrameInterval = CMTimeMake(1, 60);
+          cfg.pixelFormat = kCVPixelFormatType_32BGRA;
+          if (!g_rec_output)
+            g_rec_output = [[TinyRecOutput alloc] init];
+          SCStream *stream = [[SCStream alloc] initWithFilter:filter
+                                                configuration:cfg
+                                                     delegate:nil];
+          NSError *oerr = nil;
+          [stream addStreamOutput:g_rec_output
+                             type:SCStreamOutputTypeScreen
+               sampleHandlerQueue:g_rec_queue
+                            error:&oerr];
+          if (oerr) {
+            capture_fail(qid, [oerr.localizedDescription UTF8String]);
+            return;
+          }
+          g_rec_writer = writer;
+          g_rec_input = input;
+          g_rec_stream = stream;
+          g_rec_session = false;
+          g_rec_path = path;
+          [stream startCaptureWithCompletionHandler:^(NSError *serr) {
+            dispatch_async(g_rec_queue, ^{
+              if (serr) {
+                [writer cancelWriting];
+                rec_reset();
+                capture_fail(qid, [serr.localizedDescription UTF8String]);
+              } else {
+                sock_write_line("GOT " + qid + " {\"ok\":true,\"error\":null}");
+              }
+            });
+          }];
+        });
+      }];
+}
+
+API_AVAILABLE(macos(14.0))
+static void rec_stop(const std::string &qid) {
+  if (!g_rec_stream) {
+    capture_fail(qid, "not recording");
+    return;
+  }
+  SCStream *stream = g_rec_stream;
+  AVAssetWriter *writer = g_rec_writer;
+  AVAssetWriterInput *input = g_rec_input;
+  std::string path = g_rec_path;
+  bool session = g_rec_session;
+  CMTime first = g_rec_first, last = g_rec_last;
+  g_rec_stream = nil; // block re-entrancy; keep the rest until finalize
+  [stream stopCaptureWithCompletionHandler:^(NSError *) {
+    dispatch_async(g_rec_queue, ^{
+      [input markAsFinished];
+      [writer finishWritingWithCompletionHandler:^{
+        dispatch_async(g_rec_queue, ^{
+          bool ok = writer.status == AVAssetWriterStatusCompleted && session;
+          double dur =
+              session ? CMTimeGetSeconds(CMTimeSubtract(last, first)) : 0;
+          if (ok) {
+            char buf[64];
+            std::snprintf(buf, sizeof(buf), "%.3f", dur);
+            sock_write_line("GOT " + qid + " {\"ok\":true,\"path\":" +
+                            json_escape(path) + ",\"duration\":" + buf +
+                            ",\"error\":null}");
+          } else {
+            capture_fail(qid, writer.error
+                                  ? [writer.error.localizedDescription UTF8String]
+                                  : "no frames captured");
+          }
+          rec_reset();
+        });
+      }];
+    });
+  }];
+}
+
+static void do_record(webview_t, void *arg) {
+  RecordReq *req = static_cast<RecordReq *>(arg);
+  std::string qid = req->qid, path = req->path;
+  long display = req->display;
+  bool start = req->start;
+  delete req;
+  if (@available(macOS 14.0, *)) {
+    if (!g_rec_queue)
+      g_rec_queue = dispatch_queue_create("app.tinyjs.recorder", DISPATCH_QUEUE_SERIAL);
+    dispatch_async(g_rec_queue, ^{
+      if (start)
+        rec_start(qid, display, path);
+      else
+        rec_stop(qid);
+    });
+  } else {
+    capture_fail(qid, "needs macOS 14");
+  }
+}
+#else
+static void do_record(webview_t, void *arg) {
+  RecordReq *req = static_cast<RecordReq *>(arg);
+  sock_write_line("GOT " + req->qid + " {\"ok\":false,\"error\":\"unsupported\"}");
+  delete req;
+}
+#endif
+
+// --- accessibility: read selection + move other apps' windows (macOS) ---------------
+// All under the Accessibility permission (permissions.check('accessibility')).
+// GET selectedtext → the text selected in the frontmost app (PopClip-style
+// popovers). GET otherwindows → every on-screen window of OTHER apps. WINCTRL
+// move re-fetches an app's frontmost window and repositions/resizes it (a
+// Rectangle/Magnet "snap the active window" primitive).
+
+struct WinCtrlReq {
+  std::string qid;
+  long pid;
+  int x, y, w, h;
+};
+
+#ifdef __APPLE__
+// AXFocusedUIElement → AXSelectedText of the system-wide focused element.
+static std::string ax_selected_text() {
+  AXUIElementRef sys = AXUIElementCreateSystemWide();
+  CFTypeRef focused = NULL;
+  std::string out;
+  bool have = false;
+  if (AXUIElementCopyAttributeValue(sys, kAXFocusedUIElementAttribute,
+                                    &focused) == kAXErrorSuccess &&
+      focused) {
+    CFTypeRef sel = NULL;
+    if (AXUIElementCopyAttributeValue((AXUIElementRef)focused,
+                                      kAXSelectedTextAttribute,
+                                      &sel) == kAXErrorSuccess &&
+        sel) {
+      if (CFGetTypeID(sel) == CFStringGetTypeID()) {
+        out = [(__bridge NSString *)sel UTF8String];
+        have = true;
+      }
+      CFRelease(sel);
+    }
+    CFRelease(focused);
+  }
+  CFRelease(sys);
+  return have ? json_escape(out) : std::string("null");
+}
+
+// AXPosition/AXSize come back as AXValue; unwrap to CG structs.
+static bool ax_rect(AXUIElementRef win, CGPoint *pos, CGSize *size) {
+  CFTypeRef p = NULL, s = NULL;
+  bool ok = false;
+  if (AXUIElementCopyAttributeValue(win, kAXPositionAttribute, &p) ==
+          kAXErrorSuccess &&
+      AXUIElementCopyAttributeValue(win, kAXSizeAttribute, &s) ==
+          kAXErrorSuccess &&
+      p && s) {
+    ok = AXValueGetValue((AXValueRef)p, kAXValueTypeCGPoint, pos) &&
+         AXValueGetValue((AXValueRef)s, kAXValueTypeCGSize, size);
+  }
+  if (p) CFRelease(p);
+  if (s) CFRelease(s);
+  return ok;
+}
+
+static std::string ax_other_windows() {
+  if (!AXIsProcessTrusted())
+    return "null"; // caller maps null → "needs Accessibility"
+  std::string json = "[";
+  bool first = true;
+  pid_t self = getpid();
+  for (NSRunningApplication *app in
+       [[NSWorkspace sharedWorkspace] runningApplications]) {
+    if (app.processIdentifier == self ||
+        app.activationPolicy != NSApplicationActivationPolicyRegular)
+      continue;
+    AXUIElementRef axApp = AXUIElementCreateApplication(app.processIdentifier);
+    CFTypeRef windows = NULL;
+    if (AXUIElementCopyAttributeValue(axApp, kAXWindowsAttribute, &windows) ==
+            kAXErrorSuccess &&
+        windows) {
+      NSArray *wins = (__bridge NSArray *)windows;
+      int idx = 0;
+      for (id w in wins) {
+        AXUIElementRef win = (AXUIElementRef)w;
+        CGPoint pos;
+        CGSize size;
+        if (ax_rect(win, &pos, &size)) {
+          CFTypeRef t = NULL;
+          std::string title;
+          if (AXUIElementCopyAttributeValue(win, kAXTitleAttribute, &t) ==
+                  kAXErrorSuccess &&
+              t) {
+            if (CFGetTypeID(t) == CFStringGetTypeID())
+              title = [(__bridge NSString *)t UTF8String];
+            CFRelease(t);
+          }
+          char geo[160];
+          std::snprintf(geo, sizeof(geo),
+                        ",\"pid\":%d,\"index\":%d,\"x\":%d,\"y\":%d,"
+                        "\"width\":%d,\"height\":%d}",
+                        (int)app.processIdentifier, idx, (int)pos.x,
+                        (int)pos.y, (int)size.width, (int)size.height);
+          if (!first)
+            json += ",";
+          first = false;
+          json += "{\"app\":" +
+                  json_escape(app.localizedName ? [app.localizedName UTF8String]
+                                                : "") +
+                  ",\"bundleId\":" +
+                  (app.bundleIdentifier
+                       ? json_escape([app.bundleIdentifier UTF8String])
+                       : "null") +
+                  ",\"title\":" + json_escape(title) + geo;
+        }
+        idx++;
+      }
+      CFRelease(windows);
+    }
+    CFRelease(axApp);
+  }
+  json += "]";
+  return json;
+}
+
+static void do_winctrl(webview_t, void *arg) {
+  WinCtrlReq *req = static_cast<WinCtrlReq *>(arg);
+  std::string qid = req->qid;
+  @autoreleasepool {
+    if (!AXIsProcessTrusted()) {
+      sock_write_line("GOT " + qid +
+                      " {\"ok\":false,\"error\":\"needs Accessibility\"}");
+      delete req;
+      return;
+    }
+    AXUIElementRef axApp = AXUIElementCreateApplication((pid_t)req->pid);
+    CFTypeRef win = NULL;
+    // The app's main/frontmost window (the one a user would arrange).
+    if (AXUIElementCopyAttributeValue(axApp, kAXMainWindowAttribute, &win) !=
+            kAXErrorSuccess ||
+        !win) {
+      CFTypeRef wins = NULL;
+      if (AXUIElementCopyAttributeValue(axApp, kAXWindowsAttribute, &wins) ==
+              kAXErrorSuccess &&
+          wins && CFArrayGetCount((CFArrayRef)wins) > 0) {
+        win = CFRetain(CFArrayGetValueAtIndex((CFArrayRef)wins, 0));
+      }
+      if (wins) CFRelease(wins);
+    }
+    bool ok = false;
+    if (win) {
+      CGPoint pos = CGPointMake(req->x, req->y);
+      CGSize size = CGSizeMake(req->w, req->h);
+      AXValueRef pv = AXValueCreate(kAXValueTypeCGPoint, &pos);
+      AXValueRef sv = AXValueCreate(kAXValueTypeCGSize, &size);
+      AXError e1 = AXUIElementSetAttributeValue((AXUIElementRef)win,
+                                                kAXPositionAttribute, pv);
+      AXError e2 = AXUIElementSetAttributeValue((AXUIElementRef)win,
+                                                kAXSizeAttribute, sv);
+      ok = (e1 == kAXErrorSuccess && e2 == kAXErrorSuccess);
+      CFRelease(pv);
+      CFRelease(sv);
+      CFRelease(win);
+    }
+    CFRelease(axApp);
+    sock_write_line("GOT " + qid + " {\"ok\":" + (ok ? "true" : "false") +
+                    ",\"error\":" +
+                    (ok ? "null" : "\"no movable window\"") + "}");
+  }
+  delete req;
+}
+#else
+static std::string ax_selected_text() { return "null"; }
+static std::string ax_other_windows() { return "null"; }
+static void do_winctrl(webview_t, void *arg) {
+  WinCtrlReq *req = static_cast<WinCtrlReq *>(arg);
+  sock_write_line("GOT " + req->qid + " {\"ok\":false,\"error\":\"unsupported\"}");
+  delete req;
+}
+#endif
+
+// --- custom context menu (macOS) -------------------------------------------------
+// CTXBEGIN, ITEM/SEP lines, CTXEND replaces the webview's right-click menu
+// with the declared items (clicks -> `CTX <id>`); CTXCLEAR restores WebKit's
+// default menu.
+
+static std::vector<MenuItemSpec> g_ctx_items;
+static bool g_ctx_active = false;
+// contextMenu:false in the manifest suppresses WebKit's default right-click
+// menu (Reload/Back/Inspect Element…) for app-like windows. A custom menu
+// (g_ctx_active) always wins; this only affects the otherwise-default menu.
+static bool g_ctx_suppress = false;
+
+struct CtxReq {
+  std::vector<MenuItemSpec> items;
+  bool active;
+};
+
+#ifdef __APPLE__
+typedef void (*WillOpenMenuIMP)(id, SEL, NSMenu *, NSEvent *);
+static WillOpenMenuIMP g_orig_willOpenMenu = nullptr;
+
+static void tiny_willOpenMenu(id self, SEL cmd, NSMenu *menu, NSEvent *ev) {
+  if (g_orig_willOpenMenu)
+    g_orig_willOpenMenu(self, cmd, menu, ev);
+  if (g_ctx_active) {
+    [menu removeAllItems];
+    build_menu_into(menu, g_ctx_items, @selector(ctxItemClicked:), nil);
+    return;
+  }
+  // Empty menu -> AppKit shows nothing, so removeAllItems suppresses it.
+  if (g_ctx_suppress)
+    [menu removeAllItems];
+}
+
+// Context menus are built lazily at right-click, so state updates and reads
+// go against the stored spec rather than live NSMenuItems.
+static MenuItemSpec *find_ctx_spec(std::vector<MenuItemSpec> &items,
+                                   const std::string &id) {
+  for (MenuItemSpec &it : items) {
+    if (it.id == id)
+      return &it;
+    if (MenuItemSpec *hit = find_ctx_spec(it.submenu, id))
+      return hit;
+  }
+  return nullptr;
+}
+
+static void apply_ctx(webview_t, void *arg) {
+  CtxReq *req = static_cast<CtxReq *>(arg);
+  if (!g_menu_target)
+    g_menu_target = [[TinyMenuTarget alloc] init];
+  g_ctx_items = req->items;
+  g_ctx_active = req->active;
+  delete req;
+}
+
+static void install_ctx_hook() {
+  // willOpenMenu:withEvent: is swizzled with the same replace-or-add helper
+  // used for drag & drop.
+  g_orig_willOpenMenu = (WillOpenMenuIMP)swizzle(
+      [WKWebView class], @selector(willOpenMenu:withEvent:),
+      (IMP)tiny_willOpenMenu, "v@:@@");
+}
+#else
+static void apply_ctx(webview_t, void *arg) { delete static_cast<CtxReq *>(arg); }
+#endif
+
+struct CtxSuppressReq {
+  bool on;
+};
+static void apply_ctx_suppress(webview_t, void *arg) {
+  CtxSuppressReq *req = static_cast<CtxSuppressReq *>(arg);
+  g_ctx_suppress = req->on;
+  delete req;
+}
+
+// --- stateful menus: surgical updates + read-backs -------------------------------
+// MENUUPD <id>\t<label>\t<checked>\t<enabled> patches a live item (empty field
+// = leave unchanged; checked/enabled are ''|0|1). GET <qid> <what> answers
+// with GOT <qid> <json>; what = "win" (window state) or "item:<id>".
+
+struct MenuUpdReq {
+  std::string win, id, label, checked, enabled;  // win empty = every bar
+};
+
+struct GetReq {
+  std::string qid, what;
+};
+
+#ifdef __APPLE__
+// Every bar carrying this id, or just one window's. An id can now live in the
+// app menu AND in a window that declared its own — one shared macOS bar used
+// to make that impossible, and callers still expect "patch it everywhere".
+static std::vector<NSMutableDictionary *> regs_for(const std::string &winid) {
+  std::vector<NSMutableDictionary *> out;
+  if (winid.empty()) {
+    if (g_app_bar.reg) out.push_back(g_app_bar.reg);
+    for (auto &kv : g_win_bars)
+      if (kv.second.reg) out.push_back(kv.second.reg);
+  } else {
+    MacBar &mb = bar_source_for(winid);
+    if (mb.reg) out.push_back(mb.reg);
+  }
+  return out;
+}
+
+static void do_menu_update(webview_t, void *arg) {
+  MenuUpdReq *req = static_cast<MenuUpdReq *>(arg);
+  @autoreleasepool {
+    NSString *key = ns(req->id);
+    std::vector<NSMenuItem *> hits;
+    for (NSMutableDictionary *reg : regs_for(req->win))
+      if (NSMenuItem *found = reg[key]) hits.push_back(found);
+    if (req->win.empty() && g_reg_tray && g_reg_tray[key])
+      hits.push_back(g_reg_tray[key]);
+    for (NSMenuItem *mi : hits) {
+      if (!req->label.empty())
+        mi.title = ns(req->label);
+      if (!req->checked.empty())
+        mi.state = req->checked == "1" ? NSControlStateValueOn
+                                       : NSControlStateValueOff;
+      if (!req->enabled.empty()) {
+        mi.enabled = req->enabled == "1";
+        mi.tag = mi.enabled ? 0 : kTinyItemDisabled;  // autoenabling menus
+      }
+    }
+    // Context menus rebuild from spec at right-click; patch the spec too.
+    if (MenuItemSpec *spec = find_ctx_spec(g_ctx_items, req->id)) {
+      if (!req->label.empty())
+        spec->label = req->label;
+      if (!req->checked.empty())
+        spec->checked = req->checked == "1";
+      if (!req->enabled.empty())
+        spec->disabled = req->enabled == "0";
+    }
+  }
+  delete req;
+}
+
+static std::string battery_json();
+static std::string wifi_json();
+
+// Defined with the rest of tiny.audio.filters, far below — do_get only needs
+// to be able to ask.
+static std::string eq_state_json();
+// Likewise for the Dock tile, which lives with the app-surface code below.
+static std::string dock_icon_json();
+
+static void do_get(webview_t w, void *arg) {
+  GetReq *req = static_cast<GetReq *>(arg);
+  std::string json = "null";
+  @autoreleasepool {
+    if (req->what == "windows") {
+      json = "[\"main\"";
+      for (auto &kv : g_windows)
+        json += "," + json_escape(kv.first);
+      json += "]";
+    } else if (req->what == "win" || req->what.rfind("win:", 0) == 0) {
+      std::string wid = req->what == "win" ? "main" : req->what.substr(4);
+      NSWindow *win = window_for_id(w, wid);
+      WKWebView *gwv = webview_for_id(w, wid);
+      if (win) {
+        NSRect f = win.frame;
+        // width/height are the CONTENT size — the page's box, the same units
+        // win.open's `size`, setSize and setMinSize speak, so set → get
+        // round-trips on every platform. x/y stay the frame's top-left,
+        // because that is what setPosition takes. `outer` is the footprint
+        // the screen sees, decorations included: the difference between the
+        // two is the title bar, and a window that has to keep itself inside a
+        // screen rect needs the outer number (window.outerWidth/outerHeight
+        // are 0 in a WKWebView, so the page cannot work it out alone).
+        NSRect cr = [win contentRectForFrameRect:f];
+        NSScreen *scr = win.screen ?: [NSScreen mainScreen];
+        CGFloat top = NSMaxY([[NSScreen screens][0] frame]);
+        bool fs = (win.styleMask & NSWindowStyleMaskFullScreen) != 0;
+        // windowControls reports what is ACTUALLY visible, read off the
+        // buttons themselves, so set -> get round-trips per button.
+        std::string controls = "[";
+        if (win.styleMask & NSWindowStyleMaskTitled) {
+          const struct { NSWindowButton b; const char *name; } kBtns[] = {
+              {NSWindowCloseButton, "close"},
+              {NSWindowMiniaturizeButton, "minimize"},
+              {NSWindowZoomButton, "maximize"}};
+          for (auto &e : kBtns) {
+            NSButton *btn = [win standardWindowButton:e.b];
+            if (btn && !btn.hidden)
+              controls += (controls.size() > 1 ? ",\"" : "\"") + std::string(e.name) + "\"";
+          }
+        }
+        controls += "]";
+        char buf[1024]; // truncation here would emit half a JSON object
+        std::snprintf(
+            buf, sizeof(buf),
+            "{\"x\":%d,\"y\":%d,\"width\":%d,\"height\":%d,"
+            "\"outer\":{\"width\":%d,\"height\":%d},"
+            "\"fullscreen\":%s,\"minimized\":%s,\"visible\":%s,\"focused\":%s,"
+            "\"alwaysOnTop\":%s,\"resizable\":%s,"
+            "\"clickThrough\":%s,\"level\":\"%s\",\"allSpaces\":%s,"
+            "\"chrome\":{\"frame\":%s,\"windowControls\":%s,"
+            "\"windowControlsPos\":%s,"
+            "\"transparent\":%s,\"vibrancy\":%s,\"squareCorners\":%s,"
+            "\"acceptsFirstMouse\":%s},"
+            "\"screen\":{\"width\":%d,\"height\":%d,\"scale\":%.2f}}",
+            (int)f.origin.x, (int)(top - NSMaxY(f)), (int)cr.size.width,
+            (int)cr.size.height, (int)f.size.width, (int)f.size.height,
+            fs ? "true" : "false",
+            win.miniaturized ? "true" : "false", win.visible ? "true" : "false",
+            win.keyWindow ? "true" : "false",
+            win.level != NSNormalWindowLevel ? "true" : "false",
+            (win.styleMask & NSWindowStyleMaskResizable) ? "true" : "false",
+            win.ignoresMouseEvents ? "true" : "false",
+            win.level == kCGDesktopWindowLevel      ? "desktop"
+            : win.level == kCGScreenSaverWindowLevel ? "overlay"
+            : win.level == NSFloatingWindowLevel     ? "floating"
+                                                     : "normal",
+            (win.collectionBehavior &
+             NSWindowCollectionBehaviorCanJoinAllSpaces)
+                ? "true"
+                : "false",
+            // Chrome derived from the live window, so secondary windows
+            // report their own state (not the main globals). A borderless
+            // (square) window has neither titlebar nor traffic lights.
+            (!(win.styleMask & NSWindowStyleMaskTitled) ||
+             ((win.styleMask & NSWindowStyleMaskFullSizeContentView) &&
+              win.titlebarAppearsTransparent))
+                ? "false"
+                : "true",
+            controls.c_str(), traffic_pos_json(wid).c_str(),
+            win.opaque ? "false" : "true",
+            // vibrancy name is tracked for main only; secondary → null.
+            (wid == "main" && !g_chrome_vibrancy.empty())
+                ? json_escape(g_chrome_vibrancy).c_str()
+                : "null",
+            // Square = borderless = no Titled style bit.
+            (win.styleMask & NSWindowStyleMaskTitled) ? "false" : "true",
+            get_accepts_first_mouse(gwv) ? "true" : "false",
+            (int)scr.frame.size.width, (int)scr.frame.size.height,
+            (double)scr.backingScaleFactor);
+        json = buf;
+      }
+    } else if (req->what == "battery") {
+      json = battery_json();
+    } else if (req->what == "locale") {
+      json = locale_json();
+    } else if (req->what == "wifi") {
+      json = wifi_json();
+    } else if (req->what == "selectedtext") {
+      json = ax_selected_text();
+    } else if (req->what == "otherwindows") {
+      json = ax_other_windows();
+    } else if (req->what == "clipboard" || req->what == "clipboard:count") {
+      json = clipboard_json(req->what == "clipboard:count");
+    } else if (req->what == "mouse" || req->what.rfind("mouse:", 0) == 0) {
+      // Global cursor position in the same top-left coordinates WINOP pos
+      // and getState use, so setPosition(mouse.x, mouse.y) just works;
+      // `screen` is the display the cursor is on (frame in those coords).
+      // `window` is relative to the queried window's CONTENT area (top-left,
+      // same units as the page's clientX/clientY) — mouse:<winid> targets a
+      // secondary window, bare = main.
+      NSPoint p = [NSEvent mouseLocation]; // bottom-left origin
+      CGFloat top = NSMaxY([[NSScreen screens][0] frame]);
+      NSScreen *scr = nil;
+      for (NSScreen *s in [NSScreen screens])
+        if (NSMouseInRect(p, s.frame, NO)) {
+          scr = s;
+          break;
+        }
+      if (!scr)
+        scr = [NSScreen mainScreen];
+      NSRect sf = scr.frame;
+      std::string wid = req->what == "mouse" ? "main" : req->what.substr(6);
+      NSWindow *win = window_for_id(w, wid);
+      std::string winjson = "null";
+      if (win) {
+        NSRect cf = [win contentRectForFrameRect:win.frame]; // screen coords
+        char wbuf[128];
+        std::snprintf(wbuf, sizeof(wbuf),
+                      "{\"x\":%d,\"y\":%d,\"inside\":%s}",
+                      (int)(p.x - cf.origin.x), (int)(NSMaxY(cf) - p.y),
+                      NSMouseInRect(p, cf, NO) ? "true" : "false");
+        winjson = wbuf;
+      }
+      char buf[384];
+      std::snprintf(
+          buf, sizeof(buf),
+          "{\"x\":%d,\"y\":%d,\"window\":%s,\"screen\":{\"x\":%d,\"y\":%d,"
+          "\"width\":%d,\"height\":%d,\"scale\":%.2f}}",
+          (int)p.x, (int)(top - p.y), winjson.c_str(), (int)sf.origin.x,
+          (int)(top - NSMaxY(sf)), (int)sf.size.width, (int)sf.size.height,
+          (double)scr.backingScaleFactor);
+      json = buf;
+    } else if (req->what == "screens") {
+      // Every display, in the same top-left global coordinates WINOP pos /
+      // getState / mousePosition use, so setPosition against any screen's
+      // frame just works. visible excludes the menu bar and Dock. primary
+      // is the menu-bar screen (screens[0], the coordinate origin).
+      CGFloat top = NSMaxY([[NSScreen screens][0] frame]);
+      json = "[";
+      bool first_scr = true;
+      for (NSScreen *s in [NSScreen screens]) {
+        NSRect f = s.frame, v = s.visibleFrame;
+        NSNumber *num = s.deviceDescription[@"NSScreenNumber"];
+        std::string name = "null";
+        if (@available(macOS 10.15, *))
+          name = json_escape([s.localizedName UTF8String]);
+        char buf[512];
+        std::snprintf(
+            buf, sizeof(buf),
+            "{\"id\":%ld,\"name\":%s,"
+            "\"x\":%d,\"y\":%d,\"width\":%d,\"height\":%d,"
+            "\"visible\":{\"x\":%d,\"y\":%d,\"width\":%d,\"height\":%d},"
+            "\"scale\":%.2f,\"primary\":%s}",
+            (long)num.integerValue, name.c_str(), (int)f.origin.x,
+            (int)(top - NSMaxY(f)), (int)f.size.width, (int)f.size.height,
+            (int)v.origin.x, (int)(top - NSMaxY(v)), (int)v.size.width,
+            (int)v.size.height, (double)s.backingScaleFactor,
+            s == [NSScreen screens][0] ? "true" : "false");
+        if (!first_scr)
+          json += ",";
+        first_scr = false;
+        json += buf;
+      }
+      json += "]";
+    } else if (req->what == "idle") {
+      // Seconds since the user's last input, session-wide (pause polling /
+      // dim UI when the user walks away).
+      double s = CGEventSourceSecondsSinceLastEventType(
+          kCGEventSourceStateCombinedSessionState, kCGAnyInputEventType);
+      char buf[64];
+      std::snprintf(buf, sizeof(buf), "{\"seconds\":%.3f}", s);
+      json = buf;
+    } else if (req->what == "frontmost") {
+      // The active app right now (palettes: who focus returns to on hide()).
+      NSRunningApplication *fa =
+          [[NSWorkspace sharedWorkspace] frontmostApplication];
+      if (fa) {
+        json = std::string("{\"name\":") +
+               (fa.localizedName ? json_escape([fa.localizedName UTF8String])
+                                 : "null") +
+               ",\"bundleId\":" +
+               (fa.bundleIdentifier
+                    ? json_escape([fa.bundleIdentifier UTF8String])
+                    : "null") +
+               ",\"pid\":" + std::to_string((long)fa.processIdentifier) + "}";
+      }
+    } else if (req->what == "debug:trafficpos") {
+      NSWindow *win = (NSWindow *)webview_get_native_handle(
+          w, WEBVIEW_NATIVE_HANDLE_KIND_UI_WINDOW);
+      NSButton *btn = win ? [win standardWindowButton:NSWindowCloseButton] : nil;
+      if (btn && !btn.hidden) {
+        NSRect r = [btn convertRect:btn.bounds toView:nil]; // window coords
+        double fromTop = win.frame.size.height - NSMaxY(r);
+        char buf[128];
+        std::snprintf(buf, sizeof(buf), "{\"fromTop\":%.1f,\"x\":%.1f}",
+                      fromTop, r.origin.x);
+        json = buf;
+      } else {
+        json = "{\"hidden\":true}";
+      }
+    } else if (req->what == "debug:activation") {
+      NSApplicationActivationPolicy p = [NSApp activationPolicy];
+      const char *pol = p == NSApplicationActivationPolicyRegular ? "regular"
+                        : p == NSApplicationActivationPolicyAccessory
+                            ? "accessory"
+                            : "prohibited";
+      json = std::string("{\"policy\":\"") + pol + "\"" +
+             ",\"active\":" + ([NSApp isActive] ? "true" : "false") +
+             ",\"hidden\":" + ([NSApp isHidden] ? "true" : "false") + "}";
+    } else if (req->what == "traypos") {
+      // The tray icon's on-screen rect in the same top-left coordinates as
+      // setPosition — anchor a dropdown/panel window under the icon.
+      if (g_status_item && g_status_item.button.window) {
+        NSRect f = g_status_item.button.window.frame;
+        CGFloat sTop = NSMaxY([[NSScreen screens][0] frame]);
+        char buf[128];
+        std::snprintf(buf, sizeof(buf),
+                      "{\"x\":%d,\"y\":%d,\"width\":%d,\"height\":%d}",
+                      (int)f.origin.x, (int)(sTop - NSMaxY(f)),
+                      (int)f.size.width, (int)f.size.height);
+        json = buf;
+      }
+    } else if (req->what == "debug:tray") {
+      // NSStatusItem windows are system-hosted (invisible to CGWindowList),
+      // so tests read the item's wiring here instead.
+      if (g_status_item) {
+        NSStatusBarButton *btn = g_status_item.button;
+        json = std::string("{\"exists\":true,\"menuAttached\":") +
+               (g_status_item.menu ? "true" : "false") +
+               ",\"menuHeld\":" + (g_tray_menu ? "true" : "false") +
+               ",\"icon\":" + (btn.image ? "true" : "false") + ",\"title\":" +
+               json_escape(btn.title ? [btn.title UTF8String] : "") + "}";
+      } else {
+        json = "{\"exists\":false}";
+      }
+    } else if (req->what.rfind("item:", 0) == 0 ||
+               req->what.rfind("item@", 0) == 0) {
+      // item:<id> — any bar carrying it (tray items too). item@<win>:<id> —
+      // that window's bar. Window ids don't contain ':' (win.open picks them),
+      // so the first colon after '@' ends the window name.
+      std::string id = req->what.substr(5);
+      std::string only;
+      if (req->what[4] == '@') {
+        size_t colon = id.find(':');
+        only = colon == std::string::npos ? id : id.substr(0, colon);
+        id = colon == std::string::npos ? "" : id.substr(colon + 1);
+      }
+      NSString *key = ns(id);
+      NSMenuItem *mi = nil;
+      for (NSMutableDictionary *reg : regs_for(only))
+        if ((mi = reg[key])) break;
+      if (!mi && only.empty())
+        mi = g_reg_tray[key];
+      if (mi) {
+        json = std::string("{\"exists\":true,\"label\":") +
+               json_escape([mi.title UTF8String]) +
+               ",\"checked\":" +
+               (mi.state == NSControlStateValueOn ? "true" : "false") +
+               ",\"enabled\":" + (mi.enabled ? "true" : "false") + "}";
+      } else if (MenuItemSpec *spec = find_ctx_spec(g_ctx_items, id)) {
+        json = std::string("{\"exists\":true,\"label\":") +
+               json_escape(spec->label) +
+               ",\"checked\":" + (spec->checked ? "true" : "false") +
+               ",\"enabled\":" + (spec->disabled ? "false" : "true") + "}";
+      } else {
+        json = "{\"exists\":false}";
+      }
+    } else if (req->what == "debug:icon") {
+      json = dock_icon_json();
+    } else if (req->what == "audiofilters") {
+      // capabilities().audioFilters, answered by the code that would run
+      // rather than inferred from a version string. Core Audio process taps
+      // are 14.2+, and tinyjs's floor is 14.0, so there IS a window where the
+      // rest of the launcher works and this doesn't.
+      json = eq_state_json();
+    }
+  }
+  sock_write_line("GOT " + req->qid + " " + json);
+  delete req;
+}
+#else
+static void do_menu_update(webview_t, void *arg) { delete static_cast<MenuUpdReq *>(arg); }
+static void do_get(webview_t, void *arg) {
+  GetReq *req = static_cast<GetReq *>(arg);
+  sock_write_line("GOT " + req->qid + " null");
+  delete req;
+}
+#endif
+
+// --- native notifications (macOS, bundle mode only) ------------------------------
+// NOTIFY <id>\t<title>\t<body>\t<subtitle>\t<sound01>. Requires a real bundle
+// (UNUserNotificationCenter refuses bare processes), so this only runs when
+// the launcher is the .app executable; dev builds use the bridge's osascript
+// fallback. Authorization is requested lazily on the first notification and
+// pending ones queue until the user answers. Banner clicks come back as
+// `NOTIFYCLICK <id>` — including the click that launched the app.
+
+struct NotifReq {
+  std::string id, title, body, subtitle, actions_json;
+  bool sound = false;
+};
+
+#ifdef __APPLE__
+@interface TinyNotifDelegate : NSObject <UNUserNotificationCenterDelegate>
+@end
+@implementation TinyNotifDelegate
+- (void)userNotificationCenter:(UNUserNotificationCenter *)center
+    didReceiveNotificationResponse:(UNNotificationResponse *)response
+             withCompletionHandler:(void (^)(void))completionHandler {
+  std::string nid = [response.notification.request.identifier UTF8String];
+  if ([response.actionIdentifier
+          isEqualToString:UNNotificationDefaultActionIdentifier]) {
+    sock_write_line("NOTIFYCLICK " + nid);
+  } else if (![response.actionIdentifier
+                 isEqualToString:UNNotificationDismissActionIdentifier]) {
+    // A custom action button (or a reply field submit) was tapped.
+    std::string reply;
+    if ([response isKindOfClass:[UNTextInputNotificationResponse class]])
+      reply = [[(UNTextInputNotificationResponse *)response userText] UTF8String];
+    sock_write_line("NOTIFYACTION " + nid + "\t" +
+                    std::string([response.actionIdentifier UTF8String]) + "\t" +
+                    wire_escape(reply));
+  }
+  completionHandler();
+}
+// Show banners even while the app is frontmost (default is to suppress).
+- (void)userNotificationCenter:(UNUserNotificationCenter *)center
+       willPresentNotification:(UNNotification *)notification
+         withCompletionHandler:
+             (void (^)(UNNotificationPresentationOptions))completionHandler {
+  completionHandler(UNNotificationPresentationOptionBanner |
+                    UNNotificationPresentationOptionList);
+}
+@end
+
+static TinyNotifDelegate *g_notif_delegate = nil;
+enum class NotifAuth { Unasked, Pending, Granted, Denied, Fallback };
+static NotifAuth g_notif_auth = NotifAuth::Unasked;
+static std::vector<NotifReq> g_notif_queue;
+
+static void install_notif_delegate() {
+  if (!g_bundle_mode)
+    return;
+  g_notif_delegate = [[TinyNotifDelegate alloc] init];
+  [UNUserNotificationCenter currentNotificationCenter].delegate =
+      g_notif_delegate;
+}
+
+// Ad-hoc-signed apps are refused by Notification Center outright (error,
+// no prompt). Fall back to osascript so notify() still works in unsigned
+// builds; a real signing identity upgrades to native banners.
+static void deliver_osascript(const NotifReq &req) {
+  auto q = [](const std::string &v) {
+    std::string out = "\"";
+    for (char ch : v) {
+      if (ch == '\\' || ch == '"')
+        out += '\\';
+      out += ch;
+    }
+    return out + "\"";
+  };
+  std::string script = "display notification " + q(req.body) +
+                       " with title " + q(req.title);
+  if (!req.subtitle.empty())
+    script += " subtitle " + q(req.subtitle);
+  const char *sargv[] = {"/usr/bin/osascript", "-e", script.c_str(), nullptr};
+  pid_t pid;
+  posix_spawn(&pid, "/usr/bin/osascript", nullptr, nullptr,
+              const_cast<char *const *>(sargv), environ);
+}
+
+// Action buttons / reply fields need a UNNotificationCategory registered
+// before delivery. Each notification with actions gets its own category
+// (id = "tinyjs-cat-" + notif id); categories accumulate because
+// setNotificationCategories replaces the whole set.
+static NSMutableDictionary<NSString *, UNNotificationCategory *> *g_notif_cats;
+
+static NSString *register_notif_category(const std::string &nid,
+                                         const std::string &actions_json) {
+  @autoreleasepool {
+    NSData *d = [ns(actions_json) dataUsingEncoding:NSUTF8StringEncoding];
+    NSArray *arr = [NSJSONSerialization JSONObjectWithData:d options:0 error:nil];
+    if (![arr isKindOfClass:[NSArray class]] || arr.count == 0)
+      return nil;
+    NSMutableArray<UNNotificationAction *> *actions = [NSMutableArray array];
+    for (NSDictionary *a in arr) {
+      if (![a isKindOfClass:[NSDictionary class]])
+        continue;
+      NSString *aid = a[@"id"], *title = a[@"title"] ?: a[@"id"];
+      if (!aid)
+        continue;
+      UNNotificationActionOptions opt =
+          [a[@"destructive"] boolValue] ? UNNotificationActionOptionDestructive
+                                        : UNNotificationActionOptionNone;
+      if ([a[@"reply"] boolValue]) {
+        [actions addObject:[UNTextInputNotificationAction
+                               actionWithIdentifier:aid
+                                                title:title
+                                              options:opt
+                                 textInputButtonTitle:(a[@"buttonTitle"] ?: title)
+                                 textInputPlaceholder:(a[@"placeholder"] ?: @"")]];
+      } else {
+        [actions addObject:[UNNotificationAction actionWithIdentifier:aid
+                                                                title:title
+                                                              options:opt]];
+      }
+    }
+    if (actions.count == 0)
+      return nil;
+    NSString *catId =
+        [NSString stringWithFormat:@"tinyjs-cat-%s", nid.c_str()];
+    UNNotificationCategory *cat =
+        [UNNotificationCategory categoryWithIdentifier:catId
+                                               actions:actions
+                                     intentIdentifiers:@[]
+                                               options:UNNotificationCategoryOptionNone];
+    if (!g_notif_cats)
+      g_notif_cats = [[NSMutableDictionary alloc] init];
+    g_notif_cats[catId] = cat;
+    [[UNUserNotificationCenter currentNotificationCenter]
+        setNotificationCategories:[NSSet setWithArray:g_notif_cats.allValues]];
+    return catId;
+  }
+}
+
+static void deliver_notification(const NotifReq &req) {
+  UNMutableNotificationContent *content =
+      [[[UNMutableNotificationContent alloc] init] autorelease];
+  content.title = ns(req.title);
+  if (!req.body.empty())
+    content.body = ns(req.body);
+  if (!req.subtitle.empty())
+    content.subtitle = ns(req.subtitle);
+  if (req.sound)
+    content.sound = [UNNotificationSound defaultSound];
+  if (!req.actions_json.empty()) {
+    NSString *catId = register_notif_category(
+        req.id.empty() ? "anon" : req.id, req.actions_json);
+    if (catId)
+      content.categoryIdentifier = catId;
+  }
+  NSString *nid =
+      req.id.empty() ? [[NSUUID UUID] UUIDString] : ns(req.id);
+  UNNotificationRequest *r =
+      [UNNotificationRequest requestWithIdentifier:nid
+                                           content:content
+                                           trigger:nil];
+  [[UNUserNotificationCenter currentNotificationCenter]
+      addNotificationRequest:r
+       withCompletionHandler:^(NSError *err) {
+         if (getenv("TINYJS_NOTIF_DEBUG"))
+           std::fprintf(stderr, "DBG deliver err=%s\n",
+                        err ? [[err description] UTF8String] : "none");
+       }];
+}
+
+static void do_notify(webview_t, void *arg) {
+  NotifReq *req = static_cast<NotifReq *>(arg);
+  if (!g_bundle_mode) {
+    delete req;
+    return;
+  }
+  switch (g_notif_auth) {
+  case NotifAuth::Granted:
+    deliver_notification(*req);
+    break;
+  case NotifAuth::Fallback:
+    deliver_osascript(*req);
+    break;
+  case NotifAuth::Pending:
+    g_notif_queue.push_back(*req);
+    break;
+  case NotifAuth::Denied:
+    break; // the user explicitly said no; respect it
+  case NotifAuth::Unasked: {
+    g_notif_auth = NotifAuth::Pending;
+    g_notif_queue.push_back(*req);
+    [[UNUserNotificationCenter currentNotificationCenter]
+        requestAuthorizationWithOptions:(UNAuthorizationOptionAlert |
+                                         UNAuthorizationOptionSound |
+                                         UNAuthorizationOptionBadge)
+                      completionHandler:^(BOOL granted, NSError *err) {
+                        dispatch_async(dispatch_get_main_queue(), ^{
+                          // granted=NO WITH an error and no prompt means the
+                          // system refused (ad-hoc signature) — fall back.
+                          // granted=NO without an error is the user's choice.
+                          g_notif_auth = granted ? NotifAuth::Granted
+                                        : err    ? NotifAuth::Fallback
+                                                 : NotifAuth::Denied;
+                          for (const NotifReq &n : g_notif_queue) {
+                            if (g_notif_auth == NotifAuth::Granted)
+                              deliver_notification(n);
+                            else if (g_notif_auth == NotifAuth::Fallback)
+                              deliver_osascript(n);
+                          }
+                          g_notif_queue.clear();
+                        });
+                      }];
+    break;
+  }
+  }
+  delete req;
+}
+#else
+static void install_notif_delegate() {}
+static void do_notify(webview_t, void *arg) { delete static_cast<NotifReq *>(arg); }
+#endif
+
+// --- Now Playing + media keys (macOS) -----------------------------------------------
+// NOWPLAYING <json> populates MPNowPlayingInfoCenter (Control Center / lock
+// screen) and, on first use, wires MPRemoteCommandCenter so the hardware
+// media keys, AirPods taps, and Control Center transport route to the app as
+// `MEDIAKEY <name>` (play/pause/toggle/next/previous/seek\t<secs>). Any
+// value nowPlayingInfo needs sits in the JSON; "clear" tears it all down.
+
+struct NowPlayingReq {
+  std::string json; // "" / "clear" = clear
+};
+
+#ifdef __APPLE__
+static bool g_media_armed = false;
+
+static void arm_media_commands() {
+  if (g_media_armed)
+    return;
+  g_media_armed = true;
+  MPRemoteCommandCenter *cc = [MPRemoteCommandCenter sharedCommandCenter];
+  auto bind = [](MPRemoteCommand *cmd, const char *name) {
+    cmd.enabled = YES;
+    [cmd addTargetWithHandler:^MPRemoteCommandHandlerStatus(
+             MPRemoteCommandEvent *ev) {
+      if ([ev isKindOfClass:[MPChangePlaybackPositionCommandEvent class]]) {
+        double t = ((MPChangePlaybackPositionCommandEvent *)ev).positionTime;
+        char buf[64];
+        std::snprintf(buf, sizeof(buf), "MEDIAKEY seek\t%.3f", t);
+        sock_write_line(buf);
+      } else {
+        sock_write_line(std::string("MEDIAKEY ") + name);
+      }
+      return MPRemoteCommandHandlerStatusSuccess;
+    }];
+  };
+  bind(cc.playCommand, "play");
+  bind(cc.pauseCommand, "pause");
+  bind(cc.togglePlayPauseCommand, "toggle");
+  bind(cc.nextTrackCommand, "next");
+  bind(cc.previousTrackCommand, "previous");
+  bind(cc.changePlaybackPositionCommand, "seek");
+}
+
+static void do_nowplaying(webview_t, void *arg) {
+  NowPlayingReq *req = static_cast<NowPlayingReq *>(arg);
+  @autoreleasepool {
+    MPNowPlayingInfoCenter *ic = [MPNowPlayingInfoCenter defaultCenter];
+    if (req->json.empty() || req->json == "clear") {
+      ic.nowPlayingInfo = nil;
+      ic.playbackState = MPNowPlayingPlaybackStateStopped;
+    } else {
+      arm_media_commands();
+      NSData *d = [ns(req->json) dataUsingEncoding:NSUTF8StringEncoding];
+      NSDictionary *j =
+          [NSJSONSerialization JSONObjectWithData:d options:0 error:nil];
+      NSMutableDictionary *info = [NSMutableDictionary dictionary];
+      if ([j[@"title"] isKindOfClass:[NSString class]])
+        info[MPMediaItemPropertyTitle] = j[@"title"];
+      if ([j[@"artist"] isKindOfClass:[NSString class]])
+        info[MPMediaItemPropertyArtist] = j[@"artist"];
+      if ([j[@"album"] isKindOfClass:[NSString class]])
+        info[MPMediaItemPropertyAlbumTitle] = j[@"album"];
+      if ([j[@"duration"] isKindOfClass:[NSNumber class]])
+        info[MPMediaItemPropertyPlaybackDuration] = j[@"duration"];
+      if ([j[@"elapsed"] isKindOfClass:[NSNumber class]])
+        info[MPNowPlayingInfoPropertyElapsedPlaybackTime] = j[@"elapsed"];
+      bool playing = [j[@"playing"] boolValue];
+      info[MPNowPlayingInfoPropertyPlaybackRate] = @(playing ? 1.0 : 0.0);
+      ic.nowPlayingInfo = info;
+      ic.playbackState = playing ? MPNowPlayingPlaybackStatePlaying
+                                 : MPNowPlayingPlaybackStatePaused;
+    }
+  }
+  delete req;
+}
+#else
+static void do_nowplaying(webview_t, void *arg) {
+  delete static_cast<NowPlayingReq *>(arg);
+}
+#endif
+
+// --- speech synthesis (macOS) -------------------------------------------------------
+// SAY <qid> <text>\t<voice>\t<rate> speaks with AVSpeechSynthesizer and
+// answers GOT {ok} when the utterance FINISHES (so `await say()` waits for
+// playback). VOICES lists installed voices; SAYSTOP interrupts.
+
+struct SayReq {
+  std::string qid, text, voice;
+  double rate;
+};
+struct VoicesReq {
+  std::string qid;
+};
+
+#ifdef __APPLE__
+@interface TinySpeechDelegate : NSObject <AVSpeechSynthesizerDelegate>
+@property(strong) NSMutableDictionary<NSValue *, NSString *> *qids; // utterance -> qid
+@end
+@implementation TinySpeechDelegate
+- (void)finish:(AVSpeechUtterance *)u ok:(BOOL)ok {
+  NSValue *k = [NSValue valueWithNonretainedObject:u];
+  NSString *qid = self.qids[k];
+  if (qid) {
+    sock_write_line("GOT " + std::string([qid UTF8String]) +
+                    " {\"ok\":" + (ok ? "true" : "false") + "}");
+    [self.qids removeObjectForKey:k];
+  }
+}
+- (void)speechSynthesizer:(AVSpeechSynthesizer *)s
+    didFinishSpeechUtterance:(AVSpeechUtterance *)u {
+  [self finish:u ok:YES];
+}
+- (void)speechSynthesizer:(AVSpeechSynthesizer *)s
+    didCancelSpeechUtterance:(AVSpeechUtterance *)u {
+  [self finish:u ok:NO];
+}
+@end
+
+static AVSpeechSynthesizer *g_synth = nil;
+static TinySpeechDelegate *g_synth_delegate = nil;
+
+static void do_say(webview_t, void *arg) {
+  SayReq *req = static_cast<SayReq *>(arg);
+  @autoreleasepool {
+    if (!g_synth) {
+      g_synth = [[AVSpeechSynthesizer alloc] init];
+      g_synth_delegate = [[TinySpeechDelegate alloc] init];
+      g_synth_delegate.qids = [NSMutableDictionary dictionary];
+      g_synth.delegate = g_synth_delegate;
+    }
+    AVSpeechUtterance *u =
+        [AVSpeechUtterance speechUtteranceWithString:ns(req->text)];
+    if (!req->voice.empty()) {
+      AVSpeechSynthesisVoice *v =
+          [AVSpeechSynthesisVoice voiceWithIdentifier:ns(req->voice)]
+              ?: [AVSpeechSynthesisVoice voiceWithLanguage:ns(req->voice)];
+      if (v)
+        u.voice = v;
+    }
+    if (req->rate > 0)
+      u.rate = (float)req->rate; // 0..1 (AVSpeechUtteranceDefaultSpeechRate ~0.5)
+    g_synth_delegate.qids[[NSValue valueWithNonretainedObject:u]] =
+        ns(req->qid);
+    [g_synth speakUtterance:u];
+  }
+  delete req;
+}
+
+static void do_saystop(webview_t, void *) {
+  // Resolve every pending utterance as interrupted here rather than trust
+  // didCancelSpeechUtterance, which the framework skips when a stop lands
+  // during synthesis latency (before playback starts).
+  if (g_synth_delegate) {
+    for (NSValue *k in g_synth_delegate.qids.allKeys) {
+      NSString *qid = g_synth_delegate.qids[k];
+      sock_write_line("GOT " + std::string([qid UTF8String]) +
+                      " {\"ok\":false}");
+    }
+    [g_synth_delegate.qids removeAllObjects];
+  }
+  [g_synth stopSpeakingAtBoundary:AVSpeechBoundaryImmediate];
+}
+
+static void do_voices(webview_t, void *arg) {
+  VoicesReq *req = static_cast<VoicesReq *>(arg);
+  @autoreleasepool {
+    std::string json = "[";
+    bool first = true;
+    for (AVSpeechSynthesisVoice *v in [AVSpeechSynthesisVoice speechVoices]) {
+      const char *q = v.quality == AVSpeechSynthesisVoiceQualityPremium
+                          ? "premium"
+                          : v.quality == AVSpeechSynthesisVoiceQualityEnhanced
+                                ? "enhanced"
+                                : "default";
+      if (!first)
+        json += ",";
+      first = false;
+      json += "{\"id\":" + json_escape([v.identifier UTF8String]) +
+              ",\"name\":" + json_escape([v.name UTF8String]) +
+              ",\"lang\":" + json_escape([v.language UTF8String]) +
+              ",\"quality\":\"" + q + "\"}";
+    }
+    json += "]";
+    sock_write_line("GOT " + req->qid + " {\"ok\":true,\"voices\":" + json + "}");
+  }
+  delete req;
+}
+#else
+static void do_say(webview_t, void *arg) {
+  SayReq *r = static_cast<SayReq *>(arg);
+  sock_write_line("GOT " + r->qid + " {\"ok\":false}");
+  delete r;
+}
+static void do_saystop(webview_t, void *) {}
+static void do_voices(webview_t, void *arg) {
+  VoicesReq *r = static_cast<VoicesReq *>(arg);
+  sock_write_line("GOT " + r->qid + " {\"ok\":true,\"voices\":[]}");
+  delete r;
+}
+#endif
+
+// --- window chrome: frameless / traffic lights / transparency / vibrancy ---------
+// CHROME <frame>\t<traffic>\t<transparent>\t<vibrancy>\t<square>\t<firstMouse>
+//        \t<menu>\t<controlsPos> ('' = leave unchanged; frame/traffic/
+// transparent are 0|1; vibrancy is a material name or "none"; menu is not a
+// macOS question; controlsPos is 'x,y' or 'default').
+// "Frameless" keeps the window titled (fullSizeContentView + transparent,
+// hidden titlebar) so focus, resize edges, shadows, rounded corners, and
+// fullscreen all keep working — unlike true borderless. DRAGWIN starts a
+// native window drag (pages mark drag regions with data-tiny-drag).
+
+struct ChromeReq {
+  std::string win = "main";
+  std::string frame, traffic, transparent, vibrancy, square, first_mouse;
+  std::string traffic_pos; // '' keep · 'default' OS layout · 'x,y' offset
+};
+
+#ifdef __APPLE__
+static NSVisualEffectView *g_effect_view = nil;
+
+static NSVisualEffectMaterial material_for(const std::string &name) {
+  static const std::map<std::string, NSVisualEffectMaterial> m = {
+      {"titlebar", NSVisualEffectMaterialTitlebar},
+      {"selection", NSVisualEffectMaterialSelection},
+      {"menu", NSVisualEffectMaterialMenu},
+      {"popover", NSVisualEffectMaterialPopover},
+      {"sidebar", NSVisualEffectMaterialSidebar},
+      {"header", NSVisualEffectMaterialHeaderView},
+      {"sheet", NSVisualEffectMaterialSheet},
+      {"window", NSVisualEffectMaterialWindowBackground},
+      {"hud", NSVisualEffectMaterialHUDWindow},
+      {"fullscreen", NSVisualEffectMaterialFullScreenUI},
+      {"tooltip", NSVisualEffectMaterialToolTip},
+      {"content", NSVisualEffectMaterialContentBackground},
+      {"underwindow", NSVisualEffectMaterialUnderWindowBackground},
+      {"underpage", NSVisualEffectMaterialUnderPageBackground},
+  };
+  auto it = m.find(name);
+  return it == m.end() ? NSVisualEffectMaterialSidebar : it->second;
+}
+
+// The hidden titlebar's NSTitlebarContainerView still occupies (and drags
+// from) the top strip; hide it entirely when frameless with no traffic
+// lights so the page owns every pixel and every mouse event.
+static void set_titlebar_hidden(NSWindow *win, bool hidden) {
+  NSView *frameView = win.contentView.superview;
+  for (NSView *v in frameView.subviews) {
+    if ([v isKindOfClass:NSClassFromString(@"NSTitlebarContainerView")])
+      v.hidden = hidden;
+  }
+}
+
+// After styleMask/frame changes the private NSTitlebarContainerView can be
+// left at a stale position (traffic lights floating outside the window).
+// Re-anchor it to the top of the frame view explicitly.
+static void relayout_titlebar(NSWindow *win) {
+  NSView *frameView = win.contentView.superview;
+  CGFloat H = frameView.bounds.size.height;
+  CGFloat W = frameView.bounds.size.width;
+  for (NSView *v in frameView.subviews) {
+    if ([v isKindOfClass:NSClassFromString(@"NSTitlebarContainerView")]) {
+      CGFloat h = v.frame.size.height > 0 ? v.frame.size.height : 28;
+      v.frame = NSMakeRect(0, H - h, W, h);
+      [v setNeedsLayout:YES];
+    }
+  }
+}
+
+// windowControlsPos: a custom traffic-light offset ({x,y} in points from the
+// window's top-left) per window. AppKit re-lays-out the standard buttons on
+// resize, on the way out of fullscreen, and whenever the titlebar view is
+// rebuilt, so setting the frames once is not enough — the offset is stored
+// here and re-applied from those transitions (see the winstate observers)
+// as well as from apply_chrome_fields.
+static std::map<std::string, std::pair<double, double>> g_traffic_pos;
+// AppKit's own layout, captured per window before the first override so
+// windowControlsPos:null can put the buttons back without guessing what
+// this macOS version's defaults are.
+static std::map<std::string, std::pair<double, double>> g_traffic_default;
+
+static void apply_traffic_pos_xy(NSWindow *win, double x, double y) {
+  // In fullscreen the buttons belong to the auto-hiding menu bar — leave
+  // them alone; the exit-fullscreen observer re-applies the offset.
+  if (win.styleMask & NSWindowStyleMaskFullScreen)
+    return;
+  NSButton *close_b = [win standardWindowButton:NSWindowCloseButton];
+  NSButton *mini_b = [win standardWindowButton:NSWindowMiniaturizeButton];
+  NSButton *zoom_b = [win standardWindowButton:NSWindowZoomButton];
+  if (!close_b)
+    return;
+  // Only the group's origin moves; AppKit's inter-button spacing is kept.
+  CGFloat spacing = 20;
+  if (mini_b && mini_b.frame.origin.x > close_b.frame.origin.x)
+    spacing = mini_b.frame.origin.x - close_b.frame.origin.x;
+  NSView *bar = close_b.superview;
+  NSButton *btns[] = {close_b, mini_b, zoom_b};
+  int i = 0;
+  for (NSButton *btn : btns) {
+    if (!btn) { i++; continue; } // keep the slot so a subset stays spaced
+    NSRect f = btn.frame;
+    f.origin.x = x + spacing * i++;
+    f.origin.y = bar.isFlipped ? y : bar.bounds.size.height - y - f.size.height;
+    [btn setFrame:f];
+  }
+}
+
+static void apply_traffic_pos(NSWindow *win, const std::string &winid) {
+  auto it = g_traffic_pos.find(winid);
+  if (it != g_traffic_pos.end())
+    apply_traffic_pos_xy(win, it->second.first, it->second.second);
+}
+
+// GET win reports the custom offset (or null when AppKit's layout stands),
+// so chrome set -> get round-trips like every other chrome field.
+static std::string traffic_pos_json(const std::string &wid) {
+  auto it = g_traffic_pos.find(wid);
+  if (it == g_traffic_pos.end())
+    return "null";
+  char buf[64];
+  std::snprintf(buf, sizeof(buf), "{\"x\":%g,\"y\":%g}", it->second.first,
+                it->second.second);
+  return buf;
+}
+
+static void set_traffic_pos(NSWindow *win, const std::string &winid,
+                            const std::string &spec) {
+  if (spec == "default") {
+    g_traffic_pos.erase(winid);
+    auto d = g_traffic_default.find(winid);
+    if (d != g_traffic_default.end())
+      apply_traffic_pos_xy(win, d->second.first, d->second.second);
+    return;
+  }
+  double px = 0, py = 0;
+  if (std::sscanf(spec.c_str(), "%lf,%lf", &px, &py) != 2)
+    return;
+  if (!g_traffic_default.count(winid)) {
+    NSButton *cb = [win standardWindowButton:NSWindowCloseButton];
+    if (cb && cb.superview) {
+      NSView *bar = cb.superview;
+      double dy = bar.isFlipped ? cb.frame.origin.y
+                                : bar.bounds.size.height - NSMaxY(cb.frame);
+      g_traffic_default[winid] = {cb.frame.origin.x, dy};
+    }
+  }
+  g_traffic_pos[winid] = {px, py};
+  apply_traffic_pos(win, winid);
+}
+
+// Toggling fullSizeContentView grows the content view, but the webview's
+// autoresizing doesn't reliably follow a style-mask change — pin it (and the
+// vibrancy layer) to the new bounds explicitly.
+static void extend_content(WKWebView *wv, NSWindow *win,
+                           NSVisualEffectView *effect) {
+  if (wv)
+    wv.frame = win.contentView.bounds;
+  if (effect)
+    effect.frame = win.contentView.bounds;
+}
+
+static void webview_draws_background(WKWebView *wv, bool draws) {
+  // Private-but-stable WKWebView property, reached via KVC's _drawsBackground
+  // fallback (same trick the webview library uses for WKPreferences).
+  @try {
+    [wv setValue:@(draws) forKey:@"drawsBackground"];
+  } @catch (NSException *) {
+  }
+}
+
+static NSWindow *window_for_id(webview_t w, const std::string &id);
+static WKWebView *webview_for_id(webview_t w, const std::string &id);
+static NSVisualEffectView **effect_slot_for(const std::string &id); // main/secondary
+
+// Borderless windows (square corners) return NO for canBecomeKeyWindow, so
+// they can't take keyboard focus. Force YES on the window's class — always
+// the correct answer for our windows, so a per-class replace is safe.
+static void ensure_window_can_key(Class cls) {
+  if (!cls)
+    return;
+  IMP yes = (IMP)(+[](id, SEL) -> BOOL { return YES; });
+  class_replaceMethod(cls, @selector(canBecomeKeyWindow), yes, "c@:");
+  class_replaceMethod(cls, @selector(canBecomeMainWindow), yes, "c@:");
+}
+
+// First-mouse ("click-through focus"): WKWebView answers NO to
+// acceptsFirstMouse: — Apple's guard against stray clicks into web content —
+// so a click that only makes the window key is swallowed and the page never
+// sees the mousedown (the classic "click once to focus, again to act", and
+// why an unfocused window's DOM drag region needs an extra click). We opt in
+// per window: a swizzle on WKWebView returns a per-instance flag (default NO,
+// exactly Apple's behavior), set via an associated object so only windows
+// that asked for it change.
+static const void *kFirstMouseKey = &kFirstMouseKey;
+
+static void set_accepts_first_mouse(WKWebView *wv, bool on) {
+  if (wv)
+    objc_setAssociatedObject(wv, kFirstMouseKey, @(on),
+                             OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+static bool get_accepts_first_mouse(WKWebView *wv) {
+  return wv && [objc_getAssociatedObject(wv, kFirstMouseKey) boolValue];
+}
+
+static void install_first_mouse_hook() {
+  // Instances the webview library creates are plain WKWebView, so patching the
+  // class reaches them; the per-instance flag keeps every other webview at NO.
+  swizzle([WKWebView class], @selector(acceptsFirstMouse:),
+          (IMP)(+[](id self, SEL, NSEvent *) -> BOOL {
+            return get_accepts_first_mouse((WKWebView *)self);
+          }),
+          "c@:@");
+}
+
+// --- media proxy scheme handler (tiny.proxyURL) --------------------------------
+// A page can't run a cross-origin stream (internet radio) through Web Audio: a
+// MediaElementSource on a cross-origin <audio> outputs silence by spec, and a
+// cross-origin fetch without CORS is blocked outright. This handler serves a
+// custom scheme that proxies the upstream through the native layer and injects
+// Access-Control-Allow-Origin:*, so <audio crossorigin="anonymous"
+// src="tiny-media://…"> (or a cors fetch) is CORS-approved and its samples
+// reach the EQ/analyser graph. The launcher does the HTTP itself (NSURLSession
+// — native buffering, redirects, byte-range/seek, HLS), so there's no backend
+// hop and no base64. tiny.proxyURL(remote) builds the URL; the handler is
+// registered on every webview via a swizzle of -[WKWebView init…] (below).
+#define TINY_MEDIA_SCHEME @"tiny-media"
+
+@interface TinyMediaScheme : NSObject <WKURLSchemeHandler, NSURLSessionDataDelegate>
+@end
+
+@implementation TinyMediaScheme {
+  NSURLSession *_session;
+  NSMutableSet *_live;         // id<WKURLSchemeTask> still running (page side)
+  NSMapTable *_dataToScheme;   // NSURLSessionTask* -> id<WKURLSchemeTask>
+}
+- (instancetype)init {
+  if ((self = [super init])) {
+    _live = [[NSMutableSet alloc] init];
+    _dataToScheme = [[NSMapTable strongToStrongObjectsMapTable] retain];
+    NSURLSessionConfiguration *sc =
+        [NSURLSessionConfiguration defaultSessionConfiguration];
+    sc.requestCachePolicy = NSURLRequestReloadIgnoringLocalCacheData;
+    // Deliver on the main queue so start/stop and the data callbacks are all
+    // serialized there — the _live guard then needs no locks and we never
+    // touch a task WebKit has already stopped (which would raise).
+    _session = [[NSURLSession sessionWithConfiguration:sc
+                                              delegate:self
+                                         delegateQueue:[NSOperationQueue mainQueue]] retain];
+  }
+  return self;
+}
+// The live scheme task for an upstream data task, or nil if it was stopped.
+- (id<WKURLSchemeTask>)liveFor:(NSURLSessionTask *)dt {
+  id<WKURLSchemeTask> st = [_dataToScheme objectForKey:dt];
+  return (st && [_live containsObject:st]) ? st : nil;
+}
+- (void)webView:(WKWebView *)wv startURLSchemeTask:(id<WKURLSchemeTask>)task {
+  // Who may use it (#30): a proxied response carries ACAO:*, so whoever can
+  // fetch it can read any URL the launcher can reach, CORS bypassed. The
+  // requester's origin is the Origin header WebKit stamps on every request
+  // whose response a page could read (cors fetch, crossorigin media) — pages
+  // can't set it. Without one (no-cors: opaque to a cross-origin frame
+  // anyway) fall back to the window's top document. That origin must be
+  // trusted for "proxy": the app's own pages, or an "api.origins" key
+  // allowing media.proxy (mediaTrustLines). And never serve a DOCUMENT:
+  // a frame navigated to tiny-media://proxy/?u=<its own page> would run as
+  // the proxy's origin and fetch it same-origin, with no Origin header to
+  // check. Navigations ask for text/html; media and fetch send */* (or
+  // whatever the page set, which can't make it a navigation). Every
+  // response also carries CSP sandbox, so a document that slipped through
+  // anyway would get an opaque origin and send Origin: null.
+  {
+    NSString *acc = [task.request valueForHTTPHeaderField:@"Accept"];
+    NSString *org = [task.request valueForHTTPHeaderField:@"Origin"];
+    std::string who = org ? std::string(org.UTF8String)
+                          : url_origin_str(task.request.mainDocumentURL);
+    BOOL doc = acc && [acc rangeOfString:@"text/html"].location != NSNotFound;
+    if (doc || !media_trusted("proxy", who)) {
+      fprintf(stderr, "tinyjs: tiny-media proxy refused for %s%s\n", who.c_str(),
+              doc ? " (document load)" : " (not trusted: allow media.proxy in tinyjs.json \"api\".origins)");
+      [task didFailWithError:[NSError errorWithDomain:@"tinyjs" code:403
+          userInfo:@{NSLocalizedDescriptionKey:
+                     @"tiny.proxyURL: this origin may not use the media proxy"}]];
+      return;
+    }
+  }
+  NSURLComponents *c = [NSURLComponents componentsWithURL:task.request.URL
+                                  resolvingAgainstBaseURL:NO];
+  NSString *upstream = nil;
+  for (NSURLQueryItem *qi in c.queryItems)
+    if ([qi.name isEqualToString:@"u"]) upstream = qi.value; // already decoded
+  NSURL *uu = upstream ? [NSURL URLWithString:upstream] : nil;
+  NSString *sch = uu.scheme.lowercaseString;
+  if (!uu || !([sch isEqualToString:@"http"] || [sch isEqualToString:@"https"])) {
+    [task didFailWithError:[NSError errorWithDomain:@"tinyjs" code:400
+        userInfo:@{NSLocalizedDescriptionKey:
+                   @"tiny.proxyURL: only http/https URLs can be proxied"}]];
+    return;
+  }
+  [_live addObject:task];
+  NSMutableURLRequest *up = [NSMutableURLRequest requestWithURL:uu];
+  // Forward the bits that matter for media: range (seek) + any UA the page set.
+  NSString *range = [task.request valueForHTTPHeaderField:@"Range"];
+  if (range) [up setValue:range forHTTPHeaderField:@"Range"];
+  NSString *ua = [task.request valueForHTTPHeaderField:@"User-Agent"];
+  if (ua) [up setValue:ua forHTTPHeaderField:@"User-Agent"];
+  NSURLSessionDataTask *dt = [_session dataTaskWithRequest:up];
+  [_dataToScheme setObject:task forKey:dt];
+  [dt resume];
+}
+- (void)webView:(WKWebView *)wv stopURLSchemeTask:(id<WKURLSchemeTask>)task {
+  [_live removeObject:task];
+  for (NSURLSessionTask *k in [[_dataToScheme keyEnumerator] allObjects]) {
+    if ([_dataToScheme objectForKey:k] == task) {
+      [k cancel];
+      [_dataToScheme removeObjectForKey:k];
+      break;
+    }
+  }
+}
+- (void)URLSession:(NSURLSession *)s
+          dataTask:(NSURLSessionDataTask *)dt
+didReceiveResponse:(NSURLResponse *)response
+ completionHandler:(void (^)(NSURLSessionResponseDisposition))done {
+  id<WKURLSchemeTask> st = [self liveFor:dt];
+  if (!st) { done(NSURLSessionResponseCancel); return; }
+  NSMutableDictionary *h = [NSMutableDictionary dictionary];
+  NSInteger code = 200;
+  // A live stream (icecast/shoutcast internet radio) sends its 200 with no
+  // Content-Length and no byte-range support. WKWebView's custom-scheme media
+  // loader then refuses the <audio> with error 4 (SRC_NOT_SUPPORTED) even
+  // though the bytes are valid MP3/AAC and stream fine to fetch(). Advertise a
+  // large fake Content-Length and hide range/chunked framing so the media
+  // engine treats it as one long non-seekable resource and plays it
+  // progressively — which lets MediaElementSource tap it for the EQ/analyser
+  // graph. A finite file keeps its real Content-Length and stays seekable.
+  //
+  // Gated on an audio/video MIME so it only touches media: proxyURL also fronts
+  // ordinary CORS fetches, and a fake length on a length-less JSON/text stream
+  // would make fetch() error on completion (fewer bytes than promised).
+  NSString *mime = response.MIMEType.lowercaseString;
+  BOOL isMedia = [mime hasPrefix:@"audio/"] || [mime hasPrefix:@"video/"];
+  BOOL endless = isMedia &&
+                 (response.expectedContentLength == NSURLResponseUnknownLength);
+  if ([response isKindOfClass:[NSHTTPURLResponse class]]) {
+    NSHTTPURLResponse *hr = (NSHTTPURLResponse *)response;
+    code = hr.statusCode;
+    // Pass upstream headers through (Content-Type, Content-Length, Accept-
+    // Ranges, Content-Range for seek…) but drop any ACAO — we set our own.
+    // For an endless stream also drop the length/range/chunked headers so they
+    // don't contradict the synthetic Content-Length we add below.
+    for (id k in hr.allHeaderFields) {
+      NSString *lk = [[k description] lowercaseString];
+      if ([lk hasPrefix:@"access-control-"]) continue;
+      if ([lk hasPrefix:@"content-security-policy"]) continue;
+      if (endless && ([lk isEqualToString:@"transfer-encoding"] ||
+                      [lk isEqualToString:@"accept-ranges"] ||
+                      [lk isEqualToString:@"content-length"] ||
+                      [lk isEqualToString:@"content-range"])) continue;
+      h[k] = hr.allHeaderFields[k];
+    }
+  }
+  if (!h[@"Content-Type"] && response.MIMEType) h[@"Content-Type"] = response.MIMEType;
+  // ~1 TiB — longer than any listening session; the element just streams until
+  // we stop feeding it. Only for a successful 200 (redirects/errors untouched).
+  if (endless && code == 200) h[@"Content-Length"] = @"1099511627776";
+  h[@"Access-Control-Allow-Origin"] = @"*";
+  h[@"Access-Control-Allow-Headers"] = @"*";
+  h[@"Access-Control-Expose-Headers"] = @"*";
+  h[@"Content-Security-Policy"] = @"sandbox";
+  NSHTTPURLResponse *out = [[[NSHTTPURLResponse alloc]
+      initWithURL:st.request.URL statusCode:code HTTPVersion:@"HTTP/1.1"
+     headerFields:h] autorelease];
+  @try { [st didReceiveResponse:out]; }
+  @catch (NSException *e) { done(NSURLSessionResponseCancel); return; }
+  done(NSURLSessionResponseAllow);
+}
+- (void)URLSession:(NSURLSession *)s
+          dataTask:(NSURLSessionDataTask *)dt
+    didReceiveData:(NSData *)data {
+  id<WKURLSchemeTask> st = [self liveFor:dt];
+  if (!st) return;
+  @try { [st didReceiveData:data]; } @catch (NSException *e) {}
+}
+- (void)URLSession:(NSURLSession *)s
+              task:(NSURLSessionTask *)dt
+didCompleteWithError:(NSError *)err {
+  id<WKURLSchemeTask> st = [_dataToScheme objectForKey:dt];
+  [_dataToScheme removeObjectForKey:dt];
+  if (!st || ![_live containsObject:st]) return;
+  [_live removeObject:st];
+  @try {
+    if (err) [st didFailWithError:err];
+    else [st didFinish];
+  } @catch (NSException *e) {}
+}
+@end
+
+static TinyMediaScheme *g_media_handler = nil;
+typedef id (*WKInitIMP)(id, SEL, CGRect, id);
+static WKInitIMP g_orig_wk_init = nullptr;
+
+// Every WKWebView (the library's main one and our secondary windows) is built
+// with -[initWithFrame:configuration:]; register the media scheme on the config
+// here, before the original init consumes it (handlers can't be added after).
+static id tiny_wk_init(id self, SEL _cmd, CGRect frame, id config) {
+  @autoreleasepool {
+    if (config && g_media_handler) {
+      @try {
+        if (![config urlSchemeHandlerForURLScheme:TINY_MEDIA_SCHEME])
+          [config setURLSchemeHandler:g_media_handler
+                         forURLScheme:TINY_MEDIA_SCHEME];
+      } @catch (NSException *e) {}
+    }
+  }
+  return g_orig_wk_init ? g_orig_wk_init(self, _cmd, frame, config) : self;
+}
+
+// Must run BEFORE webview_create (the main webview's init happens inside it).
+static void install_media_scheme_hook() {
+  g_media_handler = [[TinyMediaScheme alloc] init];
+  g_orig_wk_init = (WKInitIMP)swizzle([WKWebView class],
+      @selector(initWithFrame:configuration:), (IMP)tiny_wk_init,
+      "@@:{CGRect={CGPoint=dd}{CGSize=dd}}@");
+}
+
+// ============================ tiny.audioTap ================================
+// Read the app's (or the whole system's) *rendered* audio output as PCM, for
+// VU meters / visualizers — including audio that never touches Web Audio
+// (native HLS, CORS-tainted <audio>, other apps). Uses Core Audio process
+// taps (macOS 14.2+): a CATapDescription -> AudioHardwareCreateProcessTap ->
+// an aggregate device with that sub-tap -> an IOProc that reads float32,
+// converts to interleaved Int16, and a main-queue timer that chunks + base64s
+// it out as `AUDIOTAP <b64>\t<sr>\t<ch>\t<frames>\t<t>` frames to the backend
+// (which push()es an 'audio-tap' page event). Read-only: it observes the mix,
+// it can't process it (EQ still needs the signal in the graph — proxyURL).
+//
+// scope 'app'  -> tap every audio process object whose *responsible pid*
+//   matches ours. WKWebView renders audio in a com.apple.WebKit.GPU XPC helper
+//   (ppid 1, so not findable by walking children); the responsible-pid link is
+//   the reliable way to select exactly our app's WebKit processes. In a bundle
+//   the launcher is its own responsible root, so this is tight; in `dev` the
+//   terminal is the root, so it can over-capture (dev-only).
+// scope 'system' -> a global tap (optionally excluding our own processes).
+//   Trips the "System Audio Recording" TCC prompt.
+// TCC note: an unauthorized tap returns success but delivers SILENCE (zeroed
+// buffers), not an error — so `denied` cannot be reported synchronously; it
+// surfaces as chunks whose samples are all zero.
+extern "C" pid_t responsibility_get_pid_responsible_for_pid(pid_t);
+
+struct AudioTapReq { std::string qid; std::string scope; bool excludeSelf; int interval; };
+
+static AudioObjectID g_tap_id = 0;
+static AudioObjectID g_tap_agg = 0;
+static AudioDeviceIOProcID g_tap_proc = nullptr;
+static bool g_tap_active = false;
+static bool g_tap_dev_listener = false;
+static std::string g_tap_scope = "app";
+static bool g_tap_exclude_self = false;
+static int g_tap_interval = 80;
+static double g_tap_sr = 48000;
+static int g_tap_ch = 2;
+static std::vector<int16_t> g_tap_pcm;      // interleaved Int16 accumulator
+static std::mutex g_tap_pcm_lock;
+static double g_tap_chunk_t0 = 0;           // monotonic ms of the chunk's first sample
+static dispatch_source_t g_tap_timer = nullptr;
+
+static double tiny_now_ms() {
+  return (double)clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW) / 1.0e6;
+}
+
+// Audio process objects belonging to our app (same responsible pid). Captures
+// the whole app tree — launcher + WebKit GPU/WebContent/Networking helpers.
+API_AVAILABLE(macos(14.2))
+static NSArray<NSNumber *> *tiny_app_process_objects() {
+  NSMutableArray *out = [NSMutableArray array];
+  pid_t myResp = responsibility_get_pid_responsible_for_pid(getpid());
+  AudioObjectPropertyAddress la = { kAudioHardwarePropertyProcessObjectList,
+      kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMain };
+  UInt32 sz = 0;
+  if (AudioObjectGetPropertyDataSize(kAudioObjectSystemObject, &la, 0, NULL, &sz) != noErr)
+    return out;
+  int n = sz / sizeof(AudioObjectID);
+  std::vector<AudioObjectID> objs(n > 0 ? n : 0);
+  if (n <= 0 ||
+      AudioObjectGetPropertyData(kAudioObjectSystemObject, &la, 0, NULL, &sz, objs.data()) != noErr)
+    return out;
+  for (int i = 0; i < n; i++) {
+    pid_t pid = 0; UInt32 s = sizeof(pid);
+    AudioObjectPropertyAddress pa = { kAudioProcessPropertyPID,
+        kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMain };
+    if (AudioObjectGetPropertyData(objs[i], &pa, 0, NULL, &s, &pid) != noErr || pid <= 0)
+      continue;
+    if (pid == getpid() ||
+        (myResp > 0 && responsibility_get_pid_responsible_for_pid(pid) == myResp))
+      [out addObject:@(objs[i])];
+  }
+  return out;
+}
+
+// Tear down the running tap graph (not the device-change listener). Safe to
+// call repeatedly; leaves g_tap_active untouched (the caller owns that flag).
+API_AVAILABLE(macos(14.2))
+static void tiny_audiotap_teardown() {
+  if (g_tap_timer) { dispatch_source_cancel(g_tap_timer); g_tap_timer = nullptr; }
+  if (g_tap_agg && g_tap_proc) {
+    AudioDeviceStop(g_tap_agg, g_tap_proc);
+    AudioDeviceDestroyIOProcID(g_tap_agg, g_tap_proc);
+  }
+  g_tap_proc = nullptr;
+  if (g_tap_agg) { AudioHardwareDestroyAggregateDevice(g_tap_agg); g_tap_agg = 0; }
+  if (g_tap_id) { AudioHardwareDestroyProcessTap(g_tap_id); g_tap_id = 0; }
+  std::lock_guard<std::mutex> lk(g_tap_pcm_lock);
+  g_tap_pcm.clear();
+  g_tap_chunk_t0 = 0;
+}
+
+API_AVAILABLE(macos(14.2))
+static void tiny_audiotap_start_timer() {
+  g_tap_timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, dispatch_get_main_queue());
+  uint64_t iv = (uint64_t)g_tap_interval * NSEC_PER_MSEC;
+  dispatch_source_set_timer(g_tap_timer, dispatch_time(DISPATCH_TIME_NOW, iv), iv, iv / 10);
+  dispatch_source_set_event_handler(g_tap_timer, ^{
+    std::vector<int16_t> chunk; double t0 = 0;
+    {
+      std::lock_guard<std::mutex> lk(g_tap_pcm_lock);
+      if (g_tap_pcm.empty()) return;
+      chunk.swap(g_tap_pcm);
+      t0 = g_tap_chunk_t0;
+      g_tap_chunk_t0 = 0;
+    }
+    NSData *d = [NSData dataWithBytesNoCopy:chunk.data()
+                                    length:chunk.size() * sizeof(int16_t)
+                              freeWhenDone:NO];
+    NSString *b64 = [d base64EncodedStringWithOptions:0];
+    int ch = g_tap_ch > 0 ? g_tap_ch : 1;
+    int frames = (int)(chunk.size() / ch);
+    char meta[96];
+    snprintf(meta, sizeof(meta), "\t%d\t%d\t%d\t%.1f", (int)g_tap_sr, g_tap_ch, frames, t0);
+    sock_write_line(std::string("AUDIOTAP ") + [b64 UTF8String] + meta);
+  });
+  dispatch_resume(g_tap_timer);
+}
+
+// Build tap -> aggregate device -> IOProc and start it. Sets g_tap_sr/ch.
+API_AVAILABLE(macos(14.2))
+static OSStatus tiny_audiotap_build() {
+  CATapDescription *desc;
+  if (g_tap_scope == "system") {
+    NSArray *excl = g_tap_exclude_self ? tiny_app_process_objects() : @[];
+    desc = [[CATapDescription alloc] initStereoGlobalTapButExcludeProcesses:excl];
+  } else {
+    NSArray *incl = tiny_app_process_objects();
+    if (incl.count == 0) return kAudioHardwareBadObjectError;
+    desc = [[CATapDescription alloc] initStereoMixdownOfProcesses:incl];
+  }
+  desc.name = @"tinyjs-audioTap";
+  desc.privateTap = YES;
+  desc.muteBehavior = CATapUnmuted; // still play through the speakers
+
+  OSStatus st = AudioHardwareCreateProcessTap(desc, &g_tap_id);
+  if (st != noErr) { g_tap_id = 0; return st; }
+
+  CFStringRef uid = NULL; UInt32 s = sizeof(uid);
+  AudioObjectPropertyAddress ua = { kAudioTapPropertyUID,
+      kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMain };
+  AudioObjectGetPropertyData(g_tap_id, &ua, 0, NULL, &s, &uid);
+  AudioStreamBasicDescription fmt = {}; s = sizeof(fmt);
+  AudioObjectPropertyAddress fa = { kAudioTapPropertyFormat,
+      kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMain };
+  AudioObjectGetPropertyData(g_tap_id, &fa, 0, NULL, &s, &fmt);
+  g_tap_sr = fmt.mSampleRate > 0 ? fmt.mSampleRate : 48000;
+  g_tap_ch = fmt.mChannelsPerFrame > 0 ? (int)fmt.mChannelsPerFrame : 2;
+
+  NSString *aggUID = [[NSUUID UUID] UUIDString];
+  NSDictionary *aggd = @{
+    @"name": @"tinyjs-audioTap-agg",
+    @"uid": aggUID,
+    @"private": @1,
+    @"tapautostart": @1,
+    @"taps": @[ @{ @"uid": (uid ? (__bridge NSString *)uid : @""), @"drift": @0 } ],
+  };
+  st = AudioHardwareCreateAggregateDevice((__bridge CFDictionaryRef)aggd, &g_tap_agg);
+  if (uid) CFRelease(uid);
+  if (st != noErr) { g_tap_agg = 0; tiny_audiotap_teardown(); return st; }
+
+  st = AudioDeviceCreateIOProcIDWithBlock(&g_tap_proc, g_tap_agg, NULL,
+      ^(const AudioTimeStamp *now, const AudioBufferList *in, const AudioTimeStamp *inT,
+        AudioBufferList *out, const AudioTimeStamp *outT) {
+        if (!in) return;
+        std::lock_guard<std::mutex> lk(g_tap_pcm_lock);
+        if (g_tap_pcm.empty()) g_tap_chunk_t0 = tiny_now_ms();
+        for (UInt32 b = 0; b < in->mNumberBuffers; b++) {
+          const AudioBuffer &buf = in->mBuffers[b];
+          const float *f = (const float *)buf.mData;
+          if (!f) continue;
+          UInt32 cnt = buf.mDataByteSize / sizeof(float);
+          size_t base = g_tap_pcm.size();
+          g_tap_pcm.resize(base + cnt);
+          for (UInt32 i = 0; i < cnt; i++) {
+            float v = f[i];
+            if (v > 1.0f) v = 1.0f; else if (v < -1.0f) v = -1.0f;
+            g_tap_pcm[base + i] = (int16_t)lrintf(v * 32767.0f);
+          }
+        }
+      });
+  if (st != noErr) { g_tap_proc = nullptr; tiny_audiotap_teardown(); return st; }
+
+  st = AudioDeviceStart(g_tap_agg, g_tap_proc);
+  if (st != noErr) { tiny_audiotap_teardown(); return st; }
+  return noErr;
+}
+
+// Default-output-device changed (e.g. headphones plugged): re-arm on the new
+// device. A brief audio gap is acceptable.
+API_AVAILABLE(macos(14.2))
+static OSStatus tiny_audiotap_dev_changed(AudioObjectID, UInt32,
+                                          const AudioObjectPropertyAddress *, void *) {
+  if (!g_tap_active) return noErr;
+  dispatch_async(dispatch_get_main_queue(), ^{
+    if (!g_tap_active) return;
+    tiny_audiotap_teardown();
+    if (tiny_audiotap_build() == noErr) tiny_audiotap_start_timer();
+  });
+  return noErr;
+}
+
+static const AudioObjectPropertyAddress kDefaultOutAddr = {
+    kAudioHardwarePropertyDefaultOutputDevice,
+    kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMain };
+
+// Handles AUDIOTAP start (scope != "__stop__") and stop, on the main thread.
+static void do_audiotap(webview_t, void *arg) {
+  std::unique_ptr<AudioTapReq> req((AudioTapReq *)arg);
+  if (@available(macOS 14.2, *)) {
+    bool stop = (req->scope == "__stop__");
+    if (stop) {
+      if (g_tap_active) {
+        g_tap_active = false;
+        if (g_tap_dev_listener) {
+          AudioObjectRemovePropertyListener(kAudioObjectSystemObject, &kDefaultOutAddr,
+                                            tiny_audiotap_dev_changed, NULL);
+          g_tap_dev_listener = false;
+        }
+        tiny_audiotap_teardown();
+      }
+      return;
+    }
+    auto reply_ok = [&]() {
+      sock_write_line("GOT " + req->qid + " {\"ok\":true,\"sampleRate\":" +
+                      std::to_string((int)g_tap_sr) + ",\"channels\":" +
+                      std::to_string(g_tap_ch) + "}");
+    };
+    int iv = req->interval < 20 ? 20 : (req->interval > 500 ? 500 : req->interval);
+    if (g_tap_active) {
+      if (g_tap_scope == req->scope && g_tap_exclude_self == req->excludeSelf &&
+          g_tap_interval == iv) { reply_ok(); return; }   // idempotent
+      g_tap_active = false;                                // restart with new opts
+      if (g_tap_dev_listener) {
+        AudioObjectRemovePropertyListener(kAudioObjectSystemObject, &kDefaultOutAddr,
+                                          tiny_audiotap_dev_changed, NULL);
+        g_tap_dev_listener = false;
+      }
+      tiny_audiotap_teardown();
+    }
+    g_tap_scope = req->scope;
+    g_tap_exclude_self = req->excludeSelf;
+    g_tap_interval = iv;
+    OSStatus st = tiny_audiotap_build();
+    if (st != noErr) {
+      tiny_audiotap_teardown();
+      sock_write_line("GOT " + req->qid +
+                      " {\"ok\":false,\"code\":\"failed\",\"status\":" +
+                      std::to_string((int)st) + "}");
+      return;
+    }
+    g_tap_active = true;
+    AudioObjectAddPropertyListener(kAudioObjectSystemObject, &kDefaultOutAddr,
+                                   tiny_audiotap_dev_changed, NULL);
+    g_tap_dev_listener = true;
+    tiny_audiotap_start_timer();
+    reply_ok();
+  } else {
+    if (req->scope != "__stop__")
+      sock_write_line("GOT " + req->qid + " {\"ok\":false,\"code\":\"unsupported\"}");
+  }
+}
+
+// ========================== tiny.audio.filters =============================
+// Native DSP on the app's own output: an EQ that applies to audio the page
+// never gets samples for (native HLS, a CORS-tainted <audio>), survives a
+// reload, and is one call rather than a Web Audio graph the app has to build.
+//
+// The whole graph is Core Audio — no driver, no system install (macOS 14.2+):
+//
+//   WebKit audio processes --[process tap, MUTED]--> our IOProc --> aggregate
+//                                                        |          device
+//                                                     biquads    (wraps the real
+//                                                                default output)
+//
+// Muting the tap takes the page's audio off the speakers, so the only way out
+// is through our IOProc, which filters and writes it to an aggregate device
+// wrapping the real output. Apple ships an EQ AudioUnit
+// (kAudioUnitSubType_NBandEQ) that could sit in the middle instead, but the
+// biquads are computed here from the same RBJ cookbook PipeWire's `bq_*`
+// builtins use, so { type:'peaking', freq:60, q:1.1, gain:4 } is the same
+// curve on macOS and Linux. One API that sounds different per platform would
+// not be worth having.
+//
+// This launcher's OWN pid is deliberately left out of the tap: the IOProc's
+// output comes from this process, so tapping ourselves would feed our output
+// back into our input. The cost is that app.playSound (NSSound, in this
+// process) goes out unfiltered — the page's audio is what the API is for.
+//
+// Muting is EARNED, never assumed. An unauthorized tap does not fail — it
+// succeeds and delivers zeroed buffers (measured: audioTap has the same
+// behaviour, 39 chunks of silence from a playing 440 Hz tone). Mute on that
+// and the app goes completely silent, which is far worse than having no EQ.
+//
+// So a new chain starts in PROBATION: the tap is unmuted and the IOProc writes
+// silence, i.e. audio plays normally down its usual path and we only listen.
+// The moment a non-zero sample arrives — proof the tap really can hear us —
+// the graph rebuilds muted and starts filtering. If that sample never comes,
+// nothing is ever muted and the user keeps their audio, unfiltered. The failure
+// mode is "the EQ didn't apply", not "my app went silent".
+
+struct EqFilter {
+  std::string label;                      // bq_peaking, linear, …
+  double freq = 1000, q = 1, gain = 0;    // dB for bq_*, a multiplier for linear
+  double gainR = 0;                       // right channel; equals gain unless split
+  bool split = false;
+};
+
+// One filter, compiled for one channel. `linear` is a plain multiplier (see
+// the Linux note: PipeWire's `gain` builtin is unusable, so `linear` does that
+// job there too, and the wire carries the same label).
+struct EqBand {
+  bool linear = false;
+  float mult = 1;
+  float b0 = 1, b1 = 0, b2 = 0, a1 = 0, a2 = 0;
+  float x1 = 0, x2 = 0, y1 = 0, y2 = 0;   // per-channel history
+};
+
+static AudioObjectID g_eq_tap = 0;
+static AudioObjectID g_eq_agg = 0;
+static AudioDeviceIOProcID g_eq_proc = nullptr;
+static bool g_eq_active = false;
+static bool g_eq_listeners = false;
+static bool g_eq_muted = false;           // false = probation (see the note above)
+static std::atomic<bool> g_eq_heard{false};   // the IOProc has seen a real sample
+static std::atomic<bool> g_eq_arming{false};  // one rebuild in flight, not many
+static std::vector<EqFilter> g_eq;        // the chain as asked for (empty = off)
+static double g_eq_balance = 0;           // -1..1
+static double g_eq_sr = 48000;
+static std::vector<EqBand> g_eq_bands[2]; // compiled, [0] = L, [1] = R
+static float g_eq_gain[2] = {1, 1};       // balance, folded per channel
+
+// capabilities().audioFilters, plus what the chain is actually doing. `state`
+// is the honest one: a chain can be set and not filtering, because it has to
+// hear a real sample before it is allowed to mute the source. 'waiting' means
+// an app asked for an EQ and either nothing has played yet, or the tap isn't
+// permitted to hear us (see the probation note above).
+static std::string eq_state_json() {
+  if (@available(macOS 14.2, *)) {
+    const char *state = !g_eq_active ? "off" : (g_eq_muted ? "active" : "waiting");
+    return std::string("{\"available\":true,\"state\":\"") + state +
+           "\",\"filters\":" + std::to_string(g_eq.size()) + ",\"heard\":" +
+           (g_eq_heard.load(std::memory_order_relaxed) ? "true" : "false") + "}";
+  }
+  return "{\"available\":false,\"state\":\"unsupported\"}";
+}
+
+// A chain longer than this is a page bug, not a request. Unlike Linux (where
+// the ceiling is PipeWire's filter-chain segfault) nothing here breaks, but an
+// unbounded chain is unbounded work on a realtime thread.
+static const size_t EQ_MAX = 32;
+
+// The IOProc runs on a realtime thread and must never block. The main thread
+// spins to publish new coefficients; the IOProc only ever TRIES, and passes
+// audio through unfiltered for the one buffer it loses the race on. That is
+// ~10 ms of flat response while a slider moves, which beats a priority
+// inversion on the audio thread.
+static std::atomic_flag g_eq_busy = ATOMIC_FLAG_INIT;
+
+// RBJ cookbook, matching PipeWire's builtin biquads so both platforms give the
+// same curve for the same numbers.
+static void eq_compile(EqBand &b, const std::string &label, double freq,
+                       double q, double gain, double sr) {
+  b = EqBand{};
+  if (label == "linear") { b.linear = true; b.mult = (float)gain; return; }
+  if (q <= 0.0001) q = 0.0001;
+  if (freq < 1) freq = 1;
+  if (freq > sr * 0.49) freq = sr * 0.49;   // keep it below Nyquist
+  const double A = pow(10.0, gain / 40.0);  // amplitude, for peaking/shelves
+  const double w0 = 2.0 * M_PI * freq / sr;
+  const double cw = cos(w0), sw = sin(w0);
+  const double alpha = sw / (2.0 * q);
+  const double sqA = sqrt(A > 0 ? A : 0);
+  double b0, b1, b2, a0, a1, a2;
+  if (label == "bq_lowshelf") {
+    b0 = A * ((A + 1) - (A - 1) * cw + 2 * sqA * alpha);
+    b1 = 2 * A * ((A - 1) - (A + 1) * cw);
+    b2 = A * ((A + 1) - (A - 1) * cw - 2 * sqA * alpha);
+    a0 = (A + 1) + (A - 1) * cw + 2 * sqA * alpha;
+    a1 = -2 * ((A - 1) + (A + 1) * cw);
+    a2 = (A + 1) + (A - 1) * cw - 2 * sqA * alpha;
+  } else if (label == "bq_highshelf") {
+    b0 = A * ((A + 1) + (A - 1) * cw + 2 * sqA * alpha);
+    b1 = -2 * A * ((A - 1) + (A + 1) * cw);
+    b2 = A * ((A + 1) + (A - 1) * cw - 2 * sqA * alpha);
+    a0 = (A + 1) - (A - 1) * cw + 2 * sqA * alpha;
+    a1 = 2 * ((A - 1) - (A + 1) * cw);
+    a2 = (A + 1) - (A - 1) * cw - 2 * sqA * alpha;
+  } else if (label == "bq_lowpass") {
+    b0 = (1 - cw) / 2; b1 = 1 - cw; b2 = (1 - cw) / 2;
+    a0 = 1 + alpha; a1 = -2 * cw; a2 = 1 - alpha;
+  } else if (label == "bq_highpass") {
+    b0 = (1 + cw) / 2; b1 = -(1 + cw); b2 = (1 + cw) / 2;
+    a0 = 1 + alpha; a1 = -2 * cw; a2 = 1 - alpha;
+  } else if (label == "bq_bandpass") {
+    b0 = alpha; b1 = 0; b2 = -alpha;          // constant 0 dB peak gain
+    a0 = 1 + alpha; a1 = -2 * cw; a2 = 1 - alpha;
+  } else if (label == "bq_notch") {
+    b0 = 1; b1 = -2 * cw; b2 = 1;
+    a0 = 1 + alpha; a1 = -2 * cw; a2 = 1 - alpha;
+  } else if (label == "bq_allpass") {
+    b0 = 1 - alpha; b1 = -2 * cw; b2 = 1 + alpha;
+    a0 = 1 + alpha; a1 = -2 * cw; a2 = 1 - alpha;
+  } else { // bq_peaking, and the default for anything unrecognised
+    b0 = 1 + alpha * A; b1 = -2 * cw; b2 = 1 - alpha * A;
+    a0 = 1 + alpha / A; a1 = -2 * cw; a2 = 1 - alpha / A;
+  }
+  if (a0 == 0) a0 = 1;
+  b.b0 = (float)(b0 / a0); b.b1 = (float)(b1 / a0); b.b2 = (float)(b2 / a0);
+  b.a1 = (float)(a1 / a0); b.a2 = (float)(a2 / a0);
+}
+
+// Rebuild both channels from g_eq. `keepState` preserves the filter histories
+// across a retune so moving a slider doesn't click; a shape change resets them.
+static void eq_publish(bool keepState) {
+  std::vector<EqBand> next[2];
+  for (int ch = 0; ch < 2; ch++) {
+    next[ch].resize(g_eq.size());
+    for (size_t i = 0; i < g_eq.size(); i++) {
+      const EqFilter &f = g_eq[i];
+      double g = (ch == 1 && f.split) ? f.gainR : f.gain;
+      eq_compile(next[ch][i], f.label, f.freq, f.q, g, g_eq_sr);
+      if (keepState && i < g_eq_bands[ch].size()) {
+        next[ch][i].x1 = g_eq_bands[ch][i].x1; next[ch][i].x2 = g_eq_bands[ch][i].x2;
+        next[ch][i].y1 = g_eq_bands[ch][i].y1; next[ch][i].y2 = g_eq_bands[ch][i].y2;
+      }
+    }
+  }
+  // -1 = hard left, +1 = hard right; the quiet side is attenuated, so balance
+  // never makes the app louder than it was.
+  double bal = g_eq_balance < -1 ? -1 : (g_eq_balance > 1 ? 1 : g_eq_balance);
+  while (g_eq_busy.test_and_set(std::memory_order_acquire)) { /* spin: main thread */ }
+  g_eq_bands[0].swap(next[0]);
+  g_eq_bands[1].swap(next[1]);
+  g_eq_gain[0] = (float)(bal > 0 ? 1.0 - bal : 1.0);
+  g_eq_gain[1] = (float)(bal < 0 ? 1.0 + bal : 1.0);
+  g_eq_busy.clear(std::memory_order_release);
+}
+
+static inline float eq_run(std::vector<EqBand> &bands, float in) {
+  float v = in;
+  for (EqBand &b : bands) {
+    if (b.linear) { v *= b.mult; continue; }
+    float out = b.b0 * v + b.b1 * b.x1 + b.b2 * b.x2 - b.a1 * b.y1 - b.a2 * b.y2;
+    b.x2 = b.x1; b.x1 = v;
+    b.y2 = b.y1; b.y1 = out;
+    v = out;
+  }
+  return v;
+}
+
+// Our app's audio process objects, minus this process (see the feedback note
+// above). Empty is a real answer: WebKit only spawns its audio process once
+// something plays, so a chain armed before playback has nothing to tap yet —
+// eq_procs_changed re-arms when it appears.
+API_AVAILABLE(macos(14.2))
+static NSArray<NSNumber *> *tiny_eq_process_objects() {
+  NSMutableArray *out = [NSMutableArray array];
+  for (NSNumber *n in tiny_app_process_objects()) {
+    pid_t pid = 0; UInt32 s = sizeof(pid);
+    AudioObjectPropertyAddress pa = { kAudioProcessPropertyPID,
+        kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMain };
+    if (AudioObjectGetPropertyData([n unsignedIntValue], &pa, 0, NULL, &s, &pid) != noErr)
+      continue;
+    if (pid != getpid()) [out addObject:n];
+  }
+  return out;
+}
+
+API_AVAILABLE(macos(14.2))
+static void tiny_eq_teardown() {
+  if (g_eq_agg && g_eq_proc) {
+    AudioDeviceStop(g_eq_agg, g_eq_proc);
+    AudioDeviceDestroyIOProcID(g_eq_agg, g_eq_proc);
+  }
+  g_eq_proc = nullptr;
+  if (g_eq_agg) { AudioHardwareDestroyAggregateDevice(g_eq_agg); g_eq_agg = 0; }
+  // Destroying the tap is what un-mutes the app: while it exists the tapped
+  // processes are silent on their own, so this must run on EVERY failure path.
+  if (g_eq_tap) { AudioHardwareDestroyProcessTap(g_eq_tap); g_eq_tap = 0; }
+}
+
+API_AVAILABLE(macos(14.2))
+static OSStatus tiny_eq_build(bool muted) {
+  NSArray *incl = tiny_eq_process_objects();
+#ifdef TINY_EQ_PROBE
+  {
+    fprintf(stderr, "[eq] build: %lu process objects to tap (self=%d resp=%d)\n",
+            (unsigned long)incl.count, (int)getpid(),
+            (int)responsibility_get_pid_responsible_for_pid(getpid()));
+    for (NSNumber *n in incl) {
+      pid_t pid = 0; UInt32 sz = sizeof(pid);
+      AudioObjectPropertyAddress pa = { kAudioProcessPropertyPID,
+          kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMain };
+      AudioObjectGetPropertyData([n unsignedIntValue], &pa, 0, NULL, &sz, &pid);
+      CFStringRef bid = NULL; sz = sizeof(bid);
+      AudioObjectPropertyAddress ba = { kAudioProcessPropertyBundleID,
+          kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMain };
+      AudioObjectGetPropertyData([n unsignedIntValue], &ba, 0, NULL, &sz, &bid);
+      UInt32 running = 0; sz = sizeof(running);
+      AudioObjectPropertyAddress ra = { kAudioProcessPropertyIsRunningOutput,
+          kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMain };
+      AudioObjectGetPropertyData([n unsignedIntValue], &ra, 0, NULL, &sz, &running);
+      fprintf(stderr, "[eq]   obj=%u pid=%d out=%u bundle=%s\n",
+              [n unsignedIntValue], (int)pid, (unsigned)running,
+              bid ? [(__bridge NSString *)bid UTF8String] : "-");
+      if (bid) CFRelease(bid);
+    }
+  }
+#endif
+  if (incl.count == 0) return kAudioHardwareBadObjectError;
+
+  CATapDescription *desc = [[CATapDescription alloc] initStereoMixdownOfProcesses:incl];
+  desc.name = @"tinyjs-eq";
+  desc.privateTap = YES;
+  // Probation taps stay UNMUTED: the app keeps playing down its normal path
+  // while we check whether we can hear it at all.
+  desc.muteBehavior = muted ? CATapMuted : CATapUnmuted;
+  g_eq_muted = muted;
+  if (!muted) g_eq_heard.store(false, std::memory_order_relaxed);
+  OSStatus st = AudioHardwareCreateProcessTap(desc, &g_eq_tap);
+  [desc release];
+#ifdef TINY_EQ_PROBE
+  fprintf(stderr, "[eq] CreateProcessTap -> %d (tap=%u)\n", (int)st, (unsigned)g_eq_tap);
+#endif
+  if (st != noErr) { g_eq_tap = 0; return st; }
+
+  CFStringRef tapUID = NULL; UInt32 s = sizeof(tapUID);
+  AudioObjectPropertyAddress ua = { kAudioTapPropertyUID,
+      kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMain };
+  AudioObjectGetPropertyData(g_eq_tap, &ua, 0, NULL, &s, &tapUID);
+  AudioStreamBasicDescription fmt = {}; s = sizeof(fmt);
+  AudioObjectPropertyAddress fa = { kAudioTapPropertyFormat,
+      kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMain };
+  AudioObjectGetPropertyData(g_eq_tap, &fa, 0, NULL, &s, &fmt);
+  g_eq_sr = fmt.mSampleRate > 0 ? fmt.mSampleRate : 48000;
+
+  // The aggregate wraps the CURRENT default output, so the processed audio
+  // comes out where the user expects. eq_dev_changed rebuilds on a switch.
+  AudioObjectID outDev = 0; s = sizeof(outDev);
+  AudioObjectGetPropertyData(kAudioObjectSystemObject, &kDefaultOutAddr, 0, NULL, &s, &outDev);
+  CFStringRef outUID = NULL; s = sizeof(outUID);
+  AudioObjectPropertyAddress da = { kAudioDevicePropertyDeviceUID,
+      kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMain };
+  if (!outDev ||
+      AudioObjectGetPropertyData(outDev, &da, 0, NULL, &s, &outUID) != noErr || !outUID) {
+    if (tapUID) CFRelease(tapUID);
+    tiny_eq_teardown();
+    return kAudioHardwareBadDeviceError;
+  }
+
+  NSDictionary *aggd = @{
+    @"name": @"tinyjs-eq-agg",
+    @"uid": [[NSUUID UUID] UUIDString],
+    @"private": @1,
+    @"stacked": @0,
+    @"tapautostart": @1,
+    @"master": (__bridge NSString *)outUID,
+    @"subdevices": @[ @{ @"uid": (__bridge NSString *)outUID } ],
+    @"taps": @[ @{ @"uid": (tapUID ? (__bridge NSString *)tapUID : @""), @"drift": @1 } ],
+  };
+  st = AudioHardwareCreateAggregateDevice((__bridge CFDictionaryRef)aggd, &g_eq_agg);
+#ifdef TINY_EQ_PROBE
+  fprintf(stderr, "[eq] CreateAggregateDevice -> %d (agg=%u) sr=%.0f\n",
+          (int)st, (unsigned)g_eq_agg, g_eq_sr);
+#endif
+  if (tapUID) CFRelease(tapUID);
+  CFRelease(outUID);
+  if (st != noErr) { g_eq_agg = 0; tiny_eq_teardown(); return st; }
+
+  eq_publish(false);
+
+  st = AudioDeviceCreateIOProcIDWithBlock(&g_eq_proc, g_eq_agg, NULL,
+      ^(const AudioTimeStamp *, const AudioBufferList *in, const AudioTimeStamp *,
+        AudioBufferList *out, const AudioTimeStamp *) {
+        if (!out) return;
+        // Channel n of a buffer list is either its own mono buffer
+        // (non-interleaved, what taps and most devices give) or interleaved
+        // inside one buffer. Handle both rather than assuming.
+        auto pick = [](const AudioBufferList *l, int ch, float **base,
+                       int *stride, UInt32 *frames) -> bool {
+          if (!l || l->mNumberBuffers == 0) return false;
+          if (l->mNumberBuffers > 1) {
+            UInt32 i = (UInt32)ch < l->mNumberBuffers ? (UInt32)ch : 0;
+            const AudioBuffer &b = l->mBuffers[i];
+            if (!b.mData) return false;
+            *base = (float *)b.mData; *stride = 1;
+            *frames = b.mDataByteSize / sizeof(float);
+            return true;
+          }
+          const AudioBuffer &b = l->mBuffers[0];
+          if (!b.mData) return false;
+          int nch = b.mNumberChannels > 0 ? (int)b.mNumberChannels : 1;
+          *base = (float *)b.mData + (ch < nch ? ch : 0);
+          *stride = nch;
+          *frames = b.mDataByteSize / sizeof(float) / nch;
+          return true;
+        };
+        const bool muted = g_eq_muted;
+        bool locked = muted && !g_eq_busy.test_and_set(std::memory_order_acquire);
+        bool heard = false;
+#ifdef TINY_EQ_PROBE
+        static float pin = 0, pout = 0; static int pn = 0;
+#endif
+        for (int ch = 0; ch < 2; ch++) {
+          float *op = nullptr, *ip = nullptr;
+          int os = 1, is = 1;
+          UInt32 of = 0, inf = 0;
+          if (!pick(out, ch, &op, &os, &of)) continue;
+          bool haveIn = pick(in, ch, &ip, &is, &inf);
+          UInt32 n = haveIn && inf < of ? inf : of;
+          for (UInt32 i = 0; i < n; i++) {
+            float v = haveIn ? ip[i * is] : 0.0f;
+#ifdef TINY_EQ_PROBE
+            if (ch == 0 && fabsf(v) > pin) pin = fabsf(v);
+#endif
+            if (v != 0.0f) heard = true;
+            // Probation: listen, emit nothing. The source is unmuted, so
+            // writing the signal here would play it twice.
+            if (!muted) { op[i * os] = 0.0f; continue; }
+            if (locked) v = eq_run(g_eq_bands[ch], v) * g_eq_gain[ch];
+            op[i * os] = v;
+#ifdef TINY_EQ_PROBE
+            if (ch == 0 && fabsf(v) > pout) pout = fabsf(v);
+#endif
+          }
+          for (UInt32 i = n; i < of; i++) op[i * os] = 0.0f;  // no input: silence
+        }
+        // Anything past stereo (a 5.1 device) gets silence rather than noise.
+        if (out->mNumberBuffers > 2)
+          for (UInt32 b = 2; b < out->mNumberBuffers; b++)
+            if (out->mBuffers[b].mData)
+              memset(out->mBuffers[b].mData, 0, out->mBuffers[b].mDataByteSize);
+#ifdef TINY_EQ_PROBE
+        if (++pn >= 100) {
+          fprintf(stderr, "[eq] bands=%zu peakIn=%.4f peakOut=%.4f locked=%d "
+                  "inBufs=%u inCh=%u inBytes=%u outBufs=%u outCh=%u outBytes=%u\n",
+                  g_eq_bands[0].size(), pin, pout, (int)locked,
+                  in ? (unsigned)in->mNumberBuffers : 9999u,
+                  (in && in->mNumberBuffers) ? (unsigned)in->mBuffers[0].mNumberChannels : 0u,
+                  (in && in->mNumberBuffers) ? (unsigned)in->mBuffers[0].mDataByteSize : 0u,
+                  (unsigned)out->mNumberBuffers,
+                  out->mNumberBuffers ? (unsigned)out->mBuffers[0].mNumberChannels : 0u,
+                  out->mNumberBuffers ? (unsigned)out->mBuffers[0].mDataByteSize : 0u);
+          pn = 0; pin = 0; pout = 0;
+        }
+#endif
+        if (locked) g_eq_busy.clear(std::memory_order_release);
+        // Proof the tap can hear us — promote to a muted, filtering graph.
+        // exchange() so a burst of callbacks queues exactly one rebuild.
+        if (heard && !muted && !g_eq_arming.exchange(true)) {
+          g_eq_heard.store(true, std::memory_order_relaxed);
+          dispatch_async(dispatch_get_main_queue(), ^{
+            if (g_eq_active && !g_eq_muted) {
+              tiny_eq_teardown();
+              if (tiny_eq_build(true) != noErr) tiny_eq_teardown();
+            }
+            g_eq_arming.store(false);
+          });
+        }
+      });
+#ifdef TINY_EQ_PROBE
+  fprintf(stderr, "[eq] CreateIOProcID -> %d\n", (int)st);
+#endif
+  if (st != noErr) { g_eq_proc = nullptr; tiny_eq_teardown(); return st; }
+
+  st = AudioDeviceStart(g_eq_agg, g_eq_proc);
+#ifdef TINY_EQ_PROBE
+  fprintf(stderr, "[eq] AudioDeviceStart -> %d\n", (int)st);
+#endif
+  if (st != noErr) { tiny_eq_teardown(); return st; }
+  return noErr;
+}
+
+API_AVAILABLE(macos(14.2))
+static void tiny_eq_rearm(void) {
+  if (!g_eq_active) return;
+  tiny_eq_teardown();
+  // Always re-enter probation: a new output device or process set has to
+  // re-prove itself before anything is muted again.
+  if (tiny_eq_build(false) != noErr) tiny_eq_teardown();
+}
+
+// The default output changed (headphones in), or our app's set of audio
+// processes changed. The second matters more than it looks: WebKit spawns its
+// audio process lazily, so a chain set before anything plays has nothing to
+// tap until this fires.
+API_AVAILABLE(macos(14.2))
+static OSStatus tiny_eq_dev_changed(AudioObjectID, UInt32,
+                                    const AudioObjectPropertyAddress *, void *) {
+  if (!g_eq_active) return noErr;
+  dispatch_async(dispatch_get_main_queue(), ^{ tiny_eq_rearm(); });
+  return noErr;
+}
+
+static const AudioObjectPropertyAddress kProcListAddr = {
+    kAudioHardwarePropertyProcessObjectList,
+    kAudioObjectPropertyScopeGlobal, kAudioObjectPropertyElementMain };
+
+API_AVAILABLE(macos(14.2))
+static OSStatus tiny_eq_procs_changed(AudioObjectID, UInt32,
+                                      const AudioObjectPropertyAddress *, void *) {
+  if (!g_eq_active) return noErr;
+  dispatch_async(dispatch_get_main_queue(), ^{
+    if (!g_eq_active) return;
+    // Only re-arm when the tap can't be running but could be, or is running
+    // against a set that has since changed. Rebuilding on every process
+    // change would gap audio whenever any app started playing.
+    NSArray *now = tiny_eq_process_objects();
+    if (now.count == 0) return;
+    if (!g_eq_tap) { tiny_eq_rearm(); return; }
+  });
+  return noErr;
+}
+
+API_AVAILABLE(macos(14.2))
+static void tiny_eq_stop() {
+  if (!g_eq_active) return;
+  g_eq_active = false;
+  if (g_eq_listeners) {
+    AudioObjectRemovePropertyListener(kAudioObjectSystemObject, &kDefaultOutAddr,
+                                      tiny_eq_dev_changed, NULL);
+    AudioObjectRemovePropertyListener(kAudioObjectSystemObject, &kProcListAddr,
+                                      tiny_eq_procs_changed, NULL);
+    g_eq_listeners = false;
+  }
+  tiny_eq_teardown();
+  g_eq.clear();
+  while (g_eq_busy.test_and_set(std::memory_order_acquire)) { }
+  g_eq_bands[0].clear();
+  g_eq_bands[1].clear();
+  g_eq_busy.clear(std::memory_order_release);
+}
+
+// AUDIOFILTERS <label,freq,q,gain[,gainR]>\t… — replace the chain, empty
+// clears it. Same wire and same semantics as the Linux launcher.
+static void do_audiofilters(const std::string &rest) {
+  if (@available(macOS 14.2, *)) {
+    std::vector<EqFilter> prev = g_eq;
+    g_eq.clear();
+    for (const std::string &f : split_tabs(rest)) {
+      if (f.empty()) continue;
+      std::vector<std::string> p;
+      size_t start = 0;
+      for (;;) {
+        size_t c = f.find(',', start);
+        p.push_back(f.substr(start, c == std::string::npos ? c : c - start));
+        if (c == std::string::npos) break;
+        start = c + 1;
+      }
+      if (p.size() < 4) continue;
+      EqFilter e;
+      e.label = p[0];
+      e.freq = atof(p[1].c_str());
+      e.q = atof(p[2].c_str());
+      e.gain = atof(p[3].c_str());
+      e.gainR = e.gain;
+      if (p.size() >= 5 && !p[4].empty()) { e.gainR = atof(p[4].c_str()); e.split = true; }
+      g_eq.push_back(e);
+    }
+    if (g_eq.size() > EQ_MAX) g_eq.resize(EQ_MAX);
+    if (g_eq.empty()) { tiny_eq_stop(); return; }
+
+    // Same filters in the same order = a retune, not a rebuild: publish new
+    // coefficients and keep the graph (and the filter histories) running.
+    bool sameShape = g_eq_active && prev.size() == g_eq.size();
+    for (size_t i = 0; sameShape && i < prev.size(); i++)
+      if (prev[i].label != g_eq[i].label || prev[i].split != g_eq[i].split)
+        sameShape = false;
+    if (sameShape) { eq_publish(true); return; }
+
+    if (g_eq_active) tiny_eq_teardown();
+    g_eq_active = true;
+    if (!g_eq_listeners) {
+      AudioObjectAddPropertyListener(kAudioObjectSystemObject, &kDefaultOutAddr,
+                                     tiny_eq_dev_changed, NULL);
+      AudioObjectAddPropertyListener(kAudioObjectSystemObject, &kProcListAddr,
+                                     tiny_eq_procs_changed, NULL);
+      g_eq_listeners = true;
+    }
+    // A failed build is not fatal: the listeners stay armed, so the chain
+    // comes up as soon as the app actually has an audio process to tap.
+    OSStatus bst = tiny_eq_build(false);
+#ifdef TINY_EQ_PROBE
+    fprintf(stderr, "[eq] do_audiofilters: %zu filters, build -> %d\n", g_eq.size(), (int)bst);
+#endif
+    if (bst != noErr) tiny_eq_teardown();
+  }
+}
+
+// AUDIOFILTERSET <index>\t<freq>\t<q>\t<gain> — retune one, no rebuild.
+static void do_audiofilterset(const std::string &rest) {
+  if (@available(macOS 14.2, *)) {
+    std::vector<std::string> f = split_tabs(rest);
+    if (f.size() < 4) return;
+    size_t i = (size_t)atoi(f[0].c_str());
+    if (i >= g_eq.size()) return;
+    g_eq[i].freq = atof(f[1].c_str());
+    g_eq[i].q = atof(f[2].c_str());
+    g_eq[i].gain = atof(f[3].c_str());
+    if (!g_eq[i].split) g_eq[i].gainR = g_eq[i].gain;
+    eq_publish(true);
+  }
+}
+
+static void do_audiobalance(const std::string &rest) {
+  if (@available(macOS 14.2, *)) {
+    g_eq_balance = atof(rest.c_str());
+    eq_publish(true);
+  }
+}
+
+// Switch a window between titled (rounded corners) and borderless (square).
+// Borderless keeps Resizable (drag-resize edges) and the shadow; the page
+// owns every pixel and moves the window via data-tiny-drag, exactly like
+// frameless. This is the ONLY way to lose macOS's window corner radius.
+static void apply_square(NSWindow *win, bool square) {
+  // The page's box survives the swap, not the frame — same rule as the
+  // frameless toggle, so a squareCorners app is the same size in dev (chrome
+  // applied after the window exists) as packaged (applied from the plist).
+  NSSize keep_content = [win contentRectForFrameRect:win.frame].size;
+  if (square) {
+    ensure_window_can_key(object_getClass(win));
+    win.styleMask = NSWindowStyleMaskResizable; // no Titled bit → square
+    win.hasShadow = YES;
+    // Borderless windows are excluded from Mission Control / Exposé unless
+    // they opt in — without this, every squareCorners app is invisible to
+    // the four-finger swipe. The policy helper keeps pets/overlays out.
+    apply_expose_policy(win);
+  } else {
+    win.styleMask = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
+                    NSWindowStyleMaskMiniaturizable | NSWindowStyleMaskResizable;
+  }
+  NSRect f = win.frame;
+  CGFloat top = NSMaxY(f);
+  f.size = [win frameRectForContentRect:NSMakeRect(0, 0, keep_content.width,
+                                                   keep_content.height)].size;
+  f.origin.y = top - f.size.height;
+  [win setFrame:f display:YES];
+  if (square)
+    [win makeKeyAndOrderFront:nil]; // re-key after the styleMask swap
+}
+
+// The chrome-application core, factored out so do_winopen can apply chrome
+// to a secondary window BEFORE it's ordered on screen (no titlebar flash).
+static void apply_chrome_fields(NSWindow *win, WKWebView *wv,
+                                NSVisualEffectView **effect, bool is_main,
+                                ChromeReq *req) {
+    bool req_frameless = req->frame == "0";
+    // `traffic` is a TOKEN, not a bit ('' keep · 'all' · 'none' · a comma
+    // list) — windowControls:false arrives as "none". Comparing it against
+    // "0" is never true, which left every secondary frameless window with a
+    // live NSTitlebarContainerView: invisible bar, but its 1px rounded top
+    // edge drew over the page and it swallowed the top strip's mouse events.
+    bool req_traffic_off = req->traffic == "none";
+    if (!req->frame.empty()) {
+      bool frameless = req_frameless;
+      if (is_main)
+        g_chrome_frameless = frameless;
+      // Keep the PAGE's box across the change; the frame gives up (or takes
+      // back) the title bar strip around it. That's the contract everywhere
+      // else — `size`, setSize, setMinSize and getState all mean the content
+      // box — and it's what makes a frameless app the same size in dev, where
+      // the bridge calls setChrome after the window exists, as in a packaged
+      // build, where the plist applies it before first paint. Toggling
+      // FullSizeContentView does NOT get AppKit's usual content-preserving
+      // treatment (it keeps the frame and hands the strip to the page), so
+      // this has to be explicit.
+      NSSize keep_content = [win contentRectForFrameRect:win.frame].size;
+      if (frameless) {
+        win.styleMask |= NSWindowStyleMaskFullSizeContentView;
+        win.titlebarAppearsTransparent = YES;
+        win.titleVisibility = NSWindowTitleHidden;
+      } else {
+        win.styleMask &= ~NSWindowStyleMaskFullSizeContentView;
+        win.titlebarAppearsTransparent = NO;
+        win.titleVisibility = NSWindowTitleVisible;
+      }
+      {
+        NSRect f = win.frame;
+        CGFloat top = NSMaxY(f); // top-left anchored, like every other resize
+        f.size = [win frameRectForContentRect:NSMakeRect(0, 0, keep_content.width,
+                                                         keep_content.height)].size;
+        f.origin.y = top - f.size.height;
+        [win setFrame:f display:YES];
+      }
+    }
+    if (!req->traffic.empty()) {
+      // '' keep · 'all' · 'none' · a comma list of close/minimize/maximize.
+      // macOS is the one platform that can hide these individually.
+      const std::string &c = req->traffic;
+      bool all = c == "all";
+      bool none = c == "none";
+      auto want = [&](const char *name) {
+        if (all) return true;
+        if (none) return false;
+        return c.find(name) != std::string::npos;
+      };
+      bool close_on = want("close"), min_on = want("minimize"),
+           zoom_on = want("maximize");
+      if (is_main)
+        g_chrome_traffic = close_on || min_on || zoom_on;
+      [win standardWindowButton:NSWindowCloseButton].hidden = !close_on;
+      [win standardWindowButton:NSWindowMiniaturizeButton].hidden = !min_on;
+      [win standardWindowButton:NSWindowZoomButton].hidden = !zoom_on;
+    }
+    if (!req->transparent.empty()) {
+      bool tr = req->transparent == "1";
+      if (is_main)
+        g_chrome_transparent = tr;
+      win.opaque = !tr;
+      win.backgroundColor = tr ? [NSColor clearColor]
+                               : [NSColor windowBackgroundColor];
+      win.hasShadow = !tr;
+      webview_draws_background(wv, !tr);
+    }
+    if (!req->frame.empty() || !req->traffic.empty()) {
+      // Main tracks state globally; secondary windows derive from this
+      // request (set frame+windowControls together for those).
+      bool hide_bar = is_main ? (g_chrome_frameless && !g_chrome_traffic)
+                              : (req_frameless && req_traffic_off);
+      set_titlebar_hidden(win, hide_bar);
+      relayout_titlebar(win);
+      extend_content(wv, win, *effect);
+      apply_traffic_pos(win, req->win); // relayout resets custom offsets
+    }
+    if (!req->traffic_pos.empty())
+      set_traffic_pos(win, req->win, req->traffic_pos);
+    if (!req->vibrancy.empty()) {
+      if (*effect) {
+        [*effect removeFromSuperview];
+        [*effect release];
+        *effect = nil;
+      }
+      if (req->vibrancy == "none") {
+        if (is_main)
+          g_chrome_vibrancy.clear();
+        if (!is_main || !g_chrome_transparent)
+          webview_draws_background(wv, true);
+      } else {
+        if (is_main)
+          g_chrome_vibrancy = req->vibrancy;
+        NSView *content = win.contentView;
+        NSVisualEffectView *ev =
+            [[NSVisualEffectView alloc] initWithFrame:content.bounds];
+        ev.material = material_for(req->vibrancy);
+        ev.blendingMode = NSVisualEffectBlendingModeBehindWindow;
+        ev.state = NSVisualEffectStateFollowsWindowActiveState;
+        ev.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+        [content addSubview:ev positioned:NSWindowBelow relativeTo:nil];
+        *effect = ev;
+        // The page must not paint an opaque background over the effect.
+        webview_draws_background(wv, false);
+        win.opaque = NO;
+        win.backgroundColor = [NSColor clearColor];
+      }
+    }
+    // Square corners LAST — it rewrites the styleMask wholesale (borderless),
+    // so it must win over the frame/traffic titlebar work above.
+    if (!req->square.empty()) {
+      bool sq = req->square == "1";
+      if (is_main)
+        g_chrome_square = sq;
+      apply_square(win, sq);
+    }
+    // First-mouse is a per-view flag on the webview (survives styleMask/size
+    // rewrites, so no reapply needed).
+    if (!req->first_mouse.empty())
+      set_accepts_first_mouse(wv, req->first_mouse == "1");
+}
+
+static void do_chrome(webview_t w, void *arg) {
+  ChromeReq *req = static_cast<ChromeReq *>(arg);
+  @autoreleasepool {
+    NSWindow *win = window_for_id(w, req->win);
+    WKWebView *wv = webview_for_id(w, req->win);
+    NSVisualEffectView **effect = effect_slot_for(req->win);
+    if (win && wv && effect)
+      apply_chrome_fields(win, wv, effect, req->win == "main", req);
+  }
+  delete req;
+}
+
+static void reapply_window_overrides(webview_t w) {
+  NSWindow *win = (NSWindow *)webview_get_native_handle(
+      w, WEBVIEW_NATIVE_HANDLE_KIND_UI_WINDOW);
+  if (!win)
+    return;
+  // set_size rewrote the styleMask wholesale; a square (borderless) main
+  // window would snap back to titled/rounded — reassert it.
+  if (g_chrome_square) {
+    apply_square(win, true);
+    return;
+  }
+  if (g_resizable_override == 0)
+    win.styleMask &= ~NSWindowStyleMaskResizable;
+  if (g_chrome_frameless) {
+    NSRect keep = win.frame;
+    win.styleMask |= NSWindowStyleMaskFullSizeContentView;
+    win.titlebarAppearsTransparent = YES;
+    win.titleVisibility = NSWindowTitleHidden;
+    [win setFrame:keep display:YES];
+    set_titlebar_hidden(win, g_chrome_frameless && !g_chrome_traffic);
+    relayout_titlebar(win);
+    WKWebView *mwv = (WKWebView *)webview_get_native_handle(
+        w, WEBVIEW_NATIVE_HANDLE_KIND_BROWSER_CONTROLLER);
+    extend_content(mwv, win, g_effect_view);
+  }
+  apply_traffic_pos(win, "main");
+}
+
+static void do_dragwin(webview_t w, void *arg) {
+  std::string *wid = static_cast<std::string *>(arg);
+  NSWindow *win = window_for_id(w, *wid);
+  NSEvent *ev = [NSApp currentEvent];
+  // performWindowDragWithEvent: wants a live mouse-down. A startDrag() that
+  // reaches here from anything else (a click handler, a stray call) would
+  // raise rather than no-op, so check before handing it over.
+  bool mouse_ok = ev && (ev.type == NSEventTypeLeftMouseDown ||
+                         ev.type == NSEventTypeLeftMouseDragged);
+  if (win && mouse_ok) {
+    @try {
+      [win performWindowDragWithEvent:ev];
+    } @catch (NSException *) {
+    }
+  }
+  delete wid;
+}
+
+// RESIZEWIN — begin a resize from an edge, for a handle the page drew itself.
+// Windows hands this to WM_NCLBUTTONDOWN and Linux to gtk_window_begin_resize_
+// drag; AppKit has no equivalent to hand it to, so we run the drag ourselves:
+// a modal event loop that reframes the window until the button comes up. It
+// blocks the main runloop exactly as long as the user holds the mouse, which
+// is what performWindowDragWithEvent: does for the drag case.
+struct ResizeReq {
+  std::string win, edge;
+};
+
+static void do_resizewin(webview_t w, void *arg) {
+  ResizeReq *r = static_cast<ResizeReq *>(arg);
+  @autoreleasepool {
+    NSWindow *win = window_for_id(w, r->win);
+    // The loop below waits on mouse events, so it must never start unless a
+    // button is actually held — a stray startResize() from a click handler
+    // would otherwise wait for a drag that never comes and freeze the app.
+    // (GTK's begin-resize call makes the same demand and just returns.
+    // Windows does NOT — DefWindowProc's SC_SIZE loop entered with the button
+    // up glues the window to the cursor until the next click — so launcher-
+    // win.cc checks GetAsyncKeyState explicitly, same as this.)
+    bool held = ([NSEvent pressedMouseButtons] & 1) != 0;
+    // setResizable(false) means the USER can't resize; the app's own setSize
+    // still can. A page-drawn grip is a user resize, so honour the lock.
+    if (held && win && (win.styleMask & NSWindowStyleMaskResizable)) {
+      const std::string &e = r->edge;
+      bool north = e.find('n') != std::string::npos;
+      bool south = e.find('s') != std::string::npos;
+      bool west = e.find('w') != std::string::npos;
+      bool east = e.find('e') != std::string::npos;
+      NSRect from = win.frame;
+      NSPoint anchor = [NSEvent mouseLocation];
+      // The floor set by minsize is a CONTENT size; compare in frame terms.
+      NSSize mc = win.contentMinSize;
+      NSSize floor_ =
+          [win frameRectForContentRect:NSMakeRect(0, 0, mc.width, mc.height)]
+              .size;
+      floor_.width = std::max(floor_.width, (CGFloat)120);
+      floor_.height = std::max(floor_.height, (CGFloat)80);
+      while (true) {
+        // Timed rather than blocking: if the mouse-up is ever missed (another
+        // app steals it, the gesture ends off-screen), a held-button re-check
+        // ends the loop instead of the window staying stuck to the pointer.
+        NSEvent *ev = [win nextEventMatchingMask:(NSEventMaskLeftMouseDragged |
+                                                  NSEventMaskLeftMouseUp)
+                                       untilDate:[NSDate dateWithTimeIntervalSinceNow:0.5]
+                                          inMode:NSEventTrackingRunLoopMode
+                                         dequeue:YES];
+        if (!ev) {
+          if (([NSEvent pressedMouseButtons] & 1) == 0)
+            break;
+          continue;
+        }
+        if (ev.type == NSEventTypeLeftMouseUp)
+          break;
+        NSPoint now = [NSEvent mouseLocation];
+        CGFloat dx = now.x - anchor.x, dy = now.y - anchor.y;
+        // AppKit's origin is the BOTTOM-left, so the north edge moves the
+        // height alone and the south edge moves origin and height together.
+        NSRect f = from;
+        if (east)
+          f.size.width = from.size.width + dx;
+        if (west) {
+          f.origin.x = from.origin.x + dx;
+          f.size.width = from.size.width - dx;
+        }
+        if (north)
+          f.size.height = from.size.height + dy;
+        if (south) {
+          f.origin.y = from.origin.y + dy;
+          f.size.height = from.size.height - dy;
+        }
+        // Clamping has to leave the OPPOSITE edge where it was, or the window
+        // walks across the screen once the pointer passes the floor.
+        if (f.size.width < floor_.width) {
+          f.size.width = floor_.width;
+          if (west)
+            f.origin.x = NSMaxX(from) - floor_.width;
+        }
+        if (f.size.height < floor_.height) {
+          f.size.height = floor_.height;
+          if (south)
+            f.origin.y = NSMaxY(from) - floor_.height;
+        }
+        [win setFrame:f display:YES];
+      }
+    }
+  }
+  delete r;
+}
+#else
+static void do_chrome(webview_t, void *arg) { delete static_cast<ChromeReq *>(arg); }
+static void do_dragwin(webview_t, void *arg) {
+  delete static_cast<std::string *>(arg);
+}
+struct ResizeReq {
+  std::string win, edge;
+};
+static void do_resizewin(webview_t, void *arg) {
+  delete static_cast<ResizeReq *>(arg);
+}
+static void reapply_window_overrides(webview_t) {}
+#endif
+
+// --- multi-window + unified page RPC ---------------------------------------------
+// Every window (the main one included) gets the same injected bridge: the
+// page's __invoke posts to the "tiny" script-message handler, which forwards
+// `CALL <winid>:<seq> [payload]` to the backend. RET lines resolve the
+// promise by evaluating __tinyResolve in the origin window — one code path
+// for any number of windows, and the backend learns which window called.
+// Secondary windows: WINOPEN <id>\t<pagePath>\t<title>\t<WxH>, WINCLOSE <id>,
+// targeted ops via CMD@<id>, EVAL@* broadcasts, `WINCLOSED <id>` on close.
+
+#ifdef __APPLE__
+static NSWindow *window_for_id(webview_t w, const std::string &id) {
+  if (id.empty() || id == "main")
+    return (NSWindow *)webview_get_native_handle(
+        w, WEBVIEW_NATIVE_HANDLE_KIND_UI_WINDOW);
+  auto it = g_windows.find(id);
+  return it == g_windows.end() ? nil : it->second.win;
+}
+
+static WKWebView *webview_for_id(webview_t w, const std::string &id) {
+  if (id.empty() || id == "main")
+    return (WKWebView *)webview_get_native_handle(
+        w, WEBVIEW_NATIVE_HANDLE_KIND_BROWSER_CONTROLLER);
+  auto it = g_windows.find(id);
+  return it == g_windows.end() ? nil : it->second.wv;
+}
+
+static NSVisualEffectView **effect_slot_for(const std::string &id) {
+  if (id.empty() || id == "main")
+    return &g_effect_view;
+  auto it = g_windows.find(id);
+  return it == g_windows.end() ? nullptr : &it->second.effect;
+}
+
+// --- window state events -----------------------------------------------------
+// WINSTATE <id> {"fullscreen":b,"maximized":b,"minimized":b,"focused":b} —
+// same vocabulary as GET win, deduped per window so live-resize spam (and
+// the many notifications one transition fans out into) stays off the wire.
+// The bridge broadcasts each line as a 'window-state' page event and the
+// onWindowState createApp option.
+static std::map<std::string, std::string> g_last_winstate;
+
+static std::string winid_for_nswindow(NSWindow *win) {
+  if (!win)
+    return "";
+  for (auto &kv : g_windows)
+    if (kv.second.win == win)
+      return kv.first;
+  if (g_w && win == (NSWindow *)webview_get_native_handle(
+                        g_w, WEBVIEW_NATIVE_HANDLE_KIND_UI_WINDOW))
+    return "main";
+  return ""; // not ours: dialogs, panels, the devtools window
+}
+
+// Devtools (tinyjs.json "debug"). The Web Inspector attaches to the window
+// bottom by default; small app windows can't fit that, so force it into its
+// own window via the private _WKInspector (show, then detach — a no-op when
+// already windowed). Private API by KVC/performSelector so nothing breaks at
+// compile or load if it moves; the inspector UI's own detach button is the
+// manual fallback.
+static void open_inspector(WKWebView *wv) {
+  if (!wv)
+    return;
+  @try {
+    id insp = [wv valueForKey:@"_inspector"];
+    if ([insp respondsToSelector:@selector(show)])
+      [insp performSelector:@selector(show)];
+    if ([insp respondsToSelector:@selector(detach)])
+      [insp performSelector:@selector(detach)];
+  } @catch (NSException *) {
+  }
+}
+
+static void open_inspector_for_key_window() {
+  if (!g_w)
+    return;
+  std::string id = winid_for_nswindow([NSApp keyWindow]);
+  if (id.empty())
+    id = "main"; // key window is a panel/devtools window: aim at main
+  open_inspector(webview_for_id(g_w, id));
+}
+
+// Launcher-owned devtools key: F12 on every platform, same as Windows/Linux
+// (a bare F12 is no NSMenuItem keyEquivalent, so it rides a local monitor).
+static void install_devtools_key_monitor() {
+  [NSEvent addLocalMonitorForEventsMatchingMask:NSEventMaskKeyDown
+                                        handler:^NSEvent *(NSEvent *ev) {
+    if (ev.keyCode == 111 /* F12 */ &&
+        !(ev.modifierFlags &
+          (NSEventModifierFlagCommand | NSEventModifierFlagOption |
+           NSEventModifierFlagControl | NSEventModifierFlagShift))) {
+      open_inspector_for_key_window();
+      return (NSEvent *)nil;
+    }
+    return ev;
+  }];
+}
+
+// ⌘C/⌘V/⌘X/⌘A/⌘Z/⌘⇧Z reach the webview only as menu key equivalents — a
+// WKWebView turns a bare ⌘C keyDown into nothing. An app may leave the stock
+// Edit items out (`{ role: 'edit', standard: false }`, or roles that skip
+// some), so any of these the CURRENT bar doesn't claim is sent down the
+// responder chain here, exactly as the stock item would have. Anything the
+// bar does claim — stock or the app's own ⌘C — is left to the bar.
+static NSEventModifierFlags key_mods(NSEventModifierFlags f) {
+  return f & (NSEventModifierFlagCommand | NSEventModifierFlagShift |
+              NSEventModifierFlagOption | NSEventModifierFlagControl);
+}
+
+static bool menu_claims_key(NSMenu *menu, NSString *key, NSEventModifierFlags mods) {
+  for (NSMenuItem *mi in menu.itemArray) {
+    if (mi.submenu && menu_claims_key(mi.submenu, key, mods)) return true;
+    NSString *ke = mi.keyEquivalent;
+    if (ke.length == 0) continue;
+    NSEventModifierFlags m = key_mods(mi.keyEquivalentModifierMask);
+    // An uppercase letter means ⇧ (the stock Redo is @"Z" + ⌘).
+    if (![ke isEqualToString:ke.lowercaseString]) {
+      m |= NSEventModifierFlagShift;
+      ke = ke.lowercaseString;
+    }
+    if (m == mods && [ke isEqualToString:key]) return true;
+  }
+  return false;
+}
+
+static void install_stock_key_fallback() {
+  [NSEvent addLocalMonitorForEventsMatchingMask:NSEventMaskKeyDown
+                                        handler:^NSEvent *(NSEvent *ev) {
+    NSEventModifierFlags mods = key_mods(ev.modifierFlags);
+    if (!(mods & NSEventModifierFlagCommand)) return ev;
+    NSString *key = ev.charactersIgnoringModifiers.lowercaseString;
+    const NSEventModifierFlags cmd = NSEventModifierFlagCommand;
+    const NSEventModifierFlags cmd_shift = cmd | NSEventModifierFlagShift;
+    SEL action = nullptr;
+    if (mods == cmd) {
+      if ([key isEqualToString:@"z"]) action = @selector(undo:);
+      else if ([key isEqualToString:@"x"]) action = @selector(cut:);
+      else if ([key isEqualToString:@"c"]) action = @selector(copy:);
+      else if ([key isEqualToString:@"v"]) action = @selector(paste:);
+      else if ([key isEqualToString:@"a"]) action = @selector(selectAll:);
+    } else if (mods == cmd_shift && [key isEqualToString:@"z"]) {
+      action = @selector(redo:);
+    }
+    if (!action || !NSApp.mainMenu || menu_claims_key(NSApp.mainMenu, key, mods))
+      return ev;
+    [NSApp sendAction:action to:nil from:nil];
+    return (NSEvent *)nil;
+  }];
+}
+
+static void emit_winstate(NSWindow *win, const std::string &id) {
+  bool fs = (win.styleMask & NSWindowStyleMaskFullScreen) != 0;
+  auto b = [](bool v) { return v ? "true" : "false"; };
+  // zoomed IS true in fullscreen; report the pre-fullscreen sense instead so
+  // "maximized" means the green-button zoom state, matching Windows/Linux.
+  std::string s = std::string("{\"fullscreen\":") + b(fs) +
+                  ",\"maximized\":" + b(!fs && win.zoomed) +
+                  ",\"minimized\":" + b(win.miniaturized) +
+                  ",\"focused\":" + b(win.keyWindow) + "}";
+  auto it = g_last_winstate.find(id);
+  if (it != g_last_winstate.end() && it->second == s)
+    return;
+  g_last_winstate[id] = s;
+  sock_write_line("WINSTATE " + id + " " + s);
+}
+
+static void install_winstate_observers() {
+  NSArray<NSNotificationName> *names = @[
+    NSWindowDidEnterFullScreenNotification,
+    NSWindowDidExitFullScreenNotification,
+    NSWindowDidMiniaturizeNotification,
+    NSWindowDidDeminiaturizeNotification,
+    NSWindowDidBecomeKeyNotification,
+    NSWindowDidResignKeyNotification,
+    NSWindowDidResizeNotification,
+  ];
+  NSNotificationCenter *nc = [NSNotificationCenter defaultCenter];
+  for (NSNotificationName name in names) {
+    [nc addObserverForName:name
+                    object:nil // every window; ours filtered below
+                     queue:[NSOperationQueue mainQueue]
+                usingBlock:^(NSNotification *n) {
+                  if (![n.object isKindOfClass:[NSWindow class]])
+                    return;
+                  NSWindow *win = (NSWindow *)n.object;
+                  std::string id = winid_for_nswindow(win);
+                  if (id.empty())
+                    return;
+                  // AppKit re-lays-out the standard buttons on resize, on
+                  // the way out of fullscreen, and on a fresh window's first
+                  // layout — cheapest correct answer is to put a custom
+                  // windowControlsPos back on every transition (three
+                  // setFrames, no-op when none is set; the fullscreen guard
+                  // lives in apply_traffic_pos_xy).
+                  apply_traffic_pos(win, id);
+                  emit_winstate(win, id);
+                }];
+  }
+}
+
+static NSString *tiny_shim_js(const std::string &winid) {
+  std::string js =
+      "(() => {"
+      "if (window.__tinyShim) return; window.__tinyShim = true;"
+      "window.__TINY_WIN = '" + winid + "';"
+      "let seq = 0; const pending = {};"
+      "window.__invoke = (payload) => new Promise((res, rej) => {"
+      "  const s = ++seq; pending[s] = { res, rej };"
+      "  window.webkit.messageHandlers.tiny.postMessage(String(s) + ':' + String(payload));"
+      "});"
+      "window.__tinyResolve = (s, ok, jsonText) => {"
+      "  const p = pending[s]; if (!p) return; delete pending[s];"
+      "  let v = null; try { v = JSON.parse(jsonText); } catch (e) {}"
+      "  ok ? p.res(v) : p.rej(v);"
+      "};"
+      "})();";
+  return ns(js);
+}
+
+@interface TinyMsgHandler : NSObject <WKScriptMessageHandler>
+@property(nonatomic, copy) NSString *winId;
+@end
+@implementation TinyMsgHandler
+- (void)userContentController:(WKUserContentController *)ucc
+      didReceiveScriptMessage:(WKScriptMessage *)msg {
+  if (![msg.body isKindOfClass:[NSString class]])
+    return;
+  std::string body = [(NSString *)msg.body UTF8String];
+  size_t c = body.find(':');
+  if (c == std::string::npos)
+    return;
+  std::string seq = body.substr(0, c);
+  std::string payload = body.substr(c + 1);
+  // The seq is the page's own counter and round-trips in RET, which only
+  // accepts digits. Anything else isn't our client talking (#30.6).
+  if (seq.empty() || seq.size() > 15 ||
+      seq.find_first_not_of("0123456789") != std::string::npos)
+    return;
+  // The calling frame's origin rides as the LAST array element — WebKit's
+  // own attestation (frameInfo.securityOrigin), not anything the page said,
+  // so the bridge's per-origin capability gate can trust it.
+  std::string origin = "null";
+  WKSecurityOrigin *so = msg.frameInfo.securityOrigin;
+  if (so && so.protocol.length) {
+    origin = std::string([so.protocol UTF8String]) + "://";
+    if (so.host.length)
+      origin += [so.host UTF8String];
+    NSInteger port = so.port;
+    if (port &&
+        !((port == 80 && [so.protocol isEqualToString:@"http"]) ||
+          (port == 443 && [so.protocol isEqualToString:@"https"])))
+      origin += ":" + std::to_string((long)port);
+  }
+  // The "tiny" handler answers EVERY frame — WebKit gives a page-world
+  // handler to subframes too, though the shim and tiny.js are main-frame
+  // only — so a cross-origin iframe (a CodePen embed, an ad) can post here.
+  // Mark it and let the bridge decide: a subframe call runs only when an
+  // "api".origins key names its origin; with no "api" at all, nothing a
+  // subframe sends runs. Linux gives subframes no bridge at all (#18) and
+  // WebView2 only delivers top-level documents' messages, so this is
+  // macOS's half of the same rule. The marker sits BEFORE the origin (the
+  // bridge reads the origin as the last element) and only we write it: the
+  // payload is one JSON string, so a page can't add array elements here.
+  // The seq gets an 's' prefix so its RET never reaches __tinyResolve —
+  // reply_to_call only accepts digits. Without it, the subframe's reply
+  // (or denial) resolved or rejected the MAIN frame's pending call with the
+  // same number.
+  bool subframe = msg.frameInfo && !msg.frameInfo.isMainFrame;
+  sock_write_line("CALL " + std::string([self.winId UTF8String]) + ":" +
+                  (subframe ? "s" : "") + seq + " [" + json_escape(payload) +
+                  (subframe ? ",\"tiny:subframe\"" : "") + "," +
+                  json_escape(origin) + "]");
+}
+@end
+
+@interface TinyWinDelegate : NSObject <NSWindowDelegate>
+@property(nonatomic, copy) NSString *winId;
+@end
+@implementation TinyWinDelegate
+- (void)windowWillClose:(NSNotification *)n {
+  // Attached windows (win.open parent:) don't outlive their parent. Windows
+  // destroys owned windows and GTK has destroy-with-parent; AppKit just
+  // orphans children on screen, so close them here — deferred, since closing
+  // a window inside another window's close notification invites reentrancy.
+  NSWindow *closing = (NSWindow *)n.object;
+  NSArray *kids = [closing.childWindows copy];
+  if (kids.count) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+      for (NSWindow *k in kids) {
+        [closing removeChildWindow:k];
+        [k close];
+      }
+      [kids release];
+    });
+  } else {
+    [kids release];
+  }
+  std::string id = [self.winId UTF8String];
+  sock_write_line("WINCLOSED " + id);
+  g_last_winstate.erase(id);
+  g_traffic_pos.erase(id);
+  g_traffic_default.erase(id);
+  // A bar of its own goes with it; the next window to take focus puts up
+  // whichever bar is then correct.
+  apply_win_menu(id, {}, false);
+  auto it = g_windows.find(id);
+  if (it != g_windows.end()) {
+    TinyWindow tw = it->second;
+    g_windows.erase(it);
+    // Deferred release: we're inside the window's own close notification.
+    dispatch_async(dispatch_get_main_queue(), ^{
+      [tw.wv release];
+      [tw.handler release];
+      [tw.wdelegate release];
+      [tw.effect release];
+      [tw.win release];
+    });
+  }
+}
+@end
+
+static void attach_tiny_bridge(WKUserContentController *ucc,
+                               const std::string &winid) {
+  TinyMsgHandler *h = [[TinyMsgHandler alloc] init];
+  h.winId = ns(winid);
+  [ucc addScriptMessageHandler:h name:@"tiny"];
+  WKUserScript *script = [[[WKUserScript alloc]
+        initWithSource:tiny_shim_js(winid)
+         injectionTime:WKUserScriptInjectionTimeAtDocumentStart
+      forMainFrameOnly:YES] autorelease];
+  [ucc addUserScript:script];
+  // The tiny.* client library rides along — every page in every window gets
+  // window.tiny with no script tag (dev servers and file pages alike).
+  WKUserScript *client = [[[WKUserScript alloc]
+        initWithSource:[NSString stringWithUTF8String:TINY_CLIENT_JS]
+         injectionTime:WKUserScriptInjectionTimeAtDocumentStart
+      forMainFrameOnly:YES] autorelease];
+  [ucc addUserScript:client];
+  // Optional user-supplied document-start glue (tinyjs.json "inject"; dev
+  // carries it in the TINYJS_INJECT env, packaged apps as Resources/app/
+  // inject.js — both resolved into g_inject_js at startup). Useful when
+  // wrapping a third-party site and you need to shim capabilities/behaviour
+  // before the page boots.
+  if (!g_inject_js.empty()) {
+    WKUserScript *glue = [[[WKUserScript alloc]
+          initWithSource:ns(g_inject_js)
+           injectionTime:WKUserScriptInjectionTimeAtDocumentStart
+        forMainFrameOnly:YES] autorelease];
+    [ucc addUserScript:glue];
+  }
+  // main window: handler ownership parked here (never removed)
+  if (winid != "main")
+    g_windows[winid].handler = h;
+}
+
+// Resolve a page call: RET <winid>:<seq> routes here (dialogs too).
+static void reply_to_call(webview_t w, const std::string &composite, int status,
+                          const std::string &json) {
+  // q<digits>: a dialog the BACKEND opened (#36, a page printToPDF's save
+  // panel) — the answer goes back to it as a read-back, not into a page.
+  if (composite.size() > 1 && composite[0] == 'q' &&
+      composite.find_first_not_of("0123456789", 1) == std::string::npos) {
+    sock_write_line("GOT " + composite.substr(1) + " " + json);
+    return;
+  }
+  size_t c = composite.find(':');
+  if (c == std::string::npos)
+    return;
+  std::string winid = composite.substr(0, c);
+  std::string seq = composite.substr(c + 1);
+  if (seq.empty() || seq.find_first_not_of("0123456789") != std::string::npos)
+    return;
+  WKWebView *wv = webview_for_id(w, winid);
+  if (!wv)
+    return;
+  std::string js = "window.__tinyResolve(" + seq + "," +
+                   (status == 0 ? "true" : "false") + "," + json_escape(json) +
+                   ")";
+  [wv evaluateJavaScript:ns(js) completionHandler:nil];
+}
+
+struct ReplyReq {
+  std::string composite;
+  int status;
+  std::string json;
+};
+
+static void do_reply(webview_t w, void *arg) {
+  ReplyReq *req = static_cast<ReplyReq *>(arg);
+  reply_to_call(w, req->composite, req->status, req->json);
+  delete req;
+}
+
+struct WinOpenReq {
+  std::string id, page, title;
+  int width = 600, height = 400;
+  // Chrome + position applied BEFORE the window is shown (no titlebar flash).
+  std::string frame, traffic, transparent, vibrancy, square, first_mouse; // '' = default
+  std::string traffic_pos;
+  bool hasPos = false;
+  int x = 0, y = 0;
+  std::string parent; // '' | 'main' | a win id: attach above it (child window)
+};
+
+static void enable_webgpu_prefs(id preferences); // defined in WebGPU section
+static void enable_file_access(WKWebViewConfiguration *cfg); // ditto
+// Navigation + download delegate and (for non-main windows) a UI delegate —
+// defined in the browser-affordances section below.
+static void tiny_apply_web_delegates(WKWebView *wv);
+
+static void do_winopen(webview_t w, void *arg) {
+  WinOpenReq *req = static_cast<WinOpenReq *>(arg);
+  @autoreleasepool {
+    if (req->id.empty() || req->id == "main" ||
+        g_windows.count(req->id)) { // exists: just focus it
+      NSWindow *ex = window_for_id(w, req->id);
+      if (ex)
+        [ex makeKeyAndOrderFront:nil];
+      delete req;
+      return;
+    }
+    WKWebViewConfiguration *cfg =
+        [[[WKWebViewConfiguration alloc] init] autorelease];
+    enable_webgpu_prefs(cfg.preferences);
+    enable_file_access(cfg);
+    // Main gets this from webview_create(debug); secondaries build their own
+    // config, so without it child windows were never inspectable.
+    if (g_debug)
+      [cfg.preferences setValue:@YES forKey:@"developerExtrasEnabled"];
+    TinyWindow &tw = g_windows[req->id]; // create slot first (attach parks handler)
+    attach_tiny_bridge(cfg.userContentController, req->id);
+
+    NSWindow *win = [[NSWindow alloc]
+        initWithContentRect:NSMakeRect(0, 0, req->width, req->height)
+                  styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
+                            NSWindowStyleMaskMiniaturizable |
+                            NSWindowStyleMaskResizable
+                    backing:NSBackingStoreBuffered
+                      defer:NO];
+    win.releasedWhenClosed = NO;
+    win.title = ns(req->title.empty() ? req->id : req->title);
+    [win center];
+
+    WKWebView *wv =
+        [[WKWebView alloc] initWithFrame:win.contentView.bounds
+                           configuration:cfg];
+    wv.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+    if (!g_user_agent.empty())
+      wv.customUserAgent = ns(g_user_agent);
+    if (g_debug) {
+      // macOS 13.3+; KVC so older SDKs/OSes just throw into the catch.
+      @try {
+        [wv setValue:@YES forKey:@"inspectable"];
+      } @catch (NSException *) {
+      }
+    }
+    // Navigation events + downloads, and a UI delegate (file pickers, JS
+    // dialogs, window.open) — the main window's come from the webview library
+    // plus the runtime bolt-ons; secondary windows had neither.
+    tiny_apply_web_delegates(wv);
+    [win.contentView addSubview:wv];
+
+    if (req->page.rfind("http://", 0) == 0 ||
+        req->page.rfind("https://", 0) == 0) {
+      // Dev-server pages (devUrl mode); the bridge shim injects the same way.
+      [wv loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:ns(req->page)]]];
+    } else {
+      NSURL *url = [NSURL fileURLWithPath:ns(req->page)];
+      [wv loadFileURL:url allowingReadAccessToURL:tiny_read_access_url(url)];
+    }
+
+    TinyWinDelegate *del = [[TinyWinDelegate alloc] init];
+    del.winId = ns(req->id);
+    win.delegate = del;
+
+    tw.win = win;
+    tw.wv = wv;
+    tw.wdelegate = del;
+
+    // Apply chrome + position BEFORE ordering the window on screen, so a
+    // frameless/positioned secondary window never flashes a titlebar or
+    // jumps from center. The slot exists now (tw is in g_windows).
+    if (!req->frame.empty() || !req->traffic.empty() ||
+        !req->transparent.empty() || !req->vibrancy.empty() ||
+        !req->square.empty() || !req->first_mouse.empty() ||
+        !req->traffic_pos.empty()) {
+      ChromeReq cr;
+      cr.win = req->id;
+      cr.frame = req->frame;
+      cr.traffic = req->traffic;
+      cr.transparent = req->transparent;
+      cr.vibrancy = req->vibrancy;
+      cr.square = req->square;
+      cr.first_mouse = req->first_mouse;
+      cr.traffic_pos = req->traffic_pos;
+      NSVisualEffectView **effect = effect_slot_for(req->id);
+      if (effect)
+        apply_chrome_fields(win, wv, effect, false, &cr);
+      // No size correction needed here: apply_chrome_fields preserves the
+      // content box, and the window was created with initWithContentRect, so
+      // `size` is already the page's box whatever chrome lands on it.
+    }
+    if (req->hasPos) {
+      CGFloat screenTop = NSMaxY([[NSScreen screens][0] frame]);
+      [win setFrameTopLeftPoint:NSMakePoint(req->x, screenTop - req->y)];
+    }
+
+    [win makeKeyAndOrderFront:nil];
+
+    // parent: the native child-window relation — stays above its parent (but
+    // not above other apps), hides/minimizes with it. Attached after ordering
+    // front; a parent that doesn't exist just means an unattached window.
+    // Note AppKit children also MOVE with the parent, unlike the Windows
+    // owner / GTK transient twins — documented, not fought.
+    if (!req->parent.empty()) {
+      NSWindow *pw = window_for_id(w, req->parent);
+      if (pw && pw != win)
+        [pw addChildWindow:win ordered:NSWindowAbove];
+    }
+    if (g_debug_open)
+      open_inspector(wv);
+  }
+  delete req;
+}
+
+static void do_winclose(webview_t w, void *arg) {
+  std::string *id = static_cast<std::string *>(arg);
+  auto it = g_windows.find(*id);
+  if (it != g_windows.end())
+    [it->second.win close]; // delegate sends WINCLOSED + cleans up
+  delete id;
+}
+
+struct EvalReq {
+  std::string win; // "", "main", "*", or an id
+  std::string js;
+};
+
+static void do_title_win(webview_t w, void *arg) {
+  EvalReq *req = static_cast<EvalReq *>(arg); // win + text
+  @autoreleasepool {
+    NSWindow *win = window_for_id(w, req->win);
+    if (win && req->win != "main")
+      win.title = ns(req->js);
+    else if (win)
+      webview_set_title(w, req->js.c_str());
+  }
+  delete req;
+}
+
+static void do_eval_win(webview_t w, void *arg) {
+  EvalReq *req = static_cast<EvalReq *>(arg);
+  @autoreleasepool {
+    if (req->win == "*") {
+      WKWebView *main = webview_for_id(w, "main");
+      if (main)
+        [main evaluateJavaScript:ns(req->js) completionHandler:nil];
+      for (auto &kv : g_windows)
+        [kv.second.wv evaluateJavaScript:ns(req->js) completionHandler:nil];
+    } else {
+      WKWebView *wv = webview_for_id(w, req->win);
+      if (wv)
+        [wv evaluateJavaScript:ns(req->js) completionHandler:nil];
+    }
+  }
+  delete req;
+}
+#else
+struct ReplyReq { std::string composite; int status; std::string json; };
+struct WinOpenReq {
+  std::string id, page, title;
+  int width, height;
+  std::string frame, traffic, transparent, vibrancy, square, first_mouse;
+  bool hasPos;
+  int x, y;
+};
+struct EvalReq { std::string win, js; };
+static void reply_to_call(webview_t, const std::string &, int, const std::string &) {}
+static void do_reply(webview_t, void *arg) { delete static_cast<ReplyReq *>(arg); }
+static void do_winopen(webview_t, void *arg) { delete static_cast<WinOpenReq *>(arg); }
+static void do_winclose(webview_t, void *arg) { delete static_cast<std::string *>(arg); }
+static void do_eval_win(webview_t, void *arg) { delete static_cast<EvalReq *>(arg); }
+static void do_title_win(webview_t, void *arg) { delete static_cast<EvalReq *>(arg); }
+#endif
+
+// --- browser affordances (macOS) --------------------------------------------
+// Everything a *browser* does that a local-page app never needed, for wrapping
+// hosted web apps: JS dialogs (alert/confirm/prompt), downloads, navigation
+// events + policy, window.open, find-in-page. See TODO-site-wrapper.md.
+//
+// Wire additions:
+//   launcher -> backend:
+//     NAV {"window","kind","url","error"?}     kind: start|commit|finish|fail|crash
+//     NAVQ <qid> <winid>\t<url>\t<frame>       policy ask, frame main|sub|'' (unknown):
+//                                              main-frame http(s), unanswered after
+//                                              400ms = allow; other schemes in any
+//                                              frame, unanswered = deny (#30)
+//     DOWNLOAD {"id","url","filename","path","state","error"?}
+//     POPUP {"window","url","action"}          action: window|external|deny
+//   backend -> launcher:
+//     NAVR <qid> allow|deny|external
+//     FIND <id> <term>\t<forward>\t<matchCase> (call-style; resolved via RET path)
+//     STOPFIND <id>
+
+#ifdef __APPLE__
+static std::string tiny_winid_for_webview(WKWebView *wv) {
+  for (auto &kv : g_windows)
+    if (kv.second.wv == wv)
+      return kv.first;
+  return "main";
+}
+
+// -- navigation events + policy --
+
+static void tiny_nav_event(WKWebView *wv, const char *kind, NSURL *url,
+                           NSError *err) {
+  std::string u = url && url.absoluteString ? [url.absoluteString UTF8String] : "";
+  // Internal schemes stay off the wire (the tiny-media proxy, about:blank
+  // during popup setup); file/http(s) are the app's actual documents.
+  if (!u.empty() && u.rfind("http://", 0) != 0 && u.rfind("https://", 0) != 0 &&
+      u.rfind("file://", 0) != 0 && u != "about:blank")
+    return;
+  std::string j = "{\"window\":" + json_escape(tiny_winid_for_webview(wv)) +
+                  ",\"kind\":\"" + kind + "\",\"url\":" + json_escape(u);
+  if (err) {
+    const char *d = err.localizedDescription ? [err.localizedDescription UTF8String] : "";
+    j += ",\"error\":" + json_escape(d ? d : "");
+  }
+  sock_write_line("NAV " + j + "}");
+}
+
+// Other URL schemes (#30): mailto:, ms-settings:, someapp://… — anything a
+// page can name that isn't a web document, the app's own file:// pages, or
+// an engine-internal scheme. The webview never handles these (WKWebView
+// would just fail them, and nothing told the app); every frame's attempt is
+// put to onNavigate as a policy ask instead, and only an 'external' verdict
+// hands the URL to the OS. No answer in 400ms, or no backend, is a deny.
+static bool tiny_other_scheme(const std::string &u) {
+  size_t c = u.find(':');
+  if (c == std::string::npos || c == 0) return false;
+  std::string sch = u.substr(0, c);
+  for (auto &ch : sch) ch = (char)tolower((unsigned char)ch);
+  static const char *mine[] = {"http", "https", "file", "about", "data",
+                               "blob", "javascript", "tiny-media"};
+  for (const char *m : mine)
+    if (sch == m) return false;
+  return true;
+}
+
+// Held policy decisions: qid -> block(int verdict). Main thread only (delegate
+// callbacks, NAVR via webview_dispatch, and the timeout all land there).
+// Verdicts: 0 allow, 1 deny, 2 external (shell-open + cancel).
+static long g_nav_seq = 0;
+static std::map<std::string, void *> g_nav_pending;
+
+static void tiny_nav_resolve(const std::string &qid, int verdict) {
+  auto it = g_nav_pending.find(qid);
+  if (it == g_nav_pending.end())
+    return; // already resolved (timeout beat the reply, or vice versa)
+  void (^b)(int) = (void (^)(int))it->second;
+  g_nav_pending.erase(it);
+  b(verdict);
+  [b release];
+}
+
+// -- downloads --
+
+struct TinyDownloadInfo {
+  long id;
+  std::string url, filename, path;
+  double lastEmit = 0;    // throttle for progress events (monotonic ms)
+  bool observing = false; // NSProgress KVO registered
+};
+static std::map<void *, TinyDownloadInfo> g_downloads; // WKDownload* (main thread)
+static long g_download_seq = 0;
+
+static void tiny_download_event(long id, const std::string &url,
+                                const std::string &filename,
+                                const std::string &path, const char *state,
+                                const std::string &err,
+                                long long bytes = -1, long long total = -1) {
+  std::string j = "{\"id\":" + std::to_string(id) +
+                  ",\"url\":" + json_escape(url) +
+                  ",\"filename\":" + json_escape(filename) +
+                  ",\"path\":" + (path.empty() ? "null" : json_escape(path)) +
+                  ",\"state\":\"" + state + "\"";
+  if (bytes >= 0) {
+    j += ",\"bytes\":" + std::to_string(bytes);
+    // totalUnitCount is -1/0 while the response has no Content-Length.
+    j += ",\"total\":" + std::to_string(total > 0 ? total : -1);
+  }
+  if (!err.empty())
+    j += ",\"error\":" + json_escape(err);
+  sock_write_line("DOWNLOAD " + j + "}");
+}
+
+static NSString *tiny_downloads_dir() {
+  NSArray *dirs = NSSearchPathForDirectoriesInDomains(NSDownloadsDirectory,
+                                                      NSUserDomainMask, YES);
+  return dirs.count ? dirs[0] : [@"~/Downloads" stringByExpandingTildeInPath];
+}
+
+static void tiny_test_autodlg_arm(); // test hook, defined with the JS dialogs
+
+@interface TinyWebDelegate : NSObject <WKNavigationDelegate, WKDownloadDelegate>
+@end
+@implementation TinyWebDelegate
+
+- (void)webView:(WKWebView *)wv
+    decidePolicyForNavigationAction:(WKNavigationAction *)action
+                    decisionHandler:(void (^)(WKNavigationActionPolicy))decide {
+  NSURL *url = action.request.URL;
+  std::string u = url && url.absoluteString ? [url.absoluteString UTF8String] : "";
+  // <a download> and window.open'd blob: URLs ask to be downloads up front.
+  if (action.shouldPerformDownload) {
+    decide(WKNavigationActionPolicyDownload);
+    return;
+  }
+  // No target frame = a popup the UI delegate's createWebView didn't take
+  // (rel=noopener paths). Same policy as window.open, minus the ability to
+  // hand back a webview from here: window mode degrades to external.
+  if (!action.targetFrame) {
+    if (g_popup_mode != "deny" && url &&
+        (u.rfind("http://", 0) == 0 || u.rfind("https://", 0) == 0))
+      [[NSWorkspace sharedWorkspace] openURL:url];
+    decide(WKNavigationActionPolicyCancel);
+    return;
+  }
+  if (tiny_other_scheme(u)) {
+    if (g_sock < 0) {
+      decide(WKNavigationActionPolicyCancel);
+      return;
+    }
+    std::string qid = "n" + std::to_string(++g_nav_seq);
+    void (^decideCopy)(WKNavigationActionPolicy) = [decide copy];
+    NSURL *ext = [url retain];
+    void (^resolver)(int) = [^(int verdict) {
+      if (verdict == 2 && ext)
+        [[NSWorkspace sharedWorkspace] openURL:ext];
+      decideCopy(WKNavigationActionPolicyCancel);
+      [decideCopy release];
+      [ext release];
+    } copy];
+    g_nav_pending[qid] = (void *)resolver;
+    sock_write_line("NAVQ " + qid + " " + tiny_winid_for_webview(wv) + "\t" + u +
+                    (action.targetFrame.mainFrame ? "\tmain" : "\tsub"));
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(400 * NSEC_PER_MSEC)),
+                   dispatch_get_main_queue(), ^{
+                     tiny_nav_resolve(qid, 1);
+                   });
+    return;
+  }
+  // Policy asks cover main-frame http(s) only — file:// pages are the app's
+  // own frontend, subframes are the page's business. Unanswered (backend not
+  // yet attached, no onNavigate handler answering in time) = allow, so a
+  // wrapper can never deadlock its own first load.
+  if (!action.targetFrame.mainFrame ||
+      (u.rfind("http://", 0) != 0 && u.rfind("https://", 0) != 0) ||
+      g_sock < 0) {
+    decide(WKNavigationActionPolicyAllow);
+    return;
+  }
+  std::string qid = "n" + std::to_string(++g_nav_seq);
+  void (^decideCopy)(WKNavigationActionPolicy) = [decide copy];
+  NSURL *ext = [url retain];
+  void (^resolver)(int) = [^(int verdict) {
+    if (verdict == 2 && ext)
+      [[NSWorkspace sharedWorkspace] openURL:ext];
+    decideCopy(verdict == 0 ? WKNavigationActionPolicyAllow
+                            : WKNavigationActionPolicyCancel);
+    [decideCopy release];
+    [ext release];
+  } copy];
+  g_nav_pending[qid] = (void *)resolver;
+  sock_write_line("NAVQ " + qid + " " + tiny_winid_for_webview(wv) + "\t" + u + "\tmain");
+  dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(400 * NSEC_PER_MSEC)),
+                 dispatch_get_main_queue(), ^{
+                   tiny_nav_resolve(qid, 0);
+                 });
+}
+
+- (void)webView:(WKWebView *)wv
+    decidePolicyForNavigationResponse:(WKNavigationResponse *)resp
+                      decisionHandler:(void (^)(WKNavigationResponsePolicy))decide {
+  // Anything the webview can't render inline (attachments, CSV exports,
+  // unknown MIME types) becomes a download instead of a silent nothing.
+  decide(resp.canShowMIMEType ? WKNavigationResponsePolicyAllow
+                              : WKNavigationResponsePolicyDownload);
+}
+
+- (void)webView:(WKWebView *)wv
+    didStartProvisionalNavigation:(WKNavigation *)nav {
+  tiny_nav_event(wv, "start", wv.URL, nil);
+}
+- (void)webView:(WKWebView *)wv didCommitNavigation:(WKNavigation *)nav {
+  tiny_nav_event(wv, "commit", wv.URL, nil);
+}
+- (void)webView:(WKWebView *)wv didFinishNavigation:(WKNavigation *)nav {
+  // Popup windows carry the page's own title (like a browser would); other
+  // windows' titles belong to the app (setTitle / WINOPEN).
+  std::string wid = tiny_winid_for_webview(wv);
+  if (wid.rfind("popup", 0) == 0 && wv.title.length) {
+    auto it = g_windows.find(wid);
+    if (it != g_windows.end() && it->second.win)
+      it->second.win.title = wv.title;
+  }
+  tiny_nav_event(wv, "finish", wv.URL, nil);
+}
+// A failed (provisional) navigation names its target in the error, not in
+// wv.URL — by fail time that's still the page being LOOKED AT, and reporting
+// it as the failure sent apps chasing the wrong URL (measured: a
+// navigation-turned-download "failed" as the current file:// page).
+static NSURL *tiny_failing_url(WKWebView *wv, NSError *error) {
+  NSString *s = error.userInfo[NSURLErrorFailingURLStringErrorKey];
+  NSURL *u = s.length ? [NSURL URLWithString:s] : nil;
+  return u ? u : wv.URL;
+}
+
+// Not failures: NSURLErrorCancelled (our own policy cancels, rapid
+// re-navigation) and WebKit's "frame load interrupted" 102 — that one is how
+// a navigation-becoming-a-download reports itself, and painting an offline
+// screen because the user exported a CSV would be exactly wrong.
+static bool tiny_nav_error_is_noise(NSError *error) {
+  if ([error.domain isEqualToString:NSURLErrorDomain] &&
+      error.code == NSURLErrorCancelled)
+    return true;
+  if ([error.domain isEqualToString:@"WebKitErrorDomain"] && error.code == 102)
+    return true;
+  return false;
+}
+
+- (void)webView:(WKWebView *)wv
+    didFailProvisionalNavigation:(WKNavigation *)nav
+                       withError:(NSError *)error {
+  if (tiny_nav_error_is_noise(error))
+    return;
+  tiny_nav_event(wv, "fail", tiny_failing_url(wv, error), error);
+}
+- (void)webView:(WKWebView *)wv didFailNavigation:(WKNavigation *)nav
+      withError:(NSError *)error {
+  if (tiny_nav_error_is_noise(error))
+    return;
+  tiny_nav_event(wv, "fail", tiny_failing_url(wv, error), error);
+}
+- (void)webViewWebContentProcessDidTerminate:(WKWebView *)wv {
+  tiny_nav_event(wv, "crash", wv.URL, nil);
+}
+
+- (void)webView:(WKWebView *)wv
+    navigationAction:(WKNavigationAction *)action
+   didBecomeDownload:(WKDownload *)download {
+  download.delegate = self;
+}
+- (void)webView:(WKWebView *)wv
+    navigationResponse:(WKNavigationResponse *)resp
+     didBecomeDownload:(WKDownload *)download {
+  download.delegate = self;
+}
+
+- (void)download:(WKDownload *)download
+    decideDestinationUsingResponse:(NSURLResponse *)response
+                 suggestedFilename:(NSString *)suggested
+                 completionHandler:(void (^)(NSURL *))done {
+  @autoreleasepool {
+    std::string url = response.URL && response.URL.absoluteString
+                          ? [response.URL.absoluteString UTF8String]
+                          : "";
+    std::string mode = g_downloads_mode.empty() ? "auto" : g_downloads_mode;
+    NSString *name = suggested.length ? suggested : @"download";
+    if (mode == "deny") {
+      tiny_download_event(++g_download_seq, url, [name UTF8String], "",
+                          "denied", "");
+      done(nil);
+      return;
+    }
+    NSString *full = nil;
+    if (mode == "ask") {
+      NSSavePanel *panel = [NSSavePanel savePanel];
+      panel.nameFieldStringValue = name;
+      panel.directoryURL = [NSURL fileURLWithPath:tiny_downloads_dir()];
+      tiny_test_autodlg_arm();
+      if ([panel runModal] != NSModalResponseOK || !panel.URL) {
+        tiny_download_event(++g_download_seq, url, [name UTF8String], "",
+                            "cancelled", "");
+        done(nil);
+        return;
+      }
+      full = panel.URL.path;
+      name = full.lastPathComponent;
+    } else {
+      // auto: ~/Downloads, extension derived from the MIME type when the
+      // name has none, de-duplicated rather than overwritten (WKDownload
+      // refuses an existing destination anyway).
+      if (name.pathExtension.length == 0 && response.MIMEType.length) {
+        UTType *t = [UTType typeWithMIMEType:response.MIMEType];
+        if (t.preferredFilenameExtension.length)
+          name = [name stringByAppendingPathExtension:t.preferredFilenameExtension];
+      }
+      NSString *dir = tiny_downloads_dir();
+      NSString *base = [name stringByDeletingPathExtension];
+      NSString *ext = name.pathExtension;
+      NSFileManager *fm = [NSFileManager defaultManager];
+      NSString *cand = name;
+      for (int n = 2;
+           [fm fileExistsAtPath:[dir stringByAppendingPathComponent:cand]] &&
+           n < 1000;
+           n++)
+        cand = ext.length
+                   ? [NSString stringWithFormat:@"%@ (%d).%@", base, n, ext]
+                   : [NSString stringWithFormat:@"%@ (%d)", base, n];
+      name = cand;
+      full = [dir stringByAppendingPathComponent:cand];
+    }
+    long id_ = ++g_download_seq;
+    TinyDownloadInfo &info = g_downloads[(void *)download];
+    info = {id_, url, [name UTF8String], [full UTF8String]};
+    tiny_download_event(id_, url, [name UTF8String], [full UTF8String],
+                        "started", "");
+    // Progress: KVO the download's NSProgress, throttled to ~4 events/s in
+    // the observer. Context carries the WKDownload so the callback can find
+    // its bookkeeping.
+    @try {
+      [download.progress addObserver:self
+                          forKeyPath:@"completedUnitCount"
+                             options:0
+                             context:(void *)download];
+      info.observing = true;
+    } @catch (NSException *) {
+    }
+    done([NSURL fileURLWithPath:full]);
+  }
+}
+
+- (void)observeValueForKeyPath:(NSString *)kp
+                      ofObject:(id)obj
+                        change:(NSDictionary *)ch
+                       context:(void *)ctx {
+  if (![kp isEqualToString:@"completedUnitCount"])
+    return;
+  // KVO fires on whatever thread advanced the progress; the map lives on the
+  // main thread. The block retains `obj`, and the map lookup guards against
+  // a download that finished in between.
+  dispatch_async(dispatch_get_main_queue(), ^{
+    auto it = g_downloads.find(ctx);
+    if (it == g_downloads.end())
+      return;
+    double now = tiny_now_ms();
+    if (now - it->second.lastEmit < 250)
+      return;
+    it->second.lastEmit = now;
+    NSProgress *p = (NSProgress *)obj;
+    tiny_download_event(it->second.id, it->second.url, it->second.filename,
+                        it->second.path, "progress", "",
+                        (long long)p.completedUnitCount,
+                        (long long)p.totalUnitCount);
+  });
+}
+
+- (void)stopObservingDownload:(WKDownload *)download
+                         info:(TinyDownloadInfo &)info {
+  if (!info.observing)
+    return;
+  info.observing = false;
+  @try {
+    [download.progress removeObserver:self forKeyPath:@"completedUnitCount"];
+  } @catch (NSException *) {
+  }
+}
+
+- (void)downloadDidFinish:(WKDownload *)download {
+  auto it = g_downloads.find((void *)download);
+  if (it == g_downloads.end())
+    return;
+  [self stopObservingDownload:download info:it->second];
+  tiny_download_event(it->second.id, it->second.url, it->second.filename,
+                      it->second.path, "done", "");
+  g_downloads.erase(it);
+}
+- (void)download:(WKDownload *)download
+    didFailWithError:(NSError *)error
+          resumeData:(NSData *)resumeData {
+  auto it = g_downloads.find((void *)download);
+  if (it == g_downloads.end())
+    return; // denied/cancelled before a destination — already reported
+  [self stopObservingDownload:download info:it->second];
+  const char *d = error.localizedDescription ? [error.localizedDescription UTF8String] : "";
+  tiny_download_event(it->second.id, it->second.url, it->second.filename,
+                      it->second.path, "failed", d ? d : "");
+  g_downloads.erase(it);
+}
+@end
+
+static TinyWebDelegate *g_web_delegate = nil;
+static id g_secondary_ui_delegate = nil; // WebviewWKUIDelegate for non-main windows
+
+// navigationDelegate/UIDelegate are weak — the globals hold the strong refs.
+// Main already has the library's UI delegate (plus our runtime bolt-ons);
+// secondary windows had none, which also left <input type=file> dead there.
+static void tiny_apply_web_delegates(WKWebView *wv) {
+  if (!wv)
+    return;
+  if (!g_web_delegate)
+    g_web_delegate = [[TinyWebDelegate alloc] init];
+  wv.navigationDelegate = g_web_delegate;
+  if (!wv.UIDelegate) {
+    if (!g_secondary_ui_delegate) {
+      Class cls = objc_lookUpClass("WebviewWKUIDelegate");
+      if (cls)
+        g_secondary_ui_delegate = [[cls alloc] init];
+    }
+    if (g_secondary_ui_delegate)
+      wv.UIDelegate = (id<WKUIDelegate>)g_secondary_ui_delegate;
+  }
+}
+
+// TINYJS_TEST_AUTODLG=ok|cancel — answer the next modal panel by pressing its
+// REAL default/cancel button (keyEquivalent \r / esc). Test hook for headless
+// dialog verification: runModal blocks the thread that called it, but the main
+// queue keeps draining during modal sessions, so a block armed just before
+// runModal fires into the panel. Inert unless the env var is set; never in
+// normal use. (The panels are in-process — the launcher isn't sandboxed — so
+// the buttons are really there.)
+//
+// POLLS rather than firing once: an NSAlert is up within ~100ms, but an
+// NSSavePanel routinely takes longer than a second, and a single-shot timer
+// found no modalWindow and gave up silently — the ask-mode download then sat
+// waiting for a human (measured 2026-08-05). Gives up after ~6s so a wedged
+// test still ends.
+static void tiny_collect_buttons(NSView *v, NSMutableArray *out) {
+  for (NSView *s in v.subviews) {
+    if ([s isKindOfClass:[NSButton class]])
+      [out addObject:s];
+    tiny_collect_buttons(s, out);
+  }
+}
+// NSString rather than std::string: a block capturing a C++ reference
+// parameter bound to a temporary is dangling by the time it fires — the
+// "cancel" comparison then read garbage and pressed the DEFAULT button, so
+// the cancel run silently tested the OK path (measured 2026-08-05). NSString
+// is retained by the block, so this can't rot.
+static void tiny_test_autodlg_poll(NSString *mode, int tries) {
+  dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(200 * NSEC_PER_MSEC)),
+                 dispatch_get_main_queue(), ^{
+                   NSWindow *mw = [NSApp modalWindow];
+                   if (!mw) {
+                     if (tries > 0)
+                       tiny_test_autodlg_poll(mode, tries - 1);
+                     return;
+                   }
+                   bool cancel = [mode isEqualToString:@"cancel"];
+                   // Save/open panels are hosted OUT OF PROCESS on modern
+                   // macOS, so their buttons aren't in our view tree at all
+                   // (the button search found none and left the panel up).
+                   // cancel: is implemented and works; ok: is declared but
+                   // THROWS "-[NSSavePanel ok:] : not implemented", which
+                   // took the app down — so confirm the way a user does,
+                   // with Return, and fall back to ending the modal session
+                   // with the same code the Save button would return.
+                   if ([mw isKindOfClass:[NSSavePanel class]]) {
+                     if (cancel) {
+                       [(NSSavePanel *)mw cancel:nil];
+                       return;
+                     }
+                     NSEvent *ret =
+                         [NSEvent keyEventWithType:NSEventTypeKeyDown
+                                          location:NSZeroPoint
+                                     modifierFlags:0
+                                         timestamp:0
+                                      windowNumber:mw.windowNumber
+                                           context:nil
+                                        characters:@"\r"
+                       charactersIgnoringModifiers:@"\r"
+                                         isARepeat:NO
+                                           keyCode:36];
+                     if (![mw performKeyEquivalent:ret])
+                       [NSApp stopModalWithCode:NSModalResponseOK];
+                     return;
+                   }
+                   NSMutableArray *btns = [NSMutableArray array];
+                   tiny_collect_buttons(mw.contentView, btns);
+                   NSString *want = cancel ? @"\x1b" : @"\r";
+                   for (NSButton *b in btns)
+                     if ([b.keyEquivalent isEqualToString:want]) {
+                       [b performClick:nil];
+                       return;
+                     }
+                   // An alert with no Cancel (plain alert()) has only the
+                   // default button — pressing it is the only way out.
+                   for (NSButton *b in btns)
+                     if ([b.keyEquivalent isEqualToString:@"\r"]) {
+                       [b performClick:nil];
+                       return;
+                     }
+                   if (btns.count)
+                     [(NSButton *)btns[0] performClick:nil];
+                 });
+}
+static void tiny_test_autodlg_arm() {
+  const char *mode = getenv("TINYJS_TEST_AUTODLG");
+  if (!mode || !*mode)
+    return;
+  tiny_test_autodlg_poll([NSString stringWithUTF8String:mode], 30);
+}
+
+// -- JS dialogs (alert / confirm / prompt) --
+// Synchronous page primitives (`confirm()` must return a bool NOW) — nothing
+// tiny.dialog's async RPC can shim, so they get real panels here, styled like
+// do_dialog's. Headline is the page's origin: for a wrapped third-party site
+// that's the honest attribution, for the app's own file:// pages it falls
+// back to the app name. Bolted onto the vendored WebviewWKUIDelegate at
+// runtime (same pattern as install_media_capture_hook) so the header stays
+// pristine; the class is shared by every window.
+
+static NSString *tiny_js_dialog_title(WKFrameInfo *frame) {
+  NSString *host = frame.securityOrigin.host;
+  return host.length ? host : ns(g_app_name);
+}
+
+static void tiny_js_alert(id, SEL, WKWebView *, NSString *msg,
+                          WKFrameInfo *frame, void (^done)(void)) {
+  @autoreleasepool {
+    NSAlert *a = [[[NSAlert alloc] init] autorelease];
+    a.messageText = tiny_js_dialog_title(frame);
+    a.informativeText = msg ?: @"";
+    [a addButtonWithTitle:@"OK"];
+    tiny_test_autodlg_arm();
+    [a runModal];
+  }
+  done();
+}
+
+static void tiny_js_confirm(id, SEL, WKWebView *, NSString *msg,
+                            WKFrameInfo *frame, void (^done)(BOOL)) {
+  BOOL ok;
+  @autoreleasepool {
+    NSAlert *a = [[[NSAlert alloc] init] autorelease];
+    a.messageText = tiny_js_dialog_title(frame);
+    a.informativeText = msg ?: @"";
+    [a addButtonWithTitle:@"OK"];
+    [a addButtonWithTitle:@"Cancel"];
+    tiny_test_autodlg_arm();
+    ok = [a runModal] == NSAlertFirstButtonReturn;
+  }
+  done(ok);
+}
+
+static void tiny_js_prompt(id, SEL, WKWebView *, NSString *msg,
+                           NSString *defaultText, WKFrameInfo *frame,
+                           void (^done)(NSString *)) {
+  NSString *result = nil;
+  @autoreleasepool {
+    NSAlert *a = [[[NSAlert alloc] init] autorelease];
+    a.messageText = tiny_js_dialog_title(frame);
+    a.informativeText = msg ?: @"";
+    NSTextField *field =
+        [[[NSTextField alloc] initWithFrame:NSMakeRect(0, 0, 260, 24)] autorelease];
+    field.stringValue = defaultText ?: @"";
+    a.accessoryView = field;
+    a.window.initialFirstResponder = field;
+    [a addButtonWithTitle:@"OK"];
+    [a addButtonWithTitle:@"Cancel"];
+    tiny_test_autodlg_arm();
+    if ([a runModal] == NSAlertFirstButtonReturn)
+      // OWNED copy, not autorelease: the pool drains at the closing brace
+      // below, and done() runs after it. An autoreleased string here was a
+      // use-after-free — WebKit read the freed CFString and the app died in
+      // __CF_IS_OBJC (EXC_BREAKPOINT), i.e. every prompt() that returned a
+      // value crashed the app. Caught 2026-08-05 by the headless dialog run.
+      result = [field.stringValue copy];
+  }
+  done(result);
+  [result release];
+}
+
+// -- window.open / target=_blank --
+// createWebView must answer synchronously (return a WKWebView or nil), but
+// the DECISION doesn't have to be: "popups" config ("window" | external |
+// deny) fixes what's returned, then a POPUPQ ask lets onWindowOpen refine it
+// — unanswered after 400ms = the configured mode. In window mode the popup
+// is built (and starts loading) but stays HIDDEN until the verdict: 'window'
+// orders it front, 'external'/'deny' close it before it ever paints. In
+// external/deny modes nothing exists to show, so the hook can only choose
+// between those two ('window' needs "popups": "window" — the webview had to
+// be returned synchronously).
+//
+// window mode returns a real webview built on the provided configuration —
+// the only way window.open's return value, window.opener and postMessage
+// keep working (OAuth popups check). It gets a FRESH userContentController:
+// the inherited one carries the parent's tiny shim with the parent's window
+// id baked in, which would cross-wire the two windows' RPC promise tables.
+
+static long g_popup_seq = 0;
+static long g_popup_qseq = 0;
+static std::map<std::string, void *> g_popup_pending; // qid -> block(verdict)
+
+static void tiny_popup_resolve(const std::string &qid,
+                               const std::string &verdict) {
+  auto it = g_popup_pending.find(qid);
+  if (it == g_popup_pending.end())
+    return;
+  void (^b)(const std::string &) = (void (^)(const std::string &))it->second;
+  g_popup_pending.erase(it);
+  b(verdict);
+  [b release];
+}
+
+static void tiny_popup_ask(const std::string &pid, const std::string &opener,
+                           const std::string &u, const std::string &mode,
+                           void (^resolver)(const std::string &)) {
+  if (g_sock < 0) { // backend not attached: the configured mode stands
+    resolver(mode);
+    return;
+  }
+  std::string qid = "p" + std::to_string(++g_popup_qseq);
+  g_popup_pending[qid] = (void *)[resolver copy];
+  sock_write_line("POPUPQ " + qid + " " + (pid.empty() ? "-" : pid) + "\t" +
+                  opener + "\t" + u + "\t" + mode);
+  dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(400 * NSEC_PER_MSEC)),
+                 dispatch_get_main_queue(), ^{
+                   tiny_popup_resolve(qid, mode);
+                 });
+}
+
+static void tiny_popup_event(const std::string &pid, const std::string &u,
+                             const std::string &action) {
+  sock_write_line("POPUP {\"window\":" +
+                  (pid.empty() ? "null" : json_escape(pid)) +
+                  ",\"url\":" + json_escape(u) + ",\"action\":\"" + action +
+                  "\"}");
+}
+
+static WKWebView *tiny_create_webview(id, SEL, WKWebView *parent,
+                                      WKWebViewConfiguration *cfg,
+                                      WKNavigationAction *action,
+                                      WKWindowFeatures *feat) {
+  @autoreleasepool {
+    NSURL *url = action.request.URL;
+    std::string u = url && url.absoluteString ? [url.absoluteString UTF8String] : "";
+    bool web = u.rfind("http://", 0) == 0 || u.rfind("https://", 0) == 0;
+    std::string mode = g_popup_mode.empty() ? "external" : g_popup_mode;
+    std::string opener = tiny_winid_for_webview(parent);
+
+    if (mode == "window") {
+      std::string wid = "popup" + std::to_string(++g_popup_seq);
+      while (g_windows.count(wid))
+        wid = "popup" + std::to_string(++g_popup_seq);
+      WKUserContentController *ucc =
+          [[[WKUserContentController alloc] init] autorelease];
+      cfg.userContentController = ucc;
+      TinyWindow &tw = g_windows[wid]; // slot first (attach parks handler)
+      attach_tiny_bridge(ucc, wid);
+
+      int w = feat.width ? feat.width.intValue : 0;
+      int h = feat.height ? feat.height.intValue : 0;
+      if (w < 120) w = 900;
+      if (h < 90) h = 600;
+      NSWindow *win = [[NSWindow alloc]
+          initWithContentRect:NSMakeRect(0, 0, w, h)
+                    styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
+                              NSWindowStyleMaskMiniaturizable |
+                              NSWindowStyleMaskResizable
+                      backing:NSBackingStoreBuffered
+                        defer:NO];
+      win.releasedWhenClosed = NO;
+      if (feat.x && feat.y) {
+        // window.open's left/top, in the same top-left coordinates SETPOS
+        // uses.
+        CGFloat screenTop = NSMaxY([[NSScreen screens][0] frame]);
+        [win setFrameTopLeftPoint:NSMakePoint(feat.x.doubleValue,
+                                              screenTop - feat.y.doubleValue)];
+      } else {
+        [win center];
+      }
+
+      WKWebView *wv = [[WKWebView alloc] initWithFrame:win.contentView.bounds
+                                         configuration:cfg];
+      wv.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+      if (!g_user_agent.empty())
+        wv.customUserAgent = ns(g_user_agent);
+      if (g_debug)
+        @try {
+          [wv setValue:@YES forKey:@"inspectable"];
+        } @catch (NSException *) {
+        }
+      tiny_apply_web_delegates(wv);
+      [win.contentView addSubview:wv];
+
+      TinyWinDelegate *del = [[TinyWinDelegate alloc] init];
+      del.winId = ns(wid);
+      win.delegate = del;
+      tw.win = win;
+      tw.wv = wv;
+      tw.wdelegate = del;
+      // NOT ordered front yet — the verdict decides (loading proceeds
+      // meanwhile, same tradeoff as the nav-policy hold).
+      std::string wid2 = wid, u2 = u;
+      NSURL *ext = url;
+      bool web2 = web;
+      tiny_popup_ask(wid, opener, u, "window",
+                     ^(const std::string &v) {
+                       std::string a = (v == "external" || v == "deny") ? v : "window";
+                       auto it = g_windows.find(wid2);
+                       NSWindow *pw = it != g_windows.end() ? it->second.win : nil;
+                       if (a == "window") {
+                         if (pw)
+                           [pw makeKeyAndOrderFront:nil];
+                       } else {
+                         if (a == "external" && web2 && ext)
+                           [[NSWorkspace sharedWorkspace] openURL:ext];
+                         if (pw)
+                           [pw close]; // emits WINCLOSED + cleans the slot
+                       }
+                       tiny_popup_event(wid2, u2, a);
+                     });
+      return wv; // WebKit issues the load itself
+    }
+
+    // external / deny: nothing to return either way, so the ask is free.
+    std::string u2 = u;
+    NSURL *ext = url;
+    bool web2 = web;
+    std::string mode2 = mode;
+    tiny_popup_ask("", opener, u, mode,
+                   ^(const std::string &v) {
+                     // 'window' can't be honored here (nil already returned)
+                     // — coerce to the configured mode.
+                     std::string a = (v == "external" || v == "deny") ? v : mode2;
+                     if (a == "external" && web2 && ext)
+                       [[NSWorkspace sharedWorkspace] openURL:ext];
+                     tiny_popup_event("", u2, a);
+                   });
+    return nil;
+  }
+}
+
+struct PopuprReq {
+  std::string qid, verdict;
+};
+static void do_popupr(webview_t, void *arg) {
+  PopuprReq *req = static_cast<PopuprReq *>(arg);
+  tiny_popup_resolve(req->qid, req->verdict);
+  delete req;
+}
+
+// Bolt the JS-dialog + createWebView handlers onto the vendored UI delegate
+// class at runtime (registered by webview_create — call after).
+static void install_page_dialog_hooks() {
+  Class cls = objc_lookUpClass("WebviewWKUIDelegate");
+  if (!cls)
+    return;
+  struct {
+    const char *sel;
+    IMP imp;
+    const char *types;
+  } adds[] = {
+      {"webView:runJavaScriptAlertPanelWithMessage:initiatedByFrame:"
+       "completionHandler:",
+       (IMP)tiny_js_alert, "v@:@@@@?"},
+      {"webView:runJavaScriptConfirmPanelWithMessage:initiatedByFrame:"
+       "completionHandler:",
+       (IMP)tiny_js_confirm, "v@:@@@@?"},
+      {"webView:runJavaScriptTextInputPanelWithPrompt:defaultText:"
+       "initiatedByFrame:completionHandler:",
+       (IMP)tiny_js_prompt, "v@:@@@@@?"},
+      {"webView:createWebViewWithConfiguration:forNavigationAction:"
+       "windowFeatures:",
+       (IMP)tiny_create_webview, "@@:@@@@"},
+  };
+  for (auto &m : adds) {
+    SEL sel = sel_registerName(m.sel);
+    if (!class_getInstanceMethod(cls, sel))
+      class_addMethod(cls, sel, m.imp, m.types);
+  }
+}
+
+// -- find-in-page --
+// Call-style like DLG: the bridge hands the call id over, the completion
+// resolves the page's promise via reply_to_call. WKWebView's public find API
+// reports found/not-found only (no match counts).
+
+struct FindReq {
+  std::string id, term;
+  bool forward = true, matchCase = false;
+};
+
+static void do_find(webview_t w, void *arg) {
+  FindReq *req = static_cast<FindReq *>(arg);
+  @autoreleasepool {
+    size_t c = req->id.find(':');
+    std::string winid = c == std::string::npos ? "main" : req->id.substr(0, c);
+    WKWebView *wv = webview_for_id(w, winid);
+    if (!wv || req->term.empty()) {
+      reply_to_call(w, req->id, 0, "{\"found\":false}");
+      delete req;
+      return;
+    }
+    WKFindConfiguration *fc = [[[WKFindConfiguration alloc] init] autorelease];
+    fc.backwards = !req->forward;
+    fc.caseSensitive = req->matchCase;
+    fc.wraps = YES;
+    std::string cid = req->id; // NOT `id` — that would shadow the ObjC type
+                               // inside the blocks below
+    // Match counts: WebKit's public find API reports found/not-found only, so
+    // a JS pass counts occurrences (walking text nodes — skipping script/
+    // style — into one string, so matches spanning inline elements count) and
+    // derives the active index from where the find selection starts.
+    // Approximate by construction: hidden text still counts, textContent vs
+    // rendered text can differ. The selection IS the native match, though, so
+    // activeMatch tracks stepping correctly on normal pages.
+    std::string countJs =
+        "(function(t,cs){try{"
+        "var sel=getSelection(),sn=null,so=0;"
+        "if(sel.rangeCount){var r=sel.getRangeAt(0);sn=r.startContainer;so=r.startOffset;}"
+        "var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,{acceptNode:function(n){"
+        "var p=n.parentNode&&n.parentNode.nodeName;"
+        "return(p==='SCRIPT'||p==='STYLE'||p==='NOSCRIPT')?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT;}});"
+        "var text='',selAt=-1,nd;"
+        "while((nd=w.nextNode())){if(nd===sn)selAt=text.length+so;text+=nd.nodeValue;}"
+        "if(!cs){t=t.toLowerCase();text=text.toLowerCase();}"
+        "var n=0,act=0,i=0;"
+        "while((i=text.indexOf(t,i))!==-1){n++;if(selAt>=0&&i<=selAt)act=n;i+=t.length;}"
+        "return JSON.stringify({found:true,matches:n,activeMatch:act});"
+        "}catch(e){return '{\"found\":true}';}})(" +
+        json_escape(req->term) + "," + (req->matchCase ? "true" : "false") + ")";
+    NSString *countNs = ns(countJs);
+    [wv findString:ns(req->term)
+        withConfiguration:fc
+        completionHandler:^(WKFindResult *r) {
+          if (!r.matchFound) {
+            reply_to_call(g_w, cid, 0,
+                          "{\"found\":false,\"matches\":0,\"activeMatch\":0}");
+            return;
+          }
+          [wv evaluateJavaScript:countNs
+               completionHandler:^(id result, NSError *err) {
+                 std::string j = "{\"found\":true}";
+                 if (!err && [result isKindOfClass:[NSString class]])
+                   j = [(NSString *)result UTF8String];
+                 reply_to_call(g_w, cid, 0, j);
+               }];
+        }];
+  }
+  delete req;
+}
+
+static void do_stopfind(webview_t w, void *arg) {
+  std::string *id = static_cast<std::string *>(arg);
+  @autoreleasepool {
+    size_t c = id->find(':');
+    std::string winid = c == std::string::npos ? "main" : id->substr(0, c);
+    WKWebView *wv = webview_for_id(w, winid);
+    // The find match is an ordinary selection — clearing it is "stop".
+    if (wv)
+      [wv evaluateJavaScript:@"window.getSelection().removeAllRanges()"
+           completionHandler:nil];
+    reply_to_call(w, *id, 0, "true");
+  }
+  delete id;
+}
+
+struct NavrReq {
+  std::string qid, verdict;
+};
+static void do_navr(webview_t, void *arg) {
+  NavrReq *req = static_cast<NavrReq *>(arg);
+  tiny_nav_resolve(req->qid, req->verdict == "deny"      ? 1
+                             : req->verdict == "external" ? 2
+                                                          : 0);
+  delete req;
+}
+#else
+struct FindReq { std::string id, term; bool forward, matchCase; };
+struct NavrReq { std::string qid, verdict; };
+struct PopuprReq { std::string qid, verdict; };
+static void do_find(webview_t, void *arg) { delete static_cast<FindReq *>(arg); }
+static void do_stopfind(webview_t, void *arg) { delete static_cast<std::string *>(arg); }
+static void do_navr(webview_t, void *arg) { delete static_cast<NavrReq *>(arg); }
+static void do_popupr(webview_t, void *arg) { delete static_cast<PopuprReq *>(arg); }
+#endif
+
+// --- print (macOS) ---------------------------------------------------------------
+
+// PRINT / PRINT@<id>: whichever window asked is the one that prints. A
+// multi-window app's ⌘P lives in the document window, not the main one.
+static void do_print(webview_t w, void *arg) {
+  std::string id = arg ? *static_cast<std::string *>(arg) : std::string();
+  delete static_cast<std::string *>(arg);
+  (void)w;
+#ifdef __APPLE__
+  @autoreleasepool {
+    WKWebView *wv = webview_for_id(w, id);
+    NSWindow *win = window_for_id(w, id);
+    if (!wv || !win)
+      return;
+    NSPrintInfo *pi = [NSPrintInfo sharedPrintInfo];
+    pi.horizontallyCentered = YES;
+    pi.verticallyCentered = NO;
+    NSPrintOperation *op = [wv printOperationWithPrintInfo:pi];
+    op.showsPrintPanel = YES;
+    op.showsProgressPanel = YES;
+    // The print view needs a nonzero frame or WebKit renders blank pages.
+    op.view.frame = wv.bounds;
+    [op runOperationModalForWindow:win
+                          delegate:nil
+                    didRunSelector:NULL
+                       contextInfo:NULL];
+  }
+#endif
+}
+
+// --- deep-Mac citizen: PDF, dock icon, battery, wifi, spotlight -------------
+// The small native niceties apps otherwise shell out (or give up) for.
+
+struct PdfReq {
+  std::string qid, path;
+  std::string win;        // PDF@<id>: capture that window, not the main one
+};
+struct SpotlightReq {
+  std::string qid, query;
+};
+
+#ifdef __APPLE__
+static void do_pdf(webview_t w, void *arg) {
+  PdfReq *req = static_cast<PdfReq *>(arg);
+  std::string qid = req->qid, path = req->path, id = req->win;
+  delete req;
+  WKWebView *wv = webview_for_id(w, id);
+  if (!wv) {
+    sock_write_line("GOT " + qid + " {\"ok\":false,\"error\":\"no webview\"}");
+    return;
+  }
+  WKPDFConfiguration *cfg = [[WKPDFConfiguration alloc] init]; // whole page
+  [wv createPDFWithConfiguration:cfg
+               completionHandler:^(NSData *data, NSError *err) {
+                 if (!data || ![data writeToFile:ns(path) atomically:YES]) {
+                   sock_write_line(
+                       "GOT " + qid + " {\"ok\":false,\"error\":" +
+                       json_escape(err ? [err.localizedDescription UTF8String]
+                                       : "pdf write failed") +
+                       "}");
+                   return;
+                 }
+                 sock_write_line("GOT " + qid + " {\"ok\":true,\"path\":" +
+                                 json_escape(path) + ",\"error\":null}");
+               }];
+}
+
+// --- dock tile: the app icon and the progress bar share one surface ---------
+// badgeLabel is drawn by the system over whatever the tile renders, so badge()
+// composes for free. A custom contentView is different: it REPLACES the tile's
+// own drawing, so as soon as progress needs a bar this view has to paint the
+// icon too — otherwise setting progress would blank a custom icon, and setting
+// an icon would wipe the bar. One renderer owns both pieces of state and
+// redraws on either change; with both cleared the tile drops back to
+// contentView = nil so the system draws the real bundle icon again.
+static NSImage *g_dock_icon = nil;    // APPICON ('' clears)
+static double g_dock_progress = -1.0; // PROGRESS (<0 = no bar)
+
+@interface TinyDockTile : NSView
+@end
+
+@implementation TinyDockTile
+- (void)drawRect:(NSRect)dirty {
+  (void)dirty;
+  NSRect b = [self bounds];
+  NSImage *icon = g_dock_icon ? g_dock_icon
+                              : [NSImage imageNamed:@"NSApplicationIcon"];
+  [icon drawInRect:b
+          fromRect:NSZeroRect
+         operation:NSCompositingOperationSourceOver
+          fraction:1.0];
+  if (g_dock_progress < 0.0) return;
+
+  double p = g_dock_progress > 1.0 ? 1.0 : g_dock_progress;
+  CGFloat h = b.size.height * 0.12;
+  CGFloat pad = b.size.width * 0.09;
+  NSRect track = NSMakeRect(b.origin.x + pad, b.origin.y + h * 0.55,
+                            b.size.width - pad * 2.0, h);
+  NSBezierPath *tp = [NSBezierPath bezierPathWithRoundedRect:track
+                                                     xRadius:h / 2.0
+                                                     yRadius:h / 2.0];
+  [[NSColor colorWithWhite:0.0 alpha:0.55] setFill];
+  [tp fill];
+  [[NSColor whiteColor] setStroke];
+  [tp setLineWidth:1.5];
+  [tp stroke];
+
+  NSRect bar = NSInsetRect(track, 2.0, 2.0);
+  bar.size.width *= p;
+  if (bar.size.width > 0.5) {
+    // a rounded cap can't be wider than the bar itself at low percentages
+    CGFloat r = bar.size.width < bar.size.height ? bar.size.width / 2.0
+                                                 : bar.size.height / 2.0;
+    NSBezierPath *fp = [NSBezierPath bezierPathWithRoundedRect:bar
+                                                       xRadius:r
+                                                       yRadius:r];
+    [[NSColor systemBlueColor] setFill];
+    [fp fill];
+  }
+}
+@end
+
+static void dock_tile_refresh(void) {
+  NSDockTile *tile = [NSApp dockTile];
+  if (!g_dock_icon && g_dock_progress < 0.0) {
+    [tile setContentView:nil];
+    [NSApp setApplicationIconImage:nil]; // back to the bundle icon
+    [tile display];
+    return;
+  }
+  if (![[tile contentView] isKindOfClass:[TinyDockTile class]])
+    [tile setContentView:[[[TinyDockTile alloc] init] autorelease]];
+  [tile display];
+}
+
+// `tinyjs dev` has no bundle, so the Dock shows the terminal's icon unless we
+// put the project's there. TINYJS_ICON (set by the CLI, dev only) is that
+// icon, and it becomes what app.icon('') resets to — a packaged app resets to
+// its bundle icon, and this is the closest equivalent when there isn't one.
+static NSImage *g_dock_icon_default = nil;
+
+// The Dock tile is system-hosted and invisible to a screenshot — the same
+// problem debug:tray has — so tests read its wiring here instead.
+static std::string dock_icon_json() {
+  NSImage *img = g_dock_icon;
+  const char *env = getenv("TINYJS_ICON");
+  return std::string("{\"set\":") + (img ? "true" : "false") +
+         ",\"width\":" + std::to_string(img ? (int)img.size.width : 0) +
+         ",\"height\":" + std::to_string(img ? (int)img.size.height : 0) +
+         ",\"hasDevDefault\":" + (g_dock_icon_default ? "true" : "false") +
+         ",\"env\":" + json_escape(env ? env : "") + "}";
+}
+
+static void apply_dev_icon(void) {
+  const char *p = getenv("TINYJS_ICON");
+  if (!p || !*p)
+    return;
+  @autoreleasepool {
+    NSImage *img = [[NSImage alloc] initWithContentsOfFile:
+                        [NSString stringWithUTF8String:p]];
+    if (!img)
+      return;
+    g_dock_icon_default = img;             // +1, held for the process lifetime
+    if (!g_dock_icon) g_dock_icon = [img retain];
+    dock_tile_refresh();
+  }
+}
+
+static void do_appicon(webview_t, void *arg) {
+  std::string *path = static_cast<std::string *>(arg);
+  @autoreleasepool {
+    NSImage *next = nil;
+    if (!path->empty()) {
+      next = [[NSImage alloc] initWithContentsOfFile:ns(*path)];
+      if (!next) { // unreadable png — leave the tile as it was
+        delete path;
+        return;
+      }
+    } else if (g_dock_icon_default) {
+      next = [g_dock_icon_default retain];  // '' in dev: back to the project icon
+    }
+    if (g_dock_icon) [g_dock_icon release];
+    g_dock_icon = next; // owns the +1 from alloc/retain; nil when clearing
+    dock_tile_refresh();
+  }
+  delete path;
+}
+
+static void do_progress(webview_t, void *arg) {
+  double *v = static_cast<double *>(arg);
+  @autoreleasepool {
+    g_dock_progress = *v;
+    dock_tile_refresh();
+  }
+  delete v;
+}
+
+static std::string battery_json() {
+  CFTypeRef info = IOPSCopyPowerSourcesInfo();
+  CFArrayRef list = info ? IOPSCopyPowerSourcesList(info) : NULL;
+  std::string out = "null";
+  if (list && CFArrayGetCount(list) > 0) {
+    CFDictionaryRef d =
+        IOPSGetPowerSourceDescription(info, CFArrayGetValueAtIndex(list, 0));
+    if (d) {
+      NSDictionary *ps = (__bridge NSDictionary *)d;
+      double cur = [ps[@kIOPSCurrentCapacityKey] doubleValue];
+      double max = [ps[@kIOPSMaxCapacityKey] doubleValue];
+      bool charging = [ps[@kIOPSIsChargingKey] boolValue];
+      NSString *state = ps[@kIOPSPowerSourceStateKey];
+      bool plugged = [state isEqualToString:@kIOPSACPowerValue];
+      int toEmpty = [ps[@kIOPSTimeToEmptyKey] intValue];
+      int toFull = [ps[@kIOPSTimeToFullChargeKey] intValue];
+      int mins = charging ? toFull : toEmpty; // -1 = calculating
+      char buf[192];
+      std::snprintf(buf, sizeof(buf),
+                    "{\"percent\":%d,\"charging\":%s,\"plugged\":%s,"
+                    "\"minutesRemaining\":%s}",
+                    max > 0 ? (int)lround(cur / max * 100) : 0,
+                    charging ? "true" : "false", plugged ? "true" : "false",
+                    mins < 0 ? "null" : std::to_string(mins).c_str());
+      out = buf;
+    }
+  }
+  if (list) CFRelease(list);
+  if (info) CFRelease(info);
+  return out;
+}
+
+static std::string wifi_json() {
+  @autoreleasepool {
+    CWInterface *itf = [[CWWiFiClient sharedWiFiClient] interface];
+    if (!itf || !itf.powerOn)
+      return "null";
+    // ssid is nil without the Location permission on macOS 14+; the rest of
+    // the fields still come through.
+    NSString *ssid = itf.ssid;
+    return std::string("{\"ssid\":") +
+           (ssid ? json_escape([ssid UTF8String]) : "null") + ",\"bssid\":" +
+           (itf.bssid ? json_escape([itf.bssid UTF8String]) : "null") +
+           ",\"rssi\":" + std::to_string((long)itf.rssiValue) +
+           ",\"noise\":" + std::to_string((long)itf.noiseMeasurement) +
+           ",\"txRate\":" + std::to_string((long)itf.transmitRate) + "}";
+  }
+}
+
+// NSMetadataQuery gathers asynchronously off the main runloop; observe the
+// finish notification, snapshot up to 100 paths, tear the query down.
+@class TinySpotlight;
+static TinySpotlight *g_spotlight_hold = nil;
+@interface TinySpotlight : NSObject
+@property(strong) NSMetadataQuery *query;
+@property(assign) id observer;
+@property std::string qid;
+@end
+@implementation TinySpotlight
+- (void)finished:(NSNotification *)note {
+  [self.query stopQuery];
+  std::string json = "[";
+  bool first = true;
+  NSUInteger n = MIN(self.query.resultCount, (NSUInteger)100);
+  for (NSUInteger i = 0; i < n; i++) {
+    NSMetadataItem *it = [self.query resultAtIndex:i];
+    NSString *path = [it valueForAttribute:(NSString *)kMDItemPath];
+    if (!path)
+      continue;
+    if (!first)
+      json += ",";
+    first = false;
+    json += json_escape([path UTF8String]);
+  }
+  json += "]";
+  sock_write_line("GOT " + self.qid + " {\"ok\":true,\"paths\":" + json + "}");
+  [[NSNotificationCenter defaultCenter] removeObserver:self.observer];
+  self.query = nil;
+  g_spotlight_hold = nil; // release self
+}
+@end
+
+static void do_spotlight(webview_t, void *arg) {
+  SpotlightReq *req = static_cast<SpotlightReq *>(arg);
+  @autoreleasepool {
+    NSMetadataQuery *q = [[NSMetadataQuery alloc] init];
+    // Match display name OR text content (the two things users mean by
+    // "find files about X").
+    q.predicate = [NSPredicate
+        predicateWithFormat:@"(kMDItemDisplayName CONTAINS[cd] %@) OR "
+                            @"(kMDItemTextContent CONTAINS[cd] %@)",
+                            ns(req->query), ns(req->query)];
+    q.searchScopes = @[ NSMetadataQueryUserHomeScope ];
+    TinySpotlight *sl = [[TinySpotlight alloc] init];
+    sl.query = q;
+    sl.qid = req->qid;
+    sl.observer = sl;
+    g_spotlight_hold = sl; // keep alive until the notification fires
+    [[NSNotificationCenter defaultCenter]
+        addObserver:sl
+           selector:@selector(finished:)
+               name:NSMetadataQueryDidFinishGatheringNotification
+             object:q];
+    [q startQuery];
+  }
+  delete req;
+}
+#else
+static void do_pdf(webview_t, void *arg) {
+  PdfReq *r = static_cast<PdfReq *>(arg);
+  sock_write_line("GOT " + r->qid + " {\"ok\":false,\"error\":\"unsupported\"}");
+  delete r;
+}
+static void do_appicon(webview_t, void *arg) { delete static_cast<std::string *>(arg); }
+static void do_progress(webview_t, void *arg) { delete static_cast<double *>(arg); }
+static std::string battery_json() { return "null"; }
+static std::string wifi_json() { return "null"; }
+static void do_spotlight(webview_t, void *arg) {
+  SpotlightReq *r = static_cast<SpotlightReq *>(arg);
+  sock_write_line("GOT " + r->qid + " {\"ok\":true,\"paths\":[]}");
+  delete r;
+}
+#endif
+
+// --- on-device AI: FoundationModels via the Swift shim (macOS 26) --------------------
+// Built only with TINYJS_AI=1 (needs the macOS 26 SDK + swiftc; see setup.sh).
+// Generation blocks for seconds, so it runs on a dedicated background queue,
+// never the UI thread. Without the flag every call answers "unsupported".
+
+struct AiReq {
+  std::string qid, op, prompt, instructions, tools;
+};
+
+#if defined(__APPLE__) && defined(TINYJS_AI)
+extern "C" int tiny_ai_available();
+extern "C" char *tiny_ai_generate(const char *prompt, const char *instructions,
+                                  char **errOut);
+extern "C" char *tiny_ai_generate_tools(
+    const char *prompt, const char *instructions, const char *toolsJson,
+    char *(*invoke)(const char *name, const char *argsJson), char **errOut);
+
+static dispatch_queue_t g_ai_queue = nullptr;
+
+// --- the tool round trip -----------------------------------------------------
+// Swift calls ai_tool_invoke on a background queue; it writes AITOOL down the
+// socket and BLOCKS until the backend answers with AITOOLRESULT. Blocking is
+// fine here (never the UI thread, never the Swift cooperative pool — see the
+// dispatch in TinyDynamicTool.call) and it keeps the Swift side a plain
+// function call instead of another async protocol.
+static std::mutex g_tool_mu;
+static std::condition_variable g_tool_cv;
+static std::map<long, std::string> g_tool_results;
+static std::set<long> g_tool_pending;
+static long g_tool_seq = 0;
+
+// Called from the socket reader when the backend answers.
+static void ai_tool_result(long id, const std::string &json) {
+  {
+    std::lock_guard<std::mutex> lk(g_tool_mu);
+    if (!g_tool_pending.count(id)) return;   // late or unknown — drop it
+    g_tool_results[id] = json;
+  }
+  g_tool_cv.notify_all();
+}
+
+static char *ai_tool_invoke(const char *name, const char *argsJson) {
+  long id;
+  {
+    std::lock_guard<std::mutex> lk(g_tool_mu);
+    id = ++g_tool_seq;
+    g_tool_pending.insert(id);
+  }
+  sock_write_line("AITOOL " + std::to_string(id) + " " +
+                  wire_escape(name ? name : "") + "\t" +
+                  wire_escape(argsJson ? argsJson : "{}"));
+  std::unique_lock<std::mutex> lk(g_tool_mu);
+  // A handler that never answers must not wedge generation for ever: time out
+  // and let the model see an error string, which it handles far better than a
+  // hang the user can only kill.
+  bool ok = g_tool_cv.wait_for(lk, std::chrono::seconds(20), [&] {
+    return g_tool_results.count(id) > 0;
+  });
+  std::string out = ok ? g_tool_results[id] : "{\"error\":\"tool timed out\"}";
+  g_tool_results.erase(id);
+  g_tool_pending.erase(id);
+  return strdup(out.c_str());
+}
+
+static void do_ai(webview_t, void *arg) {
+  AiReq *req = static_cast<AiReq *>(arg);
+  if (!g_ai_queue)
+    g_ai_queue = dispatch_queue_create("app.tinyjs.ai", DISPATCH_QUEUE_SERIAL);
+  std::string qid = req->qid, op = req->op, prompt = req->prompt,
+              instr = req->instructions, tools = req->tools;
+  delete req;
+  dispatch_async(g_ai_queue, ^{
+    if (op == "available") {
+      int a = tiny_ai_available();
+      const char *st = a == 1 ? "available" : a == 0 ? "unavailable" : "unsupported";
+      sock_write_line("GOT " + qid + " {\"ok\":true,\"status\":\"" + st + "\"}");
+      return;
+    }
+    char *err = nullptr;
+    char *out = tools.empty()
+        ? tiny_ai_generate(prompt.c_str(),
+                           instr.empty() ? nullptr : instr.c_str(), &err)
+        : tiny_ai_generate_tools(prompt.c_str(),
+                                 instr.empty() ? nullptr : instr.c_str(),
+                                 tools.c_str(), ai_tool_invoke, &err);
+    if (out) {
+      sock_write_line("GOT " + qid + " {\"ok\":true,\"text\":" +
+                      json_escape(out) + "}");
+      free(out);
+    } else {
+      sock_write_line("GOT " + qid + " {\"ok\":false,\"error\":" +
+                      json_escape(err ? err : "generation failed") + "}");
+      if (err) free(err);
+    }
+  });
+}
+#else
+static void do_ai(webview_t, void *arg) {
+  AiReq *req = static_cast<AiReq *>(arg);
+  if (req->op == "available")
+    sock_write_line("GOT " + req->qid +
+                    " {\"ok\":true,\"status\":\"unsupported\"}");
+  else
+    sock_write_line("GOT " + req->qid +
+                    " {\"ok\":false,\"error\":\"tiny.ai not built in "
+                    "(needs macOS 26 + TINYJS_AI=1)\"}");
+  delete req;
+}
+#endif
+
+// --- WebGPU (macOS) ----------------------------------------------------------
+// WKWebView gates WebGPU behind a WebKit feature flag (still "experimental"
+// as of macOS 15; no public API to enable it). Flip it through the private
+// WKPreferences feature list before any content loads. Preference changes
+// propagate to the web process, so doing this right after webview_create and
+// before the first navigate/set_html is sufficient. Harmless no-op on OS
+// versions where the flag or the private API doesn't exist.
+
+#ifdef __APPLE__
+static void enable_webgpu_prefs(id preferences) {
+  WKPreferences *prefs = (WKPreferences *)preferences;
+  if (!prefs)
+    return;
+  // Newer WebKit exposes +_features / -_setEnabled:forFeature:; older builds
+  // use the _experimentalFeatures spelling.
+  struct { const char *list, *set; } apis[] = {
+      {"_features", "_setEnabled:forFeature:"},
+      {"_experimentalFeatures", "_setEnabled:forExperimentalFeature:"},
+  };
+  for (auto &api : apis) {
+    SEL list_sel = sel_registerName(api.list);
+    SEL set_sel = sel_registerName(api.set);
+    if (![(id)[WKPreferences class] respondsToSelector:list_sel] ||
+        ![prefs respondsToSelector:set_sel])
+      continue;
+    NSArray *features =
+        ((NSArray * (*)(id, SEL))objc_msgSend)((id)[WKPreferences class], list_sel);
+    for (id feature in features) {
+      NSString *key =
+          ((NSString * (*)(id, SEL))objc_msgSend)(feature, sel_registerName("key"));
+      if ([key isEqualToString:@"WebGPUEnabled"]) {
+        ((void (*)(id, SEL, BOOL, id))objc_msgSend)(prefs, set_sel, YES, feature);
+        return;
+      }
+    }
+  }
+}
+// file:// pages are opaque origins, so module scripts with `crossorigin`
+// (every Vite build) fail CORS. These private-but-stable flags make
+// file→file loads same-origin, exactly like Tauri's wry does. WebKit applies
+// them to file:// documents only, which are only ever the app's own pages:
+// an http(s) page can't navigate, frame or fetch file:// (test/file-access),
+// and page win.open is confined to the frontend dir (#29.3, #30.7).
+static void enable_file_access(WKWebViewConfiguration *cfg) {
+  @try {
+    [cfg.preferences setValue:@YES forKey:@"allowFileAccessFromFileURLs"];
+  } @catch (NSException *) {
+  }
+  @try {
+    [cfg setValue:@YES forKey:@"allowUniversalAccessFromFileURLs"];
+  } @catch (NSException *) {
+  }
+}
+
+static void enable_webgpu(webview_t w) {
+  WKWebView *wv = (WKWebView *)webview_get_native_handle(
+      w, WEBVIEW_NATIVE_HANDLE_KIND_BROWSER_CONTROLLER);
+  if (wv) {
+    enable_webgpu_prefs(wv.configuration.preferences);
+    enable_file_access(wv.configuration);
+  }
+}
+#endif
+
+// -----------------------------------------------------------------------------
+
+static void sock_read_loop() {
+  // Bundle mode: wait for the spawned backend to attach before reading.
+  if (g_listen_fd >= 0) {
+    int fd = accept(g_listen_fd, nullptr, nullptr);
+    if (fd < 0) {
+      webview_dispatch(g_w, do_terminate, nullptr);
+      return;
+    }
+    sock_set_connected(fd);
+  }
+  std::string buf;
+  char chunk[4096];
+  std::vector<MenuSpec> pending_menus;
+  std::string pending_menu_win;  // MENUBEGIN@<win>; empty = the app menu
+  bool in_menu_block = false;
+  TraySpec pending_tray;
+  bool in_tray_block = false;
+  bool in_ctx_block = false;
+  // Items build through a stack so SUB…SUBEND nests; root is build_stack[0].
+  std::vector<std::vector<MenuItemSpec>> build_stack(1);
+  std::vector<MenuItemSpec> sub_parents;
+  auto collapse_subs = [&]() {
+    while (build_stack.size() > 1) {
+      MenuItemSpec parent = sub_parents.back();
+      sub_parents.pop_back();
+      parent.submenu = build_stack.back();
+      build_stack.pop_back();
+      build_stack.back().push_back(parent);
+    }
+  };
+  auto take_root = [&]() {
+    collapse_subs();
+    std::vector<MenuItemSpec> root = build_stack[0];
+    build_stack.assign(1, {});
+    return root;
+  };
+  auto flush_root = [&]() {
+    if (!pending_menus.empty())
+      pending_menus.back().items = take_root();
+    else
+      build_stack.assign(1, {});
+  };
+  for (;;) {
+    ssize_t n = read(g_sock, chunk, sizeof(chunk));
+    if (n <= 0)
+      break;
+    buf.append(chunk, (size_t)n);
+    size_t nl;
+    while ((nl = buf.find('\n')) != std::string::npos) {
+      std::string line = buf.substr(0, nl);
+      buf.erase(0, nl + 1);
+      if (line.rfind("RET ", 0) == 0) {
+        size_t sp1 = line.find(' ', 4);
+        size_t sp2 = line.find(' ', sp1 + 1);
+        if (sp1 == std::string::npos || sp2 == std::string::npos)
+          continue;
+        ReplyReq *rr = new ReplyReq;
+        rr->composite = line.substr(4, sp1 - 4);
+        rr->status = std::atoi(line.c_str() + sp1 + 1);
+        rr->json = line.substr(sp2 + 1);
+        webview_dispatch(g_w, do_reply, rr);
+      } else if (line.rfind("EVAL", 0) == 0 &&
+                 (line[4] == ' ' || line[4] == '@')) {
+        // EVAL <js> (main) | EVAL@* <js> (broadcast) | EVAL@<id> <js>
+        // js is esc()-escaped by the bridge so multi-line snippets keep their
+        // newlines (a flattened // comment would swallow the rest); undo it.
+        EvalReq *er = new EvalReq;
+        if (line[4] == ' ') {
+          er->win = "main";
+          er->js = wire_unescape(line.substr(5));
+        } else {
+          size_t sp = line.find(' ', 5);
+          if (sp == std::string::npos) { delete er; continue; }
+          er->win = line.substr(5, sp - 5);
+          er->js = wire_unescape(line.substr(sp + 1));
+        }
+        webview_dispatch(g_w, do_eval_win, er);
+      } else if (line.rfind("TITLE@", 0) == 0) {
+        size_t sp = line.find(' ', 6);
+        if (sp == std::string::npos) continue;
+        EvalReq *tr = new EvalReq{line.substr(6, sp - 6), line.substr(sp + 1)};
+        webview_dispatch(g_w, do_title_win, tr);
+      } else if (line.rfind("TITLE ", 0) == 0) {
+        webview_dispatch(g_w, do_title, new std::string(line.substr(6)));
+      } else if (line.rfind("SIZE@", 0) == 0) {
+        size_t sp = line.find(' ', 5);
+        if (sp == std::string::npos) continue;
+        SizeReq *sr = new SizeReq{600, 400};
+        sr->win = line.substr(5, sp - 5);
+        std::sscanf(line.c_str() + sp + 1, "%d %d", &sr->width, &sr->height);
+        webview_dispatch(g_w, do_size, sr);
+      } else if (line.rfind("SIZE ", 0) == 0) {
+        SizeReq *s = new SizeReq{960, 640};
+        std::sscanf(line.c_str() + 5, "%d %d", &s->width, &s->height);
+        webview_dispatch(g_w, do_size, s);
+      } else if (line.rfind("WINOPEN ", 0) == 0) {
+        // <id>\t<page>\t<title>\t<WxH>[\t<frame>\t<traffic>\t<transp>\t<vib>
+        //   \t<square>\t<firstMouse>\t<x>\t<y>\t<menu>\t<wcPos>\t<parent>]
+        std::vector<std::string> p = split_tabs(line.substr(8));
+        WinOpenReq *wr = new WinOpenReq;
+        wr->id = p.size() > 0 ? p[0] : "";
+        wr->page = p.size() > 1 ? p[1] : "";
+        wr->title = p.size() > 2 ? p[2] : "";
+        if (p.size() > 3)
+          std::sscanf(p[3].c_str(), "%dx%d", &wr->width, &wr->height);
+        wr->frame = p.size() > 4 ? p[4] : "";
+        wr->traffic = p.size() > 5 ? p[5] : "";
+        wr->transparent = p.size() > 6 ? p[6] : "";
+        wr->vibrancy = p.size() > 7 ? p[7] : "";
+        wr->square = p.size() > 8 ? p[8] : "";
+        wr->first_mouse = p.size() > 9 ? p[9] : "";
+        if (p.size() > 11 && !p[10].empty() && !p[11].empty()) {
+          wr->hasPos = true;
+          wr->x = std::atoi(p[10].c_str());
+          wr->y = std::atoi(p[11].c_str());
+        }
+        // p[12] is chrome.menu (ignored on macOS), p[13] windowControlsPos.
+        wr->traffic_pos = p.size() > 13 ? p[13] : "";
+        wr->parent = p.size() > 14 ? p[14] : "";
+        webview_dispatch(g_w, do_winopen, wr);
+      } else if (line.rfind("WINCLOSE ", 0) == 0) {
+        webview_dispatch(g_w, do_winclose, new std::string(line.substr(9)));
+      } else if (line.rfind("DLG ", 0) == 0) {
+        // DLG <id> <op>[\t<arg>...]
+        size_t sp1 = line.find(' ', 4);
+        if (sp1 == std::string::npos)
+          continue;
+        std::vector<std::string> parts = split_tabs(line.substr(sp1 + 1));
+        DlgReq *req = new DlgReq;
+        req->id = line.substr(4, sp1 - 4);
+        req->op = parts[0];
+        req->args.assign(parts.begin() + 1, parts.end());
+        webview_dispatch(g_w, do_dialog, req);
+      } else if (line.rfind("NAVR ", 0) == 0) {
+        // NAVR <qid> allow|deny|external — answer to a held NAVQ policy ask.
+        size_t sp = line.find(' ', 5);
+        if (sp == std::string::npos) continue;
+        webview_dispatch(g_w, do_navr,
+                         new NavrReq{line.substr(5, sp - 5), line.substr(sp + 1)});
+      } else if (line.rfind("POPUPR ", 0) == 0) {
+        // POPUPR <qid> window|external|deny — answer to a POPUPQ ask.
+        size_t sp = line.find(' ', 7);
+        if (sp == std::string::npos) continue;
+        webview_dispatch(g_w, do_popupr,
+                         new PopuprReq{line.substr(7, sp - 7), line.substr(sp + 1)});
+      } else if (line.rfind("FIND ", 0) == 0) {
+        // FIND <id> <term>\t<forward>\t<matchCase> — call-style, RET via id.
+        size_t sp = line.find(' ', 5);
+        if (sp == std::string::npos) continue;
+        std::vector<std::string> p = split_tabs(line.substr(sp + 1));
+        FindReq *fr = new FindReq;
+        fr->id = line.substr(5, sp - 5);
+        fr->term = p.size() > 0 ? p[0] : "";
+        fr->forward = p.size() > 1 ? p[1] != "0" : true;
+        fr->matchCase = p.size() > 2 && p[2] == "1";
+        webview_dispatch(g_w, do_find, fr);
+      } else if (line.rfind("STOPFIND ", 0) == 0) {
+        webview_dispatch(g_w, do_stopfind, new std::string(line.substr(9)));
+      } else if (line == "MENUBEGIN" || line.rfind("MENUBEGIN@", 0) == 0) {
+        // Bare: the app menu — what every window shows unless it overrode.
+        // @<win>: that window's own, up while it holds focus (macOS has one
+        // bar for the app, so per-window means per-focus here).
+        pending_menu_win = line.size() > 10 ? line.substr(10) : "";
+        pending_menus.clear();
+        collapse_subs();
+        build_stack.assign(1, {});
+        in_menu_block = true;
+      } else if (line.rfind("MENURESET@", 0) == 0) {
+        std::string *win = new std::string(line.substr(10));
+        webview_dispatch(g_w, [](webview_t, void *arg) {
+          std::string *w = static_cast<std::string *>(arg);
+          apply_win_menu(*w, {}, false);
+          delete w;
+        }, win);
+      } else if (in_menu_block && line.rfind("MENU ", 0) == 0) {
+        flush_root(); // previous menu's items (if any)
+        pending_menus.push_back(MenuSpec{line.substr(5), {}, ""});
+        build_stack.assign(1, {});
+      } else if (in_menu_block && line.rfind("MENUROLE ", 0) == 0) {
+        // a standard menu ("edit", "app"), claiming this slot in the spec;
+        // a `nostd` flag field turns off edit's implicit stock group
+        flush_root();
+        std::vector<std::string> p = split_tabs(line.substr(9));
+        MenuSpec role_spec{"", {}, p.empty() ? "" : p[0]};
+        role_spec.no_standard = p.size() > 1 && p[1] == "nostd";
+        pending_menus.push_back(role_spec);
+        build_stack.assign(1, {});
+      } else if ((in_menu_block || in_tray_block || in_ctx_block) &&
+                 line.rfind("ROLEITEM ", 0) == 0) {
+        // a stock item (copy, paste, …, or the whole `standard` group)
+        MenuItemSpec it;
+        it.role = line.substr(9);
+        build_stack.back().push_back(it);
+      } else if ((in_menu_block || in_tray_block || in_ctx_block) &&
+                 line.rfind("ITEM ", 0) == 0) {
+        std::vector<std::string> p = split_tabs(line.substr(5));
+        MenuItemSpec it;
+        it.id = p.size() > 0 ? p[0] : "";
+        it.label = p.size() > 1 ? p[1] : it.id;
+        it.key = p.size() > 2 ? p[2] : "";
+        if (p.size() > 3) { // flags: c=checked, d=disabled
+          it.checked = p[3].find('c') != std::string::npos;
+          it.disabled = p[3].find('d') != std::string::npos;
+        }
+        build_stack.back().push_back(it);
+      } else if ((in_menu_block || in_tray_block || in_ctx_block) && line == "SEP") {
+        MenuItemSpec sep;
+        sep.separator = true;
+        build_stack.back().push_back(sep);
+      } else if ((in_menu_block || in_tray_block || in_ctx_block) &&
+                 line.rfind("SUB ", 0) == 0) {
+        // SUB <id>\t<label>: following ITEMs nest until SUBEND.
+        std::vector<std::string> p = split_tabs(line.substr(4));
+        MenuItemSpec parent;
+        parent.id = p.size() > 0 ? p[0] : "";
+        parent.label = p.size() > 1 ? p[1] : parent.id;
+        sub_parents.push_back(parent);
+        build_stack.push_back({});
+      } else if ((in_menu_block || in_tray_block || in_ctx_block) &&
+                 line == "SUBEND") {
+        if (build_stack.size() > 1) {
+          MenuItemSpec parent = sub_parents.back();
+          sub_parents.pop_back();
+          parent.submenu = build_stack.back();
+          build_stack.pop_back();
+          build_stack.back().push_back(parent);
+        }
+      } else if (line == "MENUEND") {
+        flush_root();
+        in_menu_block = false;
+        if (pending_menu_win.empty()) {
+          webview_dispatch(g_w, apply_menus,
+                           new std::vector<MenuSpec>(pending_menus));
+        } else {
+          auto *req = new std::pair<std::string, std::vector<MenuSpec>>(
+              pending_menu_win, pending_menus);
+          webview_dispatch(g_w, [](webview_t, void *arg) {
+            auto *r = static_cast<std::pair<std::string, std::vector<MenuSpec>> *>(arg);
+            apply_win_menu(r->first, r->second, true);
+            delete r;
+          }, req);
+        }
+      } else if (line.rfind("TRAYBEGIN", 0) == 0) {
+        pending_tray = TraySpec{};
+        std::vector<std::string> p =
+            line.size() > 10 ? split_tabs(line.substr(10)) : std::vector<std::string>{};
+        pending_tray.title = p.size() > 0 ? p[0] : "";
+        pending_tray.icon = p.size() > 1 ? p[1] : "";
+        pending_tray.template_icon = !(p.size() > 2 && p[2] == "0");
+        pending_tray.tooltip = p.size() > 3 ? p[3] : "";
+        pending_tray.primary = p.size() > 4 && p[4] == "1";
+        collapse_subs();
+        build_stack.assign(1, {});
+        in_tray_block = true;
+      } else if (line == "TRAYEND") {
+        in_tray_block = false;
+        pending_tray.items = take_root();
+        webview_dispatch(g_w, apply_tray, new TraySpec(pending_tray));
+      } else if (line == "TRAYREMOVE") {
+        TraySpec *rm = new TraySpec{};
+        rm->remove = true;
+        webview_dispatch(g_w, apply_tray, rm);
+      } else if (line.rfind("WINOP@", 0) == 0) {
+        size_t sp = line.find(' ', 6);
+        if (sp == std::string::npos) continue;
+        webview_dispatch(g_w, do_winop,
+                         new WinopReq{line.substr(6, sp - 6), line.substr(sp + 1)});
+      } else if (line.rfind("WINOP ", 0) == 0) {
+        webview_dispatch(g_w, do_winop, new WinopReq{"main", line.substr(6)});
+      } else if (line == "CTXBEGIN") {
+        collapse_subs();
+        build_stack.assign(1, {});
+        in_ctx_block = true;
+      } else if (line == "CTXEND") {
+        in_ctx_block = false;
+        webview_dispatch(g_w, apply_ctx, new CtxReq{take_root(), true});
+      } else if (line == "CTXCLEAR") {
+        webview_dispatch(g_w, apply_ctx, new CtxReq{{}, false});
+      } else if (line.rfind("CTXSUPPRESS ", 0) == 0) {
+        webview_dispatch(g_w, apply_ctx_suppress,
+                         new CtxSuppressReq{line.substr(12) == "1"});
+      } else if (line.rfind("ABOUTHOOK ", 0) == 0) {
+        g_about_to_app = line.substr(10) == "1";
+      } else if (line.rfind("HKREG ", 0) == 0) {
+        std::vector<std::string> p = split_tabs(line.substr(6));
+        if (p.size() >= 2)
+          webview_dispatch(g_w, do_hotkey, new HotkeyReq{p[0], p[1]});
+      } else if (line.rfind("HKUNREG ", 0) == 0) {
+        webview_dispatch(g_w, do_hotkey, new HotkeyReq{line.substr(8), ""});
+      } else if (line.rfind("AUDIOTAP STOP", 0) == 0) {
+        webview_dispatch(g_w, do_audiotap, new AudioTapReq{"", "__stop__", false, 0});
+      } else if (line.rfind("AUDIOTAP ", 0) == 0) {
+        // AUDIOTAP <qid> <scope>\t<excludeSelf>\t<interval>
+        std::string rest = line.substr(9);
+        size_t sp = rest.find(' ');
+        std::string qid = sp == std::string::npos ? rest : rest.substr(0, sp);
+        std::vector<std::string> p =
+            split_tabs(sp == std::string::npos ? "" : rest.substr(sp + 1));
+        webview_dispatch(g_w, do_audiotap,
+                         new AudioTapReq{qid, p.size() > 0 ? p[0] : "app",
+                                         p.size() > 1 && p[1] == "1",
+                                         p.size() > 2 ? atoi(p[2].c_str()) : 80});
+      } else if (line.rfind("AUDIOFILTERSET ", 0) == 0) {
+        webview_dispatch(g_w, [](webview_t, void *a) {
+          std::unique_ptr<std::string> s((std::string *)a);
+          do_audiofilterset(*s);
+        }, new std::string(line.substr(15)));
+      } else if (line.rfind("AUDIOFILTERS", 0) == 0 &&
+                 (line.size() == 12 || line[12] == ' ')) {
+        webview_dispatch(g_w, [](webview_t, void *a) {
+          std::unique_ptr<std::string> s((std::string *)a);
+          do_audiofilters(*s);
+        }, new std::string(line.size() > 13 ? line.substr(13) : ""));
+      } else if (line.rfind("AUDIOBALANCE", 0) == 0) {
+        webview_dispatch(g_w, [](webview_t, void *a) {
+          std::unique_ptr<std::string> s((std::string *)a);
+          do_audiobalance(*s);
+        }, new std::string(line.size() > 13 ? line.substr(13) : "0"));
+      } else if (line.rfind("MENUUPD", 0) == 0 &&
+                 (line[7] == ' ' || line[7] == '@')) {
+        // MENUUPD <fields> patches every bar carrying the id;
+        // MENUUPD@<win> <fields> only that window's.
+        std::string win;
+        size_t body = 8;
+        if (line[7] == '@') {
+          size_t sp = line.find(' ', 8);
+          if (sp == std::string::npos)
+            continue;
+          win = line.substr(8, sp - 8);
+          body = sp + 1;
+        }
+        std::vector<std::string> p = split_tabs(line.substr(body));
+        MenuUpdReq *req = new MenuUpdReq;
+        req->win = win;
+        req->id = p.size() > 0 ? p[0] : "";
+        req->label = p.size() > 1 ? p[1] : "";
+        req->checked = p.size() > 2 ? p[2] : "";
+        req->enabled = p.size() > 3 ? p[3] : "";
+        webview_dispatch(g_w, do_menu_update, req);
+      } else if (line.rfind("GET ", 0) == 0) {
+        size_t sp1 = line.find(' ', 4);
+        if (sp1 == std::string::npos)
+          continue;
+        webview_dispatch(g_w, do_get,
+                         new GetReq{line.substr(4, sp1 - 4), line.substr(sp1 + 1)});
+      } else if (line.rfind("NOTIFY ", 0) == 0) {
+        std::vector<std::string> p = split_tabs(line.substr(7));
+        NotifReq *req = new NotifReq;
+        req->id = p.size() > 0 ? p[0] : "";
+        req->title = p.size() > 1 ? p[1] : "";
+        req->body = p.size() > 2 ? p[2] : "";
+        req->subtitle = p.size() > 3 ? p[3] : "";
+        req->sound = p.size() > 4 && p[4] == "1";
+        req->actions_json = p.size() > 5 ? wire_unescape(p[5]) : "";
+        webview_dispatch(g_w, do_notify, req);
+      } else if (line.rfind("CHROME", 0) == 0 &&
+                 (line[6] == ' ' || line[6] == '@')) {
+        std::string winid = "main";
+        size_t body = 7;
+        if (line[6] == '@') {
+          size_t sp = line.find(' ', 7);
+          if (sp == std::string::npos) continue;
+          winid = line.substr(7, sp - 7);
+          body = sp + 1;
+        }
+        std::vector<std::string> p = split_tabs(line.substr(body));
+        ChromeReq *req = new ChromeReq;
+        req->win = winid;
+        req->frame = p.size() > 0 ? p[0] : "";
+        req->traffic = p.size() > 1 ? p[1] : "";
+        req->transparent = p.size() > 2 ? p[2] : "";
+        req->vibrancy = p.size() > 3 ? p[3] : "";
+        req->square = p.size() > 4 ? p[4] : "";
+        req->first_mouse = p.size() > 5 ? p[5] : "";
+        // p[6] is chrome.menu — a Windows/Linux question, no bar per window
+        // on macOS. p[7] is windowControlsPos ('x,y' | 'default').
+        req->traffic_pos = p.size() > 7 ? p[7] : "";
+        webview_dispatch(g_w, do_chrome, req);
+      } else if (line.rfind("DRAGWIN", 0) == 0 &&
+                 (line.size() == 7 || line[7] == '@')) {
+        // DRAGWIN@<id> for satellites — the bare form was all that matched
+        // here, so a second window's own drag region moved nothing.
+        webview_dispatch(g_w, do_dragwin,
+                         new std::string(line.size() > 8 ? line.substr(8)
+                                                         : "main"));
+      } else if (line.rfind("RESIZEWIN", 0) == 0 && line.size() > 9 &&
+                 (line[9] == ' ' || line[9] == '@')) {
+        std::string winid = "main";
+        size_t body = 10;
+        if (line[9] == '@') {
+          size_t sp = line.find(' ', 10);
+          if (sp == std::string::npos)
+            continue;
+          winid = line.substr(10, sp - 10);
+          body = sp + 1;
+        }
+        webview_dispatch(g_w, do_resizewin,
+                         new ResizeReq{winid, line.substr(body)});
+      } else if (line.rfind("CLIPWRITE ", 0) == 0) {
+        std::vector<std::string> p = split_tabs(line.substr(10));
+        ClipWriteReq *req = new ClipWriteReq;
+        req->text = p.size() > 0 ? wire_unescape(p[0]) : "";
+        req->html = p.size() > 1 ? wire_unescape(p[1]) : "";
+        req->image = p.size() > 2 ? wire_unescape(p[2]) : "";
+        req->color = p.size() > 3 ? wire_unescape(p[3]) : "";
+        for (size_t i = 4; i < p.size(); i++)
+          if (!p[i].empty())
+            req->paths.push_back(wire_unescape(p[i]));
+        webview_dispatch(g_w, do_clip_write, req);
+      } else if (line.rfind("CLIPWATCH ", 0) == 0) {
+        webview_dispatch(g_w, do_clip_watch,
+                         new int(std::atoi(line.c_str() + 10)));
+      } else if (line.rfind("DRAGOUT", 0) == 0 &&
+                 (line[7] == ' ' || line[7] == '@')) {
+        std::string winid = "main";
+        size_t body = 8;
+        if (line[7] == '@') {
+          size_t sp = line.find(' ', 8);
+          if (sp == std::string::npos) continue;
+          winid = line.substr(8, sp - 8);
+          body = sp + 1;
+        }
+        std::vector<std::string> p = split_tabs(line.substr(body));
+        DragOutReq *req = new DragOutReq;
+        req->win = winid;
+        req->image = p.size() > 0 ? wire_unescape(p[0]) : "";
+        for (size_t i = 1; i < p.size(); i++)
+          if (!p[i].empty())
+            req->paths.push_back(wire_unescape(p[i]));
+        webview_dispatch(g_w, do_dragout, req);
+      } else if (line.rfind("KEYSTROKE ", 0) == 0) {
+        size_t sp = line.find(' ', 10);
+        if (sp == std::string::npos) continue;
+        webview_dispatch(g_w, do_keystroke,
+                         new KeystrokeReq{line.substr(10, sp - 10),
+                                          line.substr(sp + 1)});
+      } else if (line.rfind("PERMCHK ", 0) == 0 ||
+                 line.rfind("PERMREQ ", 0) == 0) {
+        size_t sp = line.find(' ', 8);
+        if (sp == std::string::npos) continue;
+        webview_dispatch(g_w, do_perm,
+                         new PermReq{line.substr(8, sp - 8), line.substr(sp + 1),
+                                     line.rfind("PERMREQ ", 0) == 0});
+      } else if (line.rfind("SHELL ", 0) == 0) {
+        size_t sp = line.find(' ', 6);
+        if (sp == std::string::npos) continue;
+        std::vector<std::string> p = split_tabs(line.substr(sp + 1));
+        ShellReq *req = new ShellReq;
+        req->qid = line.substr(6, sp - 6);
+        req->op = p.size() > 0 ? p[0] : "";
+        req->target = p.size() > 1 ? wire_unescape(p[1]) : "";
+        webview_dispatch(g_w, do_shell, req);
+      } else if (line.rfind("LOGIN ", 0) == 0) {
+        size_t sp = line.find(' ', 6);
+        if (sp == std::string::npos) continue;
+        std::string rest = line.substr(sp + 1); // "get" | "set 0|1"
+        int set = rest == "set 1" ? 1 : rest == "set 0" ? 0 : -1;
+        webview_dispatch(g_w, do_login,
+                         new LoginReq{line.substr(6, sp - 6), set});
+      } else if (line.rfind("POWER ", 0) == 0) {
+        // POWER <qid> on\t<display01>\t<reason> | POWER <qid> off
+        size_t sp = line.find(' ', 6);
+        if (sp == std::string::npos) continue;
+        std::vector<std::string> p = split_tabs(line.substr(sp + 1));
+        PowerReq *req = new PowerReq;
+        req->qid = line.substr(6, sp - 6);
+        req->on = p.size() > 0 && p[0] == "on";
+        req->display = p.size() > 1 && p[1] == "1";
+        req->reason = p.size() > 2 ? wire_unescape(p[2]) : "";
+        webview_dispatch(g_w, do_power, req);
+      } else if (line.rfind("SOUND ", 0) == 0) {
+        size_t sp = line.find(' ', 6);
+        SoundReq *req = new SoundReq;
+        if (sp == std::string::npos) {
+          req->qid = line.substr(6);
+        } else {
+          req->qid = line.substr(6, sp - 6);
+          req->target = wire_unescape(line.substr(sp + 1));
+        }
+        webview_dispatch(g_w, do_sound, req);
+      } else if (line.rfind("SHARE", 0) == 0 &&
+                 (line[5] == ' ' || line[5] == '@')) {
+        std::string winid = "main";
+        size_t body = 6;
+        if (line[5] == '@') {
+          size_t sp = line.find(' ', 6);
+          if (sp == std::string::npos) continue;
+          winid = line.substr(6, sp - 6);
+          body = sp + 1;
+        }
+        std::vector<std::string> p = split_tabs(line.substr(body));
+        ShareReq *req = new ShareReq;
+        req->win = winid;
+        req->x = p.size() > 0 ? std::atoi(p[0].c_str()) : 0;
+        req->y = p.size() > 1 ? std::atoi(p[1].c_str()) : 0;
+        req->text = p.size() > 2 ? wire_unescape(p[2]) : "";
+        req->url = p.size() > 3 ? wire_unescape(p[3]) : "";
+        for (size_t i = 4; i < p.size(); i++)
+          if (!p[i].empty())
+            req->paths.push_back(wire_unescape(p[i]));
+        webview_dispatch(g_w, do_share, req);
+      } else if (line == "NOWPLAYING" || line.rfind("NOWPLAYING ", 0) == 0) {
+        NowPlayingReq *req = new NowPlayingReq;
+        req->json = line.size() > 11 ? wire_unescape(line.substr(11)) : "";
+        webview_dispatch(g_w, do_nowplaying, req);
+      } else if (line.rfind("SAY ", 0) == 0) {
+        size_t sp = line.find(' ', 4);
+        if (sp == std::string::npos) continue;
+        std::vector<std::string> p = split_tabs(line.substr(sp + 1));
+        SayReq *req = new SayReq;
+        req->qid = line.substr(4, sp - 4);
+        req->text = p.size() > 0 ? wire_unescape(p[0]) : "";
+        req->voice = p.size() > 1 ? wire_unescape(p[1]) : "";
+        req->rate = p.size() > 2 ? std::atof(p[2].c_str()) : 0;
+        webview_dispatch(g_w, do_say, req);
+      } else if (line.rfind("RECORD ", 0) == 0) {
+        // RECORD <qid> start <display>\t<path> | RECORD <qid> stop
+        size_t sp = line.find(' ', 7);
+        if (sp == std::string::npos) continue;
+        RecordReq *req = new RecordReq;
+        req->qid = line.substr(7, sp - 7);
+        std::string verb = line.substr(sp + 1); // "start …" | "stop"
+        req->start = verb.rfind("start ", 0) == 0;
+        req->display = 0;
+        if (req->start) {
+          std::vector<std::string> p = split_tabs(verb.substr(6));
+          req->display = p.size() > 0 ? std::atol(p[0].c_str()) : 0;
+          req->path = p.size() > 1 ? wire_unescape(p[1]) : "";
+        }
+        webview_dispatch(g_w, do_record, req);
+      } else if (line.rfind("WINCTRL ", 0) == 0) {
+        // WINCTRL <qid> <pid>\t<x>\t<y>\t<w>\t<h>
+        size_t sp = line.find(' ', 8);
+        if (sp == std::string::npos) continue;
+        std::vector<std::string> p = split_tabs(line.substr(sp + 1));
+        WinCtrlReq *req = new WinCtrlReq;
+        req->qid = line.substr(8, sp - 8);
+        req->pid = p.size() > 0 ? std::atol(p[0].c_str()) : 0;
+        req->x = p.size() > 1 ? std::atoi(p[1].c_str()) : 0;
+        req->y = p.size() > 2 ? std::atoi(p[2].c_str()) : 0;
+        req->w = p.size() > 3 ? std::atoi(p[3].c_str()) : 0;
+        req->h = p.size() > 4 ? std::atoi(p[4].c_str()) : 0;
+        webview_dispatch(g_w, do_winctrl, req);
+      } else if (line == "SAYSTOP") {
+        webview_dispatch(g_w, do_saystop, nullptr);
+      } else if (line.rfind("VOICES ", 0) == 0) {
+        webview_dispatch(g_w, do_voices, new VoicesReq{line.substr(7)});
+      } else if (line.rfind("PICKCOLOR ", 0) == 0) {
+        webview_dispatch(g_w, do_pickcolor, new std::string(line.substr(10)));
+      } else if (line.rfind("OCR ", 0) == 0) {
+        size_t sp = line.find(' ', 4);
+        if (sp == std::string::npos) continue;
+        webview_dispatch(g_w, do_ocr,
+                         new OcrReq{line.substr(4, sp - 4),
+                                    wire_unescape(line.substr(sp + 1))});
+      } else if (line.rfind("THUMB ", 0) == 0) {
+        size_t sp = line.find(' ', 6);
+        if (sp == std::string::npos) continue;
+        std::vector<std::string> p = split_tabs(line.substr(sp + 1));
+        webview_dispatch(
+            g_w, do_thumb,
+            new ThumbReq{line.substr(6, sp - 6),
+                         p.size() > 0 ? wire_unescape(p[0]) : "",
+                         p.size() > 1 ? std::atoi(p[1].c_str()) : 0});
+      } else if (line.rfind("SECRET ", 0) == 0) {
+        size_t sp = line.find(' ', 7);
+        if (sp == std::string::npos) continue;
+        std::vector<std::string> p = split_tabs(line.substr(sp + 1));
+        SecretReq *req = new SecretReq;
+        req->qid = line.substr(7, sp - 7);
+        req->op = p.size() > 0 ? p[0] : "";
+        req->service = p.size() > 1 ? wire_unescape(p[1]) : "";
+        req->account = p.size() > 2 ? wire_unescape(p[2]) : "";
+        req->value = p.size() > 3 ? wire_unescape(p[3]) : "";
+        webview_dispatch(g_w, do_secret, req);
+      } else if (line.rfind("AUTH ", 0) == 0) {
+        size_t sp = line.find(' ', 5);
+        if (sp == std::string::npos) continue;
+        webview_dispatch(g_w, do_auth,
+                         new AuthReq{line.substr(5, sp - 5),
+                                     wire_unescape(line.substr(sp + 1))});
+      } else if (line.rfind("OSA ", 0) == 0) {
+        size_t sp = line.find(' ', 4);
+        if (sp == std::string::npos) continue;
+        webview_dispatch(g_w, do_osa,
+                         new OsaReq{line.substr(4, sp - 4),
+                                    wire_unescape(line.substr(sp + 1))});
+      } else if (line == "QUICKLOOK" || line.rfind("QUICKLOOK ", 0) == 0) {
+        QLReq *req = new QLReq;
+        if (line.size() > 10)
+          for (auto &p : split_tabs(line.substr(10)))
+            if (!p.empty())
+              req->paths.push_back(wire_unescape(p));
+        webview_dispatch(g_w, do_quicklook, req);
+      } else if (line.rfind("CAPTURE ", 0) == 0) {
+        size_t sp = line.find(' ', 8);
+        CaptureReq *req = new CaptureReq;
+        if (sp == std::string::npos) {
+          req->qid = line.substr(8);
+          req->display = 0;
+        } else {
+          req->qid = line.substr(8, sp - 8);
+          req->display = std::atol(line.c_str() + sp + 1);
+        }
+        webview_dispatch(g_w, do_capture, req);
+      } else if (line == "BADGE" || line.rfind("BADGE ", 0) == 0) {
+        webview_dispatch(g_w, do_badge,
+                         new std::string(
+                             line.size() > 6 ? wire_unescape(line.substr(6))
+                                             : ""));
+      } else if (line.rfind("ATTENTION", 0) == 0) {
+        webview_dispatch(g_w, do_attention,
+                         new int(line.size() > 10 ? std::atoi(line.c_str() + 10)
+                                                  : 0));
+      } else if (line.rfind("PROGRESS", 0) == 0) {
+        webview_dispatch(g_w, do_progress,
+                         new double(line.size() > 9
+                                        ? std::atof(line.c_str() + 9)
+                                        : -1.0));
+      } else if (line.rfind("PDF ", 0) == 0 || line.rfind("PDF@", 0) == 0) {
+        // PDF <qid> <path> | PDF@<winid> <qid> <path>
+        std::string win;
+        size_t head = 4;
+        if (line[3] == '@') {
+          size_t sp0 = line.find(' ', 4);
+          if (sp0 == std::string::npos) continue;
+          win = line.substr(4, sp0 - 4);
+          head = sp0 + 1;
+        }
+        size_t sp = line.find(' ', head);
+        if (sp == std::string::npos) continue;
+        webview_dispatch(g_w, do_pdf,
+                         new PdfReq{line.substr(head, sp - head),
+                                    wire_unescape(line.substr(sp + 1)), win});
+      } else if (line == "APPICON" || line.rfind("APPICON ", 0) == 0) {
+        webview_dispatch(g_w, do_appicon,
+                         new std::string(line.size() > 8
+                                             ? wire_unescape(line.substr(8))
+                                             : ""));
+      } else if (line.rfind("SPOTLIGHT ", 0) == 0) {
+        size_t sp = line.find(' ', 10);
+        if (sp == std::string::npos) continue;
+        webview_dispatch(g_w, do_spotlight,
+                         new SpotlightReq{line.substr(10, sp - 10),
+                                          wire_unescape(line.substr(sp + 1))});
+      } else if (line.rfind("AI ", 0) == 0) {
+        // AI <op> <qid> [<prompt>\t<instructions>]
+        size_t o = line.find(' ', 3);
+        if (o == std::string::npos) continue;
+        std::string op = line.substr(3, o - 3);
+        size_t q = line.find(' ', o + 1);
+        AiReq *req = new AiReq;
+        req->op = op;
+        if (q == std::string::npos) {
+          req->qid = line.substr(o + 1);
+        } else {
+          req->qid = line.substr(o + 1, q - o - 1);
+          std::vector<std::string> p = split_tabs(line.substr(q + 1));
+          req->prompt = p.size() > 0 ? wire_unescape(p[0]) : "";
+          req->instructions = p.size() > 1 ? wire_unescape(p[1]) : "";
+          req->tools = p.size() > 2 ? wire_unescape(p[2]) : "";
+        }
+        webview_dispatch(g_w, do_ai, req);
+      } else if (line.rfind("AITOOLRESULT ", 0) == 0) {
+        // The backend answering a tool call. Handled right here on the reader
+        // thread rather than dispatched: the thread waiting on it is blocked in
+        // ai_tool_invoke, and hopping to the UI thread would only add latency
+        // to something with a 20s deadline.
+        size_t sp = line.find(' ', 13);
+        if (sp == std::string::npos) continue;
+        long id = std::atol(line.substr(13, sp - 13).c_str());
+#if defined(__APPLE__) && defined(TINYJS_AI)
+        ai_tool_result(id, wire_unescape(line.substr(sp + 1)));
+#else
+        (void)id;
+#endif
+      } else if (line == "PRINT") {
+        webview_dispatch(g_w, do_print, nullptr);
+      } else if (line.rfind("PRINT@", 0) == 0) {
+        webview_dispatch(g_w, do_print, new std::string(line.substr(6)));
+      } else if (line == "RELOAD") {
+        webview_dispatch(g_w, do_reload, nullptr);
+      } else if (line == "QUIT") {
+        webview_dispatch(g_w, do_terminate, nullptr);
+      }
+    }
+  }
+  // Backend exited or closed the socket: close the window.
+  webview_dispatch(g_w, do_terminate, nullptr);
+}
+
+// --- bundle mode ---------------------------------------------------------------
+// As the .app's CFBundleExecutable the launcher starts with no arguments: it
+// derives everything from the bundle, LISTENS on a private socket, and spawns
+// the backend (Contents/MacOS/tjs run Resources/app/entry.js) pointed at it
+// via TINYJS_SOCKET. Being the LaunchServices-registered GUI process is what
+// makes deep links, file opens, and single-instancing work: a second `open`
+// activates this process instead of launching another copy.
+
+#ifdef __APPLE__
+// The launcher is a universal binary, so it starts up even on an Intel Mac —
+// but the bundled `tjs` backend is arm64-only, so the app would otherwise hang
+// with a cryptic "backend never connected". Detected at spawn time (posix_spawn
+// returns EBADARCH), we show a plain apology and quit instead. Kept generic:
+// it fires whenever `tjs` has no slice for the CPU we're running on.
+static void show_arch_unsupported_alert() {
+  @autoreleasepool {
+    [NSApplication sharedApplication];
+    [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
+    [NSApp activateIgnoringOtherApps:YES];
+    NSAlert *a = [[[NSAlert alloc] init] autorelease];
+    a.alertStyle = NSAlertStyleCritical;
+    a.messageText = @"This app needs an Apple Silicon Mac";
+    a.informativeText =
+        @"Sorry — tinyjs apps currently run only on Apple Silicon (M1 and "
+        @"later). This Mac has an Intel processor, so the app can’t start.";
+    [a addButtonWithTitle:@"OK"];
+    [a runModal];
+  }
+}
+
+// Deep links + file opens: NSApplication routes kAEGetURL / kAEOpenDocuments
+// to the app delegate's application:openURLs: / application:openFiles: —
+// checked dynamically at event time, so adding the methods to the webview
+// library's delegate class works no matter when finishLaunching ran. Events
+// arriving before the backend attaches (cold starts) are buffered by
+// sock_write_line, so launch URLs/files are never lost.
+// Deep links go out as OPENURL <url>; file opens (which macOS may deliver
+// through the same openURLs: route as file:// URLs) as OPENFILES <json-paths>.
+static void send_open_urls(NSArray *urls) {
+  std::string files = "[";
+  bool any_file = false;
+  for (NSURL *u in urls) {
+    if ([u isFileURL]) {
+      if (any_file)
+        files += ",";
+      any_file = true;
+      files += json_escape([[u path] UTF8String]);
+    } else {
+      sock_write_line(std::string("OPENURL ") + [[u absoluteString] UTF8String]);
+    }
+  }
+  files += "]";
+  if (any_file)
+    sock_write_line("OPENFILES " + files);
+}
+
+static void tiny_openURLs(id, SEL, id /*app*/, NSArray *urls) {
+  send_open_urls(urls);
+}
+
+// The launcher's OWN argv — the page it was told to load and the socket it
+// talks over. AppKit hands a process's arguments to application:openFiles:
+// during launch, so without this every built app received its own index.html
+// and app.sock as "files the user opened", on every single launch. Anything
+// with an onOpenFiles handler was quietly told to open its own plumbing.
+static std::set<std::string> g_own_argv_paths;
+
+static void tiny_openFiles(id, SEL, id app, NSArray *files) {
+  std::string json = "[";
+  bool any = false;
+  for (NSUInteger i = 0; i < files.count; i++) {
+    std::string path = [(NSString *)files[i] UTF8String];
+    if (g_own_argv_paths.count(path)) continue;   // our own html / socket
+    if (any) json += ",";
+    any = true;
+    json += json_escape(path);
+  }
+  json += "]";
+  if (!any) {
+    [(NSApplication *)app replyToOpenOrPrint:NSApplicationDelegateReplySuccess];
+    return;
+  }
+  sock_write_line("OPENFILES " + json);
+  [(NSApplication *)app replyToOpenOrPrint:NSApplicationDelegateReplySuccess];
+}
+
+// Launch Apple Events can be dispatched while webview_create pumps the event
+// loop — before the app delegate exists. Register plain NSAppleEventManager
+// handlers FIRST (no delegate needed) so cold-start URLs/files are caught;
+// NSApplication may re-route later events through the delegate methods
+// installed by install_open_handlers, which produce identical wire lines.
+// Swizzled -[NSApplication setDelegate:]: graft our open handlers onto any
+// delegate the moment it is installed, so NSApplication's capability cache
+// (checked when launch Apple Events dispatch, possibly inside webview_create)
+// sees them from the start.
+typedef void (*SetDelegateIMP)(id, SEL, id);
+static SetDelegateIMP g_orig_setDelegate = nullptr;
+
+static void tiny_setDelegate(id self, SEL cmd, id delegate) {
+  if (delegate) {
+    class_addMethod(object_getClass(delegate), @selector(application:openURLs:),
+                    (IMP)tiny_openURLs, "v@:@@");
+    class_addMethod(object_getClass(delegate), @selector(application:openFiles:),
+                    (IMP)tiny_openFiles, "v@:@@");
+  }
+  if (g_orig_setDelegate)
+    g_orig_setDelegate(self, cmd, delegate);
+}
+
+static void install_early_open_handlers() {
+  if (!g_menu_target)
+    g_menu_target = [[TinyMenuTarget alloc] init];
+  g_orig_setDelegate = (SetDelegateIMP)swizzle(
+      [NSApplication class], @selector(setDelegate:), (IMP)tiny_setDelegate,
+      "v@:@");
+  NSAppleEventManager *aem = [NSAppleEventManager sharedAppleEventManager];
+  [aem setEventHandler:g_menu_target
+           andSelector:@selector(handleGetURL:withReply:)
+         forEventClass:kInternetEventClass
+            andEventID:kAEGetURL];
+  [aem setEventHandler:g_menu_target
+           andSelector:@selector(handleOpenDocs:withReply:)
+         forEventClass:kCoreEventClass
+            andEventID:kAEOpenDocuments];
+}
+
+static void install_open_handlers() {
+  id delegate = [NSApp delegate];
+  if (!delegate)
+    return;
+  class_addMethod(object_getClass(delegate), @selector(application:openURLs:),
+                  (IMP)tiny_openURLs, "v@:@@");
+  class_addMethod(object_getClass(delegate), @selector(application:openFiles:),
+                  (IMP)tiny_openFiles, "v@:@@");
+  // NSApplication caches delegate capabilities at setDelegate: time; re-set
+  // it so AppKit notices the methods we just added.
+  [NSApp setDelegate:nil];
+  [NSApp setDelegate:delegate];
+}
+
+static bool bundle_mode_setup(std::string &target, std::string &title,
+                              std::string &size_s, std::string &version) {
+  NSBundle *mb = [NSBundle mainBundle];
+  NSString *bp = [mb bundlePath];
+  NSString *frontend = [bp
+      stringByAppendingPathComponent:@"Contents/Resources/app/frontend/index.html"];
+  // tinyjs.json "url": the main window starts at a remote URL (site wrappers)
+  // — no local frontend required then.
+  NSString *remote = [mb objectForInfoDictionaryKey:@"TinyjsUrl"];
+  if (![bp hasSuffix:@".app"] ||
+      (!remote.length &&
+       ![[NSFileManager defaultManager] fileExistsAtPath:frontend]))
+    return false;
+
+  target = remote.length ? [remote UTF8String] : [frontend UTF8String];
+  NSString *name = [mb objectForInfoDictionaryKey:@"CFBundleName"];
+  title = name ? [name UTF8String] : "tinyjs";
+  NSString *ver = [mb objectForInfoDictionaryKey:@"CFBundleVersion"];
+  version = ver ? [ver UTF8String] : "0.0.0";
+  NSString *sz = [mb objectForInfoDictionaryKey:@"TinyjsWindowSize"];
+  size_s = sz ? [sz UTF8String] : "960x640";
+
+  // Private 0700 socket dir under the user temp dir (short enough for
+  // sun_path's ~104-byte cap).
+  std::string tmpl = std::string([NSTemporaryDirectory() UTF8String]) + "tinyjs-XXXXXX";
+  std::vector<char> buf(tmpl.begin(), tmpl.end());
+  buf.push_back('\0');
+  if (!mkdtemp(buf.data()))
+    return false;
+  g_sock_dir = buf.data();
+  std::string sock_path = g_sock_dir + "/app.sock";
+
+  g_listen_fd = socket(AF_UNIX, SOCK_STREAM, 0);
+  struct sockaddr_un addr;
+  std::memset(&addr, 0, sizeof(addr));
+  addr.sun_family = AF_UNIX;
+  std::strncpy(addr.sun_path, sock_path.c_str(), sizeof(addr.sun_path) - 1);
+  if (bind(g_listen_fd, (struct sockaddr *)&addr, sizeof(addr)) != 0 ||
+      listen(g_listen_fd, 1) != 0) {
+    std::fprintf(stderr, "launcher: cannot listen on %s: %s\n",
+                 sock_path.c_str(), std::strerror(errno));
+    return false;
+  }
+
+  // Spawn the backend; it attaches to our socket (bridge attach mode).
+  setenv("TINYJS_SOCKET", sock_path.c_str(), 1);
+  std::string exe = [[mb executablePath] UTF8String];
+  std::string exe_dir = exe.substr(0, exe.find_last_of('/'));
+  std::string tjs = exe_dir + "/tjs";
+  std::string entry =
+      std::string([bp UTF8String]) + "/Contents/Resources/app/entry.js";
+  const char *sargv[] = {tjs.c_str(), "run", entry.c_str(), nullptr};
+  pid_t pid;
+  // posix_spawn returns the error as its result (not via errno). On an Intel
+  // Mac the arm64-only tjs has no runnable slice -> EBADARCH: apologise and
+  // quit cleanly rather than leaving the app to hang on a backend that will
+  // never attach.
+  int rc = posix_spawn(&pid, tjs.c_str(), nullptr, nullptr,
+                       const_cast<char *const *>(sargv), environ);
+  if (rc != 0) {
+    if (rc == EBADARCH) {
+      show_arch_unsupported_alert();
+      std::exit(1);
+    }
+    std::fprintf(stderr, "launcher: cannot spawn backend: %s\n",
+                 std::strerror(rc));
+    return false;
+  }
+  return true;
+}
+#endif
+
+int main(int argc, char *argv[]) {
+  std::string target, sock_path, title = "tinyjs", size_s = "960x640";
+  bool bundle_mode = false;
+
+#ifdef __APPLE__
+  // Remember our own arguments before anything else can hand them back to us
+  // as "files the user opened" — see tiny_openFiles.
+  // EVERY argument, not just the path-shaped ones: AppKit hands the whole
+  // command line over, so the title and the "960x640" size string arrived as
+  // documents too once the paths were filtered.
+  for (int i = 1; i < argc; i++)
+    if (argv[i]) g_own_argv_paths.insert(argv[i]);
+#endif
+
+#ifdef __APPLE__
+  if (argc < 3)
+    bundle_mode = bundle_mode_setup(target, title, size_s, g_app_version);
+#endif
+
+  if (!bundle_mode) {
+    if (argc < 3) {
+      std::fprintf(stderr,
+                   "usage: %s <html-file-or-url> <socket-path> [title] [WxH]\n",
+                   argv[0]);
+      return 1;
+    }
+    target = argv[1];
+    sock_path = argv[2];
+    if (argc > 3)
+      title = argv[3];
+    if (argc > 4)
+      size_s = argv[4];
+    if (argc > 5)
+      g_app_version = argv[5];
+  }
+  g_app_name = title;
+  int width = 960, height = 640;
+  std::sscanf(size_s.c_str(), "%dx%d", &width, &height);
+
+#ifdef __APPLE__
+  // No window-server session = no webview, ever (SSH, CI, sandboxes that
+  // deny WindowServer). Without this check AppKit dies deep inside
+  // webview_create with an opaque crash that reads as an app bug — agents
+  // in headless sandboxes have burned real time on that. Checked BEFORE the
+  // socket connect so the bridge's "launcher exited before connecting" race
+  // reports the death instead of waiting on a peer that already gave up.
+  if (CFDictionaryRef gui = CGSessionCopyCurrentDictionary(); gui) {
+    CFRelease(gui);
+  } else {
+    std::fprintf(stderr,
+        "tinyjs: cannot create the webview window: no window-server session "
+        "(SSH, CI, or a sandbox that blocks WindowServer?).\n"
+        "tinyjs: the app code is likely fine; run from a logged-in GUI "
+        "session on this Mac.\n");
+    return 3;
+  }
+#endif
+
+  if (!bundle_mode) {
+    int fd = socket(AF_UNIX, SOCK_STREAM, 0);
+    struct sockaddr_un addr;
+    std::memset(&addr, 0, sizeof(addr));
+    addr.sun_family = AF_UNIX;
+    std::strncpy(addr.sun_path, sock_path.c_str(), sizeof(addr.sun_path) - 1);
+    if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) != 0) {
+      std::fprintf(stderr, "launcher: cannot connect to %s: %s\n",
+                   sock_path.c_str(), std::strerror(errno));
+      return 1;
+    }
+    g_sock = fd;
+  }
+
+  g_bundle_mode = bundle_mode;
+
+#ifdef __APPLE__
+  // Must precede webview_create: launch Apple Events (cold-start deep links /
+  // file opens) can be dispatched during its internal event pumping, and the
+  // notification-center delegate must exist before launch to receive the
+  // banner click that started the app.
+  install_early_open_handlers();
+  install_notif_delegate();
+
+  // No automatic window tabbing. With "Prefer tabs when opening documents"
+  // set to "always" — a system-wide setting, not the default one — AppKit
+  // merges each new same-sized window into the previous one as a TAB: same
+  // frame, page shrunk by the tab bar, and the x/y that win.open asked for
+  // silently ignored. An app that opens a window per document then looks like
+  // it moved the window you were reading. tinyjs has no tab-bar support to
+  // offer in exchange (the bar's "+" routes to newWindowForTab:, which nothing
+  // implements), so every window is a window. Window ▸ Merge All still works
+  // for anyone who wants them stacked.
+  if ([NSWindow respondsToSelector:@selector(setAllowsAutomaticWindowTabbing:)])
+    [NSWindow setAllowsAutomaticWindowTabbing:NO];
+
+  // Accessory activation (menu-bar agents): env in dev/spawn mode, plist in
+  // bundle mode. Must also precede webview_create — that's where the library
+  // would otherwise flash the Dock icon and the window.
+  {
+    const char *act = getenv("TINYJS_ACTIVATION");
+    bool accessory = act && std::strcmp(act, "accessory") == 0;
+    if (!accessory) {
+      NSString *pa = [[NSBundle mainBundle]
+          objectForInfoDictionaryKey:@"TinyjsActivation"];
+      accessory = pa && [pa isEqualToString:@"accessory"];
+    }
+    if (accessory)
+      install_accessory_mode();
+  }
+  // readAccess: widen the page's file:// read root (dev via env, packaged via
+  // the Info.plist key cli.js writes). '~' expands to the home directory.
+  {
+    const char *ra = getenv("TINYJS_READ_ACCESS");
+    NSString *root = ra ? [NSString stringWithUTF8String:ra] : nil;
+    if (!root) {
+      root = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"TinyjsReadAccess"];
+    }
+    if (root.length)
+      g_read_access = [[root stringByExpandingTildeInPath] UTF8String];
+  }
+  // Custom User-Agent: dev via TINYJS_UA env, packaged via the TinyjsUserAgent
+  // plist key. WKWebView's default UA omits the "Version/x Safari/x" suffix, so
+  // UA-sniffing sites (Slack, etc.) reject it — a real Safari UA gets through.
+  {
+    const char *ua = getenv("TINYJS_UA");
+    NSString *s = ua ? [NSString stringWithUTF8String:ua] : nil;
+    if (!s)
+      s = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"TinyjsUserAgent"];
+    if (s.length)
+      g_user_agent = [s UTF8String];
+  }
+  // tinyjs.json "debug": dev via TINYJS_DEBUG env (seeded by `tinyjs dev`),
+  // packaged via the TinyjsDebug plist key. See the globals' comment.
+  {
+    const char *dbg = getenv("TINYJS_DEBUG");
+    NSString *s = dbg && *dbg ? [NSString stringWithUTF8String:dbg] : nil;
+    if (!s)
+      s = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"TinyjsDebug"];
+    if (s.length) {
+      g_debug = true;
+      g_debug_open = [s isEqualToString:@"open"];
+    }
+  }
+  // tinyjs.json "inject": document-start user JS in every window. Dev carries
+  // the source inline in the env; packaged apps ship it as Resources/app/
+  // inject.js (cli.js writes it at build).
+  {
+    const char *inj = getenv("TINYJS_INJECT");
+    if (inj && *inj) {
+      g_inject_js = inj;
+    } else {
+      NSString *p = [[[NSBundle mainBundle] bundlePath]
+          stringByAppendingPathComponent:@"Contents/Resources/app/inject.js"];
+      NSString *src = [NSString stringWithContentsOfFile:p
+                                                encoding:NSUTF8StringEncoding
+                                                   error:nil];
+      if (src.length)
+        g_inject_js = [src UTF8String];
+    }
+  }
+  // "downloads": auto (default) | ask | deny, "popups": external (default) |
+  // window | deny — see the browser-affordances section.
+  {
+    const char *v = getenv("TINYJS_DOWNLOADS");
+    NSString *s = v && *v ? [NSString stringWithUTF8String:v]
+                          : [[NSBundle mainBundle]
+                                objectForInfoDictionaryKey:@"TinyjsDownloads"];
+    if (s.length)
+      g_downloads_mode = [s UTF8String];
+    v = getenv("TINYJS_POPUPS");
+    s = v && *v ? [NSString stringWithUTF8String:v]
+                : [[NSBundle mainBundle]
+                      objectForInfoDictionaryKey:@"TinyjsPopups"];
+    if (s.length)
+      g_popup_mode = [s UTF8String];
+  }
+#endif
+
+#ifdef __APPLE__
+  // Must precede webview_create: it swizzles WKWebView init so the main
+  // webview's config gets the tiny-media scheme handler before it's built.
+  install_media_scheme_hook();
+#endif
+
+  g_w = webview_create(g_debug ? 1 : 0, nullptr);
+  if (!g_w) {
+    std::fprintf(stderr, "launcher: failed to create webview\n");
+    return 1;
+  }
+
+#ifdef __APPLE__
+  apply_dev_icon();   // dev only: TINYJS_ICON -> the Dock tile
+  if (g_debug)
+    install_devtools_key_monitor();
+  install_stock_key_fallback();  // ⌘C/⌘V when an app drops the stock Edit items
+  enable_webgpu(g_w);
+  install_close_hook(g_w);
+  install_drop_hook();
+  install_media_capture_hook();
+  install_page_dialog_hooks(); // JS dialogs + window.open on the UI delegate
+  install_first_mouse_hook();
+  install_ctx_hook();
+  install_system_observers();
+  install_winstate_observers();
+  install_open_handlers();
+  // Packaged apps can declare chrome in the plist (TinyjsChrome, same
+  // tab-separated fields as the CHROME command) so the window never flashes
+  // its default titlebar.
+  NSString *plist_chrome = nil;
+  if (bundle_mode)
+    plist_chrome = [[NSBundle mainBundle]
+        objectForInfoDictionaryKey:@"TinyjsChrome"];
+  auto plist_chrome_req = [&]() -> ChromeReq * {
+    std::vector<std::string> p = split_tabs([plist_chrome UTF8String]);
+    ChromeReq *req = new ChromeReq;
+    req->frame = p.size() > 0 ? p[0] : "";
+    req->traffic = p.size() > 1 ? p[1] : "";
+    req->transparent = p.size() > 2 ? p[2] : "";
+    req->vibrancy = p.size() > 3 ? p[3] : "";
+    req->square = p.size() > 4 ? p[4] : "";
+    req->first_mouse = p.size() > 5 ? p[5] : "";
+    // The plist chrome has no menu field, so windowControlsPos is p[6]
+    // here (vs p[7] on the socket CHROME, where menu sits between).
+    req->traffic_pos = p.size() > 6 ? p[6] : "";
+    return req;
+  };
+  if (plist_chrome) do_chrome(g_w, plist_chrome_req());
+#endif
+
+  webview_set_title(g_w, title.c_str());
+  webview_set_size(g_w, width, height, WEBVIEW_HINT_NONE);
+#ifdef __APPLE__
+  // …and then say what we actually meant. webview_set_size treats those
+  // numbers as the FRAME, so the page came out title-bar-shorter than the
+  // declared size — the deck asks for 1100x720 and got a 688-tall page on
+  // macOS while Windows and Linux both gave it 720. Correct the frame so the
+  // CONTENT is the declared size, the same as the other two launchers (the
+  // Windows one does this a few lines after its own set_size, for the mirror-
+  // image reason). Left as a correction rather than a replacement because
+  // set_size is also what shows and centers the window at boot.
+  {
+    NSWindow *mw = window_for_id(g_w, "main");
+    if (mw && width > 0 && height > 0) {
+      NSRect f = mw.frame;
+      CGFloat top = NSMaxY(f);
+      f.size =
+          [mw frameRectForContentRect:NSMakeRect(0, 0, width, height)].size;
+      f.origin.y = top - f.size.height;
+      [mw setFrame:f display:YES];
+      [mw center];
+    }
+  }
+  // webview_set_size above rewrites the styleMask WHOLESALE (the reason the
+  // SETSIZE op avoids it) — which just wiped everything TinyjsChrome
+  // applied: a packaged squareCorners app snapped back to titled, traffic
+  // lights and all. Dev never showed it because the bridge re-sends chrome
+  // over the socket after boot; packaged apps have only the plist, so amp
+  // shipped with window buttons twice before this was caught. Re-apply the
+  // same request now, in the same runloop turn, so nothing paints titled.
+  if (plist_chrome) do_chrome(g_w, plist_chrome_req());
+  // Unified page RPC for every window, the main one included (replaces
+  // webview_bind: the shim's __invoke wins because nothing else defines it).
+  {
+    WKWebView *mwv = (WKWebView *)webview_get_native_handle(
+        g_w, WEBVIEW_NATIVE_HANDLE_KIND_BROWSER_CONTROLLER);
+    if (mwv) {
+      attach_tiny_bridge(mwv.configuration.userContentController, "main");
+      if (!g_user_agent.empty())
+        mwv.customUserAgent = ns(g_user_agent);
+      // Navigation events + downloads for the main window; its UI delegate is
+      // already the library's (with our runtime bolt-ons), left untouched —
+      // BUT WebKit caches which delegate methods exist at setUIDelegate:
+      // time, which was before install_page_dialog_hooks added ours (same
+      // trap install_open_handlers documents for NSApp). Re-set it so the
+      // JS-dialog and createWebView handlers are actually consulted;
+      // measured: without this, confirm() returns false instantly and
+      // window.open never reaches tiny_create_webview.
+      id uid = mwv.UIDelegate;
+      if (uid) {
+        mwv.UIDelegate = nil;
+        mwv.UIDelegate = uid;
+      }
+      tiny_apply_web_delegates(mwv);
+    }
+  }
+#endif
+
+  // Default menu bar (About/Quit + Edit); custom menus replace it via MENUEND.
+  apply_menus(g_w, new std::vector<MenuSpec>());
+  // …and from here the bar follows focus, so a window with a menu of its own
+  // (MENUBEGIN@<win>) shows it whenever it is the key window.
+  install_key_window_observer();
+
+  if (target.rfind("http://", 0) == 0 || target.rfind("https://", 0) == 0) {
+    webview_navigate(g_w, target.c_str());
+  } else {
+    // file:// document (secure context; see load_html_file).
+    g_html_path = target;
+    if (!load_html_file(g_w, target)) {
+      std::fprintf(stderr, "launcher: cannot read %s\n", target.c_str());
+      return 1;
+    }
+  }
+
+#ifdef __APPLE__
+  // Accessory startup is done: everything up to here ran with order-front
+  // suppressed, so the window was never on screen. Make sure it is genuinely
+  // ordered out, then lift the suppression so WINOP show works normally (the
+  // socket loop hasn't started yet, so no show can have been requested).
+  if (g_suppress_order_front) {
+    NSWindow *win = (NSWindow *)webview_get_native_handle(
+        g_w, WEBVIEW_NATIVE_HANDLE_KIND_UI_WINDOW);
+    [win orderOut:nil];
+    g_suppress_order_front = false;
+  }
+  // debug:"open" — main window's inspector, once the run loop is going.
+  if (g_debug_open)
+    dispatch_async(dispatch_get_main_queue(), ^{
+      open_inspector(webview_for_id(g_w, "main"));
+    });
+#endif
+
+  std::thread(sock_read_loop).detach();
+
+  webview_run(g_w);
+  webview_destroy(g_w);
+  if (!g_sock_dir.empty()) {
+    unlink((g_sock_dir + "/app.sock").c_str());
+    rmdir(g_sock_dir.c_str());
+  }
+  // The socket thread may still be blocked in read; exit hard.
+  _exit(0);
+}

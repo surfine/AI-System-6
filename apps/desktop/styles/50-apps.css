@@ -1,0 +1,3286 @@
+.scrap-empty-card {
+  border-radius: var(--surface-radius);
+  grid-column: 1 / -1;
+  min-height: 120px;
+  border: var(--scrap-empty-card-border);
+  background: var(--scrap-empty-card-bg);
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  gap: 6px;
+  padding: 12px;
+  text-align: center;
+}
+
+/* The empty-object card sets its own display, and an author display rule beats
+   the browser's [hidden] rule whatever the specificity. Without this the card
+   stays on screen after the code has already hidden it — the Draft Desk showed
+   "Quick Draft needs a project to save your work." next to a status bar
+   reading "Saved · 1 protected". Liquid Glass only re-skins border and
+   background here, so it needs no twin. */
+.finder-empty-object[hidden],
+.scrap-empty-card[hidden] {
+  display: none;
+}
+
+.finder-empty-object b,
+.finder-empty-object small,
+.scrap-empty-card b,
+.scrap-empty-card small {
+  display: block;
+  max-width: 32ch;
+  line-height: 1.25;
+}
+
+.scrap-empty-card .mini-icon,
+.finder-empty-object .mini-icon {
+  width: 38px;
+  height: 38px;
+}
+
+.writing-demo-caption {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: min(820px, calc(100vw - 320px));
+  padding: 9px 16px;
+  border: var(--demo-caption-border);
+  border-radius: var(--demo-caption-radius);
+  background: var(--demo-caption-bg);
+  box-shadow: var(--demo-caption-shadow);
+  color: var(--demo-caption-fg);
+  font: 14px/1.45 system-ui, sans-serif;
+  text-align: center;
+  pointer-events: none;
+}
+
+.writing-demo-highlight {
+  position: fixed;
+  border: 3px solid var(--demo-highlight-border);
+  border-radius: 8px;
+  box-shadow: var(--demo-highlight-ring);
+  pointer-events: none;
+}
+
+.writing-demo-highlight-label {
+  position: absolute;
+  left: 0;
+  top: -30px;
+  padding: 3px 8px;
+  border: var(--demo-highlight-label-border);
+  background: var(--demo-highlight-label-bg);
+  color: var(--demo-highlight-label-fg);
+  font: 12px/1.2 system-ui, sans-serif;
+  white-space: nowrap;
+}
+
+.chat-file-pane {
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: 10px;
+  min-height: 300px;
+}
+
+.chat-file-pane .empty-folder-note {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 10px;
+  min-height: 132px;
+}
+
+.chat-file-pane .empty-folder-note > .btn {
+  min-height: var(--touch-primary-min-height);
+}
+
+@container (max-width: 760px) {
+	  .quick-draft-intake,
+	  .quick-draft-editor{
+    align-content: stretch;
+  }
+
+  .quick-draft-intake {
+    grid-template-rows: auto;
+  }
+
+  .quick-draft-editor {
+    grid-template-rows: auto minmax(18rem, 1fr) auto auto auto;
+  }
+}
+
+/* One rule decides the collapse: the paper's smallest readable measure. The
+   window is the container, so a narrow desk window collapses exactly like a
+   phone — same DOM, same task order, one breakpoint. */
+@container (max-width: 800px) {
+
+  /* A drawer covers the paper but never all of it: the exposed edge says the
+     paper is still there, and it is the easiest place to tap to come back. */
+
+  /* The editor stack inside the paper carries its own layers (the markdown
+     overlay sits at 2). Isolating the paper keeps those layers local, so the
+     drawer covers the text by document order and needs no z-index of its own. */
+
+  /* Two rows, because none of these eight controls belongs in a menu: the
+     display gears are high traffic, delivery ends the route, and the primary
+     button keeps one position. */
+}
+
+.teachtext-pane {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto max-content;
+  gap: 8px;
+  min-height: 0;
+}
+
+/* One bar under the paper: the document's four state cells, then the status
+   message. It used to be two stacked boxes pulled together with a negative
+   margin so they would read as one instrument -- so they are one now. */
+/* Cells with nothing to say are hidden (teachtext-accessories.js), so the
+   message is pinned to the last track rather than to whatever column the
+   surviving cells leave it. */
+.teachtext-desk-strip > .window-status-slot {
+  grid-column: -2;
+}
+
+/* 写 | 读 (| 并排): one button drawn as a two- or three-way switch. */
+.writing-mode-toggle {
+  display: inline-flex;
+  align-items: stretch;
+  overflow: hidden;
+}
+.writing-mode-seg {
+  display: flex;
+  align-items: center;
+  padding: 0 0.9em;
+}
+.writing-mode-seg + .writing-mode-seg {
+  border-left: 1px solid currentColor;
+}
+/* The selected segment wears the era's own view-switch thumb, the same
+   tokens the Finder's icon/list switch reads, so the two switches in one era
+   agree. The old ink background with --selected-fg was ink on ink in Liquid
+   Glass, whose --selected-fg is dark: "Write" became an unlabeled black block
+   (2026-10-08). The foundation defaults keep System 6's reversed pair. */
+.writing-mode-seg.is-on {
+  background: var(--view-switch-thumb-bg, var(--ink));
+  color: var(--view-switch-active-fg, var(--paper));
+  /* Liquid Glass paints button text with -webkit-text-fill-color, which
+     wins over color: the white label still filled dark on the dark thumb. */
+  -webkit-text-fill-color: currentColor;
+  box-shadow: var(--view-switch-thumb-shadow, none);
+}
+
+.teachtext-desk-strip {
+  display: grid;
+  /* The state cells take the width their words need; the message takes what is
+     left. Four equal columns plus a fifth squeezed "Read-only, edit in Section
+     Drafts" down to an ellipsis -- and that cell is the one that says why the
+     writer cannot type. */
+  grid-template-columns: repeat(4, minmax(0, auto)) minmax(0, 1fr);
+  gap: 0;
+  border: var(--teachtext-strip-border);
+  background: var(--teachtext-strip-bg);
+  box-shadow: var(--teachtext-strip-shadow, inset 1px 1px 0 var(--shade));
+  color: var(--teachtext-strip-fg, currentColor);
+  font-family: var(--teachtext-strip-font, var(--mono-font));
+  font-size: 11px;
+}
+
+.teachtext-desk-strip span {
+  min-width: 0;
+  padding: 4px 6px;
+  border-right: var(--teachtext-strip-divider, 1px dotted var(--shade-dark));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.teachtext-desk-strip span:last-child {
+  border-right: 0;
+}
+
+.teachtext-body-label {
+  display: none;
+}
+
+/* Copies of 10-windows.css's .window .window-frame-scroller for the content
+   areas below that are window frame scrollers: the same selector and
+   specificity, scoped by :where(), so the frame keeps beating each area's own
+   rule under a per-file layer order as it does today by specificity. */
+.window .window-frame-scroller:where(.teachtext-editor-container, .project-cd-grid, .image-manager-list) {
+  overflow: auto;
+  border: 0;
+  box-shadow: none;
+  min-height: 0;
+}
+
+.project-cd-grid.window-frame-scroller {
+  padding: 12px;
+}
+
+.teachtext-editor-container {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  border: var(--teachtext-editor-border);
+  border-radius: var(--teachtext-editor-radius);
+  background: var(--teachtext-editor-bg);
+  box-shadow: var(--teachtext-editor-shadow);
+}
+
+.teachtext-editor-container.is-previewing {
+  max-height: none;
+}
+
+.teachtext-editor-container.is-previewing .mde-surface {
+  display: none;
+}
+
+.teachtext-editor-container.is-previewing .teachtext-preview {
+  max-height: none;
+}
+
+/* The outline as a list, in Finder's grammar: a row per section, subsections
+   indented under it, a triangle where there is something to disclose, and
+   reverse video for what is selected. The row is its own small grid rather
+   than .finder-list-row's four columns -- a tree has one column that matters.
+   Selection reuses the shared .is-selected state and the system selection
+   tokens, so each appearance's own selected twin applies to it. */
+.outline-tree {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 6px 0;
+  background: var(--paper);
+  font-size: 12px;
+}
+
+.outline-tree-row {
+  display: grid;
+  grid-template-columns: 14px 10px minmax(0, 1fr) max-content;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 3px 10px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.outline-tree-row.is-child {
+  padding-left: 30px;
+}
+
+.outline-tree-row.is-selected {
+  background: var(--system-selection-bg, var(--selection-bg));
+  color: var(--system-selection-fg, var(--selection-fg));
+}
+
+.outline-tree-twisty {
+  font-size: 9px;
+  line-height: 1;
+  text-align: center;
+}
+
+.outline-tree-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Finder's Size column. A fact about what is there, never a target: the word
+   count target was dropped because a deficit meter multiplies pressure, and
+   this is the one thing under it that was worth keeping -- which section is
+   still a shell. */
+.outline-tree-size {
+  padding-left: 10px;
+  color: var(--shade-dark);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.outline-tree-size-empty {
+  font-style: italic;
+}
+
+.outline-tree-row.is-selected .outline-tree-size {
+  color: inherit;
+}
+
+/* The grip. A finger has to start the drag here: touch-action is decided when
+   the gesture begins, so the row cannot both scroll under a finger and be
+   dragged by one. The grip takes the gesture; the rest of the row keeps
+   panning, and the list still scrolls. A mouse drags from anywhere.
+
+   Two columns of 1px dots, drawn on the pixel grid rather than smoothed --
+   later Classic Mac OS used exactly this pattern to say "take hold of me". */
+.outline-tree-grip {
+  align-self: stretch;
+  margin: 3px 0;
+  background-image: radial-gradient(currentColor 0.5px, transparent 0.5px);
+  background-size: 3px 3px;
+  background-position: 1px 1px;
+  opacity: 0.55;
+  cursor: grab;
+  touch-action: none;
+}
+
+.outline-tree-row:hover .outline-tree-grip,
+.outline-tree-row.is-selected .outline-tree-grip {
+  opacity: 1;
+}
+
+.outline-tree.is-dragging .outline-tree-grip {
+  cursor: grabbing;
+}
+
+/* Where it will land. A 1-bit rule between rows, not a shadow under a card. */
+.outline-tree-row.is-drop-before {
+  box-shadow: inset 0 2px 0 var(--ink);
+}
+
+.outline-tree-row.is-drop-after {
+  box-shadow: inset 0 -2px 0 var(--ink);
+}
+
+/* The outline as a corkboard: a third view over the same records the tree
+   reads, freely placed. The three marks reuse the writing spine's own class
+   names (is-selected, holds-pen, has-content) rather than inventing a
+   parallel vocabulary for the same three facts. */
+.outline-cards {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: var(--paper);
+}
+
+.outline-card {
+  position: absolute;
+  left: var(--outline-card-x, 0px);
+  top: var(--outline-card-y, 0px);
+  width: 200px;
+  min-height: 108px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px 8px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  box-shadow: 2px 2px 0 var(--shade);
+  color: inherit;
+  text-align: left;
+  cursor: grab;
+  touch-action: none;
+  font: inherit;
+}
+
+.outline-card.is-child {
+  border-style: dashed;
+}
+
+.outline-card.is-selected {
+  background: var(--system-selection-bg, var(--selection-bg));
+  color: var(--system-selection-fg, var(--selection-fg));
+}
+
+.outline-card.is-drop-target {
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+
+.outline-cards.is-dragging .outline-card {
+  cursor: grabbing;
+}
+
+.outline-card-grip {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 16px;
+  height: 10px;
+  background-image: radial-gradient(currentColor 0.5px, transparent 0.5px);
+  background-size: 3px 3px;
+  background-position: 1px 1px;
+  opacity: 0.55;
+  cursor: grab;
+}
+
+.outline-card:hover .outline-card-grip,
+.outline-card.is-selected .outline-card-grip {
+  opacity: 1;
+}
+
+.outline-card-title {
+  padding-right: 20px;
+  font-weight: var(--system-emphasis-weight);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.outline-card-snippet {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  font-size: 11px;
+  color: var(--shade-dark);
+}
+
+.outline-card.is-selected .outline-card-snippet {
+  color: inherit;
+}
+
+/* Filled badge: this record's Section Draft holds text. */
+.outline-card-pen {
+  position: absolute;
+  bottom: 4px;
+  left: 6px;
+  width: 8px;
+  height: 8px;
+  border: 1px solid var(--ink);
+  background: transparent;
+}
+
+.outline-card.holds-pen .outline-card-pen {
+  background: var(--ink);
+}
+
+.outline-card.is-selected .outline-card-pen {
+  border-color: currentColor;
+  background: transparent;
+}
+
+.outline-card.is-selected.holds-pen .outline-card-pen {
+  background: currentColor;
+}
+
+/* Diamond: the classic mark for "this one has something in it" -- here, the
+   outline record's own text under the heading. */
+.outline-card-diamond {
+  position: absolute;
+  bottom: 5px;
+  left: 20px;
+  width: 6px;
+  height: 6px;
+  background: var(--ink);
+  transform: rotate(45deg);
+  display: none;
+}
+
+.outline-card.has-content .outline-card-diamond {
+  display: block;
+}
+
+.outline-card.is-selected .outline-card-diamond {
+  background: currentColor;
+}
+
+.teachtext-preview {
+  flex: 1;
+  min-height: 0;
+  padding: 40px 60px;
+  overflow-y: auto;
+  /* The preview is the same sheet turned over, so it is set in the same face
+     and at the same size as the paper. It used to render two points smaller in
+     a sans face, which put 38 CJK columns on a line the writer had composed at
+     28 -- a measure that holds on only one side of the paper is not locked. */
+  font-family: var(--editor-font);
+  font-size: var(--mde-font-size);
+  line-height: var(--paper-line-height-preview);
+  user-select: text;
+  background: var(--teachtext-preview-bg);
+  color: var(--ink);
+  /* Same breaks as the paper. break-word here used to split a line in a
+     different place from the editor, so the turned-over sheet no longer
+     matched the one the writer composed. */
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+/* The optional modern face (moved from 00-foundation.css's use-modern-fonts
+   list) follows the preview's own face, which it replaces. */
+body.use-modern-fonts .teachtext-preview {
+  font-family: var(--text-font);
+}
+
+/* The reading column is the writing measure. A help document overrides this
+   with its own wider column further down: it is a manual, not the writer's
+   paper. */
+.teachtext-preview > * {
+  max-width: var(--editor-measure);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.teachtext-preview h1 {
+  font-size: 24px;
+  font-family: var(--title-font);
+  border-bottom: var(--teachtext-preview-title-divider);
+  padding-bottom: 8px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.teachtext-preview h2 {
+  font-size: 18px;
+  font-family: var(--title-font);
+  margin-top: 2em;
+  border-left: var(--teachtext-preview-section-marker);
+  padding-left: 12px;
+}
+
+/* Start-aligned, not justified: a Chinese line that carries an unbreakable
+   Latin run ("Developer Transition Kit") was stretched by pulling its Han
+   characters apart -- "DTK 封 面 卡 ：". The space between the scripts is the
+   type engine's job where it can do it. */
+/* Horizontal margins stay auto. A shorthand of `1.2em 0` used to cancel the
+   centered column on `.teachtext-preview > *`, so the title and the figure
+   sat in the middle of the window and every paragraph stuck to the left. */
+.teachtext-preview p {
+  margin: 1.2em auto;
+  text-indent: 2em;
+  text-align: start;
+  text-autospace: ideograph-alpha ideograph-numeric;
+}
+
+.teachtext-window.is-help-document .teachtext-editor-container.is-previewing {
+  max-height: none;
+}
+
+.teachtext-window.is-help-document .teachtext-preview {
+  padding: 30px clamp(24px, 5vw, 56px);
+  line-height: 1.68;
+}
+
+.teachtext-window.is-help-document .teachtext-preview > * {
+  max-width: 760px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.teachtext-window.is-help-document .teachtext-preview h1 {
+  margin-top: 0;
+  margin-bottom: 18px;
+  padding-bottom: 6px;
+  font-size: 22px;
+}
+
+.teachtext-window.is-help-document .teachtext-preview p {
+  text-indent: 0;
+  text-align: left;
+}
+
+.teachtext-window.is-help-document .teachtext-preview ol,
+.teachtext-window.is-help-document .teachtext-preview ul {
+  padding-left: 30px;
+}
+
+.teachtext-preview img {
+  display: block;
+  max-width: min(100%, 720px);
+  max-height: 62vh;
+  width: auto;
+  height: auto;
+  margin: 24px auto;
+  border: var(--teachtext-preview-image-border);
+  image-rendering: auto;
+  background: var(--teachtext-preview-image-bg);
+}
+
+/* Same column as the paragraphs. `1em 0` zeroed the horizontal auto margins,
+   so a list sat on the left edge while the prose beside it stayed centred. */
+.teachtext-preview ul, .teachtext-preview ol {
+  padding-left: 40px;
+  margin: 1em auto;
+}
+
+.teachtext-preview blockquote {
+  margin: 20px auto;
+  padding: 10px 20px;
+  border: var(--teachtext-blockquote-border);
+  background: var(--teachtext-preview-blockquote-bg);
+  font-style: italic;
+}
+
+/* The preview only ever set h1, h2, p, img, lists and blockquote. Everything
+   else a real document contains fell through to the browser default, which on
+   this page reads as broken rather than plain. h1 and h2 carry the article's
+   own furniture (centred title, section marker); h3 and below are subheads
+   inside a section, so they stay quiet. */
+.teachtext-preview h3,
+.teachtext-preview h4,
+.teachtext-preview h5,
+.teachtext-preview h6 {
+  font-family: var(--title-font);
+  font-size: 15px;
+  margin: 1.8em auto 0.6em;
+  line-height: 1.3;
+}
+
+.teachtext-preview h3 { font-size: 16px; }
+
+.teachtext-preview a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.teachtext-preview hr {
+  margin: 2em auto;
+  border: 0;
+  border-top: var(--teachtext-preview-title-divider);
+}
+
+.teachtext-preview pre {
+  margin: 1.4em auto;
+  padding: 10px 12px;
+  overflow-x: auto;
+  border: var(--system-border);
+  background: var(--quiet-panel);
+  line-height: 1.5;
+}
+
+.teachtext-preview code {
+  font-family: var(--mono-font);
+  /* Relative, not absolute: this page's prose size follows the paper measure,
+     and a fixed 13px reads as undersized next to it. */
+  font-size: 0.9em;
+}
+
+/* Width-neutral, like the editor's highlight. Padding and a border made the
+   token wider than the source, so a sentence broke in the middle of a word
+   ("写 / 成") around the chip. */
+.teachtext-preview :not(pre) > code {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: 1em;
+}
+
+/* One grid for both rendered surfaces. A model reaches for a table constantly
+   and neither the writing preview nor ClioTalk had a rule for one, so both
+   printed a run of naked words where a grid belonged. A wide table scrolls
+   inside itself; neither the paper nor the conversation column ever scrolls
+   sideways. */
+.teachtext-preview table,
+.message-content table {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1em 0;
+  border-collapse: collapse;
+}
+
+.teachtext-preview table {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.teachtext-preview th,
+.teachtext-preview td,
+.message-content th,
+.message-content td {
+  padding: 4px 8px;
+  border: var(--md-table-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.teachtext-preview th,
+.message-content th {
+  background: var(--md-table-heading-bg);
+  font-weight: 700;
+}
+
+.print-directory-window {
+  width: 560px;
+  height: 520px;
+}
+
+.print-directory-pane {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 8px;
+  min-height: 0;
+}
+
+.print-directory-preview {
+  min-height: 0;
+  padding: 18px 22px;
+  overflow: auto;
+  border: var(--print-directory-preview-border);
+  border-radius: var(--print-directory-preview-radius);
+  background: var(--print-directory-preview-bg);
+  box-shadow: var(--print-directory-preview-shadow);
+  color: var(--ink);
+  font-family: var(--text-font);
+  line-height: 1.45;
+  user-select: text;
+}
+
+.print-directory-preview h1 {
+  margin: 0 0 14px;
+  padding-bottom: 6px;
+  border-bottom: var(--print-directory-heading-border);
+  font-family: var(--title-font);
+  font-size: 20px;
+  text-align: center;
+}
+
+.print-directory-preview p {
+  margin: 0.45em 0;
+}
+
+.print-directory-preview table {
+  width: 100%;
+  margin-top: 14px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.print-directory-preview th,
+.print-directory-preview td {
+  padding: 4px 6px;
+  border: var(--print-directory-table-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.print-directory-preview th {
+  background: var(--print-directory-table-heading-bg);
+  font-family: var(--title-font);
+}
+
+.page-setup-pane {
+  display: grid;
+  gap: 10px;
+}
+
+.page-setup-group {
+  border-radius: var(--surface-radius);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 10px;
+  border: var(--system-control-line) solid var(--ink);
+  background: var(--paper);
+}
+
+.page-setup-group legend {
+  padding: 0 5px;
+  font-family: var(--title-font);
+}
+
+.page-setup-group label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 26px;
+  white-space: nowrap;
+}
+
+.teachtext-pane textarea {
+  width: 100%;
+  height: 100%;
+  padding: 12px;
+  font-family: var(--text-font);
+  line-height: 1.5;
+  resize: none;
+  /* The editor container holds the paper/glass background; the textarea itself
+     is transparent so the live markdown highlight overlay shows through. */
+  background: transparent;
+  background-image: none;
+  border: 0;
+  min-height: 360px;
+}
+
+.teachtext-attachments-empty {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 10px 6px;
+  border: var(--teachtext-attachments-empty-border);
+  background: transparent;
+  color: var(--shade-dark);
+  font: inherit;
+  line-height: 1.35;
+  text-align: center;
+  cursor: pointer;
+}
+
+.teachtext-attachments-empty:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* MacWrite ruler (line spacing only, Writing > Line Spacing): the writer's
+   density choice for every writing surface's paper and preview alike. No
+   attribute (or an old/unknown stored value) means "standard" -- the
+   :root defaults above -- so this feature ships with zero visual change
+   until a writer opens the menu. Set via mdeSetLineSpacing() in
+   markdown-editor.js and read by .mde-input/.mde-highlight and
+   .teachtext-preview below. */
+body[data-line-spacing="compact"] {
+  --paper-line-height-editor: 1.4;
+  --paper-line-height-preview: 1.5;
+}
+
+body[data-line-spacing="relaxed"] {
+  --paper-line-height-editor: 2;
+  --paper-line-height-preview: 2.1;
+}
+
+/* Live markdown highlight overlay. The textarea (.mde-input) and the painted
+   overlay (.mde-highlight) share identical metrics so the caret stays aligned
+   with the highlighted glyphs. Only width-neutral styling is painted. */
+.mde-surface {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  cursor: text;
+}
+
+.teachtext-editor-container > .mde-surface {
+  min-height: min(52vh, 420px, 100%);
+}
+
+.mde-surface > .mde-input,
+.mde-surface > .mde-highlight {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(calc(-50% + var(--mde-scrollbar-offset)));
+  width: 100%;
+  /* The editable box is wider than the 28em text measure so classic scrollbars
+     get their own lane instead of covering the 28th CJK character. */
+  max-width: var(--mde-page-width);
+  box-sizing: border-box;
+  padding: var(--mde-page-padding-y, 24px) var(--mde-page-padding-x, 24px);
+  border: 0;
+  font-family: var(--editor-font);
+  font-size: var(--mde-font-size);
+  line-height: var(--paper-line-height-editor);
+  letter-spacing: 0;
+  white-space: pre-wrap;
+  overflow-wrap: normal;
+  word-break: normal;
+  tab-size: 2;
+}
+
+.mde-surface > .mde-input {
+  /* Painted after .mde-highlight in source order, so it stacks on top without
+     a z-index (keeps the editor out of the z-index budget). */
+  resize: none;
+  overflow-y: auto;
+  background: transparent;
+  /* The overlay below paints every glyph; this layer stays invisible so the
+     markers can carry their own ink. The caret keeps an explicit colour, so
+     it survives the transparent text. */
+  color: transparent;
+  caret-color: var(--ink);
+  cursor: text;
+  min-height: 0;
+  z-index: var(--z-local-chrome);
+  padding-right: calc(var(--mde-scrollbar-gutter, 32px) + var(--mde-page-padding-x, 24px));
+  /* This transparent layer sits ON TOP of the highlight overlay; a backdrop
+     blur here would smear the text painted behind it (liquid-glass theme), and
+     an era's inset field shadow would darken the ink's first and last lines. */
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+
+/* The ink is painted by the overlay BEHIND this textarea, so an opaque
+   selection drawn in the textarea's own layer covers the very words being
+   selected: the writer selected a line and watched it vanish, spelling
+   underline still showing, in every appearance. The selection keeps the era's
+   own colour and turns translucent, so the glyphs behind read through it. */
+.mde-surface > .mde-input::selection {
+  background: color-mix(in srgb, var(--editor-selection-tint, var(--selection-bg)) 32%, transparent);
+  color: transparent;
+}
+
+.mde-surface > .mde-input::placeholder {
+  color: var(--shade-dark);
+}
+
+.mde-surface > .mde-highlight {
+  overflow: hidden;
+  pointer-events: none;
+  color: var(--ink);
+  padding-right: calc(var(--mde-scrollbar-gutter, 32px) + var(--mde-page-padding-x, 24px));
+  z-index: var(--z-local-control);
+}
+
+.mde-surface.is-typewriter-mode::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1.7em;
+  transform: translateY(-50%);
+  background: linear-gradient(to right, transparent, rgba(250, 240, 130, 0.18), transparent);
+  /* No z-index. --z-local-base is 0, and 0 and auto put a positioned element
+     in the same painting step; the value only adds a stacking context, which
+     a pseudo-element with no descendants cannot use. The band is the last
+     child in tree order, so it paints over the ink either way. */
+  pointer-events: none;
+}
+
+.mde-surface.is-typewriter-mode > .mde-input,
+.mde-surface.is-typewriter-mode > .mde-highlight {
+  padding-top: var(--mde-typewriter-pad, 18px);
+  padding-bottom: var(--mde-typewriter-pad, 18px);
+}
+
+/* Focus mode used to own the whole inked-overlay arrangement. It is the
+   default now, so all that remains here is what focus mode actually means:
+   three tiers of attention. The sentence you are writing carries full ink,
+   the rest of its paragraph stays readable so you can hear the run-up to it,
+   and the other paragraphs step well back.
+
+   Opacity cannot nest brighter -- a child of a dimmed run can never reach
+   full ink again -- so the LINE carries the light and the dim runs are what
+   gets wrapped. Nothing here may change width: the overlay sits under a
+   transparent textarea, and a metric that shifts takes the caret with it. */
+.mde-surface.is-focus-mode .md-focus-muted {
+  opacity: 0.24;
+}
+
+.mde-surface.is-focus-mode .md-focus-near {
+  opacity: 0.55;
+}
+
+.mde-surface.is-focus-mode .md-focus-active {
+  opacity: 1;
+}
+
+/* The overlay carries the ink. Everything it paints must stay width-neutral,
+   or the caret drifts away from the glyph it is standing on: markers change
+   colour only, and weight arrives as a stroke rather than a heavier face.
+   Markers and the URL half of a link are machinery — they retreat to the
+   era's grey but stay visible, because the caret has to be able to land on
+   them. */
+.md-marker,
+.md-url {
+  color: var(--md-marker-ink);
+}
+.md-heading,
+.md-strong {
+  -webkit-text-stroke: var(--md-weight-stroke) currentColor;
+}
+/* The record id is the machine's half of a heading line: still selectable
+   text, drawn in the marker ink so the title keeps the eye. */
+.md-record-id { color: var(--md-marker-ink); }
+.md-link { text-decoration: underline; text-underline-offset: 2px; text-decoration-color: currentColor; }
+.md-strike { text-decoration: line-through; text-decoration-color: currentColor; }
+.md-mark { background: var(--md-mark-wash); }
+
+/* Bottom action row, shared by every writing window (TeachText, Question
+   Sheet, Outline, Section Drafts, Review Desk). One stable model:
+
+     [ writing-control group ]  —fixed isolation gap—  [ primary action ]
+
+   The row adapts to the window; it never widens it. Every item carries
+   min-width:0 so the cluster shrinks (controls first) before the window
+   grows, and the labels stay on one line (ellipsis, never vertical). */
+.teachtext-actions {
+  display: flex;
+  position: relative;
+  justify-content: center;
+  align-items: center;
+  align-self: stretch;
+  gap: 0;
+  min-width: 0;
+}
+
+/* A locked Review Desk hides its action row, which is a .teachtext-actions row;
+   the hide follows the row's own rule (moved from 30-surfaces.css). */
+.review-desk-window.is-review-locked .review-desk-actions {
+  display: none;
+}
+
+/* Left cluster: display mode, frequent action, and additional commands. */
+.teachtext-command-group {
+  display: grid;
+  /* The first track is the 写 | 读 switch: it takes the width its words need
+     (a third segment appears when there is room for 并排). */
+  grid-template-columns:
+    minmax(var(--teachtext-action-side-width), max-content)
+    minmax(0, var(--teachtext-action-focus-width))
+    minmax(0, var(--teachtext-action-side-width));
+  gap: var(--teachtext-action-gap);
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+/* Controls and primary alike: one line, centered label, ellipsis under
+   pressure instead of wrapping or stacking vertically. */
+.teachtext-command-group > .btn,
+.teachtext-command-group > .teachtext-command-menu > summary,
+.teachtext-actions > .btn.default {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+/* Controls fill their grid cell. */
+.teachtext-command-group > .btn,
+.teachtext-command-group > .teachtext-command-menu,
+.teachtext-command-group > .teachtext-command-menu > summary {
+  width: 100%;
+}
+
+/* Primary action: content-sized with a comfortable minimum so it always
+   reads as the main action, separated from the controls by a fixed
+   isolation gap on its LEFT (never a stretched spacer that drifts to the
+   far edge). flex 0 0 = it holds its size; the controls absorb any slack. */
+.teachtext-actions > .btn.default {
+  flex: 0 0 auto;
+  min-width: var(--teachtext-action-primary-width);
+  margin-left: var(--teachtext-action-primary-gap);
+}
+
+.teachtext-actions > .sideask-launch-button {
+  flex: 0 0 auto;
+  min-width: 96px;
+  margin-left: var(--teachtext-action-primary-gap);
+}
+
+.teachtext-command-group > .teachtext-command-menu > summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.teachtext-command-menu {
+  position: relative;
+  border-radius: var(--control-radius);
+  overflow: visible;
+}
+
+.teachtext-actions .teachtext-command-menu {
+  border-radius: 8px;
+  overflow: visible;
+}
+
+.teachtext-command-menu summary {
+  list-style: none;
+  cursor: default;
+}
+
+.teachtext-command-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+/* A command popover is a menu: it opens from a control, it holds commands, and
+   it closes on choice. It used to draw its own frame in System 6 ink — a black
+   hairline and a hard 3px offset shadow — so it stayed a System 6 menu in every
+   later era while the real menus followed the era. Reading the menu panel's own
+   roles costs nothing and means one answer per era, not two. (Classic's own
+   shadow moves from an invented 3px to the 1px its menus already cast.) */
+.teachtext-command-popover {
+  position: absolute;
+  z-index: var(--z-local-popover);
+  display: grid;
+  min-width: 210px;
+  gap: 3px;
+  padding: 5px;
+  border: var(--menu-panel-border);
+  border-radius: var(--menu-panel-radius);
+  background: var(--menu-panel-bg);
+  box-shadow: var(--menu-panel-shadow);
+}
+
+.teachtext-command-popover {
+  left: 0;
+  bottom: 100%;
+  margin-bottom: 5px;
+}
+
+.specialized-command-menu .teachtext-command-popover {
+  left: auto;
+  right: 0;
+  max-height: 60dvh;
+  overflow-y: auto;
+  --teachtext-command-popover-overflow: auto;
+}
+
+/* A command menu with nothing available reads as a disabled button and does
+   not open. One rule for every such menu (DocMap's Commands, Searcher's Send
+   To); Liquid Glass dresses the same state in 70-liquid-glass.css. */
+.teachtext-command-menu.is-disabled > summary {
+  color: var(--shade-dark);
+  background:
+    repeating-linear-gradient(-45deg, transparent 0 9px, rgba(0, 0, 0, 0.06) 9px 18px),
+    var(--paper);
+  pointer-events: none;
+}
+
+/* Command controls in top toolbars open into their owning window. Bottom
+   action bars retain the default upward placement above. */
+.teachtext-command-menu.command-menu-opens-down .teachtext-command-popover {
+  top: 100%;
+  right: 0;
+  bottom: auto;
+  left: auto;
+  margin-top: 5px;
+  margin-bottom: 0;
+}
+
+.teachtext-command-popover .btn,
+.teachtext-command-subpopover .btn {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.teachtext-command-popover hr {
+  width: 100%;
+  margin: 3px 0;
+  border: 0;
+  border-top: var(--teachtext-popover-hr-border);
+}
+
+.teachtext-command-submenu {
+  position: relative;
+}
+
+.teachtext-command-submenu summary {
+  list-style: none;
+  position: relative;
+  padding-right: 24px;
+}
+
+.teachtext-command-submenu summary::-webkit-details-marker {
+  display: none;
+}
+
+.teachtext-command-submenu summary::after {
+  content: "▶";
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+}
+
+.teachtext-command-submenu[open] summary::after {
+  content: "▼";
+}
+
+.teachtext-command-subpopover {
+  display: grid;
+  gap: 3px;
+  margin: 4px 0 0 12px;
+  padding: 3px 0 0 7px;
+  border-left: var(--teachtext-subpopover-border-left);
+}
+
+/* Surface windows share the flex model from .teachtext-actions above; this
+   selector only carries the shrink guard for their direct buttons. */
+.teachtext-surface-actions > .btn {
+  min-width: 0;
+}
+
+.teachtext-surface-pane .teachtext-editor-container {
+  min-height: 0;
+}
+
+.teachtext-surface-pane .teachtext-preview {
+  padding: 32px 44px;
+}
+
+.teachtext-surface-window .details-bar span:last-child {
+  text-align: right;
+}
+
+/* The status host moved into the details-bar's trailing grid cell (paper-lane
+   chrome reduction) so its own row could go away. .status-bar-trailing's
+   justify-self:end sizes a short button to its own content, which is right
+   for a button but overflows the grid track for a long status sentence with
+   nowhere left to ellipsize -- it drew across the leading cell instead of
+   truncating. Stretching this one cell to the track's width lets the existing
+   .window-status-slot ellipsis (30-surfaces.css) do its job. */
+.status-bar-trailing.window-status-strip {
+  justify-self: stretch;
+  overflow: hidden;
+}
+
+@container (max-width: 520px) {
+  .teachtext-surface-window .details-bar span,
+  .teachtext-surface-window .details-bar button {
+    min-width: 0;
+  }
+
+  .teachtext-surface-window .details-bar .details-bar-button {
+    justify-self: end;
+    max-width: 140px;
+    padding-inline: 8px;
+    overflow: hidden;
+    text-overflow: clip;
+  }
+
+  .section-draft-nav {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr);
+  }
+
+  .section-draft-nav .btn,
+  .draft-section-label {
+    min-width: 0;
+    padding-inline: 8px;
+  }
+
+  .teachtext-surface-pane .teachtext-preview {
+    padding: 20px 24px;
+  }
+}
+
+.file-preview-body {
+  flex: 1;
+  padding: 9px;
+  overflow: auto;
+  border: var(--file-preview-border);
+  border-radius: var(--file-preview-radius);
+  background: var(--file-preview-bg);
+  box-shadow: var(--file-preview-shadow);
+  font-family: var(--text-font);
+}
+
+.chat-transcript {
+  display: grid;
+  gap: 8px;
+}
+
+.chat-transcript article {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 8px;
+  border-bottom: var(--chat-transcript-article-border);
+  padding-bottom: 7px;
+}
+
+.chat-transcript b {
+  font-family: var(--ui-font);
+}
+
+.save-chat-pane {
+  display: grid;
+  gap: 8px;
+  overflow: auto;
+}
+
+.window-pane.project-cd-pane {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 0;
+  min-height: 0;
+  flex-basis: 292px;
+  padding: 0;
+  background: var(--pane-bg);
+}
+
+.project-cd-grid {
+  min-height: 212px;
+  padding: 10px;
+  border: var(--project-cd-grid-border);
+  border-radius: var(--project-cd-grid-radius);
+  background: var(--project-cd-grid-bg);
+  box-shadow: var(--project-cd-grid-shadow);
+}
+
+.project-cd-grid .export-empty-note {
+  place-self: center;
+  max-width: min(620px, 88%);
+  margin: 0 auto;
+  padding: 18px 22px;
+}
+
+.project-cd-pane > .button-row {
+  gap: 10px;
+  /* Above the framed content area, with its hairline as that area's top edge. */
+  padding: 10px;
+  border-bottom: var(--pane-actions-border-bottom);
+}
+
+.image-manager-pane {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 8px;
+  min-height: 0;
+}
+
+.image-manager-picker {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.image-manager-list {
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  align-content: start;
+  gap: 8px;
+  padding: 6px;
+  border: var(--system-control-line) solid var(--ink);
+  box-shadow: var(--system-inset);
+  background: var(--paper);
+}
+
+.image-manager-list.is-list-view {
+  grid-template-columns: 1fr;
+  gap: 0;
+  padding: 0;
+}
+
+.image-manager-list.is-small-icons {
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+}
+
+/* Photographed notes on the Question Sheet. A thin strip under the sheet, so a
+   scribbled page reads as raw input the writer dropped in — not as an album.
+   Every value here is a shared token, and 70-liquid-glass.css names none of
+   these classes, so nothing can win a specificity tie against them. That is a
+   static check, not an eye: these surfaces and the Scrapbook picture blocks
+   below have not been looked at in Liquid Glass. */
+.question-sheet-photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px;
+  border-top: var(--system-control-line) solid var(--ink);
+  background: var(--paper);
+}
+
+.question-sheet-photo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 2px 4px;
+  border: var(--system-control-line) solid var(--ink);
+  background: var(--paper);
+}
+
+.question-sheet-photo-thumb {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border: var(--system-control-line) solid var(--ink);
+}
+
+.question-sheet-photo-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 14ch;
+}
+
+/* The Question Sheet as a deck: a view over the same eleven sections the page
+   edits, plus one unnamed card for the mess that has not been sorted yet.
+   Twelve small forms rather than one long one -- CLAUDE.md's charge that the
+   sheet "welcome messy human input before prose" needed a card with no box
+   to check before the writer knows which section it belongs to. */
+.question-sheet-cards {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+  padding: 8px;
+  background: var(--paper);
+}
+
+.qs-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 140px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+.qs-card-unnamed {
+  border-style: dashed;
+}
+
+.qs-card-label {
+  padding: 3px 6px;
+  border-bottom: 1px solid var(--ink);
+  background: var(--shade);
+  font-size: 11px;
+  font-weight: var(--system-emphasis-weight);
+}
+
+.qs-card-label-unnamed {
+  min-height: 1em;
+  background: transparent;
+  border-bottom-style: dashed;
+}
+
+.qs-card-body {
+  flex: 1;
+  min-height: 0;
+  padding: 6px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  resize: none;
+}
+
+.qs-card-body:focus {
+  outline: none;
+  background: var(--system-selection-bg, var(--selection-bg));
+}
+
+/* Clipped pictures in Scrapbook, plus the note that says a picture-only clip
+   is not searchable. Tokens only, so both appearances follow. */
+.scrap-pictures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.scrap-picture-thumb {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border: var(--system-control-line) solid var(--ink);
+}
+
+.scrap-unindexed-note {
+  margin: 0;
+}
+
+.scrap-reading-proposal {
+  display: grid;
+  gap: 6px;
+  padding: 6px;
+  border: var(--system-control-line) solid var(--ink);
+  background: var(--paper);
+  box-shadow: var(--system-inset);
+}
+
+.scrap-reading-proposal-text {
+  display: block;
+  max-height: 12em;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+.image-manager-list-header {
+  /* No stacking token needed: .image-manager-item rows below are static, so
+     this sticky (positioned) header already paints above them while
+     scrolling. */
+  position: sticky;
+  top: 0;
+  display: grid;
+  grid-template-columns: minmax(180px, 1.8fr) minmax(110px, 1fr) 78px 88px;
+  gap: 8px;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 8px;
+  border-bottom: var(--system-control-line) solid var(--ink);
+  background: var(--shade);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.image-manager-item {
+  display: grid;
+  gap: 6px;
+  padding: 6px;
+  border: var(--image-manager-item-border);
+  background: var(--image-manager-item-bg);
+}
+
+.image-manager-list.is-list-view .image-manager-item {
+  grid-template-columns: 44px minmax(128px, 1.8fr) minmax(110px, 1fr) 78px 88px auto;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--touch-primary-min-height);
+  border-width: 0 0 1px;
+  padding: 5px 8px;
+}
+
+.image-manager-item img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: contain;
+  border: var(--image-manager-thumb-border);
+  background:
+    linear-gradient(45deg, #f4f4f4 25%, transparent 25% 75%, #f4f4f4 75%) 0 0 / 8px 8px,
+    linear-gradient(45deg, #f4f4f4 25%, transparent 25% 75%, #f4f4f4 75%) 4px 4px / 8px 8px,
+    var(--paper);
+}
+
+.image-manager-list.is-list-view .image-manager-item img {
+  width: 40px;
+  height: 32px;
+  aspect-ratio: auto;
+}
+
+.image-manager-list.is-small-icons .image-manager-item img {
+  aspect-ratio: 1;
+}
+
+.image-manager-list.is-small-icons .image-manager-meta small {
+  display: none;
+}
+
+.image-manager-meta {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.image-manager-meta b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.image-manager-meta small {
+  color: var(--shade-dark);
+  line-height: 1.2;
+}
+
+.image-manager-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+.image-manager-list-kind,
+.image-manager-list-size,
+.image-manager-list-modified {
+  display: none;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+}
+
+.image-manager-list.is-list-view .image-manager-list-kind,
+.image-manager-list.is-list-view .image-manager-list-size,
+.image-manager-list.is-list-view .image-manager-list-modified {
+  display: block;
+}
+
+.image-manager-list.is-list-view .image-manager-actions {
+  grid-template-columns: repeat(4, auto);
+  justify-content: end;
+}
+
+.image-manager-actions .btn {
+  min-width: 0;
+  padding-inline: 5px;
+}
+
+.export-item {
+  width: 118px;
+  gap: 5px;
+}
+
+.export-item .mini-icon {
+  width: 30px;
+  height: 34px;
+}
+
+.export-item small {
+  max-width: 112px;
+  white-space: normal;
+  line-height: 1.15;
+}
+
+.export-empty-note {
+  display: grid;
+  min-height: 132px;
+  row-gap: 8px;
+  place-items: center;
+  text-align: center;
+}
+
+.export-empty-note b,
+.export-empty-note span {
+  display: block;
+}
+
+.export-empty-icon {
+  width: 38px;
+  height: 30px;
+  background:
+    linear-gradient(var(--ink), var(--ink)) 6px 8px / 24px 2px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 6px 14px / 22px 2px no-repeat,
+    var(--paper);
+}
+
+.memory-transfer-window .details-bar {
+  font-size: 13px;
+}
+
+.memory-transfer-pane {
+  display: grid;
+  gap: 9px;
+  padding: 10px;
+  overflow: auto;
+}
+
+.memory-transfer-note {
+  border-radius: var(--surface-radius);
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 58px;
+  padding: 8px 9px;
+  border: var(--system-control-line) solid var(--memory-transfer-note-border);
+  background:
+    linear-gradient(90deg, transparent 0, transparent 33px, var(--memory-transfer-note-line) 33px, var(--memory-transfer-note-line) 35px, transparent 35px),
+    var(--memory-transfer-note-bg);
+}
+
+.memory-transfer-note .compose-tool-icon {
+  justify-self: center;
+}
+
+.memory-transfer-note b,
+.memory-transfer-note span:not(.compose-tool-icon) {
+  display: block;
+  min-width: 0;
+}
+
+.memory-transfer-note b {
+  font-family: var(--ui-font);
+  line-height: 1.15;
+}
+
+.memory-transfer-note span:not(.compose-tool-icon) {
+  color: #444;
+  font-family: var(--text-font);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.memory-transfer-field {
+  display: flex;
+  align-items: center;
+  min-height: 16px;
+}
+
+.memory-transfer-footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.memory-transfer-footer .hint {
+  min-width: 0;
+  margin: 0;
+  line-height: 1.25;
+}
+
+.import-utility-pane {
+  display: grid;
+  gap: 9px;
+  overflow: auto;
+}
+
+.import-preview {
+  min-height: 132px;
+  border: var(--import-preview-border);
+  border-radius: var(--import-preview-radius);
+  background: var(--import-preview-bg);
+  box-shadow: var(--import-preview-shadow);
+  overflow: auto;
+}
+
+.import-empty-next.empty-next-note {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin: 16px auto;
+  max-width: 42ch;
+  text-align: center;
+  line-height: 1.45;
+}
+
+.import-empty-next.empty-next-note > .btn {
+  min-height: var(--touch-primary-min-height);
+}
+
+.documents-folder-empty-next.empty-next-note {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin: 16px auto;
+  max-width: 42ch;
+  text-align: center;
+  line-height: 1.45;
+}
+
+.documents-folder-empty-next.empty-next-note > .btn {
+  min-height: var(--touch-primary-min-height);
+}
+
+.project-disk-empty-next.empty-next-note {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin: 16px auto;
+  max-width: 42ch;
+  text-align: center;
+  line-height: 1.45;
+}
+
+.project-disk-empty-next.empty-next-note > .btn,
+.file-floppy-empty-next.empty-next-note > .btn {
+  min-height: var(--touch-primary-min-height);
+}
+
+.file-floppy-empty-next.empty-next-note {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  margin: 16px auto;
+  max-width: 42ch;
+  text-align: center;
+  line-height: 1.45;
+}
+
+.import-utility-window[data-empty] > .import-utility-pane > .memory-transfer-field,
+.import-utility-window[data-empty] > .import-utility-pane > .file-picker {
+  display: none;
+}
+
+.import-utility-window[data-empty] .memory-transfer-footer {
+  opacity: var(--control-disabled-opacity);
+}
+
+.backup-preview-section {
+  display: grid;
+  gap: 8px;
+  border-top: 1px dotted var(--shade-dark);
+  padding-top: 8px;
+}
+
+.backup-preview-section summary {
+  width: max-content;
+  max-width: 100%;
+  cursor: default;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.backup-preview-section:not([open]) {
+  padding-bottom: 0;
+}
+
+.backup-preview {
+  min-height: 96px;
+  border: var(--backup-preview-border);
+  border-radius: var(--backup-preview-radius);
+  background: var(--backup-preview-bg);
+  box-shadow: var(--backup-preview-shadow);
+}
+
+.backup-action-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.import-row {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-bottom: var(--import-row-border-bottom);
+}
+
+.import-row span:nth-child(2) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A row's icon column is 22px, but .mini-icon is drawn at 34px square — the
+   project-disk glyph is a 24px band plus a badge inside that box, positioned in
+   pixels. In the Import Utility's preview rows and in the demonstration-disk
+   list it therefore spilled 4px over the first letter of every label, which
+   reads as a clipping bug in the name rather than an icon that is too big.
+   Rows scale the whole drawing instead of only its box: the glyph's parts are
+   positioned in pixels, so a smaller box would cut the art rather than shrink
+   it. 22/34 = 0.65. */
+.import-row > .mini-icon {
+  transform: scale(0.65);
+  transform-origin: left center;
+}
+
+.import-row small {
+  color: #444;
+  white-space: nowrap;
+}
+
+.backup-preview-row {
+  grid-template-columns: 22px 120px minmax(0, 1fr);
+}
+
+.backup-preview-row small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.import-row.is-unsupported {
+  color: var(--shade-dark);
+}
+
+.scrapbook-pane {
+  display: grid;
+  grid-template-columns: var(--scrapbook-pane-columns);
+  grid-template-rows: var(--scrapbook-pane-rows);
+  gap: var(--scrapbook-pane-gap);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.trash-list {
+  border: var(--system-control-line) solid var(--ink);
+  min-height: 0;
+  overflow: auto;
+  background: var(--paper);
+}
+
+.scrap-list {
+  display: var(--scrapbook-list-display);
+  border: var(--scrap-list-border);
+  border-radius: var(--scrap-list-radius);
+  min-height: 0;
+  overflow: auto;
+  background: var(--scrap-list-bg);
+  box-shadow: var(--scrap-list-shadow);
+}
+
+.trash-list:has(.trash-empty-state) {
+  min-height: 140px;
+  display: grid;
+  align-items: start;
+}
+
+.trash-empty-state {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  margin: 18px 20px;
+  max-width: none;
+  color: var(--ink);
+  font-family: var(--ui-font);
+  line-height: 1.35;
+  text-align: left;
+  white-space: normal;
+}
+
+.trash-empty-state.empty-next-note > .btn {
+  width: auto;
+  min-height: var(--touch-primary-min-height);
+  border-bottom: 0;
+}
+
+.scrap-list button,
+.trash-list button {
+  width: 100%;
+  min-height: 28px;
+  border: 0;
+  border-bottom: var(--scrap-list-item-divider);
+  border-radius: var(--scrap-list-item-radius);
+  background: var(--scrap-list-item-bg);
+  color: var(--ink);
+  box-shadow: var(--scrap-list-item-shadow);
+  padding: 8px 9px;
+  text-align: left;
+  display: grid;
+  grid-template-columns: 18px minmax(0, 2fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 3px 7px;
+  cursor: pointer;
+}
+
+.scrap-list button span,
+.trash-list button span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.scrap-list button small,
+.trash-list button small {
+  color: inherit;
+  opacity: 0.72;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+.scrap-card-list-title {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+  font-weight: 700;
+}
+
+.scrap-card-list-meta {
+  grid-column: 2 / -1;
+  grid-row: 2;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.scrap-card-list-stats {
+  grid-column: 2 / -1;
+  grid-row: 3;
+  font-family: var(--text-font);
+  font-size: 11px;
+  opacity: 0.68;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* S03: the open-question badge shares the translation badge's slot. */
+.scrap-question-badge {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+  display: inline-grid;
+  place-items: center;
+  height: 16px;
+  padding: 0 4px;
+  border: var(--scrap-translation-badge-border);
+  font-family: var(--text-font);
+  font-size: 10px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.scrap-translation-badge {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 16px;
+  padding: 0 3px;
+  border: var(--scrap-translation-badge-border);
+  font-family: var(--mono-font);
+  font-size: 10px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.scrap-list button:not(.scrap-empty-card) .mini-icon {
+  grid-column: 1;
+  grid-row: 1 / span 3;
+  align-self: start;
+  width: 18px;
+  height: 18px;
+  border: var(--scrap-list-mini-icon-border);
+  flex-shrink: 0;
+}
+
+.scrap-list .scrap-empty-card {
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  align-content: center;
+}
+
+.scrap-list .scrap-empty-card .mini-icon {
+  grid-column: 1;
+  grid-row: auto;
+  align-self: center;
+  width: 38px;
+  height: 38px;
+}
+
+.scrap-list .scrap-empty-card b,
+.scrap-list .scrap-empty-card small {
+  grid-column: 1;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+body:not([data-theme="liquid-glass"]) .scrap-list button:hover,
+body:not([data-theme="liquid-glass"]) .scrap-list button.is-selected,
+body:not([data-theme="liquid-glass"]) .scrap-list button.is-multi-selected {
+  border-radius: var(--scrap-list-item-selected-radius);
+  background: var(--scrap-list-item-selected-bg);
+  color: var(--scrap-list-item-selected-fg);
+  box-shadow: var(--scrap-list-item-selected-shadow);
+}
+
+body:not([data-theme="liquid-glass"]) .trash-list button:hover,
+body:not([data-theme="liquid-glass"]) .trash-list button.is-selected {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+body:not([data-theme="liquid-glass"]) .scrap-list button.is-multi-selected:not(.is-selected) {
+  outline: 2px dotted var(--ink);
+  outline-offset: -4px;
+}
+
+.scrap-list button.is-source-readerClip .mini-icon {
+  background:
+    linear-gradient(90deg, currentColor 0 1px, transparent 1px 100%),
+    linear-gradient(0deg, currentColor 0 1px, transparent 1px 100%);
+  background-size: 5px 5px;
+}
+
+.scrap-list button.is-source-documentClip .mini-icon {
+  background:
+    linear-gradient(currentColor, currentColor) 4px 5px / 10px 1px no-repeat,
+    linear-gradient(currentColor, currentColor) 4px 10px / 8px 1px no-repeat,
+    linear-gradient(currentColor, currentColor) 4px 15px / 10px 1px no-repeat;
+}
+
+.scrap-list button.is-source-searchResult .mini-icon {
+  border-radius: var(--radio-radius);
+}
+
+/* The scrap, top to bottom: what it is (title, citation, marks), the
+   writer's text, then what can be done with it. A column rather than a grid
+   of fixed rows, so a part that is absent (pictures, a reading) takes no
+   track and the text keeps the space. */
+.scrap-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  min-width: 0;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.scrap-editor-header {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.scrap-citation-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 8px;
+}
+
+/* A citation, not a field: no inset frame, and it wraps instead of cutting
+   the source's title off at one line. */
+.source-info-panel.scrap-citation {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  white-space: normal;
+}
+
+.scrap-citation-title {
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.scrap-citation-meta {
+  font-family: var(--ui-font);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+/* The stack and translation marks: small outlined captions in the UI face,
+   read at a glance, not chips that outweigh the title. */
+.scrap-editor-header .tag {
+  padding: 0 6px;
+  font-family: var(--ui-font);
+  font-size: 11px;
+  line-height: 16px;
+  text-transform: none;
+}
+
+/* System 6 Scrapbook page rail. Its stepped arrows reuse the exact shared
+   window-frame arrow primitive; the one flexible segment per saved object
+   makes the white thumb position truthful without JS-authored layout. */
+.scrapbook-pager {
+  display: var(--scrapbook-pager-display);
+  grid-column: 1 / -1;
+  gap: 5px;
+  min-width: 0;
+}
+
+.scrapbook-page-rail {
+  display: flex;
+  min-width: 0;
+  height: var(--window-frame-lane);
+  border: var(--window-frame-track-border);
+  background: var(--window-frame-track-bg);
+}
+
+.scrapbook-page-rail .window-frame-arrow {
+  margin: -1px 0;
+}
+
+.scrapbook-page-rail .window-frame-arrow:first-child {
+  margin-left: -1px;
+}
+
+.scrapbook-page-rail .window-frame-arrow:last-child {
+  margin-right: -1px;
+}
+
+.scrapbook-page-rail .window-frame-arrow:disabled {
+  opacity: 0.42;
+}
+
+.scrapbook-page-track {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  background: var(--window-frame-track-bg);
+}
+
+/* Each tick is one saved object: plain activation turns to its page, a
+   modifier click toggles it in the multi-selection (same grammar as the
+   list rows the later appearances show). Order matters below: the active
+   white thumb must win over the multi-selected ink segment. */
+.scrapbook-page-tick {
+  flex: 1 1 0;
+  min-width: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.scrapbook-page-tick:hover {
+  background: var(--shade-dark);
+}
+
+.scrapbook-page-tick:focus-visible {
+  outline: var(--system-focus-outline);
+  outline-offset: -1px;
+}
+
+.scrapbook-page-tick.is-multi-selected {
+  background: var(--ink);
+}
+
+.scrapbook-page-tick.is-active {
+  border-inline: var(--window-frame-thumb-border);
+  background: var(--window-frame-thumb-bg);
+}
+
+.scrapbook-page-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-inline: 5px;
+  font-family: var(--readout-font);
+  font-size: var(--system-caption-size);
+  line-height: 1;
+}
+
+#scrap-body-input {
+  flex: 1 1 140px;
+  width: 100%;
+  min-height: 140px;
+}
+
+#scrap-body-input.is-translation-view {
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      #ffffff 0,
+      #ffffff 8px,
+      #eeeeee 8px,
+      #eeeeee 16px
+    );
+}
+
+#scrap-body-input.is-bilingual-view {
+  font-family: var(--mono-font);
+  line-height: 1.45;
+}
+
+.scrap-title-display {
+  font-weight: bold;
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-bottom: 2px;
+  border-bottom: var(--scrap-title-rule, 1px solid var(--ink));
+}
+
+.source-info-panel {
+  border-radius: var(--surface-radius);
+  min-height: 19px;
+  border: var(--source-info-panel-border);
+  background: var(--paper);
+  box-shadow: var(--system-inset);
+  padding: 5px 7px;
+  color: var(--shade-dark);
+  font-family: var(--text-font);
+  font-size: 12px;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.source-info-panel b {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.source-info-panel dl {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  gap: 3px 7px;
+  margin: 0;
+}
+
+.source-info-panel dt {
+  font-weight: 700;
+}
+
+.source-info-panel dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.scrap-card-header .mini-icon {
+  width: 18px;
+  height: 18px;
+  border: 1px solid currentColor;
+}
+
+.tag-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 18px;
+}
+
+.tag {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0 5px;
+  font-size: 11px;
+  text-transform: lowercase;
+}
+
+.tag.source-tag {
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--ink);
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tag.translation-tag {
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+}
+
+/* Delete stands apart at the leading edge; everything that keeps or uses
+   the scrap gathers at the trailing edge, Insert last as the default. The row
+   wraps: told never to, five 88px buttons pushed the editor wider than its
+   column and the text ran out of the window. */
+.scrap-editor .button-row {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.scrap-editor .button-row .btn {
+  min-width: min(88px, 100%);
+  /* The same value, handed to the era button recipe that reads it. */
+  --theme-button-min-width: min(88px, 100%);
+}
+
+.scrap-actions > #delete-scrap {
+  margin-inline-end: auto;
+}
+
+.scrap-picture-menu {
+  position: relative;
+}
+
+/* Two or more scraps selected: the editor steps aside for what acts on all of
+   them. These actions had been hidden in the window since May; only the Scrap
+   menu could reach them. */
+.scrap-selection-actions {
+  display: none;
+  align-content: start;
+  gap: 8px;
+}
+
+.scrap-editor[data-scrap-mode="multi"] > :not(.scrap-selection-actions) {
+  display: none;
+}
+
+.scrap-editor[data-scrap-mode="multi"] > .scrap-selection-actions {
+  display: grid;
+}
+
+.scrap-selection-count {
+  padding-bottom: 6px;
+  border-bottom: var(--scrap-selection-actions-border);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.scrap-selection-actions .button-row {
+  justify-content: flex-start;
+}
+
+/* The filter sits at the end of the Scrapbook's bar and narrows the list and
+   the page rail alike. */
+/* The stack chooser (All / Sources / ClioTalk / Ideas) sits beside the filter:
+   one narrows by kind, the other by words, and both feed scrapbookPageScraps(). */
+.scrap-stack-wrap {
+  flex: none;
+}
+
+/* Goal #2: on a narrow Scrapbook bar, New Scrap stays primary; stack + filter
+   wrap to a second row so count / New Scrap / status are not crushed into one
+   5-control ribbon (ADHD clutter). */
+@media (max-width: 640px) {
+  .scrapbook-details-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 8px;
+  }
+
+  .scrapbook-details-bar > #scrap-count {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .scrapbook-details-bar > [data-action="new-note"] {
+    flex: 0 0 auto;
+    min-height: var(--touch-primary-min-height);
+  }
+
+  .scrapbook-details-bar > .window-status-strip {
+    flex: 1 1 100%;
+    order: 5;
+  }
+
+  .scrapbook-details-bar > .scrap-stack-wrap,
+  .scrapbook-details-bar > .scrap-filter {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
+    order: 4;
+  }
+
+  .scrapbook-details-bar > .scrap-filter {
+    flex: 1 1 calc(50% - 4px);
+  }
+
+  /* ClioTalk: soft-keyboard hint is desktop chrome; on touch it steals a row
+     under the composer without teaching a usable gesture. */
+  .assistant-window .composer-key-hint {
+    display: none;
+  }
+}
+
+/* Height and vertical padding come from the field recipe
+   (00-foundation.css), which has always outranked this class rule. */
+.scrap-filter {
+  flex: 0 1 160px;
+  min-width: 90px;
+}
+
+/* The Scrapbook pane is a two-column grid; the ask bar spans it. */
+.scrapbook-pane > .ask-bar {
+  grid-column: 1 / -1;
+}
+
+.small-muted {
+  color: var(--shade-dark);
+  font-size: 12px;
+}
+
+.window-pane.trash-pane {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 0;
+  padding: 0;
+}
+
+.trash-pane > .button-row {
+  padding: 10px;
+  border-bottom: var(--pane-actions-border-bottom);
+}
+
+.about-stats {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 5px 12px;
+  width: min(360px, 100%);
+  margin: 4px 0;
+  text-align: left;
+}
+
+.about-stats dt {
+  font-weight: bold;
+}
+
+.about-stats dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.system-status-window .window-pane.system-status-pane {
+  display: grid;
+  gap: var(--system-status-pane-gap);
+  max-height: calc(100vh - 104px);
+  overflow-y: auto;
+  padding: var(--system-status-pane-padding);
+  background: var(--system-status-pane-bg);
+}
+
+.status-clock {
+  display: grid;
+  justify-items: center;
+  gap: var(--status-clock-gap);
+  padding: var(--status-clock-padding);
+  border: var(--status-clock-border);
+  border-radius: var(--status-clock-radius);
+  background: var(--status-clock-bg);
+  box-shadow: var(--status-clock-shadow);
+}
+
+.status-clock b {
+  font-size: 28px;
+  line-height: 1;
+  text-shadow: var(--status-clock-time-shadow);
+}
+
+.notification-center-pane {
+  min-height: 160px;
+  max-height: calc(100vh - 132px);
+  overflow: auto;
+}
+
+.notification-center-list {
+  display: grid;
+  gap: 0;
+}
+
+.notification-center-window .details-bar {
+  /* Quiet chrome: summary + Clear only — no third dense strip. */
+  gap: 6px;
+}
+
+.notification-item,
+.notification-empty {
+  border-bottom: var(--notification-item-divider);
+  padding: 6px 8px;
+}
+
+.notification-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.notification-item-body {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.notification-item b {
+  min-width: 0;
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.notification-item small {
+  color: var(--shade-dark);
+  font-family: var(--readout-font);
+  white-space: nowrap;
+}
+
+/* The state mark is a mark, not the first character of the sentence: it
+   carries its own gap so "!" and "✓" stop reading as glued-on text,
+   especially before full-width CJK glyphs. */
+.notification-item[data-state] b::before {
+  margin-right: 0.4em;
+}
+
+.notification-item[data-state="running"] b::before {
+  content: "...";
+}
+
+.notification-item[data-state="done"] b::before {
+  content: "\2713";
+}
+
+.notification-item[data-state="failed"] b::before {
+  content: "!";
+}
+
+.notification-open-button {
+  min-width: 56px;
+  justify-self: end;
+}
+
+.notification-empty {
+  color: var(--shade-dark);
+}
+
+.large-icon {
+  border-radius: var(--surface-radius);
+  width: 56px;
+  height: 56px;
+  border: var(--large-icon-border);
+  background:
+    linear-gradient(var(--ink), var(--ink)) 12px 16px / 32px 4px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 12px 28px / 32px 4px no-repeat,
+    var(--paper);
+}
+
+.field-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.field-row label {
+  margin: 0;
+  font-weight: 400;
+  color: var(--control-label-fg);
+}
+
+input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: var(--system-check-size);
+  height: var(--system-check-size);
+  margin: 0;
+  border: var(--choice-border);
+  border-radius: var(--choice-radius);
+  background-color: var(--choice-bg);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 12px 12px;
+  box-shadow: var(--choice-shadow);
+  transition:
+    background-color var(--control-motion-fast-in) var(--control-motion-ease),
+    border-color var(--control-motion-fast-in) var(--control-motion-ease),
+    box-shadow var(--control-motion-fast-in) var(--control-motion-ease);
+}
+
+input[type="checkbox"]:hover:not(:disabled),
+input[type="checkbox"]:focus-visible {
+  box-shadow: var(--control-choice-hover-shadow);
+}
+
+input[type="checkbox"]:checked {
+  background-color: var(--choice-checked-bg);
+  background-image:
+    var(--choice-checkmark-image),
+    var(--choice-checked-bg-image, none);
+  /* The tick can be its own size. 10.6 draws it 14px in a 14px well, and the
+     absolute fidelity floor measures the difference: at the shared 12px the
+     glyph scored markMismatch 0.619 against the reference's 0.35 ceiling. */
+  background-size:
+    var(--choice-checkmark-size, 12px 12px),
+    var(--choice-checked-bg-size, 12px 12px);
+  border-color: var(--choice-checked-border-color, inherit);
+  box-shadow: var(--choice-checked-shadow, inherit);
+}
+
+/* The border and the art come from the era's own tokens. This rule used to
+   write `border: 0`, so an era that draws its unchecked radio as a bordered
+   well - Snow Leopard, Yosemite, Big Sur - painted a white disc on a white
+   pane, and only Theme Lab's specimen (which carries its own copy of the
+   recipe) looked right. The art is placed against the border box so a 1px
+   border does not crop an era's full-size radio image. */
+input[type="radio"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: var(--system-radio-size);
+  height: var(--system-radio-size);
+  min-width: var(--system-radio-size);
+  min-height: var(--system-radio-size);
+  margin: 0;
+  border: var(--radio-border);
+  border-radius: 50%;
+  background-color: var(--radio-bg);
+  background-image: var(--radio-image);
+  background-origin: border-box;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: var(--system-radio-size) var(--system-radio-size);
+  box-shadow: none;
+  transition:
+    background-color var(--control-motion-fast-in) var(--control-motion-ease),
+    box-shadow var(--control-motion-fast-in) var(--control-motion-ease);
+}
+
+input[type="radio"]:hover,
+input[type="radio"]:focus-visible {
+  background-image: var(--radio-focus-image);
+  box-shadow: var(--control-choice-hover-shadow);
+}
+
+/* A checked radio's art draws its own rim in every era that has a border, so
+   the unchecked well's border steps aside unless the era names a checked rim. */
+/* --radio-checked-size lets an era with one-layer native art (Platinum's 12px
+   SVG) size it whole. The fixed two-layer default drew that art at the dot's
+   7px, so Platinum's selected radio was a speck (2026-10-08). */
+input[type="radio"]:checked {
+  border-color: var(--radio-checked-border-color, transparent);
+  background-image: var(--radio-checked-image);
+  background-size: var(--radio-checked-size, 7px 7px, var(--system-radio-size) var(--system-radio-size));
+}
+
+input[type="radio"]:checked:hover,
+input[type="radio"]:checked:focus-visible {
+  background-image: var(--radio-checked-focus-image);
+  background-size: var(--radio-checked-size, 7px 7px, var(--system-radio-size) var(--system-radio-size));
+}
+
+/* An era whose held control is its own art darkened (Quaqua's pressed frames
+   for 10.6) names the filter; the default draws nothing extra. */
+input:is([type="checkbox"], [type="radio"]):active:not(:disabled) {
+  filter: var(--choice-pressed-filter, none);
+}
+
+input[type="checkbox"]:focus-visible,
+input[type="radio"]:focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: var(--control-focus-offset);
+}
+
+input[type="checkbox"]:disabled,
+input[type="radio"]:disabled {
+  cursor: default;
+  opacity: var(--choice-disabled-opacity);
+}
+
+/* The disabled checked state is a role, not a fade. The default tokens resolve
+   to the enabled art, so an era that really does fade keeps its old result; an
+   era whose disabled control is drawn differently supplies its own values. */
+input[type="checkbox"]:checked:disabled {
+  border-color: var(--choice-disabled-border-color, inherit);
+  background-color: var(--choice-disabled-checked-bg);
+  background-image:
+    var(--choice-disabled-checkmark-image),
+    var(--choice-disabled-checked-bg-image, none);
+}
+
+/* An era with one-layer native art sizes it whole here too, or the disabled
+   radio shrank to the 7px dot slot and lost its ring (Platinum, 2026-10-09). */
+input[type="radio"]:checked:disabled {
+  background-image: var(--radio-disabled-checked-image);
+  background-size: var(--radio-checked-size,
+    7px 7px,
+    var(--radio-disabled-checked-size, var(--system-radio-size))
+      var(--radio-disabled-checked-size, var(--system-radio-size)));
+}
+
+.icon-column {
+  position: absolute;
+  /* The launcher belongs to the right edge of the display, the way the writing
+     spine belongs to the left one (owner decision, 2026-09-14: the rails stand
+     at the edges they name, and the desk between them is what grows). The whole
+     column sat under the sensor housing on a phone held sideways, so the safe
+     area still pushes it clear. */
+  right: max(22px, var(--safe-area-right));
+  top: 18px;
+  bottom: max(22px, var(--safe-area-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--desktop-icon-column-gap);
+  /* Eleven icons do not fit down a short screen -- a phone held sideways, a
+     half-open foldable, a resized window -- and the ones that did not fit fell
+     off the bottom with the Trash among them and nothing to scroll. The
+     Finder's own answer is another column beside the first, growing back from
+     the edge the icons live on. No breakpoint decides this: wrapping happens
+     exactly when the column runs out of room, which is the real condition and
+     the one that stays true on hardware nobody has shipped yet. */
+  flex-wrap: wrap-reverse;
+  align-content: flex-start;
+}
+
+.icon-column [data-open="trash"] {
+  margin-top: auto;
+}
+
+/* Set by syncIconColumnDensity() in window-manager.js, which lays the column
+   out at the natural spacing and asks whether it actually wrapped -- the real
+   condition, not a guessed screen height. When it did, the gap closes so every
+   icon fits one column again and the Trash keeps its place at the foot instead
+   of being flung alone into a second column on the left. Measured at 1366x768:
+   nine icons stack to 753px in a 704px column at 10px, and to 673px at 4px. */
+.icon-column.is-tight {
+  --desktop-icon-column-gap: 4px;
+}
+
+.icon-column.is-tight [data-open="trash"] {
+  margin-top: 0;
+}
+
+.desktop-icon {
+  width: var(--desktop-icon-width);
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  gap: 4px;
+}
+
+/* Moved from 10-windows.css: a hidden icon must keep beating the grid above. */
+.desktop-icon.is-hidden,
+.desktop-icon[hidden] {
+  display: none;
+}
+
+/* A project disk at risk of stalling carries the diamond — the classic
+   Application-menu mark for "this one has something in it", the same 1-bit
+   figure the Writing Flow palette already uses. It states two existing facts
+   (two weeks without a record write, nothing burned to the Project CD) and
+   Balloon Help says them in words. It is deliberately not dimmed with an
+   ejected disk: the warning stays readable even when the disk is not. */
+.desktop-icon.has-disk-risk {
+  position: relative;
+}
+
+.desktop-icon .disk-risk-mark {
+  position: absolute;
+  top: 0;
+  right: calc(50% - 24px);
+  width: 7px;
+  height: 7px;
+  background: var(--ink);
+  transform: rotate(45deg);
+}
+
+.desktop-icon.is-prominent {
+  width: 88px;
+}
+
+.desktop-icon.is-prominent .icon {
+  width: 36px;
+  height: 36px;
+  border-width: 2px;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.desktop-icon:hover span:last-child,
+.desktop-icon:focus span:last-child,
+.desktop-icon.is-selected span:last-child {
+  background: var(--desktop-label-selected-bg);
+  color: var(--desktop-label-selected-fg);
+  text-shadow: none;
+}
+
+/* One dotted primitive for both System 6 drag outlines: the selection marquee
+   and the frame a window will take when the grow box or title bar is released.
+   Four gray-pattern hairlines, not a CSS `dotted` border — the browser draws
+   that as spaced round dots, System 6 alternates single pixels. */
+.finder-marquee,
+.window-outline {
+  position: fixed;
+  z-index: var(--z-selection-marquee);
+  pointer-events: none;
+  mix-blend-mode: var(--drag-outline-blend);
+  background:
+    var(--drag-outline-dashes-x) left top / 100% var(--drag-outline-unit) no-repeat,
+    var(--drag-outline-dashes-x) left bottom / 100% var(--drag-outline-unit) no-repeat,
+    var(--drag-outline-dashes-y) left top / var(--drag-outline-unit) 100% no-repeat,
+    var(--drag-outline-dashes-y) right top / var(--drag-outline-unit) 100% no-repeat;
+}
+
+/* Sizing a window previews the whole frame, not just how much desk it will
+   cover: System 6's grow image carries the seam under the title bar and both
+   scroll bar lanes, so the corner cell you are dragging is visible in the
+   ghost. The two lanes cross at that bottom-right cell and nowhere else — the
+   vertical lane starts below the title bar seam, because that is where a real
+   scroll bar starts. A window with no lanes leaves those layers on top of the
+   outer hairlines, where they disappear. */
+.window-outline.is-frame {
+  /* Same lane the real frame uses; a window without one gets 0 inline. */
+  --outline-lane: var(--window-frame-lane);
+  background:
+    var(--drag-outline-dashes-x) left var(--outline-titlebar, 0) / 100% var(--drag-outline-unit) no-repeat,
+    var(--drag-outline-dashes-x) left calc(100% - var(--outline-lane, 0px)) /
+      100% var(--drag-outline-unit) no-repeat,
+    var(--drag-outline-dashes-y) calc(100% - var(--outline-lane, 0px)) bottom /
+      var(--drag-outline-unit) calc(100% - var(--outline-titlebar, 0px)) no-repeat,
+    var(--drag-outline-dashes-x) left top / 100% var(--drag-outline-unit) no-repeat,
+    var(--drag-outline-dashes-x) left bottom / 100% var(--drag-outline-unit) no-repeat,
+    var(--drag-outline-dashes-y) left top / var(--drag-outline-unit) 100% no-repeat,
+    var(--drag-outline-dashes-y) right top / var(--drag-outline-unit) 100% no-repeat;
+}
+
+.window-outline {
+  left: var(--outline-left, 0);
+  top: var(--outline-top, 0);
+  width: var(--outline-width, 0);
+  height: var(--outline-height, 0);
+}
+
+.desktop-icon span:last-child {
+  background: var(--desktop-label-bg);
+  color: var(--desktop-label-fg);
+  text-shadow: var(--desktop-label-text-shadow);
+  box-shadow: var(--desktop-label-box-shadow);
+  border-radius: var(--desktop-label-radius);
+  padding: 2px 4px;
+  max-width: var(--desktop-label-max-width);
+  line-height: 1.22;
+  text-align: center;
+  /* Break between words, not inside one: "退出 创作坊" wraps after 退出
+     rather than splitting the name into 创作 / 坊. The label box may run
+     wider than the icon so "Applications" never becomes "Applicati/ons";
+     the native Finder widened labels the same way. */
+  /* P12: an era hook with today's values as defaults. Platinum answers with
+     Geneva-view weight/width and a single line (native 02-desktop-clean). */
+  word-break: var(--desktop-label-word-break, keep-all);
+  /* break-word, not normal: keep-all forbids a break inside a Chinese run, so
+     without an emergency break a long name ("桌面级性能的预演") cannot wrap at
+     all and overflows its 92px box — the text ran past the balloon in the
+     2026-10-06 report. break-word only breaks a run that would not otherwise
+     fit, so a short term stays whole and a long one wraps instead of spilling. */
+  overflow-wrap: var(--desktop-label-wrap, break-word);
+  font-weight: var(--desktop-label-font-weight, 600);
+  font-variation-settings: var(--desktop-label-font-variation, "wdth" 113);
+  white-space: var(--desktop-label-white-space, normal);
+  box-decoration-break: clone;
+}
+
+html:lang(zh-Hans) body:not([data-theme="liquid-glass"]) .desktop-app-icon span[data-retro-label-main] {
+  font-size: 0;
+  line-height: 1.12;
+}
+
+html:lang(zh-Hans) body:not([data-theme="liquid-glass"]) .desktop-app-icon span[data-retro-label-main]::before,
+html:lang(zh-Hans) body:not([data-theme="liquid-glass"]) .desktop-app-icon span[data-retro-label-sub]::after {
+  display: block;
+  font-size: var(--system-readable-min);
+}
+
+html:lang(zh-Hans) body:not([data-theme="liquid-glass"]) .desktop-app-icon span[data-retro-label-main]::before {
+  content: attr(data-retro-label-main);
+}
+
+html:lang(zh-Hans) body:not([data-theme="liquid-glass"]) .desktop-app-icon span[data-retro-label-sub]::after {
+  content: attr(data-retro-label-sub);
+}
+
+body:not([data-theme="liquid-glass"]) .desktop-app-icon span[data-liquid-label="DAA Meme"] {
+  width: max-content;
+  max-width: none;
+  white-space: nowrap;
+}
+
+.icon {
+  width: 34px;
+  height: 34px;
+  display: block;
+  background: var(--icon-bg);
+  border: var(--icon-border);
+  position: relative;
+}
+/* The Control Panel chooser's icon cell (moved from 30-surfaces.css). It must
+   keep beating the .sys-icon primitive above, so it sits after it: in one
+   file specificity decides, and a per-file @layer order cannot flip it. */
+.control-chooser .sys-icon {
+  display: var(--control-chooser-icon-display);
+  width: var(--control-chooser-icon-size);
+  height: var(--control-chooser-icon-size);
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  /* background-color only: an era painter may carry the icon art in
+     background-image (Aqua/Snow Leopard sprite cells). */
+  background-color: transparent;
+  box-shadow: none;
+  color: inherit;
+}
+
+.sys-icon::before,
+.sys-icon::after {
+  content: none;
+}
+
+/* Classic icons share a 32×32 vector grid. One viewBox unit is the common
+   1-bit line: it scales with the icon instead of becoming disproportionately
+   heavy in the 22px and 42px renderings. Liquid owns its separate rounded,
+   non-scaling stroke contract in 70-liquid-glass.css. *//* Liquid Glass narrows this shared marker to a runtime rounded mask. The base
+   rule keeps the marker visible and unclipped in the other appearances. */
+.sys-icon-svg.liquid-glass-rounded {
+  overflow: visible;
+}
+
+.sys-icon-svg path {
+  fill: none;
+}
+
+.sys-icon-svg rect,
+.sys-icon-svg circle {
+  fill: var(--paper);
+}
+
+/* Reviewed Platinum raster art travels beside the shared fallback painters.
+   Its theme layer opts it in only for the accepted core batch. */
+.sys-icon-svg.has-platinum-core .sys-icon-platinum-core {
+  display: none;
+}
+
+/* Modern era rasters share the same semantic SVG envelope. Theme owners opt
+   in exactly one group, while source-size dispatch remains in system-icons.js. */
+.sys-icon-aqua,
+.sys-icon-snow-leopard,
+.sys-icon-yosemite {
+  display: none;
+}
+
+/* Painter dispatch defaults, moved out of the theme sheets. Both rules are
+   unprefixed — they always applied to all six appearances — so keeping them in
+   65/70 hid them from the appearance ratchet and the twin audit, which only
+   reason about prefixed selectors. The per-theme opt-ins that re-show these
+   variants live in the theme sheets at higher specificity and still win. */
+.sys-icon-liquid {
+  display: none;
+}
+
+.sys-icon-platinum-raster {
+  image-rendering: pixelated;
+}
+
+/* Reviewed Platinum PNGs are native 32/16 px pixel art. Preserve each
+   authored pixel as an integer device-pixel block on high-density screens. */
+.sys-icon-platinum-raster {
+  image-rendering: pixelated;
+}
+
+/* Inline Classic fallback painters and filled details use unit-grid runs.
+   Runtime Classic family SVGs are external smooth vectors and keep their own
+   optical strokes; this rule only governs the fallback markup. */
+.sys-icon-classic .classic-ink {
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-width: var(--system-icon-pixel-run-expansion);
+}
+
+/* Transport glyphs reuse .classic-ink in the Liquid group, where they stay
+   solid and opt out of the rounded non-scaling outline painter. */
+.sys-icon-liquid .classic-ink {
+  fill: currentColor;
+  stroke: none;
+}
+
+.sys-icon-classic .classic-paper {
+  fill: var(--paper);
+  stroke: none;
+}
+
+.sys-icon-large,
+.large-mini-icon.sys-icon {
+  width: 48px;
+  height: 48px;
+}
+
+.sys-icon-desktop,
+.desktop-icon .sys-icon {
+  width: 42px;
+  height: 42px;
+}
+
+/* The Finder's icon view is the Finder tier in every era, so it belongs in the
+   foundation rather than in one appearance: Liquid Glass declares its own
+   44 px and the Theme Lab sizes its specimens, but the other five eras
+   inherited the 34 px base box — and Platinum, which sizes its inline
+   artwork by the tier hint, painted the compact 16 px asset inside it, so the
+   whole era read as "small icons" in both view modes. Small Icons keeps its
+   22 px row, and the desktop tier keeps its 42 px: that is the launcher's
+   size, not the Finder's. */
+:where(.finder-grid:not(.finder-small-icons)) .finder-item .sys-icon:not(.sys-icon-desktop) {
+  width: 44px;
+  height: 44px;
+}
+
+.menu-bar .project-switcher-icon.sys-icon,
+.menu-bar .cloud-icon.sys-icon {
+  width: 17px;
+  height: 17px;
+}
+
+.menu-bar .sys-icon {
+  color: inherit;
+  background: transparent;
+}
+
+.menu-bar .sys-icon .sys-icon-liquid .icon-fill,
+.menu-bar .sys-icon .sys-icon-liquid .icon-fill-soft,
+.menu-bar .sys-icon .sys-icon-liquid .icon-accent {
+  fill: none;
+  stroke: currentColor;
+}
+
+.menu-bar .sys-icon-svg {
+  stroke-width: var(--menu-system-icon-stroke-width);
+}
+
+.menu-bar .sys-icon-classic .classic-ink {
+  stroke-width: var(--menu-system-icon-pixel-run-expansion);
+}
+
+.finder-small-icons .sys-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.finder-list-name-cell .sys-icon,
+.finder-list-row > span:first-child .sys-icon,
+.finder-operation-item .sys-icon {
+  width: 22px;
+  height: 22px;
+}
+
+/* Detail that only survives at full size. CMF Studio's tick marks sit 5 units
+   apart, which is under 2px in a 22px box: at that size they merge with the
+   strokes around them and the whole icon reads as a blot. The object still
+   reads — body, two colour dots, the diagonal. */
+.sys-icon-mini .sys-icon-detail,
+.finder-small-icons .sys-icon .sys-icon-detail,
+.finder-list-name-cell .sys-icon .sys-icon-detail,
+.finder-list-row > span:first-child .sys-icon .sys-icon-detail,
+.finder-operation-item .sys-icon .sys-icon-detail,
+.menu-bar .sys-icon .sys-icon-detail {
+  display: none;
+}
+
+.finder-list-row > span:first-child .sys-icon {
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.icon.disk::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  top: 5px;
+  height: 8px;
+  border: var(--system-control-line) solid var(--ink);
+}
+
+.icon.hard-disk {
+  height: 30px;
+  margin-top: 4px;
+  border-radius: 0 0 3px 3px;
+  background:
+    linear-gradient(var(--ink), var(--ink)) 4px 6px / 26px 2px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 4px 12px / 26px 2px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 23px 20px / 5px 5px no-repeat,
+    var(--paper);
+}
+
+.icon.hard-disk::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  right: 7px;
+  top: -6px;
+  height: 7px;
+  border: var(--system-control-line) solid var(--ink);
+  border-bottom: 0;
+  background: var(--paper);
+}
+
+.icon.hard-disk::after {
+  content: "";
+  position: absolute;
+  left: 7px;
+  bottom: 5px;
+  width: 13px;
+  height: 7px;
+  border: var(--system-control-line) solid var(--ink);
+  background:
+    linear-gradient(var(--ink), var(--ink)) 3px 2px / 7px 2px no-repeat,
+    var(--paper);
+}
+
+.icon.project-disk {
+  height: 30px;
+  margin-top: 4px;
+  border-radius: 0 0 3px 3px;
+  background:
+    linear-gradient(var(--ink), var(--ink)) 4px 6px / 26px 2px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 4px 12px / 26px 2px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 23px 20px / 5px 5px no-repeat,
+    var(--paper);
+}
+
+.icon.project-disk::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  right: 7px;
+  top: -6px;
+  height: 7px;
+  border: var(--system-control-line) solid var(--ink);
+  border-bottom: 0;
+  background: var(--paper);
+}
+
+.icon.project-disk::after {
+  content: "P";
+  position: absolute;
+  left: 7px;
+  bottom: 4px;
+  width: 13px;
+  height: 10px;
+  border: var(--system-control-line) solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 9px;
+  text-align: center;
+}
+
+.icon.text-disk {
+  height: 30px;
+  margin-top: 4px;
+  border-radius: 0 0 3px 3px;
+  background:
+    linear-gradient(var(--ink), var(--ink)) 6px 6px / 22px 2px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 8px 12px / 18px 2px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 8px 17px / 18px 2px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 23px 23px / 4px 4px no-repeat,
+    var(--paper);
+}
+
+.icon.text-disk::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  right: 7px;
+  top: -6px;
+  height: 7px;
+  border: var(--system-control-line) solid var(--ink);
+  border-bottom: 0;
+  background: var(--paper);
+}
+
+.icon.text-disk::after {
+  content: "T";
+  position: absolute;
+  left: 8px;
+  bottom: 4px;
+  width: 12px;
+  height: 10px;
+  border: var(--system-control-line) solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 9px;
+  text-align: center;
+}
+
+.icon.trash {
+  border: 0;
+  background:
+    linear-gradient(var(--ink), var(--ink)) 6px 4px / 22px 3px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 10px 0 / 14px 4px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 5px 10px / 2px 21px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 27px 10px / 2px 21px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 8px 31px / 18px 2px no-repeat,
+    repeating-linear-gradient(90deg, transparent 0 4px, var(--ink) 4px 6px) 10px 14px / 14px 12px no-repeat,
+    var(--paper);
+}
+
+.icon.trash.is-full {
+  background:
+    /* Bulging lid */
+    linear-gradient(var(--ink), var(--ink)) 3px 4px / 28px 3px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) 10px 0 / 14px 4px no-repeat,
+    /* Bulging sides */
+    radial-gradient(ellipse at center, var(--ink) 0%, var(--ink) 100%) 2px 10px / 4px 21px no-repeat,
+    radial-gradient(ellipse at center, var(--ink) 0%, var(--ink) 100%) 28px 10px / 4px 21px no-repeat,
+    /* Bottom */
+    linear-gradient(var(--ink), var(--ink)) 8px 31px / 18px 2px no-repeat,
+    /* Stuffed content hints */
+    repeating-linear-gradient(45deg, transparent 0 2px, var(--ink) 2px 4px) 6px 12px / 22px 16px no-repeat,
+    var(--paper);
+}
+
+/* Micropolis frame geometry lives in the boot bundle on purpose: the window
+   interior loads with the lazy module, but the frame must never collapse to a
+   sliver while (or if) the lazy stylesheet is still on its way. */
+.micropolis-window {
+  width: min(920px, calc(100vw - 72px));
+  height: min(600px, calc(100vh - 88px));
+}
+
+.micropolis-pane {
+  padding: 0;
+}
+
+/* Bonsai City frame geometry lives in the boot bundle on purpose: the window
+   interior loads with the lazy module, but the frame must never collapse to a
+   sliver while (or if) the lazy stylesheet is still on its way. */
+.bonsai-window {
+  width: var(--bonsai-window-width);
+  height: var(--bonsai-window-height);
+}

@@ -1,0 +1,426 @@
+(function installSameOriginProviders() {
+  "use strict";
+
+  const sameOriginNode = {
+    id: "same-origin-node",
+    request(input = {}) {
+      const url = input.url || input.path;
+      const init = {
+        ...(input.init || {}),
+        signal: input.signal || input.init?.signal,
+      };
+      return fetch(url, init);
+    },
+  };
+
+  // A public page (VPS or Pages) reaches the writer's own Mac through the
+  // loopback bridge: the AI System 6 running there answers on 127.0.0.1.
+  // The desk served from that Mac simply calls itself.
+  const LOCAL_BRIDGE_ORIGIN = "http://127.0.0.1:4173";
+  const BRIDGE_TOKEN_KEY = "ai-system6-bridge-token";
+
+  function bridgeToken() {
+    try {
+      return localStorage.getItem(BRIDGE_TOKEN_KEY) || "";
+    } catch {
+      return "";
+    }
+  }
+
+  function localBridgeFetch(path, init = {}, publicWeb = false) {
+    if (!publicWeb) return fetch(path, init);
+    const bridged = { ...init, mode: "cors", credentials: "omit" };
+    const token = bridgeToken();
+    if (token) bridged.headers = { ...(init.headers || {}), "X-AI-System-6-Bridge": token };
+    if (!window.AISystem6LocalLMStudio?.isSafariPublicWebUnsupported?.()
+      && !window.AISystem6LocalLMStudio?.isSafariHttpLocalMode?.()) {
+      bridged.targetAddressSpace = "loopback";
+    }
+    return fetch(`${LOCAL_BRIDGE_ORIGIN}${path}`, bridged);
+  }
+
+  window.AISystem6LocalBridge = Object.freeze({
+    origin: LOCAL_BRIDGE_ORIGIN,
+    tokenKey: BRIDGE_TOKEN_KEY,
+    fetch: localBridgeFetch,
+  });
+
+  window.AISystem6Capabilities?.registerServiceProvider?.("reader.remote", {
+    id: "same-origin-node",
+    request(input = {}) {
+      return sameOriginNode.request({
+        url: `/api/reader?url=${encodeURIComponent(input.url || "")}`,
+        signal: input.signal,
+      });
+    },
+  });
+
+  // The article inside a page someone already rendered (Time Machine's live
+  // engines, an imported .html file): HTML in, article out, no fetch.
+  window.AISystem6Capabilities?.registerServiceProvider?.("reader.extract", {
+    id: "same-origin-node",
+    request(input = {}) {
+      return sameOriginNode.request({
+        url: "/api/reader/extract",
+        signal: input.signal,
+        init: {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ url: input.url || "", html: String(input.html || "") }),
+        },
+      });
+    },
+  });
+
+  // A short-lived token for Time Machine's browse origin (its relay).
+  window.AISystem6Capabilities?.registerServiceProvider?.("browse.token", {
+    id: "same-origin-node",
+    request(input = {}) {
+      return sameOriginNode.request({
+        url: "/api/browse/token",
+        signal: input.signal,
+        init: {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(input.sid ? { sid: input.sid } : {}),
+        },
+      });
+    },
+  });
+
+  // Routes that only forward the caller's own init to one fixed path. They
+  // were twenty-two copies of the same provider; a table keeps each route
+  // named here (the service boundary's one place) for a fraction of the boot
+  // bytes.
+  [
+    ["reader.subtitlesTranslate", "/api/subtitles/translate"],
+    // The MCP bridge, both directions. The page answers a guest's tool call and
+    // mints an invitation through these, and asks an external server through the
+    // third, so a shell that carries the desk somewhere else can swap the
+    // transport without touching the bridge itself.
+    ["agent.executorReply", "/api/agent/executor/reply"],
+    ["agent.executorToken", "/api/agent/executor/token"],
+    ["mcp.client", "/api/mcp/client"],
+    ["cloud.credentials", "/api/cloud/credentials"],
+    ["cloud.status", "/api/cloud/status"],
+    // A subscription CLI provider (Claude / Codex) has no endpoint to probe; the
+    // server answers whether the CLI is installed and signed in.
+    ["cloud.subscriptionStatus", "/api/subscription-cli/status"],
+    ["cloud.models", "/api/cloud/models"],
+    ["vision.analyze", "/api/vision/analyze"],
+    ["cloud.files.upload", "/api/cloud/files"],
+    ["cloud.files.delete", "/api/cloud/files"],
+    ["local.lmstudio.start", "/api/lmstudio/start"],
+    ["device.chat", "/api/device-model/chat"],
+    ["macShared.session", "/api/mac-shared/session"],
+    ["endfield.ask", "/api/endfield/ask"],
+    ["cmf.capabilities", "/api/cmf/capabilities"],
+    ["cmf.exportUsdz", "/api/cmf/export-usdz"],
+    ["artifact.import.ocr", "/api/import-ocr-pages"],
+    ["artifact.import.text", "/api/import-text"],
+    // N9: iWork original pages and the Office copy, both through the server's
+    // own iWork importer.
+    ["artifact.import.iwork", "/api/import-iwork-convert"],
+    ["system.version", "/api/version"],
+    ["quickDraft.thesis", "/api/draft/thesis"],
+    ["bureaucracyMeme.captions", "/api/bureaucracy/captions"],
+  ].forEach(([name, url]) => {
+    window.AISystem6Capabilities?.registerServiceProvider?.(name, {
+      id: "same-origin-node",
+      request(input = {}) {
+        return sameOriginNode.request({ url, init: input.init, signal: input.signal });
+      },
+    });
+  });
+
+  // ClioTalk's engine host (docs/AGENT-HARNESS.md): one provider for the
+  // /api/agent/status, /api/agent/folders*, /api/agent/runs*, /api/agent/tasks* and /api/agent/schedules* family, path checked here.
+  window.AISystem6Capabilities?.registerServiceProvider?.("agent.harness", {
+    id: "same-origin-node",
+    request(input = {}) {
+      const url = String(input.path || "");
+      if (!/^\/api\/agent\/(?:status|folders|runs|tasks|schedules)(?:[/?]|$)/.test(url)) return Promise.reject(new Error("Not an agent route."));
+      return sameOriginNode.request({ url, init: input.init, signal: input.signal });
+    },
+  });
+
+  window.AISystem6Capabilities?.registerServiceProvider?.("search.remote", {
+    id: "same-origin-node",
+    request(input = {}) {
+      if (input.path) {
+        return sameOriginNode.request({
+          url: input.path,
+          init: input.init,
+          signal: input.signal,
+        });
+      }
+      const params = new URLSearchParams();
+      if (input.query) params.set("q", input.query);
+      if (input.limit !== undefined) params.set("limit", String(input.limit));
+      if (input.start !== undefined) params.set("start", String(input.start));
+      if (input.provider) params.set("provider", input.provider);
+      return sameOriginNode.request({
+        url: `/api/search?${params.toString()}`,
+        signal: input.signal,
+      });
+    },
+  });
+
+  window.AISystem6Capabilities?.registerServiceProvider?.("timeMachine.remote", {
+    id: "same-origin-node",
+    request(input = {}) {
+      const path = input.route
+        ? `/api/time-machine/${input.route}${input.params ? `?${input.params}` : ""}`
+        : input.path;
+      return sameOriginNode.request({
+        url: path,
+        signal: input.signal,
+      });
+    },
+  });
+
+  window.AISystem6Capabilities?.registerServiceProvider?.("timeMachine.renderUrl", {
+    id: "same-origin-node",
+    request(input = {}) {
+      const params = new URLSearchParams({
+        url: input.fetchedUrl || input.url || "",
+        original: input.url || "",
+      });
+      return `/api/time-machine/render?${params}`;
+    },
+  });
+
+  window.AISystem6Capabilities?.registerServiceProvider?.("cloud.chat", {
+    id: "same-origin-node",
+    request(input = {}) {
+      return sameOriginNode.request({
+        url: typeof cloudCredentialMode === "function" && cloudCredentialMode() === "shared-remote"
+          ? "/api/mac-shared/chat"
+          : "/api/cloud/chat",
+        init: input.init,
+        signal: input.signal,
+      });
+    },
+  });
+
+  window.AISystem6Capabilities?.registerServiceProvider?.("cloud.quota", {
+    id: "same-origin-node",
+    request(input = {}) {
+      return sameOriginNode.request({
+        url: typeof cloudCredentialMode === "function" && cloudCredentialMode() === "shared-remote"
+          ? "/api/mac-shared/quota"
+          : "/api/cloud/quota",
+        init: input.init,
+        signal: input.signal,
+      });
+    },
+  });
+
+  window.AISystem6Capabilities?.registerServiceProvider?.("device.status", {
+    id: "same-origin-node",
+    request(input = {}) {
+      return sameOriginNode.request({
+        url: "/api/device-model/status",
+        init: { headers: { "Accept": "application/json" } },
+        signal: input.signal,
+      });
+    },
+  });
+
+  window.AISystem6Capabilities?.registerServiceProvider?.("cloud.embeddings", {
+    id: "same-origin-node",
+    request(input = {}) {
+      return sameOriginNode.request({
+        url: input.path || "/api/cloud/embeddings",
+        init: input.init,
+        signal: input.signal,
+      });
+    },
+  });
+
+  window.AISystem6Capabilities?.registerServiceProvider?.("endfield.search", {
+    id: "same-origin-node",
+    request(input = {}) {
+      const query = input.query ? `?q=${encodeURIComponent(input.query)}&limit=${encodeURIComponent(input.limit || 18)}` : "";
+      return sameOriginNode.request({
+        url: `/api/endfield/search${query}`,
+        init: input.init,
+        signal: input.signal,
+      });
+    },
+  });
+
+  // 潮汐信笺 × SideAsk: the blog's own retrieval route, through the service
+  // boundary like every other same-origin call.
+  window.AISystem6Capabilities?.registerServiceProvider?.("aaron-blog.search", {
+    id: "same-origin-node",
+    request(input = {}) {
+      const params = new URLSearchParams({
+        q: String(input.query || ""),
+        limit: String(input.limit || 18),
+      });
+      if (input.doc) params.set("doc", String(input.doc));
+      return sameOriginNode.request({
+        url: `/api/aaron-blog/retrieve?${params}`,
+        init: input.init,
+        signal: input.signal,
+      });
+    },
+  });
+
+  window.AISystem6Capabilities?.registerServiceProvider?.("system.music", {
+    id: "same-origin-node",
+    request(input = {}) {
+      if (input.action !== undefined) {
+        const init = input.action === "state"
+          ? { cache: "no-store" }
+          : {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: input.action, ...(input.payload || {}) }),
+          };
+        return localBridgeFetch("/api/music/system", init, input.publicWeb === true);
+      }
+      return sameOriginNode.request({
+        url: input.url || "/api/music/system",
+        init: input.init,
+        signal: input.signal,
+      });
+    },
+  });
+
+  // Apple Music links: status, start, poll, sign and consent, on this Mac or
+  // through the loopback bridge from a public page.
+  window.AISystem6Capabilities?.registerServiceProvider?.("soundscape.gamdl", {
+    id: "same-origin-node",
+    request(input = {}) {
+      const publicWeb = input.publicWeb === true;
+      const post = (body) => ({
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        signal: input.signal,
+      });
+      if (input.action === "status") {
+        return localBridgeFetch("/api/music/gamdl/status", { cache: "no-store", signal: input.signal }, publicWeb);
+      }
+      if (input.action === "sign") {
+        return localBridgeFetch("/api/music/gamdl/sign", post({ refs: input.refs || [] }), publicWeb);
+      }
+      if (input.action === "consent") {
+        return localBridgeFetch("/api/music/gamdl/consent", post({}), false);
+      }
+      if (input.jobId) {
+        return localBridgeFetch(
+          `/api/music/gamdl/jobs/${encodeURIComponent(input.jobId)}`,
+          { cache: "no-store", signal: input.signal },
+          publicWeb
+        );
+      }
+      return localBridgeFetch(
+        "/api/music/gamdl/jobs",
+        post({ url: input.url || "", playable: input.playable || {} }),
+        publicWeb
+      );
+    },
+  });
+
+  window.AISystem6Capabilities?.registerServiceProvider?.("importer.remote", {
+    id: "same-origin-node",
+    request(input = {}) {
+      return sameOriginNode.request({
+        url: input.path || "/api/importer-status",
+        signal: input.signal,
+      });
+    },
+  });
+
+  // One More Tune's round authority. One registration for its three routes
+  // rather than three: admitting an application is what the System Floppy
+  // Budget pays for, and the window names only which route it is calling.
+  // `credits` and `media` take the id the question's path already carries, so a
+  // question's own material never needs a second route table.
+  const oneMoreTuneRoutes = { round: 1, answer: 1, report: 1, credits: 1, media: 1 };
+  window.AISystem6Capabilities?.registerServiceProvider?.("oneMoreTune.api", {
+    id: "same-origin-node",
+    request(input = {}) {
+      const route = String(input.route || "");
+      if (!oneMoreTuneRoutes[route]) return Promise.reject(new Error("unknown route"));
+      const suffix = /^[A-Za-z0-9_-]{16,}$/.test(String(input.id || "")) ? `/${input.id}` : "";
+      return sameOriginNode.request({
+        url: `/api/one-more-tune/${route}${suffix}`,
+        init: input.init,
+        signal: input.signal,
+      });
+    },
+  });
+
+  // Bonsai City's real-place import: OpenStreetMap features, terrain heights
+  // and place search, relayed by the server (apps/server/server/bonsai-osm.js).
+  const bonsaiOsmRoutes = { osm: 1, elevation: 1, place: 1 };
+  window.AISystem6Capabilities?.registerServiceProvider?.("bonsai.osm", {
+    id: "same-origin-node",
+    request(input = {}) {
+      const route = String(input.route || "");
+      if (!bonsaiOsmRoutes[route]) return Promise.reject(new Error("unknown route"));
+      return sameOriginNode.request({
+        url: `/api/bonsai/${route}?${new URLSearchParams(input.params || {})}`,
+        init: { headers: { "Accept": "application/json" } },
+        signal: input.signal,
+      });
+    },
+  });
+
+  window.AISystem6SameOriginProviders = Object.freeze({
+    activate(enabledNames) {
+      const names = enabledNames || [
+        "reader.remote",
+        "reader.extract",
+        "browse.token",
+        "reader.subtitlesTranslate",
+        "search.remote",
+        "timeMachine.remote",
+        "timeMachine.renderUrl",
+        "importer.remote",
+        "cloud.credentials",
+        "cloud.status",
+        "cloud.subscriptionStatus",
+        "cloud.models",
+        "cloud.chat",
+        "cloud.files.upload",
+        "cloud.files.delete",
+        "vision.analyze",
+        "cloud.quota",
+        "cloud.embeddings",
+        "local.lmstudio.start",
+        "device.status",
+        "device.chat",
+        "macShared.session",
+        "endfield.search",
+        "endfield.ask",
+        "aaron-blog.search",
+        "cmf.capabilities",
+        "cmf.exportUsdz",
+        "system.music",
+        "soundscape.gamdl",
+        "artifact.import.ocr",
+        "artifact.import.text",
+        "artifact.import.iwork",
+        "system.version",
+        "quickDraft.thesis",
+        "bureaucracyMeme.captions",
+        "oneMoreTune.api",
+        "bonsai.osm",
+        "agent.executorReply",
+        "agent.executorToken",
+        "agent.harness",
+        "mcp.client",
+      ];
+      names.forEach((name) => {
+        window.AISystem6Capabilities?.setCapability?.(name, "same-origin-node");
+      });
+    },
+  });
+})();

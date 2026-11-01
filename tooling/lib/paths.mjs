@@ -1,0 +1,88 @@
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+/**
+ * Physical repository boundaries.
+ *
+ * Browser paths such as `app/core/config.js` intentionally stay relative to
+ * the desktop product. Build and verification code should resolve those
+ * logical paths through `desktopRoot` instead of pretending the repository
+ * root is a web root.
+ */
+export const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
+export const desktopRoot = join(repositoryRoot, "apps", "desktop");
+export const serverRoot = join(repositoryRoot, "apps", "server");
+export const platformRoot = join(repositoryRoot, "platform");
+export const toolingRoot = join(repositoryRoot, "tooling");
+
+export function fromDesktop(...parts) {
+  return join(desktopRoot, ...parts);
+}
+
+export function fromRepository(...parts) {
+  return join(repositoryRoot, ...parts);
+}
+
+const desktopEntryFiles = new Set([
+  "index.html",
+  "endfield-terminal.html",
+  "app.js",
+  "app.bundle.js",
+  "styles.css",
+  "styles.bundle.css",
+  "styles.theme-lab.css",
+  "styles.draft-desk.css",
+  "styles.control-strip.css",
+  "styles.finder-spatial.css",
+  "styles.micropolis.css",
+  "styles.openttd.css",
+  "styles.bonsai.css",
+  "styles.cmf-studio.css",
+  "styles.endfield-terminal.css",
+  "styles.bureaucracy-meme.css",
+  "styles.stickies.css",
+  "styles.reader-pages.css",
+  "styles.time-machine.css",
+  "styles.docmap.css",
+  "styles.searcher.css",
+  "styles.clio-chart.css",
+  "styles.clio-paint.css",
+  "styles.one-more-tune.css", "styles.one-more-take.css", "styles.aaron-blog.css",
+  "styles.rootline.css",
+  "styles.joyride.css",
+  "styles.project-disks.css",
+  "styles.clio-project.css",
+  "styles.edit-kernel.css",
+  "styles.about.css",
+  "styles.extensions.css",
+  "styles.about-this-mac.css",
+  "styles.cliotalk-agent.css",
+  "styles.cliotalk-shell.css",
+  "styles.chooser-book.css",
+  "styles.big-sur.css",
+  "styles.tiger.css",
+  "styles.system-7.css",
+  "styles.drawing-board.css",
+  "styles.platinum.css",
+  "styles.desk-dock.css",
+  "styles.lion.css",
+  "styles.aqua.css",
+  "styles.liquid-glass.css",
+  "styles.nextstep.css",
+  "styles.soundscape.css",
+  "styles.liquid-cover.css",
+  "styles.image-prompt-studio.css",
+  "styles.clioworks-native.css",
+  "styles.clio-stage-audit.css",
+]);
+
+/** Resolve a browser-logical source path to its physical repository file. */
+export function resolveProjectPath(relativePath) {
+  if (
+    desktopEntryFiles.has(relativePath)
+    || /^(?:app|assets|data|styles)(?:\/|$)/.test(relativePath)
+  ) {
+    return join(desktopRoot, relativePath);
+  }
+  return join(repositoryRoot, relativePath);
+}

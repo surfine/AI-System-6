@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900" role="img" aria-labelledby="title desc">
+  <title id="title">Original cabinet office standoff</title>
+  <desc id="desc">Two generic suited figures in a fictional 1980s British government office, with no recognizable actor or real show reference.</desc>
+  <defs>
+    <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#514a3d"/>
+      <stop offset="1" stop-color="#2c281f"/>
+    </linearGradient>
+    <linearGradient id="desk" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6a4c32"/>
+      <stop offset="1" stop-color="#2c1f17"/>
+    </linearGradient>
+    <radialGradient id="lampGlow" cx="50%" cy="46%" r="52%">
+      <stop offset="0" stop-color="#e3c27c" stop-opacity="0.36"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="grain">
+      <feTurbulence type="fractalNoise" baseFrequency="0.74" numOctaves="2" stitchTiles="stitch"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer>
+        <feFuncA type="table" tableValues="0 0.08"/>
+      </feComponentTransfer>
+    </filter>
+  </defs>
+  <rect width="1200" height="900" fill="#151410"/>
+  <rect x="55" y="54" width="1090" height="792" rx="18" fill="url(#wall)"/>
+  <rect x="55" y="54" width="1090" height="792" rx="18" fill="url(#lampGlow)"/>
+  <rect x="86" y="85" width="1028" height="730" fill="none" stroke="#17140f" stroke-width="8" opacity="0.72"/>
+  <rect x="120" y="110" width="960" height="360" fill="#383a32" opacity="0.55"/>
+  <path d="M120 245h960M120 375h960M250 110v360M950 110v360" stroke="#766f5d" stroke-width="5" opacity="0.32"/>
+  <rect x="455" y="124" width="290" height="210" fill="#1d1b17" stroke="#7b6040" stroke-width="10"/>
+  <rect x="490" y="154" width="220" height="150" fill="#2f2c24"/>
+  <path d="M530 276h140M535 184h130M515 222h170" stroke="#8f7650" stroke-width="9" opacity="0.74"/>
+
+  <ellipse cx="358" cy="426" rx="118" ry="34" fill="#111" opacity="0.32"/>
+  <path d="M246 610c18-130 70-197 154-205 87 18 136 84 154 204z" fill="#18191a"/>
+  <path d="M314 604l54-184h51l70 184z" fill="#d8d0c1"/>
+  <path d="M366 429l49 2 25 82-55 67-46-69z" fill="#273f47"/>
+  <circle cx="391" cy="337" r="72" fill="#c2a685"/>
+  <path d="M320 326c28-70 86-92 155-47-3-52-39-82-94-78-52 6-75 48-61 125z" fill="#655d50"/>
+  <path d="M361 350h28M413 350h28" stroke="#2a241e" stroke-width="8" stroke-linecap="round"/>
+  <path d="M371 386c28 14 57 14 88-2" stroke="#4b2e22" stroke-width="7" stroke-linecap="round" fill="none"/>
+
+  <ellipse cx="824" cy="427" rx="118" ry="34" fill="#111" opacity="0.32"/>
+  <path d="M700 612c21-138 78-204 162-205 79 16 128 83 149 204z" fill="#202124"/>
+  <path d="M774 604l56-186h48l67 186z" fill="#ded7c8"/>
+  <path d="M830 431l47 2 23 76-52 72-45-73z" fill="#33485d"/>
+  <circle cx="855" cy="337" r="72" fill="#c4a887"/>
+  <path d="M787 321c19-61 70-94 142-42-5-47-37-76-88-79-47 2-72 43-54 121z" fill="#6c685e"/>
+  <path d="M826 350h27M878 350h27" stroke="#2a241e" stroke-width="8" stroke-linecap="round"/>
+  <path d="M832 384c32 18 66 17 101-4" stroke="#4b2e22" stroke-width="7" stroke-linecap="round" fill="none"/>
+
+  <rect x="178" y="576" width="844" height="166" rx="9" fill="url(#desk)" stroke="#19120d" stroke-width="8"/>
+  <path d="M278 630h190M278 662h150M730 628h182M730 660h128" stroke="#d8c8a8" stroke-width="15" opacity="0.9"/>
+  <rect x="548" y="617" width="105" height="62" rx="8" fill="#c5b48c"/>
+  <rect x="588" y="524" width="22" height="98" fill="#6c604d"/>
+  <path d="M555 528h88l-23-70h-42z" fill="#b99b63"/>
+  <path d="M598 458v-42" stroke="#6c604d" stroke-width="12" stroke-linecap="round"/>
+  <circle cx="650" cy="657" r="25" fill="#f1e4c7" opacity="0.92"/>
+  <circle cx="508" cy="657" r="25" fill="#f1e4c7" opacity="0.92"/>
+  <path d="M86 760h1028" stroke="#cec1a2" stroke-width="3" opacity="0.25"/>
+  <rect width="1200" height="900" filter="url(#grain)"/>
+  <rect width="1200" height="900" fill="none" stroke="#080808" stroke-width="26" opacity="0.25"/>
+</svg>

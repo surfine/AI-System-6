@@ -1,0 +1,588 @@
+/* Control Strip — floating status surface (approximation, see the module
+   comment in app/features/control-strip.js for the fidelity note).
+
+   Geometry and material come from tokens in 00-foundation.css, overridden for
+   Liquid Glass in 70-liquid-glass.css. No body[data-theme="liquid-glass"] twins here.
+   The strip floats above windows (--z-control-strip) but below the selection
+   marquee, demo overlay, and system menu (see 00-foundation z ordering).
+
+   The DOM stays logical (user module order, back/forward/handle in one fixed
+   order); [data-edge] mirrors it with flex-direction so switching edges never
+   reverses the saved order. The module track scrolls with a transform — only
+   the track moves; the end controls and handle stay put. */
+
+.control-strip {
+  position: fixed;
+  top: var(--control-strip-top, 0px);
+  /* The anchored edge is the DISPLAY's edge, not the composition's: the strip
+     slides off the screen and leaves its tab there, which only means anything
+     against real glass. The one thing between the strip and that glass is the
+     sensor housing — an iPhone held sideways puts it exactly where the tab
+     lands — so the anchor carries the same safe-area figure .icon-column and
+     .menu-bar already use. Every inset is 0 on hardware without a housing, so
+     this is the previous geometry on every Mac and every upright phone. */
+  left: var(--safe-area-left, 0px);
+  z-index: var(--z-control-strip);
+  display: flex;
+  align-items: stretch;
+  height: var(--control-strip-thickness);
+  width: max-content;
+  max-width: calc(100vw - 8px - var(--safe-area-left, 0px) - var(--safe-area-right, 0px));
+  background: var(--control-strip-bg);
+  border: var(--control-strip-border);
+  border-radius: var(--control-strip-radius);
+  box-shadow: var(--control-strip-shadow);
+  backdrop-filter: var(--control-strip-backdrop);
+  -webkit-backdrop-filter: var(--control-strip-backdrop);
+  overflow: hidden;
+  transition: transform var(--control-strip-collapse-duration) ease-out;
+}
+
+.control-strip[data-edge="right"] {
+  left: auto;
+  right: var(--safe-area-right, 0px);
+  flex-direction: row-reverse;
+  /* The tab (and its rounded end, where an era rounds one) moves to the other
+     end when the strip anchors right. */
+  border-radius: var(--control-strip-radius-mirrored);
+}
+
+/* A user-chosen length caps the strip; 0 (the default) means fit all modules. */
+.control-strip.is-fixed-length {
+  width: var(--control-strip-length, max-content);
+}
+
+/* Collapse is a slide, not a resize: the strip keeps its width and travels
+   toward the anchored edge until only the tab is on screen. Animating width
+   would be a layout animation, which DESIGN.md forbids. */
+.control-strip.is-collapsed {
+  transform: translateX(calc(var(--control-strip-handle-width) - 100%));
+}
+
+.control-strip[data-edge="right"].is-collapsed {
+  transform: translateX(calc(100% - var(--control-strip-handle-width)));
+}
+
+/* Hiding the modules keeps them out of the tab order once they are off the
+   edge; the delay lets the slide finish first, and expanding shows them at
+   once because that transition carries no delay. */
+.control-strip.is-collapsed .control-strip-modules,
+.control-strip.is-collapsed .control-strip-scroll {
+  visibility: hidden;
+  transition: visibility 0s linear var(--control-strip-collapse-duration);
+}
+
+.control-strip-scroll {
+  width: var(--control-strip-scroll-button-width);
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  position: relative;
+}
+
+.control-strip-scroll:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+/* Classic strip scroll chevrons are solid triangles, drawn with borders. */
+.control-strip-scroll::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border: 4px solid transparent;
+  transform: translate(-50%, -50%);
+}
+
+.control-strip-scroll-back::after {
+  border-right-color: currentColor;
+  transform: translate(calc(-50% - 2px), -50%);
+}
+
+.control-strip-scroll-forward::after {
+  border-left-color: currentColor;
+  transform: translate(calc(-50% + 2px), -50%);
+}
+
+/* Mirrored edge: the "back" chevron points toward the screen edge, so both
+   buttons keep the same meaning on either side of the screen. */
+.control-strip[data-edge="right"] .control-strip-scroll-back::after {
+  border-right-color: transparent;
+  border-left-color: currentColor;
+  transform: translate(calc(-50% + 2px), -50%);
+}
+
+.control-strip[data-edge="right"] .control-strip-scroll-forward::after {
+  border-left-color: transparent;
+  border-right-color: currentColor;
+  transform: translate(calc(-50% - 2px), -50%);
+}
+
+.control-strip-scroll-back {
+  border-right: var(--control-strip-divider);
+}
+
+.control-strip-scroll-forward {
+  border-left: var(--control-strip-divider);
+}
+
+/* The modules take any slack so the tab always ends up at the outer end. */
+.control-strip-modules {
+  display: flex;
+  align-items: stretch;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  visibility: visible;
+}
+
+.control-strip-module-track {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  transform: translateX(calc(-1 * var(--control-strip-scroll, 0px)));
+}
+
+/* Right edge mirrors the track: first module at the screen edge, and the
+   transform scroll keeps the same sign, so only the visual direction flips. */
+.control-strip[data-edge="right"] .control-strip-module-track {
+  direction: rtl;
+}
+
+.control-strip-module {
+  width: 24px;
+  height: var(--control-strip-tile-height);
+  border: 0;
+  background: var(--control-strip-tile-bg);
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  padding: 0;
+  margin: var(--control-strip-tile-margin);
+  border-radius: var(--control-strip-tile-radius);
+  box-shadow: var(--control-strip-tile-shadow);
+}
+
+.control-strip-module + .control-strip-module {
+  border-left: var(--control-strip-divider);
+}
+
+.control-strip-module.is-dragging {
+  opacity: 0.55;
+}
+
+.control-strip-module.is-drop-before {
+  box-shadow: inset 2px 0 0 var(--ink);
+}
+
+.control-strip[data-edge="right"] .control-strip-module.is-drop-before {
+  box-shadow: inset -2px 0 0 var(--ink);
+}
+
+.control-strip-module .sys-icon {
+  --system-icon-shape-rendering: crispEdges;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  /* Preserve an era painter's background-image (Aqua/Snow Leopard sprites)
+     while clearing only the module tile material. */
+  background-color: transparent;
+  box-shadow: none;
+  filter: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  /* The module inverts to a black block on hover / focus / open, and the icon
+     must follow the button's currentColor or it disappears into the block
+     (the base .sys-icon rule pins its own color to var(--ink)). */
+  color: inherit;
+}
+
+.control-strip-module .sys-icon-svg {
+  shape-rendering: crispEdges;
+}
+
+.control-strip-module .multifinder-icon {
+  border-color: currentColor;
+  background:
+    linear-gradient(currentColor, currentColor) 2px 2px / 8px 2px no-repeat,
+    transparent;
+}
+
+.menu-bar .is-control-strip-counterpart-hidden {
+  display: none;
+}
+
+.control-strip-clock-text {
+  min-width: 34px;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.control-strip-module.has-gauge {
+  width: auto;
+  padding: 0 5px;
+  gap: 2px;
+  grid-auto-flow: column;
+}
+
+.control-strip-module:hover,
+.control-strip-module:focus-visible {
+  background: var(--control-strip-hover-bg);
+  color: var(--control-strip-hover-fg);
+  box-shadow: var(--control-strip-tile-hover-shadow);
+}
+
+.control-strip-module.is-open {
+  background: var(--control-strip-active-bg);
+  color: var(--control-strip-active-fg);
+  box-shadow: var(--control-strip-active-shadow);
+}
+
+/* The module tile becomes a full ink block on hover / focus / open, and the
+   classic art is black on transparency: without a reversal the icon goes
+   black-on-black. Same 1-bit treatment as the reversed menu title — swap the
+   black art for the painter's reversed layer, never show the mask (the tile
+   itself already paints the black field). */
+.control-strip-module:hover .sys-icon-svg.has-classic-mask .sys-icon-classic-art,
+.control-strip-module:focus-visible .sys-icon-svg.has-classic-mask .sys-icon-classic-art,
+.control-strip-module.is-open .sys-icon-svg.has-classic-mask .sys-icon-classic-art {
+  display: none;
+}
+
+.control-strip-module:hover .sys-icon-svg.has-classic-mask .sys-icon-classic-reverse,
+.control-strip-module:focus-visible .sys-icon-svg.has-classic-mask .sys-icon-classic-reverse,
+.control-strip-module.is-open .sys-icon-svg.has-classic-mask .sys-icon-classic-reverse {
+  display: inline;
+}
+
+.control-strip-module:focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: -1px;
+}
+
+/* Soundscape inline mini player: previous / play-pause / next + the track
+   title sit directly in the strip on the desk, so the transport does not
+   require opening the module menu. The whole segment stays transparent —
+   only the individual controls and the title invert on hover/focus. */
+.control-strip-mini-player {
+  width: auto;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 6px;
+  height: 100%;
+}
+
+.control-strip-mini-player:hover,
+.control-strip-mini-player:focus-within,
+.control-strip-mini-player.is-open {
+  background: transparent;
+  color: var(--ink);
+}
+
+.control-strip-mini-control {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.control-strip-mini-control:hover,
+.control-strip-mini-control:focus-visible,
+.control-strip-mini-title:hover,
+.control-strip-mini-title:focus-visible {
+  background: var(--control-strip-hover-bg);
+  color: var(--control-strip-hover-fg);
+  box-shadow: var(--control-strip-hover-shadow);
+  outline: 0;
+}
+
+.control-strip-mini-control .sys-icon {
+  width: 12px;
+  height: 12px;
+  background: transparent;
+  color: inherit;
+}
+
+.control-strip-mini-title {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-family: var(--ui-font);
+  font-size: 11px;
+  line-height: 1.1;
+  text-align: left;
+  padding: 2px 5px;
+  cursor: pointer;
+}
+
+.control-strip-scroll:hover,
+.control-strip-scroll:focus-visible {
+  background: var(--control-strip-hover-bg);
+  color: var(--control-strip-hover-fg);
+  box-shadow: var(--control-strip-hover-shadow);
+}
+
+.control-strip-scroll:focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: -1px;
+}
+
+/* Volume-style gauges: 36 × 8 horizontal bar holding the native Battery DA
+   long:short ratio of 4.5 : 1. */
+.control-strip-gauge-wrap {
+  display: block;
+  line-height: 0;
+}
+
+.control-strip-gauge {
+  display: block;
+  width: 36px;
+  height: 8px;
+  border: var(--control-strip-border);
+  background: var(--control-strip-gauge-bg);
+  position: relative;
+}
+
+.control-strip-gauge-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--gauge-fill, 0%);
+  background: var(--control-strip-gauge);
+}
+
+/* The tab sits at the outer end, away from the screen edge — that is the end
+   the native strip textures, and it is what stays on screen once the strip
+   slides away. */
+.control-strip-handle {
+  width: var(--control-strip-handle-width);
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  position: relative;
+  flex: 0 0 auto;
+}
+
+/* Handle grip: era-owned texture. Classic keeps the short vertical ticks;
+   Platinum swaps in its rib rows; Liquid Glass a grabber pill. The texture is
+   approximation — the native Control Strip tab is not in the bundled
+   System 6 image. */
+.control-strip-handle::after {
+  content: "";
+  position: absolute;
+  inset: var(--control-strip-grip-inset);
+  border-radius: var(--control-strip-grip-radius);
+  background: var(--control-strip-grip);
+}
+
+.control-strip-handle:hover,
+.control-strip-handle:focus-visible {
+  background: var(--control-strip-hover-bg);
+  color: var(--control-strip-hover-fg);
+  box-shadow: var(--control-strip-hover-shadow);
+}
+
+.control-strip-handle.is-dragging {
+  background: var(--control-strip-active-bg);
+  color: var(--control-strip-active-fg);
+  box-shadow: var(--control-strip-active-shadow);
+}
+
+.control-strip-handle:focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: -1px;
+}
+
+/* Module menus reuse the shared .menu-popover primitive; this modifier only
+   shows and repositions it to pop upward from the bottom-anchored strip.
+   The base primitive is hidden until a .menu ancestor opens it, and a strip
+   menu has no such ancestor — it is appended to <body> — so the modifier owns
+   its visibility. The strip module removes the element to close the menu.
+   The menu font comes from the Control Strip control panel and only reaches
+   this popover, never the rest of the desk. */
+.menu-popover.control-strip-menu {
+  display: block;
+  position: fixed;
+  top: auto;
+  left: var(--control-strip-menu-left, 8px);
+  bottom: var(--control-strip-menu-bottom, calc(var(--control-strip-thickness) + var(--desk-edge-gap) + 2px));
+  z-index: var(--z-control-strip-menu);
+  /* The room the menu actually has. The module pops the menu UPWARD from the
+     strip whatever height the strip sits at, so the space above the strip is
+     the real ceiling: a strip dragged near the top of the screen opened a menu
+     that started above the screen and could not be read at all (measured
+     2026-09-05 at 912x420, 820x1180 and 1280x800 — the popover's top landed at
+     -79, -64 and -71). The strip's own top is 100vh minus the anchor the
+     module wrote, and the system menu bar takes the rest. Every menu keeps its
+     authored size until that room runs out, then it becomes a scroller instead
+     of leaving the screen. */
+  --control-strip-menu-room: calc(100vh - var(--control-strip-menu-bottom, 0px) - var(--system-menu-height));
+  max-height: min(60vh, var(--control-strip-menu-room));
+  overflow-y: auto;
+  /* The module menu wears the era's own UI face at the system's size; it used
+     to be a pair of Control Panel dropdowns, which is not a choice a writer
+     should have to make. 60-responsive.css raises the size for touch. */
+  font-family: var(--ui-font);
+  font-size: var(--control-strip-menu-font-size, 12px);
+}
+
+/* Shared menu-bar extras retain their canonical inner styling here; only the
+   floating host's size is adapted to the movable Control Strip. */
+.control-strip-menu.project-switcher-popover {
+  width: min(300px, calc(100vw - 16px));
+  max-height: min(440px, calc(100vh - 36px), var(--control-strip-menu-room));
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+
+.control-strip-menu.cloud-model-popover {
+  width: min(260px, calc(100vw - 16px));
+  max-height: min(440px, calc(100vh - 36px), var(--control-strip-menu-room));
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+
+/* --- Control Panel -> Control Strip tab ---------------------------------- */
+
+.control-strip-hotkey-row {
+  display: flex;
+  /* The shortcut field keeps its 16px input face (the phone-input rule), the
+     mini buttons keep theirs; only a shared baseline makes the three read as
+     one row. Wrapping keeps the field legible in a narrow panel instead of
+     squeezing it to a sliver beside the buttons. */
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.control-strip-hotkey-row input {
+  flex: 1 1 72px;
+  min-width: 0;
+}
+
+.control-strip-field-row .control-field {
+  flex: 1 1 190px;
+  min-width: 0;
+}
+
+.control-strip-modules-stack {
+  gap: 8px;
+}
+
+.control-strip-module-list {
+  list-style: none;
+  margin: 6px 0;
+  padding: 0;
+  border: var(--control-strip-border);
+  background: var(--paper);
+  max-height: 220px;
+  min-height: 88px;
+  overflow-y: auto;
+}
+
+.control-strip-module-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.control-strip-module-row:focus-visible {
+  outline: var(--control-focus-outline);
+  outline-offset: -2px;
+}
+
+.control-strip-module-row + .control-strip-module-row {
+  border-top: 1px solid var(--shade, #aaaaaa);
+}
+
+.control-strip-module-row.is-selected {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.control-strip-module-row.is-disabled .control-strip-settings-name {
+  opacity: 0.55;
+}
+
+.control-strip-settings-icon .sys-icon {
+  width: 16px;
+  height: 16px;
+  background: transparent;
+  color: inherit;
+  display: block;
+}
+
+.control-strip-settings-state {
+  margin-left: auto;
+  opacity: 0.8;
+}
+
+.control-strip-module-actions {
+  margin-top: 6px;
+}
+
+/* --- Touch class ---------------------------------------------------------
+   The repo's device-class query: phones in either orientation, and tablets
+   upright. 60-responsive.css turns the strip into a bottom drawer at 640px and
+   below, which is every phone HELD UPRIGHT and no phone held sideways — the
+   long edge of the smallest iPhone is 667. The two rules below are the half of
+   that treatment a phone sideways was missing; they agree with the drawer's
+   values where the two queries overlap, so neither can fight the other. */
+@media (max-width: 860px), (hover: none) and (pointer: coarse) and (max-height: 660px) {
+  /* A foregrounded full-screen app owns the screen and the floating strip
+     yields — the same rule 60-responsive.css states for portrait, which is
+     the orientation it was written in. Sideways, the strip stayed up and
+     floated a 299x24 band across the app: measured 2026-09-05 at 912x420,
+     lying over Soundscape's drawer. mobile-app-foreground is set by the shell
+     in BOTH orientations, so the state was already there to read. */
+  body.mobile-app-foreground .control-strip {
+    display: none;
+  }
+
+  /* Collapsed, the tab is the whole control: it is all that stays on screen,
+     and it is the only way back to the strip. At the desk's 16px it is a
+     mouse target sitting on glass. This is the width the phone drawer already
+     uses; the strip's thickness stays the era's, so the glyph is untouched and
+     only the hit region grows. */
+  .control-strip {
+    --control-strip-handle-width: 44px;
+  }
+}
+
+/* Reduced motion keeps the same two states, reached instantly. */
+@media (prefers-reduced-motion: reduce) {
+  .control-strip,
+  .control-strip.is-collapsed .control-strip-modules,
+  .control-strip.is-collapsed .control-strip-scroll {
+    transition-duration: 0s;
+    transition-delay: 0s;
+  }
+}

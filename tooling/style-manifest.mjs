@@ -1,0 +1,465 @@
+// Stylesheets concatenated into styles.bundle.css, which every boot loads.
+export const styleRuntimePaths = [
+  "styles/00-foundation.css",
+  "styles/10-windows.css",
+  "styles/20-reader-docmap.css",
+  "styles/30-surfaces.css",
+  "styles/40-icons.css",
+  "styles/50-apps.css",
+  "styles/60-responsive.css",
+  "styles/65-appearance-themes.css",
+];
+
+// Stylesheets that ship in production but load with their window instead of at
+// boot. Theme Lab qualifies twice over: its module is already lazy, and its
+// stylesheet is the largest single sheet in the repository while the window is
+// an internal appearance surface that most sessions never open. Every selector
+// in it is scoped to the lab, so nothing else can lose its styling.
+//
+// These files are outside the System Floppy Budget on purpose: the budget
+// measures what a boot must download, and this sheet is not part of a boot.
+//
+// Appearance sheets (loader theme-registry.js) are one stylesheet per bundle,
+// so a sheet two appearances share is downloaded once. Each is keyed by the
+// appearance whose recipe it carries (`id`) or by the capability that asks for
+// it (`capability`); an appearance loads the sheet of every appearance in its
+// recipe chain plus those of its capabilities, in the order declared here —
+// which is root to leaf, and is also their cascade-layer order. Aqua and Liquid
+// Glass lead: they were the last two boot sheets, so declaring them first keeps
+// every layer where it was. theme-registry.js carries the same table in the same
+// order; tests/features/lazy-loader.test.mjs holds the two in step.
+export const lazyStyleBundles = [
+  // Aqua is the Mac OS X recipe root; Snow Leopard's rules live in the same
+  // sheet under [data-lineage~="snow-leopard"], and Tiger and Lion inherit them.
+  { id: "aqua", output: "styles.aqua.css", loader: "app/core/theme-registry.js",
+    sources: ["styles/67-aqua-appearance.css"] },
+  // Liquid Glass's own material. Every rule is scoped to Liquid Glass itself;
+  // Yosemite and Big Sur load it as their recipe root.
+  { id: "liquid-glass", output: "styles.liquid-glass.css", loader: "app/core/theme-registry.js",
+    sources: ["styles/70-liquid-glass.css"] },
+  { id: "nextstep", output: "styles.nextstep.css", loader: "app/core/theme-registry.js",
+    sources: ["styles/nextstep-shell.css", "styles/69-nextstep-appearance.css"] },
+  // The Mac OS X Dock and its yellow lamp: the appearance sheet of every era
+  // whose Dock has shipped (capability "dock"; Snow Leopard first). It sits
+  // before the era sheets that restyle it.
+  { id: "desk-dock", capability: "dock", output: "styles.desk-dock.css", loader: "app/core/theme-registry.js",
+    sources: ["styles/88-desk-dock.css"] },
+  // An independent appearance is requested only when selected, including boot.
+  { id: "big-sur", output: "styles.big-sur.css", loader: "app/core/theme-registry.js",
+    sources: ["styles/68-big-sur-appearance.css"] },
+  { id: "tiger", output: "styles.tiger.css", loader: "app/core/theme-registry.js",
+    sources: ["styles/67-tiger-appearance.css"] },
+  { id: "system-7", output: "styles.system-7.css", loader: "app/core/theme-registry.js",
+    sources: ["styles/65-system-7-appearance.css"] },
+  // The Writing Flow utility window. Platinum's appearance chrome rides the
+  // boot bundle, but the palette's own sheet is loaded only when the Platinum
+  // lineage is selected; Drawing Board, its child, inherits it through its
+  // recipe chain.
+  { id: "platinum", output: "styles.platinum.css", loader: "app/core/theme-registry.js",
+    sources: ["styles/65-platinum-utility.css"] },
+  { id: "drawing-board", output: "styles.drawing-board.css", loader: "app/core/theme-registry.js",
+    sources: ["styles/65-drawing-board-appearance.css"] },
+  { id: "lion", output: "styles.lion.css", loader: "app/core/theme-registry.js",
+    sources: ["styles/67-lion-appearance.css"] },
+  // The Draft Desk sheet dresses Quick Draft and 文字亮室, whose modules are
+  // already lazy, and every one of its 250 selector parts is scoped to
+  // draft-desk / quick-draft / lightroom / listen / darkroom (the only others
+  // are keyframe steps). 20 KB that a boot never needed. Loaded by
+  // ensureQuickDraftModule, which is the path BOTH windows open through.
+  // The Control Strip is opt-in -- applyControlStripState returns early unless
+  // the user turned it on -- and all 76 of its selector parts are scoped to
+  // .control-strip. A boot that never shows it was downloading it anyway.
+  {
+    id: "control-strip",
+    output: "styles.control-strip.css",
+    loader: "app/core/config.js",
+    sources: ["styles/89-control-strip.css"],
+  },
+  {
+    id: "finder-spatial",
+    output: "styles.finder-spatial.css",
+    loader: "app/core/config.js",
+    sources: ["styles/89-finder-spatial.css"],
+  },
+  {
+    id: "draft-desk",
+    output: "styles.draft-desk.css",
+    loader: "app/core/config.js",
+    sources: ["styles/91-draft-desk.css"],
+  },
+  {
+    id: "theme-lab",
+    output: "styles.theme-lab.css",
+    loader: "app/core/config.js",
+    sources: ["styles/66-theme-lab.css"],
+  },
+  {
+    id: "clioworks-native",
+    output: "styles.clioworks-native.css",
+    loader: "app/core/config.js",
+    sources: ["styles/92-clioworks-native.css"],
+  },
+  {
+    id: "clio-stage-audit",
+    output: "styles.clio-stage-audit.css",
+    loader: "app/core/config.js",
+    sources: ["styles/93-clioworks-audit.css"],
+  },
+  // Endfield Terminal is a standalone lab surface: verify:css already classifies
+  // it as one, its module has always been lazy, and every selector is scoped to
+  // .endfield-* (the only others are keyframe steps). 9.7 KB that no boot needs.
+  {
+    id: "endfield-terminal",
+    output: "styles.endfield-terminal.css",
+    loader: "app/core/config.js",
+    sources: ["styles/90-endfield-terminal.css"],
+  },
+  // The Bureaucracy meme generator is a standalone joke surface with a lazy
+  // module; every selector is .bureaucracy-* or #bureaucracy-*.
+  // Stickies (To Do + Note Pad notes + held thoughts, 2026-10-31): the window
+  // and the pinned desk stickies are both summoned by the lazy module, and every
+  // selector is .stickies-*, .sticky-* or .desk-sticky*.
+  {
+    id: "stickies",
+    output: "styles.stickies.css",
+    loader: "app/core/config.js",
+    sources: ["styles/80-stickies.css"],
+  },
+  {
+    id: "bureaucracy-meme",
+    output: "styles.bureaucracy-meme.css",
+    loader: "app/core/config.js",
+    sources: ["styles/80-bureaucracy-meme.css"],
+  },
+  // Reader's original-page view is summoned by a PDF, not resident: its module
+  // is lazy and every selector is .reader-pages* or .reader-page-*.
+  {
+    id: "reader-pages",
+    output: "styles.reader-pages.css",
+    loader: "app/core/config.js",
+    sources: ["styles/80-reader-pages.css"],
+  },
+  // Time Machine is summoned, not resident: its module has always been lazy and
+  // every selector is .time-machine-* or #time-machine-*.
+  {
+    id: "time-machine",
+    output: "styles.time-machine.css",
+    loader: "app/core/config.js",
+    sources: ["styles/22-time-machine.css"],
+  },
+  // DocMap is summoned, not resident: docmap.js has always loaded on first use,
+  // and every selector in its sheet is .docmap-* or .video-docmap-*.
+  {
+    id: "docmap",
+    output: "styles.docmap.css",
+    loader: "app/core/config.js",
+    sources: ["styles/23-docmap.css"],
+  },
+  // Searcher is summoned, not resident: findpath.js has always loaded on first
+  // use, and every selector in its sheet is .find-path-*.
+  {
+    id: "searcher",
+    output: "styles.searcher.css",
+    loader: "app/core/config.js",
+    sources: ["styles/24-searcher.css"],
+  },
+  // ClioChart's own module has always been lazy. Its sheet also dresses one
+  // ClioStage element (.clio-stage-chart-slide, added when a slide carries a
+  // chart snapshot), and a snapshot can come back from a restored session
+  // without ClioChart having been opened this boot — so ClioStage's loader
+  // pulls this sheet too. ClioStage is itself lazy, so no boot pays for it.
+  // The xlsx workbook surface (S11 M1) and its comments windoid ride the same
+  // sheet: they only ever draw inside the ClioChart window, so they arrive with
+  // it instead of as a request of their own. Every selector in the two files is
+  // scoped to .clio-chart-workbook, the window's .is-workbook-mounted flag, the
+  // workbook pop-ups (.cwk-menu) or the windoid. ClioStage's native pptx
+  // surface (S11 M2) rides it too: ClioStage's loader already pulls this sheet,
+  // and its selectors are scoped to .clio-stage-native / .is-native-mounted.
+  // ClioWrite (S11 M3) draws its docx window with it too: .clio-write-window / .cw-menu.
+  // N6's show layer and page overview (84-clio-stage-show.css) ride it the same
+  // way: clio-stage.js builds them, that loader brings the sheet, and every
+  // selector is scoped to .clio-stage-show / .clio-stage-overview.
+  {
+    id: "clio-chart",
+    output: "styles.clio-chart.css",
+    loader: "app/core/config.js",
+    sources: ["styles/87-clio-chart.css", "styles/84-clio-chart-workbook.css", "styles/84-windoid.css", "styles/84-clio-stage-native.css", "styles/84-clio-write.css", "styles/84-clio-stage-show.css"],
+  },
+  {
+    id: "micropolis",
+    output: "styles.micropolis.css",
+    loader: "app/core/config.js",
+    sources: ["styles/92-micropolis.css"],
+  },
+  {
+    id: "openttd",
+    output: "styles.openttd.css",
+    loader: "app/core/config.js",
+    sources: ["styles/93-openttd.css"],
+  },
+  {
+    id: "bonsai",
+    output: "styles.bonsai.css",
+    loader: "app/core/config.js",
+    sources: ["styles/94-bonsai.css"],
+  },
+  // CMF Studio is a creative lab whose module was already lazy while its sheet
+  // still rode every boot. Every selector in it is scoped to .cmf-*, so the
+  // sheet can travel with the window it dresses.
+  {
+    id: "cmf-studio",
+    output: "styles.cmf-studio.css",
+    loader: "app/core/config.js",
+    sources: ["styles/86-cmf-studio.css"],
+  },
+  // Soundscape is a summoned player whose module was already lazy. Its shared
+  // level controls moved to styles/30-surfaces.css first, so every selector
+  // left in the sheet is scoped to the window it dresses.
+  {
+    id: "soundscape",
+    output: "styles.soundscape.css",
+    loader: "app/core/config.js",
+    sources: ["styles/88-soundscape.css"],
+  },
+  // Cover Glass is a creative lab whose module was already lazy, and every
+  // selector in its sheet is scoped to .lc-* - including the Liquid Glass
+  // twins, which are all `body[data-theme="liquid-glass"] .lc-…`.
+  // Image Prompt Studio is a lazy creative lab, and every selector in its sheet
+  // is scoped to .image-prompt-studio-window or .ips-*, so it travels with its
+  // window rather than the startup disk.
+  {
+    id: "image-prompt-studio",
+    output: "styles.image-prompt-studio.css",
+    loader: "app/core/config.js",
+    sources: ["styles/95-image-prompt-studio.css"],
+  },
+  {
+    id: "liquid-cover",
+    output: "styles.liquid-cover.css",
+    loader: "app/core/config.js",
+    sources: ["styles/85-liquid-cover.css"],
+  },
+  // ClioPaint's module is already lazy (builtByModule, like ClioProject), and
+  // every selector in its sheet is scoped to .clio-paint-*.
+  {
+    id: "clio-paint",
+    output: "styles.clio-paint.css",
+    loader: "app/core/config.js",
+    sources: ["styles/96-clio-paint.css"],
+  },
+  // One More Tune is lazy for the same reason: a deck nobody has opened yet
+  // should not spend boot bytes, and every selector is scoped to
+  // .one-more-tune-*.
+  {
+    id: "one-more-tune",
+    output: "styles.one-more-tune.css",
+    loader: "app/core/config.js",
+    sources: ["styles/97-one-more-tune.css"],
+  },
+  // One More Take, the sibling quiz: lazy for the same reason, scoped to
+  // .one-more-take-*.
+  {
+    id: "one-more-take",
+    output: "styles.one-more-take.css",
+    loader: "app/core/config.js",
+    sources: ["styles/97-one-more-take.css"],
+  },
+  {
+    id: "aaron-blog",
+    output: "styles.aaron-blog.css",
+    loader: "app/core/config.js",
+    sources: ["styles/94-aaron-blog.css"],
+  },
+  // Rootline builds its own window like the other games, and every selector
+  // is scoped to .rootline-*.
+  {
+    id: "rootline",
+    output: "styles.rootline.css",
+    loader: "app/core/config.js",
+    sources: ["styles/99-rootline.css"],
+  },
+  // Joyride builds its own window and scopes every selector to .joyride-*,
+  // plus the one body state it sets while driving.
+  {
+    id: "joyride",
+    output: "styles.joyride.css",
+    loader: "app/core/config.js",
+    sources: ["styles/99-joyride.css"],
+  },
+  // The demonstration-disk window is built at runtime by the panel that rides
+  // the generated shared-disks module, so its geometry follows the module:
+  // four declarations a boot that never opens the list should not download.
+  {
+    id: "project-disks",
+    output: "styles.project-disks.css",
+    loader: "app/core/config.js",
+    sources: ["styles/98-project-disks.css"],
+  },
+  // ClioProject: the plan diagram, its Get Info pane and the all-disks
+  // calendar. The module is lazy and builtByModule, and every selector is
+  // scoped to .clio-project-*, so the sheet travels with the loader.
+  {
+    id: "clio-project",
+    output: "styles.clio-project.css",
+    loader: "app/core/config.js",
+    sources: ["styles/99-clio-project.css"],
+  },
+  // The edit kernel's shared parts: Key Caps' command sheet, the layers panel,
+  // the inspector and the alignment guides. Every editor's loader brings it,
+  // and every selector is scoped to .edit-kernel-* / .command-sheet-*. Review
+  // Desk's comments and compare (styles/99-review-comments.css, scoped to
+  // .review-comments-panel / .review-thread* / .review-compare*) ride in it.
+  // About AI System 6: built on demand by app/features/about-desk.js, every
+  // selector scoped to .about-*, so the sheet travels with that loader.
+  {
+    id: "about",
+    output: "styles.about.css",
+    loader: "app/core/config.js",
+    sources: ["styles/99-about-desk.css"],
+  },
+  // Extensions: the window shell for skills, memory, roles and the waiting
+  // list, built on demand by app/features/extensions-window.js, every
+  // selector scoped to .extensions-*.
+  {
+    id: "extensions",
+    output: "styles.extensions.css",
+    loader: "app/core/config.js",
+    sources: ["styles/99-extensions.css"],
+  },
+  // About This Mac: built on demand by app/features/about-this-mac.js, every
+  // selector scoped to .about-this-mac-*, so the sheet travels with that
+  // loader and never rides the boot.
+  {
+    id: "about-this-mac",
+    output: "styles.about-this-mac.css",
+    loader: "app/core/config.js",
+    sources: ["styles/99-about-this-mac.css"],
+  },
+  {
+    id: "edit-kernel",
+    output: "styles.edit-kernel.css",
+    loader: "app/core/config.js",
+    sources: ["styles/99-edit-kernel.css", "styles/99-review-comments.css"],
+  },
+  // ClioTalk agent mode, Chooser's shared folders and the put-back dialog:
+  // built on demand by app/features/cliotalk-agent.js, every selector scoped
+  // to .clio-agent-* / .chooser-folder* / .agent-putback-*.
+  {
+    id: "cliotalk-agent",
+    output: "styles.cliotalk-agent.css",
+    loader: "app/core/config.js",
+    sources: ["styles/99-cliotalk-agent.css"],
+  },
+  // ClioTalk's Clio main interface (app/features/cliotalk-shell.js): sidebar,
+  // empty-state greeting and composer in the Liquid Glass appearance. Its
+  // tokens live on .clio-shell because the boot floppy has no room for a
+  // :root block; every selector is scoped to .clio-shell.
+  {
+    id: "cliotalk-shell",
+    output: "styles.cliotalk-shell.css",
+    loader: "app/core/config.js",
+    sources: ["styles/99-cliotalk-shell.css"],
+  },
+  // Chooser's driver rail and MCP switch (app/features/chooser-book.js).
+  {
+    id: "chooser-book",
+    output: "styles.chooser-book.css",
+    loader: "app/core/config.js",
+    sources: ["styles/99-chooser-book.css"],
+  },
+];
+
+// Every stylesheet the product ships, eager or lazy. Checks that reason about
+// the whole CSS surface (budgets, duplicate audits, terminology smoke) use
+// this rather than the boot list.
+export const allStylePaths = [
+  ...styleRuntimePaths,
+  ...lazyStyleBundles.flatMap((bundle) => bundle.sources),
+];
+
+// Cascade-layer assignment: one @layer name per stylesheet. The build prepends
+// a single `@layer <order>;` statement to styles.bundle.css, which pins the
+// layer order for the whole document before any rule loads. Until a file wraps
+// rules in its layer the statement is inert — unlayered rules keep today's
+// cascade. A source file may only open its own assigned layer; verify:css
+// enforces that, because claiming a later layer is the new form of the
+// !important cascade jump. Migration state and the flip-audit workflow:
+// internal/agents/CSS-LAYER-LANE.md.
+export const styleLayerByPath = Object.freeze({
+  "styles/00-foundation.css": "foundation",
+  "styles/10-windows.css": "windows",
+  "styles/20-reader-docmap.css": "reader-docmap",
+  "styles/22-time-machine.css": "time-machine",
+  "styles/23-docmap.css": "docmap",
+  "styles/24-searcher.css": "searcher",
+  "styles/30-surfaces.css": "surfaces",
+  "styles/40-icons.css": "icons",
+  "styles/50-apps.css": "apps",
+  "styles/60-responsive.css": "responsive",
+  "styles/65-appearance-themes.css": "appearance-themes",
+  "styles/67-aqua-appearance.css": "aqua-appearance",
+  "styles/68-big-sur-appearance.css": "big-sur-appearance",
+  "styles/67-tiger-appearance.css": "tiger-appearance",
+  "styles/65-system-7-appearance.css": "system-7-appearance",
+  "styles/65-drawing-board-appearance.css": "drawing-board-appearance",
+  "styles/65-platinum-utility.css": "platinum-utility",
+  "styles/88-desk-dock.css": "desk-dock",
+  "styles/67-lion-appearance.css": "lion-appearance",
+  "styles/69-nextstep-appearance.css": "nextstep-appearance",
+  "styles/nextstep-shell.css": "nextstep-shell",
+  "styles/70-liquid-glass.css": "liquid-glass",
+  "styles/80-bureaucracy-meme.css": "bureaucracy-meme",
+  "styles/80-stickies.css": "stickies",
+  "styles/80-reader-pages.css": "reader-pages",
+  "styles/85-liquid-cover.css": "liquid-cover",
+  "styles/95-image-prompt-studio.css": "image-prompt-studio",
+  "styles/86-cmf-studio.css": "cmf-studio",
+  "styles/87-clio-chart.css": "clio-chart",
+  "styles/84-clio-chart-workbook.css": "clio-chart-workbook",
+  "styles/84-windoid.css": "windoid",
+  "styles/84-clio-stage-native.css": "clio-stage-native",
+  "styles/84-clio-write.css": "clio-write",
+  "styles/84-clio-stage-show.css": "clio-stage-show",
+  "styles/88-soundscape.css": "soundscape",
+  "styles/89-control-strip.css": "control-strip",
+  "styles/89-finder-spatial.css": "finder-spatial",
+  "styles/90-endfield-terminal.css": "endfield-terminal",
+  "styles/91-draft-desk.css": "draft-desk",
+  "styles/92-clioworks-native.css": "clioworks-native",
+  "styles/93-clioworks-audit.css": "clio-stage-audit",
+  // Lazy sheets load after the boot bundle, so their layers sit after every
+  // eager layer. That matches the cascade the product has today (a lazy sheet
+  // wins ties against everything already loaded); the 66- number of Theme Lab
+  // does NOT put its layer between 65 and 67.
+  "styles/66-theme-lab.css": "theme-lab",
+  "styles/92-micropolis.css": "micropolis",
+  "styles/93-openttd.css": "openttd",
+  "styles/94-bonsai.css": "bonsai",
+  "styles/94-aaron-blog.css": "aaron-blog",
+  "styles/96-clio-paint.css": "clio-paint",
+  "styles/97-one-more-tune.css": "one-more-tune",
+  "styles/97-one-more-take.css": "one-more-take",
+  "styles/98-project-disks.css": "project-disks",
+  "styles/99-clio-project.css": "clio-project",
+  "styles/99-edit-kernel.css": "edit-kernel",
+  "styles/99-review-comments.css": "edit-kernel",
+  "styles/99-rootline.css": "rootline",
+  "styles/99-joyride.css": "joyride",
+  "styles/99-about-desk.css": "about",
+  "styles/99-extensions.css": "extensions",
+  "styles/99-about-this-mac.css": "about-this-mac",
+  "styles/99-cliotalk-agent.css": "cliotalk-agent",
+  "styles/99-cliotalk-shell.css": "cliotalk-shell",
+  "styles/99-chooser-book.css": "chooser-book",
+});
+
+// Layer order = eager files in bundle order, then lazy sheets in declaration
+// order. Derived, so it cannot desync from the path lists above.
+export const styleLayerOrder = [
+  ...styleRuntimePaths,
+  ...lazyStyleBundles.flatMap((bundle) => bundle.sources),
+].map((path) => {
+  const layer = styleLayerByPath[path];
+  if (!layer) throw new Error(`style-manifest: ${path} has no cascade-layer assignment`);
+  return layer;
+});

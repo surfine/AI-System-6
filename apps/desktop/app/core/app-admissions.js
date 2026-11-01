@@ -1,0 +1,227 @@
+// Where a window is admitted, once.
+//
+// Admitting a window used to mean editing several files that each knew a
+// different part of the same fact: the loader in config.js, the opener command
+// in actions.js, a window record in window-registry.js, an availability entry
+// in window-manager.js, an Applications row and its app_desc_* key in app.js, a
+// MultiFinder name, and a repaint hook for the language switch. Four of those
+// announced a missing entry only as a test failure, and one window (the
+// demonstration disks) shipped while invisible to every instrument that walks
+// the registry.
+//
+// This table is that declaration: one row per window, naming its owning
+// application, the loader config.js already builds, and the opener command it
+// answers to. config.js keeps the loader spec (it owns createLazyModuleLoader
+// and the flag/path rules); this table owns who is admitted and where.
+// MultiFinder names, Applications rows, description keys, repaint hooks and
+// the availability pass all read from here.
+//
+// A window its own module builds can also be declared here whole. `api` names
+// the global the module installs; from it the table derives the window record
+// window-registry.js would otherwise spell out by hand (owning app,
+// builtByModule, width, the lazy ensure and attach). `phone` is its phone role
+// (1 = the full-screen app page in portrait, 2 = immersive: landscape too),
+// and `tile` / `grow` put it in the tileable and resizable sets. With those, a
+// new game is this row, its loader in config.js, its glyph in system-icons.js
+// and its strings — nothing in window-registry, window-manager or app.js.
+//
+// Contract: tests/features/app-admissions.test.mjs
+
+window.AISystem6Admissions = (() => {
+  // window -> { app, load, command? }. `load` is the ensure() config.js built;
+  // a window with no command is opened by a desk accessory row, a menu of its
+  // own, or another window's action.
+  const WINDOWS = {
+    about: { app: "system", load: ensureAboutModule },
+    extensions: { app: "system", load: ensureExtensionsModule, api: "AISystem6Extensions", repaint: "renderExtensions" },
+    assistant: { app: "clioTalk", load: ensureClioTalkShellModule },
+    aboutThisMac: { app: "system", load: ensureAboutThisMacModule, repaint: "renderAboutThisMacLanguage" },
+    alarmClock: { app: "accessories", load: ensureAlarmClockModule, command: "open-alarm-clock" },
+    bonsaiCity: { app: "bonsaiCity", load: ensureBonsaiCityModule, command: "open-bonsai-city" , multiFinder: "Bonsai City" , applicationGroup: "games", appLabel: "bonsai_city_label", appIcon: "bonsaiCity", appDesc: "app_desc_bonsai_city", api: "AISystem6BonsaiCity", appearance: 1, phone: 2, tile: 1, grow: 1, repaint: "renderBonsaiCityLanguage" },
+    bureaucracyMeme: { app: "bureaucracyMeme", load: ensureBureaucracyMemeModule, command: "open-bureaucracy-meme" , multiFinder: "Bureaucracy Meme" , applicationGroup: "extras", appLabel: "bureaucracy_meme_label", appIcon: "bureaucracyMeme", appIconClass: "tools-icon", appDesc: "app_desc_bureaucracy" },
+    clioChart: { app: "clioChart", load: ensureClioChartModule, command: "open-clio-chart" , multiFinder: "ClioChart" , applicationGroup: "create", appLabel: "clio_chart_label", appIcon: "clioChart", appIconClass: "tools-icon", appDesc: "app_desc_clio_chart" },
+    clioCode: { app: "clioCode", load: ensureClioTalkAgentModule, multiFinder: "ClioCode", api: "AISystem6ClioCode" },
+    clioPaint: { app: "clioPaint", load: ensureClioPaintModule, command: "open-clio-paint" , multiFinder: "ClioPaint" , applicationGroup: "create", appLabel: "clio_paint_label", appIcon: "clioPaint", appIconClass: "tools-icon", api: "AISystem6ClioPaint", width: 640, phone: 1, tile: 1, grow: 1 },
+    clioProject: { app: "clioProject", load: ensureClioProjectModule, command: "open-clio-project" , multiFinder: "ClioProject" , applicationGroup: "create", appLabel: "clio_project_label", appIcon: "clioProject", appIconClass: "tools-icon" },
+    clioStage: { app: "clioStage", load: ensureClioStageModule, command: "open-clio-stage" , multiFinder: "ClioStage" , applicationGroup: "create", appLabel: "clio_stage_label", appIcon: "clioStage", appIconClass: "tools-icon", appDesc: "app_desc_clio_stage" },
+    clioWrite: { app: "clioWrite", load: ensureClioWriteModule, command: "open-clio-write" , multiFinder: "ClioWrite" , applicationGroup: "create", appLabel: "clio_write_label", appIcon: "clioWrite", appIconClass: "tools-icon", appDesc: "app_desc_clio_write", api: "AISystem6ClioWrite", width: 720, tile: 1, grow: 1 },
+    cmfStudio: { app: "cmfStudio", load: ensureCmfStudioModule, command: "open-cmf-studio" , multiFinder: "CMF Studio" , applicationGroup: "create", appLabel: "cmf_studio_label", appIcon: "cmfStudio", appIconClass: "tools-icon", appDesc: "app_desc_cmf_studio" },
+    doom: { app: "doom", load: ensureDoomModule, command: "open-doom" , multiFinder: "DOOM" , applicationGroup: "games", appLabel: "doom_label", appIcon: "doom", appDesc: "app_desc_doom", api: "AISystem6Doom", phone: 2 },
+    endfieldTerminal: { app: "endfield", load: ensureEndfieldTerminalModule, command: "open-endfield-terminal" , applicationGroup: "extras", appLabel: "endfield_terminal_label", appIcon: "endfieldTerminal", appIconClass: "tools-icon", appDesc: "app_desc_endfield" },
+    findFile: { app: "accessories", load: ensureDeskFindModule },
+    findPath: { app: "searcher", load: ensureFindPathModule, command: "open-find-path", applicationGroup: "root", appLabel: "searcher_label", appIcon: "searcher", appIconClass: "tools-icon", appDesc: "app_desc_searcher" },
+    imagePromptStudio: { app: "imagePromptStudio", load: ensureImagePromptStudioModule, command: "open-image-prompt-studio" , multiFinder: "Image Prompt Studio" , applicationGroup: "create", appLabel: "image_prompt_studio_label", appIcon: "imagePromptStudio", appDesc: "app_desc_image_prompt_studio" },
+    quickDraft: { app: "quickDraft", load: ensureQuickDraftModule, command: "open-quick-draft", applicationGroup: "root", appLabel: "quick_draft_label", appIcon: "quickDraft", appIconClass: "teachtext-icon", appDesc: "app_desc_draft_desk" },
+    // Text Lightroom: a window of its own that Quick Draft's module also builds, so it shares the loader; `appAction` is the verb its Applications row
+    // opens (the window opens through handleAction, not a lazy command of its own).
+    lightroom: { app: "lightroom", load: ensureQuickDraftModule, appAction: "open-lightroom", applicationGroup: "create", appLabel: "lightroom_title", appIcon: "lightroom", appIconClass: "app-icon" },
+    liquidCover: { app: "liquidCover", load: ensureLiquidCoverModule, command: "open-liquid-cover" , multiFinder: "Cover Glass" , applicationGroup: "create", appLabel: "liquid_cover_label", appIcon: "liquidCover", appIconClass: "tools-icon", appDesc: "app_desc_cover_glass" },
+    memoryCards: { app: "accessories", load: ensureMemoryCardsModule, command: "open-memory-cards" },
+    micropolis: { app: "micropolis", load: ensureMicropolisModule, command: "open-micropolis" , multiFinder: "Micropolis" , applicationGroup: "games", appLabel: "micropolis_label", appIcon: "micropolis", appDesc: "app_desc_micropolis", api: "AISystem6Micropolis", phone: 2, grow: 1 },
+    oneMoreTune: { app: "oneMoreTune", load: ensureOneMoreTuneModule, command: "open-one-more-tune" , multiFinder: "One More Tune" , applicationGroup: "extras", appLabel: "one_more_tune_label", appIcon: "oneMoreTune", appIconClass: "tools-icon", appDesc: "app_desc_one_more_tune", repaint: "renderOneMoreTune", api: "AISystem6OneMoreTune", width: 680, phone: 1, tile: 1, grow: 1 },
+    oneMoreTake: { app: "oneMoreTake", load: ensureOneMoreTakeModule, command: "open-one-more-take", multiFinder: "One More Take", applicationGroup: "extras", appLabel: "one_more_take_label", appIcon: "oneMoreTune", appIconClass: "tools-icon", appDesc: "app_desc_one_more_take", repaint: "renderOneMoreTake", api: "AISystem6OneMoreTake", width: 760, phone: 1, tile: 1, grow: 1 },
+    aaronBlog: { app: "aaronBlog", load: ensureAaronBlogModule, command: "open-aaron-blog", multiFinder: "潮汐信笺", applicationGroup: "extras", appLabel: "aaron_blog_label", appIcon: "manuscript", appIconClass: "tools-icon", appDesc: "app_desc_aaron_blog", appearance: 1, api: "AISystem6AaronBlog", width: 980, phone: 1, tile: 1, grow: 1, repaint: "renderAaronBlogLanguage" },
+    mingwen: { app: "mingwen", load: ensureMingwenModule, command: "open-mingwen" , multiFinderKey: "mingwen_title" , applicationGroup: "games", appLabel: "mingwen_label", appIcon: "mingwen", appDesc: "app_desc_mingwen", api: "AISystem6Mingwen", width: 1024, phone: 2, tile: 1, grow: 1 },
+    openttd: { app: "openttd", load: ensureOpenTTDModule, command: "open-openttd" , multiFinder: "OpenTTD" , applicationGroup: "games", appLabel: "openttd_label", appIcon: "openttd", appDesc: "app_desc_openttd", api: "AISystem6OpenTTD", phone: 2 },
+    rootline: { app: "rootline", load: ensureRootlineModule, command: "open-rootline" , multiFinder: "Rootline" , applicationGroup: "games", appLabel: "rootline_label", appIcon: "rootline", appDesc: "app_desc_rootline", api: "AISystem6Rootline", phone: 2, tile: 1, grow: 1, repaint: "renderRootline" },
+    joyride: { app: "joyride", load: ensureJoyrideModule, command: "open-joyride" , multiFinder: "Joyride" , applicationGroup: "games", appLabel: "joyride_label", appIcon: "joyride", appDesc: "app_desc_joyride", api: "AISystem6Joyride", phone: 2, tile: 1, grow: 1 },
+    diskPeek: { app: "accessories", load: ensureDiskPeekModule },
+    projectDisks: { app: "finder", load: ensureSharedProjectDisksIndexModule, command: "open-demo-disks", repaint: "renderDemoDisksPanel" },
+    soundscape: { app: "soundscape", load: ensureSoundscapeModule, command: "open-soundscape" , multiFinder: "Soundscape" , applicationGroup: "create", appLabel: "soundscape_label", appIcon: "soundscape", appIconClass: "tools-icon", appDesc: "app_desc_soundscape" },
+    themeLab: { app: "themeLab", load: ensureThemeLabModule, command: "open-theme-lab" , multiFinder: "Theme Lab" },
+    timeMachine: { app: "timeMachine", load: ensureTimeMachineModule, command: "open-time-machine" , multiFinder: "Time Machine" , applicationGroup: "extras", appLabel: "time_machine_label", appIcon: "timeMachine", appIconClass: "tools-icon", appDesc: "app_desc_time_machine" },
+    todo: { app: "accessories", load: ensureTodoDaModule, command: "open-todo-da" },
+    translationPad: { app: "accessories", load: ensureTranslationPadModule, command: "open-translation-pad" },
+  };
+  // An App Store shell names the apps its bundle leaves out (the GPL games).
+  (window.AISystem6NativeShell?.excludedApps || []).forEach((app) => {
+    for (const name in WINDOWS) if (WINDOWS[name].app === app) delete WINDOWS[name];
+  });
+
+  function windowRecord(name) {
+    return WINDOWS[String(name || "")] || null;
+  }
+
+  // An admitted window repaints itself on the language switch through the render
+  // function its own module installs. The names live here so the list of who has
+  // to repaint is declared beside the window rather than in a chain inside the
+  // status module — and a window that forgets it fails a contract instead of
+  // leaving the old language on screen.
+  function repaintHooks() {
+    return Object.values(WINDOWS).map((row) => row.repaint).filter(Boolean);
+  }
+
+  // Commands that open something already in the table under another name, or a
+  // window whose loader is not an application of its own: one id, one loader,
+  // no second registration to forget.
+  const ALIASES = {
+    "open-dictionary": ensureDictionaryHelpModule,
+    "open-system-help": ensureDictionaryHelpModule,
+    "open-sideask-pad": ensureSideAskPadModule,
+    "open-docmap": ensureDocMapModule,
+    // /go/disks: the folder, opened on its newest disk.
+    "open-demo-disks-latest": ensureSharedProjectDisksIndexModule,
+    // 交给 Clio…: ClioTalk, opened with the Finder's or an editor's document.
+    "hand-to-clio": ensureClioTalkAgentModule,
+  };
+
+  // Every command the table admits: the windows' openers and the aliases that
+  // share another window's loader. The availability map fills from this, so a
+  // lazy command is answerable the moment its row exists. Built once at load,
+  // because the map asks on every menu redraw.
+  const COMMANDS = Object.freeze([...new Set([
+    ...Object.values(WINDOWS).map((row) => row.command),
+    ...Object.keys(ALIASES),
+  ].filter(Boolean))]);
+
+  // The MultiFinder list names an admitted application exactly once; the map in
+  // multi-finder.js spreads this instead of keeping its own copy of the names.
+  //
+  // A row may name either a literal (`multiFinder`, for a name that is the same
+  // in every language — DOOM, OpenTTD) or a translation key (`multiFinderKey`,
+  // for a name that is translated — 明文 / Plaintext). The key is resolved
+  // through t() here, so the app switcher and the menu bar read the same string
+  // the window's own title bar does instead of an English literal.
+  function multiFinderLabels() {
+    const labels = {};
+    Object.values(WINDOWS).forEach((row) => {
+      const label = row.multiFinderKey
+        ? (typeof t === "function" ? t(row.multiFinderKey) : "")
+        : row.multiFinder;
+      if (label && !labels[row.app]) labels[row.app] = label;
+    });
+    return labels;
+  }
+
+  // The Applications folder lists an admitted window once: the row it draws is
+  // built from the same line that opens it, so a window cannot be listed and
+  // not openable, or openable and unlisted.
+  function applicationItems(group) {
+    return Object.values(WINDOWS)
+      .filter((row) => row.applicationGroup === group)
+      .map((row) => ({
+        name: t(row.appLabel),
+        iconId: row.appIcon,
+        ...(row.appIconClass ? { icon: row.appIconClass } : {}),
+        action: row.command || row.appAction,
+        type: "application",
+        kind: t("application"),
+      }));
+  }
+
+  // Command -> app_desc_* key, for the Applications folder's description line.
+  function appDescriptionKeys() {
+    const keys = {};
+    Object.values(WINDOWS).forEach((row) => {
+      if (row.appDesc && row.command) keys[row.command] = row.appDesc;
+    });
+    return keys;
+  }
+
+  function openerEntries() {
+    // Two windows can name the same command (Find File and Find Path are one
+    // searcher), and registerLazyCommand throws on a duplicate id — the registry
+    // is a registry, not a list. One entry per command, first window wins.
+    const byCommand = new Map();
+    Object.entries(WINDOWS).forEach(([windowName, row]) => {
+      if (row.command && !byCommand.has(row.command)) {
+        byCommand.set(row.command, { windowName, command: row.command, load: row.load });
+      }
+    });
+    Object.entries(ALIASES).forEach(([command, load]) => {
+      if (!byCommand.has(command)) byCommand.set(command, { windowName: "", command, load });
+    });
+    return [...byCommand.values()];
+  }
+
+  // Every opener is a lazy command: the first click runs the loader and the
+  // module then registers the real handler (the pattern registerLazyCommand
+  // documents). Called from actions.js, where the runtime exists.
+  function registerOpeners() {
+    openerEntries().forEach(({ command, load }) => {
+      window.AISystem6Runtime?.registerLazyCommand?.(command, { ensure: load });
+    });
+  }
+
+  // The window records the rows with an `api` declare. window-registry.js
+  // merges them into its table; a name declared in both is a contract failure.
+  function windowRecords() {
+    const records = {};
+    Object.entries(WINDOWS).forEach(([name, row]) => {
+      if (!row.api) return;
+      const attach = () => window[row.api]?.attach?.();
+      records[name] = {
+        app: row.app,
+        builtByModule: true,
+        ...(row.width ? { width: row.width } : {}),
+        lazy: { ensure: () => row.load(), attach, ...(row.appearance ? { appearanceAttach: attach } : {}) },
+      };
+    });
+    return records;
+  }
+
+  // Phone roles are per application; `level` 2 lists only the immersive ones.
+  function phoneApps(level = 1) {
+    return Object.values(WINDOWS).filter((row) => row.phone >= level).map((row) => row.app);
+  }
+
+  // Window names carrying a frame flag: "tile" or "grow".
+  function framedWindows(flag) {
+    return Object.keys(WINDOWS).filter((name) => WINDOWS[name][flag]);
+  }
+
+  return Object.freeze({
+    applicationItems,
+    framedWindows,
+    phoneApps,
+    windowRecords,
+    appDescriptionKeys,
+    repaintHooks,
+    commands: COMMANDS,
+    multiFinderLabels,
+    registerOpeners,
+    openerEntries,
+    windowRecord,
+    windows: () => Object.keys(WINDOWS),
+  });
+})();

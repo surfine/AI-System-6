@@ -1,0 +1,1551 @@
+{
+  "version": 1,
+  "note": "One More Take deck. Facts (dates, colours, codenames, taglines, prices, sizes) come from the Mactracker database as public fact (Aaron, 2026-10-31) and are re-checked against first-hand sources before a set ships. Question wording, captions and drawings are our own. Dates are year-month; a look's start is its earliest launch and its end its latest discontinuation across the models that share that appearance.",
+  "looks": {
+    "imacBondi": {
+      "name": {
+        "zh": "iMac（邦迪蓝，托盘光驱）",
+        "en": "iMac (Bondi Blue, tray-loading)"
+      },
+      "short": {
+        "zh": "邦迪蓝 iMac",
+        "en": "Bondi Blue iMac"
+      },
+      "start": "1998-08",
+      "end": "1999-01",
+      "art": "imacG3",
+      "artOptions": {
+        "hex": "#4e9fb0",
+        "edge": "#2f6e7c"
+      },
+      "color": {
+        "name": "Bondi Blue",
+        "hex": "4E9FB0"
+      },
+      "tagline": "Hello. (Again)",
+      "codename": "Columbus, Elroy, Tailgate, C1",
+      "price": "$1,299",
+      "size": "40.1 × 38.6 cm",
+      "source": "iMac"
+    },
+    "imacTangerine": {
+      "name": {
+        "zh": "iMac（橘子色，托盘光驱）",
+        "en": "iMac (Tangerine, tray-loading)"
+      },
+      "short": {
+        "zh": "橘子色 iMac",
+        "en": "Tangerine iMac"
+      },
+      "start": "1999-01",
+      "end": "1999-10",
+      "art": "imacG3",
+      "artOptions": {
+        "hex": "#eca716",
+        "edge": "#a8730c"
+      },
+      "color": {
+        "name": "Tangerine",
+        "hex": "ECA716"
+      },
+      "tagline": "iMac. Collect all five.",
+      "codename": "Life Savers",
+      "price": "$1,199",
+      "size": "40.1 × 38.6 cm",
+      "source": "iMac (5 Flavors)"
+    },
+    "imacGraphite": {
+      "name": {
+        "zh": "iMac（石墨色，吸入式光驱）",
+        "en": "iMac (Graphite, slot-loading)"
+      },
+      "short": {
+        "zh": "石墨色 iMac",
+        "en": "Graphite iMac"
+      },
+      "start": "1999-10",
+      "end": "2001-07",
+      "art": "imacG3",
+      "artOptions": {
+        "hex": "#4e5d73",
+        "edge": "#2c3544",
+        "slot": true,
+        "w": 38.1,
+        "h": 38.1
+      },
+      "color": {
+        "name": "Graphite",
+        "hex": "4E5D73"
+      },
+      "tagline": "iMac. Re-birth announcement.",
+      "codename": "Kihei, P7",
+      "price": "$999",
+      "size": "38.1 × 38.1 cm",
+      "source": "iMac/iMac DV/iMac DV SE (Slot Loading)"
+    },
+    "imacSage": {
+      "name": {
+        "zh": "iMac（鼠尾草绿，2000 年夏季款）",
+        "en": "iMac (Sage, Summer 2000)"
+      },
+      "short": {
+        "zh": "鼠尾草绿 iMac",
+        "en": "Sage iMac"
+      },
+      "start": "2000-07",
+      "end": "2001-02",
+      "art": "imacG3",
+      "artOptions": {
+        "hex": "#6a9f8b",
+        "edge": "#43705f",
+        "slot": true,
+        "w": 38.1,
+        "h": 38.1
+      },
+      "color": {
+        "name": "Sage",
+        "hex": "6A9F8B"
+      },
+      "tagline": "Four friendly models. Five luscious colors.",
+      "codename": null,
+      "price": "$799",
+      "size": "38.1 × 38.1 cm",
+      "source": "iMac/iMac DV/iMac DV+/iMac DV SE (Summer 2000)"
+    },
+    "imacSnow": {
+      "name": {
+        "zh": "iMac（雪白，吸入式光驱）",
+        "en": "iMac (Snow, slot-loading)"
+      },
+      "short": {
+        "zh": "雪白 iMac",
+        "en": "Snow iMac"
+      },
+      "start": "2000-07",
+      "end": "2002-03",
+      "art": "imacG3",
+      "artOptions": {
+        "hex": "#ecf0ee",
+        "edge": "#9aa3a0",
+        "slot": true,
+        "w": 38.1,
+        "h": 38.1
+      },
+      "color": {
+        "name": "Snow",
+        "hex": "ECF0EE"
+      },
+      "tagline": "Four friendly models. Five luscious colors.",
+      "codename": null,
+      "price": "$799",
+      "size": "38.1 × 38.1 cm",
+      "source": "iMac/iMac DV/iMac DV+/iMac DV SE (Summer 2000)"
+    },
+    "imacFlower": {
+      "name": {
+        "zh": "iMac（花朵图案，吸入式光驱）",
+        "en": "iMac (Flower Power, slot-loading)"
+      },
+      "short": {
+        "zh": "花朵 iMac",
+        "en": "Flower Power iMac"
+      },
+      "start": "2001-02",
+      "end": "2001-07",
+      "art": "imacG3",
+      "artOptions": {
+        "pattern": "flower",
+        "edge": "#b85a88",
+        "slot": true,
+        "w": 38.1,
+        "h": 38.1
+      },
+      "color": {
+        "name": "Flower Power",
+        "hex": "FF93C7"
+      },
+      "tagline": "Rip. Mix. Burn.",
+      "codename": null,
+      "price": "$899",
+      "size": "38.1 × 38.1 cm",
+      "source": "iMac (Early 2001)"
+    },
+    "imacG4": {
+      "name": {
+        "zh": "iMac（G4 平板，15 英寸）",
+        "en": "iMac (G4 flat panel, 15-inch)"
+      },
+      "short": {
+        "zh": "G4 平板 iMac",
+        "en": "iMac G4"
+      },
+      "start": "2002-01",
+      "end": "2004-07",
+      "art": "imacG4",
+      "color": {
+        "name": "White",
+        "hex": "FFFFFF"
+      },
+      "tagline": "New iMac. Get affordable and compact high performance, including flat screen, PowerPC G4 and SuperDrive.",
+      "codename": "Tessera, P80",
+      "price": "$1,299",
+      "size": "base 27 cm across",
+      "source": "iMac (Flat Panel)"
+    },
+    "pb100": {
+      "name": {
+        "zh": "Macintosh PowerBook 100",
+        "en": "Macintosh PowerBook 100"
+      },
+      "short": {
+        "zh": "PowerBook 100",
+        "en": "PowerBook 100"
+      },
+      "start": "1991-10",
+      "end": "1992-08",
+      "art": "laptop",
+      "artOptions": {
+        "w": 27.9,
+        "lid": 20,
+        "base": 4.6,
+        "body": "#666a6b",
+        "bezel": "#55595a",
+        "screen": "#b7c0b2",
+        "sw": 19.4,
+        "sh": 12.1,
+        "trackball": true
+      },
+      "color": {
+        "name": "Granite",
+        "hex": "666A6B"
+      },
+      "tagline": "PowerBook. It's the next thing.",
+      "codename": "Elwood, Jake, O'Shanter & Bess, Asahi, Classic, Derringer, Rosebud, and Sapporo",
+      "price": "$2,300",
+      "size": "27.9 × 21.6 cm",
+      "source": "Macintosh PowerBook 100"
+    },
+    "pbG3": {
+      "name": {
+        "zh": "PowerBook G3（黑色）",
+        "en": "PowerBook G3 (black)"
+      },
+      "short": {
+        "zh": "黑色 PowerBook G3",
+        "en": "black PowerBook G3"
+      },
+      "start": "1998-05",
+      "end": "2000-02",
+      "art": "laptop",
+      "artOptions": {
+        "w": 32.3,
+        "lid": 24.5,
+        "base": 4.1,
+        "body": "#26272a",
+        "bezel": "#1c1d1f",
+        "sw": 28.7,
+        "sh": 21.5,
+        "curve": true
+      },
+      "color": {
+        "name": "Black",
+        "hex": null
+      },
+      "tagline": "We rewrote the book.",
+      "codename": "Wallstreet",
+      "price": "$2,299",
+      "size": "32.3 × 26.4 cm",
+      "source": "PowerBook G3 Series"
+    },
+    "ibookBlueberry": {
+      "name": {
+        "zh": "iBook（蓝莓色蛤壳）",
+        "en": "iBook (Blueberry clamshell)"
+      },
+      "short": {
+        "zh": "蓝莓色 iBook",
+        "en": "Blueberry iBook"
+      },
+      "start": "1999-07",
+      "end": "2000-09",
+      "art": "ibookClam",
+      "artOptions": {
+        "hex": "#4494ba",
+        "edge": "#2a6585"
+      },
+      "color": {
+        "name": "Blueberry",
+        "hex": "4494BA"
+      },
+      "tagline": "iMac to Go.",
+      "codename": "P1, Bismol, Lanai",
+      "price": "$1,599",
+      "size": "34.3 × 29.5 cm",
+      "source": "iBook and iBook Special Edition"
+    },
+    "ibookTangerine": {
+      "name": {
+        "zh": "iBook（橘子色蛤壳）",
+        "en": "iBook (Tangerine clamshell)"
+      },
+      "short": {
+        "zh": "橘子色 iBook",
+        "en": "Tangerine iBook"
+      },
+      "start": "1999-07",
+      "end": "2000-09",
+      "art": "ibookClam",
+      "artOptions": {
+        "hex": "#eca716",
+        "edge": "#a8730c"
+      },
+      "color": {
+        "name": "Tangerine",
+        "hex": "ECA716"
+      },
+      "tagline": "iMac to Go.",
+      "codename": "P1, Bismol, Lanai",
+      "price": "$1,599",
+      "size": "34.3 × 29.5 cm",
+      "source": "iBook and iBook Special Edition"
+    },
+    "ibookIndigo": {
+      "name": {
+        "zh": "iBook（靛蓝色蛤壳）",
+        "en": "iBook (Indigo clamshell)"
+      },
+      "short": {
+        "zh": "靛蓝色 iBook",
+        "en": "Indigo iBook"
+      },
+      "start": "2000-09",
+      "end": "2001-05",
+      "art": "ibookClam",
+      "artOptions": {
+        "hex": "#4672b5",
+        "edge": "#2c4c80"
+      },
+      "color": {
+        "name": "Indigo",
+        "hex": "4672B5"
+      },
+      "tagline": "Trilemma.",
+      "codename": "P1.5",
+      "price": "$1,499",
+      "size": "34.3 × 29.5 cm",
+      "source": "iBook and iBook Special Edition (FireWire)"
+    },
+    "ibookWhite": {
+      "name": {
+        "zh": "iBook（半透明白）",
+        "en": "iBook (translucent white)"
+      },
+      "short": {
+        "zh": "白色 iBook",
+        "en": "white iBook"
+      },
+      "start": "2001-05",
+      "end": "2003-04",
+      "art": "ibookWhite",
+      "color": {
+        "name": "Translucent White",
+        "hex": "FFFFFF"
+      },
+      "tagline": "Your Life. To Go.",
+      "codename": "P29",
+      "price": "$1,299",
+      "size": "28.4 × 23.1 cm",
+      "source": "iBook (Dual USB) … iBook (32 VRAM)"
+    },
+    "pbTi": {
+      "name": {
+        "zh": "PowerBook G4（钛金属）",
+        "en": "PowerBook G4 (Titanium)"
+      },
+      "short": {
+        "zh": "钛金属 PowerBook",
+        "en": "Titanium PowerBook"
+      },
+      "start": "2001-01",
+      "end": "2003-09",
+      "art": "laptop",
+      "artOptions": {
+        "w": 34.1,
+        "lid": 23,
+        "base": 2.6,
+        "body": "#a9adb0",
+        "bezel": "#cfd2d4",
+        "sw": 32.8,
+        "sh": 21.9,
+        "thin": true
+      },
+      "color": {
+        "name": "Titanium",
+        "hex": "909598"
+      },
+      "tagline": null,
+      "codename": null,
+      "price": null,
+      "size": "34.1 × 24.1 cm",
+      "source": "PowerBook G4 … PowerBook G4 (1GHz/867MHz)"
+    },
+    "pbAl12": {
+      "name": {
+        "zh": "PowerBook G4（12 英寸铝制）",
+        "en": "PowerBook G4 (12-inch aluminium)"
+      },
+      "short": {
+        "zh": "12 英寸铝制 PowerBook",
+        "en": "12-inch aluminium PowerBook"
+      },
+      "start": "2003-01",
+      "end": "2006-05",
+      "art": "laptop",
+      "artOptions": {
+        "w": 27.7,
+        "lid": 20.5,
+        "base": 3,
+        "body": "#c4c7ca",
+        "bezel": "#2a2b2d",
+        "sw": 24.6,
+        "sh": 18.4
+      },
+      "color": {
+        "name": "Silver",
+        "hex": null
+      },
+      "tagline": "Less is more. More is more.",
+      "codename": "P99, Thresher",
+      "price": "$1,799",
+      "size": "27.7 × 21.9 cm",
+      "source": "PowerBook G4 (12-inch)"
+    },
+    "macbookWhite": {
+      "name": {
+        "zh": "MacBook（白色，13 英寸）",
+        "en": "MacBook (white, 13-inch)"
+      },
+      "short": {
+        "zh": "白色 MacBook",
+        "en": "white MacBook"
+      },
+      "start": "2006-05",
+      "end": "2006-11",
+      "art": "macbookWhite",
+      "color": {
+        "name": "White",
+        "hex": "FFFFFF"
+      },
+      "tagline": "Introducing the superfast, blogging, podcasting, do-everything-out-of-the-box MacBook.",
+      "codename": null,
+      "price": "$1,099",
+      "size": "32.5 × 22.7 cm",
+      "source": "MacBook (13-inch)"
+    }
+  },
+  "sets": [
+    {
+      "id": "take-01",
+      "number": 1,
+      "season": 1,
+      "variant": "pair",
+      "difficulty": 1,
+      "title": {
+        "zh": "iMac G3 那五年",
+        "en": "The iMac G3 Years"
+      },
+      "challenge": {
+        "zh": "从邦迪蓝到花朵，你认得几种糖果色？",
+        "en": "From Bondi Blue to Flower Power: how many flavours do you know?"
+      },
+      "credits": "OMT-004",
+      "tiers": [
+        {
+          "min": 9,
+          "zh": "邦迪蓝原厂色卡本卡",
+          "en": "A walking Bondi Blue colour chart"
+        },
+        {
+          "min": 6,
+          "zh": "资深果粉，糖果色都认得",
+          "en": "A seasoned fan who knows every flavour"
+        },
+        {
+          "min": 0,
+          "zh": "正常，这五年颜色太多了",
+          "en": "Fair enough, five years was a lot of colours"
+        }
+      ],
+      "shots": [
+        {
+          "kind": "pair",
+          "prompt": {
+            "zh": "两台 iMac 各是哪一年上市的？",
+            "en": "Which year did each iMac launch?"
+          },
+          "left": [
+            {
+              "id": "a",
+              "look": "imacBondi"
+            },
+            {
+              "id": "b",
+              "look": "imacTangerine"
+            }
+          ],
+          "right": [
+            {
+              "id": "1998",
+              "text": {
+                "zh": "1998 年",
+                "en": "1998"
+              }
+            },
+            {
+              "id": "1999",
+              "text": {
+                "zh": "1999 年",
+                "en": "1999"
+              }
+            }
+          ],
+          "answer": {
+            "a": "1998",
+            "b": "1999"
+          },
+          "caption": {
+            "zh": "邦迪蓝 iMac 1998 年 8 月上市，五色 iMac 1999 年 1 月接班。",
+            "en": "The Bondi Blue iMac launched in August 1998; the five flavours followed in January 1999."
+          }
+        },
+        {
+          "kind": "pair",
+          "prompt": {
+            "zh": "托盘光驱和吸入式光驱，各从哪个月开始？",
+            "en": "When did the tray and the slot each arrive?"
+          },
+          "left": [
+            {
+              "id": "a",
+              "look": "imacTangerine"
+            },
+            {
+              "id": "b",
+              "look": "imacGraphite"
+            }
+          ],
+          "right": [
+            {
+              "id": "t",
+              "text": {
+                "zh": "1999 年 1 月（托盘）",
+                "en": "January 1999 (tray)"
+              }
+            },
+            {
+              "id": "s",
+              "text": {
+                "zh": "1999 年 10 月（吸入式）",
+                "en": "October 1999 (slot)"
+              }
+            }
+          ],
+          "answer": {
+            "a": "t",
+            "b": "s"
+          },
+          "caption": {
+            "zh": "看光驱口：一条细缝是吸入式，1999 年 10 月起；托盘式只用到那之前。",
+            "en": "Look at the drive: a thin slot means slot-loading, from October 1999; the tray came before it."
+          }
+        },
+        {
+          "kind": "pair",
+          "prompt": {
+            "zh": "把五种颜色和它们的名字连起来。",
+            "en": "Match the five colours to their names."
+          },
+          "left": [
+            {
+              "id": "a",
+              "swatch": "4494BA"
+            },
+            {
+              "id": "b",
+              "swatch": "9E6FA3"
+            },
+            {
+              "id": "c",
+              "swatch": "DD466C"
+            },
+            {
+              "id": "d",
+              "swatch": "ECA716"
+            },
+            {
+              "id": "e",
+              "swatch": "45A94B"
+            }
+          ],
+          "right": [
+            {
+              "id": "blueberry",
+              "text": {
+                "zh": "Blueberry",
+                "en": "Blueberry"
+              }
+            },
+            {
+              "id": "grape",
+              "text": {
+                "zh": "Grape",
+                "en": "Grape"
+              }
+            },
+            {
+              "id": "strawberry",
+              "text": {
+                "zh": "Strawberry",
+                "en": "Strawberry"
+              }
+            },
+            {
+              "id": "tangerine",
+              "text": {
+                "zh": "Tangerine",
+                "en": "Tangerine"
+              }
+            },
+            {
+              "id": "lime",
+              "text": {
+                "zh": "Lime",
+                "en": "Lime"
+              }
+            }
+          ],
+          "answer": {
+            "a": "blueberry",
+            "b": "grape",
+            "c": "strawberry",
+            "d": "tangerine",
+            "e": "lime"
+          },
+          "caption": {
+            "zh": "1999 年 1 月的五色：蓝莓、葡萄、草莓、橘子、青柠。广告词是「iMac. Collect all five.」",
+            "en": "January 1999's five flavours: Blueberry, Grape, Strawberry, Tangerine, Lime. The line was \"iMac. Collect all five.\""
+          }
+        },
+        {
+          "kind": "pair",
+          "prompt": {
+            "zh": "这三句广告词，各是哪一台 iMac 的？",
+            "en": "Which iMac carried each tagline?"
+          },
+          "left": [
+            {
+              "id": "a",
+              "text": {
+                "zh": "Hello. (Again)",
+                "en": "Hello. (Again)"
+              }
+            },
+            {
+              "id": "b",
+              "text": {
+                "zh": "iMac. Collect all five.",
+                "en": "iMac. Collect all five."
+              }
+            },
+            {
+              "id": "c",
+              "text": {
+                "zh": "Rip. Mix. Burn.",
+                "en": "Rip. Mix. Burn."
+              }
+            }
+          ],
+          "right": [
+            {
+              "id": "bondi",
+              "text": {
+                "zh": "邦迪蓝 iMac（1998）",
+                "en": "Bondi Blue iMac (1998)"
+              }
+            },
+            {
+              "id": "five",
+              "text": {
+                "zh": "五色 iMac（1999）",
+                "en": "five-flavour iMac (1999)"
+              }
+            },
+            {
+              "id": "flower",
+              "text": {
+                "zh": "2001 年初的 iMac",
+                "en": "early-2001 iMac"
+              }
+            }
+          ],
+          "answer": {
+            "a": "bondi",
+            "b": "five",
+            "c": "flower"
+          },
+          "caption": {
+            "zh": "「Hello. (Again)」呼应 1984 年 Macintosh 屏幕上的 hello；「Rip. Mix. Burn.」配的是 2001 年加了刻录机的 iMac。",
+            "en": "\"Hello. (Again)\" echoed the 1984 Macintosh's hello; \"Rip. Mix. Burn.\" sold the 2001 iMac with a CD burner."
+          }
+        },
+        {
+          "kind": "pair",
+          "prompt": {
+            "zh": "研发代号配机型。",
+            "en": "Match the codenames to the machines."
+          },
+          "left": [
+            {
+              "id": "a",
+              "text": {
+                "zh": "C1",
+                "en": "C1"
+              }
+            },
+            {
+              "id": "b",
+              "text": {
+                "zh": "Life Savers",
+                "en": "Life Savers"
+              }
+            },
+            {
+              "id": "c",
+              "text": {
+                "zh": "Kihei",
+                "en": "Kihei"
+              }
+            },
+            {
+              "id": "d",
+              "text": {
+                "zh": "Kiva",
+                "en": "Kiva"
+              }
+            }
+          ],
+          "right": [
+            {
+              "id": "bondi",
+              "text": {
+                "zh": "初代 iMac（1998）",
+                "en": "original iMac (1998)"
+              }
+            },
+            {
+              "id": "five",
+              "text": {
+                "zh": "五色 iMac（1999 年 1 月）",
+                "en": "five-flavour iMac (Jan 1999)"
+              }
+            },
+            {
+              "id": "slot",
+              "text": {
+                "zh": "吸入式 iMac（1999 年 10 月）",
+                "en": "slot-loading iMac (Oct 1999)"
+              }
+            },
+            {
+              "id": "s2001",
+              "text": {
+                "zh": "2001 年夏季款 iMac",
+                "en": "Summer 2001 iMac"
+              }
+            }
+          ],
+          "answer": {
+            "a": "bondi",
+            "b": "five",
+            "c": "slot",
+            "d": "s2001"
+          },
+          "caption": {
+            "zh": "Life Savers 是一种五彩水果糖，和五色 iMac 一个意思。",
+            "en": "Life Savers are a five-flavour fruit candy, which is exactly the point."
+          }
+        },
+        {
+          "kind": "pair",
+          "prompt": {
+            "zh": "这三种颜色，各是哪一年第一次出现在 iMac 上？",
+            "en": "Which year did each colour first appear on an iMac?"
+          },
+          "left": [
+            {
+              "id": "a",
+              "look": "imacGraphite"
+            },
+            {
+              "id": "b",
+              "look": "imacSage"
+            },
+            {
+              "id": "c",
+              "look": "imacFlower"
+            }
+          ],
+          "right": [
+            {
+              "id": "1999",
+              "text": {
+                "zh": "1999 年",
+                "en": "1999"
+              }
+            },
+            {
+              "id": "2000",
+              "text": {
+                "zh": "2000 年",
+                "en": "2000"
+              }
+            },
+            {
+              "id": "2001",
+              "text": {
+                "zh": "2001 年",
+                "en": "2001"
+              }
+            }
+          ],
+          "answer": {
+            "a": "1999",
+            "b": "2000",
+            "c": "2001"
+          },
+          "caption": {
+            "zh": "石墨色 1999 年 10 月首次出现，之后一直卖到 2001 年；鼠尾草绿是 2000 年 7 月；花朵是 2001 年 2 月。",
+            "en": "Graphite first appeared in October 1999 and stayed until 2001; Sage arrived in July 2000; Flower Power in February 2001."
+          }
+        },
+        {
+          "kind": "pair",
+          "prompt": {
+            "zh": "三台 iMac 的首发起价。",
+            "en": "The launch starting price of each iMac."
+          },
+          "left": [
+            {
+              "id": "a",
+              "look": "imacBondi"
+            },
+            {
+              "id": "b",
+              "look": "imacTangerine"
+            },
+            {
+              "id": "c",
+              "look": "imacSage"
+            }
+          ],
+          "right": [
+            {
+              "id": "1299",
+              "text": {
+                "zh": "$1,299",
+                "en": "$1,299"
+              }
+            },
+            {
+              "id": "1199",
+              "text": {
+                "zh": "$1,199",
+                "en": "$1,199"
+              }
+            },
+            {
+              "id": "799",
+              "text": {
+                "zh": "$799",
+                "en": "$799"
+              }
+            }
+          ],
+          "answer": {
+            "a": "1299",
+            "b": "1199",
+            "c": "799"
+          },
+          "caption": {
+            "zh": "两年里，入门 iMac 从 1,299 美元降到了 799 美元。",
+            "en": "In two years the entry iMac fell from $1,299 to $799."
+          }
+        },
+        {
+          "kind": "pair",
+          "prompt": {
+            "zh": "型号后缀的意思。",
+            "en": "What the suffixes meant."
+          },
+          "left": [
+            {
+              "id": "a",
+              "text": {
+                "zh": "iMac DV",
+                "en": "iMac DV"
+              }
+            },
+            {
+              "id": "b",
+              "text": {
+                "zh": "iMac DV SE",
+                "en": "iMac DV SE"
+              }
+            }
+          ],
+          "right": [
+            {
+              "id": "dv",
+              "text": {
+                "zh": "Digital Video：有 FireWire，能剪家庭录像",
+                "en": "Digital Video: FireWire for editing home video"
+              }
+            },
+            {
+              "id": "se",
+              "text": {
+                "zh": "Special Edition：特别版",
+                "en": "Special Edition"
+              }
+            }
+          ],
+          "answer": {
+            "a": "dv",
+            "b": "se"
+          },
+          "caption": {
+            "zh": "1999 年 10 月的 iMac DV 带 FireWire 和 iMovie，是第一台主打剪视频的 iMac。",
+            "en": "October 1999's iMac DV shipped with FireWire and iMovie, the first iMac sold on video editing."
+          }
+        },
+        {
+          "kind": "pair",
+          "prompt": {
+            "zh": "三台 iMac 的重量。",
+            "en": "How much each iMac weighed."
+          },
+          "left": [
+            {
+              "id": "a",
+              "look": "imacBondi"
+            },
+            {
+              "id": "b",
+              "look": "imacGraphite"
+            },
+            {
+              "id": "c",
+              "look": "imacG4"
+            }
+          ],
+          "right": [
+            {
+              "id": "18",
+              "text": {
+                "zh": "18.1 公斤",
+                "en": "18.1 kg"
+              }
+            },
+            {
+              "id": "15",
+              "text": {
+                "zh": "15.7 公斤",
+                "en": "15.7 kg"
+              }
+            },
+            {
+              "id": "9",
+              "text": {
+                "zh": "9.7 公斤",
+                "en": "9.7 kg"
+              }
+            }
+          ],
+          "answer": {
+            "a": "18",
+            "b": "15",
+            "c": "9"
+          },
+          "caption": {
+            "zh": "换成液晶屏以后，iMac 一下子轻了将近一半。",
+            "en": "With a flat panel the iMac lost almost half its weight."
+          }
+        },
+        {
+          "kind": "pair",
+          "prompt": {
+            "zh": "导演加试：机身尺寸（高 × 宽）。",
+            "en": "Director's bonus: body size (height × width)."
+          },
+          "left": [
+            {
+              "id": "a",
+              "look": "imacBondi"
+            },
+            {
+              "id": "b",
+              "look": "imacGraphite"
+            }
+          ],
+          "right": [
+            {
+              "id": "big",
+              "text": {
+                "zh": "40.1 × 38.6 厘米",
+                "en": "40.1 × 38.6 cm"
+              }
+            },
+            {
+              "id": "small",
+              "text": {
+                "zh": "38.1 × 38.1 厘米",
+                "en": "38.1 × 38.1 cm"
+              }
+            }
+          ],
+          "answer": {
+            "a": "big",
+            "b": "small"
+          },
+          "caption": {
+            "zh": "吸入式 iMac 重新设计了机身，矮了 2 厘米、窄了半厘米。图上两台是按真实比例画的。",
+            "en": "The slot-loading redesign was 2 cm shorter and half a centimetre narrower. Both are drawn to true scale."
+          }
+        }
+      ]
+    },
+    {
+      "id": "take-05",
+      "number": 5,
+      "season": 1,
+      "variant": "scene",
+      "difficulty": 2,
+      "title": {
+        "zh": "PowerBook 与 iBook",
+        "en": "PowerBook and iBook"
+      },
+      "challenge": {
+        "zh": "十张桌子，十台笔记本，哪一台来早了？",
+        "en": "Ten desks, ten notebooks: which one turned up too early?"
+      },
+      "credits": null,
+      "tiers": [
+        {
+          "min": 9,
+          "zh": "道具组想请你当顾问",
+          "en": "The props team wants you as a consultant"
+        },
+        {
+          "min": 6,
+          "zh": "笔记本没逃过你的眼睛",
+          "en": "No notebook got past you"
+        },
+        {
+          "min": 0,
+          "zh": "正常，这些笔记本长得太像了",
+          "en": "Fair enough, they do look alike"
+        }
+      ],
+      "shots": [
+        {
+          "kind": "scene",
+          "date": "1992-03",
+          "place": {
+            "zh": "律师事务所",
+            "en": "law office"
+          },
+          "tod": {
+            "zh": "日",
+            "en": "day"
+          },
+          "loc": "office",
+          "k": 6.5,
+          "deskY": 440,
+          "props": [
+            {
+              "look": "pb100",
+              "x": 300,
+              "y": 444
+            },
+            {
+              "look": "ibookBlueberry",
+              "x": 660,
+              "y": 444
+            }
+          ],
+          "decor": [
+            {
+              "d": "papers",
+              "x": 870,
+              "y": 444
+            }
+          ],
+          "wrong": "ibookBlueberry",
+          "verdict": "early",
+          "caption": {
+            "zh": "蓝莓色 iBook 1999 年 7 月才有。PowerBook 100 是 1991 年 10 月的，没问题。",
+            "en": "The Blueberry iBook only arrived in July 1999. The PowerBook 100 dates from October 1991."
+          }
+        },
+        {
+          "kind": "scene",
+          "date": "2000-04",
+          "place": {
+            "zh": "大学宿舍",
+            "en": "dorm room"
+          },
+          "tod": {
+            "zh": "夜",
+            "en": "night"
+          },
+          "loc": "dorm",
+          "k": 6.5,
+          "deskY": 440,
+          "props": [
+            {
+              "look": "ibookTangerine",
+              "x": 330,
+              "y": 444
+            },
+            {
+              "look": "macbookWhite",
+              "x": 700,
+              "y": 444
+            }
+          ],
+          "decor": [
+            {
+              "d": "mug",
+              "x": 120,
+              "y": 446,
+              "c": "#2c5d8f"
+            }
+          ],
+          "wall": [
+            {
+              "d": "pinboard",
+              "x": 640,
+              "y": 34,
+              "w": 250,
+              "h": 150
+            }
+          ],
+          "wrong": "macbookWhite",
+          "verdict": "early",
+          "caption": {
+            "zh": "白色 MacBook 要到 2006 年 5 月才有。橘子色 iBook 是 1999 年 7 月的。",
+            "en": "The white MacBook did not exist until May 2006. The Tangerine iBook is from July 1999."
+          }
+        },
+        {
+          "kind": "scene",
+          "date": "1999-04",
+          "place": {
+            "zh": "咖啡馆",
+            "en": "café"
+          },
+          "tod": {
+            "zh": "日",
+            "en": "day"
+          },
+          "loc": "cafe",
+          "k": 6.5,
+          "deskY": 450,
+          "props": [
+            {
+              "look": "pbG3",
+              "x": 330,
+              "y": 454
+            },
+            {
+              "look": "ibookBlueberry",
+              "x": 700,
+              "y": 454
+            }
+          ],
+          "decor": [
+            {
+              "d": "mug",
+              "x": 120,
+              "y": 456,
+              "c": "#f3efe6"
+            }
+          ],
+          "wrong": "ibookBlueberry",
+          "verdict": "early",
+          "caption": {
+            "zh": "iBook 1999 年 7 月才发布，比这场戏晚 3 个月。黑色 PowerBook G3 是 1998 年 5 月的。",
+            "en": "The iBook was announced in July 1999, three months after this scene. The black PowerBook G3 is from May 1998."
+          }
+        },
+        {
+          "kind": "scene",
+          "date": "2001-03",
+          "place": {
+            "zh": "机场候机室",
+            "en": "airport lounge"
+          },
+          "tod": {
+            "zh": "日",
+            "en": "day"
+          },
+          "loc": "lounge",
+          "k": 6.5,
+          "deskY": 450,
+          "props": [
+            {
+              "look": "pbTi",
+              "x": 320,
+              "y": 454
+            },
+            {
+              "look": "ibookWhite",
+              "x": 700,
+              "y": 454
+            }
+          ],
+          "decor": [
+            {
+              "d": "mug",
+              "x": 900,
+              "y": 456,
+              "c": "#ffffff"
+            }
+          ],
+          "wrong": "ibookWhite",
+          "verdict": "early",
+          "caption": {
+            "zh": "白色 iBook 2001 年 5 月才上市。钛金属 PowerBook G4 是 2001 年 1 月的，没问题。",
+            "en": "The white iBook launched in May 2001. The Titanium PowerBook G4 dates from January 2001."
+          }
+        },
+        {
+          "kind": "scene",
+          "date": "2002-06",
+          "place": {
+            "zh": "杂志编辑部",
+            "en": "magazine office"
+          },
+          "tod": {
+            "zh": "日",
+            "en": "day"
+          },
+          "loc": "office",
+          "k": 6,
+          "deskY": 440,
+          "props": [
+            {
+              "look": "ibookTangerine",
+              "x": 170,
+              "y": 444
+            },
+            {
+              "look": "ibookWhite",
+              "x": 470,
+              "y": 444
+            },
+            {
+              "look": "pbTi",
+              "x": 770,
+              "y": 444
+            }
+          ],
+          "decor": [],
+          "wrong": null,
+          "verdict": "clean",
+          "caption": {
+            "zh": "这一镜干净。橘子色 iBook 是 1999 年的旧机器，留在办公室里照用，不算穿帮。",
+            "en": "This take is clean. The Tangerine iBook is a 1999 machine still in use, which is not a goof."
+          }
+        },
+        {
+          "kind": "scene",
+          "date": "2000-06",
+          "place": {
+            "zh": "大学宿舍",
+            "en": "dorm room"
+          },
+          "tod": {
+            "zh": "夜",
+            "en": "night"
+          },
+          "loc": "dorm",
+          "k": 6.5,
+          "deskY": 440,
+          "props": [
+            {
+              "look": "ibookTangerine",
+              "x": 330,
+              "y": 444
+            },
+            {
+              "look": "ibookIndigo",
+              "x": 700,
+              "y": 444
+            }
+          ],
+          "decor": [
+            {
+              "d": "mug",
+              "x": 120,
+              "y": 446,
+              "c": "#7b2d26"
+            }
+          ],
+          "wall": [
+            {
+              "d": "pinboard",
+              "x": 640,
+              "y": 34,
+              "w": 250,
+              "h": 150
+            }
+          ],
+          "wrong": "ibookIndigo",
+          "verdict": "early",
+          "caption": {
+            "zh": "靛蓝色 iBook 2000 年 9 月才出，比这场戏晚 3 个月。同一个蛤壳，颜色不同，日子也不同。",
+            "en": "The Indigo iBook came in September 2000, three months late. Same clamshell, different colour, different date."
+          }
+        },
+        {
+          "kind": "scene",
+          "date": "2002-03",
+          "place": {
+            "zh": "苹果直营店橱窗",
+            "en": "Apple Store window"
+          },
+          "tod": {
+            "zh": "日",
+            "en": "day"
+          },
+          "loc": "store",
+          "k": 5.5,
+          "deskY": 440,
+          "onSale": true,
+          "props": [
+            {
+              "look": "ibookWhite",
+              "x": 200,
+              "y": 444
+            },
+            {
+              "look": "pbTi",
+              "x": 480,
+              "y": 444
+            },
+            {
+              "look": "ibookTangerine",
+              "x": 780,
+              "y": 444
+            }
+          ],
+          "decor": [
+            {
+              "d": "card",
+              "x": 200,
+              "y": 505
+            },
+            {
+              "d": "card",
+              "x": 480,
+              "y": 505
+            },
+            {
+              "d": "card",
+              "x": 780,
+              "y": 505
+            }
+          ],
+          "wrong": "ibookTangerine",
+          "verdict": "offsale",
+          "caption": {
+            "zh": "直营店橱窗只摆在售的。蛤壳 iBook 2000 年 9 月就停售了。白色 iBook 和钛金属 PowerBook 这时都还在卖。",
+            "en": "An Apple Store window shows only what is on sale. The clamshell iBook was discontinued in September 2000; the white iBook and Titanium PowerBook were still selling."
+          }
+        },
+        {
+          "kind": "scene",
+          "date": "2002-10",
+          "place": {
+            "zh": "设计工作室",
+            "en": "design studio"
+          },
+          "tod": {
+            "zh": "日",
+            "en": "day"
+          },
+          "loc": "office",
+          "k": 6.5,
+          "deskY": 440,
+          "props": [
+            {
+              "look": "pbTi",
+              "x": 330,
+              "y": 444
+            },
+            {
+              "look": "pbAl12",
+              "x": 720,
+              "y": 444
+            }
+          ],
+          "decor": [
+            {
+              "d": "papers",
+              "x": 900,
+              "y": 444
+            }
+          ],
+          "wrong": "pbAl12",
+          "verdict": "early",
+          "caption": {
+            "zh": "12 英寸铝制 PowerBook 2003 年 1 月才发布，比这场戏晚 3 个月。",
+            "en": "The 12-inch aluminium PowerBook was announced in January 2003, three months after this scene."
+          }
+        },
+        {
+          "kind": "scene",
+          "date": "2006-09",
+          "place": {
+            "zh": "书房",
+            "en": "study"
+          },
+          "tod": {
+            "zh": "夜",
+            "en": "night"
+          },
+          "loc": "study",
+          "k": 6,
+          "deskY": 440,
+          "props": [
+            {
+              "look": "pb100",
+              "x": 180,
+              "y": 444
+            },
+            {
+              "look": "macbookWhite",
+              "x": 480,
+              "y": 444
+            },
+            {
+              "look": "ibookBlueberry",
+              "x": 790,
+              "y": 444
+            }
+          ],
+          "decor": [],
+          "wrong": null,
+          "verdict": "clean",
+          "caption": {
+            "zh": "这一镜干净。白色 MacBook 2006 年 5 月刚出；PowerBook 100 和蓝莓色 iBook 是收藏的旧机器。",
+            "en": "This take is clean. The white MacBook was new in May 2006; the PowerBook 100 and Blueberry iBook are old machines kept on the shelf."
+          }
+        },
+        {
+          "kind": "scene",
+          "date": "1998-02",
+          "place": {
+            "zh": "报社夜班",
+            "en": "newspaper night desk"
+          },
+          "tod": {
+            "zh": "夜",
+            "en": "night"
+          },
+          "loc": "study",
+          "k": 6.5,
+          "deskY": 440,
+          "props": [
+            {
+              "look": "pb100",
+              "x": 300,
+              "y": 444
+            },
+            {
+              "look": "pbG3",
+              "x": 680,
+              "y": 444
+            }
+          ],
+          "decor": [
+            {
+              "d": "lamp",
+              "x": 900,
+              "y": 440
+            }
+          ],
+          "wrong": "pbG3",
+          "verdict": "early",
+          "caption": {
+            "zh": "导演加试：黑色 PowerBook G3 1998 年 5 月才发布，比这场戏晚 3 个月。",
+            "en": "Director's bonus: the black PowerBook G3 was announced in May 1998, three months after this scene."
+          }
+        }
+      ]
+    }
+  ],
+  "anniversaries": [
+    {
+      "month": 1,
+      "day": 24,
+      "title": {
+        "zh": "Macintosh 发布纪念日",
+        "en": "Macintosh anniversary"
+      }
+    },
+    {
+      "month": 2,
+      "day": 29,
+      "leap": true,
+      "title": {
+        "zh": "闰日特别套：四年才拍一次",
+        "en": "Leap-day special: shot once every four years"
+      }
+    },
+    {
+      "month": 4,
+      "day": 1,
+      "title": {
+        "zh": "Apple 成立纪念日",
+        "en": "Apple founding day"
+      }
+    },
+    {
+      "month": 6,
+      "day": 29,
+      "title": {
+        "zh": "iPhone 开卖纪念日",
+        "en": "iPhone launch day"
+      }
+    },
+    {
+      "month": 10,
+      "day": 23,
+      "title": {
+        "zh": "iPod 发布纪念日",
+        "en": "iPod anniversary"
+      }
+    },
+    {
+      "month": 6,
+      "weekday": 1,
+      "nth": 2,
+      "title": {
+        "zh": "WWDC 主题演讲日",
+        "en": "WWDC keynote day"
+      }
+    }
+  ]
+}

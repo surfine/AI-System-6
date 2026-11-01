@@ -1,0 +1,38 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "strict": false,
+    "noImplicitAny": false,
+    "noUnusedLocals": false,
+    "skipLibCheck": true,
+    "types": []
+  },
+  "include": [
+    "core/state-stores.js",
+    "core/state-stores.d.ts",
+    "core/document-revisions.js",
+    "core/desktop-maintenance.js",
+    "core/model-roles.js",
+    "core/project-disk-backup.js",
+    "core/persistence-scan-shadow.js",
+    "core/adjustment-layers.js",
+    "core/protected-ranges.js",
+    "core/text-compose.js",
+    "core/grain-diff.js",
+    "core/quick-draft-workspace.js",
+    "data/draft-desk-presets.js",
+    "features/draft-desk.js",
+    "features/quick-draft-intake.js",
+    "features/quick-draft-editor.js",
+    "features/quick-draft-composition.js",
+    "features/lightroom-develop.js",
+    "features/quick-draft-ai.js",
+    "features/quick-draft-tracks.js",
+    "features/quick-draft-handoff.js",
+    "draft-desk-globals.d.ts"
+  ]
+}

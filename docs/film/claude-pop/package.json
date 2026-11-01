@@ -1,0 +1,18 @@
+{
+  "name": "ai-system-6-claude-pop-video",
+  "version": "1.0.0",
+  "description": "A code-rendered Claude-Pop music video for AI System 6.",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "render": "node render.mjs video",
+    "check": "node render.mjs check"
+  },
+  "devDependencies": {
+    "puppeteer-core": "^25.12.0"
+  },
+  "dependencies": {
+    "three": "0.186.1"
+  }
+}

@@ -1,0 +1,657 @@
+// Window registry — the one place a window says what it is.
+//
+// A window used to be declared in eight places: an app-id map, a width table, a
+// narrow-screen exclusion set, a lazy-module map, a chain of `if (name === …)`
+// render hooks, the hideSidebars list, the runtime manifest, and its own markup.
+// Four of those only announced a missing entry as a test failure, which is a
+// gate compensating for the absence of a declaration. This is the declaration.
+//
+// The authority is here, in the product. The tooling contract
+// (tooling/interface-guidelines-contract.mjs) carries the *design* facets —
+// interface role, status layout, document model — which the browser never reads
+// and which would only cost boot bytes; a gate holds the two key sets equal, so
+// neither file can quietly grow a window the other has never heard of.
+//
+// Two hook phases, and the difference is load-bearing. `onOpen` runs while the
+// window is still hidden; `onReveal` runs after
+// `classList.remove("is-hidden")`, which is the only point where a window can
+// be measured. The old chain hid that seam in the middle of a list of ifs, and
+// a hook on the wrong side of it fails in a way that looks like a layout bug.
+//
+// Values, not behaviour, wherever possible. `width` is a token name and a
+// fallback rather than a resolved number, so it is read after the stylesheet
+// exists instead of at boot. `lazy` and the hooks stay as arrow functions
+// because a bare reference to a lazily loaded function resolves at boot and
+// throws; the arrow defers it.
+//
+// Contract: tests/features/window-registry.test.mjs
+
+const windowRegistry = Object.freeze({
+  // About is an ordinary window built on demand (app/features/about-desk.js):
+  // the instrument, the film, the chapters and the first-time doors.
+  about: {
+    builtByModule: true,
+    app: "system",
+    onOpen: () => window.AISystem6About?.render?.(),
+    lazy: { ensure: () => ensureAboutModule() },
+  },
+  // About This Mac (关于本机) is an ordinary window built on demand
+  // (app/features/about-this-mac.js): the agent-era facts the Apple menu's
+  // first row opens, read only.
+  aboutThisMac: {
+    builtByModule: true,
+    app: "system",
+    onOpen: () => window.AISystem6AboutThisMac?.render?.(),
+    // The facts read per opening, and onOpen still sees the hidden window —
+    // the reveal is where a read begins.
+    onReveal: () => window.AISystem6AboutThisMac?.reveal?.(),
+    lazy: { ensure: () => ensureAboutThisMacModule() },
+  },
+  alarmClock: {
+    app: "accessories",
+    mobileOverlay: true,
+    sidebar: true,
+    lazy: { ensure: () => ensureAlarmClockModule() },
+  },
+  applications: {
+    app: "finder",
+    sidebar: true,
+    onOpen: () => renderStaticFinderWindow("applications"),
+  },
+  assistant: {
+    app: "clioTalk",
+    lazy: { ensure: () => ensureClioTalkShellModule() },
+  },
+  bureaucracyMeme: {
+    builtByModule: true,
+    app: "bureaucracyMeme",
+    onOpen: () => { if (typeof renderBureaucracyMemeGenerator === "function") renderBureaucracyMemeGenerator(); },
+    lazy: { ensure: () => ensureBureaucracyMemeModule() },
+  },
+  calculator: {
+    app: "accessories",
+    width: 208,
+    mobileOverlay: true,
+    sidebar: true,
+    // Verified for WM4: no editor, iframe, video or running canvas, so the
+    // collapsed shade may temporarily reveal this window's own DOM read-only.
+    preview: "same-dom-readonly",
+  },
+  chatFile: {
+    app: "teachText",
+    sidebar: true,
+  },
+  chooser: {
+    app: "accessories",
+    mobileOverlay: true,
+    sidebar: true,
+    lazy: { ensure: () => ensureMcpServersModule().then(() => window.AISystem6ChooserBook.ready()) },
+    onOpen: () => window.AISystem6ChooserBook?.bind?.(),
+  },
+  claimCheck: {
+    app: "teachText",
+    opensAs: "reviewDesk",
+    onOpen: () => renderPipeline(),
+  },
+  clioChart: {
+    app: "clioChart",
+    lazy: {
+    ensure: () => ensureClioChartModule(),
+    attach: () => window.AISystem6ClioChart?.attach?.(),
+  },
+  },
+  clioProject: {
+    app: "clioProject",
+    builtByModule: true,
+    width: 760,
+    lazy: {
+      ensure: () => ensureClioProjectModule(),
+      attach: () => window.AISystem6ClioProjectWindow?.attach?.(),
+    },
+    onOpen: () => window.AISystem6ClioProjectWindow?.render?.(),
+  },
+  clioStage: {
+    app: "clioStage",
+    lazy: {
+    ensure: () => ensureClioStageModule(),
+    attach: () => window.AISystem6ClioStage?.attach?.(),
+  },
+  },
+  clipboard: {
+    app: "accessories",
+    width: ["--da-width-pad", 340],
+    mobileOverlay: true,
+    sidebar: true,
+    // Read-only by nature; verified safe for the WM4 glance preview.
+    preview: "same-dom-readonly",
+  },
+  cmfStudio: {
+    app: "cmfStudio",
+    width: 1080,
+    sidebar: true,
+    onOpen: () => { if (typeof renderCmfStudio === "function") renderCmfStudio(); },
+    lazy: { ensure: () => ensureCmfStudioModule() },
+  },
+  contextPanel: {
+    app: "clioTalk",
+    sidebar: true,
+    onReveal: () => document.body.classList.add("has-context-panel-open"),
+  },
+  control: {
+    app: "accessories",
+    mobileOverlay: true,
+    sidebar: true,
+    onOpen: ({ wasAlreadyOpen }) => { refreshControlPanelModels(); if (!wasAlreadyOpen && typeof setControlTab === "function") setControlTab(); },
+  },
+  dictation: {
+    app: "accessories",
+    mobileOverlay: true,
+    onOpen: () => { if (typeof refreshDictationDestination === "function") refreshDictationDestination(); },
+    lazy: { ensure: () => ensureDictationPadModule() },
+  },
+  dictionary: {
+    app: "accessories",
+    width: ["--da-width-wide-pad", 380],
+    mobileOverlay: true,
+    sidebar: true,
+    preview: "same-dom-readonly",
+    onOpen: () => renderDictionaryResult(),
+    lazy: {
+    ensure: async () => {
+      await ensureSystemDictionaryData();
+      await ensureDictionaryHelpModule();
+    },
+    // The writer's own word list is drawn on the way in. `typeof` and not
+    // `?.()`: an undefined identifier is a ReferenceError, which the optional
+    // call does not catch.
+    attach: () => {
+      if (typeof renderDictionaryWords === "function") renderDictionaryWords();
+    },
+  },
+  },
+  disk: {
+    app: "finder",
+    sidebar: true,
+    onOpen: () => renderStaticFinderWindow("disk"),
+  },
+  docMap: {
+    app: "docMap",
+    sidebar: true,
+    // Multi-instance (§3.1, shape (V)): the second window is a READ-ONLY view
+    // of the same map, built by the kind's own lazy module. The concentrated
+    // table in lazy window-instances.js names the same kind; the contract holds
+    // the two layers equal.
+    instances: "multi",
+    instanceModule: "app/features/docmap-instances.js",
+    // This hook renders the MAIN instance — renderDocMap writes the main
+    // window's tree. A second view is already built by its builder, so opening
+    // one must not re-render the main map underneath it.
+    onOpen: ({ win } = {}) => {
+      if (win?.dataset?.windowInstance) return;
+      if (window.AISystem6DocMapLoaded) renderDocMap();
+    },
+  },
+  documents: {
+    app: "finder",
+    sidebar: true,
+  },
+  endfieldTerminal: {
+    app: "endfield",
+    sidebar: true,
+    onOpen: () => window.AISystem6EndfieldTerminal?.attach?.(),
+    lazy: {
+    ensure: () => ensureEndfieldTerminalModule(),
+    attach: () => window.AISystem6EndfieldTerminal?.attach?.(),
+  },
+  },
+  fileInfo: {
+    app: "finder",
+  },
+  findChange: {
+    app: "accessories",
+    lazy: { ensure: () => ensureFindChangeModule() },
+  },
+  findFile: {
+    app: "accessories",
+    width: 520,
+    mobileOverlay: true,
+    sidebar: true,
+    lazy: {
+      ensure: () => ensureDeskFindModule(),
+      attach: () => {
+        runFindFileSearch();
+      },
+    },
+  },
+  findPath: {
+    app: "searcher",
+    sidebar: true,
+    onReveal: () => document.body.classList.add("has-find-path-open"),
+    lazy: {
+    ensure: () => ensureFindPathModule(),
+    attach: () => renderFindPathResults(),
+  },
+  },
+  finder: {
+    app: "finder",
+    sidebar: true,
+    onOpen: () => renderFinder(),
+  },
+  finishingReceipt: {
+    builtByModule: true,
+    app: "finder",
+    lazy: {
+    ensure: () => ensureProjectCdPrintModule(),
+    attach: () => window.attachFinishingReceipt?.(),
+  },
+  },
+  helpFolder: {
+    app: "finder",
+    sidebar: true,
+    onOpen: () => renderStaticFinderWindow("helpFolder"),
+  },
+  imageManager: {
+    app: "teachText",
+    sidebar: true,
+    onOpen: () => renderTeachTextImageAttachments(),
+  },
+  imagePromptStudio: {
+    app: "imagePromptStudio",
+    builtByModule: true,
+    lazy: {
+    ensure: () => ensureImagePromptStudioModule(),
+    attach: () => window.AISystem6ImagePromptStudio?.render?.(),
+    appearanceAttach: () => window.AISystem6ImagePromptStudio?.render?.(),
+  },
+  },
+  importUtility: {
+    app: "finder",
+    onOpen: () => renderImportPreview(),
+  },
+  keyCaps: {
+    app: "accessories",
+    width: 380,
+    mobileOverlay: true,
+    sidebar: true,
+    preview: "same-dom-readonly",
+  },
+  // 文字亮室 is its own application, task and all. Finder mode is single-task,
+  // so the darkroom and the draft cannot share the screen there; seeing the
+  // grain beside the sentence is a MultiFinder arrangement. That is the cost of
+  // a real second application, and it was chosen with the cost known.
+  lightroom: {
+    app: "lightroom",
+    builtByModule: true,
+    // The window frame comes from the Quick Draft bundle that also renders it,
+    // so a restore or an Appearance probe can raise the frame through the shared
+    // boundary; openWindow's own branch still calls openLightroom to fill it.
+    lazy: { ensure: () => ensureQuickDraftModule() },
+  },
+  liquidCover: {
+    app: "liquidCover",
+    builtByModule: true,
+    // Cover Glass builds its own window, so loading the module is not the same
+    // as having a window: installLiquidCoverWindow() is what puts one on the
+    // desk. openWindow reaches that through AISystem6LiquidCover.open(), but a
+    // caller holding only the registry -- appearance verification is the one
+    // that does -- had no way in, and reported the window as never mounting.
+    lazy: {
+      ensure: () => ensureLiquidCoverModule(),
+      appearanceAttach: () => installLiquidCoverWindow(),
+    },
+  },
+  memoryCards: {
+    app: "accessories",
+    width: 520,
+    mobileOverlay: true,
+    sidebar: true,
+    onOpen: () => { if (!memoryCardsHasGame()) newMemoryCardsGame(); renderMemoryCards(); },
+    lazy: { ensure: () => ensureMemoryCardsModule() },
+  },
+  notePad: {
+    app: "accessories",
+    width: ["--da-width-pad", 340],
+    mobileOverlay: true,
+    sidebar: true,
+    // A plain textarea, no iframe/media; verified for the WM4 glance.
+    preview: "same-dom-readonly",
+    // Note Pad's pages are notes in Stickies now and its command opens
+    // Stickies at Notes; this window is only reachable from a saved session
+    // until its markup retires (it is still the eager DA several contracts use).
+    onOpen: () => renderNotePadPage(),
+  },
+  notificationCenter: {
+    app: "accessories",
+    width: 360,
+    mobileOverlay: true,
+    sidebar: true,
+    onOpen: () => renderNotificationCenter(),
+  },
+  // The original film, watched where a desktop watches things: in a window of
+  // its own, centered on the work area, rather than in a slab inside the quiz's
+  // own pane. It is the same application (one MultiFinder entry, one lifecycle,
+  // one lazy module) and a second window.
+  oneMoreTuneFilm: {
+    app: "oneMoreTune",
+    builtByModule: true,
+    centered: true,
+    // Load, then build — the same shape the SideAsk pad uses, and for the same
+    // reason: a module that is only loaded leaves a registered window nobody
+    // ever built. The width is the stylesheet's (880px there), not a second
+    // copy of the number here.
+    lazy: {
+      ensure: async () => {
+        await ensureOneMoreTuneModule();
+        window.AISystem6OneMoreTune?.installFilmWindow?.();
+      },
+    },
+  },
+  outline: {
+    app: "teachText",
+    onOpen: () => renderPipeline(),
+    lazy: { ensure: () => ensureWritingFlowModule() },
+  },
+  pageSetup: {
+    app: "finder",
+  },
+  printDirectory: {
+    app: "finder",
+  },
+  projectCd: {
+    app: "finder",
+    onOpen: () => renderProjectCd(),
+  },
+  // A Finder folder on the Startup Disk, so the page is ordinary markup and this
+  // record names only the draw and the list's loader. The ensure runs before
+  // onOpen: the folder is never drawn with a count it will contradict later.
+  projectDisks: {
+    app: "finder",
+    sidebar: true,
+    onOpen: () => renderStaticFinderWindow("projectDisks"),
+    lazy: {
+      ensure: () => ensureSharedProjectDisksIndexModule(),
+    },
+  },
+  projectInfo: {
+    app: "finder",
+  },
+  // Looking inside a demonstration disk before copying it. A desk accessory, so
+  // in single-tasking Finder mode it floats over the folder it was opened from
+  // instead of replacing it; the arrows walk that folder while it reads.
+  diskPeek: {
+    builtByModule: true,
+    app: "accessories",
+    mobileOverlay: true,
+    lazy: {
+      ensure: () => ensureDiskPeekModule(),
+      attach: () => window.AISystem6DiskPeek?.attach?.(),
+    },
+  },
+  projectPeek: {
+    builtByModule: true,
+    app: "accessories",
+    width: 420,
+    mobileOverlay: true,
+    sidebar: true,
+    lazy: {
+      ensure: () => ensureProjectPeekModule(),
+      attach: () => {
+        if (typeof mountProjectPeekRuntime === "function") mountProjectPeekRuntime();
+      },
+    },
+    onOpen: () => {
+      if (typeof mountProjectPeekRuntime === "function") mountProjectPeekRuntime();
+    },
+  },
+  projects: {
+    app: "finder",
+    sidebar: true,
+    onOpen: () => renderProjectDisks(),
+  },
+  puzzle: {
+    app: "accessories",
+    width: 188,
+    mobileOverlay: true,
+    sidebar: true,
+    onOpen: () => newPuzzleGame({ announce: false }),
+  },
+  questionSheet: {
+    app: "teachText",
+    onOpen: () => renderPipeline(),
+    lazy: { ensure: () => ensureWritingFlowModule() },
+  },
+  quickDraft: {
+    app: "quickDraft",
+  },
+  reader: {
+    app: "reader",
+    sidebar: true,
+    // Multi-instance (§9C): Reader is the first kind that may open a second
+    // window — a read-only view of the same document. The concentrated table
+    // in lazy window-instances.js names the same kind; the contract holds the
+    // two layers equal.
+    instances: "multi",
+    instanceModule: "app/features/reader-instances.js",
+    // onReveal, not onOpen: the rail's axis is a container query answer, and a
+    // hidden container has no size to answer with.
+    onReveal: () => readerOnReveal(),
+  },
+  rebuildFlow: {
+    app: "teachText",
+    // Built by app/features/rebuild-flow.js, which loads with Writing Flow.
+    builtByModule: true,
+    onOpen: () => renderRebuildFlow(),
+    lazy: { ensure: () => ensureWritingFlowModule() },
+  },
+  reviewDesk: {
+    app: "teachText",
+    onOpen: () => { renderPipeline(); renderStyleCheckSections(); renderClaimCheckSections(); },
+  },
+  saveChat: {
+    app: "clioTalk",
+    mobileOverlay: true,
+    onReveal: () => placeSaveChatWindow(),
+  },
+  scrapbook: {
+    app: "scrapbook",
+    sidebar: true,
+  },
+  sectionDrafts: {
+    app: "teachText",
+    onOpen: () => renderPipeline(),
+    lazy: { ensure: () => ensureWritingFlowModule() },
+  },
+  sideAskPad: {
+    app: "accessories",
+    mobileOverlay: true,
+    builtByModule: true,
+    // Load, then build. The pad builds its own window, and while the module was
+    // eager the ensure could call straight into it; lazily, a loader that only
+    // loads leaves the desk with a registered window nobody ever built.
+    lazy: {
+      ensure: async () => {
+        await ensureSideAskPadModule();
+        if (typeof sideAskPad === "function") sideAskPad();
+      },
+    },
+  },
+  soundscape: {
+    app: "soundscape",
+    sidebar: true,
+    lazy: {
+    ensure: () => ensureSoundscapeModule(),
+    attach: () => window.AISystem6Soundscape?.attach?.(),
+  },
+  },
+  styleSheet: {
+    app: "teachText",
+    opensAs: "reviewDesk",
+    onOpen: () => { renderStyleCheckSections(); renderClaimCheckSections(); },
+  },
+  systemHelp: {
+    app: "system",
+    onOpen: () => renderSystemHelp(),
+    lazy: {
+    ensure: async () => {
+      await ensureSystemDictionaryData();
+      await ensureDictionaryHelpModule();
+    },
+  },
+  },
+  systemStatus: {
+    app: "accessories",
+    width: 430,
+    mobileOverlay: true,
+    sidebar: true,
+    preview: "same-dom-readonly",
+    onOpen: () => renderSystemStatus(),
+  },
+  teachText: {
+    app: "teachText",
+    onOpen: () => { updateTeachTextBoundaries(); updateTeachTextTranslateButton(); updateTeachTextBilingualExportButton(); },
+  },
+  textDisk: {
+    app: "finder",
+    sidebar: true,
+  },
+  themeLab: {
+    app: "themeLab",
+    builtByModule: true,
+    lazy: {
+    ensure: () => ensureThemeLabModule(),
+    attach: () => window.AISystem6ThemeLab?.restore?.(),
+  },
+  },
+  timeMachine: {
+    app: "timeMachine",
+    // Multi-instance (§3.1, shape (V)): the second window is a READ-ONLY view of
+    // the same history, built by the kind's own lazy module. Unlike docMap there
+    // is no hook to guard: `lazy.attach` runs only when the main instance is not
+    // on the desk (window-manager's loadLazyWindowModule), and the mount below
+    // is a one-time wire-up whose element reads are all null-safe.
+    instances: "multi",
+    instanceModule: "app/features/time-machine-instances.js",
+    lazy: {
+    ensure: () => ensureTimeMachineModule(),
+    attach: () => window.AISystem6TimeMachine?.attach?.(),
+  },
+  },
+  todo: {
+    builtByModule: true,
+    app: "accessories",
+    width: ["--da-width-pad", 340],
+    mobileOverlay: true,
+    sidebar: true,
+    preview: "same-dom-readonly",
+    lazy: {
+      ensure: () => ensureTodoDaModule(),
+      attach: () => window.AISystem6Stickies?.attach?.(),
+      appearanceAttach: () => window.AISystem6Stickies?.attach?.(),
+    },
+    onOpen: () => window.AISystem6Stickies?.render?.(),
+  },
+  translationPad: {
+    app: "accessories",
+    mobileOverlay: true,
+    lazy: { ensure: () => ensureTranslationPadModule() },
+  },
+  trash: {
+    app: "finder",
+    sidebar: true,
+  },
+  writingBell: {
+    app: "accessories",
+    width: ["--da-width-dial", 300],
+    mobileOverlay: true,
+    sidebar: true,
+    onOpen: () => renderWritingBell(),
+  },
+  // Windows declared whole in the admission table (the rows with an `api`):
+  // the games and the labs whose record is only "built by my module, ensured
+  // by my loader, attached by my global". See app/core/app-admissions.js.
+  ...window.AISystem6Admissions.windowRecords(),
+});
+
+// A window that merged into another keeps its old name only as a way in: a
+// saved Working Session, an old command or a stale link still names it, and it
+// opens the window that took over. Nothing else knows the old name.
+//   rag (Insert File Floppy)  -> textDisk (File Floppy: insert on top, contents below)
+//   modelMeter                -> systemStatus (a section of it)
+//   controlStripModules       -> control (the Control Strip tab)
+const retiredWindowNames = Object.freeze({
+  rag: "textDisk",
+  modelMeter: "systemStatus",
+  controlStripModules: "control",
+});
+
+function currentWindowName(name) {
+  return retiredWindowNames[name] || name;
+}
+
+function getWindowRecord(name) {
+  return windowRegistry[String(name || "")] || null;
+}
+
+// Every window belongs to an application. A name the registry has never heard
+// of used to fall through to "finder", which is a plausible wrong answer — the
+// worst kind. It still falls back, because a dialog opened before its record
+// exists must not take the desk down, but the gate makes the fallback unused.
+function registeredWindowAppId(name) {
+  return getWindowRecord(name)?.app || "finder";
+}
+
+function registeredWindowWidth(name) {
+  const width = getWindowRecord(name)?.width;
+  if (typeof width === "number") return width;
+  if (Array.isArray(width)) return readPixelToken(width[0], width[1]);
+  return null;
+}
+
+function isMobileOverlayWindow(name) {
+  return getWindowRecord(name)?.mobileOverlay === true;
+}
+
+// A centered window sits in the middle of the work area instead of taking a
+// cascade slot: About, and the film One More Tune opens. It is a property of the
+// window, so it is declared here with the rest of them rather than kept as a
+// second list inside the manager.
+function isCenteredWindow(name) {
+  return getWindowRecord(name)?.centered === true;
+}
+
+function sidebarWindowNames() {
+  return Object.keys(windowRegistry).filter((name) => windowRegistry[name].sidebar === true);
+}
+
+// WM4 peek capability. Default is "metadata": a collapsed window may only be
+// described by its title and icon. "same-dom-readonly" is the explicit,
+// reviewed upgrade for windows whose collapsed body is safe to show read-only
+// (no editor sizing to preserve, no password field, no cross-origin iframe, no
+// running WebGL/video). "none" never previews. window-manager.canPeekWindow
+// reads this, so the display adapter and the geometry gate cannot disagree.
+const sameDomReadonlyPreviewNames = new Set([
+  "calculator", "keyCaps", "systemStatus", "clipboard", "dictionary",
+  "notePad", "todo",
+]);
+
+function windowPreviewCapability(name) {
+  const record = getWindowRecord(name);
+  if (record?.preview) return record.preview;
+  return sameDomReadonlyPreviewNames.has(String(name || "")) ? "same-dom-readonly" : "metadata";
+}
+
+function lazyWindowRecord(name) {
+  return getWindowRecord(name)?.lazy || null;
+}
+
+// One call site per phase, so the order of hooks is the order of the registry
+// rather than the order somebody happened to add an `if` to a 5,000-line file.
+function runWindowHook(name, phase, context = {}) {
+  const hook = getWindowRecord(name)?.[phase];
+  if (typeof hook !== "function") return;
+  try {
+    hook(context);
+  } catch (error) {
+    console.warn(`Window hook failed: ${name}.${phase}`, error);
+  }
+}

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 32 32" fill="none" stroke="#000000" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" shape-rendering="geometricPrecision">
+  <style>
+    .classic-ink{fill:#000000;stroke:#000000;stroke-width:.25}
+    .classic-paper{fill:#ffffff;stroke:none}
+    .sys-icon-detail{display:none}
+  </style>
+  <g transform="translate(16 16) scale(1.1) translate(-16 -16)">
+    <circle cx="16" cy="15" r="11" />
+    <circle cx="16" cy="15" r="3" />
+    <path d="M13 25h8v4h-8z" />
+    <path d="M11 22h10v7H11zM14 27h4" />
+  </g>
+</svg>
