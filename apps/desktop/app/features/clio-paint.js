@@ -685,10 +685,6 @@ function clioPaintDoubleClickTool(tool) {
 
 // --- Document --------------------------------------------------------------
 
-function clioPaintCreateDocument(width, height) {
-  return { width, height, bits: new Uint8Array(Math.ceil((width * height) / 8)) };
-}
-
 
 function clioPaintGetBit(doc, x, y) {
   if (x < 0 || y < 0 || x >= doc.width || y >= doc.height) return 0;
@@ -1842,12 +1838,6 @@ function clioPaintShowDragSize(width, height) {
 // takes it back as though it had never been lifted. While it is dragged it
 // snaps to the page edges and centre and to the content of the other layers;
 // holding Option during the drag turns the snapping off.
-
-function clioPaintSelectionRect() {
-  const selection = clioPaintState.selection;
-  if (!selection) return null;
-  return { x: selection.x, y: selection.y, w: selection.w, h: selection.h };
-}
 
 function clioPaintPointInSelection(point) {
   const selection = clioPaintState.selection;

@@ -279,7 +279,10 @@
 
 .about-doors {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  /* Four doors read as a 2×2 shelf: the first face is 680px wide, and a
+     fourth column would squeeze the era grid and the line field into
+     crumbs. Two rows keep every door as wide as it was at three. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 

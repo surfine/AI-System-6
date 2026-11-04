@@ -10,6 +10,13 @@ The repository only has two historical tags, `pre-refactor-baseline` and
 `src-pilot`, so entries are grouped by dated product phases rather than
 invented release tags.
 
+## Public Beta 2.0.0-beta.2 - 2026-11-04
+
+- **First time here offers a finished disk.** The first-visit face of About gains a fourth door beside pick a Mac, write one line and the film: read a finished disk opens the demonstration shelf on its newest piece, read-only, and Open a Copy imports it as the visitor's own project, stopping on the manuscript the way `/go/<disk>` links do. A brand-new visitor now reaches a finished piece in one click and owns a copy in two, with no model connected.
+- **The AI's discipline has a public page.** The product site gains its first reading face under the site editorial register, "What the AI here won't do" (`aisystem6.aaronlau.me/discipline/`), stating five enforced rules with the repository source behind each: no faked thinking (assistant-activity), a receipt for every model run with no credentials and no chain of thought (run-receipts and the Memory Inspector), nothing into the manuscript unaccepted with AI-mouthpiece drift checked on the Review Desk, ask-before-write with rewindable checkpoints in ClioWork and ClioCode, and your machine or the model you name, with the writing route completable without one. The README carries the same list in both languages.
+- **The README front door moves.** A captured theme-switching loop joins "One desk. Twelve systems.", and the floppy-budget claim-check now points at `site/data/floppy-budget.json` as the only source of the measured number instead of freezing one build's bytes in a comment.
+- **Bonsai City's panes render again.** The city report, the January budget pane, the tile balloon and the OSM place list had arrived as escaped text since the html tagged-template hardening began escaping unmarked interpolations; the three owned-markup call sites now pass through `html.raw`.
+
 ## Public Beta 2.0.0-beta.1 - 2026-11-01
 
 - **ClioTalk, with ClioWork and ClioCode beside it.** The name stays ClioTalk in 2.0. **ClioWork** is a document studio you enter from ClioTalk's left column: it lists the Office documents in the project, newest first, lets you pick up to three, and gives ClioTalk a job on them, with suggestions to start from. The running job shows as a card, and the result opens beside ClioTalk with its pending revisions. **ClioCode** works on a code folder you grant. **SideAsk** stays as it was.

@@ -491,12 +491,12 @@ window.AISystem6BonsaiCityLoaded = true;
     win.className = "window bonsai-window is-hidden";
     win.setAttribute("data-window", "bonsaiCity");
     win.setAttribute("aria-labelledby", "bonsai-city-title");
-    win.innerHTML = `
+    win.innerHTML = html`
       <div class="title-bar">
-        <button class="close-box" type="button" aria-label="${t("close")}" data-i18n-aria-label="close"></button>
-        <h2 id="bonsai-city-title">${t("bonsai_city_title")}</h2>
-        <button class="resize-box" type="button" aria-label="${t("zoom")}" data-i18n-aria-label="zoom"></button>
-        <button class="shade-box" type="button" aria-label="${t("collapse")}" data-i18n-aria-label="collapse"></button>
+        <button class="close-box" type="button" aria-label="${html.raw(t("close"))}" data-i18n-aria-label="close"></button>
+        <h2 id="bonsai-city-title">${html.raw(t("bonsai_city_title"))}</h2>
+        <button class="resize-box" type="button" aria-label="${html.raw(t("zoom"))}" data-i18n-aria-label="zoom"></button>
+        <button class="shade-box" type="button" aria-label="${html.raw(t("collapse"))}" data-i18n-aria-label="collapse"></button>
       </div>
       <div class="details-bar bonsai-details-bar bonsai-gauge">
         <span class="bonsai-gauge-city" data-bonsai-status-city data-bonsai-city-name></span>
@@ -506,12 +506,12 @@ window.AISystem6BonsaiCityLoaded = true;
         <span class="bonsai-gauge-saved" data-bonsai-status-saved></span>
         <span class="bonsai-gauge-population" data-bonsai-status-population data-bonsai-population></span>
         <span class="bonsai-gauge-rci" data-bonsai-status-rci><button type="button" class="btn bonsai-rci-button" data-bonsai-rci-button aria-label="Demand"><canvas class="bonsai-rci-gauge" data-bonsai-rci-gauge width="32" height="20" role="img" aria-label="RCI"></canvas></button></span>
-        <span class="bonsai-gauge-speed bonsai-speed-controls" role="group" aria-label="${t("bonsai_speed")}">
-          ${SPEEDS.map((speed) => `<button class="btn mini-btn${state.speed === speed.value ? " is-selected" : ""}" type="button" data-bonsai-speed="${speed.value}" aria-pressed="${state.speed === speed.value}" aria-label="${t(`bonsai_speed_${speed.id}`)}" title="${t(`bonsai_speed_${speed.id}`)}">${speed.glyph}</button>`).join("")}
+        <span class="bonsai-gauge-speed bonsai-speed-controls" role="group" aria-label="${html.raw(t("bonsai_speed"))}">
+          ${SPEEDS.map((speed) => html`<button class="btn mini-btn${state.speed === speed.value ? " is-selected" : ""}" type="button" data-bonsai-speed="${speed.value}" aria-pressed="${state.speed === speed.value}" aria-label="${html.raw(t(html`bonsai_speed_${speed.id}`))}" title="${html.raw(t(html`bonsai_speed_${speed.id}`))}">${speed.glyph}</button>`)}
         </span>
         <span class="bonsai-gauge-undo-redo">
-          <button class="btn mini-btn" type="button" data-bonsai-action="undo" aria-label="${t("bonsai_undo")}">↶</button>
-          <button class="btn mini-btn" type="button" data-bonsai-action="redo" aria-label="${t("bonsai_redo")}">↷</button>
+          <button class="btn mini-btn" type="button" data-bonsai-action="undo" aria-label="${html.raw(t("bonsai_undo"))}">↶</button>
+          <button class="btn mini-btn" type="button" data-bonsai-action="redo" aria-label="${html.raw(t("bonsai_redo"))}">↷</button>
         </span>
         <span class="bonsai-gauge-tool" data-bonsai-status-tool></span>
         <span class="bonsai-gauge-cost" data-bonsai-status-cost></span>
@@ -521,18 +521,18 @@ window.AISystem6BonsaiCityLoaded = true;
       <div class="window-pane bonsai-pane">
         <div class="bonsai-workspace-container">
           <div class="bonsai-workspace">
-            <aside class="bonsai-rail" data-bonsai-rail aria-label="${t("bonsai_toolbox")}"></aside>
+            <aside class="bonsai-rail" data-bonsai-rail aria-label="${html.raw(t("bonsai_toolbox"))}"></aside>
             <main class="bonsai-map-shell">
-              <div class="bonsai-map-stack" data-bonsai-map-stack tabindex="0" aria-label="${t("bonsai_city_map")}">
-                ${MAP_LAYERS.map((layer) => `<canvas class="bonsai-map-layer bonsai-map-layer-${layer}" data-bonsai-layer="${layer}" width="1" height="1" aria-hidden="true"></canvas>`).join("")}
+              <div class="bonsai-map-stack" data-bonsai-map-stack tabindex="0" aria-label="${html.raw(t("bonsai_city_map"))}">
+                ${MAP_LAYERS.map((layer) => html`<canvas class="bonsai-map-layer bonsai-map-layer-${layer}" data-bonsai-layer="${layer}" width="1" height="1" aria-hidden="true"></canvas>`)}
               </div>
-              <section class="bonsai-minimap-card" data-bonsai-minimap-card aria-label="${t("bonsai_minimap")}" hidden></section>
-              <section class="bonsai-tile-balloon" data-bonsai-tile-balloon aria-label="${t("bonsai_tile_inspector")}" hidden></section>
+              <section class="bonsai-minimap-card" data-bonsai-minimap-card aria-label="${html.raw(t("bonsai_minimap"))}" hidden></section>
+              <section class="bonsai-tile-balloon" data-bonsai-tile-balloon aria-label="${html.raw(t("bonsai_tile_inspector"))}" hidden></section>
               <p class="bonsai-map-credit" data-bonsai-map-credit hidden></p>
               <section class="bonsai-map-setup" data-bonsai-map-setup aria-labelledby="bonsai-map-setup-title" hidden></section>
               <section class="bonsai-city-browser" data-bonsai-city-browser aria-labelledby="bonsai-city-browser-title" hidden></section>
             </main>
-            <aside class="bonsai-sub-palette" data-bonsai-sub-palette aria-label="${t("bonsai_toolbox")}"></aside>
+            <aside class="bonsai-sub-palette" data-bonsai-sub-palette aria-label="${html.raw(t("bonsai_toolbox"))}"></aside>
             <aside class="bonsai-palette-footer" data-bonsai-palette-footer>
               <button type="button" class="btn bonsai-rci-panel-button" data-bonsai-rci-panel-button aria-label="Demand"><canvas class="bonsai-rci-panel" data-bonsai-rci-panel width="72" height="44" role="img" aria-label="RCI"></canvas></button>
             </aside>
@@ -713,33 +713,33 @@ window.AISystem6BonsaiCityLoaded = true;
       editor: options.editor === true,
     };
     state.setupOptions = defaults;
-    setup.innerHTML = `
-      <div class="bonsai-subwindow-title"><h3 id="bonsai-map-setup-title">${t("bonsai_map_setup")}</h3></div>
+    setup.innerHTML = html`
+      <div class="bonsai-subwindow-title"><h3 id="bonsai-map-setup-title">${html.raw(t("bonsai_map_setup"))}</h3></div>
       <form class="bonsai-setup-form">
-        <label><span>${t("bonsai_city_name")}</span><input type="text" data-bonsai-map-name maxlength="48"></label>
-        <label><span>${t("bonsai_map_size")}</span><span class="select-wrap"><select data-bonsai-map-size><option value="64">64 × 64</option><option value="96">96 × 96</option><option value="128">128 × 128</option></select></span></label>
-        <label><span>${t("bonsai_terrain_preset")}</span><span class="select-wrap"><select data-bonsai-map-terrain>${TERRAIN_PRESETS.map((preset) => `<option value="${preset}">${t(`bonsai_terrain_${preset}`)}</option>`).join("")}<option value="${OSM_SOURCE}">${t("bonsai_terrain_osm")}</option></select></span></label>
+        <label><span>${html.raw(t("bonsai_city_name"))}</span><input type="text" data-bonsai-map-name maxlength="48"></label>
+        <label><span>${html.raw(t("bonsai_map_size"))}</span><span class="select-wrap"><select data-bonsai-map-size><option value="64">64 × 64</option><option value="96">96 × 96</option><option value="128">128 × 128</option></select></span></label>
+        <label><span>${html.raw(t("bonsai_terrain_preset"))}</span><span class="select-wrap"><select data-bonsai-map-terrain>${TERRAIN_PRESETS.map((preset) => html`<option value="${preset}">${html.raw(t(html`bonsai_terrain_${preset}`))}</option>`)}<option value="${OSM_SOURCE}">${html.raw(t("bonsai_terrain_osm"))}</option></select></span></label>
         <fieldset class="bonsai-osm-fields" data-bonsai-osm-fields hidden>
-          <legend>${t("bonsai_osm_place")}</legend>
+          <legend>${html.raw(t("bonsai_osm_place"))}</legend>
           <div class="bonsai-osm-search">
-            <input type="search" data-bonsai-osm-query maxlength="120" placeholder="${escapeHtml(t("bonsai_osm_query_placeholder"))}" aria-label="${escapeHtml(t("bonsai_osm_search_label"))}">
-            <button class="btn" type="button" data-bonsai-osm-search>${t("bonsai_osm_search")}</button>
+            <input type="search" data-bonsai-osm-query maxlength="120" placeholder="${html.raw(t("bonsai_osm_query_placeholder"))}" aria-label="${html.raw(t("bonsai_osm_search_label"))}">
+            <button class="btn" type="button" data-bonsai-osm-search>${html.raw(t("bonsai_osm_search"))}</button>
           </div>
-          <span class="select-wrap"><select data-bonsai-osm-place aria-label="${escapeHtml(t("bonsai_osm_place"))}">${osmPlaceOptions()}</select></span>
-          <label><span>${t("bonsai_osm_coordinates")}</span><input type="text" data-bonsai-osm-coords inputmode="decimal" spellcheck="false" autocomplete="off"></label>
-          <label class="bonsai-setup-editor"><input type="checkbox" data-bonsai-osm-buildings> <span>${t("bonsai_osm_buildings")}</span></label>
-          <p class="bonsai-osm-credit">${t("bonsai_osm_credit")}</p>
+          <span class="select-wrap"><select data-bonsai-osm-place aria-label="${html.raw(t("bonsai_osm_place"))}">${html.raw(osmPlaceOptions())}</select></span>
+          <label><span>${html.raw(t("bonsai_osm_coordinates"))}</span><input type="text" data-bonsai-osm-coords inputmode="decimal" spellcheck="false" autocomplete="off"></label>
+          <label class="bonsai-setup-editor"><input type="checkbox" data-bonsai-osm-buildings> <span>${html.raw(t("bonsai_osm_buildings"))}</span></label>
+          <p class="bonsai-osm-credit">${html.raw(t("bonsai_osm_credit"))}</p>
         </fieldset>
         <details class="bonsai-setup-advanced">
-          <summary>${t("bonsai_advanced")}</summary>
-          <label><span>${t("bonsai_seed")}</span><input type="number" data-bonsai-map-seed min="0" max="4294967295" step="1" value="${defaults.seed}"></label>
-          <label class="bonsai-setup-editor"><input type="checkbox" data-bonsai-map-editor> <span>${t("bonsai_start_in_editor")}</span></label>
+          <summary>${html.raw(t("bonsai_advanced"))}</summary>
+          <label><span>${html.raw(t("bonsai_seed"))}</span><input type="number" data-bonsai-map-seed min="0" max="4294967295" step="1" value="${defaults.seed}"></label>
+          <label class="bonsai-setup-editor"><input type="checkbox" data-bonsai-map-editor> <span>${html.raw(t("bonsai_start_in_editor"))}</span></label>
         </details>
         <p class="bonsai-setup-preview-note" data-bonsai-setup-preview-note></p>
         <div class="button-row bonsai-setup-actions">
-          <button class="btn" type="button" data-bonsai-setup-regenerate>${t("bonsai_new_map")}</button>
-          <button class="btn" type="button" data-bonsai-action="open">${t("bonsai_open_cities")}</button>
-          <button class="btn default" type="submit" data-bonsai-map-create>${t("bonsai_start_city")}</button>
+          <button class="btn" type="button" data-bonsai-setup-regenerate>${html.raw(t("bonsai_new_map"))}</button>
+          <button class="btn" type="button" data-bonsai-action="open">${html.raw(t("bonsai_open_cities"))}</button>
+          <button class="btn default" type="submit" data-bonsai-map-create>${html.raw(t("bonsai_start_city"))}</button>
         </div>
       </form>`;
     setup.querySelector("[data-bonsai-map-name]").value = defaults.name;
@@ -2130,9 +2130,9 @@ window.AISystem6BonsaiCityLoaded = true;
       // line that passes here, and the stop that stands here.
       bonsai_tile_transit: transitAtTile(tile) || "—",
     };
-    balloon.innerHTML = `
-      <div class="bonsai-tile-balloon-title">${t("bonsai_tile_inspector")}<span>${tile.x}, ${tile.y}</span></div>
-      <dl>${renderDefinitionRows(rows)}</dl>`;
+    balloon.innerHTML = html`
+      <div class="bonsai-tile-balloon-title">${html.raw(t("bonsai_tile_inspector"))}<span>${tile.x}, ${tile.y}</span></div>
+      <dl>${html.raw(renderDefinitionRows(rows))}</dl>`;
     const point = tileScreenPoint(tile) || (anchor && Number.isFinite(anchor.x) ? { x: anchor.x, y: anchor.y } : null);
     const shell = query(".bonsai-map-shell");
     const shellRect = shell?.getBoundingClientRect();
@@ -2785,11 +2785,11 @@ window.AISystem6BonsaiCityLoaded = true;
   function renderMinimapCard() {
     const card = query("[data-bonsai-minimap-card]");
     if (!card) return;
-    card.innerHTML = `
-      <div class="bonsai-minimap-title" data-bonsai-minimap-toggle>${t("bonsai_minimap")}</div>
-      <canvas class="bonsai-minimap" data-bonsai-minimap width="1" height="1" tabindex="0" aria-label="${t("bonsai_minimap")}"></canvas>
-      <div class="bonsai-overlay-chips" role="group" aria-label="${t("bonsai_overlay")}">
-        ${OVERLAYS.map((overlay) => `<button class="bonsai-overlay-chip" type="button" data-bonsai-overlay-chip="${overlay}" aria-pressed="${state.overlay === overlay}">${t(`bonsai_overlay_${overlay.replaceAll("-", "_")}`)}</button>`).join("")}
+    card.innerHTML = html`
+      <div class="bonsai-minimap-title" data-bonsai-minimap-toggle>${html.raw(t("bonsai_minimap"))}</div>
+      <canvas class="bonsai-minimap" data-bonsai-minimap width="1" height="1" tabindex="0" aria-label="${html.raw(t("bonsai_minimap"))}"></canvas>
+      <div class="bonsai-overlay-chips" role="group" aria-label="${html.raw(t("bonsai_overlay"))}">
+        ${OVERLAYS.map((overlay) => html`<button class="bonsai-overlay-chip" type="button" data-bonsai-overlay-chip="${overlay}" aria-pressed="${state.overlay === overlay}">${html.raw(t(html`bonsai_overlay_${overlay.replaceAll("-", "_")}`))}</button>`)}
       </div>`;
     card.hidden = false;
     card.classList.toggle("is-collapsed", state.minimapCollapsed);
@@ -3259,13 +3259,13 @@ window.AISystem6BonsaiCityLoaded = true;
         <p class="bonsai-goals-note">${t("bonsai_neighbors_note")}</p>
         <ul class="bonsai-neighbor-actions">${(report?.neighbors || []).map((neighbor) => `<li><button class="btn mini-btn" type="button" data-bonsai-rootline-neighbor="${neighbor.direction}" data-bonsai-neighbor-index="${neighbor.nameIndex}">${t("bonsai_neighbor_look_rootline")}</button></li>`).join("")}</ul>`;
     }
-    inspector.innerHTML = `
+    inspector.innerHTML = html`
       <div class="bonsai-subwindow-title">
-        <h3 id="bonsai-inspector-title">${t(titleKey)}</h3>
-        <button class="btn mini-btn" type="button" data-bonsai-inspector-close aria-label="${t("close")}">×</button>
+        <h3 id="bonsai-inspector-title">${html.raw(t(titleKey))}</h3>
+        <button class="btn mini-btn" type="button" data-bonsai-inspector-close aria-label="${html.raw(t("close"))}">×</button>
       </div>
-      <dl>${renderDefinitionRows(rows)}</dl>
-      ${controls}`;
+      <dl>${html.raw(renderDefinitionRows(rows))}</dl>
+      ${html.raw(controls)}`;
     inspector.hidden = false;
     query(".bonsai-pane")?.classList.add("has-inspector");
     if (state.inspectorMode === "graphs") {
@@ -3899,12 +3899,12 @@ window.AISystem6BonsaiCityLoaded = true;
     const setup = query("[data-bonsai-map-setup]");
     if (setup) setup.hidden = true;
     browser.hidden = false;
-    browser.innerHTML = `
+    browser.innerHTML = html`
       <div class="bonsai-subwindow-title">
-        <h3 id="bonsai-city-browser-title">${t("bonsai_open_cities")}</h3>
-        <button class="btn mini-btn" type="button" data-bonsai-browser-close aria-label="${t("close")}">×</button>
+        <h3 id="bonsai-city-browser-title">${html.raw(t("bonsai_open_cities"))}</h3>
+        <button class="btn mini-btn" type="button" data-bonsai-browser-close aria-label="${html.raw(t("close"))}">×</button>
       </div>
-      <p class="bonsai-browser-status">${t("bonsai_status_loading")}</p>`;
+      <p class="bonsai-browser-status">${html.raw(t("bonsai_status_loading"))}</p>`;
     try {
       const records = await listSavedCities();
       records.sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
@@ -4019,16 +4019,16 @@ window.AISystem6BonsaiCityLoaded = true;
       });
       const controls = document.createElement("div");
       controls.className = "button-row bonsai-browser-actions";
-      controls.innerHTML = `
-        <button class="btn" type="button" data-bonsai-browser-new data-bonsai-action="new">${t("bonsai_new_city")}</button>
-        <button class="btn" type="button" data-bonsai-browser-import data-bonsai-action="import">${t("bonsai_import_city")}</button>
+      controls.innerHTML = html`
+        <button class="btn" type="button" data-bonsai-browser-new data-bonsai-action="new">${html.raw(t("bonsai_new_city"))}</button>
+        <button class="btn" type="button" data-bonsai-browser-import data-bonsai-action="import">${html.raw(t("bonsai_import_city"))}</button>
         <input class="bonsai-import-input" type="file" accept="application/json,.json,.bonsai-city.json,.sc2,.scn" data-bonsai-import-input hidden>`;
       const title = document.createElement("div");
       title.className = "bonsai-subwindow-title";
-      title.innerHTML = `<h3 id="bonsai-city-browser-title">${t("bonsai_open_cities")}</h3><button class="btn mini-btn" type="button" data-bonsai-browser-close aria-label="${t("close")}">×</button>`;
+      title.innerHTML = html`<h3 id="bonsai-city-browser-title">${html.raw(t("bonsai_open_cities"))}</h3><button class="btn mini-btn" type="button" data-bonsai-browser-close aria-label="${html.raw(t("close"))}">×</button>`;
       browser.replaceChildren(title, list, controls);
     } catch {
-      browser.innerHTML = `<div class="bonsai-subwindow-title"><h3 id="bonsai-city-browser-title">${t("bonsai_open_cities")}</h3><button class="btn mini-btn" type="button" data-bonsai-browser-close aria-label="${t("close")}">×</button></div><p class="bonsai-empty-message">${t("bonsai_status_load_failed")}</p>`;
+      browser.innerHTML = html`<div class="bonsai-subwindow-title"><h3 id="bonsai-city-browser-title">${html.raw(t("bonsai_open_cities"))}</h3><button class="btn mini-btn" type="button" data-bonsai-browser-close aria-label="${html.raw(t("close"))}">×</button></div><p class="bonsai-empty-message">${html.raw(t("bonsai_status_load_failed"))}</p>`;
       setMessage("bonsai_status_load_failed");
     }
   }
@@ -4139,7 +4139,7 @@ window.AISystem6BonsaiCityLoaded = true;
     browser.hidden = false;
     const closeRow = document.createElement("div");
     closeRow.className = "bonsai-subwindow-title";
-    closeRow.innerHTML = `<h3 id="bonsai-city-browser-title">${t("bonsai_scenarios")}</h3><button class="btn mini-btn" type="button" data-bonsai-browser-close aria-label="${t("close")}">×</button>`;
+    closeRow.innerHTML = html`<h3 id="bonsai-city-browser-title">${html.raw(t("bonsai_scenarios"))}</h3><button class="btn mini-btn" type="button" data-bonsai-browser-close aria-label="${html.raw(t("close"))}">×</button>`;
     const list = document.createElement("div");
     list.className = "bonsai-city-list";
     if (typeof sim()?.createScenarioCity !== "function" || !Object.keys(sim().SCENARIOS || {}).length) {

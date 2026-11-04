@@ -1439,15 +1439,6 @@ async function oneMoreTuneMountPlayer(slotId, { videoId, startSeconds = 0, playW
 }
 
 /** Ask the mounted player to do something, waiting for it if it is not ready. */
-function oneMoreTuneVideoRun(action) {
-  if (oneMoreTuneVideo.ready) {
-    action();
-    return true;
-  }
-  oneMoreTuneVideo.pending = action;
-  return false;
-}
-
 function oneMoreTuneVideoPlayerPlay(startSeconds) {
   const player = oneMoreTuneVideo.player;
   if (!player) return;
@@ -1457,10 +1448,6 @@ function oneMoreTuneVideoPlayerPlay(startSeconds) {
   } catch {
     oneMoreTuneFilmNote("one_more_tune_film_no_word");
   }
-}
-
-function oneMoreTuneFilmSlot() {
-  return document.getElementById(oneMoreTuneVideo.slotId || "");
 }
 
 function oneMoreTuneFilmNote(messageKey) {
@@ -2874,12 +2861,6 @@ function syncOneMoreTuneCounts() {
 }
 
 /** The card's stage line: 阶段 + 编号, the spec's top-of-card anatomy. */
-function oneMoreTuneStageHead(stepKey, card, index, total) {
-  return `<p class="one-more-tune-step-label"><span data-i18n="${stepKey}">${stepKey}</span>
-            <span class="one-more-tune-step-count">${index + 1} / ${total}</span>
-            <span class="one-more-tune-card-id">${oneMoreTuneEscape(card.id)}</span></p>`;
-}
-
 function oneMoreTuneVisibleCards() {
   const query = oneMoreTuneQuery.trim().toLowerCase();
   const now = Date.now();
@@ -2934,15 +2915,15 @@ function renderOneMoreTuneShelf(body) {
         </button>`;
   }).join("");
 
-  body.innerHTML = `
+  body.innerHTML = html`
       <section class="one-more-tune-shelf" aria-labelledby="one-more-tune-shelf-title">
         <div class="collection-head">
           <div>
             <div class="eyebrow" data-i18n="one_more_tune_shelf_eyebrow">YOUR LISTENING COLLECTION</div>
-            <h1 id="one-more-tune-shelf-title">${t("one_more_tune_shelf_title")}</h1>
-            <p>${t("one_more_tune_shelf_intro")}</p>
+            <h1 id="one-more-tune-shelf-title">${html.raw(t("one_more_tune_shelf_title"))}</h1>
+            <p>${html.raw(t("one_more_tune_shelf_intro"))}</p>
             <div class="buttons">
-              <button class="btn default" type="button" data-one-more-tune-open-unit="${oneMoreTuneEscape(featured?.unit || "")}">${t("one_more_tune_shelf_start")} <span aria-hidden="true">→</span></button>
+              <button class="btn default" type="button" data-one-more-tune-open-unit="${featured?.unit || ""}">${html.raw(t("one_more_tune_shelf_start"))} <span aria-hidden="true">→</span></button>
             </div>
             <div class="stats">
               <div><strong>${unmet}</strong><small data-i18n="one_more_tune_stat_unmet">Not met yet</small></div>
@@ -2951,23 +2932,23 @@ function renderOneMoreTuneShelf(body) {
             </div>
             <div class="one-more-tune-progress">
               <span class="one-more-tune-progress-state" data-i18n="${oneMoreTuneStorageSourceKey()}">${oneMoreTuneStorageSourceKey()}</span>
-              <span class="one-more-tune-progress-note" role="status">${oneMoreTuneEscape(oneMoreTuneProgressNote)}</span>
+              <span class="one-more-tune-progress-note" role="status">${oneMoreTuneProgressNote}</span>
               <button class="linkbutton" type="button" data-one-more-tune-command="one-more-tune-export-progress" data-i18n="one_more_tune_progress_export">Export progress</button>
               <label class="linkbutton" for="one-more-tune-progress-input" data-i18n="one_more_tune_progress_import">Import progress</label>
               <input id="one-more-tune-progress-input" type="file" accept="application/json,.json" hidden />
             </div>
           </div>
-          ${featured ? `<div class="card-stack"><article class="lesson-card">
-            <div class="card-top"><span class="chip on">${oneMoreTuneRecord(featured.id).met ? t("one_more_tune_step_recall") : t("one_more_tune_step_learn")}</span>${oneMoreTuneEraBand(featured)}<span class="id">${oneMoreTuneEscape(featured.id)}</span></div>
-            <div class="disc-area"><div class="disc" aria-hidden="true"><div class="disc-center">♫</div></div><span class="disc-caption">${oneMoreTuneEscape(oneMoreTuneUnitLabel(featured.unit))}</span></div>
+          ${featured ? html`<div class="card-stack"><article class="lesson-card">
+            <div class="card-top"><span class="chip on">${oneMoreTuneRecord(featured.id).met ? html.raw(t("one_more_tune_step_recall")) : html.raw(t("one_more_tune_step_learn"))}</span>${oneMoreTuneEraBand(featured)}<span class="id">${featured.id}</span></div>
+            <div class="disc-area"><div class="disc" aria-hidden="true"><div class="disc-center">♫</div></div><span class="disc-caption">${oneMoreTuneUnitLabel(featured.unit)}</span></div>
             <div class="card-copy">
-              <div class="eyebrow">${oneMoreTuneEscape(featured.film || "")}</div>
-              <h2>${oneMoreTuneEscape(featured.product || t("one_more_tune_needs_check"))}</h2>
-              <p class="song">${oneMoreTuneEscape(featured.song)}</p>
-              <div class="artist">${oneMoreTuneEscape(featured.artist)}</div>
-              <button class="btn ghost compact" type="button" data-one-more-tune-open-card="${oneMoreTuneEscape(featured.id)}" data-i18n="one_more_tune_see_card">See this card</button>
+              <div class="eyebrow">${featured.film || ""}</div>
+              <h2>${featured.product || html.raw(t("one_more_tune_needs_check"))}</h2>
+              <p class="song">${featured.song}</p>
+              <div class="artist">${featured.artist}</div>
+              <button class="btn ghost compact" type="button" data-one-more-tune-open-card="${featured.id}" data-i18n="one_more_tune_see_card">See this card</button>
             </div>
-            <div class="card-end"><span>${oneMoreTuneEscape(t("one_more_tune_unit_cards"))}</span><span>${ONE_MORE_TUNE_CARDS.indexOf(featured) + 1} / ${ONE_MORE_TUNE_CARDS.length}</span></div>
+            <div class="card-end"><span>${html.raw(t("one_more_tune_unit_cards"))}</span><span>${ONE_MORE_TUNE_CARDS.indexOf(featured) + 1} / ${ONE_MORE_TUNE_CARDS.length}</span></div>
           </article></div>` : ""}
         </div>
         <section class="section">
@@ -2975,7 +2956,7 @@ function renderOneMoreTuneShelf(body) {
             <div><div class="eyebrow" data-i18n="one_more_tune_units_eyebrow">SMALL LESSONS / NO LOCKED PATHS</div><h2 data-i18n="one_more_tune_units_title">Pick a small group to start.</h2><p data-i18n="one_more_tune_units_intro">Each unit is three to five cards. Nothing is locked behind an era.</p></div>
             <span class="chip">${ONE_MORE_TUNE_UNITS.length}</span>
           </div>
-          <div class="unit-grid">${units}</div>
+          <div class="unit-grid">${html.raw(units)}</div>
         </section>
         <section class="section">
           <div class="section-heading">
@@ -2984,15 +2965,15 @@ function renderOneMoreTuneShelf(body) {
           <div class="filters">
             <label class="one-more-tune-search">
               <span class="visually-hidden" data-i18n="one_more_tune_search">Search the shelf</span>
-              <input type="search" id="one-more-tune-search" value="${oneMoreTuneEscape(oneMoreTuneQuery)}" data-i18n-placeholder="one_more_tune_search" placeholder="Search the shelf" />
+              <input type="search" id="one-more-tune-search" value="${oneMoreTuneQuery}" data-i18n-placeholder="one_more_tune_search" placeholder="Search the shelf" />
             </label>
             <div class="one-more-tune-filters" role="group" data-i18n-aria-label="one_more_tune_filters" aria-label="Filters">
-              ${["all", "learned", "due"].map((id) => `<button class="chip${oneMoreTuneFilter === id ? " on" : ""}" type="button" data-one-more-tune-filter="${id}" data-i18n="one_more_tune_filter_${id}">${id}</button>`).join("")}
+              ${["all", "learned", "due"].map((id) => html`<button class="chip${oneMoreTuneFilter === id ? " on" : ""}" type="button" data-one-more-tune-filter="${id}" data-i18n="one_more_tune_filter_${id}">${id}</button>`)}
             </div>
           </div>
           <p class="eyebrow one-more-tune-shown">${cards.length} / ${ONE_MORE_TUNE_CARDS.length}</p>
-          <div class="library-grid">${rows}</div>
-          ${cards.length ? "" : `<p class="one-more-tune-empty" data-i18n="one_more_tune_no_cards">Nothing on the shelf matches that.</p>`}
+          <div class="library-grid">${html.raw(rows)}</div>
+          ${cards.length ? "" : html`<p class="one-more-tune-empty" data-i18n="one_more_tune_no_cards">Nothing on the shelf matches that.</p>`}
         </section>
       </section>`;
 }
@@ -3335,20 +3316,20 @@ function gradeOneMoreTuneCard(gradeId) {
 function renderOneMoreTuneStudy(body) {
   if (!oneMoreTuneSession) {
     const settings = oneMoreTuneStateNow().settings;
-    body.innerHTML = `
+    body.innerHTML = html`
       <section class="one-more-tune-study one-more-tune-study-idle section">
         <div class="section-heading"><div><div class="eyebrow" data-i18n="one_more_tune_units_eyebrow">SMALL LESSONS / NO LOCKED PATHS</div><h2 data-i18n="one_more_tune_pick_unit">Pick a unit to study</h2></div></div>
         <div class="unit-grid">
           ${ONE_MORE_TUNE_UNITS.map((unit, index) => {
             const size = oneMoreTuneUnitCards(unit.id).length;
             const seen = oneMoreTuneUnitCards(unit.id).filter((card) => oneMoreTuneRecord(card.id).met).length;
-            return `<article class="unit">
-              <div class="unit-top"><span class="chip">UNIT ${String(index + 1).padStart(2, "0")} · ${size}</span><span class="unit-dots" aria-hidden="true">${oneMoreTuneUnitCards(unit.id).map((card) => `<span class="${oneMoreTuneRecord(card.id).met ? "seen" : ""}"></span>`).join("")}</span></div>
-              <h3>${oneMoreTuneEscape(t(unit.labelKey))}</h3>
-              <p>${t("one_more_tune_unit_met").replace("{met}", String(seen)).replace("{total}", String(size))}</p>
+            return html`<article class="unit">
+              <div class="unit-top"><span class="chip">UNIT ${String(index + 1).padStarhtml.raw(t(2, "0"))} · ${size}</span><span class="unit-dots" aria-hidden="true">${oneMoreTuneUnitCards(unit.id).map((card) => html`<span class="${oneMoreTuneRecord(card.id).met ? "seen" : ""}"></span>`)}</span></div>
+              <h3>${html.raw(t(unit.labelKey))}</h3>
+              <p>${html.raw(t("one_more_tune_unit_met").replace("{met}", String(seen)).replace("{total}", String(size)))}</p>
               <button class="btn ghost" type="button" data-one-more-tune-open-unit="${unit.id}" data-i18n="one_more_tune_unit_start">Start this unit</button>
             </article>`;
-          }).join("")}
+          })}
         </div>
         <p class="hint" data-i18n="one_more_tune_study_hint">Each unit: meet, match, recall.</p>
         <div class="one-more-tune-budget">
@@ -3361,12 +3342,12 @@ function renderOneMoreTuneStudy(body) {
   }
   const card = oneMoreTuneCard(oneMoreTuneSession.queue[oneMoreTuneSession.index]);
   if (!card) {
-    body.innerHTML = `
+    body.innerHTML = html`
       <section class="one-more-tune-study one-more-tune-study-done">
         <h3 data-i18n="one_more_tune_unit_done">Unit finished</h3>
         <p class="hint" data-i18n="one_more_tune_unit_done_hint">Grades are saved; cards you were just shown count as practice.</p>
         <button class="btn default" type="button" data-one-more-tune-command="one-more-tune-end-session" data-i18n="one_more_tune_back_to_shelf">Back to the shelf</button>
-        ${oneMoreTuneStudyWheelSlot()}
+        ${html.raw(oneMoreTuneStudyWheelSlot())}
       </section>`;
     oneMoreTuneAttachStudyWheel();
     return;
@@ -3392,7 +3373,7 @@ function renderOneMoreTuneLearn(body, card) {
   writeOneMoreTuneState();
   announceOneMoreTuneNowPlaying(card);
   const total = oneMoreTuneSession.queue.length;
-  body.innerHTML = `
+  body.innerHTML = html`
       <section class="one-more-tune-study one-more-tune-step-learn" aria-labelledby="one-more-tune-step-title">
         ${oneMoreTuneLessonCard({
           card,
@@ -3408,8 +3389,8 @@ function renderOneMoreTuneLearn(body, card) {
           footLeft: t("one_more_tune_stage_foot_learn"),
           footRight: `${oneMoreTuneSession.index + 1} / ${total}`,
         })}
-        ${oneMoreTuneBackstage() ? oneMoreTunePlayerBlock(card) : ""}
-        ${oneMoreTuneStudyWheelSlot()}
+        ${oneMoreTuneBackstage() ? html.raw(oneMoreTunePlayerBlock(card)) : ""}
+        ${html.raw(oneMoreTuneStudyWheelSlot())}
       </section>`;
 }
 
@@ -3417,7 +3398,7 @@ function renderOneMoreTuneMatch(body, card) {
   clearOneMoreTuneNowPlaying();
   const options = oneMoreTuneSession.options || [];
   const total = oneMoreTuneSession.queue.length;
-  body.innerHTML = `
+  body.innerHTML = html`
       <section class="one-more-tune-study one-more-tune-step-match" aria-labelledby="one-more-tune-step-title">
         ${oneMoreTuneLessonCard({
           card,
@@ -3431,8 +3412,8 @@ function renderOneMoreTuneMatch(body, card) {
           footLeft: t("one_more_tune_stage_foot_match"),
           footRight: `${oneMoreTuneSession.index + 1} / ${total}`,
         })}
-        ${oneMoreTuneStudySound(card)}
-        ${oneMoreTuneStudyWheelSlot()}
+        ${html.raw(oneMoreTuneStudySound(card))}
+        ${html.raw(oneMoreTuneStudyWheelSlot())}
       </section>`;
 }
 
@@ -3448,7 +3429,7 @@ function renderOneMoreTuneRecall(body, card) {
     return;
   }
   const total = oneMoreTuneSession.queue.length;
-  body.innerHTML = `
+  body.innerHTML = html`
       <section class="one-more-tune-study one-more-tune-step-recall one-more-tune-face" aria-labelledby="one-more-tune-step-title">
         ${oneMoreTuneLessonCard({
           card,
@@ -3463,8 +3444,8 @@ function renderOneMoreTuneRecall(body, card) {
           footLeft: t("one_more_tune_stage_foot_recall"),
           footRight: `${oneMoreTuneSession.index + 1} / ${total}`,
         })}
-        ${oneMoreTuneStudySound(card)}
-        ${oneMoreTuneStudyWheelSlot()}
+        ${html.raw(oneMoreTuneStudySound(card))}
+        ${html.raw(oneMoreTuneStudyWheelSlot())}
       </section>`;
 }
 
@@ -3472,7 +3453,7 @@ function renderOneMoreTuneReveal(body, card) {
   announceOneMoreTuneNowPlaying(card);
   const practiceOnly = oneMoreTuneSession.revealedThisSession.has(card.id);
   const total = oneMoreTuneSession.queue.length;
-  body.innerHTML = `
+  body.innerHTML = html`
       <section class="one-more-tune-study one-more-tune-step-reveal one-more-tune-face" aria-labelledby="one-more-tune-step-title">
         ${oneMoreTuneLessonCard({
           card,
@@ -3492,8 +3473,8 @@ function renderOneMoreTuneReveal(body, card) {
           footLeft: practiceOnly ? t("one_more_tune_practice_only") : "",
           footRight: `${oneMoreTuneSession.index + 1} / ${total}`,
         })}
-        ${oneMoreTuneBackstage() ? oneMoreTunePlayerBlock(card) : ""}
-        ${oneMoreTuneStudyWheelSlot()}
+        ${oneMoreTuneBackstage() ? html.raw(oneMoreTunePlayerBlock(card)) : ""}
+        ${html.raw(oneMoreTuneStudyWheelSlot())}
       </section>`;
 }
 
@@ -3512,10 +3493,6 @@ function oneMoreTuneRoundPool() {
 }
 
 /** True when the person is practising on their own copy. */
-function oneMoreTuneRoundIsPractice() {
-  return oneMoreTuneRound?.mode === "practice";
-}
-
 /**
  * The round authority, reached through the service boundary rather than by
  * fetching its route from here. Same origin, same JSON, one registration in
@@ -5024,7 +5001,7 @@ function advanceOneMoreTuneKeynote() {
 function renderOneMoreTuneKeynote(body) {
   const round = oneMoreTuneKeynoteRound;
   if (!round) {
-    body.innerHTML = `<section class="one-more-tune-study one-more-tune-keynote">
+    body.innerHTML = html`<section class="one-more-tune-study one-more-tune-keynote">
       <div class="sectiontag"><span class="eyebrow">KEYNOTE RELAY</span><span class="tag on" data-i18n="one_more_tune_keynote_tag">Six handoffs</span></div>
       <h1 data-i18n="one_more_tune_keynote_title">Who takes the stage?</h1>
       <p class="intro" data-i18n="one_more_tune_keynote_intro">Follow a product through its Apple keynote handoff. Open clues one at a time, then pick the presenter.</p>
@@ -5034,10 +5011,10 @@ function renderOneMoreTuneKeynote(body) {
     return;
   }
   if (round.done) {
-    body.innerHTML = `<section class="one-more-tune-study one-more-tune-keynote">
+    body.innerHTML = html`<section class="one-more-tune-study one-more-tune-keynote">
       <div class="sectiontag"><span class="eyebrow" data-i18n="one_more_tune_keynote_done">RELAY COMPLETE</span><span class="tag on">${round.score} / ${round.maxPoints}</span></div>
       <h1 data-i18n="one_more_tune_keynote_score_title">The handoff is yours.</h1>
-      <p class="intro">${oneMoreTuneEscape(t("one_more_tune_keynote_score_line").replace("{score}", String(round.score)).replace("{max}", String(round.maxPoints)))}</p>
+      <p class="intro">${html.raw(t("one_more_tune_keynote_score_line").replace("{score}", String(round.score)).replace("{max}", String(round.maxPoints)))}</p>
       <div class="toolbar"><button class="btn default" type="button" data-one-more-tune-command="one-more-tune-keynote-start" data-i18n="one_more_tune_keynote_again">Run it again</button></div>
     </section>`;
     return;
@@ -5047,7 +5024,7 @@ function renderOneMoreTuneKeynote(body) {
   const role = keynoteText(question.role);
   const clues = Array.isArray(question.clues?.[oneMoreTuneLanguage()]) ? question.clues[oneMoreTuneLanguage()] : question.clues?.en || [];
   const result = question.result;
-  body.innerHTML = `<section class="one-more-tune-study one-more-tune-keynote">
+  body.innerHTML = html`<section class="one-more-tune-study one-more-tune-keynote">
     <div class="sectiontag"><span class="eyebrow">${oneMoreTuneEscape(question.event?.name || "APPLE KEYNOTE")} · ${oneMoreTuneEscape(question.event?.date || "")}</span><span class="tag on">${oneMoreTuneKeynoteRound.index + 1} / ${round.questions.length}</span></div>
     <h2>${oneMoreTuneEscape(role)}</h2>
     <p class="intro" data-i18n="one_more_tune_keynote_prompt">Which presenter takes this handoff?</p>
@@ -5152,7 +5129,7 @@ function advanceOneMoreTuneLine() {
 function renderOneMoreTuneLine(body) {
   const round = oneMoreTuneLineRound;
   if (!round) {
-    body.innerHTML = `<section class="one-more-tune-study one-more-tune-line">
+    body.innerHTML = html`<section class="one-more-tune-study one-more-tune-line">
       <div class="sectiontag"><span class="eyebrow">ONE MORE LINE</span><span class="tag on" data-i18n="one_more_tune_line_tag">Ten lines</span></div>
       <h1 data-i18n="one_more_tune_line_title">What happens after the line?</h1>
       <p class="intro" data-i18n="one_more_tune_line_intro">What a keynote line was doing, and which chapter followed it. Ten written questions a round, no clock, and every answer comes with its note and its source.</p>
@@ -5162,10 +5139,10 @@ function renderOneMoreTuneLine(body) {
     return;
   }
   if (round.done) {
-    body.innerHTML = `<section class="one-more-tune-study one-more-tune-line">
+    body.innerHTML = html`<section class="one-more-tune-study one-more-tune-line">
       <div class="sectiontag"><span class="eyebrow" data-i18n="one_more_tune_line_done">ROUND COMPLETE</span><span class="tag on">${round.correct} / ${round.maxPoints}</span></div>
       <h1 data-i18n="one_more_tune_line_score_title">Ten lines, ten notes.</h1>
-      <p class="one-more-tune-score-line">${oneMoreTuneEscape(t("one_more_tune_line_score_line")
+      <p class="one-more-tune-score-line">${html.raw(t("one_more_tune_line_score_line")
         .replace("{right}", String(round.correct))
         .replace("{max}", String(round.maxPoints))
         .replace("{skipped}", String(round.skipped)))}</p>
@@ -5185,7 +5162,7 @@ function renderOneMoreTuneLine(body) {
   const phraseNote = reveal?.phraseNote ? keynoteText(reveal.phraseNote) : "";
   const sourceLabel = reveal ? keynoteText(reveal.source?.label) : "";
   const sourceLocator = reveal ? keynoteText(reveal.source?.locator) : "";
-  body.innerHTML = `<section class="one-more-tune-study one-more-tune-line">
+  body.innerHTML = html`<section class="one-more-tune-study one-more-tune-line">
     <div class="sectiontag">
       <span class="eyebrow">ONE MORE LINE · ${oneMoreTuneEscape(question.event?.name || "APPLE KEYNOTE")} · ${oneMoreTuneEscape(question.event?.date || "")}</span>
       <span class="tag on">${round.index + 1} / ${round.questions.length}</span>
@@ -5789,7 +5766,7 @@ function renderOneMoreTuneSources(body) {
           ${oneMoreTuneSourceDetail(card, { open })}`;
   }).join("");
 
-  body.innerHTML = `
+  body.innerHTML = html`
       <section class="one-more-tune-sources catalog">
         <div class="section-heading">
           <div>
@@ -5810,40 +5787,40 @@ function renderOneMoreTuneSources(body) {
         <div class="facets">
           <div class="facetrow">
             <span class="facetlabel" data-i18n="one_more_tune_facet_era">By era</span>
-            ${eraFacets.map((facet) => `<button class="chip${oneMoreTuneSourceEra === facet.id ? " on" : ""}" type="button" data-one-more-tune-source-era="${oneMoreTuneEscape(facet.id)}">${oneMoreTuneEscape(facet.id === "all"
-              ? `${t("one_more_tune_facet_all")} ${facet.count}`
+            ${eraFacets.map((facet) => html`<button class="chip${oneMoreTuneSourceEra === facet.id ? " on" : ""}" type="button" data-one-more-tune-source-era="${facet.id}">${facet.id === "all"
+              ? html`${html.raw(t("one_more_tune_facet_all"))} ${facet.count}`
               : facet.id === "none"
-                ? `${t("one_more_tune_facet_none")} ${facet.count}`
-                : `${facet.range} · ${facet.name} ${facet.count}`)}</button>`).join("")}
+                ? html`${html.raw(t("one_more_tune_facet_none"))} ${facet.count}`
+                : html`${facet.range} · ${facet.name} ${facet.count}`}</button>`)}
           </div>
           <div class="facetrow">
             <span class="facetlabel" data-i18n="one_more_tune_facet_status">By state</span>
-            <button class="chip${oneMoreTuneSourceStatus === "all" ? " on" : ""}" type="button" data-one-more-tune-source-status="all">${oneMoreTuneEscape(`${t("one_more_tune_facet_all")} ${ONE_MORE_TUNE_ALL_CARDS.length}`)}</button>
-            ${facetFacts.map((facet) => `<button class="chip${oneMoreTuneSourceStatus === facet.id ? " on" : ""}" type="button" data-one-more-tune-source-status="${oneMoreTuneEscape(facet.id)}">${oneMoreTuneEscape(`${t(facet.labelKey)} ${ONE_MORE_TUNE_ALL_CARDS.filter(facet.test).length}`)}</button>`).join("")}
+            <button class="chip${oneMoreTuneSourceStatus === "all" ? " on" : ""}" type="button" data-one-more-tune-source-status="all">${html`${html.raw(t("one_more_tune_facet_all"))} ${ONE_MORE_TUNE_ALL_CARDS.length}`}</button>
+            ${facetFacts.map((facet) => html`<button class="chip${oneMoreTuneSourceStatus === facet.id ? " on" : ""}" type="button" data-one-more-tune-source-status="${facet.id}">${html`${html.raw(t(facet.labelKey))} ${ONE_MORE_TUNE_ALL_CARDS.filter(facet.test).length}`}</button>`)}
           </div>
         </div>
         </div>
         <div class="catalog-list">
         <div class="datahead"><span>#</span><span data-i18n="one_more_tune_col_song">Song / artist</span><span class="productcol" data-i18n="one_more_tune_col_product">Product</span><span class="campaigncol" data-i18n="one_more_tune_col_film">Film</span><span data-i18n="one_more_tune_col_anchor">Anchor</span><span></span></div>
         <div class="filterbar">
-          <input type="search" id="one-more-tune-source-search" value="${oneMoreTuneEscape(oneMoreTuneSourceQuery)}"
+          <input type="search" id="one-more-tune-source-search" value="${oneMoreTuneSourceQuery}"
             data-i18n-placeholder="one_more_tune_sources_search" data-i18n-aria-label="one_more_tune_sources_search" placeholder="Search the songs, the products, the films…" aria-label="Search the catalogue" />
           <select id="one-more-tune-source-unit" data-i18n-aria-label="one_more_tune_sources_unit" aria-label="Filter by unit">
-            <option value="all"${oneMoreTuneSourceUnit === "all" ? " selected" : ""}>${oneMoreTuneEscape(t("one_more_tune_sources_all_units"))}</option>
-            ${ONE_MORE_TUNE_ALL_UNITS.map((unit) => `<option value="${oneMoreTuneEscape(unit.id)}"${oneMoreTuneSourceUnit === unit.id ? " selected" : ""}>${oneMoreTuneEscape(t(unit.labelKey))}</option>`).join("")}
+            <option value="all"${oneMoreTuneSourceUnit === "all" ? " selected" : ""}>${html.raw(t("one_more_tune_sources_all_units"))}</option>
+            ${ONE_MORE_TUNE_ALL_UNITS.map((unit) => html`<option value="${unit.id}"${oneMoreTuneSourceUnit === unit.id ? " selected" : ""}>${html.raw(t(unit.labelKey))}</option>`)}
           </select>
           <select id="one-more-tune-source-status" data-i18n-aria-label="one_more_tune_sources_status" aria-label="Filter by state">
             ${[["all", "one_more_tune_sources_all_states"], ["settled", "one_more_tune_sources_settled"], ["unsettled", "one_more_tune_sources_unsettled"], ["anchored", "one_more_tune_sources_anchored"], ["linked", "one_more_tune_sources_linked"]]
-              .map(([id, key]) => `<option value="${id}"${oneMoreTuneSourceStatus === id ? " selected" : ""}>${oneMoreTuneEscape(t(key))}</option>`).join("")}
+              .map(([id, key]) => html`<option value="${id}"${oneMoreTuneSourceStatus === id ? " selected" : ""}>${html.raw(t(key))}</option>`)}
           </select>
-          <span class="count">${oneMoreTuneEscape(t("one_more_tune_sources_entries").replace("{shown}", String(visible.length)).replace("{total}", String(ONE_MORE_TUNE_ALL_CARDS.length)))}</span>
+          <span class="count">${html.raw(t("one_more_tune_sources_entries").replace("{shown}", String(visible.length)).replace("{total}", String(ONE_MORE_TUNE_ALL_CARDS.length)))}</span>
         </div>
-        <div class="one-more-tune-source-rows">${rows}</div>
+        <div class="one-more-tune-source-rows">${html.raw(rows)}</div>
         ${visible.length ? "" : oneMoreTuneSourceEmptyNote(eraFacets)}
         </div>
         <div class="catalog-spec">${oneMoreTuneSourceSpec(ONE_MORE_TUNE_ALL_CARDS.find((card) => card.id === oneMoreTuneSourceOpen) || null)}</div>
         </div>
-        <p class="one-more-tune-shown eyebrow">${t("one_more_tune_state_auditioned")}: ${auditioned.length} · ${t("one_more_tune_state_units")}: ${ONE_MORE_TUNE_ALL_UNITS.length} · ${t("one_more_tune_state_version")} ${ONE_MORE_TUNE_DECK_VERSION}</p>
+        <p class="one-more-tune-shown eyebrow">${html.raw(t("one_more_tune_state_auditioned"))}: ${auditioned.length} · ${html.raw(t("one_more_tune_state_units"))}: ${ONE_MORE_TUNE_ALL_UNITS.length} · ${html.raw(t("one_more_tune_state_version"))} ${ONE_MORE_TUNE_DECK_VERSION}</p>
         <h3 data-i18n="one_more_tune_clocks_title">Three kinds of time</h3>
         <p data-i18n="one_more_tune_clocks_note">Three clocks: the source anchor, the music's place in the film, the player's cue. They are never copied into each other.</p>
         <h3 data-i18n="one_more_tune_music_note_title">About the music</h3>

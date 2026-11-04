@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="zh-CN" class="discipline-note">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>这台桌上的 AI 不做什么 · AI System 6</title>
+<meta name="description" content="五条规则，写在这台桌子的代码里，而不是写在一份政策页上。每一条都注明由产品的哪一部分执行，也各有会在它被悄悄移除时失败的测试。">
+<link rel="canonical" href="https://aisystem6.aaronlau.me/discipline/zh-CN">
+<link rel="alternate" hreflang="en" href="https://aisystem6.aaronlau.me/discipline/">
+<link rel="alternate" hreflang="zh-CN" href="https://aisystem6.aaronlau.me/discipline/zh-CN">
+<link rel="alternate" hreflang="x-default" href="https://aisystem6.aaronlau.me/discipline/">
+<link rel="icon" href="../img/app-icon-192.png">
+<link rel="apple-touch-icon" href="../img/app-icon-180.png">
+<meta property="og:type" content="article">
+<meta property="og:title" content="这台桌上的 AI 不做什么">
+<meta property="og:description" content="五条规则，写在这台桌子的代码里，而不是写在一份政策页上。每一条都注明由产品的哪一部分执行，也各有会在它被悄悄移除时失败的测试。">
+<meta property="og:image" content="https://aisystem6.aaronlau.me/img/og-poster.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="AI System 6，一张 1988 年的写作桌。">
+<meta property="og:url" content="https://aisystem6.aaronlau.me/discipline/zh-CN">
+<meta property="og:site_name" content="AI System 6">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="这台桌上的 AI 不做什么">
+<meta name="twitter:description" content="五条规则，写在这台桌子的代码里，而不是写在一份政策页上。每一条都注明由产品的哪一部分执行，也各有会在它被悄悄移除时失败的测试。">
+<meta name="twitter:image" content="https://aisystem6.aaronlau.me/img/og-poster.png">
+<link rel="stylesheet" href="../site.css?v=20261104a">
+<link rel="stylesheet" href="../discipline.css?v=20261104a">
+</head>
+<body>
+
+<nav class="menu-bar" aria-label="Site">
+  <a class="menu-home" href="../zh-CN"><span class="menu-apple s6-mark" aria-hidden="true"></span><span class="menu-title">AI System 6</span></a>
+  <span class="menu-here">纪律</span>
+  <span class="menu-spacer"></span>
+  <a class="menu-link" href="./" lang="en">English</a>
+  <a class="menu-link menu-link-live" href="https://system6.aaronlau.me">运行中系统</a>
+</nav>
+
+<main class="dp" id="top">
+  <header class="dp-header">
+    <p class="dp-kicker">AI System 6 · 纪律</p>
+    <h1>这台桌上的 AI 不做什么</h1>
+    <p class="dp-dek">五条规则，写在这台桌子的代码里，而不是写在一份政策页上。每一条都注明由产品的哪一部分执行，也各有会在它被悄悄移除时失败的测试。</p>
+    <p class="dp-meta">2026 年 11 月 4 日 · 约 4 分钟</p>
+  </header>
+
+  <article class="dp-article">
+      <section class="dp-section" id="d-thinking" aria-labelledby="h-d-thinking">
+        <h2 id="h-d-thinking">它不假装在思考</h2>
+        <p>状态行只有七种状态：离线、空闲、正在读、正在写、等待、就绪、出错。它们只在真实运行事件发生时变化。管理它们的模块自带一句注释：不虚构状态，不播放假的「思考中」动画；只有真的能停下时，Stop 按钮才会出现。</p>
+        <p>一台表演思考的机器，会让人放松检查。这一台宁可什么都不报，也不报一种情绪。</p>
+      </section>
+      <section class="dp-section" id="d-receipts" aria-labelledby="h-d-receipts">
+        <h2 id="h-d-receipts">它不隐瞒读过什么</h2>
+        <p>每一次模型运行都留下一张回执：走了哪条路由、重试了几次、被允许看哪一段引用范围。回执存在项目里，随备份一起走，事后随时能查。</p>
+        <p>记忆边界窗口把每次运行取用的上下文显示为一个数目，对着一份预算。回执永远不存凭据，也永远不存思维链。</p>
+      </section>
+      <section class="dp-section" id="d-voice" aria-labelledby="h-d-voice">
+        <h2 id="h-d-voice">它不变成你的声音</h2>
+        <p>模型的输出在你亲手收下、剪入、插入或导出之前，始终只是候选。没有任何东西会自己进入稿子。</p>
+        <p>在审稿台上，回来的审稿伙伴把「AI 传声筒风险」单独立一栏，和事实风险、结构风险并列。一篇稿子漂向机器腔调，会像一处错误一样被认真对待。</p>
+      </section>
+      <section class="dp-section" id="d-asks" aria-labelledby="h-d-asks">
+        <h2 id="h-d-asks">动笔之前，先问过你</h2>
+        <p>当 Clio 处理文件时，无论是管文档的 ClioWork，还是管代码文件夹的 ClioCode，只读命令不问就跑，每一条危险命令每次都问。许可由你给，也记成你给的。</p>
+        <p>每次调用都留下检查点。后悔的一次改动是一次回退，不是一场从备份开始的恢复。</p>
+      </section>
+      <section class="dp-section" id="d-yours" aria-labelledby="h-d-yours">
+        <h2 id="h-d-yours">它跑在你的机器上，或者跑在你指定的模型上</h2>
+        <p>六条路由：本地的 LM Studio 和 Ollama，云端的 DeepSeek 和 Anthropic Messages，自定义端点，以及不接模型。不接模型时写作路线照样从头走到尾；唯一想要模型的一站，大纲生成，会明说，并保留你打下的每一个字。</p>
+        <p>服务器无状态，没有第二个项目数据库。凭据永远不进项目文件、对话、备份或导出；项目本身是你浏览器里一个可以导出的 IndexedDB 数据库。</p>
+      </section>
+
+    <aside class="dp-callout" aria-label="本页不证明什么">
+      <p class="dp-callout-title">本页不证明什么</p>
+      <p>这五条是软件行为，背后是会失败的测试。它们不会让任何人成为更好的作者，也不担保一篇稿子句句属实。它们只保证这台桌子对机器做过什么保持诚实，好让你自己的判断始终是那件要紧的事。</p>
+    </aside>
+
+    <p class="dp-actions"><a class="dp-button" href="https://system6.aaronlau.me">开一台试试</a><a class="dp-quiet" href="../zh-CN">回首页</a></p>
+  </article>
+
+  <section class="dp-sources" id="sources" aria-labelledby="sources-title">
+    <h2 id="sources-title">出处</h2>
+    <p>每条规则后面的执行者都可以打开看：两个源码文件、一份边界文档、一套契约测试，以及运行中的系统本身。核对于 2026 年 11 月 4 日。</p>
+    <ol>
+      <li id="src-live"><span class="dp-src-n">1</span><div><a href="https://system6.aaronlau.me" target="_blank" rel="noopener">AI System 6 · the running desk &#8599;</a><p>开一台试试。不需要模型，也不需要注册。</p></div></li>
+      <li id="src-localcloud"><span class="dp-src-n">2</span><div><a href="https://github.com/surfine/AI-System-6/blob/main/docs/LOCAL-AND-CLOUD.md" target="_blank" rel="noopener">Local and cloud in AI System 6 (document) &#8599;</a><p>本地与云的边界：哪一段路程离线可走、模型路由有哪几条、凭据不进哪些文件。</p></div></li>
+      <li id="src-activity"><span class="dp-src-n">3</span><div><a href="https://github.com/surfine/AI-System-6/blob/main/apps/desktop/app/core/assistant-activity.js" target="_blank" rel="noopener">The activity states (source) &#8599;</a><p>七个状态只由真实运行事件驱动；模块注释写明不造假状态、不放假的思考动画。</p></div></li>
+      <li id="src-receipts"><span class="dp-src-n">4</span><div><a href="https://github.com/surfine/AI-System-6/blob/main/apps/desktop/app/core/run-receipts.js" target="_blank" rel="noopener">Run receipts (source) &#8599;</a><p>每次模型运行的回执：路由、重试、引用范围；只记可验证事实，不记密钥，不记思维链。</p></div></li>
+      <li id="src-contracts"><span class="dp-src-n">5</span><div><a href="https://github.com/surfine/AI-System-6/tree/main/tests/features" target="_blank" rel="noopener">The contracts (tests) &#8599;</a><p>行为契约套件；其中 assistant-activity、run-receipts、research-methodology 三份守着本页的五条规则。</p></div></li>
+    </ol>
+  </section>
+
+  <footer class="site-footer dp-footer">
+    <p><a href="../zh-CN">AI System 6 首页</a> / <a href="https://system6.aaronlau.me">运行中系统</a> / <a href="https://github.com/surfine/AI-System-6">GitHub</a></p>
+    <p>采用 MIT 许可。AI System 6 是独立项目，与 Apple&nbsp;Inc. 没有关联，也未获其背书。</p>
+  </footer>
+</main>
+</body>
+</html>
+

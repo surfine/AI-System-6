@@ -1,8 +1,9 @@
-// A true first launch opens About on its "First time here" face: three equal
-// doors (pick a Mac, write one line, watch the film), not a wizard and not a
-// mounted Welcome Floppy. Resumable work always wins; any door, or an
-// ordinary ClioTalk exchange, completes the introduction; Replay Introduction
-// reopens the same face and never resets completion. (DESIGN.md, 2026-10-16.)
+// A true first launch opens About on its "First time here" face: four equal
+// doors (pick a Mac, write one line, watch the film, read a finished disk),
+// not a wizard and not a mounted Welcome Floppy. Resumable work always wins;
+// any door, or an ordinary ClioTalk exchange, completes the introduction;
+// Replay Introduction reopens the same face and never resets completion.
+// (DESIGN.md, 2026-10-16.)
 
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 
@@ -50,12 +51,13 @@ test.assertMatches(guide, /async function openAboutFirstTime\(\{ startup = false
 
 // --- The doors ------------------------------------------------------------
 
-for (const door of ["mac", "line", "film"]) {
+for (const door of ["mac", "line", "film", "disk"]) {
   test.assertIncludes(about, `door("${door}", "about_door_${door}"`, `the ${door} door exists`);
   test.assertIncludes(en, `about_door_${door}:`, `English copy names the ${door} door`);
   test.assertIncludes(zh, `about_door_${door}:`, `Chinese copy names the ${door} door`);
 }
 test.assertMatches(about, /function playFilm\(\) \{[\s\S]*?if \(face === "first"\) finishDoor\("film"\);/, "the film door counts once play is pressed");
+test.assertMatches(about, /await finishDoor\("disk"\);\s*\n\s*await handleAction\("open-demo-disks-latest"\);/, "the disk door finishes, then opens the same shelf the /go/disks link opens");
 test.assertMatches(about, /appearanceGrid\(\{ onPick: \(\) => finishDoor\("mac"\) \}\)/, "picking a Mac finishes that door");
 test.assertMatches(about, /landLineOnNotePad\(text\);\s*\n\s*await finishDoor\("line"\);/, "a kept line lands as a Note Pad slip and finishes that door");
 test.assertMatches(about, /async function finishDoor\(door\) \{[\s\S]*?completeClioOnboarding\(`about-\$\{door\}`\)[\s\S]*?show: false/, "a finished door completes the introduction and clears Show at startup");

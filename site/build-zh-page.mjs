@@ -165,6 +165,8 @@ const replacements = [
   ['href="history/"', 'href="history/zh-CN"'],
   ['Field&nbsp;Notes', '往事'],
   ['>Field Notes</a>', '>往事</a>'],
+  ['href="discipline/"', 'href="discipline/zh-CN"'],
+  ['>Discipline</a>', '>纪律</a>'],
   ['When you stop writing,<br>it\'s still a whole computer.', '写累了，<br>这还是一整台电脑。'],
   ['Games in windows, the desk accessories, and tools a quiet desk still has room for.', '窗口里的游戏、几样桌面附件，还有一张安静的写作桌仍然容得下的工具。'],
   [' Every picture here is a photograph of the running app.', '这里的每一张图，都拍摄自运行中的应用。'],

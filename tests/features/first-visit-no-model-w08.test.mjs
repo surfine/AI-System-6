@@ -22,16 +22,17 @@ test.assert(Object.keys(handlers).length > 150,
 test.assert(!ctx.cloudConfig?.active,
   "the boot state is a desk with no cloud model active");
 
-// The first visit leads with About's three doors, none of which needs a model:
-// picking a Mac and keeping a line are local, and the film is a frame. The
-// only door that asks a model ("let Clio ask me three questions") is grey with
-// its reason when none is connected, and the first face never mentions one.
+// The first visit leads with About's four doors, none of which needs a model:
+// picking a Mac and keeping a line are local, the film is a frame, and the
+// finished-disk shelf is bundled content. The only door that asks a model
+// ("let Clio ask me three questions") is grey with its reason when none is
+// connected, and the first face never mentions one.
 const about = read("app/features/about-desk.js");
 test.assertMatches(about, /function modelCanAsk\(\) \{[\s\S]*?return \{ ok: false, reason: "about_door_ask_no_model" \};/,
   "the one model-backed follow-up reports why it cannot run instead of failing");
 for (const locale of ["zh", "en"]) {
   const localized = read(`app/data/translations-${locale}.js`);
-  for (const key of ["about_first_tagline", "about_door_mac_body", "about_door_line_body", "about_door_film_body"]) {
+  for (const key of ["about_first_tagline", "about_door_mac_body", "about_door_line_body", "about_door_film_body", "about_door_disk_body"]) {
     const line = localized.split("\n").find((row) => row.includes(`${key}: "`)) || "";
     const copy = (line.match(/: "(.*)"/) || [])[1] || "";
     test.assert(copy.length > 8 && !/connect|连接|model|模型/i.test(copy),

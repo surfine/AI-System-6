@@ -191,12 +191,6 @@ function updateDictationTranscriptButtons() {
   renderDictation();
 }
 
-function hasDictationTranscript() {
-  const state = dictationSession?.state;
-  if (!state) return !!(dictationRawInput.value.trim() || dictationCleanedInput.value.trim());
-  return !!(state.raw.trim() || state.cleaned.trim());
-}
-
 // ----- recording ------------------------------------------------------------
 
 function startDictation() {

@@ -200,7 +200,7 @@ try {
   if (arrowAsset.corners.some(alpha => alpha !== 0) || arrowAsset.ink === 0) failure("select:asset", "Arrow must have visible ink and transparent corners");
   // Arrow ownership is shared across appearances. Check both initialization paths
   // and disabled controls, so a theme-only fix cannot conceal another duplicate.
-  for (const theme of ["classic", "platinum", "aqua", "snow-leopard", "yosemite", "liquid-glass"]) {
+  for (const theme of ["classic", "system-7", "platinum", "drawing-board", "aqua", "tiger", "snow-leopard", "lion", "yosemite", "big-sur", "liquid-glass", "nextstep"]) {
     await page.evaluate(theme => window.AISystem6Theme.applyTheme(theme, { persist: false, announce: false }), theme);
     for (const state of ["default", "hover", "focus"]) {
       const controls = page.locator("#liquid-shape-fixture .select-wrap");
@@ -220,6 +220,10 @@ try {
     }
     if (!options.primitives) await page.screenshot({ path: join(output, `select-states-${theme}.png`) });
   }
+  // The open-menu shape check below expects the rounded Liquid Glass surface.
+  // Reset after the twelve-theme loop so the last square-corner appearance
+  // cannot decide the result.
+  await page.evaluate(() => window.AISystem6Theme.applyTheme("liquid-glass", { persist: false, announce: false }));
   await page.locator("#shape-custom-wrap .system-select-button").click();
   await page.waitForFunction(() => getComputedStyle(document.querySelector("#shape-custom-wrap .system-select-menu")).opacity === "1", null, { timeout: 3000 });
   await inspect("fixture:open-select", "#shape-custom-wrap .system-select-menu");

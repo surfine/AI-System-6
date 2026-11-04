@@ -189,8 +189,8 @@ function renderSystemHelp() {
 
   systemHelpListEl.replaceChildren();
   if (!visibleEntries.length) {
-    systemHelpListEl.innerHTML = `<p class="empty-folder-note">${escapeHtml(t("system_help_empty"))}</p>`;
-    systemHelpDetailEl.innerHTML = `<p class="empty-folder-note">${escapeHtml(t("system_help_empty"))}</p>`;
+    systemHelpListEl.innerHTML = html`<p class="empty-folder-note">${html.raw(t("system_help_empty"))}</p>`;
+    systemHelpDetailEl.innerHTML = html`<p class="empty-folder-note">${html.raw(t("system_help_empty"))}</p>`;
     return;
   }
 
@@ -213,10 +213,10 @@ function renderSystemHelp() {
     button.setAttribute("aria-selected", id === selectedSystemHelpEntryId ? "true" : "false");
     button.className = id === selectedSystemHelpEntryId ? "is-selected" : "";
     const secondaryName = currentLanguage === "zh" ? entry.termZh : "";
-    button.innerHTML = `
+    button.innerHTML = html`
       ${renderSystemIcon(systemHelpEntryIcon(entry), { size: "help-row" })}
-      <b>${escapeHtml(entry.term)}</b>
-      <small>${escapeHtml(secondaryName && secondaryName !== entry.term ? secondaryName : "")}</small>
+      <b>${entry.term}</b>
+      <small>${secondaryName && secondaryName !== entry.term ? secondaryName : ""}</small>
     `;
     // Selecting a row must not rebuild the list: replaceChildren() drops the
     // scroll offset and the focused element, so on a phone the list snapped
@@ -260,41 +260,41 @@ function renderSystemHelpDetail(entry) {
   const secondaryName = currentLanguage === "zh" && entry.termZh && entry.termZh !== entry.term ? entry.termZh : "";
   const routeRibbon = entry.category === "route" ? systemHelpRouteRibbon(entry) : "";
 
-  systemHelpDetailEl.innerHTML = `
+  systemHelpDetailEl.innerHTML = html`
     <article class="system-help-card">
       <header class="system-help-head">
         ${renderSystemIcon(systemHelpEntryIcon(entry), { size: "help-object" })}
         <div>
-          <h3>${escapeHtml(entry.term)}</h3>
-          <p>${escapeHtml([secondaryName, systemHelpGroupLabel(entry.category)].filter(Boolean).join(" · "))}</p>
+          <h3>${entry.term}</h3>
+          <p>${[secondaryName, systemHelpGroupLabel(entry.category)].filter(Boolean).join(" · ")}</p>
         </div>
       </header>
       <div class="system-help-card-scroll">
         <dl class="system-help-info">
-          ${routeRibbon ? `
-            <dt>${escapeHtml(t("system_help_position"))}</dt>
-            <dd>${routeRibbon}</dd>
+          ${routeRibbon ? html`
+            <dt>${html.raw(t("system_help_position"))}</dt>
+            <dd>${html.raw(routeRibbon)}</dd>
           ` : ""}
-          <dt>${escapeHtml(t("system_help_definition"))}</dt>
-          <dd>${escapeHtml(definition)}</dd>
-          ${example ? `
-            <dt>${escapeHtml(t("dictionary_example"))}</dt>
-            <dd>${escapeHtml(example)}</dd>
+          <dt>${html.raw(t("system_help_definition"))}</dt>
+          <dd>${definition}</dd>
+          ${example ? html`
+            <dt>${html.raw(t("dictionary_example"))}</dt>
+            <dd>${example}</dd>
           ` : ""}
-          ${aliases.length ? `
-            <dt>${escapeHtml(t("system_help_aliases"))}</dt>
-            <dd class="system-help-aliases">${aliases.map((alias) => `<span>${escapeHtml(alias)}</span>`).join("")}</dd>
+          ${aliases.length ? html`
+            <dt>${html.raw(t("system_help_aliases"))}</dt>
+            <dd class="system-help-aliases">${aliases.map((alias) => html`<span>${alias}</span>`)}</dd>
           ` : ""}
-          ${relatedEntries.length ? `
-            <dt>${escapeHtml(t("system_help_related"))}</dt>
-            <dd class="system-help-related">${relatedEntries.map((related) => `<button type="button" class="system-help-related-link" data-system-help-related="${escapeHtml(systemHelpEntryId(related))}">${escapeHtml(currentLanguage === "zh" ? related.termZh || related.term : related.term)}</button>`).join("")}</dd>
+          ${relatedEntries.length ? html`
+            <dt>${html.raw(t("system_help_related"))}</dt>
+            <dd class="system-help-related">${relatedEntries.map((related) => html`<button type="button" class="system-help-related-link" data-system-help-related="${systemHelpEntryId(related)}">${currentLanguage === "zh" ? related.termZh || related.term : related.term}</button>`)}</dd>
           ` : ""}
         </dl>
       </div>
       <div class="button-row system-help-actions">
-        <button type="button" class="btn" data-system-help-action="lookup">${escapeHtml(t("system_help_lookup_dictionary"))}</button>
-        <button type="button" class="btn${actionLabel ? "" : " default"}" data-system-help-action="ask">${escapeHtml(t("system_help_ask_assistant"))}</button>
-        ${actionLabel ? `<button type="button" class="btn default" data-system-help-action="open">${escapeHtml(actionLabel)}</button>` : ""}
+        <button type="button" class="btn" data-system-help-action="lookup">${html.raw(t("system_help_lookup_dictionary"))}</button>
+        <button type="button" class="btn${actionLabel ? "" : " default"}" data-system-help-action="ask">${html.raw(t("system_help_ask_assistant"))}</button>
+        ${actionLabel ? html`<button type="button" class="btn default" data-system-help-action="open">${actionLabel}</button>` : ""}
       </div>
     </article>
   `;
@@ -483,24 +483,6 @@ function renderDictionaryRecent() {
   });
 }
 
-function formatDictionaryMarkdown(result = currentDictionaryResult) {
-  if (!result) return "";
-  return [
-    `# ${result.term}`,
-    "",
-    `${t("branch_kind")}: ${result.kind || "term"}`,
-    `${t("dictionary_language")}: ${languageDisplayName(result.language) || result.language || "unknown"}`,
-    `${t("dictionary_source_mode")}: ${result.sourceMode || t("dictionary_no_source")}`,
-    result.model ? `Model: ${result.model}` : "",
-    "",
-    `## ${t("dictionary_definition")}`,
-    result.definition || "",
-    result.chineseExplanation ? ["", `## ${t("dictionary_chinese")}`, result.chineseExplanation].join("\n") : "",
-    result.example ? ["", `## ${t("dictionary_example")}`, result.example].join("\n") : "",
-    result.sourceLabel ? ["", "## Source", result.sourceLabel, result.sourceContext || ""].join("\n") : "",
-  ].filter(Boolean).join("\n");
-}
-
 function renderDictionaryResult(result = currentDictionaryResult, message = "") {
   if (!dictionaryResultEl) return;
   if (result !== undefined) currentDictionaryResult = result;
@@ -515,15 +497,15 @@ function renderDictionaryResult(result = currentDictionaryResult, message = "") 
   else renderDictionaryRecent();
 
   if (message) {
-    dictionaryResultEl.innerHTML = `<p class="empty-folder-note">${escapeHtml(message)}</p>`;
+    dictionaryResultEl.innerHTML = html`<p class="empty-folder-note">${message}</p>`;
     return;
   }
   if (!active) {
-    dictionaryResultEl.innerHTML = `<p class="empty-folder-note">${escapeHtml(t("dictionary_empty"))}</p>`;
+    dictionaryResultEl.innerHTML = html`<p class="empty-folder-note">${html.raw(t("dictionary_empty"))}</p>`;
     return;
   }
   if (active.markdown) {
-    dictionaryResultEl.innerHTML = `
+    dictionaryResultEl.innerHTML = html`
       <article class="dictionary-card dictionary-markdown-card">
         ${markdownToSystemHtml(active.markdown)}
       </article>
@@ -531,21 +513,21 @@ function renderDictionaryResult(result = currentDictionaryResult, message = "") 
     return;
   }
 
-  dictionaryResultEl.innerHTML = `
+  dictionaryResultEl.innerHTML = html`
     <article class="dictionary-card">
-      <h3>${escapeHtml(active.term)}</h3>
+      <h3>${active.term}</h3>
       <dl>
-        <dt>${escapeHtml(t("dictionary_language"))}</dt>
-        <dd>${escapeHtml(languageDisplayName(active.language) || active.language || "unknown")}</dd>
-        <dt>${escapeHtml(t("branch_kind"))}</dt>
-        <dd>${escapeHtml(active.kind || "term")}</dd>
-        <dt>${escapeHtml(t("dictionary_source_mode"))}</dt>
-        <dd>${escapeHtml(active.sourceMode || t("dictionary_no_source"))}</dd>
-        <dt>${escapeHtml(t("dictionary_definition"))}</dt>
-        <dd>${escapeHtml(active.definition || "")}</dd>
-        ${active.chineseExplanation ? `<dt>${escapeHtml(t("dictionary_chinese"))}</dt><dd>${escapeHtml(active.chineseExplanation)}</dd>` : ""}
-        ${active.example ? `<dt>${escapeHtml(t("dictionary_example"))}</dt><dd>${escapeHtml(active.example)}</dd>` : ""}
-        ${active.sourceContext ? `<dt>${escapeHtml(t("dictionary_context"))}</dt><dd>${escapeHtml(clipDictionaryContext(active.sourceContext, 240))}</dd>` : ""}
+        <dt>${html.raw(t("dictionary_language"))}</dt>
+        <dd>${languageDisplayName(active.language) || active.language || "unknown"}</dd>
+        <dt>${html.raw(t("branch_kind"))}</dt>
+        <dd>${active.kind || "term"}</dd>
+        <dt>${html.raw(t("dictionary_source_mode"))}</dt>
+        <dd>${active.sourceMode || html.raw(t("dictionary_no_source"))}</dd>
+        <dt>${html.raw(t("dictionary_definition"))}</dt>
+        <dd>${active.definition || ""}</dd>
+        ${active.chineseExplanation ? html`<dt>${html.raw(t("dictionary_chinese"))}</dt><dd>${active.chineseExplanation}</dd>` : ""}
+        ${active.example ? html`<dt>${html.raw(t("dictionary_example"))}</dt><dd>${active.example}</dd>` : ""}
+        ${active.sourceContext ? html`<dt>${html.raw(t("dictionary_context"))}</dt><dd>${clipDictionaryContexhtml.raw(t(active.sourceContext, 240))}</dd>` : ""}
       </dl>
     </article>
   `;

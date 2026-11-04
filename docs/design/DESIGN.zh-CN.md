@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/DESIGN.md -->
-<!-- source-sha256: 5bc3f0ad8407b1d32d6f8c88186f169d1ad6c03a2d83e5e2396c769cbb1dad1d -->
+<!-- source-sha256: d6184b9abf0aeb73cba2ce00d2034d9519e864a47674ab38eb3fefedb9a74a5b -->
 
 # AI System 6 设计合约
 
@@ -18,6 +18,10 @@ AI System 6 是产品 UI，不是营销页面。设计服务于正在阅读来�
 
 增加可见能力前，先回答三项完成度问题：它是否让第一份成品更容易完成、让已有作品更安全，
 或让下一次会话更容易继续？三个答案都是否的变更属于功能清单，不属于产品完成度，不进入当前 Beta。
+
+官网、博客和公开文档是阅读表面，不是产品 UI。它们遵循
+[SITE-EDITORIAL.zh-CN.md](SITE-EDITORIAL.zh-CN.md)；README 和 CHANGELOG 只保留基本排版要求。
+阅读表面上的产品截图或演示，展示产品区域时仍受本合约约束。
 
 Macintosh System 6 桌面隐喻是约束，不是装饰：
 
@@ -39,11 +43,13 @@ Classic Mac OS 思想，只要能改善产品，就可以被引进、消化和�
 
 - 先检查原生资源或对应年代的真实运行行为，并记录证据来自哪个系统版本；不能把后来的功能
   说成 System 6 的原生行为。
+- 找不到原生资源或截图时，从最近年代的原生证据推导，记录依据，并把结果标注为近似。
+  推导不等于原生行为。
 - 保留原始角色和状态转换。外观相近或位于同一块窗口边框上的控件，并不因此可以互换。
 - 针对网页、指针、键盘、触控、窄屏和无障碍重新消化，而不是复刻过时的输入限制。
 - 默认体验保持安静。后续系统功能应按需出现，或在真正相关时出现，不能堆成功能清单。
-- 八套 Appearance 使用同一套语义 DOM 和状态模型。各时代只改变材质与视觉几何，不改变
-  对象含义。
+- 十二套 Appearance 使用同一套语义 DOM 和状态模型。各时代改变材质与视觉几何，并可登记
+  布局 recipe；都不改变对象含义。
 
 控件语义是承重规则：
 
@@ -110,11 +116,14 @@ Classic Mac OS 思想，只要能改善产品，就可以被引进、消化和�
 
 本产品的默认设计设置：
 
-| 旋钮 | 数值 | 含义 |
-| --- | --- | --- |
-| 设计变化度 | 3 / 10 | 可预测的 System 6 对象语法。不要任意做表现型布局。 |
-| 动效强度 | 2 / 10 | 只做状态反馈。不要装饰性编舞。 |
-| 视觉密度 | 7 / 10 | 稠密、可扫读的工具表面。留白主要给写作和阅读。 |
+| 旋钮 | 写作／阅读 | 工具 | 含义 |
+| --- | --- | --- | --- |
+| 设计变化度 | 3 / 10 | 3 / 10 | 可预测的 System 6 对象语法。不要任意做表现型布局。 |
+| 动效强度 | 2 / 10 | 2 / 10 | 只做状态反馈。不要装饰性编舞。 |
+| 视觉密度 | 4 / 10 | 7 / 10 | 写作和阅读留白；工具表面稠密、可扫读。 |
+
+两列是同一套语法在不同呼吸率下的取值。不要另立第三套密度，也不要让工具表面误继承
+写作列。
 
 例外必须写进 feature contract。`Cover Glass` 玻璃封面（文件名 `liquid-cover.js`）、`CMF Studio`、`ClioStage` 和媒体创作工具可以有更宽的视觉范围，但仍要复用同一套窗口、控件、状态和主题合约。
 
@@ -133,7 +142,7 @@ Classic Mac OS 思想，只要能改善产品，就可以被引进、消化和�
 
 `verify:css`（包括带 `--css-file` 的 `verify:quick`）自动运行
 `node tooling/verify-liquid-shapes.mjs --primitives`。这个轻量浏览器夹具直接加载
-生产源样式（含延迟样式）、主题注册表和真实下拉控件函数，检查六种外观、控件字体、
+生产源样式（含延迟样式）、主题注册表和真实下拉控件函数，检查十二种外观、控件字体、
 箭头唯一性与透明底、原生控件隐藏，以及 Liquid Glass 控件和面板的圆角。
 不需要应用服务或构建；报告分别存入 `dist/verification/liquid-shapes/`。
 失败会阻断 CSS 门禁。`visual-primitives` 功能测试会故意放回已知错误，证明检查能发现它们。
@@ -152,6 +161,9 @@ Yosemite、Big Sur、Liquid Glass 和 NeXTSTEP 是同一桌面语言的材质皮
 Theme Lab Surfaces 打磨对照板产品化 key-window／vibrancy／灰阶／quiet-focus 量测，
 且不会清空未完成的 `polishTodos`。
 
+十二套全部保持受支持、可由用户选择，并纳入新功能验收。下面四条只是编写与维护谱系，
+不是支持层级：它们组织 recipe，不淘汰任何外观。
+
 维护谱系刻意分为四条：
 
 - Classic → System 7／Platinum → Drawing Board
@@ -160,8 +172,27 @@ Theme Lab Surfaces 打磨对照板产品化 key-window／vibrancy／灰阶／qui
 - NeXTSTEP（独立材质适配；专用图标押后，暂用 Classic）
 
 `recipeBase` 指定比较与编写时的基底，不会激活第二个主题 class。每个子主题拥有可评审的
-显式差异，因此 Aqua 的糖果材质不会泄漏到 Snow Leopard，Liquid Glass 的折射也不会泄漏到
-Yosemite。`family` 只用于确实共享的内部 primitive。
+显式差异——材质 token，以及历史材质确实需要时的一份布局 recipe——因此 Aqua 的糖果材质不会
+泄漏到 Snow Leopard，Liquid Glass 的折射也不会泄漏到 Yosemite。`family` 只用于确实共享的
+内部 primitive。
+
+布局 recipe 可以通过 CSS 改变排列、密度、分组和间距；不得改变 DOM 结构、任务顺序、状态机、
+对象名称或动作动词、保存状态语义、窗口所有权，以及阅读、写作、摘录、保存和导出规则。
+布局 recipe 需要自己的夹具和验收证据；只通过父级的材质夹具不够。
+
+### 布局 recipe 登记表
+
+需要与根外观不同布局的子外观，在合并前先在这里登记一行。没有行就意味着继承根的布局。
+
+| 根 | 布局 recipe 归属 | 夹具 | 备注 |
+| --- | --- | --- | --- |
+| Classic | `apps/desktop/styles/00-foundation.css` + `65-appearance-themes.css` | `verify-liquid-shapes --primitives` | 语法基线 |
+| Aqua | `apps/desktop/styles/65-appearance-themes.css` | `verify-liquid-shapes --primitives` | 细条纹／塑料纵深 |
+| Liquid Glass | `apps/desktop/styles/70-liquid-glass.css` | `verify-liquid-shapes --primitives` | 玻璃材质、圆角梯度 |
+| NeXTSTEP | `apps/desktop/styles/65-appearance-themes.css` | `verify-liquid-shapes --primitives` | 独立材质适配 |
+
+有不同布局的子外观要增加一行，写自己的 recipe 文件和夹具；没有夹具的行算未完成登记。
+布局 recipe 只改 CSS。需要不同 DOM 的子外观不是布局 recipe，而是新的核心对象，走上面的闸门。
 
 主题可以改变：
 
@@ -170,6 +201,7 @@ Yosemite。`family` 只用于确实共享的内部 primitive。
 - 圆角 token。
 - 同一语义图标 id 下的图标渲染。
 - 材质需要的小幅视觉间距修正。
+- 布局 recipe：排列、密度、分组和间距，但 DOM 不变。
 
 主题不得在没有文档说明的情况下改变：
 
@@ -178,6 +210,7 @@ Yosemite。`family` 只用于确实共享的内部 primitive。
 - 对象名称或动作动词。
 - 保存状态语义。
 - 窗口所有权边界。
+- DOM 结构或状态机。
 - 阅读、写作、摘录、保存或导出规则。
 
 Appearance 工作应优先走 token：
@@ -235,6 +268,9 @@ regular/small/mini 的关系；同期 Web CSS 只约束相同的 Web 自有表�
 原生打开面板共同显示的 15px 蓝色 Aqua 控件。外部 selector、组件 DOM 和 Apple 所有的美术
 资源不得进入仓库。
 
+近似项在合并前登记在本台账：写清推导的细节、最近年代来源和消费它的 recipe 行。详细截图
+可以放在 `internal/evidence/`；未登记的近似不按原生处理。
+
 Yosemite 只是维护血缘上的 Liquid-Glass 家族后代：它拥有
 `body[data-theme="yosemite"]` 下独立的 10.10 painter，绝不能被实现为
 "Liquid Glass 减去玻璃覆盖"（见 [THEME-FAMILY-CONTRACT.md](THEME-FAMILY-CONTRACT.md)）。
@@ -271,7 +307,15 @@ agent 发明 UI 前必须先选择一个对象角色：
 
 不要因为某个形状看起来现代就新增组件。只有现有对象角色无法表达任务时，才添加新形状。
 
-**这些原语已经承载全部六个纪元。** 用它们搭出来的应用，不写一行主题 CSS 就继承
+新核心对象是这张表里新增的一行，不是一个复用旧角色的新窗口。例外必须同时满足：
+
+1. 在本文件中写入对象角色、状态和所有权。
+2. 功能合约指明它替代或退场的现有对象。
+3. 每个版本最多新增一个核心对象。
+
+三条不齐时，用现有角色和原语完成任务。使用 `.window` 和既有角色的新窗口不算新核心对象。
+
+**这些原语已经承载全部十二个纪元。** 用它们搭出来的应用，不写一行主题 CSS 就继承
 了每一个纪元——这正是上面那份清单是规则而不是建议的原因：
 
 | 原语 | 承载什么 |
@@ -285,16 +329,20 @@ agent 发明 UI 前必须先选择一个对象角色：
 | `.finder-item`、`.sys-icon` | 对象与它们的图标 |
 
 反过来就是 Theme Lab 执行的规则：**不在**这份清单上的控件没有纪元行头可继承，
-为一个标本造一个，等于为六个纪元的装修买单而没有任何用户界面因此受益。Theme Lab
+为一个标本造一个，等于为十二个纪元的装修买单而没有任何用户界面因此受益。Theme Lab
 只展示这些原语；`verify:css` 用 `themeLabReplicaMentions` 棘轮锁住它对外观表的开销。
 
 ## 布局和几何
 
 窗口和 panel 几何必须 token 化。重复出现的新值应放进 `apps/desktop/styles/00-foundation.css`，不要散落在多个 selector 中。
 
+窗口和控件几何在所有外观、所有视口共用同一套响应式 token scale。历史尺寸角色（regular、
+small、mini）保留为语义 token；不要重新引入固定的原生像素尺寸。年代感来自相对比例，
+不是绝对像素。
+
 使用：
 
-- 产品 UI 控件使用固定 rem 或 px scale。
+- 产品 UI 控件使用固定 rem 或 px 的 token scale；不用逐外观原生尺寸。
 - 二维 pane 使用 CSS Grid。
 - 一维行和按钮组使用 Flexbox。
 - sibling 间距使用 `gap`。
@@ -311,6 +359,9 @@ agent 发明 UI 前必须先选择一个对象角色：
 - 在 `top`、`left`、`width`、`height`、`padding` 或 `margin` 上做布局动画。
 
 稠密工具表面应使用 pane、row、divider 和对象列表。Card 只用于重复条目、modal 和确实需要框定的工具。
+
+写作和阅读表面不要给单个来源、草稿或小节套 card；用 pane、row 或 divider。给单个对象套 card
+是 dashboard 习惯，不是层级。
 
 层级使用 `apps/desktop/styles/00-foundation.css` 中具名的 `--z-*` 词汇。全局层级顺序为窗口、
 置顶窗口、系统 modal、启动/关机、演示遮罩，最后是系统菜单。窗口内部控件、
@@ -358,8 +409,16 @@ Yosemite 由 Liquid Glass 派生：
 所有 Appearance 共同遵守：
 
 - 每个对象 id 只有一个图标家族。
+- 有原生证据时，用该年代的原生图标渲染同一语义 icon id；没有证据时从最近年代推导，
+  记录依据并标注近似；不要把现代重绘说成原生。
+- 1-bit 图标、边框和位图只按整数倍、最近邻缩放。布局几何可以用分数 token；不要为了让
+  1-bit 资产塞进分数框而做平滑。
 - 控件使用同一套状态词汇。
 - 英文和中文文本都必须放得下。
+- 可见目标保持历史尺寸；指针和触控命中区隐形扩大到至少 44×44 CSS px，不移动相邻对象。
+- 历史颜色与对比度冲突时，保留色相和关系，只调明度到文字可读，并记录偏差；不要为了
+  现代可访问色板换掉色相。
+- 空状态和错误态用年代原生的图标或线条语言加文字。不要现代插画；生成图不是状态。
 - 除非操作确实发生，视觉状态不得暗示保存、记忆、联网、索引、检查或导出。
 
 ## 交互和动效
@@ -367,7 +426,12 @@ Yosemite 由 Liquid Glass 派生：
 产品动效是反馈：
 
 - 交互组件必须有 hover、focus、active、selected、disabled、loading、empty 和 error 状态。
-- 大多数 transition 应在 150 到 250 ms。
+- transition 时长遵循外观阶梯：
+  - Classic、System 7、Platinum、Drawing Board、NeXTSTEP：0ms，状态当帧切换。
+  - Aqua、Tiger：100ms。
+  - Snow Leopard、Lion：120ms。
+  - Yosemite、Big Sur、Liquid Glass：180ms ease-out。
+  需要不同值的子外观在自己的 recipe 行记录；不要发明第十三种时长。
 - 默认只动画 transform 和 opacity。
 - 遵守 `prefers-reduced-motion`。
 - 普通产品窗口不做页面加载编舞。
@@ -445,7 +509,15 @@ UI 文案应该直接，并且绑定对象：
 修改 UI 表面前，确定对象角色、复用原语、参数归属和受影响状态。
 新增或修改控件都要遵守上面的共享控件不变量。新原语说明必要性并补充夹具；
 普通复用不要求填写固定问卷或报告。证据按行为选择：局部控件修正不重跑
-六时代应用或手机／平板矩阵，布局变化仍检查相应主题和方向下的受影响表面。
+全外观矩阵或手机／平板矩阵，布局变化仍检查相应主题和方向下的受影响表面。
+
+Agent 为评审、提案或文档生成的解释性视觉（示意图、图表、界面草图、交互解释与插画）遵循 `visual-creation` 技能。按交付物选择语域：
+
+- 内部评审、证据或工作笔记：中性解释语域。
+- 对外提案或公开分享：项目自己的语域——产品表面用本合约与 `system6-ui-review`，站点或公开文档用 `SITE-EDITORIAL.zh-CN.md`。
+- 产品界面的草图始终用产品语域，与路径无关。
+
+路径是默认信号：`internal/**` 为内部；`docs/**`、`site/**` 和其他公开输出为外部。文件头或任务中的显式声明可以覆盖路径。路径和声明都判断不了时，用中性语域并说明。解释语域不改变产品材质、字体或图标。
 
 ## 禁止的默认做法
 

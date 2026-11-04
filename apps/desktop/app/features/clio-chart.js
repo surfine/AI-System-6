@@ -2935,25 +2935,6 @@ function clioChartPackSource(text, budget = CLIO_CHART_PROSE_SOURCE_BUDGET) {
   return [...keep].sort((a, b) => a - b).map((index) => paragraphs[index]).join("\n\n");
 }
 
-function clioChartExtractionPrompt(source, packed, repair = null) {
-  const zh = currentLanguage === "zh";
-  return [
-    zh ? `来源：${source.label || t("untitled")}` : `Source: ${source.label || t("untitled")}`,
-    "",
-    zh
-      ? "返回一行紧凑 JSON（不换行、不缩进），quote 不超过 30 字：{\"candidates\":[{\"title\":\"一句读图结论\",\"kind\":\"quantitative 或 qualitative\",\"subject\":\"行代表什么\",\"reference\":\"作为基准的行名，可空\",\"columns\":[{\"text\":\"指标名\",\"unit\":\"单位\",\"lower\":false}],\"rows\":[{\"label\":\"对象名\",\"cells\":[{\"text\":\"值或短语\",\"quote\":\"含这个值的原文片段\"}]}],\"reading\":\"一句话说明怎么读这张图\"}]}"
-      : "Return one line of compact JSON (no line breaks or indentation); keep each quote under 30 words: {\"candidates\":[{\"title\":\"one-sentence finding\",\"kind\":\"quantitative or qualitative\",\"subject\":\"what the rows are\",\"reference\":\"baseline row label, may be empty\",\"columns\":[{\"text\":\"metric\",\"unit\":\"unit\",\"lower\":false}],\"rows\":[{\"label\":\"item\",\"cells\":[{\"text\":\"value or phrase\",\"quote\":\"source words containing it\"}]}],\"reading\":\"one sentence on how to read the chart\"}]}",
-    repair
-      ? (zh
-        ? `上一稿有 ${repair.blanked} 个格子在原文里找不到依据，已被清空。只用原文出现过的数字和短语重做，quote 必须逐字照抄原文。`
-        : `${repair.blanked} cells in the last draft had no support in the source and were cleared. Redo it using only numbers and phrases the source writes; each quote must be copied verbatim.`)
-      : "",
-    "",
-    zh ? "来源文字：" : "SOURCE TEXT:",
-    packed,
-  ].filter((line) => line !== "").join("\n");
-}
-
 function clioChartParseModelJson(text) {
   const body = String(text || "").replace(/^\s*```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
   const start = body.indexOf("{");

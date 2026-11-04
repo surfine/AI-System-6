@@ -1,5 +1,5 @@
 <!-- canonical-source: README.md -->
-<!-- source-sha256: 15f1eb02f6b33c25ac5c61322776469e4bf8fab2c07e23e7e63ec373f928af10 -->
+<!-- source-sha256: 935ebbd21123eb996da2697e80bf25640957d3bd05c92eb5c4c596e7c6e07f76 -->
 
 > 英文版为准 / 仅供人类参考
 
@@ -10,7 +10,7 @@
 # AI System 6
 
 <!-- status:start -->
-**测试版 2.0.0-beta.1** · 构建 20261101.1 · 2026-11-01 · [发布说明](https://github.com/surfine/AI-System-6/releases/tag/v2.0.0-beta.1)
+**测试版 2.0.0-beta.2** · 构建 20261104.1 · 2026-11-04 · [发布说明](https://github.com/surfine/AI-System-6/releases/tag/v2.0.0-beta.2)
 <!-- status:end -->
 
 **一张本地优先的写作桌，AI 永远不会变成你的嗓音。**<br>
@@ -50,9 +50,10 @@
 
 ## 目录
 
-- [2.0.0-beta.1 有什么新东西](#200-beta1-有什么新东西)
+- [2.0.0-beta.2 有什么新东西](#200-beta2-有什么新东西)
 - [60 秒跑起来](#60-秒跑起来)
 - [它保护什么](#它保护什么)
+- [这里的 AI 不做什么](#这里的-ai-不做什么)
 - [路线就是产品](#路线就是产品)
 - [约束里还留得下的东西](#约束里还留得下的东西)
 - [一张桌，十二个系统](#一张桌十二个系统)
@@ -63,14 +64,13 @@
 - [参与贡献](#参与贡献)
 - [许可证](#许可证)
 
-## 2.0.0-beta.1 有什么新东西
+## 2.0.0-beta.2 有什么新东西
 
-- **ClioTalk，以及它旁边的 ClioWork 与 ClioCode。** ClioWork 是从 Clio 左栏进入的文档工作室：最多挑三份项目里的 Office 文档，交给 Clio 一个任务，结果带着待处理修订在 Clio 旁边打开。ClioCode 在你授权的代码文件夹里原地工作，权限模式像 Claude Code：只读命令直接跑，危险命令每次都问，引擎在 Seatbelt 沙盒里运行，每次调用都留下可回退的检查点。
-- **三个引擎，长任务保留状态。** DeepSeek Harness，加上通过 ACP 接入的 Codex 与 Claude Code；沙盒、文件和每一次权限回答都由桌面保管。任务有进度账本和卡住报告，重启后可以继续，可以从任何完成的回合分叉，也可以把运行中输入的后续排队。
-- **Clio 提议要记住什么，你决定。** 技能和记忆按项目或整张桌面由 Clio 提议，只有你接受后才生效；Extensions 窗口负责列出、导出、导入和五个内置角色。
-- **Chooser 为 MCP 重新设计。** System 6 驱动栏、MCP 启用/停用开关、每位访客按工具的允许/每次询问/关闭与项目挂载，以及最近调用列表。Clio 可以通过本地网关使用外部连接器，仍然是同样的逐工具选择。
-- **更多 Office，以及新的关于本机。** ClioChart 增加函数、页面设置和 PDF 打印；ClioStage 增加动画窗格、切换、备注母版和讲义；ClioWrite 可以编辑页眉、页脚和页码。About This Mac 列出这张桌的事实。
-- **写作评测。** `tests/evals` 里有 21 个来自演示盘的真实写作与编辑任务，离线评分器不需要模型。
+- **「第一次来这里」多了一扇读成品盘的门。** 在挑一台 Mac、写一句话、看宣传片之外新增第四扇门：读一块成品盘。它把演示盘书架打开在最新的一篇上，只读；点「打开副本」，这块盘连同它走过的整条写作路线就变成你自己的。不需要模型，也不需要注册。
+- **AI 的纪律成了一页人人可查的说明。** 产品官网新增[「这台桌上的 AI 不做什么」](https://aisystem6.aaronlau.me/discipline/zh-CN)：五条写进代码的规则，每条都注明仓库里执行它的源码。README 也带上了同一份清单。
+- **Bonsai City 的预算面板恢复渲染。** 城市报告、一月的预算面板、地块气泡和 OSM 地点列表不再以转义文本出现。
+
+2.0.0-beta.1 的内容（ClioWork、ClioCode、三个引擎、Extensions 与 MCP Chooser）见下方变更日志。
 
 完整发布历史在 [docs/CHANGELOG.zh-CN.md](docs/CHANGELOG.zh-CN.md)；每个测试版也在 [GitHub Releases](https://github.com/surfine/AI-System-6/releases)。
 
@@ -102,6 +102,18 @@ AI 写作工具通常做两件事之一：替你写，或者藏起字是从哪�
 你粗糙的问题仍然属于你。从问题到提纲、到分节草稿、到正文的路线，让每条来源都贴在它支撑的那句话旁边。AI 的建议以候选形式到达；你不接受，它就不会进入正文。应用在你浏览器里运行，服务端不存项目，项目状态是一个可以导出的 IndexedDB 数据库。
 
 Macintosh System 6 桌面是**约束，不是卖点**。它把表面小到可以理解，也让产品拿 1988 年的预算检验自己。
+
+## 这里的 AI 不做什么
+
+五条规则，写在这张桌自己的代码里，每条背后都有一份会在它被悄悄移除时失败的契约：
+
+- **它不假装在思考。** 状态行的七种状态只在真实运行事件时变化；只有真的能停下，Stop 按钮才会出现。
+- **它不隐瞒读过什么。** 每次模型运行都留下回执（路由、重试、引用范围）；回执永远不存凭据，也不存思维链。
+- **它不变成你的声音。** 模型的输出在你收下之前只是候选；审稿台把 AI 传声筒漂移和事实、结构并列检查。
+- **动笔之前，先问过你。** 在 ClioWork 和 ClioCode 里，只读命令直接跑，危险命令每次都问，每次调用都留下可以回退的检查点。
+- **它跑在你的机器上，或者你指定的模型上。** 不接模型，路线照样走完；服务器无状态，没有第二个项目数据库。
+
+带出处的那一页长文在[产品官网](https://aisystem6.aaronlau.me/discipline/zh-CN)；本地与云的边界见 [docs/LOCAL-AND-CLOUD.md](docs/LOCAL-AND-CLOUD.md)。
 
 ## 路线就是产品
 
@@ -152,6 +164,10 @@ Macintosh System 6 桌面是**约束，不是卖点**。它把表面小到可以
 </table>
 
 <sub>CLASSIC · PLATINUM · AQUA · LIQUID GLASS——另外八种在<a href="https://aisystem6.aaronlau.me/zh-CN.html">产品官网</a>。</sub>
+
+<p align="center"><img src="apps/desktop/assets/readme/appearances.gif" alt="同一张桌面逐个窗口换时代，截自运行中的真实应用" width="80%"></p>
+
+<sub>同一张桌，正在换时代——截自运行中的真实应用。</sub>
 
 **Bonsai City** 和 **One More Tune** 是完整应用，不是演示：一座从种子长起来的城镇，和一个建立在真实牌组上的音乐回合。**它还能跑 DOOM**——以及 OpenTTD、Micropolis 和三个更小的游戏——都在同一套窗口模型里。
 
@@ -239,4 +255,4 @@ AI-System-6/
 
 </div>
 
-<!-- claim-check: npm run site:check | site/data/floppy-budget.json (bytes 2959134, budget 2959872, written by verify:floppy) | npm run verify:floppy, verify:docs, verify:public | site/img/frames (twelve appearances) -->
+<!-- claim-check: npm run site:check | site/data/floppy-budget.json (实测字节数的唯一来源；budget 2959872，由 verify:floppy 写入) | npm run verify:floppy, verify:docs, verify:public | site/img/frames (twelve appearances) | apps/desktop/assets/readme/appearances.gif -->

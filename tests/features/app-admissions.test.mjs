@@ -179,5 +179,22 @@ test.assert(roles.phone && roles.tile && roles.grow, `Rootline takes its phone p
 test.assert(roles.immersive === "bonsaiCity,doom,joyride,micropolis,mingwen,openttd,rootline", `the immersive set is the games, from their rows (${roles.immersive})`);
 test.assert(roles.microGrow && !roles.doomGrow, "frame flags stay per window: Micropolis grows, DOOM does not");
 
+// 7. The strings a row names must exist in both languages. appLabel and
+//    appDesc are keys the table mints itself, and a missing one announced
+//    itself only when a user opened the Applications folder - the same
+//    late-failure shape this contract exists to kill. Both tables carry every
+//    key with language-matched examples (the naming rules in CLAUDE.md).
+const translationsEn = read("app/data/translations-en.js");
+const translationsZh = read("app/data/translations-zh.js");
+const keyPresent = (tableSource, key) => new RegExp(`\\b${key}\\s*:`).test(tableSource);
+const stringRows = Object.entries(rows).filter(([, row]) => row.appLabel || row.appDesc);
+test.assert(stringRows.length > 20, `most admitted windows name their own strings (${stringRows.length} of ${Object.keys(rows).length} rows)`);
+stringRows.forEach(([name, row]) => {
+  [row.appLabel, row.appDesc].filter(Boolean).forEach((key) => {
+    test.assert(keyPresent(translationsEn, key), `${name}: the English table carries ${key}`);
+    test.assert(keyPresent(translationsZh, key), `${name}: the Chinese table carries ${key}`);
+  });
+});
+
 test.finish();
 process.exit(0);

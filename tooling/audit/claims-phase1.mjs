@@ -264,7 +264,9 @@ const namingPairs = [
   ["Project CD", "项目光盘"],
   ["Note Pad", "便签本"],
   ["Scrapbook", "Scrapbook"],
-  ["TeachText", "TeachText"],
+  // The zh table names TeachText by its Chinese object name (kind_teachtext:
+  // "稿纸"); CLAUDE.md's own naming table spells the pair "TeachText/稿纸".
+  ["TeachText", "稿纸"],
 ];
 const enSource = exists("apps/desktop/app/data/translations-en.js") ? read("apps/desktop/app/data/translations-en.js") : "";
 const zhSource = exists("apps/desktop/app/data/translations-zh.js") ? read("apps/desktop/app/data/translations-zh.js") : "";

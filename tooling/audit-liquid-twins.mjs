@@ -312,7 +312,7 @@ console.log(`Total rule-selector pairs analyzed: ${entries.length}`);
 console.log(`  twins: ${entries.filter((e) => e.kind === "twin").length}`);
 console.log(`  liquid-only (not a twin): ${buckets["liquid-only"].length}`);
 
-printBucket("EASY — pure value overrides (migrate to :root + body[data-theme="liquid-glass"] value swap)", buckets.easy);
+printBucket(`EASY — pure value overrides (migrate to :root + body[data-theme="liquid-glass"] value swap)`, buckets.easy);
 printBucket("MIXED — value + structural; tokenize the value props, collocate the rest", buckets.mixed);
 printBucket("STRUCTURAL — cannot tokenize as pure values; collocate next to base rule", buckets.structural);
 printBucket("LOCALE — html:lang(...) qualified; theme × locale axis", buckets.locale);

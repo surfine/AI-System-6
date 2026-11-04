@@ -1045,8 +1045,7 @@ function wireAppEvents() {
       // desktop icon is the open step (select-then-open), matching Finder.
       if (
         alreadySelected
-        && typeof window.matchMedia === "function"
-        && !window.matchMedia("(hover: hover) and (pointer: fine)").matches
+        && finderCoarsePointer()
       ) {
         openDesktopIcon(desktopIconTarget);
         return;
@@ -1078,8 +1077,7 @@ function wireAppEvents() {
       // object is the open step (select-then-open), matching desktop icons.
       if (
         alreadySelected
-        && typeof window.matchMedia === "function"
-        && !window.matchMedia("(hover: hover) and (pointer: fine)").matches
+        && finderCoarsePointer()
       ) {
         openStaticFinderTarget(staticFinderTarget);
         return;

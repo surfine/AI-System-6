@@ -98,8 +98,7 @@ function handleDropToProject(data, targetProjectId, ejected) {
   let springFolderSession = null;
 
   function isPrecisePointerAvailable() {
-    return typeof window.matchMedia === "function"
-      && window.matchMedia("(hover: hover) and (pointer: fine)").matches === true;
+    return finderPrecisePointer();
   }
 
   function isSpringAllowedDrag(dragData) {

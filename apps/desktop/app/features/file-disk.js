@@ -151,8 +151,7 @@ function renderMountedTextDisk() {
           !event.metaKey && !event.ctrlKey && !event.shiftKey
           && selectedMountedFile === name
           && selectedMountedFileNames.has(name)
-          && typeof window.matchMedia === "function"
-          && !window.matchMedia("(hover: hover) and (pointer: fine)").matches
+          && finderCoarsePointer()
         ) {
           openMountedTextFile(name);
           return;

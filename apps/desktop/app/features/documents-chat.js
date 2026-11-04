@@ -649,50 +649,29 @@ function renderDocuments() {
       const row = document.createElement("div");
       if (item.type === "folder") {
         const folder = item;
-        const selected = selectedDocumentItemKeys.has(documentSelectionKey("folder", folder.id)) || folder.id === selectedDocumentFolderId;
-        row.className = `finder-list-row finder-label-${folder.finderLabel || "none"}${selected ? " is-selected" : ""}`;
-        row.dataset.dragType = "document-folder";
-        row.dataset.id = folder.id;
-        row.dataset.projectId = folder.projectId;
-        row.dataset.dropTarget = "document-folder";
-        row.dataset.folderId = folder.id;
-        row.dataset.documentItemType = "folder";
-        row.dataset.documentItemId = folder.id;
+        const shape = finderItemShape(folder);
+        row.className = `finder-list-row finder-label-${folder.finderLabel || "none"}${finderItemSelected(folder, shape) ? " is-selected" : ""}`;
+        stampFinderItemDataset(row, folder, shape);
         row.innerHTML = `
           <span>${renderSystemIcon("folder", { size: "list"})}${escapeHtml(displayFolderName(folder.name))}</span>
           <span>${t("folder_kind")}</span>
           <span>${t("items_count", getProjectFolderDeepItemCount(folder.id))}</span>
           <span>${new Date(folder.updatedAt || folder.createdAt).toLocaleDateString()}</span>
         `;
-        row.onclick = (event) => {
-          const alreadySelected = selectedDocumentFolderId === folder.id
-            && selectedDocumentItemKeys.has(documentSelectionKey("folder", folder.id));
-          if (
-            alreadySelected
-            && !event.metaKey && !event.ctrlKey && !event.shiftKey
-            && typeof window.matchMedia === "function"
-            && !window.matchMedia("(hover: hover) and (pointer: fine)").matches
-          ) {
-            openDocumentFolder(folder.id);
-            return;
-          }
-          selectDocumentItemFromEvent("folder", folder.id, event, sortedItems);
-          if (!event.metaKey && !event.ctrlKey && !event.shiftKey) {
-            revealSelectOpenTapHint(row, { detail: event.detail });
-          }
-        };
+        row.onclick = (event) => finderTapSelect(event, row, {
+          alreadySelected: selectedDocumentFolderId === folder.id
+            && selectedDocumentItemKeys.has(documentSelectionKey("folder", folder.id)),
+          onOpen: () => openDocumentFolder(folder.id),
+          onSelect: (tapEvent) => selectDocumentItemFromEvent("folder", folder.id, tapEvent, sortedItems),
+        });
         row.ondblclick = () => {
           openDocumentFolder(folder.id);
         };
       } else {
         const file = item;
-        const selected = selectedDocumentItemKeys.has(documentSelectionKey("file", file.id)) || file.id === selectedChatFileId;
-        row.className = `finder-list-row label-${file.label || "none"} finder-label-${file.finderLabel || "none"}${selected ? " is-selected" : ""}`;
-        row.dataset.dragType = "file";
-        row.dataset.id = file.id;
-        row.dataset.projectId = file.projectId;
-        row.dataset.documentItemType = "file";
-        row.dataset.documentItemId = file.id;
+        const shape = finderItemShape(file);
+        row.className = `finder-list-row label-${file.label || "none"} finder-label-${file.finderLabel || "none"}${finderItemSelected(file, shape) ? " is-selected" : ""}`;
+        stampFinderItemDataset(row, file, shape);
         const fileKind = file.kindLabel || (file.type === "text" ? t("kind_teachtext") : t("kind_chat"));
         const icon = file.iconId || (file.type === "text" ? "teachText" : "chatFile");
         row.innerHTML = `
@@ -701,23 +680,12 @@ function renderDocuments() {
           <span>${getFinderItemSizeLabel(file)}</span>
           <span>${new Date(file.updatedAt || file.createdAt).toLocaleDateString()}</span>
         `;
-        row.onclick = (event) => {
-          const alreadySelected = selectedChatFileId === file.id
-            && selectedDocumentItemKeys.has(documentSelectionKey("file", file.id));
-          if (
-            alreadySelected
-            && !event.metaKey && !event.ctrlKey && !event.shiftKey
-            && typeof window.matchMedia === "function"
-            && !window.matchMedia("(hover: hover) and (pointer: fine)").matches
-          ) {
-            openDocumentFileOrAttachToClioTalk(file);
-            return;
-          }
-          selectDocumentItemFromEvent("file", file.id, event, sortedItems);
-          if (!event.metaKey && !event.ctrlKey && !event.shiftKey) {
-            revealSelectOpenTapHint(row, { detail: event.detail });
-          }
-        };
+        row.onclick = (event) => finderTapSelect(event, row, {
+          alreadySelected: selectedChatFileId === file.id
+            && selectedDocumentItemKeys.has(documentSelectionKey("file", file.id)),
+          onOpen: () => openDocumentFileOrAttachToClioTalk(file),
+          onSelect: (tapEvent) => selectDocumentItemFromEvent("file", file.id, tapEvent, sortedItems),
+        });
         row.ondblclick = () => {
           openDocumentFileOrAttachToClioTalk(file);
         };
@@ -760,33 +728,16 @@ function renderDocuments() {
       const folder = item;
       const button = document.createElement("button");
       button.type = "button";
-      const selected = selectedDocumentItemKeys.has(documentSelectionKey("folder", folder.id)) || folder.id === selectedDocumentFolderId;
-      button.className = `finder-item finder-label-${folder.finderLabel || "none"}${selected ? " is-selected" : ""}`;
-      button.dataset.dragType = "document-folder";
-      button.dataset.id = folder.id;
-      button.dataset.projectId = folder.projectId;
-      button.dataset.dropTarget = "document-folder";
-      button.dataset.folderId = folder.id;
-      button.dataset.documentItemType = "folder";
-      button.dataset.documentItemId = folder.id;
+      const shape = finderItemShape(folder);
+      button.className = `finder-item finder-label-${folder.finderLabel || "none"}${finderItemSelected(folder, shape) ? " is-selected" : ""}`;
+      stampFinderItemDataset(button, folder, shape);
       button.innerHTML = `${renderSystemIcon("folder", { size: "finder"})}<span>${escapeHtml(displayFolderName(folder.name))}</span>`;
-      button.addEventListener("click", (event) => {
-        const alreadySelected = selectedDocumentFolderId === folder.id
-          && selectedDocumentItemKeys.has(documentSelectionKey("folder", folder.id));
-        if (
-          alreadySelected
-          && !event.metaKey && !event.ctrlKey && !event.shiftKey
-          && typeof window.matchMedia === "function"
-          && !window.matchMedia("(hover: hover) and (pointer: fine)").matches
-        ) {
-          openDocumentFolder(folder.id);
-          return;
-        }
-        selectDocumentItemFromEvent("folder", folder.id, event, sortedItems);
-        if (!event.metaKey && !event.ctrlKey && !event.shiftKey) {
-          revealSelectOpenTapHint(button, { detail: event.detail });
-        }
-      });
+      button.addEventListener("click", (event) => finderTapSelect(event, button, {
+        alreadySelected: selectedDocumentFolderId === folder.id
+          && selectedDocumentItemKeys.has(documentSelectionKey("folder", folder.id)),
+        onOpen: () => openDocumentFolder(folder.id),
+        onSelect: (tapEvent) => selectDocumentItemFromEvent("folder", folder.id, tapEvent, sortedItems),
+      }));
       button.addEventListener("dblclick", () => {
         openDocumentFolder(folder.id);
       });
@@ -798,32 +749,17 @@ function renderDocuments() {
       const file = item;
       const button = document.createElement("button");
       button.type = "button";
-      button.dataset.dragType = "file";
-      button.dataset.id = file.id;
-      button.dataset.projectId = file.projectId;
-      button.dataset.documentItemType = "file";
-      button.dataset.documentItemId = file.id;
-      const selected = selectedDocumentItemKeys.has(documentSelectionKey("file", file.id)) || file.id === selectedChatFileId;
-      button.className = `finder-item label-${file.label || "none"} finder-label-${file.finderLabel || "none"}${selected ? " is-selected" : ""}`;
+      const shape = finderItemShape(file);
+      button.className = `finder-item label-${file.label || "none"} finder-label-${file.finderLabel || "none"}${finderItemSelected(file, shape) ? " is-selected" : ""}`;
+      stampFinderItemDataset(button, file, shape);
       const iconId = file.iconId || (file.type === "text" ? "teachText" : "chatFile");
       button.innerHTML = `${renderSystemIcon(iconId, { size: "finder"})}<span>${escapeHtml(file.name)}</span>${file.label ? `<small>${escapeHtml(labelName(file.label))}</small>` : ""}`;
-      button.addEventListener("click", (event) => {
-        const alreadySelected = selectedChatFileId === file.id
-          && selectedDocumentItemKeys.has(documentSelectionKey("file", file.id));
-        if (
-          alreadySelected
-          && !event.metaKey && !event.ctrlKey && !event.shiftKey
-          && typeof window.matchMedia === "function"
-          && !window.matchMedia("(hover: hover) and (pointer: fine)").matches
-        ) {
-          openDocumentFileOrAttachToClioTalk(file);
-          return;
-        }
-        selectDocumentItemFromEvent("file", file.id, event, sortedItems);
-        if (!event.metaKey && !event.ctrlKey && !event.shiftKey) {
-          revealSelectOpenTapHint(button, { detail: event.detail });
-        }
-      });
+      button.addEventListener("click", (event) => finderTapSelect(event, button, {
+        alreadySelected: selectedChatFileId === file.id
+          && selectedDocumentItemKeys.has(documentSelectionKey("file", file.id)),
+        onOpen: () => openDocumentFileOrAttachToClioTalk(file),
+        onSelect: (tapEvent) => selectDocumentItemFromEvent("file", file.id, tapEvent, sortedItems),
+      }));
       button.addEventListener("dblclick", () => {
         openDocumentFileOrAttachToClioTalk(file);
       });
@@ -2961,39 +2897,6 @@ function nextAvailableFileName(baseName, folderId = null) {
     index += 1;
   }
   return `${base} ${index}`;
-}
-
-function createTeachTextFileFromFinder() {
-  if (!getActiveProject()) {
-    openWindow("projects");
-    setStatus(t("no_project_mounted"));
-    return;
-  }
-
-  const folderId = getCurrentFinderParentId();
-  const now = new Date().toISOString();
-  const file = {
-    id: crypto.randomUUID(),
-    projectId: activeProjectId,
-    type: "text",
-    name: nextAvailableFileName(t("untitled"), folderId),
-    folderId,
-    body: "",
-    label: "",
-    createdAt: now,
-    updatedAt: now,
-  };
-  chatFiles.unshift(file);
-  selectedFolderId = folderId || "all";
-  selectedChatFileId = file.id;
-  selectedDocumentFolderId = null;
-  selectedProjectRootItemId = null;
-  activeTextFileId = file.id;
-  saveDeskState();
-  renderDocuments();
-  renderProjectDisks();
-  openTextFile(file.id);
-  setStatus(t("teachtext_file_created", file.name));
 }
 
 function newTextDocument() {

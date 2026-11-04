@@ -4,9 +4,10 @@
 // boot. It is now a window like the others, built here the first time it is
 // asked for, with two faces:
 //
-// - "First time here": the front door of a first launch. Three equal doors,
-//   not steps — pick a Mac, write one line, watch the film. Any door finishes
-//   the introduction and clears "Show this window at startup".
+// - "First time here": the front door of a first launch. Four equal doors,
+//   not steps — pick a Mac, write one line, watch the film, read a finished
+//   disk. Any door finishes the introduction and clears "Show this window at
+//   startup".
 // - The book: five chapters on the Control Panel's own tablist. The first is
 //   an instrument (where your words live, what AI did in this project, what
 //   you adopted, which model is current); the other four are generated from
@@ -664,7 +665,18 @@
       line.append(field, keep);
       const film = door("film", "about_door_film", "about_door_film_body");
       film.append(filmCard({ credits: false }));
-      doors.append(mac, line, film);
+      // The same shelf the README's /go/disks link opens, so a first-time
+      // visitor meets a finished piece without finding the Finder first. The
+      // peek window is read-only; a copy is one button away inside it.
+      const disk = door("disk", "about_door_disk", "about_door_disk_body");
+      disk.append(button("about_door_disk_open", {
+        className: "btn default",
+        onClick: async () => {
+          await finishDoor("disk");
+          await handleAction("open-demo-disks-latest");
+        },
+      }));
+      doors.append(mac, line, film, disk);
       host.append(doors);
       if (filmOpen) host.append(creditsRow({ expanded: true }));
     }

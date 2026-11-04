@@ -1,0 +1,8 @@
+{
+  "rawCount": 82,
+  "totalSites": 306,
+  "capturedAt": "2026-11-04T00:00:00.000Z",
+  "capturedAgainst": "main@d45619358",
+  "note": "rawCount is the ratchet ceiling (tooling/inner-html-census.mjs totals.raw): every innerHTML assignment or insertAdjacentHTML argument whose rhs is an untagged template literal (or a concatenation containing one) with interpolations — markup whose safety is a per-site escapeHtml() habit. static (no interpolation) and html-tagged sites are safe by construction and not counted; opaque rhs (function calls, identifiers) cannot be classified mechanically and are reported as information only, never gated. Lower the count by converting sites to the html template (html.raw for owned markup), not by narrowing what the census walks.",
+  "_note": "Initial baseline at the census's introduction: 0 sites tagged, the whole raw class still open. T3 file batches lower this ceiling one file at a time."
+}

@@ -85,6 +85,7 @@ export const appModulePaths = [
   "app/shared/retrieval-runtime.js",
   "app/shared/embedding-route.js",
   "app/shared/derived-index-runtime.js",
+  "app/shared/finder-rows.js",
   "app/core/local-lmstudio-client.js",
   "app/data/menus.js",
   "app/data/system-data.js",

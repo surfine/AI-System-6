@@ -295,9 +295,9 @@ test.assertIncludes(read("app/data/translations-en.js"), 'one_more_tune_wheel_re
 for (const face of ["renderOneMoreTuneLearn", "renderOneMoreTuneMatch", "renderOneMoreTuneRecall", "renderOneMoreTuneReveal"]) {
   const at = host.indexOf(`function ${face}(`);
   const body = host.slice(at, host.indexOf("\nfunction ", at + 10));
-  test.assert(at > 0 && body.includes("${oneMoreTuneStudyWheelSlot()}"), `${face} has a place for the wheel`);
+  test.assert(at > 0 && body.includes("${html.raw(oneMoreTuneStudyWheelSlot())}"), `${face} has a place for the wheel (the tagged template owns the markup; the slot is trusted html.raw)`);
 }
-test.assertMatches(host, /one_more_tune_back_to_shelf[\s\S]{0,200}\$\{oneMoreTuneStudyWheelSlot\(\)\}[\s\S]{0,80}oneMoreTuneAttachStudyWheel\(\);/,
+test.assertMatches(host, /one_more_tune_back_to_shelf[\s\S]{0,200}\$\{html\.raw\(oneMoreTuneStudyWheelSlot\(\)\)\}[\s\S]{0,80}oneMoreTuneAttachStudyWheel\(\);/,
   "and so has the unit's end, whose centre goes back to the shelf");
 test.assertMatches(host, /else renderOneMoreTuneRecall\(body, card\);\s*oneMoreTuneAttachStudyWheel\(\);/,
   "every card face mounts its wheel after it paints");

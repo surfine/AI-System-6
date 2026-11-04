@@ -256,8 +256,7 @@ function wireFindPathResults() {
     if (index < 0) return;
     if (
       index === selectedFindPathIndex
-      && typeof window.matchMedia === "function"
-      && !window.matchMedia("(hover: hover) and (pointer: fine)").matches
+      && finderCoarsePointer()
     ) {
       openSelectedFindPathInReader();
       return;

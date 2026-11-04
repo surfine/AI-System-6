@@ -90,7 +90,9 @@ function numberCheck(id, ok, detail) {
 const runnerList = spawnSync(process.execPath, ["tooling/verify-features.mjs", "--list"], { cwd: root, encoding: "utf8" });
 const contractCount = (runnerList.stdout || "").split("\n").filter(Boolean).length;
 const development = readFileSync(`${root}/docs/DEVELOPMENT.md`, "utf8");
-const documentedCount = (development.match(/(\d+) at the last audit/) || [])[1];
+// The document stamps the count with the audit date ("N at the YYYY-MM-DD
+// audit"), not the literal words "last audit"; accept the dated form.
+const documentedCount = (development.match(/(\d+) at the [\d-]+ audit/) || [])[1];
 numberCheck(
   "DEVELOPMENT:contract count names its source and matches",
   /verify-features\.mjs --list` prints the current\s+count/.test(development) && documentedCount === String(contractCount),

@@ -30,3 +30,31 @@ function escapeHtml(text) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
+
+// Tagged template for innerHTML assembly: every interpolation is escaped, so
+// a forgotten escapeHtml() can no longer be the injection. The explicit hatch
+// is html.raw(markup) for markup this codebase owns (renderSystemIcon output,
+// a span another helper already built). null and undefined render as nothing,
+// numbers and booleans render themselves (escapeHtml's `|| ""` would swallow
+// a 0), and arrays flatten, so a list of fragments joins naturally. A plain
+// string value - including another template's output - is escaped: compose
+// with arrays or html.raw, never by interpolating a raw string.
+function html(strings, ...values) {
+  let out = "";
+  strings.forEach((part, index) => {
+    out += part;
+    if (index < values.length) out += htmlValue(values[index]);
+  });
+  return out;
+}
+
+function htmlValue(value) {
+  if (value === null || value === undefined) return "";
+  if (Array.isArray(value)) return value.map(htmlValue).join("");
+  if (value && typeof value === "object" && typeof value.safeHtml === "string") return value.safeHtml;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  return escapeHtml(value);
+}
+
+// The one way to hand html`` markup it should not escape.
+html.raw = (markup) => ({ safeHtml: String(markup ?? "") });

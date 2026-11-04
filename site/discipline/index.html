@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en" class="discipline-note">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What the AI here won't do · AI System 6</title>
+<meta name="description" content="Five rules the desk enforces in its own code, not on a policy page. Each rule names the part of the product that enforces it, and each one has a test that fails if it is quietly removed.">
+<link rel="canonical" href="https://aisystem6.aaronlau.me/discipline/">
+<link rel="alternate" hreflang="en" href="https://aisystem6.aaronlau.me/discipline/">
+<link rel="alternate" hreflang="zh-CN" href="https://aisystem6.aaronlau.me/discipline/zh-CN">
+<link rel="alternate" hreflang="x-default" href="https://aisystem6.aaronlau.me/discipline/">
+<link rel="icon" href="../img/app-icon-192.png">
+<link rel="apple-touch-icon" href="../img/app-icon-180.png">
+<meta property="og:type" content="article">
+<meta property="og:title" content="What the AI here won't do">
+<meta property="og:description" content="Five rules the desk enforces in its own code, not on a policy page. Each rule names the part of the product that enforces it, and each one has a test that fails if it is quietly removed.">
+<meta property="og:image" content="https://aisystem6.aaronlau.me/img/og-poster.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="AI System 6, a writing desk from 1988.">
+<meta property="og:url" content="https://aisystem6.aaronlau.me/discipline/">
+<meta property="og:site_name" content="AI System 6">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="What the AI here won't do">
+<meta name="twitter:description" content="Five rules the desk enforces in its own code, not on a policy page. Each rule names the part of the product that enforces it, and each one has a test that fails if it is quietly removed.">
+<meta name="twitter:image" content="https://aisystem6.aaronlau.me/img/og-poster.png">
+<link rel="stylesheet" href="../site.css?v=20261104a">
+<link rel="stylesheet" href="../discipline.css?v=20261104a">
+</head>
+<body>
+
+<nav class="menu-bar" aria-label="Site">
+  <a class="menu-home" href="../"><span class="menu-apple s6-mark" aria-hidden="true"></span><span class="menu-title">AI System 6</span></a>
+  <span class="menu-here">Discipline</span>
+  <span class="menu-spacer"></span>
+  <a class="menu-link" href="zh-CN" lang="zh-CN">简体中文</a>
+  <a class="menu-link menu-link-live" href="https://system6.aaronlau.me">Live&nbsp;System</a>
+</nav>
+
+<main class="dp" id="top">
+  <header class="dp-header">
+    <p class="dp-kicker">AI System 6 · Discipline</p>
+    <h1>What the AI here won't do</h1>
+    <p class="dp-dek">Five rules the desk enforces in its own code, not on a policy page. Each rule names the part of the product that enforces it, and each one has a test that fails if it is quietly removed.</p>
+    <p class="dp-meta">November 4, 2026 · 4 min</p>
+  </header>
+
+  <article class="dp-article">
+      <section class="dp-section" id="d-thinking" aria-labelledby="h-d-thinking">
+        <h2 id="h-d-thinking">It does not pretend to think</h2>
+        <p>The status line has seven states: offline, idle, reading, working, waiting, ready, error. They change only when a real run event says so. The module that owns them carries its own note that it never invents a state and never fakes a thinking animation, and the Stop button appears only when a run can actually be stopped.</p>
+        <p>A desk that performs thinking invites you to stop checking. This one would rather report nothing than report a mood.</p>
+      </section>
+      <section class="dp-section" id="d-receipts" aria-labelledby="h-d-receipts">
+        <h2 id="h-d-receipts">It does not hide what it read</h2>
+        <p>Every model run ends in a receipt: which route it took, how many retries it made, which reference range it was allowed to see. Receipts live in the project, so they travel with a backup and can be read later.</p>
+        <p>The Memory Inspector window shows what a run took, as a count against a budget. Receipts never store credentials, and they never store a chain of thought.</p>
+      </section>
+      <section class="dp-section" id="d-voice" aria-labelledby="h-d-voice">
+        <h2 id="h-d-voice">It does not become your voice</h2>
+        <p>Model output stays a candidate until you accept it, clip it, insert it or export it yourself. Nothing enters the manuscript on its own.</p>
+        <p>On the Review Desk, the returning reviewer reports AI-mouthpiece risk as its own column, beside fact risk and structure risk, so a piece drifting toward the machine's register is checked with the same seriousness as an error.</p>
+      </section>
+      <section class="dp-section" id="d-asks" aria-labelledby="h-d-asks">
+        <h2 id="h-d-asks">It asks before it writes</h2>
+        <p>When Clio works on files, in ClioWork for documents or ClioCode for a code folder, read-only commands run without asking, and every dangerous command asks each time. Permission answers are yours, and they are remembered as yours.</p>
+        <p>Each call leaves a checkpoint, so a change you regret is a rewind, not a restore from backup.</p>
+      </section>
+      <section class="dp-section" id="d-yours" aria-labelledby="h-d-yours">
+        <h2 id="h-d-yours">It runs on your machine, or on the model you name</h2>
+        <p>Six routes: LM Studio and Ollama local, DeepSeek and Anthropic Messages in the cloud, a custom endpoint, or no model at all. Without a model the writing route still runs end to end; the one stop that wants one, outline generation, says so plainly and keeps everything you typed.</p>
+        <p>The server is stateless and keeps no project database. Credentials never enter project files, chats, backups or exports, and the project itself is an IndexedDB database in your browser that you can export.</p>
+      </section>
+
+    <aside class="dp-callout" aria-label="What this does not prove">
+      <p class="dp-callout-title">What this does not prove</p>
+      <p>These five rules are software behavior with tests behind them. They do not make anyone a better writer, and they do not certify that a piece is truthful. They keep the desk honest about what the machine did, so your own judgment stays the part that matters.</p>
+    </aside>
+
+    <p class="dp-actions"><a class="dp-button" href="https://system6.aaronlau.me">Boot the desk</a><a class="dp-quiet" href="../">Back to the home page</a></p>
+  </article>
+
+  <section class="dp-sources" id="sources" aria-labelledby="sources-title">
+    <h2 id="sources-title">Sources</h2>
+    <p>The part of the product behind each rule can be opened and read: two source files, one boundary document, the contract suite, and the running system. Checked on November 4, 2026.</p>
+    <ol>
+      <li id="src-live"><span class="dp-src-n">1</span><div><a href="https://system6.aaronlau.me" target="_blank" rel="noopener">AI System 6 · the running desk &#8599;</a><p>Boot one and look around. No model and no sign-up required.</p></div></li>
+      <li id="src-localcloud"><span class="dp-src-n">2</span><div><a href="https://github.com/surfine/AI-System-6/blob/main/docs/LOCAL-AND-CLOUD.md" target="_blank" rel="noopener">Local and cloud in AI System 6 (document) &#8599;</a><p>The local and cloud boundary: which parts of the route run offline, which model routes exist, and which files credentials never enter.</p></div></li>
+      <li id="src-activity"><span class="dp-src-n">3</span><div><a href="https://github.com/surfine/AI-System-6/blob/main/apps/desktop/app/core/assistant-activity.js" target="_blank" rel="noopener">The activity states (source) &#8599;</a><p>Seven states driven only by real run events; the module states it never invents a state and never fakes a thinking animation.</p></div></li>
+      <li id="src-receipts"><span class="dp-src-n">4</span><div><a href="https://github.com/surfine/AI-System-6/blob/main/apps/desktop/app/core/run-receipts.js" target="_blank" rel="noopener">Run receipts (source) &#8599;</a><p>One receipt per model run: route, retries, citation range; verifiable facts only, never credentials, never a chain of thought.</p></div></li>
+      <li id="src-contracts"><span class="dp-src-n">5</span><div><a href="https://github.com/surfine/AI-System-6/tree/main/tests/features" target="_blank" rel="noopener">The contracts (tests) &#8599;</a><p>The behavior contract suite; assistant-activity, run-receipts and research-methodology guard the rules on this page.</p></div></li>
+    </ol>
+  </section>
+
+  <footer class="site-footer dp-footer">
+    <p><a href="../">AI System 6 home</a> / <a href="https://system6.aaronlau.me">Live system</a> / <a href="https://github.com/surfine/AI-System-6">GitHub</a></p>
+    <p>MIT licensed. AI System 6 is an independent project and is not affiliated with or endorsed by Apple&nbsp;Inc.</p>
+  </footer>
+</main>
+</body>
+</html>
+

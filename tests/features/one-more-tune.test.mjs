@@ -255,7 +255,7 @@ test.assertNotIncludes(source, "file.name", "the chosen file's name is never rea
 test.assertIncludes(matchRender, "oneMoreTuneStudySound(card)", "the matching face plays the card's pinned sound");
 test.assertIncludes(recallRender, "oneMoreTuneStudySound(card)", "and so does the recall face");
 test.assertNotIncludes(matchRender + recallRender, "oneMoreTunePlayerBlock", "no blind face carries the segment editor or its clocks");
-test.assertMatches(source, /\$\{oneMoreTuneBackstage\(\) \? oneMoreTunePlayerBlock\(card\) : ""\}/,
+test.assertMatches(source, /\$\{oneMoreTuneBackstage\(\) \? html\.raw\(oneMoreTunePlayerBlock\(card\)\) : ""\}/,
   "and the answered faces carry it only backstage, where 资料馆 opens it");
 
 // A year is an answer. The era band names the card's decade and the appearance
@@ -1236,8 +1236,8 @@ test.assertNotIncludes(source, "oneMoreTuneAnchorLine(featured)",
   "the featured card carries no research line about anchors or auditions");
 test.assertNotIncludes(source, 't("one_more_tune_clocks_note")).slice(0, 80)',
   "no truncated sentence stands in for the card's own source line");
-test.assertIncludes(source, 'data-one-more-tune-open-card="${oneMoreTuneEscape(featured.id)}"',
-  "the card on the shelf is a door into that card");
+test.assertIncludes(source, 'data-one-more-tune-open-card="${featured.id}"',
+  "the card on the shelf is a door into that card (the html template escapes it by default)");
 test.assertIncludes(source, "startOneMoreTuneCard(card.dataset.oneMoreTuneOpenCard)",
   "and opening it leads with the card that was asked for");
 test.assertIncludes(source, 't("one_more_tune_score_card_title")',
@@ -1455,6 +1455,10 @@ test.assertIncludes(source, "question.localAnswer || oneMoreTuneCardIdForReveal(
   };
   domContext.globalThis = domContext;
   const painter = vm.createContext(domContext);
+  // The render faces assemble markup through the html`` template; the real
+  // helpers from strings.js run here so an escaping regression fails here
+  // too, not only in the browser.
+  vm.runInContext(read("app/core/strings.js"), painter);
   vm.runInContext(source, painter);
   const run = (code) => vm.runInContext(code, painter);
   const live = domContext.window.AISystem6OneMoreTune;

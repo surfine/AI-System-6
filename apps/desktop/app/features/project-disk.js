@@ -2358,30 +2358,9 @@ function getProjectFinderItemMeta(item) {
 
 function renderProjectRootListItem(item, project, mode, orderedItems = []) {
   const row = document.createElement("div");
-  const isSystem = item.type === "finder-root";
-  const isFolder = item.type === "folder";
-  const isFile = !isSystem && !isFolder;
-  const selected = isSystem
-    ? item.id === selectedProjectRootItemId
-    : isFolder
-      ? selectedDocumentItemKeys.has(documentSelectionKey("folder", item.id)) || item.id === selectedDocumentFolderId
-      : item.type === "projectReference"
-        ? selectedDocumentItemKeys.has(documentSelectionKey("projectReference", item.id)) || item.id === selectedProjectReferenceId
-        : selectedDocumentItemKeys.has(documentSelectionKey("file", item.id)) || item.id === selectedChatFileId;
-  const isReference = item.type === "projectReference";
-  row.className = `finder-list-row${item.label ? ` label-${item.label}` : ""} finder-label-${item.finderLabel || "none"}${selected ? " is-selected" : ""}`;
-  if (isSystem) row.dataset.projectRootId = item.id;
-  if (isFolder || isFile) {
-    row.dataset.dragType = isFolder ? "document-folder" : isReference ? "projectReference" : "file";
-    row.dataset.id = item.id;
-    row.dataset.projectId = item.projectId;
-    row.dataset.documentItemType = isFolder ? "folder" : isReference ? "projectReference" : "file";
-    row.dataset.documentItemId = item.id;
-  }
-  if (isFolder) {
-    row.dataset.dropTarget = "document-folder";
-    row.dataset.folderId = item.id;
-  }
+  const shape = finderItemShape(item);
+  row.className = `finder-list-row${item.label ? ` label-${item.label}` : ""} finder-label-${item.finderLabel || "none"}${finderItemSelected(item, shape) ? " is-selected" : ""}`;
+  stampFinderItemDataset(row, item, shape);
   const metaInner = item.metaHtml || escapeHtml(getProjectFinderItemMeta(item));
   const at = getFinderItemModifiedAt(item);
   row.innerHTML = `
@@ -2393,12 +2372,8 @@ function renderProjectRootListItem(item, project, mode, orderedItems = []) {
   row.title = getFinderItemName(item);
   attachCitationJumpHandler(row);
   row.addEventListener("click", (event) => {
-    if (isSystem) {
-      if (
-        selectedProjectRootItemId === item.id
-        && typeof window.matchMedia === "function"
-        && !window.matchMedia("(hover: hover) and (pointer: fine)").matches
-      ) {
+    if (shape.isSystem) {
+      if (selectedProjectRootItemId === item.id && finderCoarsePointer()) {
         openProjectRootItem(item);
         return;
       }
@@ -2408,24 +2383,14 @@ function renderProjectRootListItem(item, project, mode, orderedItems = []) {
       }
       return;
     }
-    const selectionType = isFolder ? "folder" : isReference ? "projectReference" : "file";
-    const alreadySelected = isFolder
-      ? selectedDocumentFolderId === item.id
-      : selectedChatFileId === item.id || selectedProjectReferenceId === item.id;
-    if (
-      alreadySelected
-      && !event.metaKey && !event.ctrlKey && !event.shiftKey
-      && typeof window.matchMedia === "function"
-      && !window.matchMedia("(hover: hover) and (pointer: fine)").matches
-    ) {
-      openProjectRootItem(item);
-      return;
-    }
-    selectDocumentItemFromEvent(selectionType, item.id, event, orderedItems);
-    updateProjectRootSelectionView();
-    if (!event.metaKey && !event.ctrlKey && !event.shiftKey) {
-      revealSelectOpenTapHint(row, { detail: event.detail });
-    }
+    finderTapSelect(event, row, {
+      alreadySelected: shape.isFolder
+        ? selectedDocumentFolderId === item.id
+        : selectedChatFileId === item.id || selectedProjectReferenceId === item.id,
+      onOpen: () => openProjectRootItem(item),
+      onSelect: (tapEvent) => selectDocumentItemFromEvent(shape.selectionType, item.id, tapEvent, orderedItems),
+      afterSelect: updateProjectRootSelectionView,
+    });
   });
   row.addEventListener("dblclick", () => openProjectRootItem(item));
   return row;
@@ -2434,41 +2399,16 @@ function renderProjectRootListItem(item, project, mode, orderedItems = []) {
 function renderProjectRootIconItem(item, orderedItems = []) {
   const button = document.createElement("button");
   button.type = "button";
-  const isSystem = item.type === "finder-root";
-  const isFolder = item.type === "folder";
-  const isFile = !isSystem && !isFolder;
-  const isReference = item.type === "projectReference";
-  const selected = isSystem
-    ? item.id === selectedProjectRootItemId
-    : isFolder
-      ? selectedDocumentItemKeys.has(documentSelectionKey("folder", item.id)) || item.id === selectedDocumentFolderId
-      : isReference
-        ? selectedDocumentItemKeys.has(documentSelectionKey("projectReference", item.id)) || item.id === selectedProjectReferenceId
-        : selectedDocumentItemKeys.has(documentSelectionKey("file", item.id)) || item.id === selectedChatFileId;
-  button.className = `finder-item${item.label ? ` label-${item.label}` : ""} finder-label-${item.finderLabel || "none"}${selected ? " is-selected" : ""}`;
-  if (isSystem) button.dataset.projectRootId = item.id;
-  if (isFolder || isFile) {
-    button.dataset.dragType = isFolder ? "document-folder" : isReference ? "projectReference" : "file";
-    button.dataset.id = item.id;
-    button.dataset.projectId = item.projectId;
-    button.dataset.documentItemType = isFolder ? "folder" : isReference ? "projectReference" : "file";
-    button.dataset.documentItemId = item.id;
-  }
-  if (isFolder) {
-    button.dataset.dropTarget = "document-folder";
-    button.dataset.folderId = item.id;
-  }
+  const shape = finderItemShape(item);
+  button.className = `finder-item${item.label ? ` label-${item.label}` : ""} finder-label-${item.finderLabel || "none"}${finderItemSelected(item, shape) ? " is-selected" : ""}`;
+  stampFinderItemDataset(button, item, shape);
   const metaInner = item.metaHtml || escapeHtml(getProjectFinderItemMeta(item));
   button.innerHTML = `${renderSystemIcon(item.iconId || item.iconClass, { size: "finder"})}<span>${nameCell(item)}</span><small>${metaInner}</small>`;
   button.title = getFinderItemName(item);
   attachCitationJumpHandler(button);
   button.addEventListener("click", (event) => {
-    if (isSystem) {
-      if (
-        selectedProjectRootItemId === item.id
-        && typeof window.matchMedia === "function"
-        && !window.matchMedia("(hover: hover) and (pointer: fine)").matches
-      ) {
+    if (shape.isSystem) {
+      if (selectedProjectRootItemId === item.id && finderCoarsePointer()) {
         openProjectRootItem(item);
         return;
       }
@@ -2478,24 +2418,14 @@ function renderProjectRootIconItem(item, orderedItems = []) {
       }
       return;
     }
-    const selectionType = isFolder ? "folder" : isReference ? "projectReference" : "file";
-    const alreadySelected = isFolder
-      ? selectedDocumentFolderId === item.id
-      : selectedChatFileId === item.id || selectedProjectReferenceId === item.id;
-    if (
-      alreadySelected
-      && !event.metaKey && !event.ctrlKey && !event.shiftKey
-      && typeof window.matchMedia === "function"
-      && !window.matchMedia("(hover: hover) and (pointer: fine)").matches
-    ) {
-      openProjectRootItem(item);
-      return;
-    }
-    selectDocumentItemFromEvent(selectionType, item.id, event, orderedItems);
-    updateProjectRootSelectionView();
-    if (!event.metaKey && !event.ctrlKey && !event.shiftKey) {
-      revealSelectOpenTapHint(button, { detail: event.detail });
-    }
+    finderTapSelect(event, button, {
+      alreadySelected: shape.isFolder
+        ? selectedDocumentFolderId === item.id
+        : selectedChatFileId === item.id || selectedProjectReferenceId === item.id,
+      onOpen: () => openProjectRootItem(item),
+      onSelect: (tapEvent) => selectDocumentItemFromEvent(shape.selectionType, item.id, tapEvent, orderedItems),
+      afterSelect: updateProjectRootSelectionView,
+    });
   });
   button.addEventListener("dblclick", () => openProjectRootItem(item));
   return button;

@@ -800,15 +800,6 @@ function currentCompositeState(record = activeProjectQuickDraft({ create: false 
   return { text: quickDraftLastComposite || body, ready: false, stale: true, proof: false };
 }
 
-function renderQuickDraftCompositePreview() {
-  const state = currentCompositeState();
-  if (!state.ready) {
-    refs.preview.innerHTML = `<p class="empty-folder-note">${escapeHtml(t("quick_draft_composite_pending"))}</p>`;
-    return;
-  }
-  quickDraftMarkdownPreview(state.text);
-}
-
 function renderQuickDraftReadingView() {
   if (!refs.preview) return;
   const state = currentCompositeState();

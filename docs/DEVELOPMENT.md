@@ -61,7 +61,7 @@ directory and really runs `npm ci`, `npm run build`, and `npm test` there.
 ### The loop you actually work in
 
 The contracts (`node tooling/verify-features.mjs --list` prints the current
-count; 522 at the 2026-10-12 audit) are about 2,100 CPU-seconds together, and
+count; 648 at the 2026-11-04 audit) are about 2,100 CPU-seconds together, and
 the whole-system simulations are most of that. Paying it for a module you
 touched is the single largest cost of a small change, so pick the run that
 matches the work:

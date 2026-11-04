@@ -7,7 +7,7 @@
 <!-- doc-claims: verified | audited: 2026-11-01 -->
 
 <!-- status:start -->
-**Beta 2.0.0-beta.1** · build 20261101.1 · 2026-11-01 · [release notes](https://github.com/surfine/AI-System-6/releases/tag/v2.0.0-beta.1)
+**Beta 2.0.0-beta.2** · build 20261104.1 · 2026-11-04 · [release notes](https://github.com/surfine/AI-System-6/releases/tag/v2.0.0-beta.2)
 <!-- status:end -->
 
 **A local-first writing desk where the AI never becomes your voice.**<br>
@@ -47,9 +47,10 @@ TWELVE APPEARANCES IN ALL. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 
 ## Contents
 
-- [What's new](#whats-new-in-200-beta1)
+- [What's new](#whats-new-in-200-beta2)
 - [Run it in 60 seconds](#run-it-in-60-seconds)
 - [What this protects](#what-this-protects)
+- [What the AI here won't do](#what-the-ai-here-wont-do)
 - [The route is the product](#the-route-is-the-product)
 - [What the constraint leaves room for](#what-the-constraint-still-leaves-room-for)
 - [One desk. Twelve systems.](#one-desk-twelve-systems)
@@ -60,14 +61,13 @@ TWELVE APPEARANCES IN ALL. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 - [Contributing](#contributing)
 - [License](#license)
 
-## What's new in 2.0.0-beta.1
+## What's new in 2.0.0-beta.2
 
-- **ClioTalk, with ClioWork and ClioCode beside it.** ClioWork is a document studio entered from Clio's left column: pick up to three project Office documents, give Clio a job, and the result opens beside Clio with its pending revisions. ClioCode works in place on a code folder you grant, in permission modes like Claude Code's: read-only commands run without asking, dangerous ones ask every time, the engine runs in a Seatbelt sandbox, and every call leaves a checkpoint you can rewind to.
-- **Three engines, and long tasks keep their state.** The DeepSeek Harness, plus Codex and Claude Code over ACP; the desk keeps the sandbox, the files and every permission answer. Tasks have a progress ledger and a stuck report, survive a restart, can be forked from any finished turn, and queue follow-ups typed while a turn runs.
-- **Clio proposes what to remember; you accept.** Skills and memory, per project or for the whole desk, are proposed by Clio and active only once you accept, in an Extensions window with export, import and five built-in roles.
-- **Chooser is redesigned for MCP.** A System 6 driver rail, an MCP Active/Inactive switch, Guests with per-tool Allow, Ask each time or Off and project mounts, and a Recent calls list. Clio can use outside connectors through a local gateway with the same per-tool choice.
-- **More Office and a new About.** ClioChart adds functions, Page Setup and PDF print; ClioStage adds an animation pane, transitions, notes master and handouts; ClioWrite edits headers, footers and page numbers. About This Mac lists the facts of this desk.
-- **Writing evals.** `tests/evals` holds 21 real writing and editing tasks from the demonstration disk, with offline scorers that need no model.
+- **First time here offers a finished disk.** A fourth door joins pick a Mac, write one line and the film: read a finished disk opens the demonstration shelf on its newest piece, read-only, and Open a Copy makes it yours, with the whole writing route that disk traveled. No model and no sign-up needed.
+- **The AI's discipline is a page anyone can check.** The product site gains [What the AI here won't do](https://aisystem6.aaronlau.me/discipline/): five rules the desk enforces in its own code, each named with the source in the repository that enforces it. The README carries the same list.
+- **Bonsai City's budget pane renders again.** The city report, the January budget pane, the tile balloon and the OSM place list had been arriving as escaped text; they are markup again.
+
+The 2.0.0-beta.1 notes, with ClioWork, ClioCode, the three engines, Extensions and the MCP Chooser, are in the changelog below.
 
 The full release history lives in [docs/CHANGELOG.md](docs/CHANGELOG.md); every beta is also on [GitHub Releases](https://github.com/surfine/AI-System-6/releases).
 
@@ -99,6 +99,18 @@ AI writing tools tend to do one of two things: they write for you, or they hide 
 Your raw questions stay yours. The route from question to outline to section drafts to manuscript keeps every source attached to the sentence it supports. AI suggestions arrive as candidates; nothing enters the manuscript until you accept it. The app runs in your browser, the server is stateless, and project state is an IndexedDB database you can export.
 
 The Macintosh System 6 desktop is a **constraint, not the pitch**. It keeps the surface small enough to understand, and it makes the product test itself against a 1988 budget.
+
+## What the AI here won't do
+
+Five rules the desk enforces in its own code, each with a contract that fails if it is quietly removed:
+
+- **It does not pretend to think.** The status line's seven states change only on real run events; Stop appears only when a run can actually stop.
+- **It does not hide what it read.** Every model run leaves a receipt (route, retries, citation range), and receipts never store credentials or a chain of thought.
+- **It does not become your voice.** Model output stays a candidate until you accept it, and Review Desk checks AI-mouthpiece drift beside facts and structure.
+- **It asks before it writes.** In ClioWork and ClioCode, read-only commands run, dangerous ones ask every time, and every call leaves a checkpoint you can rewind to.
+- **It runs on your machine, or on the model you name.** With no model the route still completes; the server is stateless and keeps no project database.
+
+The long version, with sources for each rule, is [on the product site](https://aisystem6.aaronlau.me/discipline/); the local and cloud boundary is [docs/LOCAL-AND-CLOUD.md](docs/LOCAL-AND-CLOUD.md).
 
 ## The route is the product
 
@@ -149,6 +161,10 @@ Question Sheet → Outline → Section Drafts → Manuscript → Review Desk →
 </table>
 
 <sub>CLASSIC · PLATINUM · AQUA · LIQUID GLASS — AND EIGHT MORE ON THE <a href="https://aisystem6.aaronlau.me">PRODUCT SITE</a>.</sub>
+
+<p align="center"><img src="apps/desktop/assets/readme/appearances.gif" alt="The same desk moving between eras, window by window, captured from the running app" width="80%"></p>
+
+<sub>SAME DESK, SWITCHING ERAS — CAPTURED FROM THE RUNNING APP.</sub>
 
 **Bonsai City** and **One More Tune** are complete applications, not demos: a town that grows from a seed and a music round built on a real deck. **It also runs DOOM** — and OpenTTD, Micropolis and three smaller games — inside the same window model.
 
@@ -236,4 +252,4 @@ If AI writing tools should leave your voice alone, **[★ star AI System 6](http
 
 </div>
 
-<!-- claim-check: npm run site:check | site/data/floppy-budget.json (bytes 2959134, budget 2959872, written by verify:floppy) | npm run verify:floppy, verify:docs, verify:public | site/img/frames (twelve appearances) -->
+<!-- claim-check: npm run site:check | site/data/floppy-budget.json (the only source of the measured bytes; budget 2959872, written by verify:floppy) | npm run verify:floppy, verify:docs, verify:public | site/img/frames (twelve appearances) | apps/desktop/assets/readme/appearances.gif -->

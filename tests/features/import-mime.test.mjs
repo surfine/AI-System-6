@@ -32,10 +32,6 @@ function encodedWord(charset, bytes) {
 }
 
 /** Encode an ASCII string to quoted-printable, splitting on a soft break. */
-function quotedPrintableAscii(text) {
-  return text.split("").join("");
-}
-
 // --- Encoded-word subjects ---------------------------------------------------
 
 // "报告" in GBK: B1 A8 B8 E6. Declared as GB2312, the way an older client

@@ -151,10 +151,6 @@ function rebuildFlowCharCount(text) {
   return String(text || "").replace(/\s+/g, "").length;
 }
 
-function rebuildFlowSourceText() {
-  return rebuildFlow.text || "";
-}
-
 // ---------------------------------------------------------------------------
 // Sources
 // ---------------------------------------------------------------------------

@@ -786,11 +786,8 @@ select:focus {
 
 /* .teachtext-pane gap moved to base (styles/50-apps.css). */
 
-.teachtext-desk-strip {
-  border: var(--teachtext-strip-border);
-  background: var(--teachtext-strip-bg);
-}
-
+/* .teachtext-desk-strip border/background — audited DEAD on 2026-11-04:
+   the responsive copy had become identical to the base cascade winner. */
 .teachtext-preview,
 .reader-content {
   max-width: none;
@@ -2294,11 +2291,9 @@ body.use-modern-fonts .mde-surface * {
    era while the real menus followed their own. A command popover is a menu, so
    it takes the menu panel's frame; eras that declare nothing still resolve to
    ink through the foundation value. */
-.teachtext-command-popover,
-.teachtext-command-subpopover {
-  border: var(--menu-panel-border);
-}
-
+/* .teachtext-command-popover/-subpopover border — audited DEAD on
+   2026-11-04: the base cascade now hands the menu panel's frame to popovers
+   in every era, so this copy painted exactly what already won. */
 /* The surface rule above paints every listed surface with ink, and its longhand
    outranks foundation's border-bottom shorthand -- so an appearance that sets
    --menu-bar-border never reached the screen. Hand the menu bar its own colour
@@ -2536,6 +2531,9 @@ body.use-modern-fonts .mde-surface * {
   line-height: 20px;
 }
 
+/* Kept in this layer on purpose: tests/features/window-frame.test.mjs pins
+   that this layer preserves Chicago 12 in Classic title bars — the duplicate
+   is the guard (same pattern as the spine panels below). */
 .title-bar h1,
 .title-bar h2 {
   align-self: center;

@@ -512,8 +512,7 @@ function renderProjectCd() {
       if (
         alreadySelected
         && !event.metaKey && !event.ctrlKey && !event.shiftKey
-        && typeof window.matchMedia === "function"
-        && !window.matchMedia("(hover: hover) and (pointer: fine)").matches
+        && finderCoarsePointer()
       ) {
         openProjectCdItemInReader(item);
         return;

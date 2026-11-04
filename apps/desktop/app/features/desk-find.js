@@ -397,8 +397,7 @@ function renderFindFileResults() {
     button.addEventListener("click", (event) => {
       if (
         selectedFindFileIndex === index
-        && typeof window.matchMedia === "function"
-        && !window.matchMedia("(hover: hover) and (pointer: fine)").matches
+        && finderCoarsePointer()
       ) {
         openFindFileResult(result);
         return;

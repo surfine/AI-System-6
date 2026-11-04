@@ -3,10 +3,13 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import crypto from "node:crypto";
 import { SCORERS } from "./scorers.mjs";
 
-export const suiteRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..", "..", "..", "tests", "evals", "writing");
+// fileURLToPath, not URL.pathname: a checkout under a path with a space
+// ("AI System 6") leaves %20 encoded in .pathname and every read ENOENTs.
+export const suiteRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "tests", "evals", "writing");
 
 const readJson = (file) => JSON.parse(fs.readFileSync(file, "utf8"));
 const isText = (buf) => !buf.includes(0);

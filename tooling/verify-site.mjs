@@ -44,6 +44,10 @@ const required = [
   "history/zh-CN.html",
   "build-history-page.mjs",
   "history.css",
+  "discipline/index.html",
+  "discipline/zh-CN.html",
+  "build-discipline-page.mjs",
+  "discipline.css",
   "js/history.js",
   "site.css",
   "desk.css",
@@ -234,6 +238,15 @@ const historyBuild = spawnSync(process.execPath, [path.join(siteRoot, "build-his
 });
 if (historyBuild.status === 0) ok("Field Notes pages match their one chapter source");
 else fail((historyBuild.stderr || historyBuild.stdout || "Field Notes pages are stale").trim());
+
+// The discipline page is generated for both languages from one section list,
+// like the essay: a rule or a source cannot exist in one language only.
+const disciplineBuild = spawnSync(process.execPath, [path.join(siteRoot, "build-discipline-page.mjs"), "--check"], {
+  cwd: root,
+  encoding: "utf8",
+});
+if (disciplineBuild.status === 0) ok("Discipline pages match their one section source");
+else fail((disciplineBuild.stderr || disciplineBuild.stdout || "Discipline pages are stale").trim());
 
 const publicNarrative = [index, zhIndex, ...jsFiles.map((file) => readFileSync(file, "utf8"))].join("\n");
 for (const forbidden of [

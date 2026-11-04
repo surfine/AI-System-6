@@ -28,7 +28,7 @@ test.assertIncludes(finderDrag, "springFolderSession", "the spring session is mo
 test.assertIncludes(finderDrag, "originFolderId", "the session remembers the starting Finder path");
 test.assertIncludes(finderDrag, "currentTargetId", "the session tracks the hovered folder");
 test.assertIncludes(finderDrag, "opened", "the session tracks whether a folder opened");
-test.assertIncludes(finderDrag, 'matchMedia("(hover: hover) and (pointer: fine)")', "spring folders require a precise pointer");
+test.assertIncludes(finderDrag, "finderPrecisePointer()", "spring folders ask the shared precise-pointer helper (the media query lives once in finder-rows)");
 test.assertIncludes(finderDrag, '"clipping-selection"', "Reader clipping drags can spring folders too");
 test.assertIncludes(finderDrag, "isDocumentFolderDescendant", "spring validation reuses the existing tree check");
 test.assertIncludes(finderDrag, "openDocumentFolder", "spring navigation reuses the documents Finder opener");
@@ -280,6 +280,7 @@ const foreignFileEl = makeFinderElement({ dragType: "file", id: "file-9", projec
 
 const clock = makeClock();
 const harness = buildContext(true, clock);
+vm.runInContext(read("app/shared/finder-rows.js"), harness.context);
 vm.runInContext(externalDrop, harness.context);
 vm.runInContext(dragDrop, harness.context);
 harness.context.initDragAndDrop();
@@ -440,6 +441,7 @@ test.assert(
 // pointer: coarse never enables spring folders.
 const coarseClock = makeClock();
 const coarseHarness = buildContext(false, coarseClock);
+vm.runInContext(read("app/shared/finder-rows.js"), coarseHarness.context);
 vm.runInContext(externalDrop, coarseHarness.context);
 vm.runInContext(dragDrop, coarseHarness.context);
 coarseHarness.context.initDragAndDrop();

@@ -13,10 +13,12 @@ try {
   assert.equal(result.status, 0, result.error?.message || result.stderr || result.stdout);
   const report = JSON.parse(readFileSync(join(output, readdirSync(output)[0], "report.json"), "utf8"));
   assert.deepEqual(report.failures, []);
+  // Six historical defect replays stay six; the select-scene themes below
+  // grew with the appearance set (six -> twelve).
   assert.equal(report.selfTests.length, 6);
   assert.ok(report.selfTests.every(proof => proof.rejected), "each historical defect must trip the same browser checks used by CSS verification");
-  assert.equal(new Set(report.checks.filter(check => check.scene.startsWith("select:")).map(check => check.scene.split(":")[1])).size, 6);
-  console.log("OK  shared-control gate rejects duplicate/missing arrows, font drift, hidden native ink and square glass");
+  assert.equal(new Set(report.checks.filter(check => check.scene.startsWith("select:")).map(check => check.scene.split(":")[1])).size, 12); // select:{theme}:... — the distinct theme count
+  console.log("OK  shared-control gate rejects duplicate/missing arrows, font drift, hidden native ink and square glass across all twelve appearances");
 } finally {
   rmSync(output, { recursive: true, force: true });
 }

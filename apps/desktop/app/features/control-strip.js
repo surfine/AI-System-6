@@ -220,18 +220,6 @@ function setModuleEnabled(id, enabled) {
   }
 }
 
-function reorderModule(moduleId, targetIndex) {
-  const prefs = stripPrefs();
-  const ordered = (prefs.moduleOrder || []).filter((id) => stripModuleRegistry.has(id));
-  const from = ordered.indexOf(moduleId);
-  if (from < 0) return;
-  ordered.splice(from, 1);
-  const clamped = Math.max(0, Math.min(ordered.length, Number(targetIndex) || 0));
-  ordered.splice(clamped, 0, moduleId);
-  stripSavePrefs({ moduleOrder: ordered });
-  refreshStrip();
-}
-
 // --- Lifecycle -------------------------------------------------------------
 
 function ensureStripMount() {

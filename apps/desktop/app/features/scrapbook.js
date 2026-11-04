@@ -401,7 +401,7 @@ function renderAttachedClips() {
     btn.className = "btn mini-btn";
     btn.setAttribute("aria-label", t("clio_remove_attachment", scrap.title));
     btn.title = t("clio_remove_attachment", scrap.title);
-    btn.innerHTML = `<span class="mini-icon text-file-icon" aria-hidden="true"></span><span>${escapeHtml(scrap.title)}</span> <small aria-hidden="true">×</small>`;
+    btn.innerHTML = html`<span class="mini-icon text-file-icon" aria-hidden="true"></span><span>${scrap.title}</span> <small aria-hidden="true">×</small>`;
     btn.addEventListener("click", () => {
       attachedClipIds.delete(id);
       renderAttachedClips();
@@ -422,7 +422,7 @@ function renderAttachedClips() {
     btn.className = "btn mini-btn";
     btn.setAttribute("aria-label", t("clio_remove_attachment", file.name));
     btn.title = t("clio_remove_attachment", file.name);
-    btn.innerHTML = `<span class="mini-icon text-file-icon" aria-hidden="true"></span><span>${escapeHtml(file.name)}</span> <small aria-hidden="true">×</small>`;
+    btn.innerHTML = html`<span class="mini-icon text-file-icon" aria-hidden="true"></span><span>${file.name}</span> <small aria-hidden="true">×</small>`;
     btn.addEventListener("click", () => {
       window.nextTaskInputFileIds.delete(id);
       renderAttachedClips();
@@ -440,7 +440,7 @@ function renderAttachedClips() {
     btn.dataset.clioImageClientId = record.clientId || "";
     btn.setAttribute("aria-label", `${record.label} · ${t("clio_remove_attachment", record.name)}`);
     btn.title = btn.getAttribute("aria-label");
-    btn.innerHTML = `<span class="mini-icon text-file-icon" aria-hidden="true"></span><span>${escapeHtml(record.label)}</span> <small aria-hidden="true">×</small>`;
+    btn.innerHTML = html`<span class="mini-icon text-file-icon" aria-hidden="true"></span><span>${record.label}</span> <small aria-hidden="true">×</small>`;
     btn.disabled = record.state === "uploading";
     btn.addEventListener("click", () => record.remove?.());
     attachedClipsShelfEl.append(btn);
@@ -895,8 +895,9 @@ function renderScraps() {
     scrapTranslationViewMode,
     showingScrapTranslation,
     currentLanguage,
+    // Record content - tags, body, everything - is covered by the complete
+    // collectionVersion fingerprint; this signature only lists UI state.
     collectionVersion(visibleScraps),
-    visibleScraps.map((scrap) => `${scrap.id}:${(scrap.tags || []).join(",")}:${String(scrap.body || "").length}`).join("|"),
   ].join("::");
   if (shouldSkipRender("scraps", signature)) return;
   const fragment = document.createDocumentFragment();
@@ -917,7 +918,7 @@ function renderScraps() {
           : selectedScrapStack === "assistant"
             ? t("no_scraps_clio")
             : t("no_scraps");
-    empty.innerHTML = `<span class="mini-icon scrapbook-desk-icon"></span><b>${escapeHtml(t("scrapbook"))}</b><small>${escapeHtml(emptyMessage)}</small>`;
+    empty.innerHTML = html`<span class="mini-icon scrapbook-desk-icon"></span><b>${html.raw(t("scrapbook"))}</b><small>${emptyMessage}</small>`;
     // Goal #2/#6: empty Scrapbook is a next-step into Reader (clip path), not
     // a disabled decoration. Filter/stack empties still open Reader — the
     // honest empty copy stays on the card.
@@ -1181,7 +1182,7 @@ function renderContextPanel() {
         retrospective: currentLanguage === "zh" ? "本次附加复盘" : "Attached retrospective",
         "retrieved-context": currentLanguage === "zh" ? "来源与项目文件" : "Sources and project files",
       };
-      item.innerHTML = `<div class="context-header"><strong>${escapeHtml(labels[entry.kind] || entry.kind)}</strong><span>${entry.estimatedTokens} ${t("estimated_tokens")}</span></div>`;
+      item.innerHTML = html`<div class="context-header"><strong>${labels[entry.kind] || entry.kind}</strong><span>${entry.estimatedTokens} ${html.raw(t("estimated_tokens"))}</span></div>`;
       const body = document.createElement("div");
       body.className = "context-body";
       body.textContent = entry.content.slice(0, 900);
@@ -1254,7 +1255,7 @@ function renderContextPanel() {
       const gistRole = contextGistRoleLabel(contextItem.gistRole);
       const badgeText = gistRole && contextItem.included !== false && !contextItem.excluded ? `${badge} · ${gistRole}` : badge;
       const sourceLabel = contextSourceLabel(contextItem);
-      header.innerHTML = `<strong title="${escapeHtml(sourceLabel)}">${escapeHtml(sourceLabel)}</strong><span>${escapeHtml(badgeText)}</span>`;
+      header.innerHTML = html`<strong title="${sourceLabel}">${sourceLabel}</strong><span>${badgeText}</span>`;
 
       const body = document.createElement("div");
       body.className = "context-body";
@@ -1324,7 +1325,7 @@ function renderContextPanel() {
       const header = document.createElement("div");
       header.className = "context-header";
       const sourceLabel = sourceLabelFromRegistryItem(source);
-      header.innerHTML = `<strong title="${escapeHtml(sourceLabel)}">${escapeHtml(sourceLabel)}</strong><span>${escapeHtml(excludedContextKeys.has(source.key) ? t("context_excluded") : t("context_available"))}</span>`;
+      header.innerHTML = html`<strong title="${sourceLabel}">${sourceLabel}</strong><span>${excludedContextKeys.has(source.key) ? html.raw(t("context_excluded")) : html.raw(t("context_available"))}</span>`;
 
       const body = document.createElement("div");
       body.className = "context-body";
@@ -1485,10 +1486,10 @@ function renderTrash() {
     const typeLabel = t(t(k) === k ? "trash_type_note" : k);
     const path = getTrashOriginalPath(item);
     button.title = item.title;
-    button.innerHTML = `
+    button.innerHTML = html`
       <span>${index + 1}.</span>
       <span>${nameCell(item)}</span>
-      <small>${escapeHtml(typeLabel)}${path ? ` · ${escapeHtml(path)}` : ""}</small>
+      <small>${typeLabel}${path ? html` · ${path}` : ""}</small>
     `;
     button.addEventListener("click", async () => {
       selectedTrashItem = item;

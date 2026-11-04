@@ -20,7 +20,9 @@ const isRecord = (path) =>
   /HANDOFF|CLOSEOUT|RELEASE-NOTES|CHANGELOG|ICON-LINEAGE-AUDIT|GOLDEN-GATE|ICON-ERA/.test(path);
 
 const findings = { unresolvedPath: [], missingScript: [], missingCommand: [], badLineRef: [], brokenLink: [], external: [] };
-const anchors = ["", "apps/desktop/", "apps/desktop/app/", "apps/server/", "apps/server/server/", "tooling/", "tests/", "docs/", "internal/", "internal/archive/endfield/", "platform/"];
+// styles/ and app/vendor/ carry their own trees of referenced files (numbered
+// sheets, vendored upstream modules) that documents cite by path.
+const anchors = ["", "apps/desktop/", "apps/desktop/app/", "apps/desktop/app/vendor/", "apps/desktop/styles/", "apps/server/", "apps/server/server/", "tooling/", "tests/", "docs/", "internal/", "internal/archive/endfield/", "platform/"];
 
 // This ledger quotes retired paths on purpose: naming what was wrong is its job.
 const isLedger = (path) => path === "internal/agents/DOC-CLAIM-AUDIT.md";
@@ -58,6 +60,9 @@ for (const doc of docs) {
   }
 
   for (const match of text.matchAll(/npm run ([A-Za-z0-9:_-]+)/g)) {
+    // A trailing colon means a script-family placeholder ("npm run audit:<name>"
+    // truncates to "audit:" here), not one script; it cannot be looked up.
+    if (match[1].endsWith(":")) continue;
     if (typeof scripts[match[1]] !== "string") findings.missingScript.push(`${doc} (${kind}): npm run ${match[1]}`);
   }
 

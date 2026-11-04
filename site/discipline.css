@@ -1,0 +1,255 @@
+/* AI System 6 · Discipline: the first reading face under
+   docs/design/SITE-EDITORIAL.md.
+
+   Paper white, ink black, one oxidized accent. One column, a text serif for
+   the body, a system sans for the furniture, hairline rules, no shadows and
+   no gradients. The page follows the reader's light or dark setting and
+   nothing else; the menu bar is the site's own, so every page here is one
+   place. */
+
+html.discipline-note {
+  --dp-bg: #f8f6f1;
+  --dp-ink: #201e1b;
+  --dp-muted: #6d675f;
+  --dp-rule: rgba(32, 30, 27, 0.14);
+  --dp-surface: #fffefb;
+  --dp-accent: #8f4636;
+  --dp-accent-ink: #7c3d2f;
+  --dp-serif: "New York", "Iowan Old Style", Charter, Georgia, "Songti SC", STSong, "Noto Serif CJK SC", serif;
+  --dp-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Noto Sans", "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", sans-serif;
+  --dp-mono: ui-monospace, "SF Mono", Menlo, "Cascadia Mono", monospace;
+  --ink: var(--dp-ink);
+  --bar-bg: rgba(248, 246, 241, 0.85);
+  --bar-border: var(--dp-rule);
+  --footer-ink: var(--dp-muted);
+  --footer-shadow: none;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  html.discipline-note {
+    --dp-bg: #16161a;
+    --dp-ink: #e9e6e0;
+    --dp-muted: #a09a91;
+    --dp-rule: rgba(233, 230, 224, 0.15);
+    --dp-surface: #1d1d22;
+    --dp-accent: #d29685;
+    --dp-accent-ink: #dca291;
+    --bar-bg: rgba(22, 22, 26, 0.85);
+    color-scheme: dark;
+  }
+}
+
+html.discipline-note body {
+  background: var(--dp-bg);
+  color: var(--dp-ink);
+  font-family: var(--dp-sans);
+  font-size: 17px;
+  line-height: 1.75;
+}
+html.discipline-note body::before { display: none; }
+html.discipline-note:lang(zh-CN) body { line-height: 1.9; }
+
+.dp {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 20px 64px;
+}
+
+/* Article header: kicker, title, dek, metadata. Not a hero. */
+.dp-header {
+  padding: 56px 0 28px;
+  border-bottom: 1px solid var(--dp-rule);
+}
+.dp-kicker {
+  margin: 0 0 14px;
+  font-family: var(--dp-sans);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dp-accent-ink);
+}
+.dp-header h1 {
+  margin: 0 0 16px;
+  font-family: var(--dp-serif);
+  font-size: clamp(30px, 6vw, 38px);
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+.dp-dek {
+  margin: 0 0 18px;
+  font-family: var(--dp-serif);
+  font-size: 19px;
+  line-height: 1.6;
+  color: var(--dp-muted);
+  max-width: 40em;
+}
+.dp-meta {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--dp-muted);
+}
+
+/* One argument per page, one column, a generous rhythm. */
+.dp-article {
+  padding: 8px 0 8px;
+}
+.dp-section {
+  padding: 28px 0 4px;
+}
+.dp-section h2 {
+  margin: 0 0 12px;
+  font-family: var(--dp-serif);
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: -0.005em;
+}
+.dp-section p {
+  margin: 0 0 16px;
+  font-family: var(--dp-serif);
+  font-size: 17.5px;
+  line-height: 1.75;
+  max-width: 40em;
+}
+html.discipline-note:lang(zh-CN) .dp-section p { max-width: none; }
+
+/* One callout: quiet surface change, hairline edge, no second palette. */
+.dp-callout {
+  margin: 36px 0 8px;
+  padding: 18px 20px;
+  background: var(--dp-surface);
+  border: 1px solid var(--dp-rule);
+  border-radius: 2px;
+}
+.dp-callout-title {
+  margin: 0 0 8px;
+  font-family: var(--dp-sans);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dp-accent-ink);
+}
+.dp-callout p {
+  margin: 0 0 10px;
+  font-family: var(--dp-serif);
+  font-size: 16.5px;
+  line-height: 1.7;
+}
+.dp-callout p:last-child { margin-bottom: 0; }
+
+.dp-actions {
+  margin: 28px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+.dp-button {
+  display: inline-block;
+  padding: 9px 18px;
+  border: 1px solid var(--dp-ink);
+  border-radius: 2px;
+  color: var(--dp-bg);
+  background: var(--dp-ink);
+  font-family: var(--dp-sans);
+  font-size: 15px;
+  text-decoration: none;
+}
+.dp-button:hover { background: var(--dp-accent-ink); border-color: var(--dp-accent-ink); }
+.dp-quiet {
+  font-family: var(--dp-sans);
+  font-size: 15px;
+  color: var(--dp-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Sources: numbered, reachable without JavaScript. */
+.dp-sources {
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid var(--dp-rule);
+}
+.dp-sources h2 {
+  margin: 0 0 12px;
+  font-family: var(--dp-serif);
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+.dp-sources > p {
+  margin: 0 0 18px;
+  font-family: var(--dp-serif);
+  font-size: 15.5px;
+  line-height: 1.7;
+  color: var(--dp-muted);
+  max-width: 40em;
+}
+.dp-sources ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.dp-sources li {
+  display: grid;
+  grid-template-columns: 2em minmax(0, 1fr);
+  gap: 0 10px;
+  padding: 10px 0;
+  border-top: 1px dotted var(--dp-rule);
+}
+.dp-src-n {
+  font-family: var(--dp-mono);
+  font-size: 13px;
+  color: var(--dp-muted);
+  padding-top: 3px;
+}
+.dp-sources li a {
+  font-family: var(--dp-sans);
+  font-size: 15px;
+  color: var(--dp-accent-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.dp-sources li p {
+  margin: 4px 0 0;
+  font-family: var(--dp-sans);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--dp-muted);
+}
+
+.dp-footer {
+  margin-top: 48px;
+  padding-top: 20px;
+  border-top: 1px solid var(--dp-rule);
+}
+.dp-footer p {
+  margin: 0 0 8px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.dp-footer a {
+  color: var(--dp-accent-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Links are visibly links; focus is an outline, never a shadow. */
+html.discipline-note a:focus-visible {
+  outline: 2px solid var(--dp-accent-ink);
+  outline-offset: 2px;
+  border-radius: 1px;
+}
+
+/* Below 480px the header keeps its measure and the sources keep their gap. */
+@media (max-width: 480px) {
+  .dp { padding-inline: 16px; }
+  .dp-header { padding-top: 40px; }
+  .dp-dek { font-size: 17.5px; }
+  .dp-section p { font-size: 17px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.discipline-note * { transition: none !important; }
+}

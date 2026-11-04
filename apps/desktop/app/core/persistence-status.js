@@ -463,8 +463,29 @@ function saveLocalApiTokenForSession() {
   } catch {}
 }
 
+// A complete fingerprint, not a remembered field list.
+//
+// The old version joined each record's id/title/name with its
+// updatedAt/createdAt: a record whose content moved without a timestamp bump -
+// tags on a scrap, a file's folder, a reference's note - produced the SAME
+// version and the renderer skipped the repaint it had just been asked for.
+// That is the exact bug this cache exists to make impossible, so the
+// fingerprint now covers the whole record. The cost is one linear walk of the
+// collection per signature check - the same order as the paint the check is
+// deciding about. Equal records stringify equal because key order is stable
+// for a record's lifetime; a merge that reorders keys can only cause an extra
+// paint, never a missed one. A record that cannot stringify falls back to its
+// identity line rather than throwing the render.
 function collectionVersion(items = []) {
-  return `${items.length};${items.map((item) => `${item.id || item.title || item.name || ""}:${item.updatedAt || item.createdAt || ""}`).join("|")}`;
+  return `${items.length};${items.map((item) => {
+    const identity = item?.id || item?.title || item?.name || "";
+    if (item === null || typeof item !== "object") return `${identity}:${String(item ?? "")}`;
+    try {
+      return `${identity}:${JSON.stringify(item)}`;
+    } catch {
+      return `${identity}:${item.updatedAt || item.createdAt || ""}`;
+    }
+  }).join("|")}`;
 }
 
 function shouldSkipRender(name, signature) {

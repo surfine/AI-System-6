@@ -28,6 +28,12 @@ make the first finished work easier, make existing work safer, or make the next
 session easier to resume? A change that answers no to all three is feature
 inventory, not product completion, and stays out of the current Beta.
 
+The official site, blog and public documentation are reading surfaces, not
+product UI. They follow [SITE-EDITORIAL.md](SITE-EDITORIAL.md); README and
+CHANGELOG keep only basic typographic hygiene. A product screenshot or demo on a
+reading surface is still governed by this contract for the product area it
+shows.
+
 The Macintosh System 6 desktop metaphor is a constraint, not decoration:
 
 - Visible objects beat abstract AI controls.
@@ -50,6 +56,9 @@ Adopting a historical element requires all of the following:
 - Inspect the native resource or era-appropriate runtime behavior first. Record
   which system version supplied the evidence; do not present a later feature as
   native System 6 behavior.
+- If the native resource or capture is missing, derive from the nearest period
+  evidence, record the basis, and label the result as an approximation. A
+  derivation is not native behavior.
 - Preserve its original role and state transitions. Similar-looking controls
   are not interchangeable merely because they occupy the same chrome.
 - Adapt the idea for web, pointer, keyboard, touch, narrow screens, and
@@ -57,7 +66,8 @@ Adopting a historical element requires all of the following:
 - Keep the default experience quiet. Later-system features should appear on
   demand or at the moment they become relevant, not as a feature inventory.
 - Keep one semantic DOM and state model across all twelve appearances. Each era
-  changes material and optical geometry, not the object's meaning.
+  changes material and optical geometry, and may register a layout recipe; none
+  changes the object's meaning.
 
 Control meanings are load-bearing:
 
@@ -157,11 +167,15 @@ In short: **System 6 is the grammar; Classic Mac OS is the vocabulary library.**
 
 Default design settings for this product:
 
-| Dial | Value | Meaning |
-| --- | --- | --- |
-| Design variance | 3 / 10 | Predictable System 6 object grammar. No arbitrary expressive layouts. |
-| Motion intensity | 2 / 10 | State feedback only. No decorative choreography. |
-| Visual density | 7 / 10 | Dense, scannable tool surfaces. Air is reserved for writing and reading. |
+| Dial | Writing / reading | Tools | Meaning |
+| --- | --- | --- | --- |
+| Design variance | 3 / 10 | 3 / 10 | Predictable System 6 object grammar. No arbitrary expressive layouts. |
+| Motion intensity | 2 / 10 | 2 / 10 | State feedback only. No decorative choreography. |
+| Visual density | 4 / 10 | 7 / 10 | Air for writing and reading; dense, scannable tool surfaces. |
+
+The two columns are the same grammar at different breathing rates. Do not create
+a third density register or let a tool surface inherit the writing column by
+accident.
 
 Exceptions must be named in the feature contract. `Cover Glass` (file name
 `liquid-cover.js`), `CMF Studio`, `ClioStage`, and media creation tools may
@@ -185,7 +199,7 @@ across its theme counterparts, including controls inserted after initialization.
 `verify:css`, including scoped `verify:quick -- --css-file ...`, automatically runs
 `node tooling/verify-liquid-shapes.mjs --primitives`. This small browser fixture
 loads production source CSS (including lazy sheets), the theme registry and the
-actual select functions. It checks six appearances, control typography, arrow
+actual select functions. It checks twelve appearances, control typography, arrow
 ownership/transparency, hidden native ink and Liquid Glass control/panel corners.
 It needs neither an application server nor a build, and writes an isolated report
 under `dist/verification/liquid-shapes/`. Failures stop the CSS gate. The
@@ -210,6 +224,10 @@ screenshot instrumentation for the twelve is catalogued in
 Theme Lab Surfaces polish boards productize key-window / vibrancy / grayscale /
 quiet-focus measures without clearing open `polishTodos`.
 
+All twelve remain supported, user-selectable and included in new-feature
+acceptance. The four branches below are an authoring and maintenance lineage,
+not a support tier: they organize recipes, they do not retire an appearance.
+
 The maintenance lineage has four deliberate branches:
 
 - Classic → System 7 / Platinum → Drawing Board
@@ -218,9 +236,34 @@ The maintenance lineage has four deliberate branches:
 - NeXTSTEP (independent material adaptation; dedicated icons deferred; Classic art retained)
 
 `recipeBase` names the comparison and authoring baseline; it does not activate a
-second theme class. Each child owns a reviewable delta, so Aqua candy does not
-leak into Snow Leopard and Liquid Glass refraction does not leak into Yosemite.
-`family` is only for genuinely shared internal primitives.
+second theme class. Each child owns a reviewable delta — material tokens and,
+where the historical material requires it, a layout recipe — so Aqua candy does
+not leak into Snow Leopard and Liquid Glass refraction does not leak into
+Yosemite. `family` is only for genuinely shared internal primitives.
+
+A layout recipe may change arrangement, density, grouping and spacing through
+CSS. It may not change DOM structure, the task sequence, the state machine,
+object names or verbs, saved-state semantics, window ownership, or the reading,
+writing, clipping, saving and export rules. A layout recipe needs its own
+fixture and acceptance evidence; passing the parent's material fixture is not
+enough.
+
+### Layout recipe registry
+
+A child that needs a layout different from its root registers a row here before
+merge. No row means it inherits its root's layout.
+
+| Root | Layout recipe owner | Fixture | Notes |
+| --- | --- | --- | --- |
+| Classic | `apps/desktop/styles/00-foundation.css` + `65-appearance-themes.css` | `verify-liquid-shapes --primitives` | Grammar baseline |
+| Aqua | `apps/desktop/styles/65-appearance-themes.css` | `verify-liquid-shapes --primitives` | Pinstripe/plastic depth |
+| Liquid Glass | `apps/desktop/styles/70-liquid-glass.css` | `verify-liquid-shapes --primitives` | Glass material, rounded ladder |
+| NeXTSTEP | `apps/desktop/styles/65-appearance-themes.css` | `verify-liquid-shapes --primitives` | Independent material adaptation |
+
+A child with a different layout adds a row with its own recipe file and fixture;
+a row without a fixture is an incomplete registration. A layout recipe is
+CSS-only. A child that needs a different DOM is not a layout recipe; it is a new
+core object and goes through the gate above.
 
 Theme changes may alter:
 
@@ -229,6 +272,8 @@ Theme changes may alter:
 - Radius tokens.
 - Icon rendering inside the same semantic icon id.
 - Small optical spacing where the material requires it.
+- A layout recipe: arrangement, density, grouping and spacing, with the DOM
+  unchanged.
 
 Theme changes must not alter without a documented reason:
 
@@ -237,6 +282,7 @@ Theme changes must not alter without a documented reason:
 - Object names or verbs.
 - Saved state semantics.
 - Window ownership boundaries.
+- DOM structure or the state machine.
 - Reading, writing, clipping, saving, or export rules.
 
 Appearance work should be token-first:
@@ -304,6 +350,11 @@ Leopard system scrollbar remains the 15px blue Aqua control shown by Quaqua and
 native open panels. External selectors, component DOM, and Apple-owned artwork
 must not enter the repository.
 
+Approximations are registered in this ledger before merge: name the derived
+detail, the nearest period source, and the recipe row that consumes it. Detailed
+captures may live under `internal/evidence/`; an unregistered approximation is
+not treated as native.
+
 Yosemite is the Liquid-Glass-family descendant for maintenance lineage only:
 it owns an independent 10.10 painter under `body[data-theme="yosemite"]` and
 must never be implemented as "Liquid Glass minus glass overrides" (see
@@ -344,7 +395,18 @@ Prefer existing primitives before adding classes:
 Do not add a new component shape because it looks modern. Add one only when an
 existing object role cannot express the task.
 
-**These primitives carry all eight appearances already.** An application built
+A new core object is a new row in this table, not a new window that reuses an
+existing row. The exception gate is all of:
+
+1. A written entry in this file describing the object's role, states and
+   ownership.
+2. A feature contract naming the existing object it replaces or retires.
+3. At most one new core object per release.
+
+Without all three, build the task from the existing rows and primitives. A new
+window that uses `.window` and an existing role is not a new core object.
+
+**These primitives carry all twelve appearances already.** An application built
 from them inherits every era without writing a line of theme CSS, which is the
 whole reason the list above is a list and not a suggestion:
 
@@ -360,7 +422,7 @@ whole reason the list above is a list and not a suggestion:
 
 The reverse is the rule Theme Lab enforces: a control that is **not** on this
 list has no era wardrobe to inherit, so building one for a specimen means
-paying for six eras of dressing that no user interface ever benefits from.
+paying for twelve eras of dressing that no user interface ever benefits from.
 Theme Lab shows these primitives and nothing else; `verify:css` ratchets what
 it costs the appearance sheets (`themeLabReplicaMentions`).
 
@@ -369,9 +431,15 @@ it costs the appearance sheets (`themeLabReplicaMentions`).
 Window and panel geometry is tokenized. New repeated values belong in
 `apps/desktop/styles/00-foundation.css`, not in scattered selectors.
 
+Window and control geometry uses the shared responsive token scale at every
+appearance and viewport. Historical size roles (regular, small, mini) remain
+semantic tokens; do not reintroduce fixed native pixel dimensions. Relative
+proportion carries the era, not absolute pixels.
+
 Use:
 
-- Fixed rem or px scales for product UI controls.
+- Fixed rem or px token scales for product UI controls; not per-appearance
+  native dimensions.
 - CSS Grid for two-dimensional panes.
 - Flexbox for one-dimensional rows and button groups.
 - `gap` for sibling spacing.
@@ -389,6 +457,10 @@ Avoid:
 
 Dense tool surfaces should use panes, rows, dividers, and object lists. Cards
 are reserved for repeated items, modals, and genuinely framed tools.
+
+Writing and reading surfaces do not card an individual source, draft or
+section; use a pane, row or divider. A card around a single object is a
+dashboard habit, not a hierarchy.
 
 Layering uses the named `--z-*` vocabulary from `apps/desktop/styles/00-foundation.css`.
 Global layers are ordered as windows, pinned windows, system modals, boot/shutdown,
@@ -446,8 +518,22 @@ Liquid Glass theme:
 All appearances:
 
 - One icon family per object id.
+- Render each semantic icon id with its era's native icon when evidence exists.
+  When it does not, derive from the nearest period source, record the basis, and
+  label the approximation; never pass a modern redraw as native.
+- Scale 1-bit icons, borders and bitmap art by integer factors with
+  nearest-neighbor. Layout geometry may use fractional tokens; never smooth a
+  1-bit asset to fit a fractional box.
 - One state vocabulary for controls.
 - Text must fit in English and Chinese.
+- Keep the visible target at its historical size; expand the pointer and touch
+  hit area invisibly to at least 44×44 CSS px, without moving neighbouring
+  objects.
+- When a historical color fails contrast, preserve its hue and relationship and
+  adjust lightness until the text is readable; record the deviation. Do not swap
+  the hue for a modern accessible palette.
+- Empty and error states use the era's native icon or line language plus text.
+  No modern illustration; a generated image is not a state.
 - No visual state may imply save, memory, network, indexing, check, or export
   unless that operation actually happened.
 
@@ -457,7 +543,14 @@ Product motion is feedback:
 
 - Hover, focus, active, selected, disabled, loading, empty, and error states are
   required for interactive components.
-- Most transitions should be 150 to 250 ms.
+- Transition time follows the appearance ladder:
+  - Classic, System 7, Platinum, Drawing Board, NeXTSTEP: 0ms; the state changes
+    on the frame.
+  - Aqua, Tiger: 100ms.
+  - Snow Leopard, Lion: 120ms.
+  - Yosemite, Big Sur, Liquid Glass: 180ms ease-out.
+  A child that needs a different value records it in its recipe row; do not
+  invent a thirteenth timing.
 - Animate transform and opacity by default.
 - Honor `prefers-reduced-motion`.
 - No page-load choreography for ordinary product windows.
@@ -557,8 +650,25 @@ owning tokens and affected states. Apply the shared-control invariants above
 whenever a control is added or changed. Explain a new primitive's need and add
 its fixture; ordinary reuse does not require a fixed questionnaire or report.
 Choose evidence for the changed behavior. A local control correction does not
-restart the six-era application or phone/tablet matrix; layout changes still
-check the affected surface in the relevant themes and orientations.
+restart the all-appearance application or phone/tablet matrix; layout changes
+still check the affected surface in the relevant themes and orientations.
+
+Agent-authored explanation visuals — diagrams, charts, mockups, interactive
+explainers and illustrations made for a review, proposal or document — follow
+the `visual-creation` skill. Choose the register by delivery:
+
+- Internal review, evidence or working note: the neutral explanation register.
+- External proposal or public share: the project's own register — this contract
+  and `system6-ui-review` for a product surface, `SITE-EDITORIAL.md` for a site
+  or public document.
+- A mockup of a product surface is always the product register, whatever the
+  path.
+
+Path is the default signal: `internal/**` is internal; `docs/**`, `site/**` and
+other public output are external. A file header or an explicit task declaration
+overrides the path. If neither path nor declaration settles it, use the neutral
+register and say so. The explanation register never changes product material,
+typography or icons.
 
 ## Forbidden Defaults
 

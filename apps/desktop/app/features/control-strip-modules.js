@@ -59,31 +59,6 @@ function controlStripVolumeLevel() {
   return Math.max(0, Math.min(7, Math.round((Number(snap.volume) || 0) / 100 * 7)));
 }
 
-function controlStripFormatTokens(tokens) {
-  const value = Math.max(0, Number(tokens) || 0);
-  if (value >= 1000) return `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}K`;
-  return String(Math.round(value));
-}
-
-function controlStripPendingAssistantMessages() {
-  if (typeof messagesEl === "undefined" || !messagesEl) return [];
-  return [...messagesEl.querySelectorAll(".message.assistant.pending")];
-}
-
-function controlStripContextBudget() {
-  if (typeof lastContextBudget === "undefined") return null;
-  return lastContextBudget || null;
-}
-
-function controlStripContextUsed(budget) {
-  const used = Number(
-    typeof lastContextLoadout !== "undefined" && lastContextLoadout?.promptTokens
-      ? lastContextLoadout.promptTokens
-      : budget?.promptTokens || 0
-  );
-  return Math.max(0, used);
-}
-
 function controlStripEnsureSoundscapeRuntime() {
   if (typeof ensureSoundscapeModule !== "function") return Promise.resolve(true);
   return ensureSoundscapeModule().then(() => window.AISystem6Soundscape?.ensureRuntime?.());
@@ -114,11 +89,6 @@ function controlStripSubscribeNotifications(listener) {
   const observer = new MutationObserver(listener);
   observer.observe(indicator, { attributes: true, childList: true, subtree: true });
   return () => observer.disconnect();
-}
-
-function controlStripProjectName(project) {
-  if (typeof projectDisplayName === "function") return projectDisplayName(project);
-  return project?.name || t("projects");
 }
 
 // Whether the desk would actually run a command right now, read from the one

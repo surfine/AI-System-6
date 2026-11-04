@@ -344,7 +344,7 @@
       node.innerHTML = "";
       return;
     }
-    node.innerHTML = `<strong>${esc(label)}</strong><button type="button" data-blog-clear-filter>${esc(tr("aaron_blog_clear", "Clear"))}</button>`;
+    node.innerHTML = html`<strong>${label}</strong><button type="button" data-blog-clear-filter>${html.raw(tr("aaron_blog_clear", "Clear"))}</button>`;
   }
 
   function postRow(post) {
@@ -439,11 +439,11 @@
     const list = listEl();
     if (!list) return;
     if (!state.index) {
-      list.innerHTML = `<div class="aaron-blog-empty"><strong>${esc(tr("aaron_blog_loading", "Loading…"))}</strong>${esc(tr("aaron_blog_loading_detail", "The first sync is fetching the post index."))}</div>`;
+      list.innerHTML = html`<div class="aaron-blog-empty"><strong>${html.raw(tr("aaron_blog_loading", "Loading…"))}</strong>${html.raw(tr("aaron_blog_loading_detail", "The first sync is fetching the post index."))}</div>`;
       return;
     }
     if (state.section === "search" && state.query.trim() && !state.searchEntries) {
-      list.innerHTML = `<div class="aaron-blog-empty"><strong>${esc(tr("aaron_blog_searching", "Searching…"))}</strong></div>`;
+      list.innerHTML = html`<div class="aaron-blog-empty"><strong>${html.raw(tr("aaron_blog_searching", "Searching…"))}</strong></div>`;
       await ensureSearch();
       if (token !== listToken) return;
     }
@@ -459,7 +459,7 @@
     }
     if (state.section === "search") {
       if (!state.query.trim()) {
-        list.innerHTML = `<div class="aaron-blog-empty"><strong>${esc(tr("aaron_blog_search", "Search"))}</strong>${esc(tr("aaron_blog_search_hint", "Type a title, tag or phrase."))}</div>`;
+        list.innerHTML = html`<div class="aaron-blog-empty"><strong>${html.raw(tr("aaron_blog_search", "Search"))}</strong>${html.raw(tr("aaron_blog_search_hint", "Type a title, tag or phrase."))}</div>`;
         return;
       }
       const allRows = searchRows(state.query);
@@ -529,7 +529,7 @@
     setWindowTitle(post.title);
     const article = articleEl();
     if (article) {
-      article.innerHTML = `<div class="aaron-blog-article-inner"><div class="aaron-blog-article-head"><button type="button" class="aaron-blog-back" data-blog-back>← ${esc(tr("aaron_blog_back", "Back"))}</button><time>${esc(post.date)}</time><span>${post.minutes} ${esc(tr("aaron_blog_minutes", "min read"))}</span></div><div class="aaron-blog-empty">${esc(tr("aaron_blog_loading", "Loading…"))}</div></div>`;
+      article.innerHTML = html`<div class="aaron-blog-article-inner"><div class="aaron-blog-article-head"><button type="button" class="aaron-blog-back" data-blog-back>← ${html.raw(tr("aaron_blog_back", "Back"))}</button><time>${post.date}</time><span>${post.minutes} ${html.raw(tr("aaron_blog_minutes", "min read"))}</span></div><div class="aaron-blog-empty">${html.raw(tr("aaron_blog_loading", "Loading…"))}</div></div>`;
     }
     try {
       const chunk = post.kind === "long" ? await ensureLongPack() : await ensureChunk(post.date.slice(0, 4));
@@ -537,7 +537,7 @@
       const html = chunk?.posts?.[id]?.html || "";
       if (!html) throw new Error(tr("aaron_blog_missing", "This post is not in the downloaded pack."));
       if (article) {
-        article.innerHTML = `<div class="aaron-blog-article-inner"><div class="aaron-blog-article-head"><button type="button" class="aaron-blog-back" data-blog-back>← ${esc(tr("aaron_blog_back", "Back"))}</button><time>${esc(post.date)}</time><span>${post.minutes} ${esc(tr("aaron_blog_minutes", "min read"))}</span><button type="button" class="aaron-blog-ask" data-blog-ask="post">${esc(tr("aaron_blog_ask_post", "Ask about this post"))}</button></div><div class="aaron-blog-article-body">${safeHtml(html)}</div>${articleFooter(post)}</div>`;
+        article.innerHTML = html`<div class="aaron-blog-article-inner"><div class="aaron-blog-article-head"><button type="button" class="aaron-blog-back" data-blog-back>← ${html.raw(tr("aaron_blog_back", "Back"))}</button><time>${post.date}</time><span>${post.minutes} ${html.raw(tr("aaron_blog_minutes", "min read"))}</span><button type="button" class="aaron-blog-ask" data-blog-ask="post">${html.raw(tr("aaron_blog_ask_post", "Ask about this post"))}</button></div><div class="aaron-blog-article-body">${safeHtml(html)}</div>${articleFooter(post)}</div>`;
         article.scrollTop = Number(restoreScroll) || 0;
       }
       state.error = "";
@@ -546,7 +546,7 @@
       if (navigator.onLine === false) state.online = false;
       state.error = String(error?.message || error);
       if (article) {
-        article.innerHTML = `<div class="aaron-blog-article-inner"><div class="aaron-blog-article-head"><button type="button" class="aaron-blog-back" data-blog-back>← ${esc(tr("aaron_blog_back", "Back"))}</button></div><div class="aaron-blog-empty"><strong>${esc(tr("aaron_blog_unavailable", "Could not load this post"))}</strong>${esc(state.error)}</div></div>`;
+        article.innerHTML = html`<div class="aaron-blog-article-inner"><div class="aaron-blog-article-head"><button type="button" class="aaron-blog-back" data-blog-back>← ${html.raw(tr("aaron_blog_back", "Back"))}</button></div><div class="aaron-blog-empty"><strong>${html.raw(tr("aaron_blog_unavailable", "Could not load this post"))}</strong>${state.error}</div></div>`;
       }
     }
     renderRail();
@@ -565,7 +565,7 @@
     const article = articleEl();
     if (article) {
       const link = note.link ? `<p><a href="${esc(note.link)}" data-external="1" rel="noopener noreferrer">${esc(note.host || note.link)} ↗</a></p>` : "";
-      article.innerHTML = `<div class="aaron-blog-article-inner"><div class="aaron-blog-article-head"><button type="button" class="aaron-blog-back" data-blog-back>← ${esc(tr("aaron_blog_back", "Back"))}</button><time>${esc(note.date)}</time></div><div class="aaron-blog-article-body"><p>${esc(note.text)}</p>${link}</div></div>`;
+      article.innerHTML = html`<div class="aaron-blog-article-inner"><div class="aaron-blog-article-head"><button type="button" class="aaron-blog-back" data-blog-back>← ${html.raw(tr("aaron_blog_back", "Back"))}</button><time>${note.date}</time></div><div class="aaron-blog-article-body"><p>${note.text}</p>${html.raw(link)}</div></div>`;
       article.scrollTop = 0;
     }
     renderRail();
