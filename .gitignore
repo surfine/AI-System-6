@@ -202,3 +202,4 @@ platform/macos/tinyjs/signing.local.json
 
 # Break-UI fixtures (tooling/dev/worst-case-disks.mjs); dev only, never released
 /apps/desktop/app/dev/worst-case/
+platform/macos/tinyjs/acceptance-override.local.json

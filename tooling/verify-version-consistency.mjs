@@ -31,7 +31,7 @@ import { createServer } from "node:net";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { findStatusLine, statusLine } from "./lib/readme-status.mjs";
+import { findStatusLine } from "./lib/readme-status.mjs";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const args = process.argv.slice(2);
@@ -179,22 +179,22 @@ if (buildInfo.build && generatedJson.build === buildInfo.build) {
   fail(`build-info build ${buildInfo.build || "(missing)"} !== generated build ${generatedJson.build}`);
 }
 
-// The README's freshness line is derived by npm run version:set. A hand edit or
-// a renumber that missed it leaves the front page naming the previous beta.
-for (const [relative, chinese] of [["README.md", false], ["README.zh-CN.md", true]]) {
+// The README no longer carries the generated status line (retired 2026-11-04
+// at the owner's request: the shields row above it already names the beta and
+// links the release). A leftover line can only be stale — a renumber from a
+// tree that still had it, or a branch merge from before the retirement — and
+// a stale line is worse than none, so the gate refuses any remnant.
+for (const relative of ["README.md", "README.zh-CN.md"]) {
   const file = join(root, relative);
   if (!existsSync(file)) {
     fail(`${relative} is missing`);
     continue;
   }
-  const expected = statusLine({ version: pkg.version, build: buildInfo.build, chinese });
-  const actual = findStatusLine(readFileSync(file, "utf8"));
-  if (actual === expected) {
-    ok(`${relative} status line names ${pkg.version} · build ${buildInfo.build}`);
-  } else if (actual === null) {
-    fail(`${relative} has no <!-- status:start/end --> line; run npm run version:set`);
+  const leftover = findStatusLine(readFileSync(file, "utf8"));
+  if (leftover === null) {
+    ok(`${relative} carries no status line (retired; the shields row names the release)`);
   } else {
-    fail(`${relative} status line is stale; run npm run version:set`);
+    fail(`${relative} still has a <!-- status:start/end --> line; the status line was retired 2026-11-04 — delete the block`);
   }
 }
 

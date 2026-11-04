@@ -22,6 +22,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { globSync } from "node:fs";
 import { compileBrowseFiltersForRelease } from "./lib/browse-filters-release.mjs";
+import { generateBuildInfo } from "./lib/build-info.mjs";
 import { auditMachOTree } from "./lib/macho-audit.mjs";
 import { MAC_LEGACY_X64, fetchOfficialNode, nodeDistVersion, nodeVersionInRange } from "./lib/mac-legacy-profile.mjs";
 
@@ -146,6 +147,15 @@ if (!assetGlobs.length) {
   console.error("package.json macPackagedAssets.assets is empty; nothing to package.");
   process.exit(1);
 }
+
+// The payload carries the generated build-info files verbatim, so the copy
+// must carry THIS build's source identity (release-prepare exports
+// AI_SYSTEM6_SOURCE_COMMIT), not whatever an earlier build in this tree left
+// stamped there. Regenerating here is what the identity check in
+// build-tinyjs-shell-app.mjs has always assumed happened; without it a tree
+// whose last build ran without the variable packages an empty sourceCommit
+// and the shell refuses at "Server payload identity differs".
+generateBuildInfo({ root: repoRoot });
 
 rmSync(payloadDir, { recursive: true, force: true });
 mkdirSync(payloadDir, { recursive: true });

@@ -86,6 +86,22 @@ const suiteInfrastructure = new Set([
   // release tooling, not about the product, so it belongs on this side of the
   // count like the two above.
   "release-step-resume.test.mjs",
+  // Spawns the real release-prepare and requires the prerelease Mac-target
+  // guard to refuse: a claim about the release gate going red, the way
+  // gate-self-proof is, not about the app.
+  "release-mac-target-guard.test.mjs",
+  // Executes the real receipt library in a temporary tree: seals a base
+  // receipt, publishes part of it, extends it with a target, and requires the
+  // publish state to inherit only what the base finished. A claim about the
+  // release tooling, like release-step-resume above.
+  "release-extend-sealed-identity.test.mjs",
+  // Holds release-prepare to the two wires 2026-11-04 needed and did not have
+  // (the signing identity reaching the frozen Mac gates, a refusal keeping its
+  // step logs). Release tooling, not the product.
+  "release-frozen-env-and-log-retention.test.mjs",
+  // Calls the notarization failure classifier with the real strings Apple and
+  // notarytool returned on 2026-11-04. A claim about the release tooling.
+  "notary-failure-classification.test.mjs",
 ]);
 
 /** Every module specifier the file imports, static or dynamic. */

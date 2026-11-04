@@ -1,5 +1,5 @@
 <!-- canonical-source: README.md -->
-<!-- source-sha256: 935ebbd21123eb996da2697e80bf25640957d3bd05c92eb5c4c596e7c6e07f76 -->
+<!-- source-sha256: 6b975ff06367376a09d8fe44f27ed4bf098c6035dcc4250fcd743f626a2c5ccd -->
 
 > 英文版为准 / 仅供人类参考
 
@@ -8,10 +8,6 @@
 <samp>1988 年的对象 / 2026 年的智能</samp>
 
 # AI System 6
-
-<!-- status:start -->
-**测试版 2.0.0-beta.2** · 构建 20261104.1 · 2026-11-04 · [发布说明](https://github.com/surfine/AI-System-6/releases/tag/v2.0.0-beta.2)
-<!-- status:end -->
 
 **一张本地优先的写作桌，AI 永远不会变成你的嗓音。**<br>
 从你粗糙的问题到一篇能交出去的稿子，只有一条路线。项目留在浏览器，服务端不留项目。两张软盘。

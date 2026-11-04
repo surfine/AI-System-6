@@ -34,6 +34,7 @@ import { fileURLToPath } from "node:url";
 import process from "node:process";
 
 import { collectMachOFiles } from "./build-tinyjs-shell-app.mjs";
+import { classifyNotaryFailure } from "./lib/notary-failure.mjs";
 
 export const NODE_ENTITLEMENTS = resolve(fileURLToPath(new URL("../platform/macos/tinyjs/entitlements.node.plist", import.meta.url)));
 
@@ -134,8 +135,30 @@ function verifyBundle(app) {
   console.log("OK  codesign --verify --deep --strict");
 }
 
+// A notarization upload is a few hundred megabytes over the same network that
+// has to carry everything else on this machine. Measured 2026-11-04: an upload
+// aborted on part 22 of 285 MB with `Network.NWError error 60`, and that one
+// blip threw away a 40-minute Mac chain. Only transient failures are retried
+// (see tooling/lib/notary-failure.mjs); anything Apple judged fails at once.
 function notarize(artifact, credentials) {
-  run(xcrun(), ["notarytool", "submit", artifact, "--wait", "--timeout", "20m", ...credentials]);
+  const attempts = 3;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    const result = runCapture(xcrun(), ["notarytool", "submit", artifact, "--wait", "--timeout", "20m", ...credentials]);
+    const output = `${result.stdout}\n${result.stderr}`;
+    if (result.status === 0) {
+      console.log(`OK  notarized ${basename(artifact)}`);
+      return;
+    }
+    const kind = classifyNotaryFailure(output);
+    if (kind !== "transient" || attempt === attempts) {
+      console.error(output.trim());
+      console.error(`notarization of ${basename(artifact)} failed (attempt ${attempt} of ${attempts}: ${kind})`);
+      process.exit(1);
+    }
+    const waitMs = attempt * 60_000;
+    console.warn(`[notarize] ${basename(artifact)} upload failed transiently (attempt ${attempt} of ${attempts}); retrying in ${waitMs / 1000}s`);
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, waitMs);
+  }
 }
 
 function staple(artifact) {
