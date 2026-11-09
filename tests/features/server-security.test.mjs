@@ -97,7 +97,7 @@ test.assert(!localRequest.isLoopbackHostname("192.168.1.9"), "LAN addresses are 
 const defaultPolicy = localRequest.configuredLocalRequestPolicy(4173);
 test.assert(
   defaultPolicy.browserBridgeOrigins.has("https://system6.aaronlau.me")
-    && defaultPolicy.browserBridgeOrigins.has("http://local.system6.aaronlau.me")
+    && defaultPolicy.browserBridgeOrigins.has("https://boot-system6.pages.dev")
     && !defaultPolicy.browserBridgeOrigins.has("https://attacker.example"),
   "the Mac Music bridge has a narrow browser-origin allowlist"
 );

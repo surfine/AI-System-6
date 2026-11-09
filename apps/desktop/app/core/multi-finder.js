@@ -252,9 +252,9 @@ function runningApplicationRows() {
     button.type = "button";
     button.dataset.switchApp = app.id;
     button.className = `multifinder-app${app.id === activeAppId ? " is-current" : ""}${app.hidden ? " is-app-hidden" : ""}`;
-    button.innerHTML = `
+    button.innerHTML = html`
       <span class="multifinder-mark">${app.id === activeAppId ? "✓" : ""}</span>
-      <span>${escapeHtml(app.label)}</span>
+      <span>${app.label}</span>
       <small>${app.windowCount}</small>
     `;
     rows.push(button);

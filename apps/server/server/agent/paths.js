@@ -57,6 +57,26 @@ function schedulesFile() {
   return path.join(agentHome(), "schedules.json");
 }
 
+/**
+ * 文思泉涌's user site descriptions (「添加站点」, lane C P1), beside
+ * folders.json and schedules.json: one JSON file per site the writer added,
+ * validated by lib/blog-sites/description.js before it is served. The two
+ * built-in descriptions live in the source tree instead; this directory is
+ * only for sites added at run time.
+ */
+function siteDescriptionsDir() {
+  return path.join(agentHome(), "site-descriptions");
+}
+
+/**
+ * 文思泉涌's publish ledger (P7): which article was last published where, so a
+ * second publish is an update rather than a duplicate. Local state, not site
+ * configuration — it never enters a site description or the site tree.
+ */
+function publishLedgerDir() {
+  return path.join(agentHome(), "publish-ledger");
+}
+
 function patchDir() {
   return path.join(__dirname, "patches");
 }
@@ -193,10 +213,23 @@ function codexEngineStatus() {
 }
 
 function realOrSelf(value) {
-  try {
-    return fs.realpathSync(value);
-  } catch {
-    return path.resolve(value);
+  // A directory the description names may not exist yet (Hexo's _drafts is
+  // created by the first draft). Resolve the deepest existing ancestor and
+  // append the rest, so a symlinked ancestor (/var → /private/var on macOS)
+  // still matches the grant that covers the path.
+  const resolved = path.resolve(value);
+  const tail = [];
+  let current = resolved;
+  for (;;) {
+    try {
+      const real = fs.realpathSync(current);
+      return tail.length ? path.join(real, ...tail.reverse()) : real;
+    } catch {
+      const parent = path.dirname(current);
+      if (parent === current) return resolved;
+      tail.push(path.basename(current));
+      current = parent;
+    }
   }
 }
 
@@ -253,10 +286,12 @@ module.exports = {
   isInside,
   legacyDshHome,
   patchDir,
+  publishLedgerDir,
   realOrSelf,
   repoRoot,
   runsRoot,
   shadowsRoot,
+  siteDescriptionsDir,
   tasksRoot,
   temporaryRoots,
 };

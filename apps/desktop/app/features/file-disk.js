@@ -139,11 +139,11 @@ function renderMountedTextDisk() {
       button.dataset.id = name;
       button.dataset.projectId = activeProjectId || "";
       button.dataset.mountedFile = name;
-      button.innerHTML = `
-        ${renderSystemIcon("document", { size: "finder"})}
-        <span>${escapeHtml(name)}</span>
-        <small>${escapeHtml(mountedFileMeta(report))}</small>
-        ${hasWarning ? `<small>${escapeHtml(t("file_disk_warning"))}</small>` : ""}
+      button.innerHTML = html`
+        ${html.raw(renderSystemIcon("document", { size: "finder"}))}
+        <span>${name}</span>
+        <small>${mountedFileMeta(report)}</small>
+        ${html.raw(hasWarning ? html`<small>${html.raw(t("file_disk_warning"))}</small>` : "")}
       `;
       button.title = mountedFileDiagnosticTitle(name, report);
       button.addEventListener("click", (event) => {

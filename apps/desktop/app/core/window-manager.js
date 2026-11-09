@@ -50,7 +50,9 @@ function isCenteredSystemWindow(winOrName) {
 // source for a width that both the stylesheet and this map have to agree on.
 // Function declarations hoist, so the map above may call this.
 function readPixelToken(name, fallback) {
-  const raw = getComputedStyle(document.documentElement).getPropertyValue(name);
+  // body, not html: an era answers a width on its body block (Liquid Glass
+  // widens the Clipboard there), and body still inherits every :root default.
+  const raw = getComputedStyle(document.body || document.documentElement).getPropertyValue(name);
   const value = Number.parseInt(raw, 10);
   return Number.isFinite(value) ? value : fallback;
 }
@@ -2144,7 +2146,7 @@ function renderFinderSidebar(win, windowName) {
       row.type = "button";
       row.className = here ? "tdi-tab is-active" : "tdi-tab";
       if (here) row.setAttribute("aria-current", "page");
-      row.innerHTML = `${renderSystemIcon(iconId, { className: "tdi-tab-icon" })}<span class="tdi-tab-copy"><span>${escapeHtml(t(finderLocationLabelKeys.get(target)))}</span></span>`;
+      row.innerHTML = html`${html.raw(renderSystemIcon(iconId, { className: "tdi-tab-icon" }))}<span class="tdi-tab-copy"><span>${html.raw(t(finderLocationLabelKeys.get(target)))}</span></span>`;
       row.addEventListener("click", (event) => {
         event.stopPropagation();
         if (!here) navigateFinderLocation(windowName, target);
@@ -2177,7 +2179,7 @@ function renderFinderToolbarPlaces(nav, win, windowName) {
     button.className = here ? "finder-toolbar-place is-active" : "finder-toolbar-place";
     if (here) button.setAttribute("aria-current", "page");
     button.title = label;
-    button.innerHTML = `${renderSystemIcon(iconId, { className: "finder-toolbar-place-icon" })}<span class="finder-toolbar-place-label">${escapeHtml(label)}</span>`;
+    button.innerHTML = html`${html.raw(renderSystemIcon(iconId, { className: "finder-toolbar-place-icon" }))}<span class="finder-toolbar-place-label">${label}</span>`;
     button.addEventListener("click", (event) => {
       event.stopPropagation();
       if (!here) navigateFinderLocation(windowName, target);
@@ -3131,6 +3133,8 @@ function getActionAvailability() {
     // N14 送审 sends the manuscript itself, so it needs exactly that: the
     // TeachText window with a body to clean, footnote and hand over.
     "send-manuscript-review": isTeachText && hasTeachTextBody,
+    // The blog handoff needs a manuscript with words in it, exactly like 送审.
+    "publish-to-blog": isTeachText && hasTeachTextBody,
     "download-active-bilingual-markdown": hasTeachTextTranslation,
     "export-teachtext-project-cd": teachTextCanBurnProjectCd,
     // Sending a draft to the darkroom needs a draft. The row is grey until one
@@ -3153,6 +3157,7 @@ function getActionAvailability() {
     "generate-marp-open-clio-stage": hasTeachTextBody && teachTextCanExport,
     "toggle-writing-preview": isWritingPaper,
     "cycle-writing-focus": isWritingPaper,
+    "toggle-writing-focus": isWritingPaper,
     "insert-question-template": routeWinName === "questionSheet",
     "organize-question-sheet": routeWinName === "questionSheet",
     "toggle-writing-eli5": routeWinName === "questionSheet" && Boolean(getActiveProject()),
@@ -3679,6 +3684,15 @@ function updateMenuState() {
     }
     if (btn.dataset.lineSpacingChoice) {
       btn.classList.toggle("is-checked", btn.dataset.lineSpacingChoice === mdeCurrentLineSpacing());
+    }
+    // The 专注模式 toggle mirrors the one stored preference the ⌥⌘F cycle and
+    // every writing surface write through mdeSetFocusMode, so the checkmark
+    // answers "is any focus state on right now", not "what did this row do".
+    if (action === "toggle-writing-focus") {
+      const surfaceMode = document.querySelector(".window.is-active:not(.is-hidden) .mde-surface")?.dataset.mdeFocusMode;
+      const focused = (surfaceMode || mdeStoredFocusMode()) !== "off";
+      btn.classList.toggle("is-checked", focused);
+      if (btn.hasAttribute("aria-pressed")) btn.setAttribute("aria-pressed", String(focused));
     }
     if (btn.dataset.layoutChoice) {
       // Only an open map has a layout; with no map the rows are grey anyway and

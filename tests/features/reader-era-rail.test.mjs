@@ -2,6 +2,7 @@
 // shared source-rail and placard roles through tokens only.
 
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
+import vm from "node:vm";
 
 const test = createFeatureTest("reader-era-rail");
 const index = read("index.html");
@@ -10,8 +11,12 @@ const windows = read("styles/10-windows.css");
 const readerStyles = read("styles/20-reader-docmap.css");
 const appearance = read("styles/65-appearance-themes.css");
 const aqua = read("styles/67-aqua-appearance.css");
-const en = read("app/data/translations-en.js");
-const zh = read("app/data/translations-zh.js");
+// The translation tables execute in a VM (they are classic scripts installing
+// window globals); asserting on the loaded table - not the file text - is what
+// makes this contract execute real shipped data.
+const loadTable = (path) => vm.runInContext(`${read(path)}; window`, vm.createContext({ window: {} }));
+const en = loadTable("app/data/translations-en.js").AISystem6TranslationsEn;
+const zh = loadTable("app/data/translations-zh.js").AISystem6TranslationsZh;
 
 test.assertIncludes(index, 'class="status-bar-leading status-bar-placard" id="reader-status"', "Reader maps its confirmed leading receipt onto the shared placard role");
 test.assertIncludes(index, 'class="tdi-rail tdi-source-rail reader-rail"', "Reader identifies its existing TDI rail as a source rail without forking the document model");
@@ -29,7 +34,7 @@ test.assertIncludes(aqua, "--tdi-source-label-display: block;", "Snow Leopard re
 test.assertIncludes(aqua, "--tdi-tab-active-bg: var(--sidebar-selection-bg);", "Snow Leopard reuses the measured source-list selection painter");
 test.assertNotMatches(appearance, /body\[data-(?:theme|lineage~)="platinum"\][^{]*(?:tdi-source-rail|status-bar-placard)/, "Platinum remains token-only for the new Reader roles");
 test.assertNotMatches(aqua, /body\[data-(?:theme|lineage~|theme-family)="(?:aqua|snow-leopard)"\][^{]*(?:tdi-source-rail|status-bar-placard)/, "Aqua-family appearances remain token-only for the new Reader roles");
-test.assertIncludes(en, 'reader_sources_label: "Sources"', "English includes the source-list heading");
-test.assertIncludes(zh, 'reader_sources_label: "来源"', "Chinese includes the source-list heading");
+test.assert(en.reader_sources_label === "Sources", "English includes the source-list heading");
+test.assert(zh.reader_sources_label === "来源", "Chinese includes the source-list heading");
 
 test.finish();

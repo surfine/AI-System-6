@@ -31,7 +31,7 @@ function appendMessageTranslation(actions, item, role, content) {
       const translated = await translateTextWithLocalModel(content, targetLanguage, { preserveMarkdown: true });
       const translation = document.createElement("div");
       translation.className = "message-translation";
-      translation.innerHTML = `<b>${escapeHtml(formatTranslationMeta(targetLanguage, new Date().toISOString(), role === "user" ? t("you") : t("assistant"), currentTranslationModel()))}</b><div>${markdownToSystemHtml(translated)}</div>`;
+      translation.innerHTML = html`<b>${formatTranslationMeta(targetLanguage, new Date().toISOString(), role === "user" ? t("you") : t("assistant"), currentTranslationModel())}</b><div>${html.raw(markdownToSystemHtml(translated))}</div>`;
       item.querySelector(".message-content")?.append(translation);
       scrollMessagesToLatest();
       clearStatus();
@@ -246,7 +246,7 @@ function renderClioTalkWelcome() {
       : (sideAskEnabled && !isMultiFinderMode()
         ? "sideask_welcome_message"
         : (clioTalkTemporaryMode ? "temporary_welcome_message" : "welcome_message"));
-  body.innerHTML = `<p>${t(welcomeKey)}</p>`;
+  body.innerHTML = html`<p>${html.raw(t(welcomeKey))}</p>`;
   // The website's own AI is what a visitor gets by default, so the honest
   // reason they cannot send is usually not "connect a model" -- it is that the
   // shared budget for today is spent. The resolver already knows which it is.
@@ -2877,14 +2877,14 @@ function createPendingMessage() {
 
   const body = document.createElement("div");
   body.className = "message-content system-wait";
-  body.innerHTML = `
-    <div class="wait-title">${escapeHtml(modelRouteText("working_locally", "working_cloud"))}</div>
-    <div class="progress-track" role="progressbar" aria-label="${escapeHtml(t("clio_progress"))}" aria-valuetext="${escapeHtml(modelRouteText("wait_opening", "wait_opening_cloud"))}"><div class="progress-bar"></div></div>
-    <div class="wait-copy">${escapeHtml(modelRouteText("wait_opening", "wait_opening_cloud"))}</div>
-    <div class="wait-steps" aria-label="${escapeHtml(t("clio_working_steps"))}">
-      <div class="wait-step is-active" data-step="0">${escapeHtml(t("checking_context"))}</div>
-      <div class="wait-step" data-step="1">${escapeHtml(modelRouteText("consulting_model", "consulting_cloud_model"))}</div>
-      <div class="wait-step" data-step="2">${escapeHtml(t("typesetting_reply"))}</div>
+  body.innerHTML = html`
+    <div class="wait-title">${modelRouteText("working_locally", "working_cloud")}</div>
+    <div class="progress-track" role="progressbar" aria-label="${html.raw(t("clio_progress"))}" aria-valuetext="${modelRouteText("wait_opening", "wait_opening_cloud")}"><div class="progress-bar"></div></div>
+    <div class="wait-copy">${modelRouteText("wait_opening", "wait_opening_cloud")}</div>
+    <div class="wait-steps" aria-label="${html.raw(t("clio_working_steps"))}">
+      <div class="wait-step is-active" data-step="0">${html.raw(t("checking_context"))}</div>
+      <div class="wait-step" data-step="1">${modelRouteText("consulting_model", "consulting_cloud_model")}</div>
+      <div class="wait-step" data-step="2">${html.raw(t("typesetting_reply"))}</div>
     </div>
   `;
 

@@ -275,9 +275,9 @@ window.AISystem6MicropolisLoaded = true;
       const cost = tool.cost > 0 ? ` · $${tool.cost}` : "";
       return `<option value="${tool.id}"${selected}>${t(`micropolis_tool_${tool.id}`)}${cost}</option>`;
     }).join("");
-    toolbar.innerHTML = `<label class="micropolis-tool-picker">
-        <span class="micropolis-tool-picker-label">${t("micropolis_tool_picker")}</span>
-        <span class="select-wrap"><select data-micropolis-tool-select aria-label="${t("micropolis_tool_picker")}">${options}</select></span>
+    toolbar.innerHTML = html`<label class="micropolis-tool-picker">
+        <span class="micropolis-tool-picker-label">${html.raw(t("micropolis_tool_picker"))}</span>
+        <span class="select-wrap"><select data-micropolis-tool-select aria-label="${html.raw(t("micropolis_tool_picker"))}">${html.raw(options)}</select></span>
       </label>
       <div class="micropolis-toolbar-footer" data-micropolis-toolbar-footer>
           <div class="micropolis-armed-tool" data-micropolis-armed-tool></div>

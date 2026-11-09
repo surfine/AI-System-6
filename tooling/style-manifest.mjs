@@ -270,6 +270,15 @@ export const lazyStyleBundles = [
     loader: "app/core/config.js",
     sources: ["styles/94-aaron-blog.css"],
   },
+  // 文思泉涌, the blog writing studio: the module is lazy (admission row with
+  // an `api`) and the shell in index.html is a stub, so every selector is
+  // scoped to .wensi-quanyong-window / .wensi-* and no boot pays for the sheet.
+  {
+    id: "wensi-quanyong",
+    output: "styles.wensi-quanyong.css",
+    loader: "app/core/config.js",
+    sources: ["styles/95-wensi-quanyong.css"],
+  },
   // Rootline builds its own window like the other games, and every selector
   // is scoped to .rootline-*.
   {
@@ -436,6 +445,7 @@ export const styleLayerByPath = Object.freeze({
   "styles/93-openttd.css": "openttd",
   "styles/94-bonsai.css": "bonsai",
   "styles/94-aaron-blog.css": "aaron-blog",
+  "styles/95-wensi-quanyong.css": "wensi-quanyong",
   "styles/96-clio-paint.css": "clio-paint",
   "styles/97-one-more-tune.css": "one-more-tune",
   "styles/97-one-more-take.css": "one-more-take",

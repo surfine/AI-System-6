@@ -252,13 +252,29 @@
       return;
     }
     if (existing) return;
+    bar.append(createFullscreenButton());
+  }
+
+  function createFullscreenButton() {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "fullscreen-button";
     button.dataset.i18nAriaLabel = "window_full_screen";
     button.setAttribute("aria-label", t("window_full_screen"));
     button.addEventListener("pointerdown", (event) => event.stopPropagation());
-    bar.append(button);
+    return button;
+  }
+
+  // A Theme Lab specimen title bar is not a managed window (no data-window),
+  // so it is dressed by era alone: Lion's bar carries the same button, inert
+  // because the click handler only answers `.window[data-window]`.
+  function syncSpecimenButton(bar) {
+    const existing = bar?.querySelector?.(":scope > .fullscreen-button") || null;
+    const wants = bar
+      && window.AISystem6Theme?.getCurrentTheme?.() === LION_THEME
+      && bar.querySelector(":scope > .resize-box");
+    if (!wants) existing?.remove();
+    else if (!existing) bar.append(createFullscreenButton());
   }
 
   function syncAll() {
@@ -279,7 +295,7 @@
   }
   window.addEventListener("resize", syncAll);
 
-  window.AISystem6WindowFullscreen = Object.freeze({ enter, exit, toggle, eligible, syncAll, frameForPersistence, layerForPersistence });
+  window.AISystem6WindowFullscreen = Object.freeze({ enter, exit, toggle, eligible, syncAll, syncSpecimenButton, frameForPersistence, layerForPersistence });
   window.AISystem6WindowFullscreenLoaded = true;
   syncAll();
 })();

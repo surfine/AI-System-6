@@ -475,9 +475,9 @@ function clioStageMountPage(host, index) {
   const directives = runtime.pageDirectives(markdown).pages[index] || {};
   if (!clioStagePageCssCache.has(era)) clioStagePageCssCache.set(era, runtime.pageCss(era));
   const root = host.shadowRoot || host.attachShadow({ mode: "open" });
-  root.innerHTML = `<style>${clioStagePageCssCache.get(era)}${CLIO_STAGE_PAGE_CHROME_CSS}</style><div class="clio-stage-page-scale">${runtime.pageHtml({
+  root.innerHTML = html`<style>${html.raw(clioStagePageCssCache.get(era))}${html.raw(CLIO_STAGE_PAGE_CHROME_CSS)}</style><div class="clio-stage-page-scale">${html.raw(runtime.pageHtml({
     page, index, count: clioStageState.parsed.slides.length, era, canvas, ...directives,
-  })}</div>`;
+  }))}</div>`;
   const box = model.placementCanvas(canvas);
   host.style.setProperty("--clio-page-w", `${box.width}px`);
   host.style.setProperty("--clio-page-h", `${box.height}px`);
@@ -551,14 +551,14 @@ function renderClioStageCue() {
   const next = document.createElement("aside");
   next.className = "clio-stage-cue-next";
   const nextSlide = clioStageState.parsed.slides[clioStageState.index + 1] || "";
-  next.innerHTML = `<span>${escapeHtml(t("next_slide"))}</span><strong>${escapeHtml(nextSlide ? clioStageSlideTitle(nextSlide, "") : t("end_of_deck"))}</strong>`;
+  next.innerHTML = html`<span>${html.raw(t("next_slide"))}</span><strong>${nextSlide ? clioStageSlideTitle(nextSlide, "") : html.raw(t("end_of_deck"))}</strong>`;
   const notesText = clioStageSlideNotes(clioStageState.index);
   if (notesText) {
     const notes = document.createElement("aside");
     notes.className = "clio-stage-cue-next clio-stage-cue-notes";
     // Speaker notes are markdown too -- rendering them as escaped source
     // put literal ** marks on the prompter.
-    notes.innerHTML = `<span>${escapeHtml(t("clio_stage_notes"))}</span>`;
+    notes.innerHTML = html`<span>${html.raw(t("clio_stage_notes"))}</span>`;
     const notesBody = document.createElement("div");
     notesBody.className = "clio-stage-cue-notes-body";
     notesBody.innerHTML = markdownToSystemHtml(notesText);

@@ -804,10 +804,10 @@ function renderQuickDraftReadingView() {
   if (!refs.preview) return;
   const state = currentCompositeState();
   if (!state.ready) {
-    refs.preview.innerHTML = `<p class="empty-folder-note">${escapeHtml(t("quick_draft_composite_pending"))}</p>`;
+    refs.preview.innerHTML = html`<p class="empty-folder-note">${html.raw(t("quick_draft_composite_pending"))}</p>`;
     return;
   }
-  refs.preview.innerHTML = `<div class="quick-draft-reading">${quickDraftMarkdownHtml(state.text)}</div>`;
+  refs.preview.innerHTML = html`<div class="quick-draft-reading">${html.raw(quickDraftMarkdownHtml(state.text))}</div>`;
 }
 
 // The model sees one layer at a time. The frame is structure only -- which
@@ -1362,7 +1362,7 @@ function renderQuickDraftGrain() {
   if (!refs.preview) return;
   const report = quickDraftGrainReport();
   if (!report.totalChars) {
-    refs.preview.innerHTML = `<p class="empty-folder-note">${escapeHtml(t("quick_draft_grain_empty"))}</p>`;
+    refs.preview.innerHTML = html`<p class="empty-folder-note">${html.raw(t("quick_draft_grain_empty"))}</p>`;
     return;
   }
   const maskEntries = grainMaskEntries(report.body);

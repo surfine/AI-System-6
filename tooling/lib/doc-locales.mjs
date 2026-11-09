@@ -33,6 +33,10 @@ const ignoredDirs = new Set([
   // Eval corpora (tests/evals/): task material in the writer's own language,
   // read by scorers byte for byte; not documents to mirror.
   "evals",
+  // 文思泉涌 fixtures: real posts copied from the writer's two sites, read byte
+  // for byte by the front-matter round-trip contracts. A translated mirror
+  // would change the bytes under test, so they mirror nothing.
+  "wensi-quanyong",
   // Local scratch output and agent checkpoints, both already ignored by
   // .gitignore. When git cannot answer (a child process in this environment can
   // meet a broken shim), the walker falls back to reading the tree, and these

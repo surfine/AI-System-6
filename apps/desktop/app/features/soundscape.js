@@ -1049,9 +1049,12 @@
 
   async function connectSystemMusic(options = {}) {
     if (window.AISystem6LocalLMStudio?.isSafariPublicWebUnsupported?.()) {
-      const capabilities = await window.AISystem6PublicAccess?.getCapabilities?.();
-      const origin = capabilities?.public_access?.safari_http_local_origin || "";
-      window.location.assign(window.AISystem6LocalLMStudio.httpLocalEntryUrl(origin));
+      if (!options.quiet) {
+        setStatus(translate(
+          "soundscape_safari_unsupported",
+          "Safari cannot reach Music on this Mac from this page. Open the desk in Chrome, or use AI System 6 on the Mac."
+        ));
+      }
       return false;
     }
     if (!options.quiet) setStatus(translate("soundscape_system_connecting", "Connecting to Music on this Mac..."));

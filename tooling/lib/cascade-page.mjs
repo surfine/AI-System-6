@@ -122,12 +122,22 @@ export async function bootThemedPage(browser, serverUrl, theme, viewport, { dete
 }
 
 /** Every registered window, as census:controls opens them. */
-export async function openEveryWindow(page, { settleMs = 0 } = {}) {
-  const windowNames = await page.evaluate(() => Object.keys(typeof windowRegistry === "object" ? windowRegistry : {}));
+export async function openEveryWindow(page, { settleMs = 0, only = null } = {}) {
+  const registered = await page.evaluate(() => Object.keys(typeof windowRegistry === "object" ? windowRegistry : {}));
+  // `only` (the targeted ledger) opens a subset, in registry order, and then
+  // the walk's last window as well: whichever window opened last is the front
+  // one, and the front window decides which title bar is active and what the
+  // menu bar lists. With the same window in front as the full walk, the
+  // windows under test sit in the same inactive state as in the baseline.
+  const last = registered[registered.length - 1];
+  const windowNames = only
+    ? [...registered.filter((name) => only.includes(name) && name !== last), ...(last ? [last] : [])]
+    : registered;
   const opened = [];
   const failed = [];
   for (const name of windowNames) {
     let result = null;
+    const windowStarted = Date.now();
     // One lazy module occasionally loses a race with the teardown of the
     // window before it and misses the 20s deadline. Retrying in the same
     // session keeps the measured window set stable instead of turning a
@@ -152,6 +162,8 @@ export async function openEveryWindow(page, { settleMs = 0 } = {}) {
     }
     if (result.shown) opened.push(name);
     else failed.push({ window: name, error: result.error });
+    const spent = Date.now() - windowStarted;
+    if (spent > 10000) console.error(`  window ${name}: ${result.shown ? "opened" : result.error} after ${Math.round(spent / 1000)}s`);
     // A window places itself against the rectangles of the windows already
     // open, and those still change while their content loads; a pause before
     // the next open makes the placements the same from run to run.
@@ -221,4 +233,62 @@ export async function settleLayout(page, { quietPolls = 3, intervalMs = 400, tim
     finish();
     return { settled: steady >= quiet, ms: Math.round(performance.now() - started) };
   }, { quietPolls, intervalMs, timeoutMs });
+}
+
+/**
+ * Which window owns which part of the page, for the targeted ledger
+ * (tooling/cascade-changed.mjs). Two maps, both read from the live DOM:
+ *
+ *   roots      "div#theme-lab-panel-chrome" -> "themeLab": the window (or
+ *              "(desk)") that holds each element a ledger path can start from.
+ *              A path starts at the nearest element with a stable id, so the
+ *              data-window segment is often not in it.
+ *   ancestors  { tags, ids, classes } of every element a window sits inside.
+ *   inventory  window -> { tags, ids, classes }: every token any element in
+ *              that window carries, hidden or not, state classes included. A
+ *              selector whose subject needs a token a window does not have
+ *              cannot match anything in it.
+ *
+ * "(desk)" holds everything outside a window: menu bar, Dock, desktop icons.
+ */
+export async function windowIndex(page) {
+  return page.evaluate(() => {
+    const GENERATED_ID = /\d{4,}|[0-9a-f]{8,}|(?:^|[-_])\d+$/i;
+    const roots = {};
+    const sets = {};
+    for (const element of document.body.querySelectorAll("*")) {
+      const name = element.closest("[data-window]")?.dataset.window || "(desk)";
+      const entry = (sets[name] ||= { tags: new Set(), ids: new Set(), classes: new Set() });
+      entry.tags.add(element.localName);
+      for (const token of element.classList) entry.classes.add(token);
+      if (element.id) {
+        entry.ids.add(element.id);
+        if (!GENERATED_ID.test(element.id)) roots[`${element.localName}#${element.id}`] = name;
+      }
+    }
+    // Every element a window inherits from (html, body, main.desktop, ...):
+    // a rule whose subject can be one of them reaches every window.
+    const above = { tags: new Set(), ids: new Set(), classes: new Set() };
+    for (const win of document.querySelectorAll("[data-window]")) {
+      for (let node = win.parentElement; node; node = node.parentElement) {
+        above.tags.add(node.localName);
+        if (node.id) above.ids.add(node.id);
+        for (const token of node.classList) above.classes.add(token);
+      }
+    }
+    const ancestors = { tags: [...above.tags].sort(), ids: [...above.ids].sort(), classes: [...above.classes].sort() };
+    const inventory = Object.fromEntries(Object.entries(sets).sort(([a], [b]) => (a < b ? -1 : 1)).map(([name, entry]) => [name, {
+      tags: [...entry.tags].sort(), ids: [...entry.ids].sort(), classes: [...entry.classes].sort(),
+    }]));
+    return { roots: Object.fromEntries(Object.entries(roots).sort(([a], [b]) => (a < b ? -1 : 1))), ancestors, inventory };
+  });
+}
+
+/** The window a ledger path belongs to: its data-window segment, else its root's owner, else "(desk)". */
+export function windowOfPath(path, roots) {
+  // The innermost window, as windowIndex attributes elements (closest()).
+  const direct = [...path.matchAll(/\[data-window="([^"]+)"\]/g)].pop();
+  if (direct) return direct[1];
+  const root = path.split(" > ")[0].replace(/(?:::?[a-z-]+)?(?: #\d+)?$/, "");
+  return roots?.[root] || "(desk)";
 }

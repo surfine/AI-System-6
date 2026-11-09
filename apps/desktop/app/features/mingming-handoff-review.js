@@ -313,7 +313,7 @@ async function runMingmingHandoffReview(options = {}) {
   } catch (error) {
     if (!isAbortError(error)) {
       const message = `${t("connection_error")} ${error.message}`;
-      if (claimResultsEl) claimResultsEl.innerHTML = `<div class="empty-folder-note">${escapeHtml(message)}</div>`;
+      if (claimResultsEl) claimResultsEl.innerHTML = html`<div class="empty-folder-note">${message}</div>`;
       setStatus(message);
     }
   } finally {

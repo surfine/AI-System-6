@@ -247,6 +247,9 @@ async function makeWorld() {
   // The show layer is shared machinery beneath clio-stage.js (must-fix 2); it
   // reads t through the window, as the desk's scripts do.
   win.t = context.t;
+  // strings.js ships ahead of the stage module: clioStageMountPage assembles
+  // its page shell through the html`` helper.
+  vm.runInContext(read("app/core/strings.js"), context);
   vm.runInContext(showSource, context);
   vm.runInContext(clioStageSource, context);
   const stage = win.AISystem6ClioStage;

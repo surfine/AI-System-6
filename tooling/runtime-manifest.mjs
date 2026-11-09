@@ -152,6 +152,9 @@ export const lazyRuntimePaths = [
   // button; requested by window-fullscreen.js in an era that has full screen.
   "app/core/window-fullscreen-space.js",
   "app/features/aaron-blog.js",
+  // 文思泉涌: the blog writing studio (P1). Same laziness lane as the reader
+  // beside it — only the admission row rides the boot.
+  "app/features/wensi-quanyong.js",
   "app/features/code.js",
   "app/features/project-backup-export-data.js",
   "app/features/file-import-extractors.js",

@@ -583,14 +583,14 @@ function buildDeskSticky(sticky) {
   node.className = "desk-sticky";
   node.dataset.stickyId = sticky.id;
   const swatches = STICKY_COLOURS.map((colour) => `<button class="sticky-swatch" type="button" data-sticky-colour="${colour}" aria-label="${escapeHtml(t(`sticky_colour_${colour}`))}"></button>`).join("");
-  node.innerHTML = `
+  node.innerHTML = html`
     <div class="desk-sticky-bar">
-      <button class="desk-sticky-close" type="button" data-desk-sticky="unpin" aria-label="${escapeHtml(t("stickies_unpin"))}"></button>
+      <button class="desk-sticky-close" type="button" data-desk-sticky="unpin" aria-label="${html.raw(t("stickies_unpin"))}"></button>
       <span class="desk-sticky-title"></span>
-      <button class="desk-sticky-collapse" type="button" data-desk-sticky="collapse" aria-label="${escapeHtml(t("stickies_collapse"))}"></button>
+      <button class="desk-sticky-collapse" type="button" data-desk-sticky="collapse" aria-label="${html.raw(t("stickies_collapse"))}"></button>
     </div>
-    <textarea class="desk-sticky-text" data-dictation="off" aria-label="${escapeHtml(t("stickies_text"))}"></textarea>
-    <div class="desk-sticky-colours" role="group" aria-label="${escapeHtml(t("sticky_colour"))}">${swatches}</div>`;
+    <textarea class="desk-sticky-text" data-dictation="off" aria-label="${html.raw(t("stickies_text"))}"></textarea>
+    <div class="desk-sticky-colours" role="group" aria-label="${html.raw(t("sticky_colour"))}">${html.raw(swatches)}</div>`;
   return node;
 }
 

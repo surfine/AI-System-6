@@ -70,10 +70,26 @@ test.assert(
   "an empty card drops out on the way back, the same way an empty section already does",
 );
 
+// The keep lives in the lazy writing route. Load just those two functions into
+// the same vm, so a card edit is checked against the document it was read from.
+const keepStart = writingFlow.indexOf("function questionSheetKeptOutsideCards");
+const keepEnd = writingFlow.indexOf("// One card changed:");
+vm.runInContext(writingFlow.slice(keepStart, keepEnd), context);
+
+const messy = "# 这篇的题\n\n还没归类的几句\n\n## 必须记住\n- 留下这句\n\n## 我自己的一节\n这里不是十一个栏目之一\n";
+const messyCards = context.questionSheetCardsFromMarkdown(messy);
+messyCards.find((card) => card.key === "mustRemember").body = "- 留下这句\n- 又补了一句";
+const messyBack = context.questionSheetMarkdownKeepingAuthorText(messyCards, messy);
+test.assertIncludes(messyBack, "# 这篇的题", "the pack title survives a card edit");
+test.assertIncludes(messyBack, "还没归类的几句", "unsorted notes stay on the unnamed card");
+test.assertIncludes(messyBack, "又补了一句", "the edited known section keeps the new line");
+test.assertIncludes(messyBack, "## 我自己的一节", "a section the sheet does not recognize is kept");
+test.assertIncludes(messyBack, "这里不是十一个栏目之一", "and so is the writing under that section");
+
 // --- Wired into the writing route, not a second store -----------------------
 
 test.assertIncludes(writingFlow, "questionSheetCardsFromMarkdown(project?.questionSheet", "cards are read from the project's own Question Sheet field, via question-sheet.js's parse");
-test.assertIncludes(writingFlow, "questionSheetBodyInput.value = questionSheetMarkdownFromCards(cards);", "a card edit writes back into the SAME textarea the page edits");
+test.assertIncludes(writingFlow, "questionSheetMarkdownKeepingAuthorText(cards, project.questionSheet || \"\")", "a card edit writes back into the SAME textarea, keeping the title and any section the cards do not edit");
 test.assertIncludes(writingFlow, "savePipelineData();", "and is saved through the existing pipeline save, not a new one");
 test.assertMatches(
   writingFlow,

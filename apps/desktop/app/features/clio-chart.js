@@ -1094,7 +1094,7 @@ function renderClioChartGrid() {
     return `<tr class="${classes}" data-row="${rowIndex}"><td class="is-label" data-row="${rowIndex}"${draggable} data-label="${escapeHtml(table.labelColumn.text)}" title="${escapeHtml(row.label)}">${escapeHtml(row.aggregate ? `~ ${row.label}` : row.label)}</td>${cells}</tr>`;
   }).join("");
 
-  els.grid.innerHTML = `<thead><tr>${header}</tr></thead><tbody>${body}</tbody>`;
+  els.grid.innerHTML = html`<thead><tr>${html.raw(header)}</tr></thead><tbody>${html.raw(body)}</tbody>`;
 }
 
 function selectClioChartCell(rowIndex, columnIndex) {
@@ -1147,7 +1147,7 @@ function commitClioChartCellEdit(save) {
 function startClioChartEdit(node, kind, current, seed, position) {
   if (!node) return;
   clioChartState.editing = { ...position, kind, node };
-  node.innerHTML = `<input class="clio-chart-cell-input" type="text" />`;
+  node.innerHTML = html`<input class="clio-chart-cell-input" type="text" />`;
   const input = node.querySelector("input");
   input.value = seed === null ? current : seed;
   input.focus();
@@ -1412,7 +1412,7 @@ function animateClioChartBars() {
 function renderClioChartSource() {
   const els = clioChartElements();
   const text = clioChartState.sourceDraft ?? serializeClioChartTable(clioChartState.table);
-  els.view.innerHTML = `<textarea class="clio-chart-source" spellcheck="false"></textarea>`;
+  els.view.innerHTML = html`<textarea class="clio-chart-source" spellcheck="false"></textarea>`;
   const editor = els.view.querySelector("textarea");
   editor.value = text;
   editor.addEventListener("input", () => {
@@ -3226,7 +3226,7 @@ function renderClioChartGallery() {
       const skeleton = document.createElement("div");
       skeleton.className = "clio-chart-gallery-card is-skeleton";
       skeleton.setAttribute("aria-hidden", "true");
-      skeleton.innerHTML = `<span class="clio-chart-gallery-caption">${escapeHtml(t("clio_chart_gallery_reading"))}</span>`;
+      skeleton.innerHTML = html`<span class="clio-chart-gallery-caption">${html.raw(t("clio_chart_gallery_reading"))}</span>`;
       cards.append(skeleton);
     }
   }
@@ -3695,7 +3695,7 @@ function clioChartEnsureCompareButton() {
   button.id = "clio-chart-compare-view";
   button.setAttribute("data-i18n-aria-label", "clio_chart_compare");
   button.setAttribute("aria-label", t("clio_chart_compare"));
-  button.innerHTML = `<span class="mobile-control-long" data-i18n="clio_chart_compare">${escapeHtml(t("clio_chart_compare"))}</span><span class="mobile-control-short" data-i18n="clio_chart_compare_short">${escapeHtml(t("clio_chart_compare_short"))}</span>`;
+  button.innerHTML = html`<span class="mobile-control-long" data-i18n="clio_chart_compare">${html.raw(t("clio_chart_compare"))}</span><span class="mobile-control-short" data-i18n="clio_chart_compare_short">${html.raw(t("clio_chart_compare_short"))}</span>`;
   source.before(button);
 }
 

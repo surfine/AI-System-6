@@ -12,6 +12,9 @@ for (const command of ['runHkrrReview()', 'runMingmingHandoffReview({mode:"card"
     readChatJson:async()=>({choices:[{message:{content:'  \n  '}}]}),stripRebuildMarkdownFence:s=>s,renderClaimCheckDraft:v=>rendered.push(v),appendReviewFeedbackToBody:v=>rendered.push(v),
     setStatus:v=>statuses.push(v),t:k=>k,escapeHtml:s=>s,isAbortError:()=>false,friendlyErrorDetail:e=>e.message,console,setClipboard:v=>copied.push(v),navigator:{clipboard:{writeText:async()=>{}}},
   });
+  // The html`` helper (strings.js) ships ahead of the module: runHkrrReview
+  // assembles its empty-note markup through it.
+  vm.runInContext(read('app/core/strings.js'),context);
   vm.runInContext(read('app/features/hkrr-review.js'),context);
   vm.runInContext(read('app/features/mingming-handoff-review.js'),context);
   await vm.runInContext(command,context);

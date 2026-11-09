@@ -215,6 +215,17 @@ for (const relPath of cssFiles) {
 
 cssFiles.forEach((relPath) => checkCssFile(relPath, budget));
 cssFiles.forEach((relPath) => checkCssBraceBalance(relPath));
+// A `*/` inside a comment ends it early, and the rest of the comment becomes
+// part of the next selector, so the browser drops that whole rule in silence
+// (2026-11-05: "(min-*/flex/padding)" took every checkbox back to native).
+cssFiles.forEach((relPath) => {
+  const stray = readFileSync(resolveProjectPath(relPath), "utf8")
+    .replace(/\/\*[\s\S]*?\*\//g, (comment) => comment.replace(/[^\n]/g, ""))
+    .split("\n")
+    .map((line, index) => (line.includes("*/") ? index + 1 : 0))
+    .filter(Boolean);
+  if (stray.length) fail(`${relPath}: "*/" outside a comment at line(s) ${stray.join(", ")} - a comment closed early and swallowed the next rule`);
+});
 
 // --- Cascade-layer conformance ----------------------------------------------
 //
@@ -782,12 +793,17 @@ const appearanceOrphans = [];
 for (const themeId of APPEARANCE_THEME_IDS) {
   const escapedId = themeId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const prefix = new RegExp(`^(?:html|body)\\[data-(?:theme|lineage~)=["']${escapedId}["']\\](?:\\s+|$)`);
-  const owned = appearanceSelectors.filter((selector) => prefix.test(selector));
+  // body:is([data-theme="a"], [data-theme="b"]) and body:where(...) own their
+  // selector for every era they name; they were invisible to this count until
+  // 2026-11-05.
+  const grouped = new RegExp(`^(?:html|body):(?:is|where)\\([^)]*\\[data-(?:theme|lineage~)=["']${escapedId}["']\\][^)]*\\)`);
+  const owned = appearanceSelectors.filter((selector) => prefix.test(selector) || grouped.test(selector));
   const limit = appearanceThemeSelectorLimits[themeId];
   if (typeof limit === "number" && owned.length > limit) {
     fail(`${APPEARANCE_FILES.join(", ")}: ${themeId} selectors = ${owned.length}, limit = ${limit}. Promote repeated values to semantic tokens or a family recipe.`);
   } else if (typeof limit === "number") {
     ok(`${APPEARANCE_FILES.join(", ")}: ${themeId} selectors ${owned.length}/${limit}`);
+    writeDown(`appearanceThemeSelectorLimits ${themeId}`, limit, owned.length, (n) => { appearanceThemeSelectorLimits[themeId] = n; });
   }
 }
 
@@ -805,13 +821,20 @@ const RECIPE_PARENTS = Object.freeze({
 for (const themeId of APPEARANCE_THEME_IDS) {
   const escapedId = themeId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const prefix = new RegExp(`^(?:html|body)\\[data-(?:theme|lineage~)=["']${escapedId}["']\\](?:\\s+|$)`);
-  const owned = appearanceSelectors65.filter((selector) => prefix.test(selector));
-  for (const selector of owned) {
-    const base = selector.replace(prefix, "").trim();
+  const grouped = new RegExp(`^(?:html|body):(?:is|where)\\([^)]*\\[data-(?:theme|lineage~)=["']${escapedId}["']\\][^)]*\\)\\s*`);
+  for (const selector of appearanceSelectors65) {
+    // A grouped body:is()/:where() selector is one rule serving several eras -
+    // the family-recipe form itself - so it never counts as a per-era copy;
+    // its base must still exist.
+    const isGrouped = !prefix.test(selector) && grouped.test(selector);
+    if (!isGrouped && !prefix.test(selector)) continue;
+    const base = selector.replace(isGrouped ? grouped : prefix, "").trim();
     if (!base) continue;
-    const themeSet = recipesByBase.get(base) || new Set();
-    themeSet.add(themeId);
-    recipesByBase.set(base, themeSet);
+    if (!isGrouped) {
+      const themeSet = recipesByBase.get(base) || new Set();
+      themeSet.add(themeId);
+      recipesByBase.set(base, themeSet);
+    }
     const missing = extractClassIdTokens(base).filter((token) => !baseClassIds.has(token));
     if (missing.length) appearanceOrphans.push({ themeId, base, missing });
   }
@@ -879,9 +902,11 @@ let childAppSpecificCount = 0;
 for (const themeId of CHILD_THEME_IDS) {
   const escapedId = themeId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const prefix = new RegExp(`^(?:html|body)\\[data-(?:theme|lineage~)=["']${escapedId}["']\\](?:\\s+|$)`);
+  const grouped = new RegExp(`^(?:html|body):(?:is|where)\\([^)]*\\[data-(?:theme|lineage~)=["']${escapedId}["']\\][^)]*\\)\\s*`);
   for (const selector of appearanceSelectors) {
-    if (!prefix.test(selector)) continue;
-    const base = selector.replace(prefix, "").trim();
+    const isGrouped = !prefix.test(selector) && grouped.test(selector);
+    if (!isGrouped && !prefix.test(selector)) continue;
+    const base = selector.replace(isGrouped ? grouped : prefix, "").trim();
     const appTokens = extractClassIdTokens(base).filter((token) => {
       if (SHARED_WINDOW_PRIMITIVES.has(token) || /^\.is-/.test(token)) return false;
       if (childAppAllowlist.has(token) || childAppAllowlist.has(`${themeId}:${token}`)) return false;
@@ -909,7 +934,7 @@ if (typeof childAppBudget !== "number") {
   ok(`${APPEARANCE_FILE}: child+app-specific selectors ${childAppSpecificCount}/${childAppBudget} across ${Object.keys(windowInterfaceRegistry).length} registered windows`);
 }
 
-const OUTSIDE_THEME_SELECTOR_PATTERN = /\b(?:body:not\(\[data-theme="liquid-glass"\]\)|(?:html|body)\[data-(?:theme(?:-family)?|lineage~)=)/;
+const OUTSIDE_THEME_SELECTOR_PATTERN = /\b(?:body:not\(\[data-theme="liquid-glass"\]\)|(?:html|body)\[data-(?:theme(?:-family)?|lineage~)=|(?:html|body):(?:is|where)\([^)]*\[data-(?:theme(?:-family)?|lineage~)=)/;
 const outsideThemeBudgets = budget.themeSelectorsOutsideLiquid ?? {};
 cssFiles
   .filter((path) => path !== LIQUID_FILE && path !== APPEARANCE_FILE)
@@ -932,6 +957,7 @@ cssFiles
       );
     } else {
       ok(`${path}: theme selectors outside ${LIQUID_FILE} ${count}/${allowed}`);
+      writeDown(`themeSelectorsOutsideLiquid ${path}`, allowed, count, (n) => { outsideThemeBudgets[path] = n; });
     }
   });
 
@@ -1159,6 +1185,8 @@ if (!coverageBudgets || typeof coverageBudgets !== "object") {
       );
     } else {
       ok(`${id}: unanswered period tokens ${found.length}/${allowed}`);
+      const table = typeof coverageBudgets.missing?.[id] === "number" ? coverageBudgets.missing : coverageBudgets.inherited;
+      writeDown(`eraTokenCoverage ${id}`, allowed, found.length, (n) => { table[id] = n; });
     }
   }
 }
@@ -1182,6 +1210,7 @@ if (!replicaBudgets || typeof replicaBudgets !== "object") {
       );
     } else {
       ok(`${relPath}: Theme Lab replica mentions ${found}/${allowed}`);
+      writeDown(`themeLabReplicaMentions ${relPath}`, allowed, found, (n) => { replicaBudgets[relPath] = n; });
     }
   }
 }

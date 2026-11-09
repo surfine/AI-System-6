@@ -1,5 +1,5 @@
 <!-- canonical-source: README.md -->
-<!-- source-sha256: 6b975ff06367376a09d8fe44f27ed4bf098c6035dcc4250fcd743f626a2c5ccd -->
+<!-- source-sha256: 7e02f27677a4a3050788fbb9d069aa14048ed08722cf9056f7c7b8634c24d8a8 -->
 
 > 英文版为准 / 仅供人类参考
 
@@ -46,7 +46,7 @@
 
 ## 目录
 
-- [2.0.0-beta.2 有什么新东西](#200-beta2-有什么新东西)
+- [2.0.0-beta.3 有什么新东西](#200-beta3-有什么新东西)
 - [60 秒跑起来](#60-秒跑起来)
 - [它保护什么](#它保护什么)
 - [这里的 AI 不做什么](#这里的-ai-不做什么)
@@ -60,13 +60,17 @@
 - [参与贡献](#参与贡献)
 - [许可证](#许可证)
 
-## 2.0.0-beta.2 有什么新东西
+## 2.0.0-beta.3 有什么新东西
 
-- **「第一次来这里」多了一扇读成品盘的门。** 在挑一台 Mac、写一句话、看宣传片之外新增第四扇门：读一块成品盘。它把演示盘书架打开在最新的一篇上，只读；点「打开副本」，这块盘连同它走过的整条写作路线就变成你自己的。不需要模型，也不需要注册。
-- **AI 的纪律成了一页人人可查的说明。** 产品官网新增[「这台桌上的 AI 不做什么」](https://aisystem6.aaronlau.me/discipline/zh-CN)：五条写进代码的规则，每条都注明仓库里执行它的源码。README 也带上了同一份清单。
-- **Bonsai City 的预算面板恢复渲染。** 城市报告、一月的预算面板、地块气泡和 OSM 地点列表不再以转义文本出现。
+- **文思泉涌在桌面里写博客。** 新窗口把每个站点当成站点：先选站，再选内容类型——两百来字的日更、几句话的笔记、长文、影像一卷——字段、网址和草稿规则都来自那份站点描述。左右对照写与预览，发布前点「检查这篇」：引文对不上原话、说话人写错会挡住发布，推测句和 AI 腔只提示。发布写进站点自己的仓库（或它的 Micropub 端点），然后等那一页真的在线；已发布文章改了 slug，旧的 301 会留下。分类、标签、媒体库、联络人、长文、预言账本、回扫和聊天记录同步都在同一个窗口里，Clio 只在你按下按钮时起草。
+- **网页桌面搬到了 Cloudflare Pages。** [system6.aaronlau.me](https://system6.aaronlau.me) 现在从 Pages 项目送出与 Mac 客户端同一份构建，`boot-system6.pages.dev` 仍然可用、也是同一批文件。两个名字上完成的验证都被接受，公开桌面不再依赖已经过期的 VPS。
+- **Safari 的本机入口下线了。** `local.system6.aaronlau.me` 退役。在 Safari 里，控制面板与创作声景会直接说明这一页到不了这台 Mac，并指向 Chrome 或在 Mac 上使用应用，而不是给一个通向空门的按钮。
+- **时光机的网页引擎有了自己的名字。** `browse.system6.aaronlau.me` 承载代理网页引擎，桌面允许嵌这个来源。
+- **这一版里，网页桌面打不开 One More Tune 的一局。** 它原来的出题权威是 VPS；现在桌面自己就是那个 Pages 项目，所以答题器会说没有独立出题权威，而不是把请求转回去打转。Mac 客户端和从仓库跑起来的桌面仍有完整的答题器。
+- **文思泉涌会等站点构建。** 文章先提交进站点仓库，桌面随后最多等三分钟让那一页出现。站点重建期间提交的文章不会再报「看不到」，也就不会诱人重发一次。
+- **只有一个版本名。** 发布 tag 不再重复叠加 beta 计数，下载、README 徽章和「关于」读到的是同一个版本。
 
-2.0.0-beta.1 的内容（ClioWork、ClioCode、三个引擎、Extensions 与 MCP Chooser）见下方变更日志。
+2.0.0-beta.2 的内容（读成品盘的门、AI 纪律页）见下方变更日志。
 
 完整发布历史在 [docs/CHANGELOG.zh-CN.md](docs/CHANGELOG.zh-CN.md)；每个测试版也在 [GitHub Releases](https://github.com/surfine/AI-System-6/releases)。
 
@@ -89,7 +93,7 @@ npm test
 npm run verify:public
 ```
 
-Mac 测试版由同一份源码打包；它是 ad-hoc 签名，首次打开可能需要 **按住 Control 点按 › 打开**。见[最新发布](https://github.com/surfine/AI-System-6/releases/latest)。
+Mac 测试版由同一份源码打包，用 Developer ID 签名并附 Apple 的公证票据，双击即可打开；从浏览器下载的副本仍可能多问一次。见[最新发布](https://github.com/surfine/AI-System-6/releases/latest)。
 
 ## 它保护什么
 
@@ -207,6 +211,7 @@ Macintosh System 6 桌面是**约束，不是卖点**。它把表面小到可以
 | `site:check` | 这一页引用门禁从未测量过的字节数 |
 | `verify:docs` | 英文文档与中文镜像漂移 |
 | `verify:public` | 这里宣传的命令在全新克隆里失败 |
+| `evals:dry` | 写作 AI 漂进自己的评测所禁止的模式 |
 
 这一页和[产品官网](https://aisystem6.aaronlau.me/zh-CN.html)上的每一张产品截图，都由 `npm run site:capture-frames`、`npm run site:capture-route` 和 `tooling/capture-site-proofs.mjs` 从运行中的应用重新拍摄。没有手制营销图目录，也就没有会过期的手制营销图。
 

@@ -321,7 +321,6 @@ for (const key of [
   "docmap_inserted_outline_unsaved",
   "docmap_saved_file_unsaved",
   "clio_result_written_unsaved",
-  "safari_http_local_not_copied",
   "translated_document_saved_unsaved",
   "clio_paint_saved_unsaved",
   "outline_tree_pasted_unsaved",

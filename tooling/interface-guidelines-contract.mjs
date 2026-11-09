@@ -624,6 +624,9 @@ const windowInterfaceContracts = Object.freeze({
   }),
 
   aaronBlog: standardDocument("reader", "summoned", { referenceSurface: "reader", rationale: "The blog reader keeps one continuous reading pane; its left rail chooses the collection and the list chooses the document." }),
+  // 文思泉涌 is a writing surface of the route family: one manuscript at a
+  // time in the middle pane, the site's description driving the inspector.
+  wensiQuanyong: standardDocument("writing-route", "core", { referenceSurface: "teachText" }),
   reader: standardDocument("reader", "summoned", { documentModel: "tdi", tdiHost: "reader-tabs" }),
   timeMachine: specializedUtility("reader", {
     documentModel: "tdi",

@@ -244,11 +244,14 @@ body.is-resizing-tdi {
   user-select: none;
 }
 
+/* Tap metrics moved here from 60-responsive (2026-11-05 audit, second batch). */
 .reader-tabs .btn {
   max-width: none;
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 11px;
+  min-height: calc(var(--system-button-min-height) - 2px);
+  padding: 3px 10px;
 }
 
 .tdi-tabs {

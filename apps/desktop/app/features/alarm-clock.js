@@ -203,7 +203,7 @@ function addAlarmClockAgentButton() {
   button.setAttribute("aria-selected", "false");
   button.tabIndex = -1;
   button.dataset.alarmClockMode = "agent";
-  button.innerHTML = `${alarmClockAgentIcon}<span class="visually-hidden">${t("alarm_clock_agent")}</span>`;
+  button.innerHTML = html`${html.raw(alarmClockAgentIcon)}<span class="visually-hidden">${html.raw(t("alarm_clock_agent"))}</span>`;
   elements.modes.append(button);
   elements.modes.style.gridTemplateColumns = "repeat(4, 1fr)";
   const panel = document.createElement("div");

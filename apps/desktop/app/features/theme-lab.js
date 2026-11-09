@@ -52,7 +52,7 @@
                 <div class="theme-lab-button-row">
                   <button class="btn" type="button" data-i18n="theme_lab_normal">Normal</button>
                   <button class="btn default" type="button" data-i18n="theme_lab_default">Default</button>
-                  <button class="btn is-active" type="button" aria-pressed="true" data-i18n="theme_lab_pressed">Pressed</button>
+                  <button class="btn is-active theme-lab-press-demo" type="button" aria-pressed="true" data-i18n="theme_lab_pressed">Pressed</button>
                   <button class="btn theme-lab-focus-control" type="button" data-i18n="theme_lab_focused">Focused</button>
                   <button class="btn" type="button" disabled data-i18n="theme_lab_disabled">Disabled</button>
                 </div>
@@ -654,11 +654,11 @@
       for (const entry of rows) {
         const row = document.createElement("div");
         row.className = `finder-list-row${entry.selected ? " is-selected" : ""}`;
-        row.innerHTML = `
-          <span class="finder-list-name-cell">${renderSystemIcon(entry.iconId, { size: "list" })}<span>${escapeHtml(entry.name)}</span></span>
-          <span>${escapeHtml(entry.kind)}</span>
-          <span>${escapeHtml(entry.meta)}</span>
-          <span>${escapeHtml(entry.modified)}</span>
+        row.innerHTML = html`
+          <span class="finder-list-name-cell">${html.raw(renderSystemIcon(entry.iconId, { size: "list" }))}<span>${entry.name}</span></span>
+          <span>${entry.kind}</span>
+          <span>${entry.meta}</span>
+          <span>${entry.modified}</span>
         `;
         list.append(row);
       }
@@ -711,6 +711,9 @@
       }
       host.replaceWith(bar);
     }
+    // Lion's full-screen button rides the Finder fixture's bar as on a real
+    // window; every other era removes it again.
+    window.AISystem6WindowFullscreen?.syncSpecimenButton?.(win.querySelector(".theme-lab-finder-window > .title-bar"));
     // Every fixture that reproduces a pinned native capture says so on the
     // board. These are not replicas of product components -- three lamps in a
     // row is true of the window they reproduce -- and a reader who cannot tell
@@ -765,12 +768,12 @@
     const active = stops.find((stop) => stop.theme.id === theme.id) || stops[0];
     if (host.dataset.built !== "true") {
       host.dataset.built = "true";
-      host.innerHTML = `
+      host.innerHTML = html`
         <input class="theme-lab-era-range" type="range" min="0" max="1000" step="1"
-          data-theme-lab-era-range aria-label="${escapeHtml(t("theme_lab_timeline"))}" />
-        <div class="theme-lab-era-ticks">${stops.map((stop) => `
-          <button class="theme-lab-era-tick" type="button" data-theme-lab-era="${escapeHtml(stop.theme.id)}"
-            style="--theme-lab-era-t: ${stop.t}"><i aria-hidden="true"></i><span>${stop.theme.year}</span></button>`).join("")}</div>`;
+          data-theme-lab-era-range aria-label="${html.raw(t("theme_lab_timeline"))}" />
+        <div class="theme-lab-era-ticks">${html.raw(stops.map((stop) => html`
+          <button class="theme-lab-era-tick" type="button" data-theme-lab-era="${stop.theme.id}"
+            style="--theme-lab-era-t: ${stop.t}"><i aria-hidden="true"></i><span>${stop.theme.year}</span></button>`))}</div>`;
     }
     const range = host.querySelector("[data-theme-lab-era-range]");
     if (range && document.activeElement !== range) range.value = String(Math.round(active.t * 1000));
@@ -941,7 +944,7 @@
         : "";
       return `<div class="theme-lab-object-appearance is-${escapeHtml(appearance)}">${name}<div class="theme-lab-object-zooms">${figures}</div></div>`;
     }).join("");
-    inspector.innerHTML = `<h4>${escapeHtml(OBJECT_LABELS[id])}<code>${escapeHtml(id)}</code><small>${escapeHtml(t(`theme_lab_provenance_${cls.toLowerCase()}`))}</small></h4><div class="theme-lab-object-appearances">${rows}</div>`;
+    inspector.innerHTML = html`<h4>${OBJECT_LABELS[id]}<code>${id}</code><small>${html.raw(t(html`theme_lab_provenance_${cls.toLowerCase()}`))}</small></h4><div class="theme-lab-object-appearances">${html.raw(rows)}</div>`;
   }
 
   // Five checks, the same five in every era. An era answers them with its own
@@ -998,27 +1001,27 @@
     if (!panel || panel.querySelector("[data-theme-lab-token-table]")) return;
     const field = (labelKey, control) =>
       `<label><span>${escapeHtml(t(labelKey))}</span>${control}</label>`;
-    panel.insertAdjacentHTML("beforeend", `
+    panel.insertAdjacentHTML("beforeend", html`
       <section class="theme-lab-group theme-lab-token-desk" aria-labelledby="theme-lab-token-desk-title">
-        <h3 id="theme-lab-token-desk-title">${escapeHtml(t("theme_lab_tokens"))}</h3>
+        <h3 id="theme-lab-token-desk-title">${html.raw(t("theme_lab_tokens"))}</h3>
         <p class="theme-lab-token-summary" data-theme-lab-token-summary aria-live="polite"></p>
         <!-- What a seventh appearance would still owe. Derived from which
              tokens any era sets, so it is a worklist that maintains itself. -->
         <div class="theme-lab-token-coverage" data-theme-lab-token-coverage aria-live="polite"></div>
         <div class="theme-lab-token-filters">
-          ${field("theme_lab_token_group", `<span class="select-wrap"><select data-theme-lab-token-group aria-label="${escapeHtml(t("theme_lab_token_group"))}"></select></span>`)}
-          ${field("theme_lab_token_scope", `<span class="select-wrap"><select data-theme-lab-token-scope aria-label="${escapeHtml(t("theme_lab_token_scope"))}">
-            <option value="overridden">${escapeHtml(t("theme_lab_token_scope_overridden"))}</option>
-            <option value="inherited">${escapeHtml(t("theme_lab_token_scope_inherited"))}</option>
-            <option value="all">${escapeHtml(t("theme_lab_token_scope_all"))}</option>
-          </select></span>`)}
-          ${field("theme_lab_token_search", `<input class="theme-lab-token-search" type="search" data-theme-lab-token-search aria-label="${escapeHtml(t("theme_lab_token_search"))}" />`)}
+          ${html.raw(field("theme_lab_token_group", html`<span class="select-wrap"><select data-theme-lab-token-group aria-label="${html.raw(t("theme_lab_token_group"))}"></select></span>`))}
+          ${html.raw(field("theme_lab_token_scope", html`<span class="select-wrap"><select data-theme-lab-token-scope aria-label="${html.raw(t("theme_lab_token_scope"))}">
+            <option value="overridden">${html.raw(t("theme_lab_token_scope_overridden"))}</option>
+            <option value="inherited">${html.raw(t("theme_lab_token_scope_inherited"))}</option>
+            <option value="all">${html.raw(t("theme_lab_token_scope_all"))}</option>
+          </select></span>`))}
+          ${html.raw(field("theme_lab_token_search", html`<input class="theme-lab-token-search" type="search" data-theme-lab-token-search aria-label="${html.raw(t("theme_lab_token_search"))}" />`))}
         </div>
         <div class="theme-lab-token-table" data-theme-lab-token-table></div>
         <div class="theme-lab-desk-actions">
           <span class="theme-lab-desk-status" data-theme-lab-token-status aria-live="polite"></span>
-          <button class="btn" type="button" data-theme-lab-token-revert>${escapeHtml(t("theme_lab_token_revert"))}</button>
-          <button class="btn default" type="button" data-theme-lab-token-copy>${escapeHtml(t("theme_lab_token_copy"))}</button>
+          <button class="btn" type="button" data-theme-lab-token-revert>${html.raw(t("theme_lab_token_revert"))}</button>
+          <button class="btn default" type="button" data-theme-lab-token-copy>${html.raw(t("theme_lab_token_copy"))}</button>
         </div>
         <pre class="theme-lab-desk-output" data-theme-lab-token-output hidden></pre>
       </section>`);
@@ -1415,9 +1418,9 @@
     const line = theme.id === "classic"
       ? t("theme_lab_coverage_baseline", t(theme.labelKey), ownedCount)
       : t("theme_lab_coverage_summary", t(theme.labelKey), answered, ownedCount, mineCount, inheritedCount);
-    host.innerHTML = `<p class="theme-lab-coverage-line${missing.length && theme.id !== "classic" ? "" : " is-complete"}">${
-      escapeHtml(line)
-    }</p>${theme.id === "classic" ? "" : groups}`;
+    host.innerHTML = html`<p class="theme-lab-coverage-line${missing.length && theme.id !== "classic" ? "" : " is-complete"}">${
+      line
+    }</p>${html.raw(theme.id === "classic" ? "" : groups)}`;
   }
 
   function renderTokenDesk(theme) {
@@ -1442,7 +1445,7 @@
     const chooser = win.querySelector("[data-theme-lab-token-group]");
     if (chooser) {
       const wanted = chooser.value;
-      chooser.innerHTML = [`<option value="all">${escapeHtml(t("theme_lab_token_group_all", rows.length))}</option>`]
+      chooser.innerHTML = [html`<option value="all">${html.raw(t("theme_lab_token_group_all", rows.length))}</option>`]
         .concat(named.map(([name, count]) => `<option value="${escapeHtml(name)}">${escapeHtml(`${name} · ${count}`)}</option>`))
         .concat(smallCount ? [`<option value="__other">${escapeHtml(t("theme_lab_token_group_other", smallCount))}</option>`] : [])
         .join("");

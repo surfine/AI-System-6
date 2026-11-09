@@ -17,9 +17,12 @@ test.assertMatches(
   /body\.use-modern-fonts \{[\s\S]*--clio-title-font: var\(--title-font\)[\s\S]*--drop-target-font-family: var\(--ui-font\)/,
   "Modern mode rebinds semantic aliases at the mode owner"
 );
-test.assertIncludes(responsive, "--system-titlebar-font-size: 13px", "Modern window titles are not left at the bitmap-size default");
-test.assertIncludes(responsive, "--system-caption-size: 12px", "Modern secondary chrome has a readable caption size");
-test.assertIncludes(responsive, "--system-title-weight: 500", "Modern compact chrome stays optically balanced with one-bit menu art");
+// The modern-metric token block moved to the foundation (2026-11-05 audit:
+// css-no-pingpong keeps the token vocabulary there); the values are pinned
+// where they now live.
+test.assertIncludes(foundation, "--system-titlebar-font-size: 13px", "Modern window titles are not left at the bitmap-size default");
+test.assertIncludes(foundation, "--system-caption-size: 12px", "Modern secondary chrome has a readable caption size");
+test.assertIncludes(foundation, "--system-title-weight: 500", "Modern compact chrome stays optically balanced with one-bit menu art");
 test.assertMatches(foundation, /body\.use-modern-fonts \{[\s\S]*--system-icon-stroke-width: 1\.5;[\s\S]*--system-icon-pixel-run-expansion: 0\.5;/, "Modern typography balances outlined and filled Classic icon runs at one-and-a-half grid units");
 test.assertMatches(foundation, /body\.use-modern-fonts \{[\s\S]*--menu-system-icon-stroke-width: 2\.25;[\s\S]*--menu-system-icon-pixel-run-expansion: 1\.25;/, "Modern menu icons compensate for their smaller 17-pixel rendering box");
 test.assertIncludes(foundation, "stroke-width: var(--system-icon-stroke-width)", "System icons consume the theme-owned stroke weight");

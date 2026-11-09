@@ -20,6 +20,7 @@
 
 const { createHash } = require("node:crypto");
 const fs = require("node:fs/promises");
+const fsSync = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 
@@ -27,12 +28,37 @@ const { send } = require("../lib/http.js");
 const https = require("node:https");
 const { proxyUrlForTarget, httpProxyAgentFor } = require("../lib/proxy.js");
 const { isPublicDeployment } = require("../runtime-profile.js");
+const agentPaths = require("../agent/paths.js");
 const ragRuntime = require("../../../desktop/app/shared/blog-rag-runtime.js");
 
 const BASE = "https://aaronlau.me/ai6/";
 const MAX_BYTES = 12 * 1024 * 1024;
 const CACHE_MS = 5 * 60 * 1000;
 const cache = new Map();
+
+// The corpus registry (「多语料检索」). `aaronlau` is the corpus this route has
+// always searched — the published pack below — and stays the default, so a
+// request without ?corpus= behaves exactly as before. `appscope` is registered
+// here, and its pack is the file named by AI_SYSTEM6_APPSCOPE_RAG. With that
+// unset, or with the file missing, a question naming appscope answers
+// corpus_not_configured instead of a silent empty result. Each entry validates
+// through the shared runtime's validateCorpusDescriptor.
+const CORPUS_TABLE = {
+  aaronlau: { id: "aaronlau", label: "aaronlau.me", packKind: "aaronlau-rag" },
+  appscope: { id: "appscope", label: "app-scope.com", packKind: "appscope-rag" },
+};
+
+function appscopeRagFile() {
+  const fromEnv = String(process.env.AI_SYSTEM6_APPSCOPE_RAG || "").trim();
+  if (fromEnv) return fromEnv;
+  const pointer = path.join(agentPaths.agentHome(), "appscope-rag.path");
+  try {
+    return fsSync.readFileSync(pointer, "utf8").trim();
+  } catch {
+    return "";
+  }
+}
+const DEFAULT_CORPUS = "aaronlau";
 
 // A local build of the pack (internal/design-proposals/aaronlau-me/dist/ai6)
 // can stand in for the published one: the blog and the desk are built side by
@@ -225,9 +251,72 @@ function packMeta(state) {
   };
 }
 
+async function handleAppscopeRetrieve(res, query, params) {
+  const file = appscopeRagFile();
+  if (!file) {
+    send(res, 400, JSON.stringify({ error: "corpus_not_configured", corpus: "appscope" }), { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
+    return;
+  }
+  let text = "";
+  try {
+    text = await fs.readFile(file, "utf8");
+  } catch (error) {
+    if (error?.code === "ENOENT") {
+      send(res, 400, JSON.stringify({ error: "corpus_not_configured", corpus: "appscope" }), { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
+      return;
+    }
+    send(res, 502, JSON.stringify({ error: "blog_index_unavailable", detail: "unreadable" }), { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
+    return;
+  }
+  let pack;
+  try {
+    pack = JSON.parse(text);
+  } catch {
+    send(res, 502, JSON.stringify({ error: "blog_index_unavailable", detail: "json" }), { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
+    return;
+  }
+  if (!ragRuntime.validatePack(pack) || pack.kind !== "appscope-rag") {
+    send(res, 400, JSON.stringify({ error: "corpus_not_configured", corpus: "appscope" }), { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
+    return;
+  }
+  const index = ragRuntime.buildIndex(pack, { sha256: sha256(text) });
+  const meta = {
+    sha256: sha256(text),
+    generatedAt: index.generatedAt,
+    chunking: index.chunking,
+    runtime: index.version,
+    chunks: index.chunks.length,
+    docs: index.docs.length,
+    offline: true,
+  };
+  if (!query) {
+    send(res, 200, JSON.stringify({ query, pack: meta, results: [] }), { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
+    return;
+  }
+  const found = ragRuntime.search(index, query, {
+    limit: Number(params.get("limit") || 0) || undefined,
+  });
+  send(res, 200, JSON.stringify({ query, pack: meta, ...found }), {
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff",
+  });
+}
+
 async function handleRetrieve(req, res, url) {
   const params = url.searchParams;
   const query = String(params.get("q") || params.get("query") || "").trim().slice(0, 500);
+  const corpus = String(params.get("corpus") || "").trim() || DEFAULT_CORPUS;
+  // An unconfigured corpus is a caller mistake, not an empty index: answer
+  // before touching any pack, so the asker can say so plainly.
+  if (!CORPUS_TABLE[corpus]) {
+    send(res, 400, JSON.stringify({ error: "corpus_not_configured", corpus }), { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
+    return;
+  }
+  if (corpus === "appscope") {
+    await handleAppscopeRetrieve(res, query, params);
+    return;
+  }
   try {
     const state = await loadRag();
     const meta = packMeta(state);

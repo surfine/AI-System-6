@@ -2220,7 +2220,8 @@ window.AISystem6ClioTalkAgent = (() => {
     try {
       if (liveProjectId() !== run.deskProjectId) throw new Error("project_changed: the writer has another Project Hard Disk open now.");
       if (typeof ensureGuestToolsModule === "function") await ensureGuestToolsModule();
-      const result = window.AISystem6GuestTools.runEngineDeskTool(String(event.tool || ""), event.args || {}, run.deskProjectId);
+      // Awaited: blog reads answer from the local API, so a tool may be async.
+      const result = await window.AISystem6GuestTools.runEngineDeskTool(String(event.tool || ""), event.args || {}, run.deskProjectId);
       body = { ok: true, result };
     } catch (error) {
       body = { ok: false, error: String(error?.message || error) };

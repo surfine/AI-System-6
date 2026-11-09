@@ -633,11 +633,11 @@ function renderStyleSheet(findings, message = "") {
   if (!styleSheetResultsEl) return;
 
   if (message) {
-    styleSheetResultsEl.innerHTML = `<p class="empty-folder-note">${escapeHtml(message)}</p>`;
+    styleSheetResultsEl.innerHTML = html`<p class="empty-folder-note">${message}</p>`;
     return;
   }
   if (!findings.length) {
-    styleSheetResultsEl.innerHTML = `<p class="empty-folder-note">${escapeHtml(t("no_style_results"))}</p>`;
+    styleSheetResultsEl.innerHTML = html`<p class="empty-folder-note">${html.raw(t("no_style_results"))}</p>`;
     return;
   }
 
@@ -1192,7 +1192,10 @@ async function praiseReviewDeskText() {
       "",
       praise.trim(),
     ].join("\n"));
-    clearStatus();
+    // A persistent receipt, not a self-erasing one: the praise lives in the
+    // Review Desk body, and the status line says where it went (the same
+    // grammar as copied_selection/cut_selection).
+    setStatus(t("praise_appended"));
   } catch (error) {
     if (error.name !== "AbortError") setStatus(friendlyErrorDetail(error));
   } finally {
@@ -1239,7 +1242,7 @@ async function reviewSectionAsMingming() {
   } catch (error) {
     if (!isAbortError(error)) {
       const message = friendlyErrorDetail(error);
-      if (claimResultsEl) claimResultsEl.innerHTML = `<div class="empty-folder-note">${escapeHtml(message)}</div>`;
+      if (claimResultsEl) claimResultsEl.innerHTML = html`<div class="empty-folder-note">${message}</div>`;
       setStatus(message);
     }
   } finally {

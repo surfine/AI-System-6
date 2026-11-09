@@ -675,6 +675,7 @@ export function installCascadeLedger(core, layerOrderList) {
       const seen = new Map();
       const pathCache = new Map();
       state.targets = new Map();
+      state.declared = new Map();
       containerMemo.clear();
       const check = { agree: 0, disagree: 0, samples: [] };
       for (const [element, pseudo] of visibleTargets()) {
@@ -757,6 +758,14 @@ export function installCascadeLedger(core, layerOrderList) {
             else { check.disagree += 1; if (check.samples.length < 8) check.samples.push(`${path} ${property}: ${winner.selector ? winner.selector.key : "inline"} says ${winner.value}, computed ${computed}`); }
           }
         }
+        // Declarations that read a custom property or resolve `auto`: the
+        // targeted ledger asks for these to tell script-placed geometry from
+        // a rule's own effect (declared(); not part of the ledger).
+        for (const [property, winner] of best) {
+          if (winner.selector && (winner.value.includes("var(") || winner.value === "auto")) {
+            (state.declared.get(path) || state.declared.set(path, new Map()).get(path)).set(property, winner.value);
+          }
+        }
         targets.push([path, cells]);
       }
       return {
@@ -764,6 +773,24 @@ export function installCascadeLedger(core, layerOrderList) {
         targets,
         stats: { renderedTargets: targets.length, rules: entries.length, indexItems: items, mappingProblems, winnerCheck: check },
       };
+    },
+
+    /** Declared value (when it reads var() or is auto) of the winning rule for [path, property] pairs. */
+    declared(pairs) {
+      return pairs.map(([path, property]) => {
+        const value = state.declared?.get(path)?.get(property) ?? null;
+        const target = state.targets.get(path);
+        if (value === null || !target) return null;
+        // Custom properties the declaration reads that script sets inline on
+        // this element or one it inherits from.
+        const inline = [];
+        for (const [, name] of value.matchAll(/var\(\s*(--[\w-]+)/g)) {
+          for (let node = target[0]; node && node.style; node = node.parentElement) {
+            if (node.style.getPropertyValue(name) !== "") { inline.push(name); break; }
+          }
+        }
+        return { value, inline };
+      });
     },
 
     /** Current computed values for [path, property] pairs from the last capture(). */

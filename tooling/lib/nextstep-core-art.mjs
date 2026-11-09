@@ -458,10 +458,6 @@ function questionMark(tiny) {
   ].join("");
 }
 
-function documentMark(tiny) {
-  return rect(tiny ? 13 : 13, tiny ? 15 : 15, tiny ? 7 : 8, tiny ? 7 : 9, PAPER, OUTLINE, 1);
-}
-
 function fanOfSheets(tiny) {
   return [
     rect(tiny ? 15 : 15, tiny ? 14 : 14, tiny ? 8 : 9, tiny ? 10 : 11, SHADE, OUTLINE, 1),

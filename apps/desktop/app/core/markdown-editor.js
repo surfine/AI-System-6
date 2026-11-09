@@ -518,15 +518,75 @@ function mdeApplyDimRuns(overlay) {
   });
 }
 
-function mdeHighlightHtml(text, focusRange, sentenceRange) {
+// --- Front matter ----------------------------------------------------------
+//
+// A document may open with a --- fence of keys the site's generator reads.
+// The writer scans those keys, so inside the opening fence the keys carry the
+// ink and each value shows its own kind -- a date reads as a date, a tag list
+// as tags -- while the fences themselves are machinery and step back like
+// every other marker. Same layer rule as ever: colour and wash only, never a
+// metric. Opt-in through attachMarkdownHighlight's `frontMatter` option, so
+// no existing surface changes until its owner asks for it.
+
+const MDE_FM_FENCE_PATTERN = /^---[ \t]*$/;
+const MDE_FM_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}(?:[ T]\d{2}:\d{2}(?::\d{2})?)?$/;
+
+// The opening fence, its keys, and the closing fence -- and nothing else. An
+// unterminated fence is not front matter: the lines stay ordinary markdown.
+function mdeFrontMatterLineCount(text) {
+  if (!/^---[ \t]*\r?\n/.test(text)) return 0;
+  const lines = text.split("\n");
+  for (let index = 1; index < lines.length; index += 1) {
+    if (MDE_FM_FENCE_PATTERN.test(lines[index].replace(/\r$/, ""))) return index + 1;
+  }
+  return 0;
+}
+
+// Which kind of data a value holds. A bracketed array or a comma list of
+// short items is a tag list; a comma'd sentence is prose and stays a value.
+function mdeFrontMatterValueClass(value) {
+  const trimmed = value.trim().replace(/^["']|["']$/g, "");
+  if (!trimmed) return "";
+  if (MDE_FM_DATE_PATTERN.test(trimmed)) return "md-fm-date";
+  if (/^\[.*\]$/.test(trimmed)) return "md-fm-tags";
+  if (trimmed.includes(",") && trimmed.split(",").every((item) => item.trim().length > 0 && item.trim().length <= 30)) {
+    return "md-fm-tags";
+  }
+  return "md-fm-value";
+}
+
+function mdeFrontMatterHtml(line) {
+  if (MDE_FM_FENCE_PATTERN.test(line.replace(/\r$/, ""))) {
+    return `<span class="md-marker">${mdeEscapeHtml(line)}</span>`;
+  }
+  const match = line.match(/^(\s*)([A-Za-z0-9_-]+)(:[ \t]*)(.*)$/);
+  if (!match) {
+    // A list item under the key above, or a wrapped continuation: data, not
+    // structure. A "- item" line is a tag list the long way round.
+    const item = line.match(/^(\s*-[ \t]+)(.*)$/);
+    if (item) {
+      return `<span class="md-marker">${mdeEscapeHtml(item[1])}</span><span class="md-fm-tags">${mdeEscapeHtml(item[2])}</span>`;
+    }
+    return `<span class="md-fm-value">${mdeEscapeHtml(line)}</span>`;
+  }
+  const [, indent, key, colon, value] = match;
+  const valueClass = mdeFrontMatterValueClass(value);
+  const valueHtml = valueClass
+    ? `<span class="${valueClass}">${mdeEscapeHtml(value)}</span>`
+    : mdeEscapeHtml(value);
+  return `<span class="md-marker">${mdeEscapeHtml(indent)}</span><span class="md-fm-key">${mdeEscapeHtml(key)}</span><span class="md-marker">${mdeEscapeHtml(colon)}</span>${valueHtml}`;
+}
+
+function mdeHighlightHtml(text, focusRange, sentenceRange, frontMatter = false) {
   const state = { fence: false };
   let offset = 0;
-  return text.split("\n").map((line) => {
+  const frontMatterLines = frontMatter ? mdeFrontMatterLineCount(text) : 0;
+  return text.split("\n").map((line, index) => {
     const lineStart = offset;
     const lineEnd = lineStart + line.length;
     offset = lineEnd + 1;
     const cls = mdeLineFocusClass(lineStart, lineEnd, focusRange, sentenceRange);
-    const html = mdeLineHtml(line, state);
+    const html = index < frontMatterLines ? mdeFrontMatterHtml(line) : mdeLineHtml(line, state);
     if (!cls) return html;
     const dim = cls === " md-focus-active" ? mdeLineDimRuns(lineStart, lineEnd, sentenceRange) : "";
     const dimAttribute = dim ? ` data-mde-dim="${dim}"` : "";
@@ -608,11 +668,15 @@ function mdeRepaintHighlight(textarea) {
   return true;
 }
 
-// Wrap a textarea with a synced highlight overlay. Idempotent.
-function attachMarkdownHighlight(textarea) {
+// Wrap a textarea with a synced highlight overlay. Idempotent. Options:
+//   frontMatter -- paint the document's opening --- fence as front matter
+//                  (keys inked, values by kind, fences receded). Off by
+//                  default; a surface asks for it when its documents carry one.
+function attachMarkdownHighlight(textarea, options = {}) {
   if (!textarea || textarea.dataset.mdeHighlight === "true" || !textarea.parentNode) return;
   textarea.dataset.mdeHighlight = "true";
   mdeEnsureLineSpacingRestored();
+  const frontMatter = options.frontMatter === true;
 
   const surface = document.createElement("div");
   surface.className = "mde-surface";
@@ -633,7 +697,7 @@ function attachMarkdownHighlight(textarea) {
     const sentenceRange = focused
       ? mdeSentenceRange(textarea.value, textarea.selectionStart, focusRange)
       : null;
-    overlay.innerHTML = mdeHighlightHtml(textarea.value, focusRange, sentenceRange);
+    overlay.innerHTML = mdeHighlightHtml(textarea.value, focusRange, sentenceRange, frontMatter);
     if (sentenceRange) mdeApplyDimRuns(overlay);
     overlay.scrollTop = textarea.scrollTop;
     overlay.scrollLeft = textarea.scrollLeft;
@@ -676,6 +740,16 @@ function attachMarkdownHighlight(textarea) {
   // overlay still showed the text from before the composition started.
   textarea.addEventListener("compositionupdate", schedulePaint);
   textarea.addEventListener("compositionend", paint);
+  // The browser paints an IME composition in the textarea's own layer: glyphs
+  // in the text colour (transparent here) on an opaque platform highlight that
+  // neither ::selection nor any other stylesheet hook reaches. That box hid
+  // the overlay's copy of the very characters being composed -- the writer
+  // typed Chinese into a featureless highlight. While the composition is open
+  // the textarea therefore shows its own text again and goes back to
+  // transparent at compositionend. Colour moves no metric, so the double-
+  // painted glyphs sit exactly on the overlay's.
+  textarea.addEventListener("compositionstart", () => surface.classList.add("is-composing"));
+  textarea.addEventListener("compositionend", () => surface.classList.remove("is-composing"));
 
   // The overlay carries the ink, so a value the code writes must repaint it
   // just like a keystroke does. Session restore, AI results, revisions, and
@@ -769,6 +843,10 @@ const MDE_FORMAT_SURFACES = {
   questionSheet: "question-sheet-body",
   reviewDesk: "review-desk-body",
   quickDraft: "quick-draft-draft",
+  // 文思泉涌's writing area (lane B owns the window and the textarea; the id
+  // is the contract's). Resolving to a missing element is harmless: the target
+  // stays null until that window exists.
+  wensiQuanyong: "wensi-body",
 };
 
 function mdeFormatTarget(editing = true) {

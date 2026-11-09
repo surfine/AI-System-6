@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/CHANGELOG.md -->
-<!-- source-sha256: 07c2bad914d6b7751498f203b5f672a2f3d746bf295d5056b8b98cf51d4fc162 -->
+<!-- source-sha256: a260eb25180b616715e0d5140aff2e6d558f6dd2a51afd93a3f03e36c245d514 -->
 
 # AI System 6 中文更新日志
 
@@ -12,6 +12,23 @@
 仓库目前只有两个历史 tag：`pre-refactor-baseline` 和 `src-pilot`。因此下文
 按日期阶段和可确认版本组织，不虚构不存在的 release tag，也不把内部提交逐条
 搬进公开文档。
+
+## 公开测试版 2.0.0-beta.3 — 2026-11-09
+
+- **文思泉涌是一扇博客窗口，也是本版首次带上它。** 一个站点由数据描述，不由代码写死：`apps/server/server/site-descriptions/*.json` 声明每种内容类型的字段、存储、网址规则与草稿规则，窗口（`apps/desktop/app/features/wensi-quanyong.js`，服务端在 `/api/wensi-quanyong`）照这份描述渲染自己。日更保留 front-matter 草稿规则，Hexo 文章用 `_drafts/` 目录。发布走 `git-static` 通道（提交进站点仓库，再探测线上网址）或 app-scope 的 Micropub 端点；已发布文章改了 slug 或分类，会补一条 301 并更新站点的 slug 索引。检查是分级的：引文对不上原话、说话人写错是拦截项，推测句与 AI 腔只是提示。公开树带上通用 Hexo 模板和应用本体，但不带站主自己的两份内置描述（它们写着这台机器的家目录与检出路径）；读者自己的站点由精灵建立。
+- **公开桌面搬到了 Cloudflare Pages。** `system6.aaronlau.me` CNAME 到 `boot-system6` Pages 项目，送出与 Mac 客户端同一份构建；`boot-system6.pages.dev` 回答同一批文件。Pages 函数同时认得这两个主机名来做 Turnstile siteverify（`functions/_lib/public-hosts.mjs`），在任一个名字上验证的会话都会被接受。One More Tune 的中继不再把 `system6.aaronlau.me` 当出题权威——那个地址现在就是这个项目，转过去只会打转。网页桌面上的答题器会报 `quiz_authority_unavailable`，直到 `AI_SYSTEM6_QUIZ_ORIGIN` 指向一个活的权威；Mac 客户端与从本仓库跑起来的桌面仍有完整答题器。
+- **Safari 的 HTTP 本机入口退役。** `local.system6.aaronlau.me` 与 `AI_SYSTEM6_HTTP_LOCAL_ORIGIN` 一并移除，`isSafariHttpLocalMode`、`httpLocalEntryUrl` 以及把 Safari 访客从 HTTPS 带到明文桌面的“复制地址再开空白页”流程也删掉了。托管桌面在 Safari 里到不了 Mac 上的服务，剩下的界面把这件事说清楚：控制面板的连接按钮禁用并写明原因，创作声景在自己的状态行里说同一件事。为此打开控制面板的启动步骤也去掉了，实测启动载荷从 2,959,236 降到 2,956,862 字节。
+- **浏览引擎有了自己的主机名。** `browse.system6.aaronlau.me` 是 `aisystem6-browse` 项目的自定义域名。若请求真的落到本项目，`functions/_middleware.js` 会把那个 Host 交给浏览引擎；暂存的 Pages 树在 `__ais6/` 下带着引擎脚本；桌面的 CSP 允许嵌这个来源；`/api/browse/token` 按这个来源签发浏览密钥。
+- **文思泉涌会等站点重建。** `apps/server/server/site-descriptions/appscope.json` 给 Micropub 通道设了 `pollSeconds: 180`：文章已提交后，桌面会花最多三分钟等站点构建，而不是在部署检查里报失败、诱人重发。
+- **一个版本，一个发布 tag。** 只有 `tooling/lib/release-tag.mjs` 推导 tag，`tooling/release-publish.mjs` 与 `tooling/publish-github-release.mjs` 现在都用它；payload 比对改用 `isVersionTag`，不再用永远匹配不到“预发布版本自己的 tag”的 `-beta.` 前缀，因此重新打包同一份应用不会再发一版。
+- **分镜的 CSS 断言数的是政策，不是巧合。** 那条契约原本要求四条 `media-src` 政策，那个数字只是退役的 80 埠 nginx 块凑巧提供；现在逐个数真正服务桌面的来源，并把根本不声明 `media-src` 的游戏外壳资源目录排除在外。
+
+## 公开测试版 2.0.0-beta.2 — 2026-11-04
+
+- **「第一次来这里」多了一扇读成品盘的门。** 在挑一台 Mac、写一句话、看宣传片之外新增第四扇门：读一块成品盘。它把演示盘书架打开在最新的一篇上，只读；点「打开副本」，这块盘连同它走过的整条写作路线就变成你自己的，停在手稿那一页，和 `/go/<disk>` 链接一样。全新的访客现在一次点击就能读到成品，两次点击就拥有副本，不需要连模型。
+- **AI 的纪律有了公开的一页。** 产品官网按站点编辑规范新增第一张阅读面孔「这台桌上的 AI 不做什么」（`aisystem6.aaronlau.me/discipline/`），写明五条由代码执行的规则，每条都指出仓库里执行它的源码：不假思考（assistant-activity）、每次模型运行都有回执且不含凭据与思维链（run-receipts 与记忆边界）、不收下不进稿子且审校台会检查嘴替漂移、动笔之前先问且 ClioWork 与 ClioCode 的检查点可回退、跑在你的机器或你指定的模型上且不连模型也能走完写作路线。README 中英两份都带着同一份清单。
+- **README 的正门换了。** 一段录下来的外观切换循环加入「一张桌，十二个系」；软盘预算的说法改为指向 `site/data/floppy-budget.json` 这一处实测数字，不再把某一次构建的字节数冻在注释里。
+- **Bonsai City 的面板恢复渲染。** 城市报告、一月的预算面板、地块气泡和 OSM 地点列表，自 html 模板加固开始转义未标记插值以来一直以转义文本出现；三个自有标记的调用点现在走 `html.raw`。
 
 ## 公开测试版 2.0.0-beta.1 — 2026-11-01
 

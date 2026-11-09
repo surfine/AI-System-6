@@ -475,13 +475,6 @@ async function boot() {
     } else if (!resumedWorkingSession) {
       await runBootStep("Startup items", () => openStartupItems());
     }
-    if (window.AISystem6LocalLMStudio?.isSafariHttpLocalMode?.()) {
-      await runBootStep(t("local_model"), () => {
-        openWindow("control");
-        setControlTab("local");
-      });
-    }
-
     updateMenuState();
     refreshSystemSelectControls();
     installWorkingSessionAutosave();

@@ -104,7 +104,7 @@ test.assertMatches(systemIcons,
   /class="sys-icon-classic-reverse" href="\$\{art\}"[^>]*filter="url\(#\$\{classicReverseFilterId\}\)"/,
   "the painter draws a reversed copy of the same classic art through an SVG filter");
 test.assertMatches(systemIcons,
-  /filter id="\$\{classicReverseFilterId\}"[\s\S]*?feColorMatrix type="matrix" values="-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0"/,
+  /filter id="\$\{html\.raw\(classicReverseFilterId\)\}"[\s\S]*?feColorMatrix type="matrix" values="-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0"/,
   "the reversed layer is the same art file through an inverting colour matrix");
 test.assertMatches(icons,
   /\.sys-icon-svg\.has-classic-mask \.sys-icon-classic-mask,\s*\.sys-icon-svg\.has-classic-mask \.sys-icon-classic-reverse \{\s*display: none;/,

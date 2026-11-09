@@ -214,7 +214,7 @@ function renderSystemHelp() {
     button.className = id === selectedSystemHelpEntryId ? "is-selected" : "";
     const secondaryName = currentLanguage === "zh" ? entry.termZh : "";
     button.innerHTML = html`
-      ${renderSystemIcon(systemHelpEntryIcon(entry), { size: "help-row" })}
+      ${html.raw(renderSystemIcon(systemHelpEntryIcon(entry), { size: "help-row" }))}
       <b>${entry.term}</b>
       <small>${secondaryName && secondaryName !== entry.term ? secondaryName : ""}</small>
     `;
@@ -263,7 +263,7 @@ function renderSystemHelpDetail(entry) {
   systemHelpDetailEl.innerHTML = html`
     <article class="system-help-card">
       <header class="system-help-head">
-        ${renderSystemIcon(systemHelpEntryIcon(entry), { size: "help-object" })}
+        ${html.raw(renderSystemIcon(systemHelpEntryIcon(entry), { size: "help-object" }))}
         <div>
           <h3>${entry.term}</h3>
           <p>${[secondaryName, systemHelpGroupLabel(entry.category)].filter(Boolean).join(" · ")}</p>
@@ -271,30 +271,30 @@ function renderSystemHelpDetail(entry) {
       </header>
       <div class="system-help-card-scroll">
         <dl class="system-help-info">
-          ${routeRibbon ? html`
+          ${html.raw(routeRibbon ? html`
             <dt>${html.raw(t("system_help_position"))}</dt>
             <dd>${html.raw(routeRibbon)}</dd>
-          ` : ""}
+          ` : "")}
           <dt>${html.raw(t("system_help_definition"))}</dt>
           <dd>${definition}</dd>
-          ${example ? html`
+          ${html.raw(example ? html`
             <dt>${html.raw(t("dictionary_example"))}</dt>
             <dd>${example}</dd>
-          ` : ""}
-          ${aliases.length ? html`
+          ` : "")}
+          ${html.raw(aliases.length ? html`
             <dt>${html.raw(t("system_help_aliases"))}</dt>
-            <dd class="system-help-aliases">${aliases.map((alias) => html`<span>${alias}</span>`)}</dd>
-          ` : ""}
-          ${relatedEntries.length ? html`
+            <dd class="system-help-aliases">${html.raw(aliases.map((alias) => html`<span>${alias}</span>`))}</dd>
+          ` : "")}
+          ${html.raw(relatedEntries.length ? html`
             <dt>${html.raw(t("system_help_related"))}</dt>
-            <dd class="system-help-related">${relatedEntries.map((related) => html`<button type="button" class="system-help-related-link" data-system-help-related="${systemHelpEntryId(related)}">${currentLanguage === "zh" ? related.termZh || related.term : related.term}</button>`)}</dd>
-          ` : ""}
+            <dd class="system-help-related">${html.raw(relatedEntries.map((related) => html`<button type="button" class="system-help-related-link" data-system-help-related="${systemHelpEntryId(related)}">${currentLanguage === "zh" ? related.termZh || related.term : related.term}</button>`))}</dd>
+          ` : "")}
         </dl>
       </div>
       <div class="button-row system-help-actions">
         <button type="button" class="btn" data-system-help-action="lookup">${html.raw(t("system_help_lookup_dictionary"))}</button>
         <button type="button" class="btn${actionLabel ? "" : " default"}" data-system-help-action="ask">${html.raw(t("system_help_ask_assistant"))}</button>
-        ${actionLabel ? html`<button type="button" class="btn default" data-system-help-action="open">${actionLabel}</button>` : ""}
+        ${html.raw(actionLabel ? html`<button type="button" class="btn default" data-system-help-action="open">${actionLabel}</button>` : "")}
       </div>
     </article>
   `;
@@ -507,7 +507,7 @@ function renderDictionaryResult(result = currentDictionaryResult, message = "") 
   if (active.markdown) {
     dictionaryResultEl.innerHTML = html`
       <article class="dictionary-card dictionary-markdown-card">
-        ${markdownToSystemHtml(active.markdown)}
+        ${html.raw(markdownToSystemHtml(active.markdown))}
       </article>
     `;
     return;
@@ -525,9 +525,9 @@ function renderDictionaryResult(result = currentDictionaryResult, message = "") 
         <dd>${active.sourceMode || html.raw(t("dictionary_no_source"))}</dd>
         <dt>${html.raw(t("dictionary_definition"))}</dt>
         <dd>${active.definition || ""}</dd>
-        ${active.chineseExplanation ? html`<dt>${html.raw(t("dictionary_chinese"))}</dt><dd>${active.chineseExplanation}</dd>` : ""}
-        ${active.example ? html`<dt>${html.raw(t("dictionary_example"))}</dt><dd>${active.example}</dd>` : ""}
-        ${active.sourceContext ? html`<dt>${html.raw(t("dictionary_context"))}</dt><dd>${clipDictionaryContexhtml.raw(t(active.sourceContext, 240))}</dd>` : ""}
+        ${html.raw(active.chineseExplanation ? html`<dt>${html.raw(t("dictionary_chinese"))}</dt><dd>${active.chineseExplanation}</dd>` : "")}
+        ${html.raw(active.example ? html`<dt>${html.raw(t("dictionary_example"))}</dt><dd>${active.example}</dd>` : "")}
+        ${html.raw(active.sourceContext ? html`<dt>${html.raw(t("dictionary_context"))}</dt><dd>${clipDictionaryContext(active.sourceContext, 240)}</dd>` : "")}
       </dl>
     </article>
   `;

@@ -9,6 +9,7 @@ body[data-theme-family="liquid-glass"] {
 }
 
 body[data-theme="liquid-glass"] {
+  --theme-button-min-width: 82px;
   /* Period tokens Platinum made shared (2026-09-25, second batch), answered
      with the values this era already drew. */
   --window-frame-arrow-up-order: 0;
@@ -263,6 +264,7 @@ body[data-theme="liquid-glass"] {
   --scrap-list-border: 1px solid rgba(255, 255, 255, 0.44);
   --scrap-list-radius: var(--r-lg);
   --scrap-list-item-radius: var(--r-sm);
+  --scrap-title-rule: 0;
   --dictionary-form-label-radius: var(--r-sm);
   --scrap-list-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68);
   --scrap-empty-card-border: 1px solid rgba(255, 255, 255, 0.42);
@@ -515,6 +517,10 @@ body[data-theme="liquid-glass"] {
     8px 8px 0 rgba(16, 17, 20, 0.22),
     0 20px 52px rgba(18, 28, 38, 0.18);
   --happy-mac-face-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  --happy-mac-face-radius: 6px;
+  --happy-mac-face-bg: rgba(255, 255, 255, 0.62);
+  --finder-list-selected-bg: rgba(16, 17, 20, 0.84);
+  --finder-list-selected-fg: #ffffff;
   --happy-mac-backdrop: blur(8px) saturate(140%);
   --system-shadow: 0 8px 15px rgba(0, 0, 0, 0.04), 0 24px 58px rgba(18, 28, 38, 0.08);
   --system-inset: inset 1px 1px 0 rgba(255, 255, 255, 0.78);
@@ -1074,6 +1080,7 @@ body[data-theme="liquid-glass"] {
   --active-window-shadow: 0 8px 15px rgba(0, 0, 0, 0.045), 0 28px 68px rgba(18, 28, 38, 0.1);
   --card-caption-color: rgba(16, 17, 20, 0.58);
   --finder-navigation-border: 1px solid rgba(16, 17, 20, 0.1);
+  --finder-pathbar-border: 1px solid rgba(16, 17, 20, 0.1);
   --finder-navigation-bg: rgba(255, 255, 255, 0.24);
   --finder-breadcrumb-radius: var(--r-sm);
   --finder-breadcrumb-text-decoration: none;
@@ -1877,6 +1884,10 @@ body[data-theme="liquid-glass"] {
   --note-pad-details-bg: rgba(255, 255, 255, 0.18);
   --note-pad-details-border: 1px solid rgba(16, 17, 20, 0.1);
   --note-pad-details-radius: var(--r-md);
+  /* Clear, Translate, DocMap and Insert at label width plus three gaps need
+     333px here; the pad's 316px content pushed Clear out of the window. 368px
+     keeps the 11px slack the other eras have. */
+  --clipboard-window-width: 368px;
   --clipboard-pane-bg: rgba(255, 255, 255, 0.08);
   --clipboard-pane-border: 1px solid rgba(255, 255, 255, 0.42);
   --clipboard-pane-radius: var(--r-lg);
@@ -2023,6 +2034,89 @@ body[data-theme="liquid-glass"] {
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.56), rgba(212, 221, 228, 0.5)),
     #e4e8ea;
+
+  /* Work order C: period tokens this era already computes at <html>/<body>,
+     restated here; every value is proven equal in .jspace/LEDGER-C.md. */
+  --alarm-clock-close-size: 10px;
+  --app-toolbar-bg: none;
+  --app-toolbar-border-bottom: none;
+  --choice-checked-bg: #ffffff;
+  --choice-checkmark-image: url("./assets/themes/classic/controls/checkmark.svg");
+  --control-disabled-bg: #ffffff;
+  --control-disabled-opacity: 0.56;
+  --control-focus-offset: 2px;
+  --control-strip-gauge: #000000;
+  --control-strip-radius-mirrored: 0;
+  --desktop-label-selected-bg: #000000;
+  --desktop-label-selected-fg: #ffffff;
+  --desktop-label-text-shadow: none;
+  --desktop-surface: radial-gradient(rgba(0, 0, 0, 0.28) 0.7px, transparent 0.85px) 0 0 / 8px 8px, radial-gradient(rgba(255, 255, 255, 0.16) 0.6px, transparent 0.75px) 4px 4px / 8px 8px, #b6b6b6;
+  --find-path-header-display: none;
+  --find-path-relevance-display: none;
+  --find-path-result-padding: 10px 12px;
+  --inactive-window-shadow: 2px 2px 0 #5e5e5e;
+  --md-marker-ink: #767676;
+  --panel: #ededed;
+
+  --progress-bg: repeating-linear-gradient(90deg, #ffffff 0, #ffffff 8px, #ededed 8px, #ededed 16px);
+  --progress-border-color: #000000;
+  --progress-fill-bg: #000000;
+  --progress-fill-shadow: none;
+  --progress-height: 18px;
+  --progress-padding: 0px;
+  --quiet-panel: #f8f8f8;
+  --radio-bg: transparent;
+  --radio-border: 0;
+  --radio-checked-focus-image: url("./assets/themes/classic/controls/radio-dot.svg"), url("./assets/themes/classic/controls/radio-border-focused.svg");
+  --radio-checked-image: url("./assets/themes/classic/controls/radio-dot.svg"), url("./assets/themes/classic/controls/radio-border.svg");
+  --radio-focus-image: url("./assets/themes/classic/controls/radio-border-focused.svg");
+  --radio-image: url("./assets/themes/classic/controls/radio-border.svg");
+  --radio-shadow: none;
+  --rule: #777777;
+  --scrap-list-item-bg: transparent;
+  --scrap-list-item-divider: 1px dotted #696969;
+  --scrap-list-item-selected-bg: #000000;
+  --scrap-list-item-selected-fg: #ffffff;
+  --scrap-list-item-selected-shadow: none;
+
+  --scrollbar-width: 16px;
+  --selection-edge: #000000;
+  --system-button-min-height: 29px;
+  --system-button-mini-font-size: 10px;
+  --system-button-mini-height: 19px;
+  --system-button-mini-padding-x: 7px;
+  --system-button-padding-x: 15px;
+  --system-button-padding-y: 3px;
+  --system-button-small-font-size: 11px;
+  --system-button-small-height: 22px;
+  --system-button-small-padding-x: 9px;
+  --system-caption-size: 12px;
+  --system-check-size: 14px;
+  --system-control-min-height: 30px;
+  --system-control-size: 14px;
+  --system-menu-height: 26px;
+  --system-object-shadow: 2px 2px 0 #696969;
+  --system-radio-size: 12px;
+  --system-readable-min: 14px;
+  --system-text-size: 14px;
+
+  --system-title-size: 13px;
+  --system-titlebar-control-size: 40px;
+  --system-titlebar-control-slot: 40px;
+  --system-titlebar-font-size: 13px;
+  --system-titlebar-height: 23px;
+  --system-titlebar-margin-y: 1px;
+  --system-titlebar-padding-x: 1px;
+  --system-titlebar-padding-y: 2px;
+  --system-titlebar-title-height: 14px;
+  --tab-active-fg: #000000;
+  --tdi-rail-padding: 0;
+  --tdi-tab-close-active-bg: #000000;
+  --tdi-tab-close-active-fg: #ffffff;
+  --tdi-tab-close-active-shadow: inset 1px 1px 0 #696969, inset -1px -1px 0 #ffffff;
+  --titlebar-border: 1px solid #000000;
+  --titlebar-shadow: none;
+  --window-frame-arrow-bg: #ffffff;
 }
 
 /* Two attributes keep this rule's (0,2,1): it outranked the era root when
@@ -2085,7 +2179,6 @@ body[data-theme="liquid-glass"] .menu-bar > .project-switcher-menu > .menu-popov
 
 body[data-theme="liquid-glass"] .project-switcher-menu .menu-popover {
   min-width: min(430px, calc(100vw - 18px));
-  background: var(--liquid-menu-panel);
 }
 
 body[data-theme="liquid-glass"] .project-switcher-copy small {
@@ -2116,7 +2209,6 @@ body[data-theme="liquid-glass"] .menu-sub-popover button {
 body[data-theme="liquid-glass"] .menu-section-label {
   padding-top: 8px;
   padding-bottom: 4px;
-  color: rgba(16, 17, 20, 0.62);
 }
 
 body[data-theme="liquid-glass"] .window,
@@ -2137,14 +2229,6 @@ body[data-theme="liquid-glass"] .finder-operation-modal {
   -webkit-backdrop-filter: var(--window-backdrop-filter);
 }
 
-body[data-theme="liquid-glass"] .spine-toolbox-panel {
-  position: relative;
-}
-
-body[data-theme="liquid-glass"] .writing-spine-panel {
-  background: transparent;
-  box-shadow: none;
-}
 /* Specificity-only twin: the generic body[data-theme="liquid-glass"] .window rule above
    sets box-shadow at (0,0,2,0), same as base .window.is-active, so we restate
    the active-state shadow at higher specificity. Value still lives in the
@@ -2303,21 +2387,16 @@ body[data-theme="liquid-glass"] .assistant-window .messages {
   -webkit-backdrop-filter: var(--glass-reading-blur);
 }
 
-body[data-theme="liquid-glass"] .docmap-markmap-svg .markmap-link {
-  stroke-opacity: 0.9;
-}body[data-theme="liquid-glass"] .reader-content > .empty-folder-note {
+body[data-theme="liquid-glass"] .reader-content > .empty-folder-note {
   --empty-note-max-width: 760px;
   --empty-note-margin: 32px auto 0;
   --empty-note-padding: 16px 22px;
-  --empty-note-radius: var(--r-lg);
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 64px;
   font-family: var(--title-font);
   font-size: 17px;
-  line-height: 1.45;
-  text-align: center;
 }
 
 /* Golden Gate 6.1: the chrome bars stacked at the top of a window read as one
@@ -2358,14 +2437,12 @@ body[data-theme="liquid-glass"] .title-bar h2 {
   padding: 0 10px;
   background: transparent;
   border: 0;
-  color: rgba(16, 17, 20, 0.82);
   line-height: 18px;
   font-weight: 700;
 }
 
 body[data-theme="liquid-glass"] .window:not(.is-active) .title-bar h1,
 body[data-theme="liquid-glass"] .window:not(.is-active) .title-bar h2 {
-  color: rgba(16, 17, 20, 0.72);
   font-weight: 650;
 }
 
@@ -2454,17 +2531,13 @@ body[data-theme="liquid-glass"] .grow-box::before {
   box-shadow: 1px 1px 0 rgba(255, 255, 255, 0.42);
 }
 
-body[data-theme="liquid-glass"] .grow-box:hover,
-body[data-theme="liquid-glass"] .grow-box:focus,
-body[data-theme="liquid-glass"] .grow-box:focus-visible {
+body[data-theme="liquid-glass"] .grow-box:is(:hover, :focus, :focus-visible) {
   background: transparent;
   outline: 0;
   box-shadow: inset -4px -4px 0 rgba(255, 255, 255, 0.44);
 }
 
-body[data-theme="liquid-glass"] .grow-box:hover::before,
-body[data-theme="liquid-glass"] .grow-box:focus::before,
-body[data-theme="liquid-glass"] .grow-box:focus-visible::before {
+body[data-theme="liquid-glass"] .grow-box:is(:hover, :focus, :focus-visible)::before {
   border-color: rgba(16, 17, 20, 0.62);
 }
 
@@ -2534,8 +2607,6 @@ body[data-theme="liquid-glass"] .system-select-button:focus-visible {
 
 body[data-theme="liquid-glass"] input[type="checkbox"],
 body[data-theme="liquid-glass"] input[type="radio"] {
-  appearance: none;
-  -webkit-appearance: none;
   display: inline-grid;
   place-items: center;
   width: 18px;
@@ -2770,10 +2841,11 @@ body[data-theme="liquid-glass"] .btn.danger:focus-visible:not(:disabled):not(.is
     0 0 0 3px rgba(228, 54, 54, 0.12);
 }
 
-body[data-theme="liquid-glass"] .btn:disabled,
-body[data-theme="liquid-glass"] .btn.is-disabled,
-body[data-theme="liquid-glass"] .btn.default:disabled,
-body[data-theme="liquid-glass"] .btn.default.is-disabled {
+/* Same fold the disabled shapes below use: :is() moves no weight, every
+   argument is one state, so each compound keeps the specificity its
+   spelled-out form had. */
+body[data-theme="liquid-glass"] .btn:is(:disabled, .is-disabled),
+body[data-theme="liquid-glass"] .btn.default:is(:disabled, .is-disabled) {
   border-color: rgba(16, 17, 20, 0.22);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.54), rgba(255, 255, 255, 0.2)),
@@ -2784,10 +2856,8 @@ body[data-theme="liquid-glass"] .btn.default.is-disabled {
   opacity: 1;
 }
 
-body[data-theme="liquid-glass"] .btn:disabled:active,
-body[data-theme="liquid-glass"] .btn.is-disabled:active,
-body[data-theme="liquid-glass"] .btn.default:disabled:active,
-body[data-theme="liquid-glass"] .btn.default.is-disabled:active {
+body[data-theme="liquid-glass"] .btn:is(:disabled, .is-disabled):active,
+body[data-theme="liquid-glass"] .btn.default:is(:disabled, .is-disabled):active {
   transform: none;
   color: rgba(16, 17, 20, 0.42);
 }
@@ -2796,32 +2866,13 @@ body[data-theme="liquid-glass"] .composer {
   /* The composer keeps its docked layout while its visible surface follows
      the same rounded panel role as the rest of Liquid Glass. */
   border-radius: var(--r-lg);
-  background: var(--clio-composer-bg);
-  box-shadow: var(--clio-composer-shadow);
   backdrop-filter: blur(22px) saturate(150%);
   -webkit-backdrop-filter: blur(22px) saturate(150%);
 }
 
-body[data-theme="liquid-glass"] .assistant-window .composer-action-row {
-  box-sizing: border-box;
-}
-
-body[data-theme="liquid-glass"] .window:has(> .grow-box) .window-pane > .button-row:last-child,
-body[data-theme="liquid-glass"] .window:has(> .grow-box) .teachtext-actions:last-child,
-body[data-theme="liquid-glass"] .window:has(> .grow-box) .dictation-bottom-actions,
-body[data-theme="liquid-glass"] .window:has(> .grow-box) .translation-pad-actions {
-  box-sizing: border-box;
-}
-
 body[data-theme="liquid-glass"] .assistant-window .composer label {
   width: fit-content;
-  min-height: auto;
-  display: block;
-  border-radius: 0;
-  background: transparent;
   color: rgba(16, 17, 20, 0.86);
-  box-shadow: none;
-  font-weight: 700;
 }
 
 body[data-theme="liquid-glass"] .assistant-window .composer textarea {
@@ -2922,8 +2973,7 @@ body[data-theme="liquid-glass"] .dictation-field-button {
   -webkit-backdrop-filter: blur(10px) saturate(145%);
 }
 
-body[data-theme="liquid-glass"] .dictation-field-button:hover,
-body[data-theme="liquid-glass"] .dictation-field-button:focus {
+body[data-theme="liquid-glass"] .dictation-field-button:is(:hover, :focus) {
   outline: 0;
   border-color: rgba(0, 122, 255, 0.42);
   background:
@@ -3023,8 +3073,7 @@ body[data-theme="liquid-glass"] .control-panel .control-footer {
 body[data-theme="liquid-glass"] .memory-card:hover:not([aria-disabled="true"]) {
   border-color: rgba(16, 17, 20, 0.28);
 }
-body[data-theme="liquid-glass"] .memory-card.is-face-up,
-body[data-theme="liquid-glass"] .memory-card.is-matched {
+body[data-theme="liquid-glass"] .memory-card:is(.is-face-up, .is-matched) {
   border-color: rgba(16, 17, 20, 0.28);
 }
 
@@ -3055,8 +3104,6 @@ body[data-theme="liquid-glass"] .compose-tools-menu {
 body[data-theme="liquid-glass"] .compose-tools-menu button {
   padding: 7px 9px;
   border-radius: var(--r-md);
-  background: transparent;
-  box-shadow: none;
 }
 
 /* Specificity-only twin: the generic liquid button rule above (0,3,1) would
@@ -3073,8 +3120,7 @@ body[data-theme="liquid-glass"] .compose-tools-menu button:focus-visible {
   color: var(--compose-menu-hover-fg);
 }
 
-body[data-theme="liquid-glass"] .compose-tools-menu button:hover .compose-tool-copy small,
-body[data-theme="liquid-glass"] .compose-tools-menu button:focus-visible .compose-tool-copy small {
+body[data-theme="liquid-glass"] .compose-tools-menu button:is(:hover, :focus-visible) .compose-tool-copy small {
   color: var(--compose-menu-hover-fg);
 }
 
@@ -3100,7 +3146,6 @@ body[data-theme="liquid-glass"] .memory-transfer-pane {
     rgba(255, 255, 255, 0.2);
 }
 
-body[data-theme="liquid-glass"] .memory-transfer-note,
 body[data-theme="liquid-glass"] .memory-transfer-note {
   grid-template-columns: 48px minmax(0, 1fr);
   min-height: 68px;
@@ -3114,10 +3159,6 @@ body[data-theme="liquid-glass"] .memory-transfer-note b {
 body[data-theme="liquid-glass"] .memory-transfer-note span:not(.compose-tool-icon) {
   color: rgba(16, 17, 20, 0.58);
   font-size: 13px;
-}
-
-body[data-theme="liquid-glass"] .memory-transfer-field label {
-  margin-bottom: 0;
 }
 
 body[data-theme="liquid-glass"] .file-picker {
@@ -3261,6 +3302,7 @@ body[data-theme="liquid-glass"] .window-status-strip.has-message {
 }
 
 body[data-theme="liquid-glass"] .spine-toolbox-panel {
+  position: relative;
   border: 1px solid var(--glass-border);
   border-radius: var(--r-lg);
   box-shadow: 0 18px 52px rgba(18, 28, 38, 0.18), 0 2px 8px rgba(18, 28, 38, 0.1);
@@ -3287,7 +3329,6 @@ body[data-theme="liquid-glass"] .spine-title-row {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.16)),
     rgba(255, 255, 255, 0.24);
-  background-clip: border-box;
 }
 
 body[data-theme="liquid-glass"] .review-desk-markdown:focus {
@@ -3345,7 +3386,6 @@ body[data-theme="liquid-glass"] .happy-mac {
     linear-gradient(rgba(16, 17, 20, 0.92), rgba(16, 17, 20, 0.92)) 57px 84px / 40px 4px no-repeat,
     linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.34)),
     rgba(255, 255, 255, 0.32);
-  box-shadow: var(--happy-mac-shadow);
   backdrop-filter: var(--happy-mac-backdrop);
   -webkit-backdrop-filter: var(--happy-mac-backdrop);
 }
@@ -3353,12 +3393,6 @@ body[data-theme="liquid-glass"] .happy-mac {
 body[data-theme="liquid-glass"] .happy-mac::after {
   border-radius: 0 0 4px 4px;
   background: rgba(255, 255, 255, 0.36);
-}
-
-body[data-theme="liquid-glass"] .happy-mac-face {
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.62);
-  box-shadow: var(--happy-mac-face-shadow);
 }
 
 body[data-theme="liquid-glass"] .shutdown-ledger,
@@ -3435,17 +3469,10 @@ body[data-theme="liquid-glass"] .scrapbook-pane {
 
 body[data-theme="liquid-glass"] .scrap-editor {
   padding: 18px 20px;
-}
-
-body[data-theme="liquid-glass"] .scrap-editor {
   border: 1px solid rgba(255, 255, 255, 0.44);
   border-radius: var(--r-lg);
   background: rgba(255, 255, 255, 0.18);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68);
-}
-
-body[data-theme="liquid-glass"] .scrap-title-display {
-  border: 0;
 }
 
 /* Specificity-only twin: the editor container also carries the window frame
@@ -3578,10 +3605,6 @@ body[data-theme="liquid-glass"] .text-disk-grid {
   padding: 14px;
 }
 
-body[data-theme="liquid-glass"] .project-finder-pathbar {
-  border-bottom: 1px solid rgba(16, 17, 20, 0.1);
-}
-
 body[data-theme="liquid-glass"] .finder-item {
   width: 118px;
   min-height: 94px;
@@ -3630,8 +3653,7 @@ body[data-theme="liquid-glass"] .finder-item small {
   padding: 1px 5px;
 }
 
-body[data-theme="liquid-glass"] .finder-item:hover,
-body[data-theme="liquid-glass"] .finder-item:focus-visible {
+body[data-theme="liquid-glass"] .finder-item:is(:hover, :focus-visible) {
   background: rgba(255, 255, 255, 0.22);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.54), 0 8px 26px rgba(18, 28, 38, 0.1);
 }
@@ -3654,9 +3676,7 @@ body[data-theme="liquid-glass"] .finder-item.is-selected .sys-icon {
   background: transparent;
 }
 
-body[data-theme="liquid-glass"] .finder-list-row.is-selected,
-body[data-theme="liquid-glass"] .scrap-list button.is-selected,
-body[data-theme="liquid-glass"] .scrap-list button.is-multi-selected,
+body[data-theme="liquid-glass"] .scrap-list button:is(.is-selected, .is-multi-selected),
 body[data-theme="liquid-glass"] .trash-list button.is-selected {
   background: rgba(16, 17, 20, 0.84);
   color: #ffffff;
@@ -3676,7 +3696,6 @@ body[data-theme="liquid-glass"] .finder-marquee {
 body[data-theme="liquid-glass"] .desktop-icon {
   border-radius: var(--r-lg);
   padding: var(--liquid-desktop-icon-padding);
-  width: var(--desktop-icon-width);
 }
 
 body[data-theme="liquid-glass"] .desktop-icon:hover,
@@ -3738,9 +3757,6 @@ body[data-theme="liquid-glass"] .desktop-app-icon span[data-liquid-label] {
   width: fit-content;
   max-width: min(104px, calc(100vw - 24px));
   line-height: var(--liquid-desktop-icon-label-line-height);
-}
-
-body[data-theme="liquid-glass"] .desktop-app-icon span[data-liquid-label] {
   font-size: 0;
 }
 
@@ -3880,17 +3896,8 @@ body[data-theme="liquid-glass"] .sys-icon-liquid .icon-accent {
   fill: rgba(90, 200, 250, 0.36);
 }
 
-body[data-theme="liquid-glass"] .desktop-icon .sys-icon,
-body[data-theme="liquid-glass"] .spine-actions .sys-icon {
-  width: var(--liquid-desktop-icon-size);
-  height: var(--liquid-desktop-icon-size);
-}
-
-body[data-theme="liquid-glass"] .desktop-icon:hover .sys-icon,
-body[data-theme="liquid-glass"] .desktop-icon:focus-visible .sys-icon,
-body[data-theme="liquid-glass"] .desktop-icon.is-selected .sys-icon,
-body[data-theme="liquid-glass"] .spine-actions button:hover .sys-icon,
-body[data-theme="liquid-glass"] .spine-actions button:focus-visible .sys-icon {
+body[data-theme="liquid-glass"] .desktop-icon:is(:hover, :focus-visible, .is-selected) .sys-icon,
+body[data-theme="liquid-glass"] .spine-actions button:is(:hover, :focus-visible) .sys-icon {
   background: transparent;
   box-shadow: none;
   filter: drop-shadow(0 5px 9px rgba(18, 28, 38, 0.2)) saturate(1.08);
@@ -3984,8 +3991,7 @@ body[data-theme="liquid-glass"] .video-docmap-timeline {
   padding: 2px 4px 2px 0;
 }
 
-body[data-theme="liquid-glass"] .video-docmap-timeline button:hover,
-body[data-theme="liquid-glass"] .video-docmap-timeline button:focus-visible {
+body[data-theme="liquid-glass"] .video-docmap-timeline button:is(:hover, :focus-visible) {
   border-color: rgba(47, 157, 179, 0.34);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.66), rgba(255, 255, 255, 0.3)),
@@ -3995,7 +4001,6 @@ body[data-theme="liquid-glass"] .video-docmap-timeline button:focus-visible {
 body[data-theme="liquid-glass"] .video-docmap-node {
   padding: 16px 18px;
   border-color: rgba(16, 17, 20, 0.1);
-  border-radius: var(--r-lg);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0.2)),
     rgba(255, 255, 255, 0.2);
@@ -4029,7 +4034,6 @@ body[data-theme="liquid-glass"] .video-docmap-node blockquote {
 
 body[data-theme="liquid-glass"] .teachtext-command-popover,
 body[data-theme="liquid-glass"] .docmap-command-popover {
-  gap: 3px;
   padding: 6px;
   border: 1px solid var(--glass-border);
   border-radius: var(--r-md);
@@ -4075,14 +4079,8 @@ body[data-theme="liquid-glass"] .teachtext-command-subpopover .btn {
   text-shadow: none;
 }
 
-body[data-theme="liquid-glass"] .docmap-command-popover .btn {
-  overflow-wrap: anywhere;
-}
-
-body[data-theme="liquid-glass"] .teachtext-command-popover .btn:hover,
-body[data-theme="liquid-glass"] .teachtext-command-popover .btn:focus-visible {
+body[data-theme="liquid-glass"] .teachtext-command-popover .btn:is(:hover, :focus-visible) {
   outline: 0;
-  border: 0;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.48), rgba(255, 255, 255, 0.24)),
     rgba(255, 255, 255, 0.22);
@@ -4090,8 +4088,7 @@ body[data-theme="liquid-glass"] .teachtext-command-popover .btn:focus-visible {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
 }
 
-body[data-theme="liquid-glass"] .teachtext-command-popover .btn:disabled,
-body[data-theme="liquid-glass"] .teachtext-command-popover .btn.is-disabled,
+body[data-theme="liquid-glass"] .teachtext-command-popover .btn:is(:disabled, .is-disabled),
 body[data-theme="liquid-glass"] .teachtext-command-menu.is-disabled summary {
   border-color: rgba(255, 255, 255, 0.44);
   background:
@@ -4161,8 +4158,7 @@ body[data-theme="liquid-glass"] .specialized-command-menu .teachtext-command-pop
   line-height: 1.18;
 }
 
-body[data-theme="liquid-glass"] .specialized-command-menu .teachtext-command-popover .btn:disabled,
-body[data-theme="liquid-glass"] .specialized-command-menu .teachtext-command-popover .btn.is-disabled,
+body[data-theme="liquid-glass"] .specialized-command-menu .teachtext-command-popover .btn:is(:disabled, .is-disabled),
 body[data-theme="liquid-glass"] .review-desk-window.is-review-locked .specialized-command-menu .teachtext-command-popover .btn {
   border-color: rgba(255, 255, 255, 0.48);
   background:
@@ -4175,7 +4171,6 @@ body[data-theme="liquid-glass"] .review-desk-window.is-review-locked .specialize
 body[data-theme="liquid-glass"] .teachtext-command-popover hr {
   width: auto;
   margin: 3px 10px;
-  border-top: 1px solid rgba(16, 17, 20, 0.12);
 }
 
 body[data-theme="liquid-glass"] .view-controls {
@@ -4199,8 +4194,6 @@ body[data-theme="liquid-glass"] .view-btn {
   height: 22px;
   border: 1px solid transparent;
   border-radius: var(--r-sm);
-  background: transparent;
-  box-shadow: none;
   transition: background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
 }
 
@@ -4257,24 +4250,17 @@ body[data-theme="liquid-glass"] :is(input, textarea):disabled {
   -webkit-text-fill-color: currentColor;
 }
 
-body[data-theme="liquid-glass"] button:disabled:not(.memory-card),
-body[data-theme="liquid-glass"] button.is-disabled:not(.memory-card),
-body[data-theme="liquid-glass"] .btn:disabled,
-body[data-theme="liquid-glass"] .btn.is-disabled,
-body[data-theme="liquid-glass"] .btn.default:disabled,
-body[data-theme="liquid-glass"] .btn.default.is-disabled,
-/* The three state suffixes were spelled out once per disabled shape —
-   eighteen selectors that all said the same thing. :is() folds them to six
-   and moves no weight: every argument is a single pseudo-class, so each
-   compound keeps exactly the specificity its spelled-out form had. The
-   restatements themselves stay, because out-weighing the enabled hover and
-   active rules is the job they were written for. */
-body[data-theme="liquid-glass"] button:disabled:not(.memory-card):is(:hover, :focus-visible, :active),
-body[data-theme="liquid-glass"] button.is-disabled:not(.memory-card):is(:hover, :focus-visible, :active),
-body[data-theme="liquid-glass"] .btn:disabled:is(:hover, :focus-visible, :active),
-body[data-theme="liquid-glass"] .btn.is-disabled:is(:hover, :focus-visible, :active),
-body[data-theme="liquid-glass"] .btn.default:disabled:is(:hover, :focus-visible, :active),
-body[data-theme="liquid-glass"] .btn.default.is-disabled:is(:hover, :focus-visible, :active) {
+/* Same fold as the disabled shapes below: :is() moves no weight — every
+   argument is a single state — so each compound keeps exactly the specificity
+   its spelled-out form had. The restatements themselves stay, because
+   out-weighing the enabled hover and active rules is the job they were
+   written for. */
+body[data-theme="liquid-glass"] button:is(:disabled, .is-disabled):not(.memory-card),
+body[data-theme="liquid-glass"] .btn:is(:disabled, .is-disabled),
+body[data-theme="liquid-glass"] .btn.default:is(:disabled, .is-disabled),
+body[data-theme="liquid-glass"] button:is(:disabled, .is-disabled):not(.memory-card):is(:hover, :focus-visible, :active),
+body[data-theme="liquid-glass"] .btn:is(:disabled, .is-disabled):is(:hover, :focus-visible, :active),
+body[data-theme="liquid-glass"] .btn.default:is(:disabled, .is-disabled):is(:hover, :focus-visible, :active) {
   --menu-shortcut-color: var(--liquid-disabled-control-fg);
   border-color: var(--liquid-disabled-control-border);
   background: var(--liquid-disabled-control-bg);
@@ -4303,17 +4289,13 @@ body[data-theme="liquid-glass"] .btn:not(.default):not(:disabled):not(.is-disabl
    -- this rule is deliberately specific, and out-specifying it would start the
    arms race css-no-pingpong forbids. */
 body[data-theme="liquid-glass"] .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled),
-body[data-theme="liquid-glass"] .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled):hover,
-body[data-theme="liquid-glass"] .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled):focus-visible,
-body[data-theme="liquid-glass"] .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled):active {
+body[data-theme="liquid-glass"] .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled):is(:hover, :focus-visible, :active) {
   color: var(--liquid-action-ink);
   -webkit-text-fill-color: var(--liquid-action-ink);
   text-shadow: none;
 }
 
-body[data-theme="liquid-glass"] .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled):hover,
-body[data-theme="liquid-glass"] .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled):focus-visible,
-body[data-theme="liquid-glass"] .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled):active {
+body[data-theme="liquid-glass"] .btn:not(.default):not(.is-active):not(.is-selected):not(.is-multi-selected):not(:disabled):not(.is-disabled):is(:hover, :focus-visible, :active) {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.68), rgba(255, 255, 255, 0.28)),
     rgba(255, 255, 255, 0.42);
@@ -4323,18 +4305,13 @@ body[data-theme="liquid-glass"] .btn:not(.default):not(.is-active):not(.is-selec
 }
 
 body[data-theme="liquid-glass"] .btn.danger:not(:disabled):not(.is-disabled),
-body[data-theme="liquid-glass"] .btn.danger:not(:disabled):not(.is-disabled):hover,
-body[data-theme="liquid-glass"] .btn.danger:not(:disabled):not(.is-disabled):focus-visible,
-body[data-theme="liquid-glass"] .btn.danger:not(:disabled):not(.is-disabled):active {
+body[data-theme="liquid-glass"] .btn.danger:not(:disabled):not(.is-disabled):is(:hover, :focus-visible, :active) {
   color: rgb(185, 28, 28);
   -webkit-text-fill-color: rgb(185, 28, 28);
 }
 
 body[data-theme="liquid-glass"] .teachtext-actions .btn:not(.default):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected),
-body[data-theme="liquid-glass"] .teachtext-actions .btn:not(.default):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):hover,
-body[data-theme="liquid-glass"] .teachtext-actions .btn:not(.default):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):focus,
-body[data-theme="liquid-glass"] .teachtext-actions .btn:not(.default):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):focus-visible,
-body[data-theme="liquid-glass"] .teachtext-actions .btn:not(.default):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):active {
+body[data-theme="liquid-glass"] .teachtext-actions .btn:not(.default):not(:disabled):not(.is-disabled):not(.is-active):not(.is-selected):is(:hover, :focus, :focus-visible, :active) {
   color: rgba(16, 17, 20, 0.94);
   -webkit-text-fill-color: rgba(16, 17, 20, 0.94);
   text-shadow: none;
@@ -4363,27 +4340,19 @@ body[data-theme="liquid-glass"] button:active:not(.menu-bar button):not(:disable
     0 0 0 3px rgba(0, 122, 255, 0.18);
 }
 
-body[data-theme="liquid-glass"] .btn.default:hover:not(:disabled):not(.is-disabled),
-body[data-theme="liquid-glass"] .btn.default:focus:not(:disabled):not(.is-disabled),
-body[data-theme="liquid-glass"] .btn.default:focus-visible:not(:disabled):not(.is-disabled) {
+body[data-theme="liquid-glass"] .btn.default:is(:hover, :focus, :focus-visible):not(:disabled):not(.is-disabled) {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0.06)),
     linear-gradient(180deg, #178bff, #0071e3);
 }
 
-body[data-theme="liquid-glass"] button:disabled:not(.memory-card),
-body[data-theme="liquid-glass"] button.is-disabled:not(.memory-card),
-body[data-theme="liquid-glass"] .btn:disabled,
-body[data-theme="liquid-glass"] .btn.is-disabled,
-body[data-theme="liquid-glass"] .btn.default:disabled,
-body[data-theme="liquid-glass"] .btn.default.is-disabled,
+body[data-theme="liquid-glass"] button:is(:disabled, .is-disabled):not(.memory-card),
+body[data-theme="liquid-glass"] .btn:is(:disabled, .is-disabled),
+body[data-theme="liquid-glass"] .btn.default:is(:disabled, .is-disabled),
 /* Same fold as the disabled-material rule above, for the same reason. */
-body[data-theme="liquid-glass"] button:disabled:not(.memory-card):is(:hover, :focus-visible, :active),
-body[data-theme="liquid-glass"] button.is-disabled:not(.memory-card):is(:hover, :focus-visible, :active),
-body[data-theme="liquid-glass"] .btn:disabled:is(:hover, :focus-visible, :active),
-body[data-theme="liquid-glass"] .btn.is-disabled:is(:hover, :focus-visible, :active),
-body[data-theme="liquid-glass"] .btn.default:disabled:is(:hover, :focus-visible, :active),
-body[data-theme="liquid-glass"] .btn.default.is-disabled:is(:hover, :focus-visible, :active) {
+body[data-theme="liquid-glass"] button:is(:disabled, .is-disabled):not(.memory-card):is(:hover, :focus-visible, :active),
+body[data-theme="liquid-glass"] .btn:is(:disabled, .is-disabled):is(:hover, :focus-visible, :active),
+body[data-theme="liquid-glass"] .btn.default:is(:disabled, .is-disabled):is(:hover, :focus-visible, :active) {
   color: var(--liquid-disabled-control-fg);
   -webkit-text-fill-color: var(--liquid-disabled-control-fg);
   text-shadow: none;

@@ -576,18 +576,18 @@ function renderLightroomCompare() {
     // One column, the changes marked where they happen: what was taken out
     // struck through, what was put in marked.
     const diff = window.AISystem6WordDiff.wordDiff(source.body, after);
-    let html = "";
+    let markup = "";
     let at = 0;
     diff.hunks.forEach((hunk) => {
-      html += escapeHtml(after.slice(at, hunk.after.start));
+      markup += escapeHtml(after.slice(at, hunk.after.start));
       const gone = source.body.slice(hunk.before.start, hunk.before.end);
       const came = after.slice(hunk.after.start, hunk.after.end);
-      if (gone) html += `<del class="lightroom-changed is-before">${escapeHtml(gone)}</del>`;
-      if (came) html += `<mark class="lightroom-changed is-after">${escapeHtml(came)}</mark>`;
+      if (gone) markup += `<del class="lightroom-changed is-before">${escapeHtml(gone)}</del>`;
+      if (came) markup += `<mark class="lightroom-changed is-after">${escapeHtml(came)}</mark>`;
       at = hunk.after.end;
     });
-    html += escapeHtml(after.slice(at));
-    refs.preview.innerHTML = `<p class="quick-draft-grain-note">${escapeHtml(note)}</p><pre class="quick-draft-grain-body lightroom-changes">${html}</pre>`;
+    markup += escapeHtml(after.slice(at));
+    refs.preview.innerHTML = html`<p class="quick-draft-grain-note">${note}</p><pre class="quick-draft-grain-body lightroom-changes">${html.raw(markup)}</pre>`;
     return true;
   }
   refs.preview.innerHTML = [

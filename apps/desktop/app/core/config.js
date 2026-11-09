@@ -724,6 +724,9 @@ const ensureOneMoreTakeModule = createLazyModuleLoader("AISystem6OneMoreTakeLoad
 // The wheel rides along beside its host: same lazy lane, no stylesheet of its own.
 const ensureOneMoreTuneWheelModule = createLazyModuleLoader("AISystem6OneMoreTuneWheelLoaded", ["app/features/one-more-tune-wheel.js"]);
 const ensureAaronBlogModule = createLazyModuleLoader("AISystem6AaronBlogLoaded", ["app/core/application-shell.js", "app/features/aaron-blog.js"], false, ["styles.aaron-blog.css"]);
+// 文思泉涌 — the blog writing studio. The window shell is in index.html; the
+// loader brings the shell helper, the studio module and its sheet together.
+const ensureWensiQuanyongModule = createLazyModuleLoader("AISystem6WensiQuanyongLoaded", ["app/core/application-shell.js", "app/features/wensi-quanyong.js"], false, ["styles.wensi-quanyong.css"]);
 // Stickies／便利贴 — To Do, Note Pad's notes and the held-thought pile as one
 // object (2026-10-31). The loader keeps To Do's name because the admission
 // table names it; the window keeps "todo" for the same reason.

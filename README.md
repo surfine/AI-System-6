@@ -43,7 +43,7 @@ TWELVE APPEARANCES IN ALL. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 
 ## Contents
 
-- [What's new](#whats-new-in-200-beta2)
+- [What's new](#whats-new-in-200-beta3)
 - [Run it in 60 seconds](#run-it-in-60-seconds)
 - [What this protects](#what-this-protects)
 - [What the AI here won't do](#what-the-ai-here-wont-do)
@@ -57,13 +57,17 @@ TWELVE APPEARANCES IN ALL. NO MODEL REQUIRED TO LOOK AROUND.</sub>
 - [Contributing](#contributing)
 - [License](#license)
 
-## What's new in 2.0.0-beta.2
+## What's new in 2.0.0-beta.3
 
-- **First time here offers a finished disk.** A fourth door joins pick a Mac, write one line and the film: read a finished disk opens the demonstration shelf on its newest piece, read-only, and Open a Copy makes it yours, with the whole writing route that disk traveled. No model and no sign-up needed.
-- **The AI's discipline is a page anyone can check.** The product site gains [What the AI here won't do](https://aisystem6.aaronlau.me/discipline/): five rules the desk enforces in its own code, each named with the source in the repository that enforces it. The README carries the same list.
-- **Bonsai City's budget pane renders again.** The city report, the January budget pane, the tile balloon and the OSM place list had been arriving as escaped text; they are markup again.
+- **文思泉涌 writes the blog inside the desk.** A new window treats each site as a site: pick one, then a content type — a short daily post, a few lines of notes, a longform piece, a photo roll — and the fields, address and draft rule come from that site's own description. Write and preview side by side, then Check This Article: a quote that does not match its source, or a speaker attributed to the wrong person, blocks the publish, while speculation and AI tone only warn. Publishing writes the site's repository (or its Micropub endpoint) and waits for the page to be live; a renamed article leaves its 301 behind. Categories, tags, the media library, contacts, longform, the prediction ledger, rescan and chat-history sync live in the same window, and Clio drafts only when you press the button.
+- **The web desk moved to Cloudflare Pages.** [system6.aaronlau.me](https://system6.aaronlau.me) now serves the same bundle the Mac app does from a Pages project, with `boot-system6.pages.dev` still answering on the same files. A verification completed on either name is accepted by both, so the public desk no longer depends on a VPS that had expired.
+- **Safari's dead local entry is gone.** `local.system6.aaronlau.me` is retired. In Safari, Control Panel and Soundscape now say plainly that the page cannot reach this Mac, and point to Chrome or the Mac app, instead of offering a button that led nowhere.
+- **Time Machine's web engine has a name of its own.** `browse.system6.aaronlau.me` serves the proxied web engine, and the desk allows framing that origin.
+- **One More Tune cannot start a round on the web desk in this build.** Its round authority was the VPS; now that the desk itself is the Pages project, the quiz says there is no separate round authority instead of forwarding into a loop. The Mac app and a desk run from this repository keep the full quiz.
+- **文思泉涌 waits for the site build.** A published article is committed to the site repository first, and the desk then waits up to three minutes for the page to appear, so a post committed while the site is rebuilding no longer reports "not visible" and invites a second send.
+- **One version name.** The release tag stopped doubling the beta counter, so the download, its README badge and About all read the same version.
 
-The 2.0.0-beta.1 notes, with ClioWork, ClioCode, the three engines, Extensions and the MCP Chooser, are in the changelog below.
+The 2.0.0-beta.2 notes, with the finished-disk door and the discipline page, are in the changelog below.
 
 The full release history lives in [docs/CHANGELOG.md](docs/CHANGELOG.md); every beta is also on [GitHub Releases](https://github.com/surfine/AI-System-6/releases).
 
@@ -86,7 +90,7 @@ npm test
 npm run verify:public
 ```
 
-The Mac beta is packaged from the same source; it is ad-hoc signed and may need **Control-click › Open** on first launch. See the [latest release](https://github.com/surfine/AI-System-6/releases/latest).
+The Mac beta is packaged from the same source and signed with a Developer ID with Apple's notarization ticket, so it opens with a double-click; a copy downloaded in a browser may still ask once. See the [latest release](https://github.com/surfine/AI-System-6/releases/latest).
 
 ## What this protects
 
@@ -204,6 +208,7 @@ Claims rot. These run from a fresh clone and fail the build instead.
 | `site:check` | this page quoting a byte count the gate never measured |
 | `verify:docs` | an English document drifting away from its Chinese mirror |
 | `verify:public` | a command advertised here that fails from a fresh clone |
+| `evals:dry` | the writing AI drifting into the patterns its own evals forbid |
 
 Every product screenshot on this page and on the [product site](https://aisystem6.aaronlau.me) is re-shot from the running app by `npm run site:capture-frames`, `npm run site:capture-route`, and `tooling/capture-site-proofs.mjs`. There is no art directory of hand-made marketing images to fall out of date.
 

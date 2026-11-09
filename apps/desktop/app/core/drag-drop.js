@@ -237,6 +237,9 @@ function dispatchInternalDrop(dropTarget, dragData, event) {
 // and Control Strip stay internal-object targets: an external drop on them is
 // refused in place rather than quietly turned into an import.
 const externalDropTargets = new Set(["desktop", "editor-insert", "clio-attachment", "scrap", "file-floppy"]);
+// 文思泉涌's photo tray takes pictures as frames. Its module loads with the
+// window, so a hit on the tray means the handler exists.
+externalDropTargets.add("wensi-photos");
 
 function externalDropTargetAccepts(dropTargetType) {
   return externalDropTargets.has(dropTargetType);
@@ -252,7 +255,7 @@ function externalDropHitKind(dropTargetType, event) {
   if (dropTargetType === "scrap" || dropTargetType === "file-floppy") {
     return externalDropHasFiles(event) ? "accept" : "reject";
   }
-  if (dropTargetType === "editor-insert" || dropTargetType === "clio-attachment") {
+  if (dropTargetType === "editor-insert" || dropTargetType === "clio-attachment" || dropTargetType === "wensi-photos") {
     return externalDropHasFiles(event) ? "accept" : "reject";
   }
   return "reject";
@@ -326,6 +329,17 @@ async function handleExternalDropOnTarget(event, dropTargetType) {
     }
     setStatus(t("external_drop_scrap_needs_picture"));
     return false;
+  }
+
+  if (dropTargetType === "wensi-photos") {
+    // 文思泉涌's photo grid takes pictures as frames. The module lives with the
+    // window, so a hit here means it is loaded; without it, File Floppy is the
+    // desk's usual destination rather than a snap-back.
+    if (!externalDropHasFiles(event)) return false;
+    event.preventDefault();
+    const takePhotos = window.AISystem6WensiQuanyongPhotoDrop;
+    if (typeof takePhotos === "function") return takePhotos(imageFilesFromList(event.dataTransfer?.files));
+    return routeExternalDropFilesOnly(event);
   }
 
   if (dropTargetType === "editor-insert" || dropTargetType === "clio-attachment") {

@@ -19,6 +19,7 @@
    than claiming it. */
 html[data-theme="nextstep"],
 body[data-theme="nextstep"] {
+  --theme-button-min-width: 82px;
   /* The 3.3 close box (native 09c), one art for the main-menu shell and the
      phone, where the bare #aaaaaa square left the title bar blank. */
   --nextstep-close-art: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='15' shape-rendering='crispEdges'%3E%3Cpath fill='%23000' d='M0 0h15v15H0z'/%3E%3Cpath fill='%23555' d='M0 0h14v14H0z'/%3E%3Cpath fill='%23fff' d='M0 0h14v1H0zM0 0h1v14H0z'/%3E%3Cpath fill='%23aaa' d='M1 1h12v12H1z'/%3E%3Cpath fill='%23555' d='M3 2h1v1h-1zM10 2h1v1h-1zM2 3h1v1h-1zM4 3h1v1h-1zM9 3h1v1h-1zM11 3h1v1h-1zM3 4h1v1h-1zM5 4h1v1h-1zM8 4h1v1h-1zM10 4h1v1h-1zM4 5h1v1h-1zM6 5h1v1h-1zM7 5h1v1h-1zM9 5h1v1h-1zM5 6h1v1h-1zM8 6h1v1h-1zM5 7h1v1h-1zM8 7h1v1h-1zM4 8h1v1h-1zM6 8h1v1h-1zM7 8h1v1h-1zM9 8h1v1h-1zM3 9h1v1h-1zM5 9h1v1h-1zM8 9h1v1h-1zM10 9h1v1h-1zM2 10h1v1h-1zM4 10h1v1h-1zM9 10h1v1h-1zM11 10h1v1h-1zM3 11h1v1h-1zM10 11h1v1h-1z'/%3E%3Cpath fill='%23000' d='M2 2h1v1h-1zM3 3h1v1h-1zM4 4h1v1h-1zM5 5h1v1h-1zM6 6h1v1h-1zM7 6h1v1h-1zM6 7h1v1h-1zM7 7h1v1h-1zM8 5h1v1h-1zM9 4h1v1h-1zM10 3h1v1h-1zM11 2h1v1h-1zM5 8h1v1h-1zM4 9h1v1h-1zM3 10h1v1h-1zM2 11h1v1h-1zM8 8h1v1h-1zM9 9h1v1h-1zM10 10h1v1h-1zM11 11h1v1h-1z'/%3E%3C/svg%3E") center / 15px 15px no-repeat;
@@ -566,10 +567,6 @@ body[data-theme="nextstep"] .title-bar {
 body[data-theme="nextstep"] .window.is-active > .title-bar {
   background: var(--system-titlebar-active-bg);
 }
-body[data-theme="nextstep"] .title-bar :is(h1, h2) {
-  justify-self: center;
-  text-align: center;
-}
 body[data-theme="nextstep"] .title-bar > :is(.close-box, .resize-box) {
   background: #aaaaaa;
   border: 1px solid #000000;
@@ -582,8 +579,6 @@ body[data-theme="nextstep"] .title-bar > :is(.close-box, .resize-box) {
    (moved from nextstep-shell.css) and precede its :active press. The theme
    test sits in :where(): the shell class alone decided, and still does. */
 body:where([data-theme="nextstep"]) .window > .title-bar > :is(.nextstep-miniaturize, .close-box) {
-  width: 15px;
-  height: 15px;
   align-self: center;
   border: 0;
   box-shadow: none;
@@ -698,7 +693,6 @@ body[data-theme="nextstep"] .nextstep-miniaturize {
   height: var(--system-titlebar-control-size);
   margin: 0;
   padding: 0;
-  border: 1px solid var(--ink);
   border-radius: 0;
   background: var(--panel);
   box-shadow: var(--system-shadow);

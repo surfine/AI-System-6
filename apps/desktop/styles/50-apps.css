@@ -917,6 +917,17 @@ body[data-line-spacing="relaxed"] {
   color: var(--shade-dark);
 }
 
+/* While an IME composition is open, the textarea shows its own text again.
+   The browser paints the composing characters in the textarea's own layer, in
+   the text colour, on an opaque platform highlight that no stylesheet hook
+   (::selection included) reaches -- so a transparent text colour left the
+   writer typing Chinese into a featureless box, with the overlay's copy of
+   the same glyphs hidden behind that box. Colour alone moves no metric, and
+   compositionend removes the class, so the paper returns to overlay-only ink. */
+.mde-surface.is-composing > .mde-input {
+  color: var(--ink);
+}
+
 .mde-surface > .mde-highlight {
   overflow: hidden;
   pointer-events: none;
@@ -986,6 +997,21 @@ body[data-line-spacing="relaxed"] {
 /* The record id is the machine's half of a heading line: still selectable
    text, drawn in the marker ink so the title keeps the eye. */
 .md-record-id { color: var(--md-marker-ink); }
+/* Front matter (surfaces that ask for it): the key is the scannable
+   skeleton and carries the ink with the same stroke a heading uses; a date
+   reads as content; a tag list rides the highlight wash; any other value is
+   data and recedes to the marker ink. Colour and wash only -- the layer
+   under a transparent textarea must stay width-neutral. */
+.md-fm-key {
+  color: var(--ink);
+  -webkit-text-stroke: var(--md-weight-stroke) currentColor;
+}
+.md-fm-date { color: var(--ink); }
+.md-fm-tags {
+  color: var(--ink);
+  background: var(--md-mark-wash);
+}
+.md-fm-value { color: var(--md-marker-ink); }
 .md-link { text-decoration: underline; text-underline-offset: 2px; text-decoration-color: currentColor; }
 .md-strike { text-decoration: line-through; text-decoration-color: currentColor; }
 .md-mark { background: var(--md-mark-wash); }
@@ -1256,10 +1282,13 @@ body[data-line-spacing="relaxed"] {
   flex: 1;
   padding: 9px;
   overflow: auto;
-  border: var(--file-preview-border);
+  /* The file well's frame by default (resolved here, so an era's own
+     --file-well-bg/--system-* reach it); Liquid Glass answers the three
+     --file-preview-* tokens with its reading glass. */
+  border: var(--file-preview-border, var(--system-border));
   border-radius: var(--file-preview-radius);
-  background: var(--file-preview-bg);
-  box-shadow: var(--file-preview-shadow);
+  background: var(--file-preview-bg, var(--file-well-bg));
+  box-shadow: var(--file-preview-shadow, var(--system-inset));
   font-family: var(--text-font);
 }
 
@@ -1867,11 +1896,15 @@ body[data-line-spacing="relaxed"] {
   overflow: hidden;
 }
 
+/* File-well frame moved here from 60-responsive (2026-11-05 audit), its
+   well background with it: --file-well-bg is not --paper in every era. */
 .trash-list {
   border: var(--system-control-line) solid var(--ink);
   min-height: 0;
   overflow: auto;
-  background: var(--paper);
+  background: var(--file-well-bg);
+  border: var(--system-border);
+  box-shadow: var(--system-inset);
 }
 
 .scrap-list {
@@ -2601,6 +2634,7 @@ body:not([data-theme="liquid-glass"]) .scrap-list button.is-multi-selected:not(.
   color: var(--control-label-fg);
 }
 
+/* Shrink-proofing moved here from 60-responsive (2026-11-05 audit): the responsive copies were additive-only (min sizes, flex, padding). */
 input[type="checkbox"] {
   appearance: none;
   -webkit-appearance: none;
@@ -2618,6 +2652,10 @@ input[type="checkbox"] {
     background-color var(--control-motion-fast-in) var(--control-motion-ease),
     border-color var(--control-motion-fast-in) var(--control-motion-ease),
     box-shadow var(--control-motion-fast-in) var(--control-motion-ease);
+  min-width: var(--system-check-size);
+  min-height: var(--system-check-size);
+  flex: 0 0 var(--system-check-size);
+  padding: 0;
 }
 
 input[type="checkbox"]:hover:not(:disabled),
@@ -2666,6 +2704,10 @@ input[type="radio"] {
   transition:
     background-color var(--control-motion-fast-in) var(--control-motion-ease),
     box-shadow var(--control-motion-fast-in) var(--control-motion-ease);
+  min-width: var(--system-radio-size);
+  min-height: var(--system-radio-size);
+  flex: 0 0 var(--system-radio-size);
+  padding: 0;
 }
 
 input[type="radio"]:hover,
@@ -2819,6 +2861,7 @@ input[type="radio"]:checked:disabled {
   height: 36px;
   border-width: 2px;
   box-shadow: 2px 2px 0 var(--ink);
+  background-color: var(--paper);
 }
 
 .desktop-icon:hover span:last-child,

@@ -803,7 +803,7 @@ function quickDraftEli5PromptBody(id = "lenses.eli5-explainer") {
 function showQuickDraftEli5Candidate(body = "") {
   const container = refs.draft?.closest(".teachtext-editor-container");
   if (!container || !refs.preview || !refs.draft) return;
-  refs.preview.innerHTML = `<div class="quick-draft-reading">${quickDraftMarkdownHtml(String(body || ""))}</div>`;
+  refs.preview.innerHTML = html`<div class="quick-draft-reading">${html.raw(quickDraftMarkdownHtml(String(body || "")))}</div>`;
   container.classList.add("is-previewing");
   refs.preview.classList.remove("is-hidden");
   refs.draft.classList.add("is-hidden");

@@ -13,7 +13,16 @@
 // review belongs to the Review Desk. A document is developed, not edited, when
 // the negative is left alone and the change is a stack of adjustments the
 // writer can switch off again.
-const applicationIntents = Object.freeze(["open", "read", "edit", "review", "develop", "map", "chart", "present", "attach", "export"]);
+//
+// "publish" hands a draft to 文思泉涌 (wensiQuanyong), whose descriptor —
+// registered by that window's own lane — accepts item kind "text" with intents
+// open/edit/publish and recordsRuns ["publish"]. Its handler contract for this
+// intent: a text item arriving with intent "publish" opens the new-draft flow
+// and carries the item's body into the draft form; the run receipt records the
+// handoff. Publishing to the site itself (git/Micropub, P3) lives behind the
+// blog app's own server routes — this intent only delivers the draft in and
+// records that it was delivered.
+const applicationIntents = Object.freeze(["open", "read", "edit", "review", "develop", "map", "chart", "present", "attach", "export", "publish"]);
 const applicationsById = new Map();
 
 function normalizeApplicationIntent(intent) {
@@ -667,6 +676,34 @@ registerApplication({
     if (!file) return { ok: false, reason: "missing" };
     if (typeof openChatFileWindow === "function") openChatFileWindow(file.id);
     return { ok: true };
+  },
+});
+
+// 文思泉涌 (the blog writing studio): a text manuscript handed over with the
+// publish intent becomes a new draft there ("把稿交进文思泉涌"); open/edit just
+// open the studio window. The publish vocabulary itself is lane A's word-list
+// change; normalizeApplicationIntent drops the intent silently until it lands,
+// and this descriptor then starts routing without another edit.
+registerApplication({
+  id: "wensiQuanyong",
+  labelKey: "wensi_quanyong_label",
+  windowName: "wensiQuanyong",
+  acceptedItemKinds: ["text"],
+  acceptedIntents: ["open", "edit", "publish"],
+  recordsRuns: ["publish"],
+  handler: async (items, context) => {
+    const file = items[0];
+    if (!file) return { ok: false, reason: "missing" };
+    const studio = window.AISystem6WensiQuanyong;
+    if (context.intent === "publish") {
+      if (typeof studio?.openDraftFromText !== "function") return { ok: false, reason: "no-handler" };
+      const opened = await studio.openDraftFromText({ title: String(file.name || ""), body: String(file.body || "") });
+      if (!opened) return { ok: false, reason: "draft-failed" };
+      // The draft becomes the studio's working copy; the source was read.
+      return { ok: true, affectedObjectIds: [file.id], destination: "wensiQuanyong" };
+    }
+    if (typeof studio?.open !== "function") return { ok: false, reason: "no-handler" };
+    return { ok: !!(await studio.open()) };
   },
 });
 

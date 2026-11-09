@@ -4,7 +4,7 @@
 // disappeared). The fixtures are the smallest ledgers that show each class.
 
 import assert from "node:assert/strict";
-import { decodeLedger, diffLedgers, encodeLedger, formatDiffReport, mergeDiffs, NO_RULE, serializeLedger, UNDECLARED } from "../../tooling/lib/cascade-diff.mjs";
+import { acceptChanges, decodeLedger, diffLedgers, encodeLedger, formatDiffReport, mergeDiffs, NO_RULE, serializeLedger, UNDECLARED } from "../../tooling/lib/cascade-diff.mjs";
 
 const WINDOWS = "styles/10-windows.css :: .window-pane";
 const GLASS = "styles/70-liquid-glass.css :: body[data-theme=\"liquid-glass\"] .window-pane";
@@ -180,6 +180,25 @@ const baseline = ledger({
   const diff = diffLedgers(committed, current);
   assert.deepEqual(diff.counts, { flip: 0, moved: 0, derived: 0, appeared: 0, disappeared: 0 });
   assert.deepEqual(diff.flips, []);
+}
+
+// 10. Accepting a run writes exactly its flips and derived cells into the
+// baseline: a second diff is clean, an excused cell keeps the baseline value,
+// and a target that only appeared is not adopted.
+{
+  const committed = ledger({ [PANE]: { "padding-top": ["8px", WINDOWS], "padding-left": ["8px", WINDOWS] }, [PANE_B]: { "padding-top": ["8px", WINDOWS] } });
+  const current = ledger({
+    [PANE]: { "padding-top": ["12px", WINDOWS], "padding-left": ["8px", GLASS] },
+    [PANE_B]: { "padding-top": ["9px", WINDOWS] },
+    "body > new": { color: ["red", WINDOWS] },
+  });
+  const excuse = (path) => path === PANE_B;
+  const diff = diffLedgers(committed, current, { contextual: excuse });
+  const accepted = acceptChanges(committed, current, diff);
+  const again = diffLedgers(accepted, current, { contextual: excuse });
+  assert.equal(again.counts.flip + again.counts.derived, 0);
+  assert.equal(decodeLedger(accepted).get(PANE_B).cells.get("padding-top").value, "8px", "an excused cell keeps the baseline value");
+  assert.equal(decodeLedger(accepted).has("body > new"), false, "an appeared target is not adopted");
 }
 
 console.log("cascade-diff: ok");

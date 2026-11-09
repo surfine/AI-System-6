@@ -505,7 +505,7 @@ function renderModuleGauge(button, descriptor, state) {
   const wrap = document.createElement("span");
   wrap.className = "control-strip-gauge-wrap";
   const ratio = Math.max(0, Math.min(1, Number(gauge.ratio ?? 0)));
-  wrap.innerHTML = `<span class="control-strip-gauge" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(ratio * 100)}"><span class="control-strip-gauge-fill" style="--gauge-fill: ${ratio * 100}%"></span></span>`;
+  wrap.innerHTML = html`<span class="control-strip-gauge" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(ratio * 100)}"><span class="control-strip-gauge-fill" style="--gauge-fill: ${ratio * 100}%"></span></span>`;
   button.append(wrap);
 }
 

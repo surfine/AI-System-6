@@ -26,7 +26,7 @@
  *
  * Usage:
  *   npm run version:set -- 1.0.59
- *   npm run version:set -- 1.0.59 --build 20261013.1
+ *   npm run version:set -- 2.0.0-beta.3 --build 20261109.2
  *   npm run version:set -- --build 20261013.2        # stamp only, version stays
  *   npm run version:set -- 1.0.59 --dry-run          # say what would change
  *
@@ -72,8 +72,12 @@ for (let index = 0; index < args.length; index += 1) {
   }
 }
 
-if (nextVersion && !/^\d+\.\d+\.\d+$/.test(nextVersion)) {
-  console.error(`NO  version must be x.y.z; received ${nextVersion}.`);
+// A beta carries its prerelease suffix in package.json (`2.0.0-beta.3`); the
+// suffix is not a build detail to be dropped, so the identity accepts it. A
+// strict x.y.z test used to refuse every beta, which is how the beta version
+// ended up hand-swept across surfaces instead of set in one place.
+if (nextVersion && !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z][0-9A-Za-z.-]*)?$/.test(nextVersion)) {
+  console.error(`NO  version must be x.y.z or x.y.z-<prerelease>; received ${nextVersion}.`);
   process.exit(2);
 }
 if (nextBuild && !/^\d{8}\.\d+$/.test(nextBuild)) {

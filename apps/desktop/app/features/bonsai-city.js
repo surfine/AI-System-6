@@ -507,7 +507,7 @@ window.AISystem6BonsaiCityLoaded = true;
         <span class="bonsai-gauge-population" data-bonsai-status-population data-bonsai-population></span>
         <span class="bonsai-gauge-rci" data-bonsai-status-rci><button type="button" class="btn bonsai-rci-button" data-bonsai-rci-button aria-label="Demand"><canvas class="bonsai-rci-gauge" data-bonsai-rci-gauge width="32" height="20" role="img" aria-label="RCI"></canvas></button></span>
         <span class="bonsai-gauge-speed bonsai-speed-controls" role="group" aria-label="${html.raw(t("bonsai_speed"))}">
-          ${SPEEDS.map((speed) => html`<button class="btn mini-btn${state.speed === speed.value ? " is-selected" : ""}" type="button" data-bonsai-speed="${speed.value}" aria-pressed="${state.speed === speed.value}" aria-label="${html.raw(t(html`bonsai_speed_${speed.id}`))}" title="${html.raw(t(html`bonsai_speed_${speed.id}`))}">${speed.glyph}</button>`)}
+          ${html.raw(SPEEDS.map((speed) => html`<button class="btn mini-btn${state.speed === speed.value ? " is-selected" : ""}" type="button" data-bonsai-speed="${speed.value}" aria-pressed="${state.speed === speed.value}" aria-label="${html.raw(t(html`bonsai_speed_${speed.id}`))}" title="${html.raw(t(html`bonsai_speed_${speed.id}`))}">${speed.glyph}</button>`))}
         </span>
         <span class="bonsai-gauge-undo-redo">
           <button class="btn mini-btn" type="button" data-bonsai-action="undo" aria-label="${html.raw(t("bonsai_undo"))}">↶</button>
@@ -524,7 +524,7 @@ window.AISystem6BonsaiCityLoaded = true;
             <aside class="bonsai-rail" data-bonsai-rail aria-label="${html.raw(t("bonsai_toolbox"))}"></aside>
             <main class="bonsai-map-shell">
               <div class="bonsai-map-stack" data-bonsai-map-stack tabindex="0" aria-label="${html.raw(t("bonsai_city_map"))}">
-                ${MAP_LAYERS.map((layer) => html`<canvas class="bonsai-map-layer bonsai-map-layer-${layer}" data-bonsai-layer="${layer}" width="1" height="1" aria-hidden="true"></canvas>`)}
+                ${html.raw(MAP_LAYERS.map((layer) => html`<canvas class="bonsai-map-layer bonsai-map-layer-${layer}" data-bonsai-layer="${layer}" width="1" height="1" aria-hidden="true"></canvas>`))}
               </div>
               <section class="bonsai-minimap-card" data-bonsai-minimap-card aria-label="${html.raw(t("bonsai_minimap"))}" hidden></section>
               <section class="bonsai-tile-balloon" data-bonsai-tile-balloon aria-label="${html.raw(t("bonsai_tile_inspector"))}" hidden></section>
@@ -718,7 +718,7 @@ window.AISystem6BonsaiCityLoaded = true;
       <form class="bonsai-setup-form">
         <label><span>${html.raw(t("bonsai_city_name"))}</span><input type="text" data-bonsai-map-name maxlength="48"></label>
         <label><span>${html.raw(t("bonsai_map_size"))}</span><span class="select-wrap"><select data-bonsai-map-size><option value="64">64 × 64</option><option value="96">96 × 96</option><option value="128">128 × 128</option></select></span></label>
-        <label><span>${html.raw(t("bonsai_terrain_preset"))}</span><span class="select-wrap"><select data-bonsai-map-terrain>${TERRAIN_PRESETS.map((preset) => html`<option value="${preset}">${html.raw(t(html`bonsai_terrain_${preset}`))}</option>`)}<option value="${OSM_SOURCE}">${html.raw(t("bonsai_terrain_osm"))}</option></select></span></label>
+        <label><span>${html.raw(t("bonsai_terrain_preset"))}</span><span class="select-wrap"><select data-bonsai-map-terrain>${html.raw(TERRAIN_PRESETS.map((preset) => html`<option value="${preset}">${html.raw(t(html`bonsai_terrain_${preset}`))}</option>`))}<option value="${OSM_SOURCE}">${html.raw(t("bonsai_terrain_osm"))}</option></select></span></label>
         <fieldset class="bonsai-osm-fields" data-bonsai-osm-fields hidden>
           <legend>${html.raw(t("bonsai_osm_place"))}</legend>
           <div class="bonsai-osm-search">
@@ -2789,7 +2789,7 @@ window.AISystem6BonsaiCityLoaded = true;
       <div class="bonsai-minimap-title" data-bonsai-minimap-toggle>${html.raw(t("bonsai_minimap"))}</div>
       <canvas class="bonsai-minimap" data-bonsai-minimap width="1" height="1" tabindex="0" aria-label="${html.raw(t("bonsai_minimap"))}"></canvas>
       <div class="bonsai-overlay-chips" role="group" aria-label="${html.raw(t("bonsai_overlay"))}">
-        ${OVERLAYS.map((overlay) => html`<button class="bonsai-overlay-chip" type="button" data-bonsai-overlay-chip="${overlay}" aria-pressed="${state.overlay === overlay}">${html.raw(t(html`bonsai_overlay_${overlay.replaceAll("-", "_")}`))}</button>`)}
+        ${html.raw(OVERLAYS.map((overlay) => html`<button class="bonsai-overlay-chip" type="button" data-bonsai-overlay-chip="${overlay}" aria-pressed="${state.overlay === overlay}">${html.raw(t(html`bonsai_overlay_${overlay.replaceAll("-", "_")}`))}</button>`))}
       </div>`;
     card.hidden = false;
     card.classList.toggle("is-collapsed", state.minimapCollapsed);

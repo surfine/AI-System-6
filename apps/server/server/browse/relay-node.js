@@ -177,7 +177,9 @@ const engineFiles = new Map([
  */
 function deskFrameAncestors() {
   if (isPublicDeployment) {
-    return String(process.env.AI_SYSTEM6_PUBLIC_ORIGIN || "https://system6.aaronlau.me");
+    const configured = String(process.env.AI_SYSTEM6_PUBLIC_ORIGIN || "https://system6.aaronlau.me");
+    const desks = ["https://system6.aaronlau.me", "https://boot-system6.pages.dev"];
+    return [...new Set([configured, ...desks])].join(" ");
   }
   const port = Number(process.env.PORT || 4173);
   return `http://127.0.0.1:${port} http://localhost:${port}`;

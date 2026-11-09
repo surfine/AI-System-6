@@ -598,11 +598,11 @@ function renderTeachTextImageAttachments() {
   if (isFinderListMode(mode)) {
     const header = document.createElement("div");
     header.className = "image-manager-list-header";
-    header.innerHTML = `
-      <span>${escapeHtml(t("file_name"))}</span>
-      <span>${escapeHtml(t("kind"))}</span>
-      <span>${escapeHtml(t("size"))}</span>
-      <span>${escapeHtml(t("modified"))}</span>
+    header.innerHTML = html`
+      <span>${html.raw(t("file_name"))}</span>
+      <span>${html.raw(t("kind"))}</span>
+      <span>${html.raw(t("size"))}</span>
+      <span>${html.raw(t("modified"))}</span>
     `;
     teachTextAttachmentsListEl.append(header);
   }

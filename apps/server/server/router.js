@@ -87,6 +87,7 @@ const handleSearchAnswer = lazyHandler(() => require("./routes/search-answer.js"
 const handleSearchTools = lazyHandler(() => require("./routes/search-tools.js"), "./routes/search-tools.js", "handleSearchTools");
 const handleReader = lazyHandler(() => require("./routes/reader.js"), "./routes/reader.js", "handleReader");
 const handleAaronBlog = lazyHandler(() => require("./routes/aaron-blog.js"), "./routes/aaron-blog.js", "handleAaronBlog");
+const handleWensiQuanyong = lazyHandler(() => require("./routes/wensi-quanyong.js"), "./routes/wensi-quanyong.js", "handleWensiQuanyong");
 const handleTimeMachine = lazyHandler(() => require("./routes/time-machine.js"), "./routes/time-machine.js", "handleTimeMachine");
 const handleEndfieldSearch = lazyHandler(() => require("./routes/endfield-search.js"), "./routes/endfield-search.js", "handleEndfieldSearch");
 const handleEndfieldAsk = lazyHandler(() => require("./routes/endfield-ask.js"), "./routes/endfield-ask.js", "handleEndfieldAsk");
@@ -357,6 +358,14 @@ const localPrefixRoutes = [
   { method: "GET", prefix: "/api/search", handler: handleSearch },
   { method: "GET", prefix: "/api/reader", handler: handleReader },
   { method: "GET", prefix: "/api/aaron-blog", handler: handleAaronBlog },
+  // 文思泉涌's server door (P1): site descriptions, article lists, single
+  // article read/write, taxonomy. Deliberately NOT in publicPrefixRouteKeys —
+  // a public deployment answers 404 for the whole group (risk table: the
+  // fixed command table and the site folders are this Mac's own).
+  { method: "GET", prefix: "/api/wensi-quanyong", handler: handleWensiQuanyong },
+  { method: "PUT", prefix: "/api/wensi-quanyong", handler: handleWensiQuanyong },
+  // P2: preview renders an unsaved draft; check runs the site's rule packages.
+  { method: "POST", prefix: "/api/wensi-quanyong", handler: handleWensiQuanyong },
   { method: "GET", prefix: "/api/time-machine", handler: handleTimeMachine },
   { method: "GET", prefix: "/api/endfield/search", handler: handleEndfieldSearch },
   { method: "POST", prefix: "/api/endfield/search", handler: handleEndfieldSearch },

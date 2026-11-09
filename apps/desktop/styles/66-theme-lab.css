@@ -931,8 +931,20 @@ body[data-lineage~="platinum"] {
   margin-bottom: var(--theme-lab-button-row-margin-bottom, 12px);
 }
 
-.theme-lab-button-row .btn {
-  min-width: var(--theme-lab-button-min-width, 82px);
+/* The Pressed specimen poses the held state, which a still page cannot hold:
+   its active tokens become the era's --btn-pressed-* where the era has them
+   (Yosemite), and stay the era's own active tokens everywhere else. The row
+   carries those so the specimen can fall back without reading itself. */
+.theme-lab-button-row {
+  --theme-lab-held-bg: var(--btn-active-bg);
+  --theme-lab-held-fg: var(--btn-active-fg);
+  --theme-lab-held-shadow: var(--btn-active-shadow);
+}
+
+.theme-lab-button-row .theme-lab-press-demo {
+  --btn-active-bg: var(--btn-pressed-bg, var(--theme-lab-held-bg));
+  --btn-active-fg: var(--btn-pressed-fg, var(--theme-lab-held-fg));
+  --btn-active-shadow: var(--btn-pressed-shadow, var(--theme-lab-held-shadow));
 }
 
 .theme-lab-size-row {
@@ -1120,19 +1132,10 @@ body[data-lineage~="platinum"] {
   box-shadow: var(--field-focus-ring);
 }
 
-.theme-lab-form-grid input:disabled {
-  --theme-lab-disabled-control-border-color: var(--theme-lab-disabled-field-border-color);
-  --theme-lab-disabled-control-bg: var(--theme-lab-disabled-field-bg);
-  --theme-lab-disabled-control-fg: var(--theme-lab-disabled-field-fg);
-  --theme-lab-disabled-control-shadow: var(--theme-lab-disabled-field-shadow);
-}
-
-.theme-lab-form-grid select:disabled {
-  --theme-lab-disabled-control-border-color: var(--theme-lab-disabled-popup-border-color);
-  --theme-lab-disabled-control-bg: var(--control-disabled-bg);
-  --theme-lab-disabled-control-fg: var(--theme-lab-disabled-popup-fg);
-  --theme-lab-disabled-control-shadow: var(--theme-lab-disabled-popup-shadow);
-}
+/* Disabled fields are the shipping control: the shared disabled recipe
+   (60-responsive.css) dresses every raw input and select with the era's own
+   --system-disabled-fg and --control-disabled-field-bg, so the specimen no
+   longer carries a private token plumbing for it. */
 
 /* The view switcher specimen sat flush against the last field's bottom edge,
    so the two frames read as one broken control. */

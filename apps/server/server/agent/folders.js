@@ -109,10 +109,23 @@ function validateFolderPath(chosen) {
  * @property {string} path
  * @property {string} name
  * @property {string} level
+ * @property {string | null} purpose  what the grant is for, e.g. "blog-site"
+ *                                    (文思泉涌, lane C P1); null for the
+ *                                    ordinary Chooser grants that predate it
  * @property {string} grantedAt
  * @property {number} dev
  * @property {number} ino
  */
+
+/**
+ * Normalize the optional purpose tag: a short string or null. Callers that
+ * omit it (every grant made before 文思泉涌) keep whatever the grant had.
+ * @param {unknown} purpose
+ */
+function normalizePurpose(purpose) {
+  const text = String(purpose ?? "").trim().slice(0, 120);
+  return text || null;
+}
 
 /** @returns {{ version: number, folders: FolderGrant[] }} */
 function readRegistry() {
@@ -134,12 +147,15 @@ function writeRegistry(registry) {
 }
 
 /**
- * Grant a folder (or change an existing grant's level).
+ * Grant a folder (or change an existing grant's level). `purpose` is the
+ * optional 文思泉涌 tag ("blog-site"); every older caller omits it and the
+ * grant keeps its previous purpose.
  * @param {string} chosen
  * @param {string} level
+ * @param {unknown} [purpose]
  * @returns {FolderGrant}
  */
-function grantFolder(chosen, level) {
+function grantFolder(chosen, level, purpose) {
   const normalized = normalizeLevel(level);
   if (!normalized) throw folderError("bad_level", "Level must be read, propose or change.");
   const { real, dev, ino } = validateFolderPath(chosen);
@@ -147,6 +163,7 @@ function grantFolder(chosen, level) {
   const existing = registry.folders.find((folder) => folder.path === real);
   if (existing) {
     Object.assign(existing, { level: normalized, dev, ino });
+    if (purpose !== undefined) existing.purpose = normalizePurpose(purpose);
     writeRegistry(registry);
     return existing;
   }
@@ -156,6 +173,7 @@ function grantFolder(chosen, level) {
     path: real,
     name: path.basename(real),
     level: normalized,
+    purpose: normalizePurpose(purpose),
     grantedAt: new Date().toISOString(),
     dev,
     ino,
@@ -189,6 +207,41 @@ function resolveFolder(id) {
   if (!grant) throw folderError("folder_unknown", "No shared folder has that id.", 404);
   if (!grantIsAvailable(grant)) {
     throw folderError("folder_changed", "The shared folder moved, changed or is gone; share it again from the Chooser.", 409);
+  }
+  return grant;
+}
+
+/**
+ * The grant that covers an absolute directory with at least `minLevel`,
+ * re-validated now. Routes that work on fixed directories named by a site
+ * description (文思泉涌, lane C P1) never accept a caller-typed path, so
+ * their check is "a grant the writer chose covers this directory" — looked
+ * up by path — not "this id names a grant". The Chooser dialog stays the
+ * only door: if no grant covers the directory, the desk asks the writer to
+ * share it (with purpose "blog-site") before this answers.
+ * @param {string} chosen an absolute directory path
+ * @param {string} minLevel "read" | "propose" | "change"
+ * @returns {FolderGrant}
+ */
+function findGrantForPath(chosen, minLevel) {
+  const wanted = LEVELS.indexOf(normalizeLevel(minLevel));
+  if (wanted < 0) throw folderError("bad_level", "Level must be read, propose or change.");
+  const text = String(chosen || "").trim();
+  if (!path.isAbsolute(text) || text.includes("\0")) {
+    throw folderError("bad_folder", "Not an absolute folder path.");
+  }
+  const real = paths.realOrSelf(text);
+  const grant = readRegistry().folders.find((folder) => (
+    LEVELS.indexOf(normalizeLevel(folder.level)) >= wanted
+    && grantIsAvailable(folder)
+    && paths.isInside(real, folder.path)
+  ));
+  if (!grant) {
+    throw folderError(
+      "folder_grant_required",
+      `No shared folder covers ${text} at the "${normalizeLevel(minLevel)}" level; share it from the Chooser first.`,
+      403
+    );
   }
   return grant;
 }
@@ -252,9 +305,11 @@ module.exports = {
   LEVELS,
   capLevel,
   chooseFolderWithDialog,
+  findGrantForPath,
   grantFolder,
   listFolders,
   normalizeLevel,
+  normalizePurpose,
   resolveFolder,
   revokeFolder,
   setFolderLevel,

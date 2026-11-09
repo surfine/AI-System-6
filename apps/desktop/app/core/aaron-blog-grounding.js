@@ -16,6 +16,13 @@ window.AISystem6AaronBlogGrounding = (() => {
   const DEFAULT_LIMIT = 8;
 
   let scope = { type: "blog", id: "", title: "", date: "" };
+  // Which corpus the retrieval asks for (「多语料检索」). "aaronlau" is the
+  // desk's original corpus and the default: with it, requests carry no corpus
+  // parameter at all, so the server's answers are byte-identical to before.
+  // 文思泉涌's SideAsk anchor (its own lane) sets another id — say
+  // "appscope" — before asking; an unconfigured one comes back as
+  // corpus_not_configured and surfaces as a failed retrieval, not as silence.
+  let corpusId = "";
   let latest = {
     query: "",
     results: [],
@@ -160,6 +167,9 @@ window.AISystem6AaronBlogGrounding = (() => {
         query: normalized,
         limit: String(limit),
         ...(docId ? { doc: docId } : {}),
+        // The default corpus travels unnamed: the server's own default keeps
+        // every existing request byte-identical.
+        ...(corpusId && corpusId !== "aaronlau" ? { corpus: corpusId } : {}),
         signal: options.signal,
       });
       const payload = await response.json().catch(() => ({}));
@@ -212,7 +222,11 @@ window.AISystem6AaronBlogGrounding = (() => {
     if (!normalized) return latest;
     let result = await searchForSideAsk(normalized, options);
     if (!result.ok) {
-      const local = await searchLocally(normalized, options);
+      // The offline pack in IndexedDB is 潮汐信笺's own corpus; another
+      // corpus's question must not be answered from it.
+      const local = corpusId && corpusId !== "aaronlau"
+        ? { ok: false, error: "offline-pack-unavailable", results: [] }
+        : await searchLocally(normalized, options);
       if (local.ok) result = local;
       else result = { ...result, error: [result.error, local.error].filter(Boolean).join("; ") };
     }
@@ -254,6 +268,22 @@ window.AISystem6AaronBlogGrounding = (() => {
       ? { type: "post", id: String(next.id), title: String(next.title || ""), date: String(next.date || "") }
       : { type: "blog", id: "", title: "", date: "" };
     return { ...scope };
+  }
+
+  /**
+   * Point the retrieval at a corpus: "" (or "aaronlau") is the desk's own
+   * blog corpus and sends no corpus parameter; any other id travels as
+   * ?corpus= and the server decides whether it is configured. The corpus is
+   * the asker's choice, not the document's — it survives scope changes.
+   * @param {string} id
+   */
+  function setCorpus(id) {
+    corpusId = normalizeText(id);
+    return corpusId;
+  }
+
+  function getCorpus() {
+    return corpusId;
   }
 
   /**
@@ -311,6 +341,8 @@ window.AISystem6AaronBlogGrounding = (() => {
     snapshot,
     setScope,
     getScope,
+    setCorpus,
+    getCorpus,
   });
 })();
 // SideAsk's anchor registry (anchorHook in chat-messages.js): while

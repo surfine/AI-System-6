@@ -268,10 +268,12 @@
   // desk revokes every invitation at once. Servers are the other direction:
   // MCP servers this desk asks, whose answers land on the File Floppy (lazy
   // mcp-servers).
-  function section(kind, titleId, titleKey, html) {
+  function section(kind, titleId, titleKey, markup) {
     const node = el("section", `control-section chooser-section chooser-${kind}-section`);
     node.setAttribute("aria-labelledby", titleId);
-    node.innerHTML = `<h3 id="${titleId}" data-i18n="${titleKey}"></h3>${html}`;
+    // `markup` is the section's own trusted html; the shadowing of the global
+    // helper's name is why this parameter no longer calls itself html.
+    node.innerHTML = html`<h3 id="${titleId}" data-i18n="${titleKey}"></h3>${html.raw(markup)}`;
     node.querySelectorAll("[data-i18n]").forEach((item) => {
       item.textContent = tr(item.dataset.i18n);
     });

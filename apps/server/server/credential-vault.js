@@ -17,6 +17,10 @@ const {
 
 const execFileAsync = promisify(execFile);
 const keychainService = "AI System 6 Cloud Credential";
+// Micropub tokens are a different kind of secret from a model API key; they
+// get their own Keychain service so the owner can tell them apart in
+// Keychain Access, and the cloud credential flow is untouched.
+const siteTokenKeychainService = "AI System 6 Site Token";
 const stagedCredentials = new Map();
 const stagedCredentialTtlMs = boundedInteger(
   process.env.AI_SYSTEM6_STAGED_CREDENTIAL_TTL_MS,
@@ -97,12 +101,12 @@ function stagedSecret(credentialId, now = Date.now()) {
   return entry && entry.expiresAt > now ? entry.secret : "";
 }
 
-async function readKeychainCredential(credentialId) {
+async function readKeychainCredential(credentialId, service = keychainService) {
   if (process.platform !== "darwin") return "";
   try {
     const result = await execFileAsync("/usr/bin/security", [
       "find-generic-password",
-      "-s", keychainService,
+      "-s", service,
       "-a", credentialId,
       "-w",
     ], {
@@ -117,12 +121,12 @@ async function readKeychainCredential(credentialId) {
   }
 }
 
-async function writeKeychainCredential(credentialId, apiKey) {
+async function writeKeychainCredential(credentialId, apiKey, service = keychainService) {
   if (process.platform !== "darwin") return false;
   try {
     await execFileAsync("/usr/bin/security", [
       "add-generic-password",
-      "-s", keychainService,
+      "-s", service,
       "-a", credentialId,
       "-w", apiKey,
       "-U",
@@ -138,12 +142,12 @@ async function writeKeychainCredential(credentialId, apiKey) {
   }
 }
 
-async function deleteKeychainCredential(credentialId) {
+async function deleteKeychainCredential(credentialId, service = keychainService) {
   if (process.platform !== "darwin") return false;
   try {
     await execFileAsync("/usr/bin/security", [
       "delete-generic-password",
-      "-s", keychainService,
+      "-s", service,
       "-a", credentialId,
     ], {
       encoding: "utf8",
@@ -288,13 +292,116 @@ function discardStagedCredential(credentialId) {
   return id ? stagedCredentials.delete(id) : false;
 }
 
+/**
+ * A Micropub token's identity is the site and its endpoint, never the token
+ * itself. The id is derived, so the description does not carry even an id —
+ * and a token entered for one site cannot satisfy another.
+ * @param {string} siteId
+ * @param {string} endpoint
+ */
+function micropubCredentialId(siteId, endpoint) {
+  const identity = [
+    "micropub",
+    String(siteId || "").trim(),
+    String(endpoint || "").trim().toLowerCase(),
+  ].join("\n");
+  return `cred-${crypto.createHash("sha256").update(identity).digest("hex").slice(0, 32)}`;
+}
+
+/**
+ * Save one Micropub token to the Keychain. There is deliberately no staged
+ * path: a publish token has no "enter again to confirm" step, and a token the
+ * user typed once must not linger in memory waiting for a second request.
+ * @param {string} siteId
+ * @param {string} endpoint
+ * @param {string} token
+ * @returns {Promise<{ credentialId: string, persistence: "keychain" }>}
+ */
+async function persistMicropubToken(siteId, endpoint, token) {
+  const secret = String(token || "").trim();
+  if (!secret) {
+    throw credentialRequestError("Missing Micropub token.", 400, "missing_token");
+  }
+  if (Buffer.byteLength(secret, "utf8") > 8192) {
+    throw credentialRequestError("Micropub token is too large (8192 bytes max).", 413, "token_too_large");
+  }
+  const id = micropubCredentialId(siteId, endpoint);
+  const stored = await writeKeychainCredential(id, secret, siteTokenKeychainService);
+  if (!stored) {
+    throw credentialRequestError(
+      "Keychain could not save this token. Save it from the macOS desktop; no token is written to disk or to the site description.",
+      503,
+      "keychain_unavailable"
+    );
+  }
+  const readback = await readKeychainCredential(id, siteTokenKeychainService);
+  const hash = (value) => crypto.createHash("sha256").update(value).digest();
+  if (!readback || !crypto.timingSafeEqual(hash(secret), hash(readback))) {
+    await deleteKeychainCredential(id, siteTokenKeychainService);
+    throw credentialRequestError("Keychain verification failed; the token was not saved.", 503, "keychain_unavailable");
+  }
+  return { credentialId: id, persistence: "keychain" };
+}
+
+/**
+ * The token for one site and endpoint, or "" when none is stored. Callers must
+ * never put the result in a response, a log line or an error message.
+ * @param {string} siteId
+ * @param {string} endpoint
+ * @returns {Promise<string>}
+ */
+async function resolveMicropubToken(siteId, endpoint) {
+  const id = micropubCredentialId(siteId, endpoint);
+  return await readKeychainCredential(id, siteTokenKeychainService);
+}
+
+/**
+ * @param {string} siteId
+ * @param {string} endpoint
+ * @returns {Promise<boolean>}
+ */
+/**
+ * Remove one site's Micropub token from the Keychain. The token is never
+ * returned. Nothing stored is `{ deleted: false }`, not an error. A machine
+ * without the Keychain says so, the same way saving does.
+ * @param {string} siteId
+ * @param {string} endpoint
+ * @returns {Promise<{ deleted: boolean }>}
+ */
+async function deleteMicropubToken(siteId, endpoint) {
+  if (process.platform !== "darwin") {
+    throw credentialRequestError(
+      "Keychain could not delete this token. Delete it from the macOS desktop; no token is written to disk.",
+      503,
+      "keychain_unavailable"
+    );
+  }
+  const id = micropubCredentialId(siteId, endpoint);
+  stagedCredentials.delete(id);
+  const existing = await readKeychainCredential(id, siteTokenKeychainService);
+  if (!existing) return { deleted: false };
+  const deleted = await deleteKeychainCredential(id, siteTokenKeychainService);
+  if (!deleted) {
+    throw credentialRequestError(
+      "Keychain could not delete this token. Delete it from the macOS desktop; no token is written to disk.",
+      503,
+      "keychain_unavailable"
+    );
+  }
+  return { deleted: true };
+}
+
 module.exports = {
   createCredentialId,
   deleteCloudCredential,
+  deleteMicropubToken,
   discardStagedCredential,
+  micropubCredentialId,
   normalizedCredentialId,
   persistCloudCredential,
+  persistMicropubToken,
   resolveCloudCredential,
+  resolveMicropubToken,
   stageCloudCredential,
   stagedCredentialConfig: Object.freeze({
     maxEntries: stagedCredentialMaxEntries,

@@ -1,0 +1,58 @@
+{
+  "_template": {
+    "id": "hexo",
+    "label": "Hexo",
+    "note": "A starting description for a Hexo site. The values in double braces are the wizard's questions; the filled result is an ordinary git-static description, not a new channel. Hexo's own defaults are used: posts in source/_posts, drafts in source/_drafts, the default permalink 年/月/日/slug/, and source/images for media. If the site has a tag table (source/_data/tags.json), the wizard adds taxonomy.tags.source; without one the tag field accepts new names.",
+    "answers": [
+      { "key": "id", "label": "站点 id（小写字母/数字/连字符）", "required": true, "kind": "id" },
+      { "key": "label", "label": "界面显示名", "required": true, "kind": "string" },
+      { "key": "root", "label": "Hexo 站点根目录（绝对路径）", "required": true, "kind": "absolute-path" },
+      { "key": "siteUrl", "label": "站点网址（可选，上线确认用）", "required": false, "kind": "url" }
+    ]
+  },
+  "schema": 1,
+  "id": "{{id}}",
+  "label": "{{label}}",
+  "channel": {
+    "kind": "git-static",
+    "root": "{{root}}",
+    "commands": [],
+    "checkUrl": "{{siteUrl}}"
+  },
+  "contentTypes": {
+    "posts": {
+      "label": "文章",
+      "note": "Hexo 惯例：一篇文章一个 Markdown 文件；slug 决定文件名与网址，日期写进 front matter。改 slug 会换网址，站点若没有跳转插件，旧网址不会自动 301。",
+      "storage": {
+        "kind": "file-per",
+        "dir": "{{root}}/source/_posts",
+        "filename": "<slug>.md"
+      },
+      "fields": [
+        { "key": "title", "type": "string", "required": true, "maxLength": 80 },
+        { "key": "date", "type": "date", "required": true, "format": "YYYY-MM-DD HH:mm:ss" },
+        { "key": "updated", "type": "date" },
+        { "key": "slug", "type": "slug", "required": true },
+        { "key": "categories", "type": "tags", "optionsSource": "taxonomy.categories" },
+        { "key": "tags", "type": "tags", "optionsSource": "taxonomy.tags" }
+      ],
+      "url": {
+        "single": "{year}/{month}/{day}/{slug}/",
+        "dedupe": "existing"
+      },
+      "editor": "markdown",
+      "draftRule": {
+        "kind": "draft-dir",
+        "dir": "{{root}}/source/_drafts",
+        "note": "Hexo 的草稿放在 source/_drafts，发布时才进 source/_posts；目录不存在时列草稿为空，写第一篇时自动创建。"
+      }
+    }
+  },
+  "rulePackages": ["builtin-generic"],
+  "taxonomy": null,
+  "media": {
+    "dir": "{{root}}/source/images",
+    "urlPrefix": "/images/"
+  },
+  "maintenance": []
+}

@@ -1188,6 +1188,30 @@
     return payload;
   }
 
+  /**
+   * One read from 文思泉涌's local API, with the desk's own session. A refusal
+   * comes back as data (code + text), so the guest sees what stopped it.
+   * @param {string} path
+   */
+  async function blogToolJson(path, options = {}) {
+    const provider = window.AISystem6Capabilities;
+    if (!provider || typeof provider.requestService !== "function") throw new Error("blog_read_failed: service unavailable");
+    const response = await provider.requestService("wensi.api", {
+      path,
+      init: {
+        method: options.method || "GET",
+        headers: { Accept: "application/json", ...(options.body ? { "Content-Type": "application/json" } : {}) },
+        body: options.body,
+      },
+    });
+    let payload = null;
+    try { payload = await response.json(); } catch { payload = null; }
+    if (!response.ok) {
+      throw new Error(`blog_read_failed: ${response.status} ${String(payload?.error || payload?.code || "")}`.trim());
+    }
+    return payload;
+  }
+
   const tools = {
     ais6_get_desk_state() {
       const project = requireProject();
@@ -1210,6 +1234,99 @@
         // fewer, larger answers when the allowance is nearly gone, instead of
         // discovering it one refusal at a time.
         budget: deskBudget(),
+      };
+    },
+
+    /**
+     * 文思泉涌's read side, for a guest with the granted channel. The site is
+     * named explicitly: two sites are served, and picking one silently would
+     * let a run read the wrong blog.
+     */
+    async ais6_read_blog_articles(args) {
+      const site = String(args?.site || "").trim();
+      const type = String(args?.type || "").trim();
+      const limit = Math.min(Math.max(Number(args?.limit) || 20, 1), 50);
+      if (!site) {
+        const sites = await blogToolJson("/sites");
+        return { ok: false, code: "site_required", sites: (sites?.sites || []).map((entry) => ({ id: entry.id, label: entry.label })), note: "文思泉涌有两个站点，读哪一个是调用方要说的：args.site。" };
+      }
+      // No type named: read every article type the site declares (a collection
+      // type has no article list, so it is left out rather than erroring).
+      let types = type ? [type] : [];
+      if (!types.length) {
+        const directory = await blogToolJson("/sites");
+        const entry = (directory?.sites || []).find((row) => String(row?.id || "") === site);
+        if (!entry) throw new Error(`blog_read_failed: unknown site ${site}`);
+        types = Object.entries(entry.contentTypes || {})
+          .filter(([, definition]) => definition?.storage?.kind !== "json-collection")
+          .map(([id]) => id);
+      }
+      const articles = [];
+      for (const one of types) {
+        const payload = await blogToolJson(`/sites/${encodeURIComponent(site)}/articles?type=${encodeURIComponent(one)}`);
+        for (const row of Array.isArray(payload?.articles) ? payload.articles : []) articles.push({ ...row, type: row.type || one });
+      }
+      return {
+        ok: true,
+        site,
+        type: type || types.join(","),
+        count: articles.length,
+        articles: articles.slice(0, limit).map((row) => ({
+          type: row.type, path: row.path, title: row.title, date: row.date,
+          status: row.status, tags: row.tags, description: row.description,
+        })),
+        truncated: articles.length > limit,
+      };
+    },
+
+    async ais6_read_blog_article(args) {
+      const site = String(args?.site || "").trim();
+      const type = String(args?.type || "").trim();
+      const path = String(args?.path || "").trim();
+      if (!site || !type || !path) {
+        throw new Error("read_blog_article needs site, type and path.");
+      }
+      const payload = await blogToolJson(
+        `/sites/${encodeURIComponent(site)}/article?type=${encodeURIComponent(type)}&path=${encodeURIComponent(path)}`
+      );
+      const body = String(payload?.body || "");
+      const limit = 12_000;
+      return {
+        ok: true,
+        site,
+        type,
+        path: payload?.path || path,
+        status: payload?.status,
+        frontMatter: payload?.frontMatter || {},
+        body: body.length > limit ? body.slice(0, limit) : body,
+        truncated: body.length > limit,
+        url: payload?.url || "",
+      };
+    },
+
+    async ais6_propose_blog_fields(args) {
+      const site = String(args?.site || "").trim();
+      if (!site) {
+        const sites = await blogToolJson("/sites");
+        return { ok: false, code: "site_required", sites: (sites?.sites || []).map((entry) => ({ id: entry.id, label: entry.label })), note: "文思泉涌有两个站点，建议哪一个是调用方要说的：args.site。" };
+      }
+      const payload = await blogToolJson(`/sites/${encodeURIComponent(site)}/suggest`, {
+        method: "POST",
+        body: JSON.stringify({
+          title: args?.title,
+          slug: args?.slug,
+          cats: args?.cats,
+          tags: args?.tags,
+          series: args?.series,
+          filename: args?.filename,
+        }),
+      });
+      return {
+        ok: true,
+        site,
+        held: true,
+        suggestion: payload?.suggestion || null,
+        note: "挂起。点过才写入草稿。",
       };
     },
 
@@ -2780,10 +2897,20 @@
   const ENGINE_DESK_TOOLS = Object.freeze([
     "list_project_objects", "read_project_object", "search_project_sources",
     "read_file_floppy_item", "list_scrapbook_clips", "list_dictionary_terms",
+    "read_blog_articles", "read_blog_article", "propose_blog_fields",
   ]);
+  // Blog reads are the desk's site data, not the mounted project's: they still
+  // need the granted channel, but they are not scoped to whichever disk is open.
+  const BLOG_DESK_TOOLS = Object.freeze(new Set(["read_blog_articles", "read_blog_article", "propose_blog_fields"]));
 
   function runEngineDeskTool(name, args, projectId) {
     if (!ENGINE_DESK_TOOLS.includes(name)) throw new Error(`not_allowed: ${String(name).slice(0, 64)}`);
+    if (BLOG_DESK_TOOLS.has(name)) {
+      // No project stamp on a blog read: it describes a site, not a disk.
+      const call = tools[`ais6_${name}`];
+      if (typeof call !== "function") throw new Error(`not_implemented: ${name}`);
+      return call(args && typeof args === "object" ? args : {});
+    }
     const project = requireProject();
     if (String(project.id) !== String(projectId || "")) throw new Error("project_changed: the writer has another Project Hard Disk open now.");
     // The file channel speaks the desk-tool names (agent/desk-tools.js's own

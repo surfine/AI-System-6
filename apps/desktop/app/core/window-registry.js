@@ -119,7 +119,7 @@ const windowRegistry = Object.freeze({
   },
   clipboard: {
     app: "accessories",
-    width: ["--da-width-pad", 340],
+    width: ["--clipboard-window-width", 340],
     mobileOverlay: true,
     sidebar: true,
     // Read-only by nature; verified safe for the WM4 glance preview.

@@ -27,6 +27,11 @@ const keyboardShortcutRegistry = [
   { id: "clio-search", key: "k", action: "clio-search", display: "⌘K", labelKey: "clio_search", scope: ["clioTalk"] },
   { id: "new-office-document", key: "n", action: "new-office-document", display: "⌘N", labelKey: "new_office_document", keyCaps: true, scope: ["clioWrite", "clioChart", "clioStage"] },
   { id: "save", key: "s", action: "save-current", display: "⌘S", labelKey: "save_current", keyCaps: true, scope: ["teachText", "clioTalk", "quickDraft"] },
+  // 文思泉涌's two document keys. ⌘N and ⌘S mean the same thing here as in
+  // TeachText — a new draft, and a save that does not wait for the pause — so
+  // the rows print the keys the writer already knows.
+  { id: "wensi-new", key: "n", action: "wensi-new-draft", display: "⌘N", labelKey: "new_document", keyCaps: true, scope: ["wensiQuanyong"] },
+  { id: "wensi-save", key: "s", action: "wensi-save", display: "⌘S", labelKey: "save_current", keyCaps: true, scope: ["wensiQuanyong"] },
   { id: "save-copy", key: "s", shift: true, action: "save-copy", display: "⇧⌘S", labelKey: "save_copy", keyCaps: true, scope: ["teachText"] },
   { id: "close-window", key: "w", action: "close-active-window", display: "⌘W", labelKey: "close_window", keyCaps: true, scope: "global" },
   // The desk's windows, in the order Mac OS X walks them: front-most first,
@@ -106,6 +111,11 @@ const keyboardShortcutRegistry = [
   { id: "route-advance", key: "arrowright", shift: true, action: "advance-writing-route", display: "⇧⌘→", labelKey: "advance_writing_route", keyCaps: true, scope: ["teachText"] },
   { id: "writing-preview", key: "p", shift: true, action: "toggle-writing-preview", display: "⇧⌘P", labelKey: "preview", keyCaps: true, scope: ["teachText", "quickDraft"] },
   { id: "writing-focus", key: "f", option: true, action: "cycle-writing-focus", display: "⌥⌘F", labelKey: "focus_mode_cycle", scope: ["teachText", "quickDraft"] },
+  // 专注模式开关: one checked row for the writer who wants focus on or off,
+  // beside the ⌥⌘F cycle that walks all three states. Both read and write the
+  // one stored preference (ai-system6-writing-focus), so the checkmark, the
+  // cycle and the desk-quieting agree.
+  { id: "writing-focus-toggle", key: "f", option: true, shift: true, action: "toggle-writing-focus", display: "⇧⌥⌘F", labelKey: "focus_mode_toggle", scope: ["teachText"] },
   // 文字亮室. The three views take the scoped number keys ClioChart already
   // uses; suppressInEditable is load-bearing here because the FatBits cells in
   // the grain view are editable, and ⌘1 inside one must type nothing.
@@ -1266,6 +1276,49 @@ async function openTextDocumentFromDisk() {
   });
 }
 
+/**
+ * 发布到博客…: hand the open manuscript to 文思泉涌 as a new draft.
+ *
+ * The handoff carries the words themselves, not a pointer: the blog's title,
+ * slug, tags and checks are the blog app's job, and its descriptor accepts a
+ * text item with the "publish" intent (the application registry records the
+ * run). Nothing is written to any site until the writer confirms a publish
+ * there — this action only opens the door.
+ */
+async function publishActiveManuscriptToBlog() {
+  const win = document.querySelector('.window.is-active:not(.is-hidden)[data-window="teachText"]')
+    || document.querySelector('.window:not(.is-hidden)[data-window="teachText"]');
+  const textarea = win?.querySelector(".mde-input") || win?.querySelector("textarea");
+  const body = String(textarea?.value || "").trim();
+  const dispatch = window.AISystem6ApplicationRegistry?.dispatchApplicationIntent;
+  if (!body || typeof dispatch !== "function") {
+    // Say it instead of doing nothing: the menu row is availability-gated, so
+    // reaching here means the manuscript emptied while the menu was open.
+    if (typeof window.showBalloonHelp === "function" && win) {
+      window.showBalloonHelp(win, "balloon_publish_no_manuscript", { force: true, autoHideMs: 3200 });
+    }
+    return { ok: false, reason: "no-manuscript" };
+  }
+  const title = String(win?.querySelector(".win-title")?.textContent || "").trim();
+  // The studio is lazy: load it before handing the draft over, or its handler
+  // answers "no-handler" and the menu row looks broken in silence.
+  try {
+    await window.AISystem6Runtime?.getLazyCommand?.("open-wensi-quanyong")?.ensure?.();
+  } catch (error) {
+    console.warn(error);
+  }
+  // Leaving a dirty manuscript for another app asks the writer to save first
+  // (prepareFinderModeForApp's prompt). That pause is the product working:
+  // awaiting here lets the writer answer it, and a cancelled prompt simply
+  // returns without opening anything.
+  const result = await dispatch("wensiQuanyong", {
+    intent: "publish",
+    items: [{ id: `manuscript-${Date.now()}`, type: "text", name: title, body, title }],
+    sourceAppId: "teachText",
+  });
+  return result;
+}
+
 function cycleWritingFocusMode() {
   const active = document.activeElement;
   const textarea = active?.classList?.contains("mde-input")
@@ -1276,6 +1329,24 @@ function cycleWritingFocusMode() {
   const mode = mdeCycleFocusMode(textarea);
   window.AISystem6WritingFocus?.syncButtons?.(mode);
   textarea.focus();
+}
+
+// The checked 专注模式 row: off <-> sentence. The mode itself lives where the
+// cycle and the surfaces already keep it -- mdeSetFocusMode stores the
+// preference (ai-system6-writing-focus), so nothing here owns a second copy.
+function toggleWritingFocusMode() {
+  const active = document.activeElement;
+  const textarea = active?.classList?.contains("mde-input")
+    ? active
+    : document.querySelector(".window.is-active:not(.is-hidden) .mde-input:not(.is-hidden)");
+  if (!textarea) return;
+
+  const surface = textarea.closest(".mde-surface");
+  const current = surface?.dataset.mdeFocusMode || mdeStoredFocusMode();
+  const mode = mdeSetFocusMode(textarea, current === "off" ? "sentence" : "off");
+  window.AISystem6WritingFocus?.syncButtons?.(mode);
+  textarea.focus();
+  return mode;
 }
 
 function toggleWritingPreviewForActiveWindow() {
@@ -1539,8 +1610,10 @@ function getApplicationActionHandlers() {
     "scrapbook-keep-reading": () => keepScrapReadingProposal(),
     "scrapbook-discard-reading": () => discardScrapReadingProposal(),
     "toggle-question-preview": () => toggleTeachTextSurfacePreview("questionSheet"),
+    "publish-to-blog": publishActiveManuscriptToBlog,
     "toggle-writing-preview": toggleWritingPreviewForActiveWindow,
     "cycle-writing-focus": cycleWritingFocusMode,
+    "toggle-writing-focus": toggleWritingFocusMode,
     // MacWrite's ruler, narrowed to the one thing Aaron kept: line spacing.
     // Applies to every writing surface's paper and preview alike; see
     // mdeSetLineSpacing in markdown-editor.js.

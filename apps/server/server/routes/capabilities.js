@@ -41,20 +41,6 @@ function handleCapabilities(_req, res) {
   const cloudFilesAvailable = !isPublicDeployment || publicAccessReady;
   const macSharedAvailable = sharedCloud;
   const sharedCloudBudget = sharedCloudBudgetConfig();
-  let safariHttpLocalOrigin = "";
-  try {
-    const candidate = new URL(String(process.env.AI_SYSTEM6_HTTP_LOCAL_ORIGIN || ""));
-    if (
-      candidate.protocol === "http:"
-      && !candidate.username
-      && !candidate.password
-      && candidate.pathname === "/"
-      && !candidate.search
-      && !candidate.hash
-    ) {
-      safariHttpLocalOrigin = candidate.origin;
-    }
-  } catch {}
   const browse = browseConfig();
   sendJson(res, 200, {
     deployment_profile: deploymentProfile,
@@ -82,7 +68,6 @@ function handleCapabilities(_req, res) {
         : "",
       turnstile_action: isPublicDeployment ? TURNSTILE_ACTION : "",
       session_ttl_seconds: isPublicDeployment ? SESSION_TTL_SECONDS : 0,
-      safari_http_local_origin: isPublicDeployment ? safariHttpLocalOrigin : "",
       shared_cloud: {
         available: sharedCloud,
         daily_request_limit: sharedCloud ? sharedCloudBudget.dailyRequestLimit : 0,

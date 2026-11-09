@@ -141,7 +141,7 @@ function renderQuickDraftListenView() {
   const state = ensureQuickDraftListenState();
   const supported = quickDraftListenSupported();
   if (!state.beats.length) {
-    refs.preview.innerHTML = `<div class="draft-desk-listen"><p class="draft-desk-listen-empty">${escapeHtml(t("quick_draft_listen_empty"))}</p></div>`;
+    refs.preview.innerHTML = html`<div class="draft-desk-listen"><p class="draft-desk-listen-empty">${html.raw(t("quick_draft_listen_empty"))}</p></div>`;
     return;
   }
   const beats = state.beats.map((beat) => {

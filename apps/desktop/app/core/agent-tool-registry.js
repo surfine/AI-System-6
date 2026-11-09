@@ -47,6 +47,11 @@
     tool("dictionary.list", "List dictionary terms", "列出词典条目", "read", { bridge: ["list_dictionary_terms"] }),
     tool("chart.range", "Read a chart range", "读取图表范围", "read"),
     tool("write.read", "Read the writing windows", "读取写作窗口", "read"),
+    // 文思泉涌 (D7): the site's own material — drafts, articles, photo
+    // collection, tag table, the prediction ledger. Listed before the bridge
+    // answers it, which is why it shows as not selectable today.
+    tool("blog.read", "Read the blog site", "读取博客站点", "read", { bridge: ["read_blog_articles", "read_blog_article"] }),
+    tool("blog.suggest", "Suggest blog fields", "建议博客字段", "read", { bridge: ["propose_blog_fields"] }),
     tool("chart.read", "Read ClioChart", "读取 ClioChart", "read"),
     tool("stage.read", "Read ClioStage", "读取 ClioStage", "read"),
     // Proposals. The bridge is read-only, so none is available through it yet.
@@ -56,6 +61,9 @@
     tool("propose.revision", "Propose an errand revision", "提议跑腿修订", "propose"),
     tool("propose.format", "Propose a formatting candidate", "提议格式类候选", "propose"),
     tool("propose.chart", "Propose a new chart", "提议新图表", "propose"),
+    // A blog draft is a proposal in the strongest sense: it lands in the
+    // drafts folder and waits, and publishing is still the writer's click.
+    tool("propose.blog-draft", "Propose a blog draft", "提议一篇博客草稿", "propose", { proposalKind: "new-document", bridge: ["propose_blog_fields"] }),
   ]);
 
   const byId = new Map(TOOLS.map((entry) => [entry.id, entry]));

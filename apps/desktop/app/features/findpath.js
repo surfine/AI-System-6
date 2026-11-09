@@ -128,10 +128,10 @@ function renderFindPathResults() {
   const resultsHeader = document.createElement("div");
   resultsHeader.className = "find-path-results-header";
   resultsHeader.setAttribute("aria-hidden", "true");
-  resultsHeader.innerHTML = `
-    <span>${escapeHtml(t("searcher_column_name"))}</span>
-    <span class="find-path-header-relevance">${escapeHtml(t("searcher_column_relevance"))}</span>
-    <span>${escapeHtml(t("searcher_column_site"))}</span>
+  resultsHeader.innerHTML = html`
+    <span>${html.raw(t("searcher_column_name"))}</span>
+    <span class="find-path-header-relevance">${html.raw(t("searcher_column_relevance"))}</span>
+    <span>${html.raw(t("searcher_column_site"))}</span>
   `;
   findPathResultsEl.append(resultsHeader);
 
@@ -147,17 +147,17 @@ function renderFindPathResults() {
     // Rank-mapped relevance bar (Sherlock idiom): the value is the result's
     // rank order, not a score. Only Platinum / Aqua appearance CSS draws it.
     item.style.setProperty("--find-path-relevance", `${Math.max(12, 96 - index * 7)}%`);
-    item.innerHTML = `
-      <strong>${escapeHtml(result.title)}</strong>
+    item.innerHTML = html`
+      <strong>${result.title}</strong>
       <span class="find-path-result-relevance" aria-hidden="true"></span>
-      <span>${escapeHtml(result.site || result.url)}</span>
-      <p>${escapeHtml(result.snippet || "")}</p>
-      ${targetLanguage || hasTranslation ? `
+      <span>${result.site || result.url}</span>
+      <p>${result.snippet || ""}</p>
+      ${html.raw(targetLanguage || hasTranslation ? html`
         <div class="find-path-result-actions">
-          ${targetLanguage && !hasTranslation ? `<button class="btn mini-btn" type="button" data-find-path-translate="${index}">${escapeHtml(t("translate_result"))}</button>` : ""}
+          ${html.raw(targetLanguage && !hasTranslation ? html`<button class="btn mini-btn" type="button" data-find-path-translate="${index}">${html.raw(t("translate_result"))}</button>` : "")}
         </div>
-      ` : ""}
-      ${hasTranslation ? `<div class="find-path-translation"><b>${escapeHtml(formatTranslationMeta(result.translationLanguage, result.translationCreatedAt, "Searcher", result.translationModel))}</b><p>${escapeHtml(result.translation)}</p></div>` : ""}
+      ` : "")}
+      ${html.raw(hasTranslation ? html`<div class="find-path-translation"><b>${formatTranslationMeta(result.translationLanguage, result.translationCreatedAt, "Searcher", result.translationModel)}</b><p>${result.translation}</p></div>` : "")}
     `;
     item.setAttribute("aria-pressed", index === selectedFindPathIndex ? "true" : "false");
     item.dataset.findPathIndex = String(index);

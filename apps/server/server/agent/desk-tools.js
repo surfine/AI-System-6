@@ -45,6 +45,14 @@ const DESK_TOOLS = Object.freeze({
   read_file_floppy_item: Object.freeze(["name", "offset", "limit"]),
   list_scrapbook_clips: Object.freeze(["limit"]),
   list_dictionary_terms: Object.freeze([]),
+  // 文思泉涌 (D7, read-only): the blog sites this desk serves. The page answers
+  // them from the same local API the window uses, so the folder grants the
+  // writer already shared are the only door; nothing here writes or publishes.
+  read_blog_articles: Object.freeze(["site", "type", "limit"]),
+  read_blog_article: Object.freeze(["site", "type", "path"]),
+  // Held field suggestion. The page returns slug, category, series and tags
+  // and writes nothing; the writer clicks them into the draft.
+  propose_blog_fields: Object.freeze(["site", "title", "slug", "cats", "tags", "series", "filename"]),
 });
 
 const DESK_LIMITS = Object.freeze({

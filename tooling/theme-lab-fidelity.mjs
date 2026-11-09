@@ -261,7 +261,15 @@ async function prepareSources(manifest, options) {
     if (actualHash !== source.sha256) {
       throw new Error(`SHA-256 mismatch for ${source.id}: expected ${source.sha256}, got ${actualHash}`);
     }
-    const image = await loadImage(path);
+    // node-canvas ignores embedded ICC profiles. A 10.6+ capture carries the
+    // capturing Mac's display profile ("Color LCD"), so its raw pixels are in
+    // display space: the 10.10 zoom lamp reads #33c748 raw and #27c93f, Apple's
+    // art value, once converted. A source marked colorProfile "embedded" is
+    // converted to sRGB first, the way the lamp sprites were cut
+    // (internal/evidence/drafts/lamp-fidelity/SOURCES.md).
+    const image = source.colorProfile === "embedded"
+      ? await loadImage(await (await import("sharp")).default(path).toColourspace("srgb").png().toBuffer())
+      : await loadImage(path);
     if (image.width !== source.width || image.height !== source.height) {
       throw new Error(`Dimensions mismatch for ${source.id}: expected ${source.width}x${source.height}, got ${image.width}x${image.height}`);
     }
@@ -507,12 +515,22 @@ function analyzeGeometryAndMaterial(referenceCanvas, currentCanvas, options = {}
   distanceSum += uncovered * 8;
 
   // Material error: interior (non-edge) pixels of the reference, colour delta.
+  // materialMask "mark" scores the glyph's ink instead: a transparent control
+  // (Lion's full-screen arrows) shows the bar beneath it, and the bar is
+  // another specimen's material.
+  const ink = options.materialMask === "mark"
+    ? (() => {
+      const reference = markMask(refLum, width, height, options.mark).mask;
+      const current = markMask(curLum, width, height, options.mark).mask;
+      return reference.map((value, i) => value || current[i]);
+    })()
+    : null;
   let materialSum = 0;
   let materialCount = 0;
   for (let y = 2; y < height - 2; y += 1) {
     for (let x = 2; x < width - 2; x += 1) {
       const i = y * width + x;
-      if (refEdges[i] || curEdges[i] || refText[i]) continue;
+      if (ink ? !ink[i] : (refEdges[i] || curEdges[i] || refText[i])) continue;
       const offset = i * 4;
       materialSum += (
         Math.abs(referenceData[offset] - currentData[offset])
@@ -1303,7 +1321,7 @@ try {
     const geometryMaterial = analyzeGeometryAndMaterial(
       aligned.referenceCanvas,
       aligned.currentCanvas,
-      { geometryMask: specimen.geometryMask },
+      { geometryMask: specimen.geometryMask, materialMask: specimen.materialMask, mark: specimen.mark },
     );
     const markAnalysis = specimen.mark
       ? analyzeMark(aligned.referenceCanvas, aligned.currentCanvas, specimen.mark)

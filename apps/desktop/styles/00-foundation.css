@@ -39,6 +39,9 @@
   --review-desk-results-radius: 0;
   --review-desk-results-bg: var(--paper);
   --review-desk-results-shadow: none;
+  /* 文思泉涌 states the system has no token for; eras may retint both. */
+  --wensi-required-ink: #b3261e;
+  --wensi-new-tag-bg: #ffe9a8;
   --review-surface-bg: var(--paper);
   --review-desk-splitter-hover-bg: var(--ink);
   --review-locked-pane-bg: transparent;
@@ -503,6 +506,10 @@
   --system-button-mini-padding-x: 7px;
   --system-button-padding-y: 2px;
   --system-button-padding-x: 12px;
+  /* The push-button width floor, answered per era by its own block: 82px is
+     what the System 6, System 7, NeXTSTEP, Big Sur and Liquid Glass references
+     measure (the Theme Lab default-ok crop). */
+  --theme-button-min-width: 82px;
   --control-hit-target: 28px;
   --control-motion-fast-in: 80ms;
   --control-motion-fast-out: 60ms;
@@ -1679,6 +1686,9 @@
   --da-width-dial: 300px;
   --da-width-pad: 340px;
   --da-width-wide-pad: 380px;
+  /* The Clipboard is a pad unless an era's buttons need more: its four
+     buttons sit on one line and none may be narrower than its label. */
+  --clipboard-window-width: var(--da-width-pad);
   /* Native WIND -16000 is 129×18 in compact form and its PICT mode glyphs
      are 23×23, 24×22, and 14×17. Preserve that 1× relationship. */
   --alarm-clock-window-width: 130px;
@@ -1905,10 +1915,7 @@
   --print-directory-heading-border: var(--system-border);
   --print-directory-table-border: 1px solid var(--ink);
   --print-directory-table-heading-bg: var(--shade);
-  --file-preview-border: var(--system-border);
-  --file-preview-bg: var(--paper);
   --file-preview-radius: 0;
-  --file-preview-shadow: none;
   --project-cd-grid-bg: transparent;
   --project-cd-grid-border: 0;
   --project-cd-grid-radius: 0;
@@ -2110,6 +2117,10 @@ body[data-theme] {
    the generic family was quoted ("serif") and so never applied. Each era's
    own stack already carries its CJK face behind the Latin one. */
 
+  /* Modern-metric tokens moved here from 60-responsive (2026-11-05 audit):
+     css-no-pingpong puts the token vocabularies in the foundation; the
+     appearance layer's body[data-theme]:not(.use-modern-fonts) still wins
+     over this block for non-modern states. */
 body.use-modern-fonts {
   --ui-font: var(--modern-sans-font);
   --title-font: var(--modern-sans-font);
@@ -2138,6 +2149,30 @@ body.use-modern-fonts {
      stroke therefore needs its own optical compensation to remain legible. */
   --menu-system-icon-stroke-width: 2.25;
   --menu-system-icon-pixel-run-expansion: 1.25;
+
+  --system-readable-min: 14px;
+  --system-title-size: 13px;
+  --system-control-size: 14px;
+  --system-text-size: 14px;
+  --system-caption-size: 12px;
+  --system-leading: 1.45;
+  --system-window-padding: 11px;
+  --system-control-min-height: 30px;
+  --system-button-min-height: 29px;
+  --system-button-padding-y: 3px;
+  --system-button-padding-x: 15px;
+  --system-menu-height: 26px;
+  --system-titlebar-height: 23px;
+  --system-titlebar-title-height: 14px;
+  --system-titlebar-font-size: 13px;
+  --system-check-size: 14px;
+  --system-title-weight: 500;
+  --system-emphasis-weight: 500;
+  --system-select-control-font-weight: 400;
+  --system-strong-weight: 600;
+  --writing-editor-font-size: 15px;
+  --writing-editor-line-height: 1.58;
+  font-synthesis-weight: none;
 }
 
 body.use-modern-fonts .print-directory-preview,
@@ -2311,6 +2346,7 @@ textarea,
   user-select: text;
 }
 
+/* min-width: 0 moved here from 60-responsive (2026-11-05 audit: the responsive copy was the only declaration left). */
 .menu-bar {
   height: var(--menu-bar-height);
   flex-shrink: 0;
@@ -2331,6 +2367,7 @@ textarea,
   backdrop-filter: var(--menu-bar-backdrop-filter);
   -webkit-backdrop-filter: var(--menu-bar-backdrop-filter);
   overflow: visible;
+  min-width: 0;
 }
 
 .menu-bar,
@@ -2366,6 +2403,8 @@ body.has-system-modal .menu-bar {
   /* A finger can press a title and drag down onto an item. The bar never
      scrolls, so the browser keeps no pan here and does not cancel the drag. */
   touch-action: none;
+  border-radius: var(--menu-button-radius);
+  transition: var(--menu-button-transition);
 }
 
 /* System 6 reverses a menu title only while its menu is pulled down. The old
@@ -2388,6 +2427,7 @@ body.has-system-modal .menu-bar {
   }
 }
 
+/* Popover scroll bounds moved here from 60-responsive (2026-11-05 audit): the responsive copy's two properties were its only content. */
 .menu-popover {
   display: none;
   position: absolute;
@@ -2413,6 +2453,8 @@ body.has-system-modal .menu-bar {
   -webkit-backdrop-filter: var(--menu-panel-backdrop-filter);
   z-index: var(--z-system-menu-popover);
   scrollbar-gutter: stable;
+  max-height: min(560px, calc(100vh - 34px));
+  overflow: auto;
 }
 
 .menu.is-open .menu-popover {
@@ -2581,6 +2623,8 @@ body.has-system-modal .menu-bar {
   box-shadow: var(--menu-panel-shadow);
   min-width: 120px;
   scrollbar-gutter: stable;
+  max-height: min(560px, calc(100vh - 34px));
+  overflow: auto;
 }
 
 .menu-sub-popover {
@@ -3134,8 +3178,8 @@ body[data-menu-bar-model="system-owned"] {
   width: 84px;
   height: 56px;
   border: var(--happy-mac-face-border-width) solid var(--happy-mac-border-color);
-  border-radius: 2px;
-  background: var(--paper);
+  border-radius: var(--happy-mac-face-radius, 2px);
+  background: var(--happy-mac-face-bg, var(--paper));
   box-shadow: var(--happy-mac-face-shadow);
   overflow: hidden;
 }

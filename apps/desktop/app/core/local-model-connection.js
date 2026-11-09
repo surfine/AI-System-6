@@ -306,7 +306,6 @@ function localConnectionErrorKey(error) {
   if (/ollama_cors_or_offline|ollama_bad_response/.test(message)) return "local_connection_ollama_unavailable";
   if (/ollama_model_missing/.test(message)) return "local_connection_ollama_no_models";
   if (/lmstudio_auth_failed/.test(message)) return "local_connection_auth_failed";
-  if (/lmstudio_safari_http_unavailable/.test(message)) return "local_connection_safari_http_unavailable";
   if (/lmstudio_safari_unsupported/.test(message)) return "local_connection_safari_unsupported";
   if (/lmstudio_browser_permission_denied/.test(message)) return "local_connection_browser_permission_denied";
   if (/lmstudio_v1_required/.test(message)) return "local_connection_v1_required";
@@ -414,14 +413,9 @@ function renderLocalConnectionStatus(state, data = null) {
   if (state === "local_connection_waiting" && ollama) state = "local_connection_ollama_waiting";
   if (state === "local_connection_waiting" && window.AISystem6LocalLMStudio?.isSafariPublicWebUnsupported?.()) {
     state = "local_connection_safari_unsupported";
-  } else if (state === "local_connection_waiting" && window.AISystem6LocalLMStudio?.isSafariHttpLocalMode?.()) {
-    state = "local_connection_safari_http_ready";
   }
-  const safariUnsupported = [
-    "local_connection_safari_unsupported",
-    "local_connection_safari_http_unavailable",
-  ].includes(state);
-  const idleState = ["local_connection_waiting", "local_connection_ollama_waiting", "local_connection_safari_http_ready"].includes(state);
+  const safariUnsupported = state === "local_connection_safari_unsupported";
+  const idleState = ["local_connection_waiting", "local_connection_ollama_waiting"].includes(state);
   status.dataset.state = state === "ready" ? "ready" : state.startsWith("local_connection_") && !idleState ? "unavailable" : "";
   syncLocalModelPhase(state === "ready");
   const hasToken = !!(typeof localApiTokenInput !== "undefined" && localApiTokenInput?.value?.trim());
@@ -433,7 +427,7 @@ function renderLocalConnectionStatus(state, data = null) {
     button.disabled = true;
     return;
   }
-  button.disabled = false;
+  button.disabled = safariUnsupported;
   if (state === "ready") {
     status.textContent = t(
       ollama ? "local_connection_ollama_ready" : hasToken ? "local_connection_ready" : "local_connection_ready_no_token",
@@ -449,9 +443,7 @@ function renderLocalConnectionStatus(state, data = null) {
     button.textContent = t(ollama ? "disconnect_ollama" : "disconnect_local_model");
     return;
   }
-  button.textContent = safariUnsupported
-    ? t("open_safari_http_local")
-    : t(ollama ? "connect_ollama" : "open_and_connect_lm_studio");
+  button.textContent = t(ollama ? "connect_ollama" : "open_and_connect_lm_studio");
   status.textContent = t(state === "disconnected"
     ? (ollama ? "local_connection_ollama_disconnected" : "local_connection_disconnected")
     : state);
@@ -471,67 +463,9 @@ function renderLocalConnectionStatus(state, data = null) {
   }
 }
 
-async function copyTextToClipboard(text) {
-  if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(text);
-    return;
-  }
-  const copyTarget = document.createElement("textarea");
-  copyTarget.className = "visually-hidden";
-  copyTarget.value = text;
-  document.body.append(copyTarget);
-  try {
-    copyTarget.select();
-    if (!document.execCommand("copy")) throw new Error("copy failed");
-  } finally {
-    copyTarget.remove();
-  }
-}
-
-// Safari will not let an HTTPS page navigate straight to the plain-HTTP local
-// host (mixed-content navigation), so a `location.assign` to
-// local.system6.aaronlau.me silently fails. Hand the user the address on the
-// clipboard plus a fresh tab to paste it into instead of a dead redirect.
-async function openSafariHttpLocalEntry() {
-  // Safari blocks window.open once the click gesture has been broken by an
-  // await, so the blank paste tab must open synchronously here. Keep the
-  // handle so a missing or invalid local origin can close it again.
-  const blankTab = window.open("", "_blank");
-  const capabilities = await window.AISystem6PublicAccess?.getCapabilities?.();
-  const origin = capabilities?.public_access?.safari_http_local_origin || "";
-  let url;
-  try {
-    url = window.AISystem6LocalLMStudio.httpLocalEntryUrl(origin);
-  } catch (error) {
-    blankTab?.close();
-    throw error;
-  }
-  // [lane-honesty] Clipboard writes can be denied by the browser; the modal
-  // must not claim "copied" unless the write actually landed.
-  let clipboardCopied = true;
-  try {
-    await copyTextToClipboard(url);
-  } catch {
-    clipboardCopied = false;
-  }
-  const copyStatusKey = clipboardCopied ? "safari_http_local_copied" : "safari_http_local_not_copied";
-  // The address and the paste hint are instructions to keep on screen while the
-  // other tab is used, which is exactly what a dialog stops.
-  pushSystemNotification(`${t(copyStatusKey, url)}\n\n${t("safari_http_local_paste_hint")}`);
-}
-
 async function connectLocalLmStudio(options = {}) {
   if (window.AISystem6LocalLMStudio?.isSafariPublicWebUnsupported?.()) {
-    if (options.toggle !== false) {
-      try {
-        await openSafariHttpLocalEntry();
-      } catch (error) {
-        renderLocalConnectionStatus(localConnectionErrorKey(error));
-        if (!options.silent) setStatus(t(localConnectionErrorKey(error)), { notify: false });
-      }
-    } else {
-      renderLocalConnectionStatus("local_connection_safari_unsupported");
-    }
+    renderLocalConnectionStatus("local_connection_safari_unsupported");
     return null;
   }
   if (localLmStudioConnectionEnabled && options.toggle !== false) {

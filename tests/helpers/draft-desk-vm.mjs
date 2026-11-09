@@ -22,6 +22,9 @@ const sourcePaths = [
   "app/features/quick-draft-intake.js",
   "app/features/quick-draft-editor.js",
   "app/features/quick-draft-composition.js",
+  // strings.js ships first: the darkroom preview assembles its markup
+  // through the html`` helper.
+  "app/core/strings.js",
   "app/features/lightroom-develop.js",
   "app/features/quick-draft-ai.js",
   "app/features/quick-draft-handoff.js",

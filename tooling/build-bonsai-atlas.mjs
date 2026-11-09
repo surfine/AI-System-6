@@ -719,25 +719,6 @@ function drawTree(buffer, frame, cx, cy, directionIndex) {
   });
 }
 
-function buildingWindowRects(frame) {
-  const height = Math.min(68, frame.height);
-  const rows = Math.max(1, Math.floor(height / ISO_V));
-  const rects = [];
-  for (let row = 0; row < rows; row += 1) {
-    const y = ANCHOR_Y - height + 10 + row * 10;
-    rects.push({ x: 88, y, w: 5, h: 4 });
-    rects.push({ x: 67, y: y + 4, w: 5, h: 4 });
-    if (frame.variant % 2 === 0) rects.push({ x: 98, y: y + 5, w: 4, h: 3 });
-  }
-  return rects;
-}
-
-function nightWindowRects(frame) {
-  if (frame.kind === "wind") return [{ x: 78, y: 42, w: 4, h: 4 }];
-  if (frame.kind === "tower") return [{ x: 78, y: 46, w: 4, h: 4 }];
-  return buildingWindowRects(frame);
-}
-
 // The 2.5D read for frames that carry no zone grammar: roof edges catch the
 // light, the front corner separates the faces, floor lines give rhythm.
 function drawFacadeDetails(buffer, cx, cy, box, base, light) {

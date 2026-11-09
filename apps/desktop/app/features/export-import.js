@@ -479,10 +479,10 @@ function renderProjectCd() {
     const empty = document.createElement("button");
     empty.type = "button";
     empty.className = "finder-empty-object project-empty-object export-empty-note";
-    empty.innerHTML = `
+    empty.innerHTML = html`
       <span class="mini-icon export-empty-icon"></span>
-      <b>${escapeHtml(t("export_empty_title"))}</b>
-      <small>${escapeHtml(t("export_empty_body"))}</small>
+      <b>${html.raw(t("export_empty_title"))}</b>
+      <small>${html.raw(t("export_empty_body"))}</small>
     `;
     empty.addEventListener("click", () => handleAction("open-teachtext"));
     projectCdGridEl.append(empty);
@@ -501,10 +501,10 @@ function renderProjectCd() {
     const updatedAt = new Date(item.updatedAt || item.burnedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     const bytes = new Blob([item.body || ""]).size;
     button.title = t("project_cd_open_hint");
-    button.innerHTML = `
+    button.innerHTML = html`
       <span class="mini-icon doc-icon"></span>
-      <span>${escapeHtml(item.title)}</span>
-      <small>${escapeHtml(t("export_item_meta", updatedAt, bytes))}</small>
+      <span>${item.title}</span>
+      <small>${html.raw(t("export_item_meta", updatedAt, bytes))}</small>
     `;
     button.addEventListener("click", (event) => {
       const alreadySelected = selectedProjectCdItemId === item.id
@@ -1318,10 +1318,10 @@ function renderImportPreview() {
   importCandidates.forEach((item) => {
     const row = document.createElement("div");
     row.className = `import-row${item.supported ? "" : " is-unsupported"}`;
-    row.innerHTML = `
+    row.innerHTML = html`
       <span class="mini-icon ${item.supported ? "doc-icon" : "trash-icon"}"></span>
-      <span>${escapeHtml(item.name)}</span>
-      <small>${item.supported ? escapeHtml(t("import_supported")) : escapeHtml(t("import_unsupported"))} · ${item.size} bytes</small>
+      <span>${item.name}</span>
+      <small>${item.supported ? html.raw(t("import_supported")) : html.raw(t("import_unsupported"))} · ${item.size} bytes</small>
     `;
     importPreviewEl.append(row);
   });
@@ -1369,10 +1369,10 @@ function renderBackupPreview(bundle, fileName = "", validation = null) {
   rows.forEach(([label, value]) => {
     const row = document.createElement("div");
     row.className = "import-row backup-preview-row";
-    row.innerHTML = `
+    row.innerHTML = html`
       <span class="mini-icon project-disk-icon"></span>
-      <span>${escapeHtml(label)}</span>
-      <small>${escapeHtml(value)}</small>
+      <span>${label}</span>
+      <small>${value}</small>
     `;
     projectBackupPreviewEl.append(row);
   });

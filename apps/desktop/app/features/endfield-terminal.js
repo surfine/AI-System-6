@@ -200,10 +200,10 @@ function ensureEndfieldProgressControl(bar) {
 
 function renderEndfieldRecent(items = endfieldRecentQueries()) {
   if (!endfieldRecentListEl) return;
-  endfieldRecentListEl.innerHTML = items.map((query, index) => `
-    <button type="button" class="endfield-recent-item${query === endfieldLastQuery ? " is-selected" : ""}" data-query="${escapeHtml(query)}" aria-pressed="${query === endfieldLastQuery ? "true" : "false"}">
+  endfieldRecentListEl.innerHTML = items.map((query, index) => html`
+    <button type="button" class="endfield-recent-item${query === endfieldLastQuery ? " is-selected" : ""}" data-query="${query}" aria-pressed="${query === endfieldLastQuery ? "true" : "false"}">
       <span>Q-${String(index + 1).padStart(2, "0")}</span>
-      <b>${escapeHtml(query.replace(/[？?].*$/, ""))}</b>
+      <b>${query.replace(/[？?].*$/, "")}</b>
     </button>
   `).join("");
 }
@@ -214,13 +214,13 @@ function renderEndfieldRecent(items = endfieldRecentQueries()) {
 function renderEndfieldMatches(groups = []) {
   if (!endfieldMatchListEl) return;
   if (!groups.length) {
-    endfieldMatchListEl.innerHTML = `<p class="endfield-empty">${escapeHtml(t("endfield_empty"))}</p>`;
+    endfieldMatchListEl.innerHTML = html`<p class="endfield-empty">${html.raw(t("endfield_empty"))}</p>`;
     return;
   }
   const most = Math.max(1, ...groups.map((group) => group.count));
-  endfieldMatchListEl.innerHTML = groups.map((group) => `
-    <div class="endfield-source-group${group.id === "missing" || group.id === "folded" ? " is-gap" : ""}" role="button" tabindex="0" data-source-group="${escapeHtml(group.id || "")}">
-      <span>${escapeHtml(group.label)}</span><i class="endfield-source-group-bar" aria-hidden="true"><i style="width:${Math.round((group.count / most) * 100)}%"></i></i><small>${group.count}</small>
+  endfieldMatchListEl.innerHTML = groups.map((group) => html`
+    <div class="endfield-source-group${group.id === "missing" || group.id === "folded" ? " is-gap" : ""}" role="button" tabindex="0" data-source-group="${group.id || ""}">
+      <span>${group.label}</span><i class="endfield-source-group-bar" aria-hidden="true"><i style="width:${Math.round((group.count / most) * 100)}%"></i></i><small>${group.count}</small>
     </div>
   `).join("");
 }
@@ -315,23 +315,23 @@ function renderEndfieldWelcome() {
   if (!endfieldOutputEl) return;
   endfieldRenderedSources = [];
   endfieldRenderedQuery = "";
-  endfieldOutputEl.innerHTML = `
+  endfieldOutputEl.innerHTML = html`
     <article class="endfield-answer endfield-welcome">
-      <p class="endfield-kicker"><span class="endfield-kicker-tag">ARCHIVE</span>${escapeHtml(t("endfield_kicker_audience"))}</p>
-      <h3>${escapeHtml(t("endfield_welcome_title"))}</h3>
-      ${t("endfield_welcome_tagline") ? `<p class="endfield-tagline" aria-hidden="true">${escapeHtml(t("endfield_welcome_tagline"))}</p>` : ""}
-      <p>${escapeHtml(t("endfield_welcome_body"))}</p>
-      ${endfieldCoverageHTML()}
-      <div class="endfield-question-list" role="group" aria-label="${escapeHtml(t("endfield_suggestions"))}">
-        ${defaultEndfieldQueries.map((query, index) => {
+      <p class="endfield-kicker"><span class="endfield-kicker-tag">ARCHIVE</span>${html.raw(t("endfield_kicker_audience"))}</p>
+      <h3>${html.raw(t("endfield_welcome_title"))}</h3>
+      ${html.raw(t("endfield_welcome_tagline") ? html`<p class="endfield-tagline" aria-hidden="true">${html.raw(t("endfield_welcome_tagline"))}</p>` : "")}
+      <p>${html.raw(t("endfield_welcome_body"))}</p>
+      ${html.raw(endfieldCoverageHTML())}
+      <div class="endfield-question-list" role="group" aria-label="${html.raw(t("endfield_suggestions"))}">
+        ${html.raw(defaultEndfieldQueries.map((query, index) => {
           const available = query !== defaultEndfieldQueries[defaultEndfieldQueries.length - 1];
-          return `
-          <button class="btn" type="button" data-query="${escapeHtml(query)}">
+          return html`
+          <button class="btn" type="button" data-query="${query}">
             <span class="endfield-question-no" aria-hidden="true">${String(index + 1).padStart(2, "0")}</span>
-            <span>${escapeHtml(query)}</span>
-            <span class="endfield-stamp${available ? "" : " is-gap"}" data-availability>${escapeHtml(t(available ? "endfield_avail_yes" : "endfield_avail_no"))}</span>
+            <span>${query}</span>
+            <span class="endfield-stamp${available ? "" : " is-gap"}" data-availability>${html.raw(t(available ? "endfield_avail_yes" : "endfield_avail_no"))}</span>
           </button>`;
-        }).join("")}
+        }))}
       </div>
     </article>
   `;
@@ -370,14 +370,14 @@ function renderEndfieldResults(data) {
   const sources = endfieldSourceCardsHTML(results, questionType);
   const verdicts = endfieldVerdictBlocks(data.answer || "");
 
-  endfieldOutputEl.innerHTML = `
+  endfieldOutputEl.innerHTML = html`
     <article class="endfield-answer">
-      <p class="endfield-kicker"><span class="endfield-kicker-tag">EVIDENCE</span>${escapeHtml(t("endfield_sources_kicker", results.length, endfieldProgressLabel()))}</p>
-      <h3>${escapeHtml(data.query || endfieldLastQuery)}</h3>
-      ${endfieldProgressTrackHTML(results, foldedCount)}
-      <div class="endfield-sources">${sources}</div>
-      ${verdicts}
-      ${foldedCount ? `<div class="endfield-fold" data-endfield-fold>${escapeHtml(t("endfield_fold", foldedCount))}</div>` : ""}
+      <p class="endfield-kicker"><span class="endfield-kicker-tag">EVIDENCE</span>${html.raw(t("endfield_sources_kicker", results.length, endfieldProgressLabel()))}</p>
+      <h3>${data.query || endfieldLastQuery}</h3>
+      ${html.raw(endfieldProgressTrackHTML(results, foldedCount))}
+      <div class="endfield-sources">${html.raw(sources)}</div>
+      ${html.raw(verdicts)}
+      ${html.raw(foldedCount ? html`<div class="endfield-fold" data-endfield-fold>${html.raw(t("endfield_fold", foldedCount))}</div>` : "")}
     </article>
   `;
   linkEndfieldInlineCitationsInHtml(endfieldOutputEl);
@@ -805,12 +805,12 @@ async function askEndfield(query) {
     setStatus(`Endfield: ${normalized}`);
   } catch (error) {
     if (error?.name === "AbortError" || requestId !== endfieldRequestId) return;
-    endfieldOutputEl.innerHTML = `
+    endfieldOutputEl.innerHTML = html`
       <article class="endfield-answer endfield-error" role="alert">
-        <p class="endfield-kicker">${escapeHtml(t("endfield_error_label"))}</p>
-        <h3>${escapeHtml(t("endfield_error_title"))}</h3>
-        <p>${escapeHtml(t("endfield_error_body"))}</p>
-        <button class="btn" type="button" data-retry-query="${escapeHtml(normalized)}">${escapeHtml(t("endfield_retry"))}</button>
+        <p class="endfield-kicker">${html.raw(t("endfield_error_label"))}</p>
+        <h3>${html.raw(t("endfield_error_title"))}</h3>
+        <p>${html.raw(t("endfield_error_body"))}</p>
+        <button class="btn" type="button" data-retry-query="${normalized}">${html.raw(t("endfield_retry"))}</button>
       </article>
     `;
     setStatus(t("endfield_error_title"));

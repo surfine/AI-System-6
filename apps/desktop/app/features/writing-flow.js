@@ -1335,6 +1335,66 @@ function renderQuestionSheetCards(project = getActiveProject()) {
   host.innerHTML = cards.map(questionSheetCardMarkup).join("");
 }
 
+// Lines the twelve cards do not own. A level-1 title is the pack title, and a
+// heading the sheet does not recognize — once a known section has begun — is
+// the writer's own section. Neither is a card. Rebuilding the deck without
+// them deleted that writing on the first card edit. This stays beside the
+// card commit, in the lazy writing route, so the boot bundle does not carry it.
+function questionSheetKeptOutsideCards(markdown) {
+  const headings = questionSheetHeadingKeyMap();
+  const titles = [];
+  const retained = [];
+  let seenKnown = false;
+  let block = null;
+
+  normalizeMarkdownText(markdown).split("\n").forEach((line) => {
+    const heading = line.match(/^\s{0,3}(#{1,6})\s+(.+?)\s*$/);
+    if (!heading) {
+      if (block) block.lines.push(line);
+      return;
+    }
+    const known = headings.get(heading[2].replace(/\s+/g, "").toLowerCase()) || "";
+    if (!seenKnown && heading[1].length === 1) {
+      titles.push(line.trim());
+      block = null;
+      return;
+    }
+    if (known) {
+      seenKnown = true;
+      block = null;
+      return;
+    }
+    if (!seenKnown) {
+      block = null;
+      return;
+    }
+    block = { heading: line.trim(), lines: [] };
+    retained.push(block);
+  });
+
+  return {
+    titles,
+    retained: retained.map((item) => ({
+      heading: item.heading,
+      body: item.lines.join("\n").trim(),
+    })),
+  };
+}
+
+function questionSheetMarkdownKeepingAuthorText(cards, sourceMarkdown) {
+  const rebuilt = questionSheetMarkdownFromCards(cards);
+  const kept = questionSheetKeptOutsideCards(sourceMarkdown);
+  if (!kept.titles.length && !kept.retained.length) return rebuilt;
+  const lines = [];
+  if (kept.titles.length) lines.push(...kept.titles, "");
+  if (rebuilt) lines.push(rebuilt, "");
+  kept.retained.forEach((item) => {
+    lines.push(item.heading, "");
+    if (item.body) lines.push(item.body, "");
+  });
+  return lines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
 // One card changed: rebuild the whole document from all twelve, write it back
 // through the same textarea savePipelineData already reads, and save. The
 // deck holds no state of its own once the input leaves the field.
@@ -1347,7 +1407,7 @@ function commitQuestionSheetCardEdit() {
     key: el.dataset.qsCardBody,
     body: el.value,
   }));
-  questionSheetBodyInput.value = questionSheetMarkdownFromCards(cards);
+  questionSheetBodyInput.value = questionSheetMarkdownKeepingAuthorText(cards, project.questionSheet || "");
   if (typeof noteWritingSurfaceEdit === "function") noteWritingSurfaceEdit("questionSheet");
   savePipelineData();
   refreshTeachTextSurfacePreview("questionSheet");
@@ -1890,7 +1950,7 @@ function renderPipeline() {
         clipCount ? `${clipCount} clip${clipCount === 1 ? "" : "s"}` : t("draft_no_clips"),
         draft.insertedAt ? t("draft_inserted") : t("draft_not_inserted"),
       ].filter(Boolean).join(" · ");
-      btn.innerHTML = `<span>${escapeHtml(draft.title || `Draft ${index + 1}`)}</span><small>${escapeHtml(meta)}</small>`;
+      btn.innerHTML = html`<span>${html.raw(draft.title || html`Draft ${index + 1}`)}</span><small>${meta}</small>`;
       btn.addEventListener("click", () => {
         selectedDraftIndex = index;
         if (draftTitleInput) draftTitleInput.value = draft.title || draft.sectionTitle || "";
@@ -2454,7 +2514,7 @@ function renderOutlineTree(project = getActiveProject()) {
 
   const tree = markdownOutlineTree(currentOutlineMarkdown(project) || "");
   if (!tree.sections.length) {
-    outlineTreeEl.innerHTML = `<p class="empty-folder-note">${escapeHtml(t("outline_tree_empty"))}</p>`;
+    outlineTreeEl.innerHTML = html`<p class="empty-folder-note">${html.raw(t("outline_tree_empty"))}</p>`;
     return;
   }
 
@@ -2859,7 +2919,7 @@ function renderOutlineCards(project = getActiveProject()) {
   const tree = markdownOutlineTree(currentOutlineMarkdown(project) || "");
   const nodes = outlineCardsFlatNodes(tree);
   if (!nodes.length) {
-    cards.innerHTML = `<p class="empty-folder-note">${escapeHtml(t("outline_tree_empty"))}</p>`;
+    cards.innerHTML = html`<p class="empty-folder-note">${html.raw(t("outline_tree_empty"))}</p>`;
     return;
   }
   if (outlineCardsSelectedId && !nodes.some((node) => node.id === outlineCardsSelectedId)) outlineCardsSelectedId = "";

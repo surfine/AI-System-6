@@ -1253,7 +1253,7 @@ async function runClaimCheck(options = {}) {
     if (options.online === true) {
       const claims = extractOnlineCheckClaims(body);
       if (!claims.length) {
-        claimResultsEl.innerHTML = `<div class="empty-folder-note">${escapeHtml(t("claim_check_online_none"))}</div>`;
+        claimResultsEl.innerHTML = html`<div class="empty-folder-note">${html.raw(t("claim_check_online_none"))}</div>`;
         setStatus(t("claim_check_online_none"));
         return false;
       }
@@ -1379,7 +1379,7 @@ ${body}`;
     if (!isAbortError(error)) {
       console.error("Claim check failed", error);
       const message = t("claim_check_error", friendlyErrorDetail(error));
-      claimResultsEl.innerHTML = `<div class="empty-folder-note">${message}</div>`;
+      claimResultsEl.innerHTML = html`<div class="empty-folder-note">${message}</div>`;
       setStatus(message);
     }
     return false;

@@ -64,7 +64,7 @@
     "styles/84-clio-chart-workbook.css": 6,
     "styles/89-finder-spatial.css": 1,
     "styles/00-foundation.css": 8,
-    "styles/10-windows.css": 12,
+    "styles/10-windows.css": 11,
     "styles/20-reader-docmap.css": 2,
     "styles/22-time-machine.css": 1,
     "styles/23-docmap.css": 0,
@@ -125,22 +125,22 @@
   },
   "_liquidGlassFloorNote": "Examined 2026-09-02. liquidGlassOrphanCount is at its floor at 4, and the four are NOT dead code. .is-glass-pressed is put on by core/wireup.js, #importer-status and #import-project-backup are real elements in index.html, and .video-docmap-time is rendered by features/docmap.js. They are called orphans because the audit asks whether a base stylesheet also styles the class, and for these four nothing does -- which is what liquid-only styling looks like, not drift. Deleting any of them removes real paint from a live element. liquidGlassTwinCount stayed at 476: 70-liquid-glass.css belongs to the Liquid Glass lane, and this lane did not edit it. One warning for whoever does. `.grow-box { border: 0 }` reads as a verbatim repeat of the base rule and the audit will offer it as an easy twin. It is not. Base .grow-box sets `border: 0` and THEN sets border-left and border-top to --window-frame-track-border in the same block, so the twin is what removes that track hairline in glass. Delete it and two hairlines appear.",
   "_liquidGlassNote": "Total twin selectors (body[data-theme=\"liquid-glass\"] <X>; the body.use-liquid-glass class form until 2026-09-26) in 70-liquid-glass.css; ratchet pushes the architecture toward token-based theming. Orphan count tracks twins whose base class/id no longer appears in any non-theme CSS file — a strong drift signal. Both numbers may only shrink; raising either requires explicit justification in the PR.",
-  "liquidGlassTwinCount": 451,
+  "liquidGlassTwinCount": 381,
   "liquidGlassOrphanCount": 4,
   "_appearanceSelectorLimitNote": "Per-theme ratchet over styles/65-appearance-themes.css + styles/67-aqua-appearance.css. Values are the honest 2026-08-10 counts: Yosemite's 122 body.use-liquid-glass[data-theme=yosemite] counter-rules became countable after de-inheritance rewrote them to body[data-theme=yosemite]; Aqua/Snow Leopard live in 67 and were previously invisible to the ratchet. These are corrections, not new churn; each may only shrink. Icon painter mappings (semantic id -> per-theme asset) are exempt from the duplicated-recipe check by design, and a base shared with the recipeBase parent (classic->platinum, aqua->snow-leopard, liquid-glass->yosemite) is the documented derivation delta.",
   "appearanceThemeSelectorLimits": {
     "classic": 0,
-    "platinum": 29,
-    "aqua": 66,
-    "snow-leopard": 36,
-    "yosemite": 112,
+    "platinum": 27,
+    "aqua": 58,
+    "snow-leopard": 30,
+    "yosemite": 47,
     "liquid-glass": 0,
-    "big-sur": 23,
+    "big-sur": 19,
     "tiger": 8,
-    "lion": 7,
-    "system-7": 10,
+    "lion": 6,
+    "system-7": 9,
     "drawing-board": 4,
-    "nextstep": 48
+    "nextstep": 52
   },
   "_bootThemeSurfaceNote": "2026-08-10 bump: per-era boot/shutdown surfaces added for Platinum (+5 appearance selectors) and Aqua/Snow Leopard (+16 theme selectors in 67). These re-skin the shared Happy Mac boot/shutdown harness per theme (same DOM/JS as Classic and Liquid Glass), not per-app churn; both files remain under the raised limits.",
   "_childAppNote": "Child+app-specific selector budget for the derived appearances (Platinum / Snow Leopard / Yosemite). Application prefixes come from windowInterfaceRegistry in tooling/interface-guidelines-contract.mjs, including dynamic and lazy windows, so a new app cannot evade the zero-debt ratchet by being absent from index.html. For a genuine system-level historical exception, add its class token (or 'themeId:token' for one child only) to childAppSpecificAllowlist and justify it in the commit.",
@@ -163,48 +163,49 @@
   "themeSelectorsOutsideLiquid": {
     "styles/66-theme-lab.css": 1,
     "styles/65-platinum-utility.css": 146,
-    "styles/88-desk-dock.css": 12,
+    "styles/88-desk-dock.css": 36,
     "styles/50-apps.css": 12,
-    "styles/80-bureaucracy-meme.css": 48,
+    "styles/80-bureaucracy-meme.css": 0,
     "styles/80-reader-pages.css": 0,
-    "styles/85-liquid-cover.css": 45,
-    "styles/90-endfield-terminal.css": 11,
+    "styles/85-liquid-cover.css": 44,
+    "styles/90-endfield-terminal.css": 2,
     "styles/60-responsive.css": 1,
-    "styles/67-aqua-appearance.css": 190,
-    "styles/97-one-more-tune.css": 2,
+    "styles/67-aqua-appearance.css": 126,
+    "styles/97-one-more-tune.css": 1,
     "styles/97-one-more-take.css": 0,
-    "styles/68-big-sur-appearance.css": 25,
-    "styles/67-tiger-appearance.css": 8,
-    "styles/67-lion-appearance.css": 7,
-    "styles/65-system-7-appearance.css": 10,
+    "styles/68-big-sur-appearance.css": 19,
+    "styles/67-tiger-appearance.css": 7,
+    "styles/67-lion-appearance.css": 6,
+    "styles/65-system-7-appearance.css": 9,
     "styles/65-drawing-board-appearance.css": 4,
-    "styles/69-nextstep-appearance.css": 48,
+    "styles/69-nextstep-appearance.css": 53,
     "styles/93-clioworks-audit.css": 0,
     "styles/99-about-this-mac.css": 2,
     "styles/99-chooser-book.css": 1,
     "styles/99-cliotalk-shell.css": 1,
-    "styles/99-extensions.css": 1
+    "styles/99-extensions.css": 1,
+    "styles/89-finder-spatial.css": 1
   },
-  "_eraTokenCoverageNote": "What a seventh appearance owes. A token two eras set is a period decision; a token one era sets is that era's quirk. Coverage counts the first kind an era answers, following its recipeBase chain, and Theme Lab's Tokens tab shows the same list on screen so the number is a worklist rather than a score. The rule is asymmetric on purpose: an era with no entry here -- a NEW appearance -- must answer all of them, because arriving complete is the point of the gate; the six that predate it carry real debt and are ratcheted instead, each count may only fall. baselineEra is exempt because its values ARE the defaults the others override. Measured 2026-09-01 (sidebar tier 2: tdi-rail heading/hover/pressed/unfocused tokens, answered by all five eras) against period tokens. Lower a number when you answer tokens; never raise one.",
+  "_eraTokenCoverageNote": "What a seventh appearance owes. A token two eras set is a period decision; a token one era sets is that era's quirk. Coverage counts the first kind an era answers, following its recipeBase chain, and Theme Lab's Tokens tab shows the same list on screen so the number is a worklist rather than a score. The rule is asymmetric on purpose: an era with no entry here -- a NEW appearance -- must answer all of them, because arriving complete is the point of the gate; the six that predate it carry real debt and are ratcheted instead, each count may only fall. baselineEra is exempt because its values ARE the defaults the others override. Measured 2026-09-01 (sidebar tier 2: tdi-rail heading/hover/pressed/unfocused tokens, answered by all five eras) against period tokens. Lower a number when you answer tokens; never raise one. 2026-11-05: snow-leopard answered its 8 (the sidebar tier-2 set) per the OS X family grammar - tiger/lion carry the identical answers (var(--system-object-shadow) balloons, var(--ink) menu text, no backdrop blur, bare desktop labels, shared strip tile metrics).",
   "eraTokenCoverage": {
     "baselineEra": "classic",
     "missing": {
-      "platinum": 119,
-      "aqua": 18,
-      "snow-leopard": 8,
-      "yosemite": 125,
-      "liquid-glass": 162
+      "platinum": 114,
+      "aqua": 4,
+      "snow-leopard": 0,
+      "yosemite": 62,
+      "liquid-glass": 75
     },
     "_inheritedNote": "Children that take their parent's unanswered period tokens with its recipe: ratcheted like 'missing', but they do not vote on which tokens are period tokens, so their optional choices cannot create debt in older eras. Measured 2026-09-24: System 7 answers only its colour chrome and keeps Classic's defaults for the rest; Drawing Board carries exactly Platinum's 119. Lower a number when the child answers tokens; never raise one.",
     "inherited": {
-      "system-7": 425,
-      "drawing-board": 119
+      "system-7": 94,
+      "drawing-board": 114
     }
   },
   "_themeLabReplicaNote": "Ratchet over what Theme Lab costs the appearance sheets. The Lab exists to cut the per-theme workload -- one place to change, six themes served -- and a specimen built from theme-lab-* classes inverts that: every era dresses the real control once and the Lab's copy a second time, and the copy drifts. It drew a three-lamp title bar with a Minimize this product has never had. Measured 2026-08-29 after the chrome, scrollbar, tab, menu, dialog, balloon and window fixtures became real parts: 723 mentions, down from 1,039; a later round (rail, Finder list) landed the count at 695 before this note caught up. Measured 2026-09-01: 591 mentions, down from 695, by removing two orphans -- a pre-conversion segmented-control wardrobe and a pre-conversion scrollbar wardrobe, both fully superseded (the scroll bar already adopts the shipping window-frame bar via AISystem6WindowFrameBar; no segmented specimen has existed in the markup since some earlier round) but left standing in the three era files with zero consuming selector. The count may only fall. To lower it further, convert a specimen to the shipping component and move any era metrics onto that component's own token family -- not by deleting the era knowledge of a specimen that still renders, which is the evidence (a genuinely dead wardrobe carries no such evidence; git history keeps the calibrated values if a live segmented specimen is ever built against .view-switch). What legitimately remains: the historical reproductions (a Mac OS 9 Apple menu, the 10.2 column browser and its Finder toolbar, the 10.2 attached-sheet shape, the Mac OS 9 Open dialog and About box), the board's own furniture, and the generic Lists & sidebar fixture, whose sidebar/browser component the product does not have yet. The product does now ship a real segmented control (.view-switch) and a real progress meter (.progress-meter, already used directly in the Chrome tab) -- neither needs a Lab specimen rebuilt for it unless a new comparison is wanted.",
   "themeLabReplicaMentions": {
-    "styles/65-appearance-themes.css": 269,
-    "styles/67-aqua-appearance.css": 291,
+    "styles/65-appearance-themes.css": 240,
+    "styles/67-aqua-appearance.css": 285,
     "styles/70-liquid-glass.css": 7,
     "styles/68-big-sur-appearance.css": 0,
     "styles/67-tiger-appearance.css": 0,
@@ -220,22 +221,22 @@
   "_appearanceGeometryDrain20261004Note": "2026-10-04 harvest Q15: early-harvest had charged three Platinum menu-title geometry declarations (height/min-height/line-height) that pushed 65 to 100/97. Those values moved to --menu-title-* tokens on the Platinum recipe; 60-responsive consumes them with the prior calc(...) fallbacks. Count returns to 97; budget unchanged. Not a floor raise.",
   "appearanceGeometry": {
     "styles/65-appearance-themes.css": {
-      "geometry": 97,
-      "hairline": 9,
+      "geometry": 91,
+      "hairline": 7,
       "unprefixed": 0
     },
     "styles/67-aqua-appearance.css": {
-      "geometry": 147,
+      "geometry": 126,
       "hairline": 6,
       "unprefixed": 0
     },
     "styles/70-liquid-glass.css": {
-      "geometry": 376,
-      "hairline": 53,
+      "geometry": 352,
+      "hairline": 51,
       "unprefixed": 0
     },
     "styles/68-big-sur-appearance.css": {
-      "geometry": 6,
+      "geometry": 5,
       "hairline": 0,
       "unprefixed": 0
     },
@@ -245,7 +246,7 @@
       "unprefixed": 0
     },
     "styles/67-lion-appearance.css": {
-      "geometry": 2,
+      "geometry": 0,
       "hairline": 0,
       "unprefixed": 0
     },
@@ -260,8 +261,8 @@
       "unprefixed": 0
     },
     "styles/69-nextstep-appearance.css": {
-      "geometry": 48,
-      "hairline": 3,
+      "geometry": 45,
+      "hairline": 2,
       "unprefixed": 0
     },
     "styles/93-clioworks-audit.css": 0
@@ -276,5 +277,7 @@
   "_clioworksAuditImportantNote": "styles/93-clioworks-audit.css carries 8: the geometry-preview class must override the host placed-block's INLINE styles (specificity cannot reach inline); clearing and restoring inline styles from JS would spend the app/ inline-layout budget instead.",
   "_appearanceGeometryCatchUp": "2026-10-15 catch-up, zero CSS changed: budgets lowered to the measured counts that earlier drains never wrote back (system-7 10->6, big-sur 8->6, nextstep 54->48 and hairline 4->3, liquid-glass 408->376 and hairline 56->53; liquidGlassTwinCount 461->451). The other theme-named sheets (65-platinum-utility, nextstep-shell, 66-theme-lab, 85-liquid-cover) are tool and shell layouts with no appearance prefix, so their geometry is their own layout, not an appearance override, and they stay outside this ratchet on purpose. From now on the cascade ledger (npm run verify:cascade) is the gate that proves a drain changed no winner.",
   "_n20StageHandoutNote": "2026-10-31: 84-clio-stage-native.css !important 2 is the handout print isolation: while printing, every desk layer except the handout is hidden and the handout shown, against window and theme display rules at any specificity (the same reason as ClioChart's print sheet). Ratchet only; may only fall.",
-  "_n1060MergeNote": "2026-10-28: the 1.0.60 feature merge raised three files' counts and added two files. 84-clio-stage-show.css z-index 2: the show overlay pins the presenter strip over the projected page via --z-window-pinned, and one literal 1 layers the page host inside the overlay (private to that overlay). 84-clio-write.css z-index 1 and !important 57: the page view's read-only gates and print overrides win specificity wars against upstream layout styles on purpose (contenteditable off, print-only rules); 88-desk-dock.css z-index 1 -> 2 is the fullscreen menu-bar reveal zone (--z-fullscreen-reveal, a token between every window and the bar it summons). Ratchet only; may only fall."
+  "_n1060MergeNote": "2026-10-28: the 1.0.60 feature merge raised three files' counts and added two files. 84-clio-stage-show.css z-index 2: the show overlay pins the presenter strip over the projected page via --z-window-pinned, and one literal 1 layers the page host inside the overlay (private to that overlay). 84-clio-write.css z-index 1 and !important 57: the page view's read-only gates and print overrides win specificity wars against upstream layout styles on purpose (contenteditable off, print-only rules); 88-desk-dock.css z-index 1 -> 2 is the fullscreen menu-bar reveal zone (--z-fullscreen-reveal, a token between every window and the bar it summons). Ratchet only; may only fall.",
+  "_cssRatchet20261105Note": "2026-11-05 push-down. liquidGlassTwinCount 443 -> 419. (a) 22 pairs folded where one component's state variants already shared one rule at equal specificity, e.g. `.grow-box:is(:hover, :focus, :focus-visible)`: same rule, same specificity, same matched elements, so the fold is a static identity (the cascade ledger sees most of these states only as `moved`). Folding DIFFERENT components into one :is() was refused: it would hide them from this counter without removing a recipe. The `.btn:hover`, generic `button:hover` and `.view-btn:hover` groups were left alone because interaction-controls.test.mjs pins their text. (b) `.writing-spine-panel` restated 10-windows.css verbatim and was deleted. (c) `.project-finder-pathbar` now answers `--finder-pathbar-border` on the era body; 40-icons.css is its only reader. 70's hairline 53 -> 52 follows (c). Proof: a liquid-glass ledger captured from a clean HEAD worktree, verified against this tree at 1440x960 and 390x844 -- the only flip is the token cell itself, its consumer is `moved` with the same value. Catch-up, zero CSS (none of these is covered by --write-down): appearanceThemeSelectorLimits, themeSelectorsOutsideLiquid and themeLabReplicaMentions lowered to measured counts. 67-aqua's outside count is aqua 58 + snow-leopard 30 + tiger 1 + 38 family/compound selectors; its 190 was slack never written back. NOT lowered: 90-endfield-terminal reads 0 only because its two selectors are written body:is([data-theme-family=...]), a form the OUTSIDE and per-theme patterns do not see (65 has 3 such, 69 has 6, 88-desk-dock 25). The other 86 EASY twins were checked one by one and kept: no base declaration to receive a token (adding one changes every appearance and spends boot bytes), a shared token, a load-bearing override, or a pinned rule.",
+  "_themeSelectorCountCorrection20261105Note": "2026-11-05 counting correction, not new debt (owner decision): both theme-selector counters now see the grouped forms body:is([data-theme=...], ...) and body:where([data-theme=...]), which they missed before. No CSS changed. Re-opened at the measured counts: appearanceThemeSelectorLimits yosemite 47 -> 50 and big-sur 16 -> 19 (the same three body:is([yosemite], [big-sur]) grow-box rules in 65), nextstep 47 -> 53 (six body:where lamp rules in 69); themeSelectorsOutsideLiquid 69-nextstep 48 -> 54, 88-desk-dock 11 -> 36 (25 grouped Dock-era rules), and 90-endfield-terminal 11 -> 2, whose 0 had been the blind spot itself; 89-finder-spatial gets its first entry, 1 (its classic/NeXTSTEP body:is rule). Widened the same day to the duplicated-recipe, orphan and child-app checks (owner decision); a grouped selector is one rule serving several eras, so it never counts as a per-era copy. No new violation appeared. All of these may only fall."
 }

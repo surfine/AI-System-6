@@ -32,8 +32,7 @@
     const bridged = { ...init, mode: "cors", credentials: "omit" };
     const token = bridgeToken();
     if (token) bridged.headers = { ...(init.headers || {}), "X-AI-System-6-Bridge": token };
-    if (!window.AISystem6LocalLMStudio?.isSafariPublicWebUnsupported?.()
-      && !window.AISystem6LocalLMStudio?.isSafariHttpLocalMode?.()) {
+    if (!window.AISystem6LocalLMStudio?.isSafariBrowser?.()) {
       bridged.targetAddressSpace = "loopback";
     }
     return fetch(`${LOCAL_BRIDGE_ORIGIN}${path}`, bridged);
@@ -143,6 +142,23 @@
       const url = String(input.path || "");
       if (!/^\/api\/agent\/(?:status|folders|runs|tasks|schedules)(?:[/?]|$)/.test(url)) return Promise.reject(new Error("Not an agent route."));
       return sameOriginNode.request({ url, init: input.init, signal: input.signal });
+    },
+  });
+
+  // 文思泉涌's local API. The path is a suffix under that one route; the
+  // studio and its guests do not fetch it themselves.
+  window.AISystem6Capabilities?.registerServiceProvider?.("wensi.api", {
+    id: "same-origin-node",
+    request(input = {}) {
+      const path = String(input.path || "");
+      if (!path.startsWith("/") || path.startsWith("//") || path.includes("..")) {
+        return Promise.reject(new Error("Not a 文思泉涌 route."));
+      }
+      return sameOriginNode.request({
+        url: `/api/wensi-quanyong${path}`,
+        init: input.init,
+        signal: input.signal,
+      });
     },
   });
 
@@ -416,6 +432,7 @@
         "agent.executorReply",
         "agent.executorToken",
         "agent.harness",
+        "wensi.api",
         "mcp.client",
       ];
       names.forEach((name) => {

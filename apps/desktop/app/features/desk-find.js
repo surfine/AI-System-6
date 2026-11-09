@@ -388,11 +388,11 @@ function renderFindFileResults() {
     button.className = `find-file-result${index === selectedFindFileIndex ? " is-selected" : ""}`;
     button.dataset.kind = result.kind;
     const modified = result.modifiedAt ? new Date(result.modifiedAt).toLocaleString() : "";
-    button.innerHTML = `
-      <strong>${escapeHtml(result.name)}</strong>
-      <span>${escapeHtml(result.path)}</span>
-      ${result.snippet ? `<span>${escapeHtml(result.snippet)}</span>` : ""}
-      ${modified ? `<small>${escapeHtml(modified)}</small>` : ""}
+    button.innerHTML = html`
+      <strong>${result.name}</strong>
+      <span>${result.path}</span>
+      ${html.raw(result.snippet ? html`<span>${result.snippet}</span>` : "")}
+      ${html.raw(modified ? html`<small>${modified}</small>` : "")}
     `;
     button.addEventListener("click", (event) => {
       if (

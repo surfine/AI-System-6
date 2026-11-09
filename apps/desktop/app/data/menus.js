@@ -295,6 +295,8 @@ const teachTextMenus = [
     ]),
     // N14 送审: one clean .docx round in the 来回 folder, citations as footnotes.
     menuItem("send-manuscript-review", "send_manuscript_review"),
+    // 成稿的下一站是博客：把正文交给文思泉涌开成新稿，字段与检查在那边做。
+    menuItem("publish-to-blog", "publish_to_blog"),
     menuSeparator,
     menuItem("open-document-versions", "versions_menu"),
     menuSeparator,
@@ -331,6 +333,10 @@ const teachTextMenus = [
     menuItem("toggle-writing-preview", "preview", "writing-preview"),
     menuItem("open-heading-navigator", "heading_navigator_ellipsis"),
     menuItem("cycle-writing-focus", "focus_mode_cycle", "writing-focus"),
+    // 专注模式开关: one checked row beside the cycle. The checkmark follows
+    // the one stored preference both rows write (window-manager's sync reads
+    // it, exactly as it reads the line-spacing choice below).
+    menuItem("toggle-writing-focus", "focus_mode_toggle", "writing-focus-toggle"),
     // MacWrite's ruler, narrowed to the one setting Aaron kept: line spacing.
     // Applies to the editing paper and the preview alike, on every writing
     // surface, and persists the way focus mode already does (localStorage).
@@ -1038,6 +1044,10 @@ const applicationMenuSets = Object.freeze({
   bureaucracyMeme: bureaucracyMemeMenus,
 });
 
+// Lazy applications compose the same Window menu the built-in sets use, so a
+// module never re-declares core rows (and never drifts from them).
+window.AISystem6MenuInternals = Object.freeze({ menu, menuItem, menuSeparator, submenu, windowMenu });
+
 const lazyApplicationMenuSets = new Map();
 globalThis.AISystem6RegisterApplicationMenuSet = (appId, definitions = []) => {
   lazyApplicationMenuSets.set(appId, [...definitions, specialMenu()]);
@@ -1086,6 +1096,12 @@ function renderApplicationMenuItem(item) {
       // the conversation already on screen read like every other row, and
       // choosing it opened what was already open and said nothing.
       button.dataset.chatFileChoice = file.id;
+      // The conversation already on screen is a choice in force: mark it the
+      // way checked menu rows are marked, so choosing it reads as "already
+      // open" rather than as an action that silently did nothing.
+      if (typeof activeChatFileId !== "undefined" && activeChatFileId && String(activeChatFileId) === String(file.id)) {
+        button.setAttribute("aria-pressed", "true");
+      }
       button.textContent = file.name;
       // The list is drawn from the store, and the store can move under it (the
       // file deleted from another window, the project switched). A row nobody

@@ -22,7 +22,7 @@ test.assert(Object.isFrozen(registry) && Object.isFrozen(registry.TOOLS) && Obje
 test.assertNotMatches(source, /indexedDB|localStorage|fetch\(|require\(["'](?:node:)?(?:child_process|net|http|https)/, "the list touches no storage, network or process");
 
 // Every id the design names is in the list.
-const named = ["web", "reader.*", "sources.search", "talk.quote", "scrap.*", "dossier.read", "chart.range", "write.read", "chart.read", "stage.read",
+const named = ["web", "reader.*", "sources.search", "talk.quote", "scrap.*", "dossier.read", "chart.range", "write.read", "chart.read", "stage.read", "blog.read",
   "propose.scrap", "propose.flag", "propose.new-document", "propose.revision", "propose.format", "propose.chart"];
 test.assert(named.every((id) => ids.includes(id)), "every tool the design board names is listed");
 test.assert(ids.filter((id) => id.startsWith("propose.")).every((id) => registry.toolById(id).level === "propose")
@@ -32,11 +32,26 @@ test.assert(!ids.some((id) => /shell|exec|run|write|network|fetch-new/i.test(id.
 
 // Alignment with the bridge.
 test.assert(JSON.stringify([...registry.BRIDGE_TOOL_NAMES].sort()) === JSON.stringify(Object.keys(desk.DESK_TOOLS).sort()),
-  "the bridge names the registry stands on are exactly the desk-tools bridge's six reads");
-test.assert(registry.TOOLS.filter((tool) => tool.bridge.length).every((tool) => tool.level === "read"), "only reads stand on the read-only bridge");
+  "the bridge names the registry stands on are exactly the reads the desk-tools bridge implements");
+test.assert(registry.TOOLS.filter((tool) => tool.bridge.length && tool.id !== "propose.blog-draft").every((tool) => tool.level === "read"),
+  "only reads stand on the read-only bridge; the blog field suggestion is held and writes nothing");
 test.assert(registry.isAvailable("sources.search") && !registry.isAvailable("web") && !registry.isAvailable("propose.scrap") && !registry.isAvailable("nope"),
   "an id the bridge implements is available; one it does not, and an unknown one, is not");
 test.assert(JSON.stringify(registry.availableToolIds().sort()) === JSON.stringify(ids.filter((id) => registry.toolById(id).bridge.length).sort()), "availableToolIds is the bridge-backed entries");
+
+// 文思泉涌's read side (D7): available now, and implemented where the bridge runs.
+test.assert(registry.isAvailable("blog.read"), "blog.read is available now that the bridge implements it");
+test.assert(JSON.stringify(registry.toolById("blog.read").bridge) === JSON.stringify(["read_blog_articles", "read_blog_article"]),
+  "blog.read stands on the two blog reads");
+const guestSource = read("app/features/guest-tools.js");
+test.assert(guestSource.includes('"read_blog_articles", "read_blog_article", "propose_blog_fields"') && guestSource.includes("async ais6_read_blog_article(") && guestSource.includes("async ais6_propose_blog_fields("),
+  "the page implements both blog reads and the held field suggestion");
+test.assert(registry.isAvailable("propose.blog-draft") && registry.isAvailable("blog.suggest"),
+  "the held field suggestion is selectable, and it still does not write");
+test.assert(guestSource.includes("const BLOG_DESK_TOOLS") && guestSource.includes("if (BLOG_DESK_TOOLS.has(name))"),
+  "blog reads are answered without requiring an open project, and still inside the granted channel");
+test.assert(desk.DESK_TOOLS.read_blog_article.length === 3 && desk.DESK_TOOLS.read_blog_articles.length === 3,
+  "the bridge drops any argument the two blog reads do not name");
 
 // What later validators import.
 const verdict = registry.validateToolIds(["sources.search", "web", "shell", "write_manuscript"]);

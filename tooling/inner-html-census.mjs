@@ -68,6 +68,7 @@ function classifyExpression(node) {
     const right = classifyExpression(node.right);
     if (left === "raw" || right === "raw") return "raw";
     if (left === "opaque" || right === "opaque") return "opaque";
+    if (left === "tagged" || right === "tagged") return "tagged";
     return "static";
   }
   return "opaque";

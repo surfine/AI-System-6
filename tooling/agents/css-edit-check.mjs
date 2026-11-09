@@ -29,7 +29,7 @@ const reason = [
   `verify:css failed for ${rel} after this edit:`,
   ...lines.slice(0, 8).map((line) => `  ${line.replace(/^NO\s+/, "")}`),
   lines.length > 8 ? `  …and ${lines.length - 8} more` : "",
-  "Fix the cause (specificity, token placement, owner file) rather than raising tooling/css-budget.json; run `node tooling/verify-css.mjs --file " + rel + "` to re-check, and `npm run verify:cascade` before committing.",
+  "Fix the cause (specificity, token placement, owner file) rather than raising tooling/css-budget.json; run `node tooling/verify-css.mjs --file " + rel + "` to re-check, and `npm run verify:cascade-changed` (every appearance and viewport the change reaches) before committing.",
 ].filter(Boolean).join("\n");
 process.stdout.write(`${JSON.stringify({ decision: "block", reason })}\n`);
 process.exit(0);

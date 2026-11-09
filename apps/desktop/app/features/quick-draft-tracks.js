@@ -288,7 +288,7 @@ function renderQuickDraftTrackPaper() {
         ].join("")
       : `<p class="empty-folder-note">${escapeHtml(quickDraftTrackBusy ? t("lightroom_track_writing") : t("lightroom_track_empty"))}</p>`;
   if (quickDraftTrackMode === "split") {
-    refs.preview.innerHTML = `${embrace}<div class="quick-draft-track-split"><div>${interestHtml}</div><div>${contentHtml}</div></div>`;
+    refs.preview.innerHTML = html`${html.raw(embrace)}<div class="quick-draft-track-split"><div>${html.raw(interestHtml)}</div><div>${html.raw(contentHtml)}</div></div>`;
     return;
   }
   refs.preview.innerHTML = contentHtml;

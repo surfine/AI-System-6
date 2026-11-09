@@ -56,5 +56,10 @@ function htmlValue(value) {
   return escapeHtml(value);
 }
 
-// The one way to hand html`` markup it should not escape.
-html.raw = (markup) => ({ safeHtml: String(markup ?? "") });
+// The one way to hand html`` markup it should not escape. An array joins
+// without escaping: its elements are already-safe strings (nested html``
+// output escapes its own interpolations at construction, so lifting the
+// joined result past the outer escape loses no protection).
+html.raw = (markup) => Array.isArray(markup)
+  ? { safeHtml: markup.map((part) => String(part ?? "")).join("") }
+  : { safeHtml: String(markup ?? "") };

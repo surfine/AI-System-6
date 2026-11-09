@@ -127,6 +127,11 @@ test.assertIncludes(
   'const externalDropTargets = new Set(["desktop", "editor-insert", "clio-attachment", "scrap", "file-floppy"]);',
   "desktop, editable surfaces, Scrapbook, and File Floppy take outside material"
 );
+test.assertIncludes(
+  dragDrop,
+  'externalDropTargets.add("wensi-photos")',
+  "the photo tray is admitted as a drop surface of its own"
+);
 test.assertIncludes(dragDrop, "function externalDropHitKind", "outside material hit feedback distinguishes accept from reject");
 test.assertIncludes(dragDrop, "function markDropHitReject", "a refuse hit is a visible class, not a silent no-op");
 test.assertIncludes(dragDrop, 'markDropHitReject(dropTarget)', "dragover paints reject on surfaces that will not file the drop");

@@ -355,11 +355,11 @@ function renderClippingFileInfo(item) {
   const captured = clipMeta.capturedAt
     ? ` · ${t("clipping_captured_label")} ${new Date(clipMeta.capturedAt).toLocaleString()}`
     : "";
-  infoFinderObjectsBlockEl.innerHTML = `
-    <p class="hint">${t("clipping_source_label")}: ${sourceLabel}${sourceUrl ? ` (${sourceUrl})` : ""}${captured}</p>
+  infoFinderObjectsBlockEl.innerHTML = html`
+    <p class="hint">${html.raw(t("clipping_source_label"))}: ${sourceLabel}${html.raw(sourceUrl ? html` (${sourceUrl})` : "")}${captured}</p>
     <label for="info-clipping-allow-quote">
       <input type="checkbox" id="info-clipping-allow-quote" ${clipMeta.allowQuote === false ? "" : "checked"} />
-      <span data-i18n="clipping_allow_quote">${t("clipping_allow_quote")}</span>
+      <span data-i18n="clipping_allow_quote">${html.raw(t("clipping_allow_quote"))}</span>
     </label>
   `;
   infoFinderObjectsBlockEl.querySelector("#info-clipping-allow-quote").addEventListener("change", (event) => {
@@ -395,13 +395,13 @@ function renderAliasFileInfo(item) {
   // alias record: that would produce a mis-typed chatFile. Replace Original
   // stays gated — only file aliases can be replaced with the original.
   const replaceGated = !!target && targetKind !== "file";
-  infoFinderObjectsBlockEl.innerHTML = `
-    <p class="hint">${t("alias_target_label")}: ${targetText}</p>
-    <p class="hint">${target ? t("alias_status_ok") : t("alias_status_broken")}</p>
-    ${replaceGated ? `<p class="hint">${t("alias_replace_file_only")}</p>` : ""}
+  infoFinderObjectsBlockEl.innerHTML = html`
+    <p class="hint">${html.raw(t("alias_target_label"))}: ${targetText}</p>
+    <p class="hint">${target ? html.raw(t("alias_status_ok")) : html.raw(t("alias_status_broken"))}</p>
+    ${html.raw(replaceGated ? html`<p class="hint">${html.raw(t("alias_replace_file_only"))}</p>` : "")}
     <div class="button-row">
-      <button class="btn" type="button" data-finder-alias-action="show" ${target ? "" : "disabled"} data-i18n="alias_show_original">${t("alias_show_original")}</button>
-      <button class="btn" type="button" data-finder-alias-action="replace" ${target && !replaceGated ? "" : "disabled"} data-i18n="alias_replace_original">${t("alias_replace_original")}</button>
+      <button class="btn" type="button" data-finder-alias-action="show" ${target ? "" : "disabled"} data-i18n="alias_show_original">${html.raw(t("alias_show_original"))}</button>
+      <button class="btn" type="button" data-finder-alias-action="replace" ${target && !replaceGated ? "" : "disabled"} data-i18n="alias_replace_original">${html.raw(t("alias_replace_original"))}</button>
     </div>
   `;
   infoFinderObjectsBlockEl.querySelectorAll("[data-finder-alias-action]").forEach((button) => {
@@ -471,9 +471,9 @@ function renderFinderLabelInfo(item) {
   const picker = document.createElement("div");
   picker.className = "info-comments";
   picker.dataset.finderLabelPicker = "";
-  picker.innerHTML = `
+  picker.innerHTML = html`
     <label for="info-finder-label-select">${currentLanguage === "zh" ? "标签" : "Label"}:</label>
-    <div class="select-wrap"><select id="info-finder-label-select">${options}</select></div>
+    <div class="select-wrap"><select id="info-finder-label-select">${html.raw(options)}</select></div>
   `;
   infoFinderObjectsBlockEl.append(picker);
   picker.querySelector("#info-finder-label-select").addEventListener("change", (event) => {
@@ -491,9 +491,9 @@ function renderFinderLabelInfo(item) {
     const row = document.createElement("div");
     row.className = "finder-label-suggestion";
     const suggestionLabel = finderLabelDisplay(suggestion.id) || suggestion.id;
-    row.innerHTML = `
-      <p class="hint">${escapeHtml(t("finder_label_suggestion", suggestionLabel, suggestion.reason || ""))}</p>
-      <button class="btn mini-btn" type="button" data-finder-label-accept>${t("finder_label_accept")}</button>
+    row.innerHTML = html`
+      <p class="hint">${html.raw(t("finder_label_suggestion", suggestionLabel, suggestion.reason || ""))}</p>
+      <button class="btn mini-btn" type="button" data-finder-label-accept>${html.raw(t("finder_label_accept"))}</button>
     `;
     picker.after(row);
     row.querySelector("[data-finder-label-accept]").addEventListener("click", () => {

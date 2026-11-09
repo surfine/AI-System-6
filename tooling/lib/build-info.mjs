@@ -55,6 +55,8 @@ export const stampedIndexAssets = [
   "assets/app-icon/manifest.json",
   "assets/app-icon/app-icon-180.png",
   "assets/app-icon/app-icon-192.png",
+  "assets/app-icon/favicon.svg",
+  "assets/app-icon/favicon.ico",
 ];
 
 export const generatedJsPath = "app/generated/build-info.js";

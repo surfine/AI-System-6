@@ -9,7 +9,6 @@ const modifyingMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 const loopbackHostnames = new Set(["127.0.0.1", "::1", "localhost"]);
 const defaultBrowserBridgeOrigins = Object.freeze([
   "https://system6.aaronlau.me",
-  "http://local.system6.aaronlau.me",
   "https://boot-system6.pages.dev",
 ]);
 

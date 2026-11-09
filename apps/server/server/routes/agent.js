@@ -83,6 +83,7 @@ function folderView(list) {
     name: folder.name,
     path: folder.path,
     level: folder.level,
+    purpose: folder.purpose ?? null,
     grantedAt: folder.grantedAt,
     available: folder.available,
   }));
@@ -129,7 +130,9 @@ async function handleAgentFoldersChoose(req, res) {
       sendJson(res, 200, { cancelled: true });
       return;
     }
-    const grant = folders.grantFolder(chosen, level);
+    // purpose is 文思泉涌's optional tag ("blog-site"); the ordinary Chooser
+    // flow sends none and the grant keeps null.
+    const grant = folders.grantFolder(chosen, level, body.purpose);
     sendJson(res, 200, { cancelled: false, folder: folderView([{ ...grant, available: true }])[0] });
   });
 }

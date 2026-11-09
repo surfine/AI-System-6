@@ -631,7 +631,7 @@ function renderTdiTabStrip(container, tabs, options = {}) {
     const dirtyMark = dirtyFor(tab) ? "• " : "";
     const iconId = iconFor(tab, index);
     const icon = iconId ? renderSystemIcon(iconId, { size: "mini", className: "tdi-tab-icon" }) : "";
-    button.innerHTML = `${icon}<span class="tdi-tab-copy"><span>${escapeHtml(`${dirtyMark}${label}`)}</span><small>${escapeHtml(sublabel)}</small></span>`;
+    button.innerHTML = html`${html.raw(icon)}<span class="tdi-tab-copy"><span>${html.raw(html`${dirtyMark}${label}`)}</span><small>${sublabel}</small></span>`;
     button.addEventListener("click", () => onOpen(tab));
     const close = document.createElement("button");
     close.type = "button";
@@ -2363,10 +2363,10 @@ function renderProjectRootListItem(item, project, mode, orderedItems = []) {
   stampFinderItemDataset(row, item, shape);
   const metaInner = item.metaHtml || escapeHtml(getProjectFinderItemMeta(item));
   const at = getFinderItemModifiedAt(item);
-  row.innerHTML = `
-    <span class="finder-list-name-cell">${renderSystemIcon(item.iconId || item.iconClass, { size: "list"})}<span>${nameCell(item)}</span></span>
-    <span>${escapeHtml(getFinderItemKindLabel(item))}</span>
-    <span>${metaInner}</span>
+  row.innerHTML = html`
+    <span class="finder-list-name-cell">${html.raw(renderSystemIcon(item.iconId || item.iconClass, { size: "list"}))}<span>${html.raw(nameCell(item))}</span></span>
+    <span>${getFinderItemKindLabel(item)}</span>
+    <span>${html.raw(metaInner)}</span>
     <span>${at ? new Date(at).toLocaleDateString() : "—"}</span>
   `;
   row.title = getFinderItemName(item);
@@ -2403,7 +2403,7 @@ function renderProjectRootIconItem(item, orderedItems = []) {
   button.className = `finder-item${item.label ? ` label-${item.label}` : ""} finder-label-${item.finderLabel || "none"}${finderItemSelected(item, shape) ? " is-selected" : ""}`;
   stampFinderItemDataset(button, item, shape);
   const metaInner = item.metaHtml || escapeHtml(getProjectFinderItemMeta(item));
-  button.innerHTML = `${renderSystemIcon(item.iconId || item.iconClass, { size: "finder"})}<span>${nameCell(item)}</span><small>${metaInner}</small>`;
+  button.innerHTML = html`${html.raw(renderSystemIcon(item.iconId || item.iconClass, { size: "finder"}))}<span>${html.raw(nameCell(item))}</span><small>${html.raw(metaInner)}</small>`;
   button.title = getFinderItemName(item);
   attachCitationJumpHandler(button);
   button.addEventListener("click", (event) => {

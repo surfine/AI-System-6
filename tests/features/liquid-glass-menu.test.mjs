@@ -1,9 +1,13 @@
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
+import vm from "node:vm";
 
 const test = createFeatureTest("liquid-glass-menu");
 const liquid = read("styles/70-liquid-glass.css");
 const menus = read("app/data/menus.js");
-const dictionary = read("app/data/system-dictionary.js");
+// The dictionary is a classic script installing a window global; loading it
+// in a VM makes this contract execute the shipped data instead of its text.
+const dictionaryData = vm.runInContext(`${read("app/data/system-dictionary.js")}; window.AISystem6DictionaryData.systemDictionaryEntries`, vm.createContext({ window: {} }));
+const dictionary = dictionaryData;
 
 test.assertIncludes(
   liquid,
@@ -59,8 +63,8 @@ test.assertMatches(
   "and it refuses the material by name instead of by omission",
 );
 
-test.assertIncludes(dictionary, 'id: "liquid-glass-appearance"', "System Help keeps the stable Appearance dictionary record id");
-test.assertIncludes(dictionary, "Special → Appearance", "Help explains that the same running workspace changes appearance");
-test.assertIncludes(dictionary, "same running workspace", "Help explains that Appearance never opens a parallel workspace");
+test.assert(Array.isArray(dictionaryData) && dictionaryData.some((entry) => entry.id === "liquid-glass-appearance"), "System Help keeps the stable Appearance dictionary record id");
+test.assert(JSON.stringify(dictionaryData).includes("Special → Appearance"), "Help explains that the same running workspace changes appearance");
+test.assert(JSON.stringify(dictionaryData).includes("same running workspace"), "Help explains that Appearance never opens a parallel workspace");
 
 test.finish();

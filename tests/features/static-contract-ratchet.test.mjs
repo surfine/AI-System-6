@@ -59,8 +59,12 @@ const budget = JSON.parse(readFileSync(budgetPath, "utf8"));
 // counting it as a reading of source would be the measurement lying. The routes
 // are named rather than all of apps/server: importing a data module is not
 // executing an endpoint, and a signal that wide would hand the whole server
-// tree's neighbours a slot each.
-const executingSignal = /node:vm|boot-vm\.mjs|draft-desk-vm\.mjs|write-lease-vm\.mjs|backup-vm\.mjs|app-boot-vm\.mjs|^\.\.\/\.\.\/(?:functions\/(?:_lib|api)|workers|apps\/server|platform\/macos\/tinyjs\/src\/node)\//;
+// tree's neighbours a slot each. `apps/desktop/app` joins the same way
+// (2026-11-05): its modules are ES modules with real exports — importing one
+// runs the shipped code, unlike the classic scripts a text `read()` only
+// spells. agent-runtime.test.mjs was executing two shared runtimes through
+// createRequire and counted as static because this signal could not see it.
+const executingSignal = /node:vm|boot-vm\.mjs|draft-desk-vm\.mjs|write-lease-vm\.mjs|backup-vm\.mjs|app-boot-vm\.mjs|^\.\.\/\.\.\/(?:functions\/(?:_lib|api)|workers|apps\/server|apps\/desktop\/app|platform\/macos\/tinyjs\/src\/node)\//;
 const suiteInfrastructure = new Set([
   "static-contract-ratchet.test.mjs",
   "gate-self-proof.test.mjs",
@@ -86,6 +90,10 @@ const suiteInfrastructure = new Set([
   // release tooling, not about the product, so it belongs on this side of the
   // count like the two above.
   "release-step-resume.test.mjs",
+  // Executes the innerHTML transformer's real export against fixture
+  // templates (the mis-shear class, protected spans, idempotence). A claim
+  // about the conversion tooling, not about the product.
+  "inner-html-transform.test.mjs",
   // Spawns the real release-prepare and requires the prerelease Mac-target
   // guard to refuse: a claim about the release gate going red, the way
   // gate-self-proof is, not about the app.

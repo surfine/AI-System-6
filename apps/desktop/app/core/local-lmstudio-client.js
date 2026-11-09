@@ -86,34 +86,6 @@ window.AISystem6LocalLMStudio = (() => {
     return isPublicWebMode() && window.location?.protocol === "https:" && isSafariBrowser();
   }
 
-  function isSafariHttpLocalMode() {
-    return isPublicWebMode() && window.location?.protocol === "http:" && isSafariBrowser();
-  }
-
-  function httpLocalEntryUrl(origin = "") {
-    let targetOrigin;
-    try {
-      targetOrigin = new URL(String(origin || ""));
-    } catch {
-      throw new Error("lmstudio_safari_http_unavailable");
-    }
-    if (
-      targetOrigin.protocol !== "http:"
-      || targetOrigin.username
-      || targetOrigin.password
-      || targetOrigin.pathname !== "/"
-      || targetOrigin.search
-      || targetOrigin.hash
-    ) {
-      throw new Error("lmstudio_safari_http_unavailable");
-    }
-    const current = new URL(window.location.href);
-    current.protocol = targetOrigin.protocol;
-    current.hostname = targetOrigin.hostname;
-    current.port = targetOrigin.port;
-    return current.href;
-  }
-
   async function browserPermissionState() {
     if (!navigator.permissions?.query) return "unsupported";
     try {
@@ -1216,9 +1188,8 @@ window.AISystem6LocalLMStudio = (() => {
     REQUEST_TIMEOUT_MS,
     INFERENCE_TIMEOUT_MS,
     isPublicWebMode,
+    isSafariBrowser,
     isSafariPublicWebUnsupported,
-    isSafariHttpLocalMode,
-    httpLocalEntryUrl,
     browserPermissionState,
     normalizeBaseUrl,
     currentProvider,

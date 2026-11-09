@@ -652,10 +652,10 @@ function renderDocuments() {
         const shape = finderItemShape(folder);
         row.className = `finder-list-row finder-label-${folder.finderLabel || "none"}${finderItemSelected(folder, shape) ? " is-selected" : ""}`;
         stampFinderItemDataset(row, folder, shape);
-        row.innerHTML = `
-          <span>${renderSystemIcon("folder", { size: "list"})}${escapeHtml(displayFolderName(folder.name))}</span>
-          <span>${t("folder_kind")}</span>
-          <span>${t("items_count", getProjectFolderDeepItemCount(folder.id))}</span>
+        row.innerHTML = html`
+          <span>${html.raw(renderSystemIcon("folder", { size: "list"}))}${displayFolderName(folder.name)}</span>
+          <span>${html.raw(t("folder_kind"))}</span>
+          <span>${html.raw(t("items_count", getProjectFolderDeepItemCount(folder.id)))}</span>
           <span>${new Date(folder.updatedAt || folder.createdAt).toLocaleDateString()}</span>
         `;
         row.onclick = (event) => finderTapSelect(event, row, {
@@ -674,9 +674,9 @@ function renderDocuments() {
         stampFinderItemDataset(row, file, shape);
         const fileKind = file.kindLabel || (file.type === "text" ? t("kind_teachtext") : t("kind_chat"));
         const icon = file.iconId || (file.type === "text" ? "teachText" : "chatFile");
-        row.innerHTML = `
-          <span>${renderSystemIcon(icon, { size: "list"})}${escapeHtml(file.name)}</span>
-          <span>${fileKind}${file.label ? ` · ${escapeHtml(labelName(file.label))}` : ""}</span>
+        row.innerHTML = html`
+          <span>${html.raw(renderSystemIcon(icon, { size: "list"}))}${file.name}</span>
+          <span>${fileKind}${html.raw(file.label ? html` · ${labelName(file.label)}` : "")}</span>
           <span>${getFinderItemSizeLabel(file)}</span>
           <span>${new Date(file.updatedAt || file.createdAt).toLocaleDateString()}</span>
         `;
@@ -717,7 +717,7 @@ function renderDocuments() {
         const empty = document.createElement("button");
         empty.type = "button";
         empty.className = "finder-empty-object project-empty-object";
-        empty.innerHTML = `${renderSystemIcon("document", { size: "ordinary" })}<b>${escapeHtml(t("documents"))}</b><small>${escapeHtml(t("save_chat_empty"))}</small>`;
+        empty.innerHTML = html`${html.raw(renderSystemIcon("document", { size: "ordinary" }))}<b>${html.raw(t("documents"))}</b><small>${html.raw(t("save_chat_empty"))}</small>`;
         empty.addEventListener("click", () => handleAction("open-teachtext"));
         fragment.append(empty);
       }
@@ -731,7 +731,7 @@ function renderDocuments() {
       const shape = finderItemShape(folder);
       button.className = `finder-item finder-label-${folder.finderLabel || "none"}${finderItemSelected(folder, shape) ? " is-selected" : ""}`;
       stampFinderItemDataset(button, folder, shape);
-      button.innerHTML = `${renderSystemIcon("folder", { size: "finder"})}<span>${escapeHtml(displayFolderName(folder.name))}</span>`;
+      button.innerHTML = html`${html.raw(renderSystemIcon("folder", { size: "finder"}))}<span>${displayFolderName(folder.name)}</span>`;
       button.addEventListener("click", (event) => finderTapSelect(event, button, {
         alreadySelected: selectedDocumentFolderId === folder.id
           && selectedDocumentItemKeys.has(documentSelectionKey("folder", folder.id)),
@@ -753,7 +753,7 @@ function renderDocuments() {
       button.className = `finder-item label-${file.label || "none"} finder-label-${file.finderLabel || "none"}${finderItemSelected(file, shape) ? " is-selected" : ""}`;
       stampFinderItemDataset(button, file, shape);
       const iconId = file.iconId || (file.type === "text" ? "teachText" : "chatFile");
-      button.innerHTML = `${renderSystemIcon(iconId, { size: "finder"})}<span>${escapeHtml(file.name)}</span>${file.label ? `<small>${escapeHtml(labelName(file.label))}</small>` : ""}`;
+      button.innerHTML = html`${html.raw(renderSystemIcon(iconId, { size: "finder"}))}<span>${file.name}</span>${html.raw(file.label ? html`<small>${labelName(file.label)}</small>` : "")}`;
       button.addEventListener("click", (event) => finderTapSelect(event, button, {
         alreadySelected: selectedChatFileId === file.id
           && selectedDocumentItemKeys.has(documentSelectionKey("file", file.id)),

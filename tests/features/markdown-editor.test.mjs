@@ -99,6 +99,14 @@ test.assertNotMatches(accessories, /setRangeText\([\s\S]{0,120}?\n\s*markTeachTe
 test.assertIncludes(editor, 'textarea.addEventListener("compositionupdate", schedulePaint)', "composing characters are painted while the IME is still open");
 test.assertNotIncludes(editor, "if (composing || frame) return;", "no composition guard may stop the overlay from painting");
 
+// The browser paints the composition itself in the textarea's own layer, on an
+// opaque platform highlight no stylesheet hook reaches, so while the IME is
+// open the textarea shows its own text again. Colour only: a metric change
+// here would drag every glyph out from under the caret mid-composition.
+const composingRule = appsCss.match(/\.mde-surface\.is-composing > \.mde-input \{[\s\S]*?\}/)?.[0] || "";
+test.assertIncludes(composingRule, "color: var(--ink);", "an open composition paints the textarea's own glyphs above the platform highlight");
+test.assertNotIncludes(composingRule, "font", "and the composing state changes no metric");
+
 // --- Focus mode: three tiers of attention --------------------------------
 //
 // The cycle stays three states -- Off, Typewriter, Sentence -- because a

@@ -358,6 +358,7 @@ body[data-theme] :is(.finder-item span:last-of-type, .finder-list-name-cell span
 
 .finder-item.is-archived .mini-icon {
   opacity: 0.55;
+  background-color: var(--paper);
 }
 
 /* Finder Labels (user-set status colors; Classic label hues, readable on both
@@ -925,15 +926,20 @@ body[data-theme] :is(.finder-item span:last-of-type, .finder-list-name-cell span
   overflow: hidden;
 }
 
+/* File-well frame moved here from 60-responsive (2026-11-05 audit): the
+   responsive group mixed equal-value and additive properties per selector. */
 .document-icon-grid {
   min-height: 280px;
   align-content: start;
   border: 2px solid var(--ink);
-  background: var(--paper);
+  background: var(--file-well-bg);
   padding: 12px;
   overflow: auto;
+  border: var(--system-border);
+  box-shadow: var(--system-inset);
 }
 
+/* File-well frame moved here from 60-responsive (2026-11-05 audit). */
 .project-disk-grid {
   height: 100%;
   min-height: 0;
@@ -941,6 +947,8 @@ body[data-theme] :is(.finder-item span:last-of-type, .finder-list-name-cell span
   align-content: start;
   background: var(--file-well-bg);
   padding: 14px;
+  border: var(--system-border);
+  box-shadow: var(--system-inset);
 }
 
 .finder-grid.finder-small-icons {

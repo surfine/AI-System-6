@@ -723,13 +723,13 @@ function rebuildFlowSummary(lines) {
 function renderRebuildFlowSources(parts) {
   const options = rebuildFlowSourceOptions();
   if (!rebuildFlow.sourceKind) rebuildFlow.sourceKind = options.find((option) => option.value && !option.disabled)?.value || "paste";
-  parts.source.innerHTML = options.map((option) => `<option value="${escapeHtml(option.value)}"${option.disabled ? " disabled" : ""}${option.value === rebuildFlow.sourceKind ? " selected" : ""}>${escapeHtml(option.label)}</option>`).join("");
+  parts.source.innerHTML = options.map((option) => html`<option value="${option.value}"${option.disabled ? " disabled" : ""}${option.value === rebuildFlow.sourceKind ? " selected" : ""}>${option.label}</option>`).join("");
 }
 
 function renderRebuildFlowSections(parts) {
   const list = parts.list;
   if (!rebuildFlow.sections.length) {
-    list.innerHTML = `<div class="rebuild-empty"><p><b>${escapeHtml(t("rebuild_empty_title"))}</b></p><p>${escapeHtml(t("rebuild_empty_rule"))}</p><p>${escapeHtml(t("rebuild_empty_edit"))}</p></div>`;
+    list.innerHTML = html`<div class="rebuild-empty"><p><b>${html.raw(t("rebuild_empty_title"))}</b></p><p>${html.raw(t("rebuild_empty_rule"))}</p><p>${html.raw(t("rebuild_empty_edit"))}</p></div>`;
     list.removeAttribute("aria-activedescendant");
     return;
   }
@@ -747,7 +747,7 @@ function renderRebuildFlowSections(parts) {
     }
     return `<div class="finder-list-row${selected ? " is-selected" : ""}${bad ? " is-bad" : ""}" id="rebuild-row-${index}" role="option" aria-selected="${selected}" data-rebuild-row="${index}"><span>${index + 1}</span><span>${escapeHtml(section.title)}</span><span>「${escapeHtml(start || "")}…」</span><span>${bad ? "—" : section.chars ?? ""}</span></div>`;
   });
-  list.innerHTML = header + rows.join("");
+  list.innerHTML = html`${html.raw(header)}${html.raw(rows)}`;
   if (rebuildFlow.selected >= 0) list.setAttribute("aria-activedescendant", `rebuild-row-${rebuildFlow.selected}`);
   else list.removeAttribute("aria-activedescendant");
 }
@@ -822,11 +822,11 @@ function renderRebuildFlow() {
   if (hasSplit) {
     const lines = rebuildFlowCheckLines();
     const marks = { ok: "✓", warn: "!", bad: "✕" };
-    parts.checks.innerHTML = lines.map(([kind, text]) => `<p class="is-${kind}"><span aria-hidden="true">${marks[kind]}</span><span>${escapeHtml(text)}</span></p>`).join("")
-      + `<p class="rebuild-summary">${escapeHtml(rebuildFlowSummary(lines))}</p>`;
+    parts.checks.innerHTML = lines.map(([kind, text]) => html`<p class="is-${kind}"><span aria-hidden="true">${marks[kind]}</span><span>${text}</span></p>`).join("")
+      + html`<p class="rebuild-summary">${rebuildFlowSummary(lines)}</p>`;
   } else if (rebuildFlow.failure) {
     parts.checks.hidden = false;
-    parts.checks.innerHTML = `<p class="is-warn"><span aria-hidden="true">!</span><span>${escapeHtml(rebuildFlow.failure)}</span></p>`;
+    parts.checks.innerHTML = html`<p class="is-warn"><span aria-hidden="true">!</span><span>${rebuildFlow.failure}</span></p>`;
   }
 
   const chars = rebuildFlowCharCount(rebuildFlow.text);

@@ -777,10 +777,10 @@
       row.type = "button";
       row.className = "multifinder-app multifinder-miniwindow";
       row.dataset.miniwindow = miniwindowKey(win);
-      row.innerHTML = `
+      row.innerHTML = html`
       <span class="multifinder-mark">▫</span>
-      <span>${escapeHtml(applicationWindowTitle(win))}</span>
-      <small>${escapeHtml(appLabelFor(win))}</small>
+      <span>${applicationWindowTitle(win)}</span>
+      <small>${appLabelFor(win)}</small>
     `;
       row.addEventListener("click", () => restoreMinimizedWindow(win));
       elements.push(row);

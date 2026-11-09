@@ -86,6 +86,7 @@ export function encodeLedger(meta, targets) {
     values: valueTable,
     shapes,
     targets: targetTable,
+    ...(meta.windows ? { windows: meta.windows } : {}),
   };
 }
 
@@ -118,6 +119,7 @@ export function serializeLedger(ledger) {
       top("properties"), top("rules"), top("values"),
       `"shapes": [\n${shapeLines.join(",\n")}\n]`,
       `"targets": {\n${targetLines.join(",\n")}\n}`,
+      ...(ledger.windows ? [top("windows")] : []),
     ].join(",\n"),
     "}",
     "",
@@ -157,10 +159,21 @@ function finishGroups(map) {
  *
  * @param {object} baseline ledger as written by encodeLedger
  * @param {object} current ledger of the same theme and viewport
- * @param {{ samples?: number }} [options]
+ * @param {{ samples?: number, keep?: (path: string) => boolean, contextual?: (path: string, property: string, rule: string, otherRule: string) => boolean }} [options]
+ *   keep: compare only the targets it accepts (the targeted ledger compares
+ *   the windows it opened and nothing else).
+ *   contextual: a derived change (same rule, new value) whose declaration the
+ *   predicate calls layout state -- it reads a custom property script sets
+ *   inline, or resolves an `auto` inset -- is counted under `contextual`
+ *   instead of failing. The targeted ledger opens fewer windows than the
+ *   baseline did, so script-placed geometry legitimately differs there. It
+ *   is asked about flips too (rule = current winner, otherRule = baseline's),
+ *   so the desk, whose menus follow the open windows, can be judged on the
+ *   rules a diff touched alone.
  */
 export function diffLedgers(baseline, current, options = {}) {
   const sampleLimit = options.samples ?? 10;
+  const keep = options.keep || (() => true);
   const theme = current.theme ?? baseline.theme;
   const before = decodeLedger(baseline);
   const after = decodeLedger(current);
@@ -174,6 +187,9 @@ export function diffLedgers(baseline, current, options = {}) {
   const disappeared = [];
   const lost = [];
   let skippedUnstable = 0;
+  let contextual = 0;
+  const derivedCells = [];
+  const flipCells = [];
 
   const record = (map, key, change, extra) => {
     if (!map.has(key)) map.set(key, newGroup(key, change, theme, extra));
@@ -185,6 +201,7 @@ export function diffLedgers(baseline, current, options = {}) {
 
   const paths = new Set([...before.keys(), ...after.keys()]);
   for (const path of [...paths].sort()) {
+    if (!keep(path)) continue;
     if (unstableTargets.has(path)) { skippedUnstable += 1; continue; }
     const baseTarget = before.get(path);
     const currentTarget = after.get(path);
@@ -197,10 +214,21 @@ export function diffLedgers(baseline, current, options = {}) {
       const was = baseTarget.cells.get(property);
       const now = currentTarget.cells.get(property);
       if (was && now && was.rule === now.rule && was.value === now.value) continue;
+      // A style attribute present in one capture and absent in the other is
+      // script state (an open animation's transform, a measured max-height),
+      // not a cascade change - the same reason inline values are stored as
+      // "(inline)". A rule appearing or vanishing next to it still counts.
+      const inlineOnly = (cell) => cell && String(cell.rule).startsWith("inline style attribute");
+      if ((inlineOnly(was) && !now) || (!was && inlineOnly(now))) { skippedUnstable += 1; continue; }
       let change;
       if (was && now) {
         change = { path, property, before: was, after: now };
-        if (was.rule === now.rule) { record(derived, now.rule, change, { rule: now.rule }); continue; }
+        if (was.rule === now.rule) {
+          if (options.contextual?.(path, property, now.rule, was.rule)) { contextual += 1; continue; }
+          derivedCells.push([path, property]);
+          record(derived, now.rule, change, { rule: now.rule });
+          continue;
+        }
       } else if (was) {
         const probed = probes[path]?.[property];
         change = { path, property, before: was, after: { value: probed === undefined ? UNDECLARED : probed, rule: NO_RULE }, valueUnknown: probed === undefined };
@@ -209,6 +237,8 @@ export function diffLedgers(baseline, current, options = {}) {
         change = { path, property, before: { value: UNDECLARED, rule: NO_RULE }, after: now, valueUnknown: true };
       }
       const sameValue = !change.valueUnknown && change.before.value === change.after.value;
+      if (!sameValue && options.contextual?.(path, property, change.after.rule, change.before.rule)) { contextual += 1; continue; }
+      if (!sameValue) flipCells.push([path, property]);
       record(sameValue ? moved : flips, groupKeyFlip(change), change, { from: change.before.rule, to: change.after.rule });
     }
   }
@@ -217,13 +247,20 @@ export function diffLedgers(baseline, current, options = {}) {
   const result = {
     theme,
     viewport: current.viewport ?? baseline.viewport,
-    targets: { baseline: before.size, current: after.size },
+    targets: options.keep
+      ? { baseline: [...before.keys()].filter(keep).length, current: [...after.keys()].filter(keep).length }
+      : { baseline: before.size, current: after.size },
     flips: finishGroups(flips),
     moved: finishGroups(moved),
     derived: finishGroups(derived),
     appeared: { count: appeared.length, samples: appeared.slice(0, sampleLimit) },
     disappeared: { count: disappeared.length, samples: disappeared.slice(0, sampleLimit) },
     skippedUnstable,
+    contextual,
+    derivedCells,
+    flipCells,
+    appearedTargets: appeared,
+    disappearedTargets: disappeared,
     lost,
   };
   result.counts = {
@@ -234,6 +271,29 @@ export function diffLedgers(baseline, current, options = {}) {
     disappeared: disappeared.length,
   };
   return result;
+}
+
+/**
+ * The baseline with the changes a diff reported written into it: every
+ * flipped and derived cell takes the current value and rule. Everything else
+ * keeps the baseline's value -- cells the diff excused, and targets that only
+ * appeared or disappeared (a targeted run opens windows the full walk leaves
+ * hidden, and neither kind fails a run). This is how a targeted run accepts an
+ * intended change without recapturing every window.
+ */
+export function acceptChanges(baseline, current, diff) {
+  const before = decodeLedger(baseline);
+  const after = decodeLedger(current);
+  const targets = new Map([...before].map(([path, target]) => [path, new Map(target.cells)]));
+  for (const [path, property] of [...diff.flipCells, ...diff.derivedCells]) {
+    const now = after.get(path)?.cells.get(property);
+    const cells = targets.get(path);
+    if (!cells) continue;
+    if (now) cells.set(property, now);
+    else cells.delete(property);
+  }
+  const { format, properties, rules, values, shapes, targets: _, ...meta } = baseline;
+  return encodeLedger(meta, [...targets].map(([path, cells]) => [path, [...cells].map(([property, cell]) => [property, cell.value, cell.rule])]));
 }
 
 /** Combine per-theme results: groups with the same rule key add up across themes. */

@@ -77,7 +77,7 @@ const exactPublicFiles = new Set([
   "styles.searcher.css",
   "styles.clio-chart.css",
   "styles.clio-paint.css",
-  "styles.one-more-tune.css", "styles.one-more-take.css", "styles.aaron-blog.css",
+  "styles.one-more-tune.css", "styles.one-more-take.css", "styles.aaron-blog.css", "styles.wensi-quanyong.css",
   "styles.rootline.css",
   "styles.joyride.css",
   "styles.project-disks.css",

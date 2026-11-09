@@ -99,9 +99,9 @@ function renderReaderVideoTranscriptView(readerPage) {
     item.dataset.transcriptEnd = timeEnd;
     item.dataset.transcriptBlockIds = (paragraph.blockIds || []).join(",");
     const range = `${compactTime(timeStart)}-${compactTime(timeEnd)}`;
-    item.innerHTML = `
-      <header><small>${escapeHtml(range)}</small><button type="button" data-jump-blocks="${escapeHtml((paragraph.blockIds || []).join(","))}">${escapeHtml(t("reader_show_source_blocks"))}</button></header>
-      <p>${escapeHtml(paragraph.text || "")}</p>
+    item.innerHTML = html`
+      <header><small>${range}</small><button type="button" data-jump-blocks="${(paragraph.blockIds || []).join(",")}">${html.raw(t("reader_show_source_blocks"))}</button></header>
+      <p>${paragraph.text || ""}</p>
     `;
     paragraphList.append(item);
   });
@@ -117,9 +117,9 @@ function renderReaderVideoTranscriptView(readerPage) {
     row.className = "reader-transcript-block";
     row.id = `reader-srt-block-${block.index}`;
     row.dataset.transcriptBlockId = String(block.index);
-    row.innerHTML = `
-      <header>#${escapeHtml(String(block.index))} · <small>${escapeHtml(compactTime(block.start))}-${escapeHtml(compactTime(block.end))}</small></header>
-      <p>${escapeHtml(String(block.text || ""))}</p>
+    row.innerHTML = html`
+      <header>#${String(block.index)} · <small>${compactTime(block.start)}-${compactTime(block.end)}</small></header>
+      <p>${String(block.text || "")}</p>
     `;
     blockList.append(row);
   });

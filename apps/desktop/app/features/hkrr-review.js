@@ -23,7 +23,7 @@ ${fullBody}`;
     const data = await readChatJson(response);
     const reportText = stripRebuildMarkdownFence(data?.choices?.[0]?.message?.content || "").trim();
     if (!reportText) {
-      claimResultsEl.innerHTML = `<div class="empty-folder-note">${escapeHtml(t("writing_review_empty"))}</div>`;
+      claimResultsEl.innerHTML = html`<div class="empty-folder-note">${html.raw(t("writing_review_empty"))}</div>`;
       setStatus(t("writing_review_empty"));
       return;
     }
@@ -50,7 +50,7 @@ ${fullBody}`;
     if (!isAbortError(error)) {
       console.error("HKRR review failed", error);
       const message = friendlyErrorDetail(error);
-      claimResultsEl.innerHTML = `<div class="empty-folder-note">${escapeHtml(message)}</div>`;
+      claimResultsEl.innerHTML = html`<div class="empty-folder-note">${message}</div>`;
       setStatus(message);
     }
   } finally {

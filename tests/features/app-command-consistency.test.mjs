@@ -3,31 +3,33 @@
 // failure semantics. No app invents its own Save / Retry / Share wording.
 
 import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
+import vm from "node:vm";
 
 const test = createFeatureTest("app-command-consistency");
-const en = read("app/data/translations-en.js");
-const zh = read("app/data/translations-zh.js");
+// The translation tables are classic scripts installing window globals;
+// loading them in a VM executes the shipped data instead of asserting on the
+// file's text (the reader-era-rail recipe).
+const loadTable = (path, name) => vm.runInContext(`${read(path)}; window.${name}`, vm.createContext({ window: {} }));
+const en = loadTable("app/data/translations-en.js", "AISystem6TranslationsEn");
+const zh = loadTable("app/data/translations-zh.js", "AISystem6TranslationsZh");
 const actions = read("app/core/actions.js");
 const chatMessages = read("app/core/chat-messages.js");
 
 // Save receipt copy is shared: TeachText "Saved" === Draft Desk "Saved".
-test.assertIncludes(en, 'saved: "Saved"', "TeachText save receipt reads Saved");
-test.assertIncludes(en, 'quick_draft_saved_state: "Saved"', "Draft Desk save receipt reads Saved");
-test.assertIncludes(en, 'modified: "Modified"', "TeachText modified receipt reads Modified");
-test.assertIncludes(en, 'quick_draft_modified_state: "Modified"', "Draft Desk modified receipt reads Modified");
-test.assertIncludes(zh, 'saved: "已保存"', "Chinese TeachText save receipt is 已保存");
-test.assertIncludes(zh, 'quick_draft_saved_state: "已保存"', "Chinese Draft Desk save receipt is 已保存");
+test.assert(en.saved === "Saved" && en.quick_draft_saved_state === "Saved", "TeachText and Draft Desk save receipts both read Saved");
+test.assert(en.modified === "Modified" && en.quick_draft_modified_state === "Modified", "both modified receipts read Modified");
+test.assert(zh.saved === "已保存" && zh.quick_draft_saved_state === "已保存", "Chinese save receipts are 已保存");
 test.assertNotIncludes(en, "Successfully persisted", "no app uses invented success wording");
 
 // Retry is one shared concept across apps.
-test.assertIncludes(en, 'retry: "Retry"', "Retry has one shared key");
+test.assert(en.retry === "Retry", "Retry has one shared key");
 test.assertIncludes(actions, '"retry-current-ai-action"', "retry is a shared executable action");
 test.assertIncludes(chatMessages, 'resolvePendingStatus', "ClioTalk retries through the shared message path");
 
 // Share / Download come from the shared web-platform vocabulary.
-test.assertIncludes(en, 'share_ellipsis: "Share…"', "Share uses the shared key");
-test.assertIncludes(en, 'share_markdown_done:', "Draft Desk share success uses the shared receipt");
-test.assertIncludes(en, "download_markdown", "Download uses a shared key");
+test.assert(String(en.share_ellipsis || "").startsWith("Share"), "Share uses the shared key");
+test.assert("share_markdown_done" in en, "Draft Desk share success uses the shared receipt");
+test.assert(Object.keys(en).some((key) => key.startsWith("download_markdown")), "Download uses a shared key");
 
 // Close semantics: every first-class writing app flushes before closing, and
 // a failed flush keeps the window open.
@@ -49,8 +51,8 @@ for (const key of [
   "project_storage_unavailable_message",
   "project_storage_unavailable_action",
 ]) {
-  test.assertIncludes(en, `${key}:`, `English error ${key} exists`);
-  test.assertIncludes(zh, `${key}:`, `Chinese error ${key} exists`);
+  test.assert(key in en, `English error ${key} exists`);
+  test.assert(key in zh, `Chinese error ${key} exists`);
 }
 
 test.finish();

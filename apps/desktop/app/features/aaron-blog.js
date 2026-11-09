@@ -534,10 +534,10 @@
     try {
       const chunk = post.kind === "long" ? await ensureLongPack() : await ensureChunk(post.date.slice(0, 4));
       if (state.destroyed) return;
-      const html = chunk?.posts?.[id]?.html || "";
-      if (!html) throw new Error(tr("aaron_blog_missing", "This post is not in the downloaded pack."));
+      const postHtml = chunk?.posts?.[id]?.html || "";
+      if (!postHtml) throw new Error(tr("aaron_blog_missing", "This post is not in the downloaded pack."));
       if (article) {
-        article.innerHTML = html`<div class="aaron-blog-article-inner"><div class="aaron-blog-article-head"><button type="button" class="aaron-blog-back" data-blog-back>← ${html.raw(tr("aaron_blog_back", "Back"))}</button><time>${post.date}</time><span>${post.minutes} ${html.raw(tr("aaron_blog_minutes", "min read"))}</span><button type="button" class="aaron-blog-ask" data-blog-ask="post">${html.raw(tr("aaron_blog_ask_post", "Ask about this post"))}</button></div><div class="aaron-blog-article-body">${safeHtml(html)}</div>${articleFooter(post)}</div>`;
+        article.innerHTML = html`<div class="aaron-blog-article-inner"><div class="aaron-blog-article-head"><button type="button" class="aaron-blog-back" data-blog-back>← ${html.raw(tr("aaron_blog_back", "Back"))}</button><time>${post.date}</time><span>${post.minutes} ${html.raw(tr("aaron_blog_minutes", "min read"))}</span><button type="button" class="aaron-blog-ask" data-blog-ask="post">${html.raw(tr("aaron_blog_ask_post", "Ask about this post"))}</button></div><div class="aaron-blog-article-body">${html.raw(safeHtml(postHtml))}</div>${html.raw(articleFooter(post))}</div>`;
         article.scrollTop = Number(restoreScroll) || 0;
       }
       state.error = "";

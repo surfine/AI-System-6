@@ -1587,11 +1587,11 @@ function showEraseDiskPreviewModal(project) {
     preview.rows.forEach((row) => {
       const item = document.createElement("div");
       item.className = `finder-operation-item${row.count ? "" : " is-empty"}`;
-      item.innerHTML = `
-        ${renderSystemIcon(row.iconId || row.iconClass, { size: "list"})}
+      item.innerHTML = html`
+        ${html.raw(renderSystemIcon(row.iconId || row.iconClass, { size: "list"}))}
         <span class="finder-operation-item-copy">
-          <b>${escapeHtml(row.name)}</b>
-          <small>${escapeHtml(row.meta)}</small>
+          <b>${row.name}</b>
+          <small>${row.meta}</small>
         </span>
       `;
       listEl.append(item);

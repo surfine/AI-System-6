@@ -1714,7 +1714,7 @@ function ensureDocMapNodeStrip() {
   strip.className = "docmap-node-strip";
   strip.hidden = true;
   strip.setAttribute("role", "region");
-  strip.innerHTML = `
+  strip.innerHTML = html`
     <div class="docmap-node-strip-copy"><strong></strong><span></span></div>
     <div class="button-row docmap-node-strip-actions">
       <button class="btn" type="button" data-docmap-node-command="ask"></button>
@@ -1845,14 +1845,14 @@ function renderDocMap() {
       const note = failed
         ? t("docmap_pending_failed", pending.message || t("docmap_model_quality_failed"))
         : t("docmap_pending_note", pending.label || t("docmap"), docMapRangeLabel(pending.rangeMode), pending.chars || 0);
-      docMapTreeEl.innerHTML = `<div class="empty-folder-note" data-docmap-state="${failed ? "failed" : "pending"}"><p>${escapeHtml(note)}</p>${pending.retryable ? `<button class="btn" type="button" data-action="docmap-retry-pending">${escapeHtml(t("docmap_retry"))}</button>` : ""}</div>`;
+      docMapTreeEl.innerHTML = html`<div class="empty-folder-note" data-docmap-state="${failed ? "failed" : "pending"}"><p>${note}</p>${html.raw(pending.retryable ? html`<button class="btn" type="button" data-action="docmap-retry-pending">${html.raw(t("docmap_retry"))}</button>` : "")}</div>`;
     } else {
       docMapTreeEl.removeAttribute("aria-busy");
       docMapCountEl.textContent = t("docmap_nodes_count", 0);
       // Goal #2/#6: idle DocMap offers Reader as the one next source step
       // (retry already owns the pending/failed empty). Map remains honest —
       // opening Reader never pretends a structure already exists.
-      docMapTreeEl.innerHTML = `<div class="empty-folder-note" data-docmap-state="idle"><p>${escapeHtml(t("docmap_empty"))}</p><button class="btn default" type="button" data-action="open-reader">${escapeHtml(t("reader"))}</button></div>`;
+      docMapTreeEl.innerHTML = html`<div class="empty-folder-note" data-docmap-state="idle"><p>${html.raw(t("docmap_empty"))}</p><button class="btn default" type="button" data-action="open-reader">${html.raw(t("reader"))}</button></div>`;
     }
     if (docMapCommandMenu) {
       docMapCommandMenu.classList.add("is-disabled");

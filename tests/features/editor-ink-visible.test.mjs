@@ -227,6 +227,26 @@ test.assert(
   "characters an IME is still composing reach the overlay, not just the transparent textarea",
 );
 
+// The browser paints the composition itself in the textarea's own layer, on an
+// opaque platform highlight that no stylesheet hook reaches, in the textarea's
+// own text colour -- which is transparent. So while the composition is open
+// the textarea shows its own text again, and hands the ink back at the end.
+textarea.dispatchEvent(new dom.context.Event("compositionstart"));
+test.assert(
+  surface.__classes.has("is-composing"),
+  "an open IME composition lifts the textarea's transparency so the browser's own composition paint is readable",
+);
+textarea.dispatchEvent(new dom.context.Event("compositionend"));
+dom.flush();
+test.assert(
+  !surface.__classes.has("is-composing"),
+  "compositionend hands the ink back to the overlay",
+);
+test.assert(
+  overlay.innerHTML.includes("pinyin in flight"),
+  "and the overlay never stopped painting while the composition was open",
+);
+
 // A scroll must move the ink with the caret, or the writer reads one part of
 // the document while typing into another.
 textarea.scrollTop = 240;

@@ -1488,8 +1488,8 @@ function renderTrash() {
     button.title = item.title;
     button.innerHTML = html`
       <span>${index + 1}.</span>
-      <span>${nameCell(item)}</span>
-      <small>${typeLabel}${path ? html` · ${path}` : ""}</small>
+      <span>${html.raw(nameCell(item))}</span>
+      <small>${typeLabel}${html.raw(path ? html` · ${path}` : "")}</small>
     `;
     button.addEventListener("click", async () => {
       selectedTrashItem = item;

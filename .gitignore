@@ -7,6 +7,7 @@ playwright-report/
 /apps/desktop/app.bundle.js
 internal/archive/runtime-legacy/
 /apps/desktop/styles.bundle.css
+/apps/desktop/styles.wensi-quanyong.css
 /apps/desktop/styles.theme-lab.css
 /apps/desktop/styles.draft-desk.css
 /apps/desktop/styles.control-strip.css

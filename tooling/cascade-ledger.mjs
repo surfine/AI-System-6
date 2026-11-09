@@ -57,7 +57,15 @@
 //   node tooling/cascade-ledger.mjs --update --no-build  # write baselines for the chosen themes and viewport
 //   node tooling/cascade-ledger.mjs --update --viewport 390x844
 //   node tooling/cascade-ledger.mjs --noise              # capture twice in one session, list the keys that differ
+//   node tooling/cascade-ledger.mjs --verify --windows themeLab,controlPanel   # open and compare only these windows
 //   options: --themes a,b  --viewport WxH  --no-build  --out <dir> (ledger directory, default tests/cascade-ledger)
+//            --windows a,b (targeted: open only these registered windows and compare only their targets;
+//            "(desk)" adds the menu bar, Dock and desktop)  --report <file> (verify report path)
+//            --changed-rules <file> (JSON [[file, selector]] the diff touched; with --windows)
+//            --accept (write this run's flips and derived changes into the baseline)
+//
+// The targeted form is what tooling/cascade-changed.mjs runs for each
+// appearance and viewport a working diff can reach.
 //
 // Baselines: tests/cascade-ledger/<theme>@<WxH>.json. --update captures twice in
 // one session and stores the cells that differ between the two under `unstable`;
@@ -69,9 +77,9 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { startAppServer, stopProcess } from "./lib/app-preview-server.mjs";
-import { diffLedgers, encodeLedger, formatDiffReport, mergeDiffs, serializeLedger } from "./lib/cascade-diff.mjs";
+import { acceptChanges, diffLedgers, encodeLedger, formatDiffReport, mergeDiffs, serializeLedger } from "./lib/cascade-diff.mjs";
 import { ledgerInstrumentSource } from "./lib/cascade-instrument.mjs";
-import { bootThemedPage, launchChromium, openEveryWindow, parseViewport, registeredThemeIds, revealAndSettle, settleLayout } from "./lib/cascade-page.mjs";
+import { bootThemedPage, launchChromium, openEveryWindow, parseViewport, registeredThemeIds, revealAndSettle, settleLayout, windowIndex, windowOfPath } from "./lib/cascade-page.mjs";
 import { desktopRoot, repositoryRoot } from "./lib/paths.mjs";
 import { lazyStyleBundles, styleLayerOrder, styleRuntimePaths } from "./style-manifest.mjs";
 
@@ -90,7 +98,29 @@ const viewport = parseViewport(argValue("--viewport"));
 const VIEWPORT = { width: viewport.width, height: viewport.height };
 const VIEWPORT_NAME = `${viewport.width}x${viewport.height}`;
 const LEDGER_DIR = join(repositoryRoot, argValue("--out") || "tests/cascade-ledger");
-const REPORT_PATH = join(repositoryRoot, `dist/verification/cascade-ledger@${VIEWPORT_NAME}.json`);
+const REPORT_PATH = join(repositoryRoot, argValue("--report") || `dist/verification/cascade-ledger@${VIEWPORT_NAME}.json`);
+const ONLY_WINDOWS = argValue("--windows") ? argValue("--windows").split(",").filter(Boolean) : null;
+// --accept (with --verify): write the flips and derived changes this run found
+// into the baseline instead of failing. The intended-change path for a
+// targeted run: only the cells that changed are rewritten.
+const ACCEPT = args.includes("--accept");
+// --changed-rules <json>: [[file, selector], ...] the diff touched (written by
+// tooling/cascade-changed.mjs). Ledger rule keys are "file :: selector" as the
+// CSSOM serializes it, plus any condition suffix; compared without quotes and
+// whitespace.
+const canonical = (text) => String(text).replace(/["'\s]/g, "");
+const CHANGED_RULES = argValue("--changed-rules")
+  ? JSON.parse(readFileSync(join(repositoryRoot, argValue("--changed-rules")), "utf8")).map(([file, selector]) => [file, canonical(selector)])
+  : [];
+function touchedRule(key) {
+  const [file, selector = ""] = String(key).split(" :: ");
+  const text = canonical(selector);
+  return CHANGED_RULES.some(([changedFile, changedSelector]) => changedFile === file && text.startsWith(changedSelector));
+}
+if (ONLY_WINDOWS && MODE !== "verify") {
+  console.error("--windows compares a subset against a full baseline; it only runs with --verify.");
+  process.exit(2);
+}
 const defaultThemes = ["classic", "liquid-glass"];
 const themes = argValue("--themes") ? argValue("--themes").split(",").filter(Boolean) : defaultThemes;
 const known = registeredThemeIds();
@@ -180,7 +210,7 @@ async function captureTheme(browser, server, theme, { repeat = MODE !== "verify"
   const { context, page, pageErrors } = booted;
   try {
     let mark = lap("boot", started);
-    const { windowNames, opened, failed } = await openEveryWindow(page, { settleMs: 150 });
+    const { windowNames, opened, failed } = await openEveryWindow(page, { settleMs: 150, only: ONLY_WINDOWS });
     mark = lap("windows", mark);
     const revealed = await revealAndSettle(page, opened);
     const settle = await settleLayout(page);
@@ -189,6 +219,7 @@ async function captureTheme(browser, server, theme, { repeat = MODE !== "verify"
     await page.evaluate((sources) => window.__cascadeLedger.install(sources), sourceTexts);
     const first = await page.evaluate(() => window.__cascadeLedger.capture());
     const second = repeat ? await page.evaluate(() => window.__cascadeLedger.capture()) : null;
+    const windows = await windowIndex(page);
     lap("capture", mark);
     const cells = cellsOf(first);
     const noise = second ? noiseBetween(cells, cellsOf(second)) : { targets: [], cells: [] };
@@ -210,7 +241,7 @@ async function captureTheme(browser, server, theme, { repeat = MODE !== "verify"
     // it runs many times slower, so every other mode closes it now.
     const keep = MODE === "verify";
     if (!keep) await context.close();
-    return { theme, cells, noise, coverage, page, context: keep ? context : null, started, probe: (pairs) => page.evaluate((list) => window.__cascadeLedger.probe(list), pairs) };
+    return { theme, cells, noise, coverage, windows, page, context: keep ? context : null, started, probe: (pairs) => page.evaluate((list) => window.__cascadeLedger.probe(list), pairs) };
   } catch (error) {
     await context.close();
     throw error;
@@ -262,7 +293,7 @@ try {
         for (const [path, property] of unstable.cells.slice(0, 20)) console.log(`  ${path} ${property}`);
         perTheme[theme] = { unstable, coverage: captured.coverage };
       } else if (MODE === "update") {
-        const ledger = ledgerOf(theme, captured.cells, { coverage: captured.coverage, unstable });
+        const ledger = ledgerOf(theme, captured.cells, { coverage: captured.coverage, unstable, windows: captured.windows });
         mkdirSync(LEDGER_DIR, { recursive: true });
         const text = serializeLedger(ledger);
         writeFileSync(baselineFile, text);
@@ -271,7 +302,54 @@ try {
       } else {
         const baseline = JSON.parse(readFileSync(baselineFile, "utf8"));
         const current = ledgerOf(theme, captured.cells, { coverage: captured.coverage });
-        let diff = diffLedgers(baseline, current);
+        // Targeted: a path belongs to the window that holds it on either side;
+        // everything else on the page is a desk with fewer windows than the
+        // baseline's and is not compared.
+        // "(ancestors)" is html, body and the desktop that holds the windows:
+        // the cells a token declared on them lives in, without the menus.
+        const roots = { ...(baseline.windows?.roots || {}), ...captured.windows.roots };
+        const keep = ONLY_WINDOWS ? (() => {
+          const wanted = new Set(ONLY_WINDOWS);
+          const holders = new Set(["html", "body"]);
+          for (const path of [...Object.keys(baseline.targets), ...captured.cells.keys()]) {
+            const parts = path.split(" > ");
+            const at = parts.findIndex((part) => part.includes("[data-window="));
+            for (let end = 1; end < at; end += 1) holders.add(parts.slice(0, end).join(" > "));
+          }
+          return (path) => wanted.has(windowOfPath(path, roots)) || (wanted.has("(ancestors)") && holders.has(path));
+        })() : undefined;
+        if (ONLY_WINDOWS && !baseline.windows) {
+          console.error(`${theme}: baseline predates the window index; run cascade:update for it before a targeted run.`);
+          failedRun = true;
+          continue;
+        }
+        // Targeted runs open fewer windows, and script places what it places
+        // (phone desk-accessory stacks, popover offsets) against the windows
+        // that are open. A derived change whose winning declaration reads a
+        // custom property some element carries inline, or resolves an `auto`
+        // inset, is that placement, not the stylesheet: counted, not failed.
+        // A rule the diff touched (CHANGED_RULES, from cascade-changed.mjs)
+        // is never excused: its own derived changes are what is under test.
+        let contextual;
+        if (ONLY_WINDOWS) {
+          const first = diffLedgers(baseline, current, { keep });
+          const pairs = first.derivedCells || [];
+          const declared = await captured.page.evaluate((list) => window.__cascadeLedger.declared(list), pairs);
+          const layoutState = new Set();
+          pairs.forEach(([path, property], index) => {
+            const found = declared[index];
+            if (!found) return;
+            if ((found.value === "auto" && /^(?:top|right|bottom|left)$/.test(property)) || found.inline.length) {
+              layoutState.add(`${path}\u0000${property}`);
+            }
+          });
+          // The desk lists and enables menu items for whatever is open, so on
+          // the desk only the rules the diff touched are judged.
+          contextual = (path, property, rule, otherRule) => (touchedRule(rule) || touchedRule(otherRule)
+            ? false
+            : layoutState.has(`${path}\u0000${property}`) || windowOfPath(path, roots) === "(desk)");
+        }
+        let diff = diffLedgers(baseline, current, { keep, contextual });
         if (diff.lost.length) {
           const pairs = diff.lost.slice(0, PROBE_LIMIT);
           const values = await captured.probe(pairs);
@@ -280,12 +358,17 @@ try {
             if (values[index] === null) return;
             (current.probes[path] ||= {})[property] = values[index];
           });
-          diff = diffLedgers(baseline, current);
+          diff = diffLedgers(baseline, current, { keep, contextual });
+        }
+        if (ACCEPT && (diff.counts.flip || diff.counts.derived)) {
+          writeFileSync(baselineFile, serializeLedger(acceptChanges(baseline, current, diff)));
+          console.log(`${theme}@${VIEWPORT_NAME}: accepted ${diff.counts.flip} flip(s) and ${diff.counts.derived} derived change(s) into ${baselineFile.replace(`${repositoryRoot}/`, "")}`);
+          diff.accepted = true;
         }
         diffs.push(diff);
         perTheme[theme] = { counts: diff.counts, targets: diff.targets, skippedUnstable: diff.skippedUnstable, coverage: captured.coverage };
         const c = diff.counts;
-        console.log(`${head}: ${c.flip} flip, ${c.derived} derived, ${c.moved} moved, ${c.appeared} appeared, ${c.disappeared} disappeared (${diff.skippedUnstable} unstable skipped; baseline ${diff.targets.baseline} targets) in ${seconds}s`);
+        console.log(`${head}: ${c.flip} flip, ${c.derived} derived, ${c.moved} moved, ${c.appeared} appeared, ${c.disappeared} disappeared (${diff.skippedUnstable} unstable skipped${diff.contextual ? `, ${diff.contextual} script-placed` : ""}; baseline ${diff.targets.baseline} targets) in ${seconds}s`);
         if (check.disagree) console.log(`  winner check: ${check.agree} plain pixel declarations agree with the computed value, ${check.disagree} do not`);
       }
     } finally {
@@ -319,7 +402,7 @@ if (MODE === "verify" && diffs.length) {
     perTheme: diffs,
   }, null, 1)}\n`);
   console.log(`\nReport: ${REPORT_PATH.replace(`${repositoryRoot}/`, "")}`);
-  if (merged.counts.flip || merged.counts.derived) {
+  if ((merged.counts.flip || merged.counts.derived) && !ACCEPT) {
     console.log(`\nFAILED: ${merged.counts.flip} flip(s), ${merged.counts.derived} derived change(s). If they are intended, run: npm run cascade:update`);
     process.exitCode = 1;
   } else {

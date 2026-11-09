@@ -370,14 +370,14 @@ window.AISystem6OneMoreTakeLoaded = true;
     const cover = part("cover"); cover.hidden = false;
     const headline = plan.anniversary ? L(plan.anniversary.title) : tr("one_more_take_day_line", plan.round, plan.setNumber, tr(`one_more_take_mutator_${plan.mutator}`));
     const card = (set) => `<button class="btn${set === today ? " default" : ""}" type="button" data-take-start="${set.number}">${esc(tr("one_more_take_set_line", set.number, L(set.title)))}</button>`;
-    cover.innerHTML = `<p class="one-more-take-kicker">${esc(headline)}</p>
-      ${today ? `<h2>${esc(L(today.title))}</h2><p class="one-more-take-dare">${esc(L(today.challenge))}</p>
-        <p class="one-more-take-rules">${esc(tr("one_more_take_rules", today.difficulty))}</p>
-        <div class="one-more-take-cover-actions">${card(today)}</div>`
-      : `<h2>${esc(tr("one_more_take_not_ready"))}</h2><p class="one-more-take-dare">${esc(tr("one_more_take_not_ready_body"))}</p>`}
-      <p class="one-more-take-rules">${esc(tr("one_more_take_also_playable"))}</p>
-      <div class="one-more-take-cover-actions">${deck.sets.filter((s) => s !== today).map(card).join("")}</div>
-      <p class="one-more-take-note">${esc(tr("one_more_take_built_count", built.length))}</p>`;
+    cover.innerHTML = html`<p class="one-more-take-kicker">${headline}</p>
+      ${html.raw(today ? html`<h2>${L(today.title)}</h2><p class="one-more-take-dare">${L(today.challenge)}</p>
+        <p class="one-more-take-rules">${html.raw(tr("one_more_take_rules", today.difficulty))}</p>
+        <div class="one-more-take-cover-actions">${html.raw(card(today))}</div>`
+      : html`<h2>${html.raw(tr("one_more_take_not_ready"))}</h2><p class="one-more-take-dare">${html.raw(tr("one_more_take_not_ready_body"))}</p>`)}
+      <p class="one-more-take-rules">${html.raw(tr("one_more_take_also_playable"))}</p>
+      <div class="one-more-take-cover-actions">${html.raw(deck.sets.filter((s) => s !== today).map(card).join(""))}</div>
+      <p class="one-more-take-note">${html.raw(tr("one_more_take_built_count", built.length))}</p>`;
     cover.querySelectorAll("[data-take-start]").forEach((b) => b.addEventListener("click", () => startSet(Number(b.dataset.takeStart))));
   }
 
@@ -506,7 +506,7 @@ window.AISystem6OneMoreTakeLoaded = true;
       return `<button type="button" class="one-more-take-left" data-take-left="${esc(item.id)}" aria-label="${esc(label)}"><span class="one-more-take-badge">${n + 1}</span>${face}</button>`;
     };
     const rightItem = (item) => `<button type="button" class="one-more-take-right" data-take-right="${esc(item.id)}"><span class="one-more-take-badge" data-take-badge></span><span>${esc(L(item.text))}</span></button>`;
-    board.innerHTML = `<div class="one-more-take-col">${shot.left.map(leftItem).join("")}</div><div class="one-more-take-col">${shot.right.map(rightItem).join("")}</div>`;
+    board.innerHTML = html`<div class="one-more-take-col">${html.raw(shot.left.map(leftItem).join(""))}</div><div class="one-more-take-col">${html.raw(shot.right.map(rightItem).join(""))}</div>`;
     board.querySelectorAll("[data-take-left]").forEach((b) => b.addEventListener("pointerdown", () => {
       if (game.phase !== "rolling" || game.locked[b.dataset.takeLeft]) return;
       game.sel = game.sel === b.dataset.takeLeft ? null : b.dataset.takeLeft; syncBoard();
@@ -553,7 +553,7 @@ window.AISystem6OneMoreTakeLoaded = true;
     if (game.take >= MAX_TAKES) return reveal(true);
     game.take += 1;
     const meta = part("panel").querySelector(".one-more-take-meta");
-    if (meta) meta.innerHTML = `${esc(tr("one_more_take_meta", game.i + 1, game.set.shots.length, game.take))} · <span data-take-film>${esc(tr("one_more_take_film", Math.ceil(game.film)))}</span>`;
+    if (meta) meta.innerHTML = html`${html.raw(tr("one_more_take_meta", game.i + 1, game.set.shots.length, game.take))} · <span data-take-film>${html.raw(tr("one_more_take_film", Math.ceil(game.film)))}</span>`;
     hint(`${tr("one_more_take_again")} ${message}`, true);
   }
   function call(kind) {
@@ -601,10 +601,10 @@ window.AISystem6OneMoreTakeLoaded = true;
     const title = saved ? tr("one_more_take_saved") : oneTake ? tr("one_more_take_one_take") : tr("one_more_take_nth_take", take);
     const kindKey = shot.kind === "pair" ? "one_more_take_kind_pair" : `one_more_take_kind_${shot.verdict}`;
     const panel = part("panel");
-    panel.innerHTML = `<div class="one-more-take-ruling">
-      <div class="one-more-take-head"><p class="one-more-take-verdict"><span>${esc(title)}</span>${multiplier > 1 ? `<span class="one-more-take-streak">×${multiplier}</span>` : ""}<span class="one-more-take-kind${shot.verdict === "clean" ? " is-clean" : ""}">${esc(tr(kindKey))}</span></p>
-        <button class="btn one-more-take-next" type="button" data-take-next>${esc(tr(game.i === game.set.shots.length - 1 ? "one_more_take_wrap" : "one_more_take_next"))}</button></div>
-      <p class="one-more-take-caption">${esc(L(shot.caption))}</p>
+    panel.innerHTML = html`<div class="one-more-take-ruling">
+      <div class="one-more-take-head"><p class="one-more-take-verdict"><span>${title}</span>${html.raw(multiplier > 1 ? html`<span class="one-more-take-streak">×${multiplier}</span>` : "")}<span class="one-more-take-kind${shot.verdict === "clean" ? " is-clean" : ""}">${html.raw(tr(kindKey))}</span></p>
+        <button class="btn one-more-take-next" type="button" data-take-next>${html.raw(tr(game.i === game.set.shots.length - 1 ? "one_more_take_wrap" : "one_more_take_next"))}</button></div>
+      <p class="one-more-take-caption">${L(shot.caption)}</p>
       <div class="one-more-take-ruler-slot" data-take-ruler></div></div>`;
     panel.querySelector("[data-take-next]").addEventListener("click", next);
     entering(panel);
@@ -652,17 +652,17 @@ window.AISystem6OneMoreTakeLoaded = true;
       return `<figure>${face}<figcaption><span>${i + 1}</span><span class="${r.saved ? "is-saved" : r.take === 1 ? "is-one" : ""}">${esc(mark)}</span></figcaption></figure>`;
     }).join("");
     const credits = set.credits ? `<p class="one-more-take-credits" data-take-credits></p>` : "";
-    cover.innerHTML = `<p class="one-more-take-kicker">${esc(tr("one_more_take_wrapped", set.number, L(set.title)))}</p>
-      <h2>${esc(tier ? L(tier) : "")}</h2>
-      <p class="one-more-take-score"><b>${total}</b> ${esc(tr("one_more_take_points_line", ones, set.shots.length, Math.ceil(game.film)))}</p>
-      <div class="one-more-take-strip">${strip}</div>${credits}
+    cover.innerHTML = html`<p class="one-more-take-kicker">${html.raw(tr("one_more_take_wrapped", set.number, L(set.title)))}</p>
+      <h2>${tier ? L(tier) : ""}</h2>
+      <p class="one-more-take-score"><b>${total}</b> ${html.raw(tr("one_more_take_points_line", ones, set.shots.length, Math.ceil(game.film)))}</p>
+      <div class="one-more-take-strip">${html.raw(strip)}</div>${html.raw(credits)}
       <div class="one-more-take-cover-actions">
-        <button class="btn default" type="button" data-take-copy>${esc(tr("one_more_take_copy_share"))}</button>
-        <button class="btn" type="button" data-take-home>${esc(tr("one_more_take_back_to_today"))}</button>
-        <button class="btn" type="button" data-take-tune>${esc(tr("one_more_take_to_tune"))}</button>
-      </div><p class="one-more-take-note" data-take-copied></p>${store.askedFirstDevice ? "" : `
-      <div class="one-more-take-first" data-take-first><p class="one-more-take-dare">${esc(tr("one_more_take_first_device_q"))}</p>
-        <div class="one-more-take-chips">${FIRST_DEVICES.map((d) => `<button class="btn" type="button" data-take-device="${esc(d)}">${esc(d)}</button>`).join("")}<button class="btn" type="button" data-take-device="">${esc(tr("one_more_take_first_device_skip"))}</button></div></div>`}`;
+        <button class="btn default" type="button" data-take-copy>${html.raw(tr("one_more_take_copy_share"))}</button>
+        <button class="btn" type="button" data-take-home>${html.raw(tr("one_more_take_back_to_today"))}</button>
+        <button class="btn" type="button" data-take-tune>${html.raw(tr("one_more_take_to_tune"))}</button>
+      </div><p class="one-more-take-note" data-take-copied></p>${html.raw(store.askedFirstDevice ? "" : html`
+      <div class="one-more-take-first" data-take-first><p class="one-more-take-dare">${html.raw(tr("one_more_take_first_device_q"))}</p>
+        <div class="one-more-take-chips">${html.raw(FIRST_DEVICES.map((d) => html`<button class="btn" type="button" data-take-device="${d}">${d}</button>`))}<button class="btn" type="button" data-take-device="">${html.raw(tr("one_more_take_first_device_skip"))}</button></div></div>`)}`;
     const text = shareText(set, game.results, game.film, total);
     cover.querySelector("[data-take-copy]").addEventListener("click", () => {
       const done = (ok) => { cover.querySelector("[data-take-copied]").textContent = ok ? tr("one_more_take_copied") : text; };
@@ -674,7 +674,7 @@ window.AISystem6OneMoreTakeLoaded = true;
       const saved = device ? await updateLink({ firstDevice: device }) : false;
       if (!device || saved) writeStore({ ...readStore(), askedFirstDevice: true });
       const block = cover.querySelector("[data-take-first]");
-      if (block) block.innerHTML = `<p class="one-more-take-note">${esc(device ? tr(saved ? "one_more_take_first_device_saved" : "one_more_take_first_device_unsaved", device) : tr("one_more_take_first_device_skipped"))}</p>`;
+      if (block) block.innerHTML = html`<p class="one-more-take-note">${device ? html.raw(tr(saved ? "one_more_take_first_device_saved" : "one_more_take_first_device_unsaved", device)) : html.raw(tr("one_more_take_first_device_skipped"))}</p>`;
     }));
     cover.querySelector("[data-take-tune]").addEventListener("click", () => { if (typeof handleAction === "function") handleAction("open-one-more-tune"); });
     game.phase = "wrap";
@@ -709,7 +709,7 @@ window.AISystem6OneMoreTakeLoaded = true;
     installWindow();
     const cover = part("cover");
     try { await loadDeck(); } catch {
-      if (cover) { part("frame").hidden = true; part("panel").hidden = true; cover.hidden = false; cover.innerHTML = `<p class="one-more-take-dare">${esc(tr("one_more_take_deck_failed"))}</p>`; }
+      if (cover) { part("frame").hidden = true; part("panel").hidden = true; cover.hidden = false; cover.innerHTML = html`<p class="one-more-take-dare">${html.raw(tr("one_more_take_deck_failed"))}</p>`; }
       return;
     }
     if (!game || game.phase === "wrap") renderCover();

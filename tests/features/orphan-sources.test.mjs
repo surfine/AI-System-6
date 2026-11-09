@@ -38,6 +38,8 @@ const DECLARED_UNBUNDLED = {
     "潮汐信笺's BM25 ranking runtime, shared with the desk server (apps/server/server/routes/aaron-blog.js requires it). In the browser it is loaded by app/features/aaron-blog.js through ensureLazySystemModule(\"app/shared/blog-rag-runtime.js\", ...) when the reader opens, the same reachability as the Endfield grounding core; naming it in config.js would spend floppy bytes on a module only the reader needs.",
   "app/core/aaron-blog-grounding.js":
     "潮汐信笺 × SideAsk grounding adapter, loaded by app/features/aaron-blog.js through ensureLazySystemModule(\"app/core/aaron-blog-grounding.js\", ...) and registered in window.AISystem6SideAskAnchors; like the Endfield grounding core, the runtime loader string is its only path and it must not be bundled.",
+  "app/shared/rule-packages.js":
+    "文思泉涌's rule-package interface (CONTRACTS「规则包」), pure and Node-requireable like blog-rag-runtime.js beside it: the desk server's /check route (P2) will require it, and the desk loads it through ensureLazySystemModule when the checks panel opens (P2). Nothing loads it until then, so a manifest row would spend floppy bytes on a module no window reaches yet.",
   "app/content/shared-disks-panel.js":
     "The window and its list for the demonstration project disks. tooling/build-shared-project-disks.mjs appends this file to app/content/shared-project-disks-index.js, so the panel ships inside the generated list module the folder already fetches — reachable without a manifest row, and deliberately not in the boot bundle (it would spend floppy bytes on a window most boots never open).",
   "app/features/bonsai-sc2000-reader.js":

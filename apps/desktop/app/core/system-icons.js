@@ -755,7 +755,7 @@ function ensureClassicReverseFilter(root) {
   host.setAttribute("focusable", "false");
   host.setAttribute("width", "0");
   host.setAttribute("height", "0");
-  host.innerHTML = `<defs><filter id="${classicReverseFilterId}" x="0" y="0" width="100%" height="100%"><feColorMatrix type="matrix" values="-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0" /></filter></defs>`;
+  host.innerHTML = html`<defs><filter id="${html.raw(classicReverseFilterId)}" x="0" y="0" width="100%" height="100%"><feColorMatrix type="matrix" values="-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 0 0 0 1 0" /></filter></defs>`;
   doc.body.append(host);
 }
 

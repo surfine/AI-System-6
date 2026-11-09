@@ -374,6 +374,74 @@
       annotations: ANNOTATIONS.read,
     },
     {
+      name: "ais6_read_blog_articles",
+      level: "read",
+      title: "List blog articles",
+      description: "The articles of one 文思泉涌 blog site: type, path, title, date, status and tags. Name the site — two are served — and optionally a content type. 文思泉涌某个站点的文章列表：类型、路径、标题、日期、状态与标签。要指定站点；类型可选。",
+      inputSchema: {
+        type: "object",
+        properties: { site: { type: "string" }, type: { type: "string" }, limit: { type: "integer" } },
+        additionalProperties: false,
+      },
+      outputSchema: out({
+        site: str(),
+        type: str(),
+        count: int(),
+        articles: arr({ type: "object", properties: { type: str(), path: str(), title: str(), date: str(), status: str() }, additionalProperties: true }),
+        truncated: { type: "boolean" },
+      }),
+      annotations: ANNOTATIONS.read,
+    },
+    {
+      name: "ais6_read_blog_article",
+      level: "read",
+      title: "Read one blog article",
+      description: "One article's front matter, body and address, by site, type and path. The body comes cut at 12,000 characters and marked truncated. 按站点、类型与路径读一篇：front-matter、正文与网址；正文超过 12000 字符会截断并标注。",
+      inputSchema: {
+        type: "object",
+        properties: { site: { type: "string" }, type: { type: "string" }, path: { type: "string" } },
+        required: ["site", "type", "path"],
+        additionalProperties: false,
+      },
+      outputSchema: out({
+        site: str(),
+        type: str(),
+        path: str(),
+        status: str(),
+        frontMatter: { type: "object", additionalProperties: true },
+        body: str(),
+        truncated: { type: "boolean" },
+        url: str(),
+      }),
+      annotations: ANNOTATIONS.read,
+    },
+    {
+      name: "ais6_propose_blog_fields",
+      level: "read",
+      title: "Suggest blog fields",
+      description: "A held suggestion of slug, category, series and tags for one 文思泉涌 draft. It writes nothing; the writer clicks the suggestion into the draft. 给一篇草稿建议 slug、分类、系列和标签。只挂起，不写入。",
+      inputSchema: {
+        type: "object",
+        properties: {
+          site: { type: "string" },
+          title: { type: "string" },
+          slug: { type: "string" },
+          cats: { type: "array", items: { type: "string" } },
+          tags: { type: "array", items: { type: "string" } },
+          series: { type: "string" },
+          filename: { type: "string" },
+        },
+        required: ["site"],
+        additionalProperties: false,
+      },
+      outputSchema: out({
+        site: str(),
+        held: { type: "boolean" },
+        suggestion: { type: "object", additionalProperties: true },
+      }),
+      annotations: ANNOTATIONS.read,
+    },
+    {
       name: "ais6_read_write_lease",
       level: "read",
       title: "The write lease",
@@ -1108,6 +1176,10 @@
       tools: Object.freeze(["ais6_cliopaint_list_pictures", "ais6_cliopaint_read_picture"]),
       resources: Object.freeze([Object.freeze({ kind: "painting", uri: "ais6://painting/{id}", mimeType: "image/png", description: "A saved ClioPaint picture (the composite) as PNG. 一张 ClioPaint 画片的 PNG。" })]),
     }),
+    // 文思泉涌 declares its face in P1 without tools: the studio reads and
+    // writes the site repositories through its own server route, and the guest
+    // bridge only needs to know the application exists.
+    wensiQuanyong: Object.freeze({ tools: Object.freeze([]), resources: Object.freeze([]) }),
     clioProject: Object.freeze({
       tools: Object.freeze(["ais6_clioproject_read_plan"]),
       resources: Object.freeze([Object.freeze({ kind: "plan", uri: "ais6://plan", singleton: true, mimeType: "application/json", description: "The open project's ClioProject plan as JSON. 当前项目的 ClioProject 计划。" })]),

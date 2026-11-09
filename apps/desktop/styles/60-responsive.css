@@ -34,6 +34,9 @@
 
 .scrapbook-desk-icon {
   background: var(--mini-icon-bg);
+  /* Paper fill, as the shared .mini-icon colour rule later in this file gave
+     it until 2026-11-05. */
+  background-color: var(--paper);
 }
 
 .scrapbook-desk-icon::before {
@@ -363,9 +366,6 @@ body.is-writer-mode .context-panel-window {
   padding: 18px;
 }
 
-.menu-bar {
-  min-width: 0;
-}
 
 /* The glass material is structural, so it lives next to its base rule instead
    of in the theme file. The bar keeps the era's translucent tint and gives up
@@ -379,16 +379,7 @@ body[data-theme="liquid-glass"] .menu-bar {
   -webkit-backdrop-filter: none;
 }
 
-.menu-bar > .menu > button {
-  border-radius: var(--menu-button-radius);
-  transition: var(--menu-button-transition);
-}
 
-.menu-popover,
-.menu-sub-popover {
-  max-height: min(560px, calc(100vh - 34px));
-  overflow: auto;
-}
 
 .menu-bar > .menu > .menu-popover {
   max-height: none;
@@ -530,17 +521,17 @@ body[data-theme="liquid-glass"] .menu-bar {
 /* .spine-actions .icon/.mini-icon/.sys-icon { width: 42px; height: 42px }
    — already in styles/10-windows.css. Audited DEAD on 2026-05-28. */
 
-.spine-actions .icon,
-.spine-actions .mini-icon,
-.spine-actions .sys-icon,
+/* The spine-actions copies moved to styles/10-windows.css (their size rule);
+   these two have no base host yet. */
 .desktop-icon .icon,
 .finder-item .mini-icon {
   filter: drop-shadow(1px 1px 0 var(--shade-dark));
 }
 
+/* .finder-item span:last-of-type left this group on 2026-11-05: its 1.2 was
+   shadowed in this same file by the 1.22 at the modern-fonts restatement. */
 .spine-actions b,
-.desktop-icon span:last-child,
-.finder-item span:last-of-type {
+.desktop-icon span:last-child {
   line-height: 1.2;
 }
 
@@ -571,44 +562,20 @@ body[data-theme="liquid-glass"] .menu-bar {
     var(--messages-bg);
 }
 
-.assistant-window .messages {
-  background: var(--paper);
-}
-
 /* .speaker font-family moved to base (styles/10-windows.css);
    font-weight: 700 was already in base. */
 
 /* .message-content max-width moved to base (styles/10-windows.css). */
 
-.assistant-window .messages {
-  min-height: 0;
-}
 
-.assistant-window .composer {
-  display: block;
-  flex: 0 0 auto;
-  min-height: 0;
-  overflow: visible;
-}
 
 .assistant-window .composer label {
   margin-bottom: 0;
 }
 
-.assistant-window .composer textarea {
-  box-sizing: border-box;
-  height: auto;
-  min-height: 46px;
-  max-height: min(160px, 28vh);
-  overflow-y: auto;
-}
 
 /* .composer-action-row gap moved to base (styles/10-windows.css). */
 
-.assistant-window .composer-action-row {
-  min-height: 31px;
-  margin-top: 0;
-}
 
 .assistant-window .composer-action-row > .button-row {
   min-width: 0;
@@ -730,15 +697,6 @@ select:focus {
   min-height: 0;
 }
 
-.file-preview-body,
-.document-icon-grid,
-.project-disk-grid,
-.trash-list {
-  background: var(--file-well-bg);
-  border: var(--system-border);
-  box-shadow: var(--system-inset);
-}
-
 
 
 /* .control-section h3 padding moved to base (styles/10-windows.css). */
@@ -764,11 +722,6 @@ select:focus {
 .finder-list-row {
   min-height: 27px;
   border-bottom: 1px dotted var(--rule);
-}
-
-.mini-icon,
-.icon {
-  background-color: var(--paper);
 }
 
 .finder-empty-object,
@@ -2224,32 +2177,6 @@ body.is-writer-mode .system-help-window .system-help-pane {
    Default-theme tokens (sizes, fonts, colors, system-*) consolidated into
    :root in 00-foundation.css; this block previously duplicated them. */
 
-body.use-modern-fonts {
-  --system-readable-min: 14px;
-  --system-title-size: 13px;
-  --system-control-size: 14px;
-  --system-text-size: 14px;
-  --system-caption-size: 12px;
-  --system-leading: 1.45;
-  --system-window-padding: 11px;
-  --system-control-min-height: 30px;
-  --system-button-min-height: 29px;
-  --system-button-padding-y: 3px;
-  --system-button-padding-x: 15px;
-  --system-menu-height: 26px;
-  --system-titlebar-height: 23px;
-  --system-titlebar-title-height: 14px;
-  --system-titlebar-font-size: 13px;
-  --system-check-size: 14px;
-  --system-title-weight: 500;
-  --system-emphasis-weight: 500;
-  --system-select-control-font-weight: 400;
-  --system-strong-weight: 600;
-  --writing-editor-font-size: 15px;
-  --writing-editor-line-height: 1.58;
-  font-synthesis-weight: none;
-}
-
 body {
   background: var(--desktop);
   font-family: var(--ui-font);
@@ -2797,9 +2724,10 @@ button:disabled {
 .title-bar h1,
 .title-bar h2,
 .spine-actions b,
+/* .control-section h3 left this group on 2026-11-05: its weight moved to its
+   styles/10-windows.css rule; the rest stay wired responsive. */
 .desktop-icon span:last-child,
 .finder-item span:last-of-type,
-.control-section h3,
 .control-advanced summary,
 .field-row label,
 .settings label,
@@ -2858,9 +2786,7 @@ button:disabled {
    button.btn (10-windows.css), which out-ranks this list; the list sizes the
    other mini buttons. */
 .mini-btn:where(:not(button.btn)),
-.message-actions .btn,
-.reader-tabs .btn,
-.details-bar .btn {
+.message-actions .btn {
   min-height: calc(var(--system-button-min-height) - 2px);
   padding: 3px 10px;
 }
@@ -2892,23 +2818,7 @@ html:lang(zh-Hans) .spine-title-row h2 {
 /* .spine-step-number standalone — width/height/font-size/line-height/
    font-weight all duplicate styles/10-windows.css. Audited DEAD on 2026-05-28. */
 
-input[type="checkbox"] {
-  width: var(--system-check-size);
-  min-width: var(--system-check-size);
-  height: var(--system-check-size);
-  min-height: var(--system-check-size);
-  flex: 0 0 var(--system-check-size);
-  padding: 0;
-}
 
-input[type="radio"] {
-  width: var(--system-radio-size);
-  min-width: var(--system-radio-size);
-  height: var(--system-radio-size);
-  min-height: var(--system-radio-size);
-  flex: 0 0 var(--system-radio-size);
-  padding: 0;
-}
 
 .control-panel .field-row {
   align-items: center;

@@ -676,7 +676,7 @@ body[data-theme="aqua"] {
     #93caff 80% 85%, #98d0ff 85% 90%, #a0d8ff 90% 95%,
     #b8eeff 95% 100%);
   --tab-active-fg: #06131d;
-  --theme-lab-button-min-width: 69px;
+  --theme-button-min-width: 69px;
   --theme-lab-pane-gap: 10px 18px;
   --theme-lab-pane-padding: 10px 14px 14px;
   --theme-lab-pane-bg:
@@ -1018,6 +1018,23 @@ body[data-theme="aqua"] {
   --control-strip-grip:
     repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.85) 0 1px, rgba(0, 0, 0, 0) 1px 4px) 50% 50% / 8px 60% no-repeat,
     linear-gradient(#cfe4ff, #6ba2f7 45%, #3672e8 55%, #7fb0f8);
+
+  /* Work order C: period tokens this era already computes at <html>/<body>,
+     restated here; every value is proven equal in .jspace/LEDGER-C.md. */
+  --balloon-help-shadow: 0 1px 1px rgba(0, 0, 0, 0.35), 0 3px 7px rgba(0, 0, 0, 0.22);
+  --control-chooser-bg: transparent;
+  --control-chooser-padding: 0;
+  --control-strip-tile-height: calc(26px - 2px);
+  --control-strip-tile-margin: 0;
+  --control-strip-tile-radius: 0;
+  --desktop-label-box-shadow: none;
+  --find-path-result-padding: 10px 12px;
+  --md-marker-ink: #767676;
+  --menu-item-fg: #171717;
+  --menu-panel-backdrop-filter: none;
+  --surface-backdrop-filter: none;
+  --tdi-tab-close-fg: #171717;
+  --window-backdrop-filter: none;
 }
 
 html[data-lineage~="snow-leopard"],
@@ -1141,6 +1158,18 @@ body[data-lineage~="snow-leopard"] {
     linear-gradient(#d2e5f5 0%, #9dd4f5 40%, #73b5e8 51%, #aedbfc 100%) right top / 20px 100% no-repeat,
     linear-gradient(#fff 0%, #fafafa 45%, #dcdcdc 52%, #f1f1f1 100%);
   --system-select-control-shadow: var(--btn-shadow);
+  /* Sidebar tier-2 period tokens, answered per the OS X family grammar
+     (tiger/lion carry the same answers): soft object shadows instead of the
+     classic hard offset, black menu text, no backdrop blur (10.6 predates
+     it), bare desktop labels, and the shared control-strip tile metrics. */
+  --balloon-help-shadow: var(--system-object-shadow);
+  --menu-item-fg: var(--ink);
+  --surface-backdrop-filter: none;
+  --window-backdrop-filter: none;
+  --desktop-label-box-shadow: none;
+  --control-strip-tile-height: calc(var(--control-strip-thickness) - 2px);
+  --control-strip-tile-margin: 0;
+  --control-strip-tile-radius: 0;
   --system-select-control-font-weight: 400;
   --field-control-padding: 3px 6px;
   --theme-lab-toolbar-min-height: 34px;
@@ -1687,7 +1716,7 @@ body[data-lineage~="snow-leopard"] {
      reference centres it, which no path can correct. */
   --system-radio-size: 14px;
   --system-check-size: 14px;
-  --theme-lab-button-min-width: 72px;
+  --theme-button-min-width: 72px;
   --theme-lab-group-bg: #ededed;
   --theme-lab-group-border: 1px solid #b7b7b7;
   --theme-lab-group-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
@@ -1805,7 +1834,6 @@ body[data-theme-family="aqua"] .title-bar h2 {
   background: var(--titlebar-title-bg);
   /* A background window's title hands over its colour (60-responsive.css). */
   color: var(--titlebar-inactive-title-fg, var(--titlebar-title-fg));
-  font-family: var(--theme-title-font);
 
 }
 
@@ -1844,13 +1872,6 @@ body[data-theme="aqua"] :where(
 
   height: 22px;
   min-height: 22px;
-  padding: var(--field-control-padding);
-  border: var(--field-border);
-  border-radius: var(--field-radius);
-  background: var(--field-bg);
-  box-shadow: var(--field-shadow);
-  font-family: var(--theme-ui-font);
-  font-size: var(--system-control-size);
   line-height: 16px;
 
 }
@@ -2392,13 +2413,12 @@ body[data-theme="aqua"] .btn {
   --btn-hover-shadow: var(--aqua-btn-frame);
   --btn-default-hover-bg: linear-gradient(var(--aqua-btn-hover-veil), var(--aqua-btn-hover-veil)), var(--aqua-btn-face);
   position: relative;
-  min-width: 69px;
+  min-width: var(--theme-button-min-width);
   border: 0;
   border-radius: var(--btn-radius);
   background: var(--aqua-btn-face);
   color: var(--ink);
   box-shadow: var(--aqua-btn-frame);
-  font-family: var(--theme-ui-font);
   font-size: var(--system-control-size);
   font-weight: 400;
   line-height: 13px;
@@ -2672,7 +2692,6 @@ body[data-theme-family="aqua"] :where(.btn) {
   border-radius: var(--btn-radius);
   background: var(--btn-bg);
   box-shadow: var(--btn-shadow);
-  font-family: var(--theme-ui-font);
   font-weight: 400;
 
 }
@@ -2785,12 +2804,6 @@ body[data-theme="aqua"] :is(.theme-lab-sidebar button:disabled, .theme-lab-sideb
   color: #7f7f7f;
   filter: grayscale(1);
   opacity: 0.65;
-}
-
-body[data-theme-family="aqua"] .theme-lab-finder-rows > div {
-
-  min-height: var(--theme-lab-finder-row-min-height);
-
 }
 
 /* Snow Leopard is the Aqua descendant, not an early-Aqua desaturation. The

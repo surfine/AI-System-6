@@ -295,6 +295,7 @@ body.quick-draft-focus .writing-spine-panel {
 .spine-actions .sys-icon {
   width: 42px;
   height: 42px;
+  filter: drop-shadow(1px 1px 0 var(--shade-dark));
 }
 
 .spine-actions b {
@@ -614,7 +615,7 @@ body.quick-draft-focus .writing-spine-panel {
 .clipboard-window {
   top: 126px;
   right: 190px;
-  width: var(--da-width-pad);
+  width: var(--clipboard-window-width);
 }
 
 .model-meter-empty-note.empty-next-note {
@@ -1536,8 +1537,11 @@ html:lang(zh-Hans) .title-bar h2 {
   }
 }
 
+/* Tap metrics moved here from 60-responsive (2026-11-05 audit, second batch). */
 .details-bar .btn {
   flex: 0 0 auto;
+  min-height: calc(var(--system-button-min-height) - 2px);
+  padding: 3px 10px;
 }
 
 .details-bar-button {
@@ -1843,8 +1847,8 @@ html:lang(zh-Hans) .title-bar h2 {
 }
 
 .finder-list-row.is-selected {
-  background: var(--system-selection-bg, var(--selection-bg));
-  color: var(--system-selection-fg, var(--selection-fg));
+  background: var(--finder-list-selected-bg, var(--system-selection-bg, var(--selection-bg)));
+  color: var(--finder-list-selected-fg, var(--system-selection-fg, var(--selection-fg)));
 }
 
 /* Whose highlight it is. An appearance that projects
@@ -2259,8 +2263,11 @@ body[data-selection-model="key-window"] .window[data-window]:not(.is-active) {
   display: none;
 }
 
+/* min-height moved here from 60-responsive (2026-11-05 audit). */
 .assistant-window .messages {
   padding: 16px clamp(14px, 4vw, 40px) 22px;
+  min-height: 0;
+  background: var(--paper);
 }
 
 /* One column, one left edge. The speaker gutter is gone: who is talking is
@@ -2972,10 +2979,16 @@ body[data-selection-model="key-window"] .window[data-window]:not(.is-active) {
 
 /* The later restatement (moved from 60-responsive.css); ClioTalk's own
    .assistant-window .composer refines both. */
+/* Display/flex/overflow and the textarea and action-row metrics moved here from
+   60-responsive (2026-11-05 audit): the responsive copies were additive-only. */
 .composer {
   gap: 0;
   padding: 8px;
   border: var(--clio-composer-border);
+  display: block;
+  flex: 0 0 auto;
+  min-height: 0;
+  overflow: visible;
 }
 
 /* Docked, not floating. The free-floating composer overlapped the last reply
@@ -2993,6 +3006,12 @@ body[data-selection-model="key-window"] .window[data-window]:not(.is-active) {
 }
 
 .assistant-window .composer textarea {
+  /* Moved from 60-responsive on 2026-11-05; the desklet keeps its own 58px. */
+  box-sizing: border-box;
+  height: auto;
+  min-height: 46px;
+  max-height: min(160px, 28vh);
+  overflow-y: auto;
   padding: 6px 8px;
   border: var(--clio-entry-field-border);
   border-radius: var(--clio-entry-field-radius);
@@ -3101,6 +3120,8 @@ body[data-selection-model="key-window"] .window[data-window]:not(.is-active) {
   gap: 8px;
   min-height: 36px;
   margin-top: 2px;
+  min-height: 31px;
+  margin-top: 0;
 }
 
 .assistant-window .composer-action-row {
@@ -3508,12 +3529,18 @@ select:focus {
    instead. Keep .btn's min-width (min-width: 0 shrinks all four and truncates
    the default button) and the spacer's 12px floor. inline-block, not the
    shared inline-flex: text-overflow cannot reach the anonymous flex item a
-   bare label becomes, which sliced labels at both ends instead. */
+   bare label becomes, which sliced labels at both ends instead. The era
+   floor is the width each button asks for, not a floor: where four do not fit
+   (82px pushed the Clipboard's Clear 18px out of its 340px window) the short
+   labels give up their padding first, and no button gets narrower than its
+   own label. */
 .button-row.is-one-line {
   flex-wrap: nowrap;
 }
 
 .button-row.is-one-line > .btn {
+  flex: 0 1 var(--theme-button-min-width);
+  min-width: min-content;
   display: inline-block;
   overflow: hidden;
   text-align: center;
@@ -3536,7 +3563,7 @@ select:focus {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  min-width: 72px;
+  min-width: var(--theme-button-min-width);
   min-height: var(--system-button-min-height);
   padding: var(--system-button-padding-y) var(--system-button-padding-x);
   border: var(--system-control-line) solid var(--btn-border-color);
@@ -3562,7 +3589,7 @@ select:focus {
 .file-picker .file-picker-button,
 button.btn {
   min-height: var(--system-button-min-height);
-  min-width: 72px;
+  min-width: var(--theme-button-min-width);
   padding: var(--system-button-padding-y) var(--system-button-padding-x);
   border: var(--system-control-line) solid var(--ink);
   border-radius: 7px;
@@ -3912,6 +3939,7 @@ dialog[data-enter-default-wired="true"] .btn.default:not([data-loading="true"]):
   font-family: var(--title-font);
   font-size: 13px;
   line-height: 1;
+  font-weight: var(--system-emphasis-weight);
 }
 
 .control-field {

@@ -538,23 +538,23 @@ function mountClioDiagram(container) {
   host.className = "clio-diagram";
   host.hidden = true;
   const button = (cmd, key, extra = "") => `<button class="btn" type="button" data-diagram-cmd="${cmd}" ${extra}>${escapeHtml(t(key))}</button>`;
-  host.innerHTML = `
-    <div class="clio-diagram-tools" role="toolbar" aria-label="${escapeHtml(t("clio_diagram_tools"))}">
-      <label class="visually-hidden" for="clio-diagram-kind">${escapeHtml(t("clio_diagram_kind"))}</label>
-      <div class="select-wrap"><select class="clio-diagram-kind" id="clio-diagram-kind">${CLIO_DIAGRAM_KINDS.map((kind) => `<option value="${kind}">${escapeHtml(clioDiagramKindLabel(kind))}</option>`).join("")}</select></div>
-      ${button("tidy", "clio_diagram_tidy")}
+  host.innerHTML = html`
+    <div class="clio-diagram-tools" role="toolbar" aria-label="${html.raw(t("clio_diagram_tools"))}">
+      <label class="visually-hidden" for="clio-diagram-kind">${html.raw(t("clio_diagram_kind"))}</label>
+      <div class="select-wrap"><select class="clio-diagram-kind" id="clio-diagram-kind">${html.raw(CLIO_DIAGRAM_KINDS.map((kind) => html`<option value="${kind}">${clioDiagramKindLabel(kind)}</option>`))}</select></div>
+      ${html.raw(button("tidy", "clio_diagram_tidy"))}
       <span class="clio-diagram-sep" aria-hidden="true"></span>
-      ${button("add", "clio_diagram_add")}
-      ${button("connect", "clio_diagram_connect", 'aria-pressed="false"')}
-      ${button("group", "clio_diagram_group")}
-      ${button("ungroup", "clio_diagram_ungroup")}
-      ${button("delete", "delete")}
+      ${html.raw(button("add", "clio_diagram_add"))}
+      ${html.raw(button("connect", "clio_diagram_connect", 'aria-pressed="false"'))}
+      ${html.raw(button("group", "clio_diagram_group"))}
+      ${html.raw(button("ungroup", "clio_diagram_ungroup"))}
+      ${html.raw(button("delete", "delete"))}
       <span class="clio-diagram-sep" aria-hidden="true"></span>
-      ${button("save", "clio_chart_save_document")}
-      ${button("stage", "clio_chart_send_stage")}
-      ${button("sideask", "sideask")}
+      ${html.raw(button("save", "clio_chart_save_document"))}
+      ${html.raw(button("stage", "clio_chart_send_stage"))}
+      ${html.raw(button("sideask", "sideask"))}
     </div>
-    <div class="clio-diagram-viewport window-frame-scroller" tabindex="0" aria-label="${escapeHtml(t("clio_diagram_canvas"))}">
+    <div class="clio-diagram-viewport window-frame-scroller" tabindex="0" aria-label="${html.raw(t("clio_diagram_canvas"))}">
       <div class="clio-diagram-canvas"><svg class="clio-diagram-wires" aria-hidden="true"></svg></div>
     </div>
     <div class="clio-diagram-anchor" aria-live="polite"></div>`;

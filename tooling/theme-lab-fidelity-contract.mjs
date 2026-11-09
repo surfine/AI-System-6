@@ -403,6 +403,9 @@ function validateSources(sources) {
     for (const key of ["systemVersion", "credit", "redistribution"]) {
       requireString(source[key], `${label}.${key}`);
     }
+    if (source.colorProfile !== undefined && source.colorProfile !== "embedded") {
+      invalid(`${label}.colorProfile`, 'must be "embedded" when present');
+    }
     byId.set(id, source);
     files.add(file);
   });
@@ -558,6 +561,9 @@ function validateSpecimens(specimens, sourcesById, theme, requiredList) {
     }
     if (specimen.geometryMask !== undefined && specimen.geometryMask !== "text") {
       invalid(`${label}.geometryMask`, "must be text when present");
+    }
+    if (specimen.materialMask !== undefined && (specimen.materialMask !== "mark" || !specimen.mark)) {
+      invalid(`${label}.materialMask`, "must be mark, on a specimen that declares a mark");
     }
     validateComputedStyleAssertions(specimen.computedStyleAssertions, `${label}.computedStyleAssertions`);
   });

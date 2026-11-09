@@ -14,6 +14,11 @@
 //   * Pure string compare on property values. CSS shorthand expansion is
 //     not simulated, so a `border-bottom: 1px solid X` versus `border: 1px
 //     solid X; border-top: 0; …` won't match even when computed-equivalent.
+//   * Same-file later shadowing is NOT simulated: a rule in 60-responsive
+//     whose value a LATER 60-responsive rule overrides (e.g. a line-height
+//     restated at :2829 after :543) is reported by what it matches in the
+//     base files, not by its fate inside this file. Read the file order when
+//     acting on a verdict.
 //   * Only same top-level selector strings count as duplicates. Equivalent
 //     compound selectors with different specificity / order are not matched.
 //   * @media-nested rules are not considered duplicates of unscoped rules.
@@ -48,22 +53,52 @@ function stripComments(text) {
   return text.replace(/\/\*[\s\S]*?\*\//g, "");
 }
 
+// cleanOffset -> raw line, so reported lines match the editor. Comments are
+// stripped for PARSING only; a position in the stripped text still has a
+// well-defined origin in the raw file. (The audit used to count lines in the
+// comment-stripped text itself, and every printed line number was off by the
+// stripped comments above it — an offset trap that cost two misanchored
+// deletions on 2026-11-04 before this map existed.)
+function buildCleanToRawLineMap(text) {
+  const map = [1]; // map[cleanOffset] = raw line; cleanOffset 0 starts on raw line 1
+  let rawLine = 1;
+  let i = 0;
+  while (i < text.length) {
+    if (text.startsWith("/*", i)) {
+      const end = text.indexOf("*/", i + 2);
+      const stop = end === -1 ? text.length : end + 2;
+      // The comment contributes no clean characters, but its newlines still
+      // advance the raw line for whatever follows it.
+      for (let k = i; k < stop; k++) if (text[k] === "\n") rawLine++;
+      i = stop;
+      continue;
+    }
+    if (text[i] === "\n") {
+      rawLine++;
+      map.push(rawLine);
+    } else {
+      map.push(rawLine);
+    }
+    i++;
+  }
+  return map;
+}
+
 // Walk top-level rules. Returns [{ selectors:[], properties:{name:value}, line, file }].
 // Skips nested at-rules' interiors at the top level but recurses into them
 // so we can flag nested duplicates if needed (we don't, currently).
 function extractTopLevelRules(text, file) {
   const clean = stripComments(text);
+  const cleanLine = buildCleanToRawLineMap(text);
   const rules = [];
   let i = 0;
   let lineStartIndex = 0;
   let line = 1;
 
-  // Helper to compute a line number for a character offset.
+  // The raw-file line for a clean-text offset (map is index-aligned: every
+  // non-comment character of the raw text pushes one entry).
   function lineOf(idx) {
-    // Recompute from scratch each time — text is bounded and call count low.
-    let n = 1;
-    for (let k = 0; k < idx; k++) if (clean[k] === "\n") n++;
-    return n;
+    return cleanLine[idx] ?? 1;
   }
 
   while (i < clean.length) {
@@ -79,14 +114,65 @@ function extractTopLevelRules(text, file) {
       j++;
     }
     const body = clean.slice(openIdx + 1, j - 1);
-    if (selectorChunk.startsWith("@")) {
-      // Skip — at-rule bodies (e.g. @media) are not in the unscoped-duplicate
-      // scope for this audit.
+    if (selectorChunk.startsWith("@media")) {
+      // Base @media rules JOIN the comparison, tagged with their condition:
+      // a responsive top-level property that a base media rule sets to a
+      // different value would silently regress that breakpoint if "merged
+      // into base" — the audit must say so (SHADES-MEDIA) rather than read
+      // as a safe additive.
+      const condition = selectorChunk.slice(selectorChunk.indexOf("(")).trim();
+      const inner = body;
+      let k = 0;
+      while (k < inner.length) {
+        const innerOpen = inner.indexOf("{", k);
+        if (innerOpen === -1) break;
+        const innerSel = inner.slice(k, innerOpen).trim();
+        let d2 = 1; let m = innerOpen + 1;
+        while (d2) {
+          if (inner[m] === "{") d2++;
+          else if (inner[m] === "}") d2--;
+          m++;
+        }
+        if (innerSel && !innerSel.startsWith("@")) {
+          const mediaSelectors = innerSel
+            .split(",")
+            .map((x) => x.replace(/\s+/g, " ").trim())
+            .filter(Boolean);
+          const mediaProps = {};
+          for (const decl of inner.slice(innerOpen + 1, m - 1).split(/;/)) {
+            const colon = decl.indexOf(":");
+            if (colon === -1) continue;
+            const name = decl.slice(0, colon).trim();
+            const value = decl.slice(colon + 1).trim().replace(/\s+/g, " ");
+            if (!name || !/^-?[a-z-]/.test(name)) continue;
+            mediaProps[name] = value;
+          }
+          rules.push({ selectors: mediaSelectors, properties: mediaProps, line: lineOf(openIdx), file, media: condition });
+        }
+        k = m;
+      }
+    } else if (selectorChunk.startsWith("@")) {
+      // Other at-rules (@supports, @keyframes, ...) stay out of scope.
     } else if (selectorChunk) {
-      const selectors = selectorChunk
-        .split(",")
-        .map((s) => s.replace(/\s+/g, " ").trim())
-        .filter(Boolean);
+      // Split on TOP-LEVEL commas only: a comma inside :where()/ :is()/
+      // :not() parentheses is part of ONE selector, and splitting it used to
+      // turn ".window .x:where(.a, .b)" into ".window .x:where(.a" — a shard
+      // that matched nothing and made the pair look like a phantom additive.
+      const selectors = [];
+      {
+        let depth = 0, piece = "";
+        for (const ch of selectorChunk) {
+          if (ch === "(") depth++;
+          else if (ch === ")") depth--;
+          if (ch === "," && depth === 0) {
+            const pieceTrimmed = piece.replace(/\s+/g, " ").trim();
+            if (pieceTrimmed) selectors.push(pieceTrimmed);
+            piece = "";
+          } else piece += ch;
+        }
+        const last = piece.replace(/\s+/g, " ").trim();
+        if (last) selectors.push(last);
+      }
       const properties = {};
       // Split body by ';', then by first ':'. Skip nested blocks (rare in
       // raw selectors but possible with @supports inside; we drop them).
@@ -114,35 +200,72 @@ function extractTopLevelRules(text, file) {
 
 // Build the per-selector cascade winner across all base files in load order.
 function buildBaseCascade(allBaseRules) {
-  // Map<selector, Map<propName, { value, file, line }>>
+  // Map<selector, Map<propName, { value, file, line }>> plus a media-shadow
+  // map: base @media properties a merger must not stomp on.
   const winners = new Map();
+  const mediaWinners = new Map(); // normalized condition -> selector -> props
+  const mediaShadows = new Map(); // selector -> prop -> every base @media value (any condition)
   for (const rule of allBaseRules) {
     for (const sel of rule.selectors) {
+      if (rule.media) {
+        const cond = rule.media.replace(/\s+/g, " ");
+        if (!mediaWinners.has(cond)) mediaWinners.set(cond, new Map());
+        const props = mediaWinners.get(cond);
+        if (!props.has(sel)) props.set(sel, new Map());
+        for (const [name, value] of Object.entries(rule.properties)) {
+          props.get(sel).set(name, { value, file: rule.file, line: rule.line, media: rule.media });
+          if (!mediaShadows.has(sel)) mediaShadows.set(sel, new Map());
+          mediaShadows.get(sel).set(name, { value, file: rule.file, line: rule.line, media: rule.media });
+        }
+        continue;
+      }
       if (!winners.has(sel)) winners.set(sel, new Map());
       const props = winners.get(sel);
       for (const [name, value] of Object.entries(rule.properties)) {
-        props.set(name, { value, file: rule.file, line: rule.line });
+        props.set(name, { value, file: rule.file, line: rule.line, media: rule.media });
       }
     }
   }
-  return winners;
+  return { winners, mediaShadows, mediaWinners };
 }
 
 function classifyResponsiveRule(rule, baseCascade) {
   // Per-selector verdict. A multi-selector rule will get one per selector;
   // we report the worst (most "alive") verdict for the whole rule.
+  const { winners, mediaShadows, mediaWinners } = baseCascade;
   const perSelector = [];
+  const ruleCondition = rule.media ? rule.media.replace(/\s+/g, " ") : null;
   for (const sel of rule.selectors) {
-    const baseProps = baseCascade.get(sel);
+    let baseProps;
+    if (ruleCondition !== null) {
+      // Media-scoped responsive rule: only a base rule under the SAME
+      // condition is a cascade peer (base loads first, responsive wins);
+      // unconditional base values are the floor the media value already
+      // beats, and a different condition is a different context entirely.
+      baseProps = mediaWinners.get(ruleCondition)?.get(sel);
+      if (!baseProps) {
+        perSelector.push({ sel, kind: "no-base-match", media: ruleCondition });
+        continue;
+      }
+    } else {
+      baseProps = winners.get(sel);
+    }
     if (!baseProps) {
       perSelector.push({ sel, kind: "no-base-match" });
       continue;
     }
+    const mediaProps = ruleCondition === null ? mediaShadows.get(sel) : undefined;
     const diffs = [];
     const additive = [];
+    const shadesMedia = [];
     for (const [name, value] of Object.entries(rule.properties)) {
       if (!baseProps.has(name)) {
-        additive.push({ name, value });
+        const shadow = mediaProps?.get(name);
+        if (shadow && shadow.value !== value) {
+          shadesMedia.push({ name, value, media: shadow.media, mediaValue: shadow.value });
+        } else {
+          additive.push({ name, value });
+        }
       } else if (baseProps.get(name).value !== value) {
         diffs.push({ name, was: baseProps.get(name).value, now: value });
       }
@@ -150,11 +273,12 @@ function classifyResponsiveRule(rule, baseCascade) {
     const hasDiff = diffs.length > 0;
     const hasAdd = additive.length > 0;
     let kind;
-    if (!hasDiff && !hasAdd) kind = "dead";
+    if (shadesMedia.length) kind = "shades-media";
+    else if (!hasDiff && !hasAdd) kind = "dead";
     else if (hasDiff && hasAdd) kind = "mixed";
     else if (hasDiff) kind = "override";
     else kind = "additive";
-    perSelector.push({ sel, kind, diffs, additive });
+    perSelector.push({ sel, kind, diffs, additive, shadesMedia });
   }
   return perSelector;
 }
@@ -183,6 +307,7 @@ for (const rule of responsiveRules) {
       kind: v.kind,
       diffs: v.diffs || [],
       additive: v.additive || [],
+      shadesMedia: v.shadesMedia || [],
       propCount: Object.keys(rule.properties).length,
     });
   }
@@ -194,6 +319,7 @@ const totals = {
   additive: entries.filter((e) => e.kind === "additive").length,
   mixed: entries.filter((e) => e.kind === "mixed").length,
   noBase: entries.filter((e) => e.kind === "no-base-match").length,
+  shadesMedia: entries.filter((e) => e.kind === "shades-media").length,
 };
 
 if (jsonOut) {
@@ -216,6 +342,9 @@ function printBucket(label, kind, opts = {}) {
       const sample = e.additive.slice(0, 2).map((a) => `${a.name}: ${a.value}`).join("; ");
       const more = e.additive.length > 2 ? ` +${e.additive.length - 2} more` : "";
       detail = `  adds: ${sample}${more}`;
+    } else if (kind === "shades-media") {
+      const sample = e.shadesMedia.slice(0, 2).map((m) => `${m.name}: ${m.value} vs ${m.media} ${m.mediaValue}`).join("; ");
+      detail = `  ${sample}`;
     }
     console.log(`  ${e.file}:${e.line}  ${e.sel}${detail}`);
   }
@@ -229,8 +358,10 @@ console.log(`  OVERRIDE   (responsive copy changes existing base values): ${tota
 console.log(`  ADDITIVE   (responsive copy adds new properties to base): ${totals.additive}`);
 console.log(`  MIXED      (override + additive): ${totals.mixed}`);
 console.log(`  NO-MATCH   (selector exists only in responsive): ${totals.noBase}`);
+console.log(`  SHADES-MEDIA (a base @media rule sets the property differently - merging into base would regress that breakpoint): ${totals.shadesMedia}`);
 
 printBucket("DEAD — safe to delete the responsive copy", "dead");
+printBucket("SHADES-MEDIA — do NOT merge into base; a base media rule owns this property at a breakpoint", "shades-media");
 printBucket("ADDITIVE — could merge into base file", "additive");
 printBucket("OVERRIDE — manual review; intentional theme/state override", "override", { limit: 10 });
 printBucket("MIXED — split: dead/additive parts can move, override parts stay", "mixed", { limit: 10 });

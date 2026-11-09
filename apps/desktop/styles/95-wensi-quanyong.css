@@ -1,0 +1,1186 @@
+/* 文思泉涌 — the blog writing studio.
+   The window owns the three-column layout; every material comes from a
+   semantic token, so Classic and Liquid Glass inherit the same bones. The
+   required-missing red and the new-tag yellow live in 00-foundation.css so
+   eras can retint them; control roundness is left to the shared painter
+   shape (--control-shape-radius), not restated here. */
+
+.wensi-quanyong-window {
+  width: min(1080px, calc(100vw - 72px));
+  height: min(720px, calc(100vh - 92px));
+  min-height: 360px;
+}
+
+.wensi-quanyong-pane {
+  container-type: inline-size;
+  container-name: wensi-quanyong;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+.wensi-shell {
+  display: grid;
+  grid-template-columns: minmax(210px, 250px) minmax(0, 1fr) minmax(230px, 280px);
+  height: 100%;
+  min-height: 0;
+  background: var(--paper);
+}
+
+/* ---- Left: the article library ------------------------------------------ */
+
+.wensi-library {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  padding: 10px 8px;
+  overflow-y: auto;
+  border-right: 1px solid var(--shade-dark);
+  background: var(--btn-bg);
+}
+
+.wensi-library-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.wensi-site-mark {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--ink);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.wensi-site-count {
+  flex: 0 0 auto;
+  font-size: var(--system-caption-size);
+  opacity: 0.65;
+}
+
+.wensi-site-select {
+  flex: 1;
+  min-width: 0;
+}
+
+.wensi-new-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 26px;
+  padding: 2px 9px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.wensi-key {
+  font-size: var(--system-caption-size);
+  opacity: 0.55;
+}
+
+.wensi-filters,
+.wensi-categories {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.wensi-categories[hidden] {
+  display: none;
+}
+
+.wensi-filters button,
+.wensi-categories button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 24px;
+  padding: 2px 9px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Touch has no hover; the first tap would stick the outline on. */
+@media (hover: hover) and (pointer: fine) {
+  .wensi-filters button:hover,
+  .wensi-categories button:hover {
+    border-color: var(--ink);
+  }
+}
+
+.wensi-filters button[aria-pressed="true"],
+.wensi-categories button[aria-pressed="true"] {
+  background: var(--selection-bg);
+  border-color: var(--selection-edge);
+  color: var(--selection-fg);
+}
+
+.wensi-search {
+  width: 100%;
+}
+
+.wensi-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.wensi-group h3 {
+  margin: 0 0 2px;
+  padding: 0 9px;
+  font-size: var(--system-caption-size);
+  font-weight: 700;
+  color: var(--ink);
+  opacity: 0.7;
+}
+
+.wensi-group-error,
+.wensi-group-empty {
+  margin: 2px 0 0;
+  padding: 0 9px;
+  font-size: var(--system-caption-size);
+  color: var(--ink);
+  opacity: 0.6;
+}
+
+.wensi-row {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 100%;
+  min-height: 30px;
+  padding: 4px 9px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Touch has no hover; the highlight would stay stuck after a tap. */
+@media (hover: hover) and (pointer: fine) {
+  .wensi-row:hover {
+    background: var(--btn-bg);
+  }
+}
+
+.wensi-row.is-selected,
+.wensi-row[aria-current="true"] {
+  background: var(--selection-bg);
+  color: var(--selection-fg);
+}
+
+.wensi-row-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wensi-row-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--system-caption-size);
+  opacity: 0.75;
+}
+
+.wensi-row-meta time {
+  font-size: var(--system-caption-size);
+}
+
+.wensi-status.is-draft {
+  border: 1px solid currentColor;
+  padding: 0 3px;
+}
+
+.wensi-dirty {
+  color: inherit;
+  font-size: var(--system-button-mini-font-size);
+  line-height: 1;
+}
+
+/* ---- Middle: the writing surface ---------------------------------------- */
+
+.wensi-writing {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--paper);
+}
+
+.wensi-writing-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 26px;
+  padding: 4px 12px;
+  border-bottom: 1px solid var(--system-secondary-divider);
+}
+
+.wensi-article-url {
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink);
+  opacity: 0.65;
+}
+
+.wensi-editor-host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: 12px;
+}
+
+.wensi-writing[data-empty="true"] .wensi-editor-host,
+.wensi-writing[data-empty="true"] .wensi-statusbar {
+  display: none;
+}
+
+.wensi-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 24px;
+  color: var(--ink);
+  opacity: 0.6;
+  text-align: center;
+}
+
+.wensi-writing[data-empty="false"] .wensi-empty {
+  display: none;
+}
+
+/* The highlight overlay owns the paper metrics; the studio only fixes the
+   column's own measure and lets .mde-surface fill it. */
+.wensi-writing .mde-surface {
+  min-height: 0;
+}
+
+/* ---- Right: the inspector ------------------------------------------------ */
+
+.wensi-inspector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  padding: 10px 10px 14px;
+  overflow-y: auto;
+  border-left: 1px solid var(--shade-dark);
+  background: var(--btn-bg);
+}
+
+.wensi-matter-line {
+  margin: 0 0 8px;
+  font-size: var(--system-caption-size);
+  color: var(--ink);
+  opacity: 0.65;
+}
+
+.wensi-statusbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 22px;
+  padding: 2px 12px;
+  border-top: 1px solid var(--system-secondary-divider);
+  font-size: var(--system-caption-size);
+  color: var(--ink);
+}
+
+.wensi-statusbar .wensi-article-url {
+  flex: 1;
+  min-width: 0;
+  opacity: 0.65;
+}
+
+.wensi-stat-end {
+  margin-left: auto;
+}
+
+.wensi-matter-modes {
+  display: flex;
+  gap: 2px;
+}
+
+.wensi-matter-modes button,
+.wensi-focus {
+  min-height: 22px;
+  padding: 2px 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--system-caption-size);
+  cursor: pointer;
+}
+
+.wensi-matter-modes button[aria-pressed="true"],
+.wensi-focus[aria-pressed="true"] {
+  background: var(--selection-bg);
+  border-color: var(--selection-edge);
+  color: var(--selection-fg);
+}
+
+.wensi-matter-note {
+  margin: 0;
+  font-size: var(--system-caption-size);
+  opacity: 0.7;
+}
+
+.wensi-matter-source {
+  margin: 0;
+  padding: 8px;
+  overflow: auto;
+  border: var(--system-control-line) solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--system-caption-size);
+  white-space: pre-wrap;
+}
+
+.wensi-inspector-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.wensi-type-label {
+  margin: 0;
+}
+
+.wensi-save-note {
+  font-size: var(--system-caption-size);
+  color: var(--ink);
+  opacity: 0.7;
+  text-align: right;
+}
+
+.wensi-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wensi-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.wensi-field-label {
+  font-size: var(--system-caption-size);
+  color: var(--ink);
+  opacity: 0.8;
+}
+
+.wensi-field-input,
+.wensi-field-textarea {
+  width: 100%;
+  font: inherit;
+}
+
+.wensi-readonly {
+  display: block;
+  min-height: 20px;
+  padding: 2px 4px;
+  border: var(--system-control-line) dashed var(--ink);
+  border-radius: var(--control-shape-radius, 0px);
+  font: inherit;
+  font-size: var(--system-caption-size);
+  color: var(--ink);
+  opacity: 0.75;
+}
+
+/* Required missing: the system's wavy-underline error state, in red. */
+.wensi-required-hint {
+  margin: 0;
+  font-size: var(--system-caption-size);
+  color: var(--wensi-required-ink);
+}
+
+.wensi-field .is-required-missing,
+.wensi-frame .is-required-missing {
+  text-decoration: underline wavy;
+  text-decoration-color: var(--wensi-required-ink);
+  text-underline-offset: 3px;
+}
+
+/* Tags: chips from the site's taxonomy; a value it does not know yet wears
+   the yellow until the site adopts it. */
+.wensi-tags {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wensi-tag-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.wensi-tag {
+  min-height: 20px;
+  padding: 1px 7px;
+  border: var(--system-border);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--system-caption-size);
+  cursor: pointer;
+}
+
+.wensi-tag[aria-pressed="true"] {
+  background: var(--selection-bg);
+  border-color: var(--selection-edge);
+  color: var(--selection-fg);
+}
+
+.wensi-tag.is-new {
+  background: var(--wensi-new-tag-bg);
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.wensi-tag-add {
+  width: 100%;
+  font: inherit;
+  font-size: var(--system-caption-size);
+}
+
+.wensi-url-preview {
+  font-size: var(--system-caption-size);
+  color: var(--ink);
+  opacity: 0.65;
+  word-break: break-all;
+}
+
+/* ---- Narrow windows and the phone role ----------------------------------- */
+
+@container wensi-quanyong (max-width: 720px) {
+  .wensi-shell {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    overflow-y: auto;
+  }
+
+  .wensi-library,
+  .wensi-inspector {
+    border-right: 0;
+    border-left: 0;
+    overflow-y: visible;
+  }
+
+  .wensi-library {
+    max-height: 40%;
+    border-bottom: 1px solid var(--shade-dark);
+  }
+
+  .wensi-inspector {
+    border-top: 1px solid var(--shade-dark);
+  }
+}
+
+/* ---- Right column faces: properties / checks ----------------------------- */
+
+.wensi-inspector-modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.wensi-inspector-modes button {
+  min-height: 22px;
+  padding: 2px 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--system-caption-size);
+  cursor: pointer;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .wensi-inspector-modes button:hover {
+    border-color: var(--ink);
+  }
+}
+
+.wensi-inspector-modes button[aria-pressed="true"] {
+  background: var(--selection-bg);
+  border-color: var(--selection-edge);
+  color: var(--selection-fg);
+}
+
+/* ---- Checks -------------------------------------------------------------- */
+
+.wensi-check {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.wensi-check-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.wensi-check-tally,
+.wensi-check-packages {
+  font-size: var(--system-caption-size);
+  color: var(--ink);
+  opacity: 0.7;
+}
+
+.wensi-findings {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wensi-finding {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+  padding: 3px 0;
+  border-top: 1px solid var(--system-secondary-divider);
+  font-size: var(--system-caption-size);
+  color: var(--ink);
+}
+
+.wensi-finding-mark {
+  flex: 0 0 auto;
+  width: 1em;
+  text-align: center;
+}
+
+.wensi-finding-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.wensi-finding.is-error .wensi-finding-mark {
+  color: var(--wensi-required-ink);
+  font-weight: 700;
+}
+
+.wensi-finding.is-warn .wensi-finding-mark {
+  opacity: 0.8;
+}
+
+.wensi-finding.is-info {
+  opacity: 0.75;
+}
+
+/* ---- Publish ------------------------------------------------------------- */
+
+.wensi-publish {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--shade-dark);
+}
+
+.wensi-publish-title {
+  margin: 0;
+  font-size: var(--system-caption-size);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.wensi-publish-line,
+.wensi-publish-ok,
+.wensi-publish-pending,
+.wensi-publish-blocked {
+  margin: 0;
+  font-size: var(--system-caption-size);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.wensi-publish-blocked {
+  color: var(--wensi-required-ink);
+}
+
+.wensi-publish-ok {
+  opacity: 0.8;
+}
+
+.wensi-publish-pending {
+  opacity: 0.7;
+}
+
+.wensi-publish .btn {
+  align-self: flex-start;
+}
+
+/* ---- 写 / 预览 / 对照 ----------------------------------------------------- */
+
+.wensi-view-modes {
+  display: flex;
+  gap: 2px;
+  margin-right: auto;
+}
+
+.wensi-view-modes button {
+  min-height: 22px;
+  padding: 2px 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--system-caption-size);
+  cursor: pointer;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .wensi-view-modes button:hover {
+    border-color: var(--ink);
+  }
+}
+
+.wensi-view-modes button[aria-pressed="true"] {
+  background: var(--selection-bg);
+  border-color: var(--selection-edge);
+  color: var(--selection-fg);
+}
+
+/* Side by side: the editor and the frame split the writing column; either one
+   alone takes it. */
+.wensi-writing[data-view="split"] .wensi-editor-host,
+.wensi-writing[data-view="split"] .wensi-preview {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.wensi-writing[data-view="split"] .wensi-editor-host {
+  border-right: 1px solid var(--shade-dark);
+}
+
+.wensi-writing[data-view="preview"] .wensi-editor-host {
+  display: none;
+}
+
+.wensi-writing[data-view="preview"] .wensi-preview,
+.wensi-writing[data-view="split"] .wensi-preview {
+  display: flex;
+}
+
+.wensi-preview {
+  display: none;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: 8px 10px 10px;
+}
+
+.wensi-preview-note {
+  margin: 0 0 6px;
+  overflow-wrap: anywhere;
+  font-size: var(--system-caption-size);
+  color: var(--ink);
+  opacity: 0.7;
+}
+
+.wensi-preview-frame {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  border: var(--system-border);
+  border-radius: var(--control-shape-radius, 0px);
+  background: var(--paper);
+}
+
+/* ---- Media face ---------------------------------------------------------- */
+
+.wensi-media {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* ---- Tags face ----------------------------------------------------------- */
+
+.wensi-tags-admin,
+.wensi-rename-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* ---- Photos face --------------------------------------------------------- */
+
+.wensi-photos {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.wensi-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--system-secondary-divider);
+}
+
+.wensi-stack-title {
+  margin: 0;
+  font-size: var(--system-caption-size);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.wensi-frame {
+  display: grid;
+  grid-template-columns: auto 56px minmax(0, 1fr);
+  gap: 4px 8px;
+  align-items: start;
+  padding: 6px 0;
+  min-width: 0;
+}
+
+.wensi-frame-check {
+  margin: 2px 0 0;
+}
+
+/* The photograph itself, so arranging is looking at pictures rather than
+   reading file names. Fixed square crop keeps a nine-frame stack scannable. */
+.wensi-frame-thumb {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  display: block;
+  border: var(--system-border);
+  border-radius: var(--control-shape-radius, 0px);
+  background: var(--field-bg);
+}
+
+.wensi-frame-file {
+  margin: 0;
+  font-size: var(--system-caption-size);
+  color: var(--ink);
+  opacity: 0.75;
+  overflow-wrap: anywhere;
+}
+
+.wensi-frame [data-wensi-frame-alt],
+.wensi-frame [data-wensi-frame-cap],
+.wensi-frame-controls {
+  grid-column: 1 / -1;
+}
+
+.wensi-frame-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.wensi-frame-stack {
+  width: auto;
+  max-width: 100%;
+}
+
+/* The drop target: a quiet tray until something is dragged over it, then the
+   desk's own accept frame (is-drag-over / is-drop-reject) applies. */
+.wensi-photo-drop {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border: var(--system-control-line) dashed var(--ink);
+  border-radius: var(--control-shape-radius, 0px);
+  background: var(--field-bg);
+}
+
+.wensi-photo-drop-text {
+  margin: 0;
+  font-size: var(--system-caption-size);
+  color: var(--ink);
+  opacity: 0.8;
+}
+
+.wensi-photo-note {
+  margin: 0;
+  font-size: var(--system-caption-size);
+  color: var(--ink);
+  opacity: 0.85;
+}
+
+.wensi-photo-new-stack {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding-top: 6px;
+  border-top: 1px solid var(--system-secondary-divider);
+}
+
+.wensi-photo-new-stack input {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+.wensi-photo-rolls {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 6px;
+  border-top: 1px solid var(--system-secondary-divider);
+}
+
+.wensi-photo-roll {
+  margin: 0;
+  font-size: var(--system-caption-size);
+  color: var(--ink);
+  opacity: 0.75;
+}
+
+/* The roll bar: what the ticked frames are going to become. */
+.wensi-photo-rollbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 8px;
+  border: var(--system-border);
+  border-radius: var(--control-shape-radius, 0px);
+  background: var(--field-bg);
+}
+
+.wensi-photo-rollbar > .wensi-field-input {
+  flex: 1 1 120px;
+  width: auto;
+  min-width: 0;
+}
+
+.wensi-photo-roll-count {
+  margin: 0;
+  font-size: var(--system-caption-size);
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* ---- Upkeep and ledger faces (P5 skeleton) ------------------------------- */
+
+.wensi-upkeep,
+.wensi-ledger {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.wensi-upkeep-line {
+  margin: 0;
+  font-size: var(--system-caption-size);
+  color: var(--ink);
+  opacity: 0.8;
+  overflow-wrap: anywhere;
+}
+
+/* A step that cannot run yet: the reason reads like a requirement, not a
+   warning, because nothing is broken — something is not wired. */
+.wensi-upkeep-blocked {
+  margin: 0;
+  font-size: var(--system-caption-size);
+  color: var(--wensi-required-ink);
+}
+
+.wensi-upkeep-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.wensi-upkeep-row > input {
+  flex: 1 1 120px;
+  width: auto;
+  min-width: 0;
+}
+
+.wensi-upkeep-log {
+  margin: 0;
+  max-height: 120px;
+  overflow: auto;
+  padding: 6px;
+  border: var(--system-border);
+  border-radius: var(--control-shape-radius, 0px);
+  background: var(--field-bg);
+  font-family: var(--mono-font);
+  font-size: var(--system-caption-size);
+  color: var(--ink);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.wensi-ledger-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 0;
+  border-top: 1px solid var(--system-secondary-divider);
+}
+
+.wensi-ledger-claim {
+  margin: 0;
+  font-size: var(--system-caption-size);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.wensi-ledger-meta {
+  margin: 0;
+  font-size: var(--system-caption-size);
+  color: var(--ink);
+  opacity: 0.7;
+  overflow-wrap: anywhere;
+}
+
+.wensi-ledger-select {
+  width: auto;
+}
+
+/* A drafted candidate: the words first, the rule-package verdicts under them,
+   and the save button last — reading before filing. */
+.wensi-draft-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border: var(--system-border);
+  border-radius: var(--control-shape-radius, 0px);
+  background: var(--field-bg);
+}
+
+.wensi-draft-title {
+  margin: 0;
+  font-size: var(--system-caption-size);
+  font-weight: 700;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.wensi-draft-body {
+  margin: 0;
+  max-height: 180px;
+  overflow: auto;
+  font-size: var(--system-caption-size);
+  color: var(--ink);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Contact rows: the tick and the name on one line, the meta after it. Wraps
+   instead of scrolling — a 30-character group name is normal here. */
+.wensi-contact-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+  font-size: var(--system-caption-size);
+  color: var(--ink);
+}
+
+.wensi-contact-row > input {
+  margin: 2px 0 0;
+}
+
+.wensi-contact-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* 回扫: one post per row — the name, then the one action. */
+.wensi-rescan-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.wensi-rescan-row > .wensi-frame-file {
+  flex: 1 1 140px;
+  min-width: 0;
+}
+
+/* ---- 添加站点 (P7): one dialog, one write -------------------------------- */
+
+.wensi-wizard-backdrop {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.wensi-wizard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(580px, 100%);
+  max-height: min(86vh, 720px);
+  overflow: auto;
+  padding: 12px 14px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--shade-dark);
+  border-radius: var(--control-shape-radius);
+}
+
+.wensi-wizard-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.wensi-wizard-title {
+  margin: 0;
+  font-size: var(--system-heading-size, 1.05em);
+}
+
+.wensi-wizard-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.wensi-wizard-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.wensi-wizard-label {
+  font-size: var(--system-caption-size);
+  color: var(--ink);
+}
+
+.wensi-wizard-input {
+  min-width: 0;
+  padding: 4px 6px;
+  font: inherit;
+  color: var(--ink);
+  background: var(--btn-bg);
+  border: 1px solid var(--shade-dark);
+  border-radius: var(--control-shape-radius);
+}
+
+.wensi-wizard-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.wensi-wizard-result {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.wensi-wizard-subtitle {
+  margin: 6px 0 0;
+  font-size: var(--system-caption-size);
+}
+
+.wensi-wizard-note,
+.wensi-wizard-grant,
+.wensi-wizard-next {
+  margin: 0;
+  font-size: var(--system-caption-size);
+  overflow-wrap: anywhere;
+}
+
+.wensi-wizard-ok {
+  margin: 0;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.wensi-wizard-error {
+  margin: 0;
+  color: var(--danger-ink, #8b1a1a);
+  overflow-wrap: anywhere;
+}
+
+.wensi-wizard-json {
+  max-height: 220px;
+  overflow: auto;
+  margin: 4px 0 0;
+  padding: 6px;
+  font-size: 0.75em;
+  line-height: 1.35;
+  background: var(--btn-bg);
+  border: 1px solid var(--shade-dark);
+  border-radius: var(--control-shape-radius);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 520px) {
+  .wensi-wizard-form {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* The publish panel's one-time token door. */
+.wensi-publish-token {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.wensi-publish-token > input {
+  flex: 1 1 160px;
+  min-width: 0;
+}

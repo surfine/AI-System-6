@@ -47,6 +47,10 @@ declare function markdownToSystemHtml(markdown: string): string;
 declare function enterPreviewAtCaret(input: any, preview: any): boolean;
 declare function leavePreviewToCaret(input: any, preview: any): boolean;
 declare function escapeHtml(text: string): string;
+declare function html(strings: TemplateStringsArray, ...values: unknown[]): string;
+declare namespace html {
+  function raw(markup: unknown): string;
+}
 declare const translations: Record<string, Record<string, any>>;
 declare function titleFromBody(body?: string): string;
 // Receipt bodies are hashed by documents-chat.js's classic-script helper;

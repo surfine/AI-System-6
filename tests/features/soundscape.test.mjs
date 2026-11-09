@@ -63,7 +63,7 @@ test.assertIncludes(serviceProviders, 'const LOCAL_BRIDGE_ORIGIN = "http://127.0
 test.assertIncludes(serviceProviders, 'localBridgeFetch("/api/music/system", init, input.publicWeb === true)', "the public Web app sends Music commands back to the host Mac");
 test.assertIncludes(source, 'requestService("system.music"', "Soundscape routes Music commands through the service capability");
 test.assertIncludes(serviceProviders, 'bridged.targetAddressSpace = "loopback"', "Chromium declares the local bridge address space");
-test.assertIncludes(source, "isSafariPublicWebUnsupported", "Safari reuses the dedicated HTTP local entry");
+test.assertIncludes(source, "isSafariPublicWebUnsupported", "Safari on the public desk cannot reach Music on this Mac");
 test.assertIncludes(source, 'error.code = "local_music_bridge_unavailable"', "an unavailable Mac bridge has a specific low-friction explanation");
 test.assertIncludes(source, 'requestSystemMusic("state")', "the player reads real Music app state");
 test.assertIncludes(source, 'runSystemAction("play-pause")', "the main transport controls the Music app");

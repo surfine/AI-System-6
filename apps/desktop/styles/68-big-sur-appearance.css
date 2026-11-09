@@ -6,6 +6,7 @@
    no Liquid Glass painter or refraction runs behind it. */
 html[data-theme="big-sur"],
 body[data-theme="big-sur"] {
+  --theme-button-min-width: 82px;
   /* No hover outline on choices in this era (no native evidence of one). */
   --control-choice-hover-shadow: none;
   /* Period tokens Platinum made shared (2026-09-25), answered with the values

@@ -11,19 +11,21 @@
     <!-- Let the system choose status glyph contrast. -->
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="theme-color" content="#000000" />
-    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20261104.2" />
-    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20261104.2" />
-    <link rel="manifest" href="assets/app-icon/manifest.json?v=20261104.2" />
-    <script src="app/core/theme-registry.js?v=20261104.2"></script>
-    <link rel="stylesheet" href="styles.bundle.css?v=20261104.2" />
+    <link rel="icon" href="assets/app-icon/favicon.ico?v=20261109.2" sizes="32x32" />
+    <link rel="icon" type="image/svg+xml" href="assets/app-icon/favicon.svg?v=20261109.2" />
+    <link rel="apple-touch-icon" href="assets/app-icon/app-icon-180.png?v=20261109.2" />
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon/app-icon-192.png?v=20261109.2" />
+    <link rel="manifest" href="assets/app-icon/manifest.json?v=20261109.2" />
+    <script src="app/core/theme-registry.js?v=20261109.2"></script>
+    <link rel="stylesheet" href="styles.bundle.css?v=20261109.2" />
     <!-- Preload the application while parsing the desktop. -->
-    <link rel="preload" as="script" href="app.bundle.js?v=20261104.2" />
+    <link rel="preload" as="script" href="app.bundle.js?v=20261109.2" />
   </head>
   <body class="is-booting">
     <pre id="cw3-log" style="position:fixed;left:8px;bottom:8px;z-index:9999;max-width:46vw;max-height:38vh;overflow:auto;margin:0;padding:8px;background:rgba(0,0,0,.72);color:#7CFC9B;font:11px/1.4 ui-monospace,Menlo,monospace;border-radius:6px;white-space:pre-wrap;" hidden></pre>
-    <script src="app/core/theme-body-init.js?v=20261104.2"></script>
+    <script src="app/core/theme-body-init.js?v=20261109.2"></script>
     <!-- Register crash recovery before the application bundle. -->
-    <script src="app/core/boot-safety-net.js?v=20261104.2"></script>
+    <script src="app/core/boot-safety-net.js?v=20261109.2"></script>
     <header class="menu-bar" aria-label="System menu" data-i18n-aria-label="system_menu">
       <div class="menu">
         <button class="apple" aria-label="Apple menu" data-i18n-aria-label="apple_menu" data-balloon-help="balloon_apple_menu">
@@ -3315,10 +3317,30 @@
         </div>
       </section>
 
+<!-- 文思泉涌: the blog writing studio. The shell is a stub on purpose —
+     three panes the lazy module fills from each site's description, so a
+     boot that never opens it pays only the admission row. -->
+      <section class="window wensi-quanyong-window is-hidden" data-window="wensiQuanyong" aria-labelledby="wensi-quanyong-title">
+        <div class="title-bar">
+          <button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button>
+          <h2 id="wensi-quanyong-title" data-i18n="wensi_quanyong_label">文思泉涌</h2>
+        </div>
+        <div class="details-bar app-status-bar compact-status-bar wensi-quanyong-status-bar">
+          <span class="status-bar-leading" data-wensi-site></span>
+          <span class="status-bar-context" data-wensi-context></span>
+          <span class="status-bar-trailing" data-wensi-save-state></span>
+        </div>
+        <div class="window-pane wensi-quanyong-pane"></div>
+      </section>
+
       <section class="icon-column" aria-label="Desktop icons" data-i18n-aria-label="desktop_icons">
         <button class="desktop-icon desktop-app-icon" id="desktop-tide-letters" type="button" data-open="aaronBlog" data-desk-seed="full">
           <span class="sys-icon sys-icon-desktop" data-system-icon="manuscript" aria-hidden="true"></span>
           <span data-i18n="aaron_blog_label">潮汐信笺</span>
+        </button>
+        <button class="desktop-icon desktop-app-icon" id="desktop-wensi-quanyong" type="button" data-open="wensiQuanyong" data-desk-seed="full">
+          <span class="sys-icon sys-icon-desktop" data-system-icon="rebuildArticle" aria-hidden="true"></span>
+          <span data-i18n="wensi_quanyong_label">文思泉涌</span>
         </button>
         <button class="desktop-icon" type="button" data-open="disk" data-balloon-help="balloon_startup_disk">
           <span class="sys-icon sys-icon-desktop" data-system-icon="startupDisk" aria-hidden="true"></span>
@@ -3367,10 +3389,10 @@
       </section>
     </main>
 
-    <script src="app/generated/build-info.js?v=20261104.2"></script>
+    <script src="app/generated/build-info.js?v=20261109.2"></script>
     <template id="standard-window-controls"><button class="close-box" aria-label="Close" data-i18n-aria-label="close"></button><button class="resize-box" aria-label="Zoom" data-i18n-aria-label="zoom"></button><button class="shade-box" aria-label="Collapse" data-i18n-aria-label="collapse"></button></template>
-    <script src="app.bundle.js?v=20261104.2"></script>
-    <script src="app/vendor/clioworks-v3/fixture.js?v=20261104.2"></script>
+    <script src="app.bundle.js?v=20261109.2"></script>
+    <script src="app/vendor/clioworks-v3/fixture.js?v=20261109.2"></script>
 
   </body>
 </html>
