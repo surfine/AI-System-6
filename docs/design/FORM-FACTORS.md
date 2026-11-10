@@ -27,11 +27,11 @@ that reaches an edge reads — and the shape those corners make together is
 `--edge-shape`: the era's radius on the two sides inside the screen, the
 display's on the two that meet it.
 
-Measured, not assumed: `tooling/verify-display-corners.mjs` drives twelve
-shapes — six phone poses, three watch sizes, iPad upright and sideways, and a
-13-inch Mac — in all six appearances, and asks the painted tree which element
-still has a radius at a corner it shares with the display. Seventy-two cells,
-zero findings.
+Measured, not assumed: `tooling/verify-display-corners.mjs` drives thirteen
+shapes — six phone poses plus the Duo's laptop pose, three watch sizes, iPad
+upright and sideways, and a 13-inch Mac — in the appearances, and asks the
+painted tree which element still has a radius at a corner it shares with the
+display. Every cell reports zero findings.
 
 ## What each surface is
 
@@ -41,7 +41,78 @@ zero findings.
 | iPad, sideways | The desk with a finger: the same windows, reachable by touch, split view and Stage Manager | Everything; windows are insets and can be arranged | Nothing by policy | Device matrix `ipad-11-landscape`; display corners |
 | iPad, upright | The one-page flow (820px is inside the 860px band) | Every application, one at a time, full screen | The desktop launcher's second dimension, the MultiFinder stack | Device matrix `ipad-11-portrait`, `ipad-mini-portrait` |
 | iPhone | The desk as a pocket device: one application at a time, the phone flow, the strip under the notch | Every application; the desk's launcher and MultiFinder on demand | Windows side by side | Device matrix phone cells; `tests/e2e/probe-one-more-tune-phone.spec.mjs`; `npm run verify:ios-standalone` for the home-screen web app |
+| iPhone Duo, folded like a laptop | A small desk over a keyboard, the way a portable Mac folds: the upper half is the screen, the lower half is the keyboard; sideways a press on the keys is the trackpad, and upright a palm-rest pad is drawn, with the machine's chassis crossing the crease | The menu bar, one application at a time, the MultiFinder switcher, the running-app list, and every key the desk already answers (⌘S, ⌘Z, arrows, Esc). The whole flat half is a relative pointing surface: it moves a pointer inside the screen and clicks where that pointer is | The Dock, the desktop icons and the writing spine (the screen is 261px); free window dragging by title bar; the system keyboard, until the globe key asks for it | Device matrix `iphone-duo-pocket`; display corners `iphone-duo-inner-laptop`; `tests/features/device-matrix.test.mjs` |
 | Apple Watch | A glance, not a desk | One question, one recording, three answers, the round's score | See *The wrist* below | Display corners (`watch-45mm`, `watch-41mm`, `watch-ultra`) |
+
+## The Duo's laptop posture
+
+Safari reports the pose through the Device Posture and Viewport Segments APIs,
+both behind feature flags; `window.viewport.segments` gives two rects and the
+gap between them is the hinge. The dock lands in the upper segment, the deck in
+the lower, and the two do not share a pixel. When the flags are off the Apple
+menu offers the same mode by hand.
+
+A finger gets a target even where the drawing cannot afford one. The deck's key
+is drawn at about 40px, which is what lets five rows fit a 313px deck; the key
+grows its own hit area 2px into the 4px gap, so the measured target is 44.5px
+(`iphone-duo-pocket` in the device matrix reads it by asking the page which key
+a point belongs to). The Chrome glyph rule already says the same thing for title
+bars: the drawn control keeps its size, the region around it grows.
+
+The same posture, folded the other way, is a **book**: two pages side by side.
+Nothing is drawn, but the crease is a reserved region, so an app page is pinned
+to the primary segment instead of stretching across the join — HIG's own reason
+is that a control on the crease is hard to press, and a split view that cannot
+divide cleanly collapses to one pane. The book cell in the device matrix stands
+the class and the token up by hand (Playwright has no hinge) and measures that
+the page ends at the crease.
+
+Fold posture is behind Safari feature flags at launch, so the Apple menu offers
+the laptop mode by hand; everything else is measured where it can be.
+
+Three rules are the design:
+
+- **One machine, drawn across the crease.** The chassis is decoration and takes
+  no pointer. Only the working surfaces obey safe areas. The B side is the
+  lid: its border is that machine's bezel, and the desk sits in the hole.
+  The C side is the deck. The inner panel is 1878×2670 px, ratio 445:313;
+  sideways that is 890×626 CSS px and upright it is 626×890. Sideways the
+  deck is only the keyboard, and a press on it is the trackpad, with the
+  legends blanking first. Upright, a separate pad sits on the palm rest.
+  The frame is square where it meets the hinge.
+- **The keys stay put.** Upright, a status rail, the keys and the palm rest
+  stack, and only the keys scroll. Sideways the palm rest is not drawn; a
+  press on the keys is the trackpad, and a tap is still a key.
+- **The material is the machine, and each appearance has its own.** System 6 is the Macintosh Portable, System 7 the PowerBook 170, NeXTSTEP a PowerBook 5300 in NeXT's own grey (NeXT never shipped a portable), Drawing Board the Wallstreet, Platinum the Lombard, Aqua the Titanium PowerBook, Tiger the last 15-inch aluminum PowerBook, Snow Leopard the 13-inch Unibody, Lion the 2011 Air, Yosemite the 2014 Retina 13, Big Sur the M1 Air, and Liquid Glass the 14-inch MacBook Pro. A published body width is the unit: the PowerBook 170's 18.63 mm key is that fraction of 286 mm, not a shared pitch. The fold fixes the deck's height, so the vertical scale is compressed and the ratio is written down per machine. Each one also carries the parts you recognise: the model name printed under the display (every generation but the 14-inch, which has none on the inside face), its keycap shape and colour, its pointing hardware, its hinge, and the black glass bezel that arrives in 2009. Materials are our own generated grain tile and 1px brushing folded into the sheet as a data URI, never a photograph of the hardware; the colour still comes from tokens, so a dark color mode, more contrast and forced colors restyle every machine.
+- **The launcher stays.** The Dock and the Control Strip step aside — no
+  portable Mac draws its Dock over the keyboard — but the desktop's icon column
+  is how an application is opened, and HIG asks for the same content in every
+  pose. The phone flow already folds both rails away while an app owns the
+  screen, which is the only case that needs it.
+
+The outside of that machine is the **A side**, and it is only ever seen shut.
+A closed Duo reports the fold and has one display to lay out, so the outer face
+is drawn full bleed: the era's material and grain, its hinge or front catch, its
+sleep light where it had one, and nothing invented — the mark left the lid in
+2021, and a wrong silhouette is worse than no mark. It is off by default: a
+closed phone is still a phone until the Apple menu asks for the lid, and a tap
+gives the phone back. The switch is inserted by the lazy module beside the mode
+it belongs to, because the boot budget pays only for what every desk needs.
+
+The pad is a trackpad, not a touch layer: the finger never touches what it
+points at. Sideways, a press on the keyboard blanks the legends and moves the
+pointer; a tap still types, and the legends return when the finger lifts.
+Upright, the pad is the palm rest: a tap clicks at the pointer, two fingers
+that stay put is a right-click, and two fingers that move scroll without ever
+also clicking. The pointer stays inside the screen segment. A key reached with
+Tab and activated with Return, and a finger tap on that same key, are one
+action each, and the caret is back in the field before either types.
+
+Known limits, stated rather than hidden: the keys are a US layout with a globe
+key to the system keyboard (an IME cannot be rebuilt here); the pad cannot drag
+a text selection, so ⇧ with the arrow keys is the way to select; a pinch-zoom
+scales the whole page and the deck's geometry is in layout pixels; a hardware
+keyboard works, but the deck does not detect it and hide itself.
 
 ## Corner ownership, per display
 

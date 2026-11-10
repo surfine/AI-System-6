@@ -1,0 +1,1359 @@
+/* iPhone Duo held like a laptop: the upright half is the desk, the flat half is
+   a keyboard and a palm rest. Loaded with app/features/duo-pocket-desk.js and
+   only while the mode is on, so every rule here is scoped to
+   body.duo-pocket-desk and a desk that never folds downloads none of it.
+
+   The chassis crosses the fold: one machine, drawn as a lid around the screen,
+   a hinge at the crease and a deck under the keys. Only the working surfaces
+   obey the safe areas; the material does not, which is what makes it read as
+   one object. --duo-* geometry comes from syncPocketDesk (the Viewport Segments
+   API, or half the height where the flag is off).
+
+   Materials are a token block per era, the way the Dock's are: one machine per
+   appearance, not a second appearance axis. A dark color mode answers the same
+   tokens, so the machine follows the system the way every other surface does.
+   Contract: tests/features/device-matrix.test.mjs (the Duo's laptop posture). */
+
+/* The two lengths the WINDOW rules also read live on the body: a custom
+   property declared on .duo-pocket cannot be seen by a window, and a calc()
+   with an unresolved var() is invalid at computed-value time — the frame then
+   falls back to auto and the screen stops being the screen. */
+body.duo-pocket-desk {
+  --duo-bezel-top: 18px;
+  --duo-bezel-x: 16px;
+  --duo-bezel-bottom: 14px;
+  --duo-hinge: 9px;
+  --duo-screen-radius: 0px;
+}
+
+/* One portable per appearance. The module sets data-duo-machine from the theme,
+   so these blocks are not appearance selectors and a dark color mode still
+   restates the same tokens for every machine. */
+.duo-pocket {
+  --duo-radius: 14px;
+  --duo-lid: #c9c7c2;
+  --duo-lid-edge: #8f8d88;
+  --duo-lid-ink: #33302b;
+  /* The A side is the outside face, which is not always the colour of the
+     bezel around the panel: from 2009 the bezel is black glass and the lid
+     behind it is still aluminium. These two name the skin; the machine blocks
+     below restate them only where the two really differ. */
+  --duo-skin: var(--duo-lid);
+  --duo-skin-ink: var(--duo-lid-ink);
+  --duo-skin-face: none;
+  --duo-deck: #b9b7b1;
+  --duo-deck-edge: #7d7b76;
+  --duo-deck-face: none;
+  --duo-key-bg: #f7f6f3;
+  --duo-key-ink: #2b2b2b;
+  --duo-key-edge: #adaaa4;
+  --duo-key-pressed: #e2e0dc;
+  --duo-key-latched: #cfd6e4;
+  --duo-key-radius: 3px;
+  --duo-key-shadow: inset 0 1px 0 rgb(255 255 255 / 0.7), 0 1px 0 var(--duo-key-edge);
+  --duo-rail-ink: #3a3835;
+  --duo-lamp: #3f7d5a;
+  --duo-cursor-ink: #111;
+  --duo-cursor-paper: #fff;
+  --duo-camera: none;
+  --duo-glass-ring: transparent;
+  /* The material is a generated grain tile, folded into the sheet as a data
+     URI: our own noise, not a photograph of anyone's machine. A 64px tile is
+     drawn at 192 device pixels on this display, so it stays fine, not mushy. */
+  --duo-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='64' height='64' filter='url(%23g)' opacity='.5'/%3E%3C/svg%3E");
+}
+
+/* 1989: ivory plastic, square tall keycaps, two hinge knuckles at the ends. */
+.duo-pocket[data-duo-machine="portable"] {
+  --duo-lid: #d7d1bd;
+  --duo-lid-edge: #403c2e;
+  --duo-lid-ink: #3d3829;
+  --duo-deck: #cfc8b2;
+  --duo-deck-edge: #403c2e;
+  --duo-deck-face: var(--duo-grain), linear-gradient(180deg, rgb(255 255 255 / 0.16), rgb(0 0 0 / 0.06));
+  --duo-key-bg: #e8e3d1;
+  --duo-key-ink: #17160f;
+  --duo-key-edge: #6d6650;
+  --duo-key-pressed: #cdc7b2;
+  --duo-key-latched: #b8c6cf;
+  --duo-key-radius: 0px;
+  --duo-key-shadow: inset 1px 1px 0 rgb(255 255 255 / 0.62), 1px 1px 0 rgb(64 60 46 / 0.5);
+  --duo-rail-ink: #26241c;
+  --duo-lamp: #1d5c33;
+}
+
+/* 1991: graphite body. The 140/170 keyboard is charcoal with light legends,
+   not the beige of the desktop; the rainbow mark sits above the panel. */
+.duo-pocket[data-duo-machine="powerbook-170"] {
+  --duo-lid: #4a4c4f;
+  --duo-lid-edge: #1c1e20;
+  --duo-lid-ink: #cfcdc7;
+  --duo-deck: #3a3c3f;
+  --duo-deck-edge: #17181a;
+  --duo-deck-face: var(--duo-grain), linear-gradient(180deg, rgb(255 255 255 / 0.08), rgb(0 0 0 / 0.14));
+  --duo-key-bg: #33363a;
+  --duo-key-ink: #e9e7e2;
+  --duo-key-edge: #141618;
+  --duo-key-pressed: #45494e;
+  --duo-key-latched: #6f7f96;
+  --duo-key-radius: 2px;
+  --duo-key-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), 0 1px 0 rgb(0 0 0 / 0.65);
+  --duo-rail-ink: #e6e4df;
+  --duo-lamp: #d4534a;
+}
+
+/* 1995: charcoal, twin hinge barrels, the first trackpad and its button. */
+.duo-pocket[data-duo-machine="powerbook-5300"] {
+  --duo-lid: #2f3032;
+  --duo-lid-edge: #0d0d0e;
+  --duo-lid-ink: #b9bcc0;
+  --duo-deck: #232426;
+  --duo-deck-edge: #0d0d0e;
+  --duo-deck-face: var(--duo-grain), linear-gradient(180deg, rgb(255 255 255 / 0.07), rgb(0 0 0 / 0.18));
+  --duo-key-bg: #34363a;
+  --duo-key-ink: #e8e8ea;
+  --duo-key-edge: #101112;
+  --duo-key-pressed: #45484d;
+  --duo-key-latched: #6c6f8c;
+  --duo-key-radius: 3px;
+  --duo-key-shadow: inset 0 1px 0 rgb(255 255 255 / 0.14), 0 1px 0 rgb(0 0 0 / 0.7);
+  --duo-rail-ink: #d2d2d6;
+  --duo-lamp: #8fd0ae;
+}
+
+/* 1998: black rubber lid, black keys, a wide hinge cover. */
+.duo-pocket[data-duo-machine="wallstreet"] {
+  --duo-lid: #17181a;
+  --duo-lid-edge: #050505;
+  --duo-lid-ink: #9aa0a6;
+  --duo-deck: #212224;
+  --duo-deck-edge: #050505;
+  --duo-deck-face: var(--duo-grain), linear-gradient(180deg, rgb(255 255 255 / 0.05), rgb(0 0 0 / 0.2));
+  --duo-key-bg: #232426;
+  --duo-key-ink: #ecebe7;
+  --duo-key-edge: #080808;
+  --duo-key-pressed: #34363a;
+  --duo-key-latched: #7d8ea3;
+  --duo-key-radius: 4px;
+  --duo-key-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1), 0 1px 0 rgb(0 0 0 / 0.8);
+  --duo-rail-ink: #d8d8dc;
+  --duo-lamp: #7fc39a;
+}
+
+/* Lombard's bronze keycaps are the signature. The hex is a stand-in for that
+   material, not a measured swatch — see the evidence note. */
+.duo-pocket[data-duo-machine="lombard"] {
+  --duo-lid: #121212;
+  --duo-lid-edge: #040404;
+  --duo-lid-ink: #a8a29a;
+  --duo-deck: #0d0d0d;
+  --duo-deck-edge: #040404;
+  --duo-deck-face: var(--duo-grain), linear-gradient(180deg, rgb(255 255 255 / 0.05), rgb(0 0 0 / 0.22));
+  --duo-key-radius: 4px;
+  --duo-key-bg: #b08d57;
+  --duo-key-ink: #1a1208;
+  --duo-key-edge: #6d5428;
+  --duo-key-pressed: #9a7844;
+  --duo-key-latched: #d7c49a;
+  --duo-rail-ink: #e6e0d4;
+  --duo-lamp: #c4554c;
+}
+
+.duo-pocket[data-duo-machine="titanium"] {
+  --duo-lid: #b9babe;
+  --duo-lid-edge: #6e7076;
+  --duo-lid-ink: #4a4c50;
+  --duo-deck: #94979c;
+  --duo-deck-edge: #5c5e64;
+  --duo-deck-face: repeating-linear-gradient(180deg, rgb(255 255 255 / 0.13) 0 1px, rgb(0 0 0 / 0.07) 1px 2px), var(--duo-grain), linear-gradient(180deg, rgb(255 255 255 / 0.24), rgb(0 0 0 / 0.1));
+  --duo-key-bg: #d5d6da;
+  --duo-key-ink: #1c1d20;
+  --duo-key-edge: #8a8c92;
+  --duo-key-pressed: #c4c6cb;
+  --duo-key-latched: #c5d0dc;
+  --duo-key-radius: 3px;
+  --duo-glass-ring: rgb(0 0 0 / 0.55);
+  --duo-rail-ink: #1c1d20;
+  --duo-lamp: #3f7d5a;
+}
+
+.duo-pocket[data-duo-machine="aluminum"] {
+  --duo-lid: #c3c5c9;
+  --duo-lid-edge: #6a6d72;
+  --duo-lid-ink: #4e5054;
+  --duo-deck: #a4a7ac;
+  --duo-deck-edge: #5e6166;
+  --duo-deck-face: repeating-linear-gradient(180deg, rgb(255 255 255 / 0.13) 0 1px, rgb(0 0 0 / 0.07) 1px 2px), var(--duo-grain), linear-gradient(180deg, rgb(255 255 255 / 0.22), rgb(0 0 0 / 0.09));
+  --duo-key-bg: #e9eaee;
+  --duo-key-ink: #1a1a1c;
+  --duo-key-edge: #9a9da2;
+  --duo-key-pressed: #dcdde1;
+  --duo-key-latched: #c9d4e2;
+  --duo-key-radius: 3px;
+  --duo-glass-ring: rgb(0 0 0 / 0.6);
+  --duo-rail-ink: #1a1a1c;
+  --duo-lamp: #3f7d5a;
+}
+
+/* 2009: the first black keyboard on a silver body, and the bezel around the
+   panel is black glass, not aluminium -- only the outer edge is metal. */
+.duo-pocket[data-duo-machine="unibody"] {
+  --duo-lid: #0e0e10;
+  --duo-lid-edge: #6f7378;
+  --duo-lid-ink: #c9ccd1;
+  --duo-deck: #cfcfd4;
+  --duo-deck-edge: #3a3a3c;
+  --duo-deck-face: repeating-linear-gradient(180deg, rgb(255 255 255 / 0.08) 0 1px, rgb(0 0 0 / 0.04) 1px 2px), var(--duo-grain), linear-gradient(180deg, rgb(255 255 255 / 0.16), rgb(0 0 0 / 0.05));
+  --duo-key-bg: #1c1c1e;
+  --duo-key-ink: #f5f5f7;
+  --duo-key-edge: #000;
+  --duo-key-pressed: #2c2c2e;
+  --duo-key-latched: #3a4554;
+  --duo-key-radius: 2px;
+  --duo-key-shadow: inset 0 1px 0 rgb(255 255 255 / 0.07), 0 1px 0 rgb(0 0 0 / 0.85);
+  --duo-camera: block;
+  --duo-rail-ink: #1c1c1e;
+  --duo-lamp: #34c759;
+  --duo-hinge-fill: #1c1c1e;
+  --duo-skin: #cbcbd0;
+  --duo-skin-ink: #3a3a3e;
+  --duo-skin-face: repeating-linear-gradient(180deg, rgb(255 255 255 / 0.1) 0 1px, rgb(0 0 0 / 0.05) 1px 2px);
+}
+
+.duo-pocket[data-duo-machine="air-2011"] {
+  --duo-skin: #dcdce0;
+  --duo-skin-ink: #3c3c40;
+  --duo-skin-face: repeating-linear-gradient(180deg, rgb(255 255 255 / 0.1) 0 1px, rgb(0 0 0 / 0.04) 1px 2px);
+  --duo-lid: #101012;
+  --duo-lid-edge: #8e8e93;
+  --duo-lid-ink: #c9ccd1;
+  --duo-deck: #cfcfd4;
+  --duo-deck-edge: #8e8e93;
+  --duo-deck-face: repeating-linear-gradient(180deg, rgb(255 255 255 / 0.08) 0 1px, rgb(0 0 0 / 0.04) 1px 2px), var(--duo-grain), linear-gradient(180deg, rgb(255 255 255 / 0.16), rgb(0 0 0 / 0.05));
+  --duo-key-bg: #1c1c1e;
+  --duo-key-ink: #f5f5f7;
+  --duo-key-edge: #000;
+  --duo-key-pressed: #2c2c2e;
+  --duo-key-latched: #3a4554;
+  --duo-key-radius: 2px;
+  --duo-key-shadow: inset 0 1px 0 rgb(255 255 255 / 0.07), 0 1px 0 rgb(0 0 0 / 0.85);
+  --duo-camera: block;
+  --duo-rail-ink: #1c1c1e;
+  --duo-lamp: #34c759;
+}
+
+.duo-pocket[data-duo-machine="air-m1"] {
+  --duo-skin: #dcdce0;
+  --duo-skin-ink: #3c3c40;
+  --duo-skin-face: repeating-linear-gradient(180deg, rgb(255 255 255 / 0.1) 0 1px, rgb(0 0 0 / 0.04) 1px 2px);
+  --duo-lid: #0f0f11;
+  --duo-lid-edge: #8e8e93;
+  --duo-lid-ink: #c9ccd1;
+  --duo-deck: #cfcfd4;
+  --duo-deck-edge: #8e8e93;
+  --duo-deck-face: repeating-linear-gradient(180deg, rgb(255 255 255 / 0.08) 0 1px, rgb(0 0 0 / 0.04) 1px 2px), var(--duo-grain), linear-gradient(180deg, rgb(255 255 255 / 0.16), rgb(0 0 0 / 0.05));
+  --duo-key-bg: #1c1c1e;
+  --duo-key-ink: #f5f5f7;
+  --duo-key-edge: #000;
+  --duo-key-pressed: #2c2c2e;
+  --duo-key-latched: #3a4554;
+  --duo-key-radius: 6px;
+  --duo-key-shadow: inset 0 1px 0 rgb(255 255 255 / 0.07), 0 1px 0 rgb(0 0 0 / 0.85);
+  --duo-camera: block;
+  --duo-rail-ink: #1c1c1e;
+  --duo-lamp: #34c759;
+}
+
+.duo-pocket[data-duo-machine="retina-2014"] {
+  --duo-skin: #d3d3d8;
+  --duo-skin-ink: #3a3a3e;
+  --duo-skin-face: repeating-linear-gradient(180deg, rgb(255 255 255 / 0.1) 0 1px, rgb(0 0 0 / 0.04) 1px 2px);
+  --duo-lid: #0d0d0f;
+  --duo-lid-edge: #6e7175;
+  --duo-lid-ink: #c6c9ce;
+  --duo-deck: #c6c6cb;
+  --duo-deck-edge: #1c1c1e;
+  --duo-deck-face: repeating-linear-gradient(180deg, rgb(255 255 255 / 0.08) 0 1px, rgb(0 0 0 / 0.04) 1px 2px), var(--duo-grain), linear-gradient(180deg, rgb(255 255 255 / 0.16), rgb(0 0 0 / 0.05));
+  --duo-key-bg: #1c1c1e;
+  --duo-key-ink: #f5f5f7;
+  --duo-key-edge: #000;
+  --duo-key-pressed: #2c2c2e;
+  --duo-key-latched: #3a4554;
+  --duo-key-radius: 3px;
+  --duo-key-shadow: inset 0 1px 0 rgb(255 255 255 / 0.07), 0 1px 0 rgb(0 0 0 / 0.85);
+  --duo-camera: block;
+  --duo-rail-ink: #1c1c1e;
+  --duo-lamp: #0a84ff;
+}
+
+.duo-pocket[data-duo-machine="macbook-pro-14"] {
+  --duo-skin: #d5d5da;
+  --duo-skin-ink: #3c3c42;
+  --duo-skin-face: repeating-linear-gradient(180deg, rgb(255 255 255 / 0.1) 0 1px, rgb(0 0 0 / 0.035) 1px 2px);
+  --duo-lid: #08080a;
+  --duo-lid-edge: #3c3c40;
+  --duo-lid-ink: #c6c9ce;
+  --duo-deck: #e6e6eb;
+  --duo-deck-edge: #b9b9bf;
+  --duo-deck-face: repeating-linear-gradient(180deg, rgb(255 255 255 / 0.08) 0 1px, rgb(0 0 0 / 0.03) 1px 2px), var(--duo-grain), linear-gradient(180deg, rgb(255 255 255 / 0.18), rgb(0 0 0 / 0.04));
+  --duo-key-bg: #1d1d1f;
+  --duo-key-ink: #f5f5f7;
+  --duo-key-edge: #000;
+  --duo-key-pressed: #2c2c2e;
+  --duo-key-latched: #3a4554;
+  --duo-key-radius: 5px;
+  --duo-key-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08), 0 1px 0 rgb(0 0 0 / 0.85);
+  --duo-rail-ink: #1d1d1f;
+  --duo-lamp: #30d158;
+  --duo-well: #1d1d1f;
+  --duo-hinge-fill: #2a2a2d;
+}
+
+/* B-side frame. The live desk sits in the hole, so these lengths live on the
+   body: a window is not a descendant of the chassis and cannot see a variable
+   declared there. Two side figures are derived from a published diagonal and
+   the published body width, times the 890px deck. Every other bezel is a
+   signature class (thick, medium, hairline), written down as such, not a
+   millimetre the spec never gave. Each total is kept so the live rect stays
+   between about 222 and 247 of the segment's 261, because a chin is worth
+   nothing if it eats the page. */
+body.duo-pocket-desk:has(.duo-pocket[data-duo-machine="portable"]) {
+  --duo-bezel-top: 14px;
+  --duo-bezel-x: 46px;
+  --duo-bezel-bottom: 22px;
+  --duo-hinge: 14px;
+}
+body.duo-pocket-desk:has(.duo-pocket[data-duo-machine="powerbook-170"]) {
+  --duo-bezel-top: 14px;
+  --duo-bezel-x: 30px;
+  --duo-bezel-bottom: 18px;
+  --duo-hinge: 10px;
+  --duo-screen-radius: 4px;
+}
+body.duo-pocket-desk:has(.duo-pocket[data-duo-machine="powerbook-5300"]) {
+  --duo-bezel-top: 12px;
+  --duo-bezel-x: 26px;
+  --duo-bezel-bottom: 16px;
+  --duo-hinge: 10px;
+  --duo-screen-radius: 4px;
+}
+body.duo-pocket-desk:has(.duo-pocket[data-duo-machine="wallstreet"]) {
+  --duo-bezel-top: 11px;
+  --duo-bezel-x: 24px;
+  --duo-bezel-bottom: 15px;
+  --duo-hinge: 11px;
+  --duo-screen-radius: 3px;
+}
+body.duo-pocket-desk:has(.duo-pocket[data-duo-machine="lombard"]) {
+  --duo-bezel-top: 10px;
+  --duo-bezel-x: 24px;
+  --duo-bezel-bottom: 16px;
+  --duo-hinge: 11px;
+  --duo-screen-radius: 4px;
+}
+body.duo-pocket-desk:has(.duo-pocket[data-duo-machine="titanium"]) {
+  --duo-bezel-top: 8px;
+  --duo-bezel-x: 12px;
+  --duo-bezel-bottom: 14px;
+  --duo-hinge: 12px;
+  --duo-screen-radius: 2px;
+}
+body.duo-pocket-desk:has(.duo-pocket[data-duo-machine="aluminum"]) {
+  /* 15.2 in 1440×960 in a 348 mm body: panel 321 mm, 13.4 mm a side, 34px. */
+  --duo-bezel-top: 12px;
+  --duo-bezel-x: 34px;
+  --duo-bezel-bottom: 13px;
+  --duo-hinge: 9px;
+  --duo-screen-radius: 3px;
+}
+body.duo-pocket-desk:has(.duo-pocket[data-duo-machine="unibody"]) {
+  --duo-bezel-top: 9px;
+  --duo-bezel-x: 16px;
+  --duo-bezel-bottom: 11px;
+  --duo-hinge: 8px;
+  --duo-screen-radius: 4px;
+}
+body.duo-pocket-desk:has(.duo-pocket[data-duo-machine="air-2011"]) {
+  --duo-bezel-top: 8px;
+  --duo-bezel-x: 12px;
+  --duo-bezel-bottom: 9px;
+  --duo-hinge: 7px;
+  --duo-screen-radius: 5px;
+}
+body.duo-pocket-desk:has(.duo-pocket[data-duo-machine="retina-2014"]) {
+  --duo-bezel-top: 7px;
+  --duo-bezel-x: 11px;
+  --duo-bezel-bottom: 8px;
+  --duo-hinge: 7px;
+  --duo-screen-radius: 5px;
+}
+body.duo-pocket-desk:has(.duo-pocket[data-duo-machine="air-m1"]) {
+  --duo-bezel-top: 7px;
+  --duo-bezel-x: 10px;
+  --duo-bezel-bottom: 8px;
+  --duo-hinge: 6px;
+  --duo-screen-radius: 6px;
+}
+body.duo-pocket-desk:has(.duo-pocket[data-duo-machine="macbook-pro-14"]) {
+  /* 14.2 in 3024×1964 in a 312.6 mm body: panel 302.5 mm, 5.1 mm a side, 14px. */
+  --duo-bezel-top: 9px;
+  --duo-bezel-x: 10px;
+  --duo-bezel-bottom: 7px;
+  --duo-hinge: 6px;
+  --duo-screen-radius: 8px;
+}
+
+/* Dark mode answers the same tokens: a space-grey machine with lit keys, not a
+   light machine dimmed. It is keyed on the color mode the appearance projects,
+   so it reaches every current and future era that offers one. */
+body[data-color-mode="dark"] .duo-pocket {
+  --duo-lid: #47474b;
+  --duo-lid-edge: #101012;
+  --duo-deck: #3a3a3d;
+  --duo-deck-edge: #101012;
+  --duo-key-bg: #5b5b60;
+  --duo-key-ink: #f5f5f7;
+  --duo-key-edge: #18181a;
+  --duo-key-pressed: #6d6d72;
+  --duo-key-latched: #5c729a;
+  --duo-rail-ink: #d6d6da;
+  --duo-lamp: #8fd0ae;
+  --duo-cursor-ink: #ffffff;
+  --duo-cursor-paper: #111111;
+}
+
+/* ---- The chassis ------------------------------------------------------- */
+
+.duo-pocket {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* B side: the lid's border is the bezel, and the hole is the live desk. The
+   box is the upper segment (border-box), so a side bezel stays inside the
+   display instead of widening the page. The face is a vertical gradient --
+   light over the top edge, shade into the chin -- because a flat frame reads
+   as a border, not as a lid. Square along the hinge. */
+.duo-pocket-lid {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: calc(var(--duo-fold-y) - var(--duo-hinge) / 2);
+  box-sizing: border-box;
+  border-style: solid;
+  border-color: var(--duo-lid);
+  border-width: var(--duo-bezel-top) var(--duo-bezel-x) var(--duo-bezel-bottom);
+  border-image: linear-gradient(180deg,
+    color-mix(in srgb, var(--duo-lid) 88%, #fff) 0%,
+    var(--duo-lid) 26%,
+    color-mix(in srgb, var(--duo-lid) 84%, #000) 100%) 1;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--duo-lid-edge), inset 0 1px 0 rgb(255 255 255 / 0.42);
+}
+
+/* The padding box is the hole, so a ring at inset 0 is the seam between bezel
+   and glass -- the line every machine has and no flat border ever shows. */
+.duo-pocket-lid::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--duo-screen-radius);
+  box-shadow: inset 0 0 0 1px var(--duo-glass-ring), inset 0 0 0 2px rgb(0 0 0 / 0.16), inset 0 7px 12px -8px rgb(0 0 0 / 0.5);
+}
+
+.duo-pocket-lid::before {
+  content: "";
+  display: var(--duo-camera);
+  position: absolute;
+  top: calc(var(--duo-bezel-top) / -2 - 3px);
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  margin-left: -3px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 36% 34%, #7fb4e6, #10131a 64%);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.55);
+}
+
+/* The model name printed under the display, in the chin. */
+.duo-pocket-wordmark {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: var(--duo-bezel-bottom);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(6px, calc(var(--duo-bezel-bottom) - 5px), 9px);
+  letter-spacing: 0.06em;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--duo-lid-ink);
+  opacity: 0.9;
+}
+
+.duo-pocket-wordmark[hidden] {
+  display: none;
+}
+
+.duo-pocket-notch {
+  display: none;
+}
+
+.duo-pocket[data-notch="true"] .duo-pocket-notch {
+  display: block;
+  position: absolute;
+  top: calc(var(--duo-bezel-top) * -1);
+  left: 50%;
+  width: 108px;
+  height: calc(var(--duo-bezel-top) + 16px);
+  margin-left: -54px;
+  background: #050506;
+  border-radius: 0 0 12px 12px;
+  box-shadow: inset 0 -1px 0 rgb(255 255 255 / 0.06);
+}
+
+.duo-pocket[data-notch="true"] .duo-pocket-notch::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 6px;
+  width: 5px;
+  height: 5px;
+  margin-left: -2.5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 36% 34%, #6f9ed0, #0b0e14 68%);
+}
+
+.duo-pocket-hinge {
+  position: fixed;
+  top: calc(var(--duo-fold-y) - var(--duo-hinge) / 2);
+  left: 0;
+  right: 0;
+  height: var(--duo-hinge);
+  /* A pressed groove in the same material, not a bar laid on top: the lid's
+     bezel ends at the fold, the crease is the shadow between the two halves,
+     and the machine stays one object edge to edge. */
+  background: var(--duo-hinge-fill, var(--duo-deck));
+  box-shadow:
+    inset 0 2px 3px rgb(0 0 0 / 0.42),
+    inset 0 -1px 0 rgb(255 255 255 / 0.22);
+}
+
+/* Hardware, not a line. The two-knuckle Portable, the 5300's pair of barrels
+   and the 1998-2001 wide cover are shapes people remember. */
+.duo-pocket-hinge::before,
+.duo-pocket-hinge::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-radius: 2px;
+}
+
+.duo-pocket[data-hinge="knuckles"] .duo-pocket-hinge {
+  background: transparent;
+}
+
+.duo-pocket[data-hinge="knuckles"] .duo-pocket-hinge::before,
+.duo-pocket[data-hinge="knuckles"] .duo-pocket-hinge::after {
+  width: 64px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--duo-deck) 82%, #fff), var(--duo-deck-edge));
+  box-shadow: 0 1px 0 rgb(0 0 0 / 0.5);
+}
+
+.duo-pocket[data-hinge="knuckles"] .duo-pocket-hinge::before { left: 12px; }
+.duo-pocket[data-hinge="knuckles"] .duo-pocket-hinge::after { right: 12px; }
+
+.duo-pocket[data-hinge="twin"] .duo-pocket-hinge {
+  background: transparent;
+}
+
+.duo-pocket[data-hinge="twin"] .duo-pocket-hinge::before,
+.duo-pocket[data-hinge="twin"] .duo-pocket-hinge::after {
+  width: 30%;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--duo-deck) 80%, #fff), var(--duo-deck-edge));
+  box-shadow: 0 1px 0 rgb(0 0 0 / 0.55);
+}
+
+.duo-pocket[data-hinge="twin"] .duo-pocket-hinge::before { left: 10%; }
+.duo-pocket[data-hinge="twin"] .duo-pocket-hinge::after { right: 10%; }
+
+.duo-pocket[data-hinge="cover"] .duo-pocket-hinge {
+  left: 6px;
+  right: 6px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--duo-deck) 74%, #fff), var(--duo-deck-edge));
+  box-shadow: 0 2px 4px rgb(0 0 0 / 0.5), inset 0 1px 0 rgb(255 255 255 / 0.3);
+}
+
+.duo-pocket[data-hinge="continuous"] .duo-pocket-hinge {
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.6), inset 0 -1px 0 rgb(255 255 255 / 0.1);
+}
+
+.duo-pocket-deck {
+  position: fixed;
+  top: var(--duo-fold-y);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--duo-deck);
+  background-image: var(--duo-deck-face, none);
+  border-top: 1px solid var(--duo-deck-edge);
+  /* The lid casts onto the deck. Without this the two halves are two strips of
+     colour meeting at a line instead of a screen standing over a keyboard. */
+  box-shadow: inset 0 14px 20px -14px rgb(0 0 0 / 0.55), inset 0 -1px 0 rgb(255 255 255 / 0.1);
+}
+
+.duo-pocket[data-wedge="true"] .duo-pocket-deck {
+  border-top-width: 10px;
+}
+
+.duo-pocket[data-well="true"] .duo-pocket-board {
+  background: var(--duo-well, #1d1d1f);
+  border-radius: 10px;
+  margin: 2px 10px;
+  padding: 6px 6px 4px;
+  box-shadow: inset 0 2px 6px rgb(0 0 0 / 0.55);
+}
+
+.duo-pocket[data-lip="true"] .duo-pocket-deck {
+  box-shadow: inset 0 14px 20px -14px rgb(0 0 0 / 0.55), inset 0 -10px 0 rgb(255 255 255 / 0.12);
+}
+
+/* Grilles are perforation, not stripes: one dot column each side on the two
+   machines that put speakers beside the keyboard, one bar above on the 2005. */
+.duo-pocket[data-speakers="sides"] .duo-pocket-deck::before,
+.duo-pocket[data-speakers="sides"] .duo-pocket-deck::after {
+  content: "";
+  position: absolute;
+  top: 30px;
+  bottom: 44px;
+  width: 13px;
+  opacity: 0.55;
+  background:
+    repeating-linear-gradient(90deg, var(--duo-deck-edge) 0 2px, transparent 2px 5px),
+    repeating-linear-gradient(180deg, var(--duo-deck-edge) 0 2px, transparent 2px 5px);
+}
+
+.duo-pocket[data-speakers="sides"] .duo-pocket-deck::before { left: 5px; }
+.duo-pocket[data-speakers="sides"] .duo-pocket-deck::after { right: 5px; }
+
+.duo-pocket[data-speakers="above"] .duo-pocket-deck::before {
+  content: "";
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  top: 4px;
+  height: 6px;
+  opacity: 0.5;
+  background: repeating-linear-gradient(90deg, var(--duo-deck-edge) 0 2px, transparent 2px 6px);
+}
+
+/* The rainbow mark sits in the top bezel above the panel, and the model name
+   in the chin, so the two never fight for the same strip. */
+.duo-pocket-badge {
+  display: none;
+  position: absolute;
+  left: 50%;
+  top: calc(var(--duo-bezel-top) / -2 - 7px);
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  border-radius: 50%;
+}
+
+.duo-pocket[data-badge="rainbow"] .duo-pocket-badge {
+  display: block;
+  background: conic-gradient(#61bb46 0 60deg, #fdb827 0 120deg, #f5821f 0 180deg, #e03a3e 0 240deg, #963d97 0 300deg, #009ddc 0 360deg);
+  -webkit-mask: radial-gradient(circle at 80% 46%, transparent 2.5px, #000 3px);
+  mask: radial-gradient(circle at 80% 46%, transparent 2.5px, #000 3px);
+}
+
+.duo-pocket[data-badge="oval"] .duo-pocket-badge {
+  display: block;
+  border-radius: 40%;
+  background: var(--duo-rail-ink);
+}
+
+.duo-pocket-board {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  gap: 6px;
+}
+
+.duo-pocket-pointing {
+  display: none;
+}
+
+.duo-pocket[data-pointing="side"] .duo-pocket-pointing {
+  display: block;
+  flex: 0 0 var(--duo-ball, 64px);
+  align-self: center;
+  height: var(--duo-ball, 64px);
+  border-radius: 2px;
+  border: 1px solid var(--duo-deck-edge);
+  background:
+    radial-gradient(circle at 50% 42%, var(--duo-key-bg), var(--duo-key-edge) 42%, transparent 43%),
+    var(--duo-deck);
+}
+
+.duo-pocket[data-pointing="center-ball"] .duo-pocket-pointing {
+  display: block;
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  width: min(var(--duo-ball, 48px), 48px);
+  height: min(var(--duo-ball, 48px), 48px);
+  margin-left: calc(min(var(--duo-ball, 48px), 48px) / -2);
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%, var(--duo-key-bg), var(--duo-deck-edge));
+  border: 1px solid var(--duo-key-edge);
+}
+
+/* Upright the palm is deep enough for the published ball, which the sideways
+   deck is not. */
+.duo-pocket[data-axis="portrait"][data-pointing="center-ball"] .duo-pocket-pointing {
+  width: min(var(--duo-ball, 64px), 72px);
+  height: min(var(--duo-ball, 64px), 72px);
+  margin-left: calc(min(var(--duo-ball, 64px), 72px) / -2);
+  bottom: 50%;
+  transform: translateY(50%);
+}
+
+.duo-pocket[data-pointing="center-ball"] .duo-pocket-pointing::before,
+.duo-pocket[data-pointing="center-ball"] .duo-pocket-pointing::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 22px;
+  height: 12px;
+  margin-top: -6px;
+  border-radius: 6px;
+  background: var(--duo-key-bg);
+  border: 1px solid var(--duo-key-edge);
+}
+
+.duo-pocket[data-axis="portrait"][data-pointing="center-ball"] .duo-pocket-pointing::before,
+.duo-pocket[data-axis="portrait"][data-pointing="center-ball"] .duo-pocket-pointing::after {
+  width: 34px;
+  height: 16px;
+  margin-top: -8px;
+  border-radius: 4px;
+}
+
+.duo-pocket[data-pointing="center-ball"] .duo-pocket-pointing::before {
+  right: calc(100% + 8px);
+}
+
+.duo-pocket[data-pointing="center-ball"] .duo-pocket-pointing::after {
+  left: calc(100% + 8px);
+}
+
+.duo-pocket[data-pointing="side"] .duo-pocket-palm::before,
+.duo-pocket[data-pointing="center-ball"] .duo-pocket-palm::before,
+.duo-pocket[data-pointing="center-ball"] .duo-pocket-palm::after {
+  display: none;
+}
+
+.duo-pocket[data-pointing="pad-buttons"] .duo-pocket-palm::before {
+  display: block;
+  left: 50%;
+  top: 46%;
+  width: min(30%, 210px);
+  height: 46%;
+  transform: translate(-50%, -50%);
+  border-radius: 3px;
+  background: var(--duo-key-bg);
+  border: 1px solid var(--duo-key-edge);
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.35);
+}
+
+.duo-pocket[data-pointing="pad-buttons"] .duo-pocket-palm::after {
+  display: block;
+  left: 50%;
+  top: 74%;
+  width: min(30%, 210px);
+  height: 9px;
+  transform: translateX(-50%);
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--duo-key-bg), var(--duo-key-pressed));
+  border: 1px solid var(--duo-key-edge);
+}
+
+.duo-pocket[data-pointing="pad-glass"] .duo-pocket-palm::before {
+  display: block;
+  left: 27%;
+  top: 14%;
+  width: 46%;
+  height: 64%;
+  margin: 0;
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.08), transparent 40%),
+    #141416;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.7);
+}
+
+/* ---- The A side: the lid, shut ----------------------------------------- */
+/* Full bleed, because the outside face is not a frame around anything. The
+   light comes from above the way it does on the desk: a fine vertical falloff
+   over the machine's own material, then the grain, then a chamfer at the edge.
+   Nothing is borrowed from a product photograph; a wrong silhouette would be
+   worse than no mark, so the mark is absent and the material does the work. */
+.duo-lid {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background-color: var(--duo-skin);
+  background-image:
+    var(--duo-skin-face, none),
+    linear-gradient(172deg, rgb(255 255 255 / 0.28), rgb(255 255 255 / 0.02) 42%, rgb(0 0 0 / 0.07) 78%, rgb(0 0 0 / 0.16)),
+    var(--duo-grain);
+  color: var(--duo-skin-ink);
+  font: inherit;
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.duo-lid:focus-visible {
+  outline: 2px solid var(--duo-skin-ink);
+  outline-offset: -6px;
+}
+
+.duo-lid-face {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.2),
+    inset 0 -2px 0 rgb(0 0 0 / 0.28),
+    inset 1px 0 0 rgb(255 255 255 / 0.16),
+    inset -1px 0 0 rgb(0 0 0 / 0.16);
+}
+
+/* The era's own hardware, on the edge where it lived: a sleep light that
+   breathes on the machines that had one, and the front latch on the ones that
+   needed a finger to open. */
+.duo-lid-face::before,
+.duo-lid-face::after {
+  content: "";
+  position: absolute;
+  display: none;
+}
+
+.duo-pocket[data-sleep="true"] .duo-lid-face::before {
+  display: block;
+  left: 50%;
+  bottom: 12px;
+  width: 7px;
+  height: 7px;
+  margin-left: -3.5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 38%, #fdf6c8, #c9b45a 70%);
+  box-shadow: 0 0 7px 1px rgb(253 246 200 / 0.6);
+  animation: duo-lid-sleep 3.4s ease-in-out infinite;
+}
+
+.duo-pocket[data-latch="true"] .duo-lid-face::after {
+  display: block;
+  left: 50%;
+  bottom: 0;
+  width: 62px;
+  height: 7px;
+  margin-left: -31px;
+  border-radius: 5px 5px 0 0;
+  background: var(--duo-deck-edge);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16);
+}
+
+@keyframes duo-lid-sleep {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
+
+.duo-lid-hint {
+  position: relative;
+  align-self: end;
+  margin-bottom: max(34px, calc(var(--safe-area-bottom) + 10px));
+  padding: 6px 12px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  opacity: 0.62;
+}
+
+/* ---- The deck's three bands -------------------------------------------- */
+/* The rail and the palm rest are pinned; only the keys scroll, so a short
+   deck loses a row of keys, never the trackpad. */
+
+.duo-pocket-deck-ui {
+  position: fixed;
+  /* Below the hinge's lower half: the crease is the machine's edge, not the
+     rail's first two pixels. */
+  top: calc(var(--duo-fold-y) + var(--duo-hinge) / 2);
+  left: var(--safe-area-left);
+  right: var(--safe-area-right);
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 3px 6px max(4px, var(--safe-area-bottom));
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.duo-pocket-rail,
+.duo-pocket-keys,
+.duo-pocket-palm {
+  pointer-events: auto;
+}
+
+.duo-pocket-rail {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 20px;
+  padding: 0 4px;
+  color: var(--duo-rail-ink);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.duo-pocket-brand {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.duo-pocket-lamps {
+  display: flex;
+  gap: 6px;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.duo-pocket-lamp {
+  opacity: 0;
+}
+
+.duo-pocket-lamp.is-on {
+  color: var(--duo-lamp);
+  opacity: 1;
+}
+
+.duo-pocket-keys {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  /* 4px, not 3: each key grows its own hit area by 2px into this gap, so the
+     two rows meet exactly and no pixel between them belongs to neither. */
+  gap: 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.duo-pocket-key-row {
+  display: flex;
+  flex: 1 1 0;
+  gap: 4px;
+  min-height: 40px;
+}
+
+/* The drawn key is 40px; the HIT AREA is 44. This is the same figure the phone
+   shell already keeps for window chrome -- the System 6 glyph keeps its size and
+   the region around it grows -- and it is what lets five rows fit a 313px deck
+   without asking a thumb to find a 28px target. */
+.duo-pocket-key {
+  position: relative;
+  flex: var(--duo-key-flex, 1) 1 var(--duo-key-pitch, 0px);
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 2px;
+  border: 1px solid var(--duo-key-edge);
+  border-radius: var(--duo-key-radius, 3px);
+  background-color: var(--duo-key-bg);
+  background-image: linear-gradient(180deg, rgb(255 255 255 / 0.14), rgb(255 255 255 / 0) 46%, rgb(0 0 0 / 0.1));
+  color: var(--duo-key-ink);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1;
+  text-align: center;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: var(--duo-key-shadow);
+}
+
+.duo-pocket-key-label {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The drawn key is 40px and the hit area is 44: the element does not clip, so
+   this box grows the target over the 4px gap without moving a pixel of art.
+   An absolutely positioned box is measured from the PADDING box, so the 1px
+   border is added to the figure here -- 3px of inset is 2px of reach. */
+.duo-pocket-key::after {
+  content: "";
+  position: absolute;
+  inset: -3px -2px;
+}
+
+.duo-pocket-key:is(.is-pressed, :active) {
+  background-image: linear-gradient(180deg, rgb(0 0 0 / 0.1), rgb(0 0 0 / 0) 60%);
+  box-shadow: none;
+  transform: translateY(1px);
+}
+
+.duo-pocket-key.is-latched {
+  background: var(--duo-key-latched);
+}
+
+.duo-pocket[data-key-material="bronze"] .duo-pocket-key:not(.is-pressed, :active) {
+  box-shadow: inset 0 1px 0 rgb(255 236 196 / 0.7), 0 1px 0 var(--duo-key-edge);
+}
+
+.duo-pocket-key[data-code="TouchID"] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.duo-pocket-key[data-code="TouchID"]::before {
+  content: "";
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid var(--duo-key-ink);
+  box-shadow: inset 0 0 0 3px var(--duo-key-bg), inset 0 0 0 4.5px var(--duo-key-ink);
+}
+
+.duo-pocket-key[data-code="CapsLock"].is-locked,
+.duo-pocket-key.is-locked {
+  outline: 2px solid var(--duo-lamp);
+  outline-offset: -3px;
+}
+
+/* Full keyboard access: the deck is reachable with Tab, and a focused key must
+   say so. The ring is the era's ink, not a colour of its own. */
+.duo-pocket-key:focus-visible {
+  outline: 2px solid var(--duo-key-ink);
+  outline-offset: -4px;
+}
+
+/* The pad is the whole palm rest; the drawn ball is only a hint of where a
+   1989 trackball sat. A finger anywhere on the material moves the pointer.
+   Sideways the inner panel is 890×626 and the deck is about half of that, so
+   the separate pad steps aside and a press on the keys is the pad. */
+.duo-pocket[data-axis="landscape"] .duo-pocket-palm {
+  display: none;
+}
+
+.duo-pocket.is-trackpad .duo-pocket-key-label {
+  opacity: 0;
+}
+
+/* Upright there is height to spare, so the keyboard keeps a real key height
+   instead of stretching into slabs, and the pad below grows to the size the
+   machine actually had. Sideways the palm is absent and the rows share the
+   deck; upright they are fixed and the palm takes the slack. */
+.duo-pocket[data-axis="portrait"] .duo-pocket-keys {
+  flex: 0 0 auto;
+}
+
+.duo-pocket[data-axis="portrait"] .duo-pocket-key-row {
+  flex: 0 0 44px;
+  min-height: 44px;
+}
+
+.duo-pocket[data-axis="portrait"] .duo-pocket-palm {
+  flex: 1 1 auto;
+  min-height: 96px;
+  max-height: 150px;
+}
+
+.duo-pocket-palm {
+  position: relative;
+  flex: 0 0 auto;
+  /* 54, not 56: two more pixels of keys is what makes five rows fit a 313px
+     deck without the last row sitting under the pad. The pad is 54 tall across
+     the full width, so the target is still far past the touch floor. */
+  height: 54px;
+  border-radius: max(0px, calc(var(--duo-radius) / 2));
+  background-color: var(--duo-deck);
+  background-image: var(--duo-deck-face, none);
+  border: 1px solid var(--duo-deck-edge);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.12);
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  cursor: none;
+}
+
+/* Two pieces of hardware, drawn where each machine put them: the pad with its
+   button bar, or the glass slab the later machines use with no button at all. */
+.duo-pocket-palm::before,
+.duo-pocket-palm::after {
+  content: "";
+  display: none;
+  position: absolute;
+}
+
+.duo-pocket-latch {
+  display: none;
+}
+
+.duo-pocket[data-latch="true"] .duo-pocket-latch {
+  display: block;
+  position: absolute;
+  left: 50%;
+  bottom: 5px;
+  width: 28px;
+  height: 5px;
+  margin-left: -14px;
+  border-radius: 2px;
+  background: var(--duo-deck-edge);
+}
+
+.duo-pocket-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 11px;
+  height: 16px;
+  pointer-events: none;
+  background: var(--duo-cursor-paper);
+  clip-path: polygon(0 0, 0 100%, 30% 72%, 52% 100%, 70% 91%, 48% 66%, 100% 63%);
+  box-shadow: 0 0 0 1px var(--duo-cursor-ink);
+  opacity: 0;
+  transition: opacity 120ms linear;
+}
+
+.duo-pocket-cursor.is-visible {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .duo-pocket-cursor {
+    transition: none;
+  }
+
+  .duo-pocket[data-sleep="true"] .duo-lid-face::before {
+    animation: none;
+    opacity: 0.8;
+  }
+
+  .duo-pocket-key:is(.is-pressed, :active) {
+    transform: none;
+  }
+}
+
+/* A system that wants more contrast gets more contrast, not a different
+   machine: the edges thicken and the pressed state stops relying on a one-pixel
+   shadow. */
+@media (prefers-contrast: more) {
+  .duo-pocket {
+    --duo-key-edge: var(--duo-key-ink);
+    --duo-deck-edge: var(--duo-rail-ink);
+    --duo-lid-edge: var(--duo-rail-ink);
+  }
+
+  .duo-pocket-key {
+    border-width: 2px;
+  }
+
+  .duo-pocket-key:is(.is-pressed, :active) {
+    outline: 2px solid var(--duo-key-ink);
+    outline-offset: -3px;
+  }
+}
+
+/* Forced colors replaces the palette wholesale; only the shapes and the
+   pressed/latched distinction are ours to keep. */
+@media (forced-colors: active) {
+  .duo-lid {
+    background: Canvas;
+    color: CanvasText;
+    border: 1px solid CanvasText;
+  }
+
+  .duo-lid-face {
+    box-shadow: none;
+  }
+
+  .duo-pocket[data-sleep="true"] .duo-lid-face::before {
+    display: none;
+  }
+
+  .duo-pocket-lid {
+    background: transparent;
+    border-color: CanvasText;
+    border-image: none;
+  }
+
+  .duo-pocket-lid::after,
+  .duo-pocket-lid::before,
+  .duo-pocket-badge {
+    display: none;
+  }
+
+  .duo-pocket-notch,
+  .duo-pocket-deck,
+  .duo-pocket-hinge,
+  .duo-pocket-palm {
+    background: Canvas;
+    border-color: CanvasText;
+  }
+
+  .duo-pocket-key {
+    background: ButtonFace;
+    color: ButtonText;
+    border-color: ButtonText;
+    box-shadow: none;
+  }
+
+  .duo-pocket-key.is-latched,
+  .duo-pocket-key.is-locked {
+    background: Highlight;
+    color: HighlightText;
+    outline-color: Highlight;
+  }
+}
+
+/* ---- Where the desk is allowed to live --------------------------------- */
+
+/* The screen is the upright segment, below the menu bar. Everything else the
+   desk floats stays inside it: a dialog that spills past the crease would be
+   a control the fold eats. */
+
+body.duo-pocket-desk .menu-bar {
+  position: fixed;
+  top: var(--duo-bezel-top);
+  left: var(--duo-bezel-x);
+  right: var(--duo-bezel-x);
+  width: auto;
+  margin: 0;
+}
+
+body.duo-pocket-desk .desktop {
+  position: fixed;
+  top: calc(var(--menu-bar-height) + var(--duo-bezel-top));
+  left: var(--duo-bezel-x);
+  width: calc(100% - 2 * var(--duo-bezel-x));
+  height: calc(var(--duo-fold-y) - var(--duo-hinge) / 2 - var(--menu-bar-height) - var(--duo-bezel-top) - var(--duo-bezel-bottom));
+  bottom: auto;
+  padding: 6px;
+  overflow: hidden;
+}
+
+/* The launcher and the writing spine are NOT hidden here: on the bare desk the
+   launcher is how an application is opened, and HIG asks for the same content in
+   every pose. The phone flow already folds both rails to zero while an app owns
+   the screen (60-responsive.css), which is the only case that needs it. The
+   bottom-edge Dock and the Control Strip do step aside -- no portable Mac draws
+   its Dock over the keyboard. */
+body.duo-pocket-desk .desk-dock,
+body.duo-pocket-desk .control-strip {
+  display: none;
+}
+
+body.duo-pocket-desk.mobile-app-foreground .window.is-mobile-fullscreen:not(.is-collapsed),
+body.duo-pocket-desk .window.is-mobile-system-page:not(.is-hidden):not(.is-collapsed) {
+  top: calc(var(--menu-bar-height) + var(--duo-bezel-top));
+  left: var(--duo-bezel-x);
+  right: auto;
+  width: calc(100% - 2 * var(--duo-bezel-x));
+  height: calc(var(--duo-fold-y) - var(--duo-hinge) / 2 - var(--menu-bar-height) - var(--duo-bezel-top) - var(--duo-bezel-bottom));
+  bottom: auto;
+  max-height: none;
+  border-top-left-radius: var(--duo-screen-radius);
+  border-top-right-radius: var(--duo-screen-radius);
+}
+
+body.duo-pocket-desk .window.is-mobile-dialog:not(.is-hidden):not(.is-collapsed) {
+  top: calc(var(--menu-bar-height) + var(--duo-bezel-top) + 8px);
+  left: var(--duo-bezel-x);
+  max-height: calc(var(--duo-fold-y) - var(--duo-hinge) / 2 - var(--menu-bar-height) - var(--duo-bezel-top) - var(--duo-bezel-bottom) - 16px);
+}
+
+body.duo-pocket-desk .window.is-mobile-accessory:not(.is-hidden):not(.is-collapsed) {
+  max-height: calc(var(--duo-fold-y) - var(--duo-hinge) / 2 - var(--menu-bar-height) - 12px);
+}
+
+/* A shaded window keeps its title bar as the way back to it, so it is clamped
+   into the screen rather than left at the desktop position the deck now covers. */
+body.duo-pocket-desk .window.is-collapsed:not(.is-hidden) {
+  top: calc(var(--menu-bar-height) + 4px);
+  left: 8px;
+  right: 8px;
+  height: auto;
+  max-height: 40px;
+}
+
+/* The deck owns the flat half, so the sheet falls back to the screen's own
+   corners: nothing here meets the display edge except the chassis. */
+body.duo-pocket-desk .window.is-mobile-fullscreen .grow-box {
+  display: none;
+}
+
+/* ---- Folded like a book ------------------------------------------------ */
+/* Two pages side by side and one application: the page is pinned to the primary
+   segment so no line of text, control or dialog straddles the crease. HIG names
+   the crease a reserved region for exactly this reason, and a split view that
+   cannot divide cleanly collapses to one pane rather than stretching across it.
+   --duo-page-w comes from the same posture read as the fold (segment 0), so a
+   device that reports its crease gets a measured page and a flags-off device
+   never sees this block. */
+
+body.duo-book-desk .desktop {
+  left: 0;
+  width: var(--duo-page-w, 50vw);
+  padding: 8px;
+  overflow: hidden;
+}
+
+body.duo-book-desk .window.is-mobile-fullscreen:not(.is-collapsed),
+body.duo-book-desk .window.is-mobile-system-page:not(.is-hidden):not(.is-collapsed) {
+  left: 0;
+  right: auto;
+  width: var(--duo-page-w, 50vw);
+}
+
+body.duo-book-desk .window.is-mobile-dialog:not(.is-hidden):not(.is-collapsed) {
+  left: 0;
+  width: min(430px, calc(var(--duo-page-w, 50vw) - 24px));
+  transform: none;
+}
+
+body.duo-book-desk .window.is-mobile-accessory:not(.is-hidden):not(.is-collapsed) {
+  max-width: calc(var(--duo-page-w, 50vw) - 16px);
+}

@@ -675,6 +675,7 @@ function wireAppEvents() {
     else root.removeAttribute("data-installed");
   }
   syncStandaloneSurface();
+  syncPocketDesk?.();
 
   // Track how much the on-screen keyboard covers, exposed as a CSS custom
   // property (not an inline layout style) that the full-screen app shell reads
@@ -1572,7 +1573,9 @@ function wireAppEvents() {
       const base = win.offsetParent?.getBoundingClientRect() || { left: 0, top: 0 };
       let didMove = false;
   
-      bar.setPointerCapture(event.pointerId);
+      // A synthetic pointer (the Duo's palm rest) has no capture target; the
+      // drag lives on the listeners below either way.
+      try { bar.setPointerCapture(event.pointerId); } catch {}
 
       // Classic drags the dotted outline and moves the window on release — the
       // same primitive the grow box and the selection marquee use. Liquid Glass

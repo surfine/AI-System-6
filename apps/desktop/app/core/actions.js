@@ -1914,6 +1914,7 @@ function getApplicationActionHandlers() {
       },
     ])),
     "toggle-balloon-help": toggleBalloonHelp,
+    "toggle-pocket-desk": () => window.AISystem6PocketDesk?.toggle?.(),
     "restart-system": restartSystem,
     "shut-down-system": shutDownSystem,
     "hide-active-app": () => hideApp(activeAppId),

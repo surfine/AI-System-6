@@ -184,8 +184,10 @@
     "styles/99-chooser-book.css": 1,
     "styles/99-cliotalk-shell.css": 1,
     "styles/99-extensions.css": 1,
-    "styles/89-finder-spatial.css": 1
+    "styles/89-finder-spatial.css": 1,
+    "styles/62-duo-pocket-desk.css": 0
   },
+  "_duoPocketDeskNote": "2026-11-10: the twelve portables are keyed by [data-duo-machine], which the module sets from the appearance, so this sheet no longer carries a theme selector. The count fell from 5 to 0. May only stay at 0.",
   "_eraTokenCoverageNote": "What a seventh appearance owes. A token two eras set is a period decision; a token one era sets is that era's quirk. Coverage counts the first kind an era answers, following its recipeBase chain, and Theme Lab's Tokens tab shows the same list on screen so the number is a worklist rather than a score. The rule is asymmetric on purpose: an era with no entry here -- a NEW appearance -- must answer all of them, because arriving complete is the point of the gate; the six that predate it carry real debt and are ratcheted instead, each count may only fall. baselineEra is exempt because its values ARE the defaults the others override. Measured 2026-09-01 (sidebar tier 2: tdi-rail heading/hover/pressed/unfocused tokens, answered by all five eras) against period tokens. Lower a number when you answer tokens; never raise one. 2026-11-05: snow-leopard answered its 8 (the sidebar tier-2 set) per the OS X family grammar - tiger/lion carry the identical answers (var(--system-object-shadow) balloons, var(--ink) menu text, no backdrop blur, bare desktop labels, shared strip tile metrics).",
   "eraTokenCoverage": {
     "baselineEra": "classic",

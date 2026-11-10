@@ -110,6 +110,20 @@ export const DESK_VIEWPORTS = Object.freeze([
   // desk geometry rather than paying another full sweep.
   { name: "iphone-duo-outer-landscape", width: 678, height: 466, touch: true },
   { name: "iphone-duo-inner-portrait", width: 626, height: 890, touch: true },
+  // The inner display folded like a laptop, with Pocket Desk forced on: the desk
+  // lives in the upper segment (261px under the menu bar, 250 after the hinge),
+  // so this is the shortest screen the product is asked to put a window on. It
+  // is a desk cell rather than a sweep because the window roles are the same as
+  // the Duo's landscape cell; what changes is how much room the desk has.
+  { name: "iphone-duo-pocket", width: 890, height: 626, touch: true, pocket: true },
+  // The same inner panel upright: 626×890, the 1878×2670 panel the other way.
+  // Height is no longer the scarce edge, so the separate pad comes back.
+  { name: "iphone-duo-pocket-portrait", width: 626, height: 890, touch: true, pocket: true },
+  // The same screen folded like a book. The posture itself cannot be emulated
+  // (Playwright has no hinge), so this cell stands the class, the token and the
+  // sheet up by hand and measures the one thing the block promises: an app page
+  // sits in the primary segment and does not reach the crease.
+  { name: "iphone-duo-book", width: 890, height: 626, touch: true, book: true },
   // The same two phones upright sit inside the band the swept portrait cells
   // already bracket (393 to 466 wide), so they take the desk checks only.
   // iPhone 13 mini: the narrowest phone this product still has to fit, in both
@@ -1114,12 +1128,29 @@ async function run() {
           isMobile: viewport.touch,
           hasTouch: viewport.touch,
         });
+        if (viewport.pocket) {
+          await context.addInitScript(() => {
+            try { localStorage.setItem("ais6-pocket-desk", "on"); } catch {}
+          });
+        }
         try {
           const page = await context.newPage();
           await page.goto(server.url);
           await page.waitForFunction(() => document.body.dataset.appReady === "ready", undefined, { timeout: 60_000 });
           await page.waitForTimeout(1100);
           const result = await page.evaluate(`(async () => {
+          ${viewport.book ? `
+          if (!document.querySelector("link[data-book-sheet]")) {
+            const link = document.createElement("link");
+            link.rel = "stylesheet";
+            link.href = "styles.pocket-desk.css";
+            link.dataset.bookSheet = "";
+            document.head.append(link);
+            await new Promise((done) => { link.onload = done; link.onerror = done; });
+          }
+          document.documentElement.style.setProperty("--duo-page-w", "${Math.round(viewport.width / 2)}px");
+          document.body.classList.add("duo-book-desk");
+          ` : ""}
           try { openWindow("reader"); } catch {}
           await new Promise((done) => setTimeout(done, 1000));
           const win = document.querySelector('.window[data-window="reader"]');
@@ -1130,8 +1161,10 @@ async function run() {
           // starts on the desktop profile, and that is the reader a person
           // sees first. Its placement is judged there, before the profile
           // switch below moves the desk under it.
+          // A rail the flow has stood down (a phone, or the Duo's pocket desk)
+          // measures zero: it is absent, not flush with the window.
           const railBox = rail ? rail.getBoundingClientRect() : null;
-          if (win && railBox) {
+          if (win && railBox && railBox.width > 0) {
             const box = win.getBoundingClientRect();
             detail.window = [box.left, box.top, box.width, box.height].map(Math.round);
             if (box.right > innerWidth + 1 || box.left < -1 || box.bottom > innerHeight + 1) failed.push("on-screen");
@@ -1162,7 +1195,7 @@ async function run() {
             if (detail.railEdges.left > ${RAIL_EDGE_OFFSET + RAIL_EDGE_SLACK}
                 || detail.railEdges.right > ${RAIL_EDGE_OFFSET + RAIL_EDGE_SLACK}) failed.push("rails-at-the-edges");
           }
-          if (phoneFlow && win) {
+            if (phoneFlow && win && !document.body.classList.contains("duo-pocket-desk")) {
             const box = win.getBoundingClientRect();
             if (Math.round(box.width) !== innerWidth) failed.push("phone-shell-fills-width");
           }
@@ -1178,6 +1211,94 @@ async function run() {
             }
           }
           if (document.documentElement.scrollWidth > innerWidth + 1) failed.push("no-overflow");
+          // The Duo's laptop pose: the deck is measured where a thumb meets it.
+          // The hit area is read by asking the page which key a point belongs
+          // to, because the drawn key is smaller than its target on purpose.
+          ${viewport.pocket ? `
+          if (!document.body.classList.contains("duo-pocket-desk")) failed.push("pocket-mode-off");
+          const deckKeys = [...document.querySelectorAll(".duo-pocket-key")];
+          if (deckKeys.length < 60) failed.push("pocket-deck-missing");
+          const middle = deckKeys[Math.floor(deckKeys.length / 2)];
+          if (middle) {
+            const keyBox = middle.getBoundingClientRect();
+            const x = keyBox.left + keyBox.width / 2;
+            let first = null;
+            let last = null;
+            for (let y = keyBox.top - 6; y <= keyBox.bottom + 6; y += 0.5) {
+              if (document.elementFromPoint(x, y) === middle) {
+                if (first === null) first = y;
+                last = y;
+              }
+            }
+            detail.keyHit = first === null ? 0 : Math.round((last - first + 0.5) * 10) / 10;
+            if (detail.keyHit < ${MIN_HIT_SIZE}) failed.push("pocket-key-hit");
+            detail.keyDrawn = Math.round(keyBox.height * 10) / 10;
+          }
+          // The crease is a reserved region: nothing interactive may sit on it.
+          const foldY = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--duo-fold-y"));
+          const deckUi = document.querySelector(".duo-pocket-deck-ui");
+          if (!deckUi) failed.push("pocket-deck-missing");
+          else if (foldY && Math.round(deckUi.getBoundingClientRect().top) < Math.ceil(foldY)) failed.push("pocket-deck-on-the-crease");
+          const screenBottom = win ? Math.round(win.getBoundingClientRect().bottom) : 0;
+          if (foldY && screenBottom > Math.ceil(foldY)) failed.push("pocket-window-crosses-the-crease");
+          const pocketSurface = window.AISystem6PocketDeskSurface;
+          if (pocketSurface?.machines && pocketSurface.setMachine) {
+            const contrastOf = (ink, paper) => {
+              const parts = (value) => (value.match(/[\\d.]+/g) || []).slice(0, 3).map(Number);
+              const lin = (c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+              const L = (rgb) => 0.2126 * lin(rgb[0] / 255) + 0.7152 * lin(rgb[1] / 255) + 0.0722 * lin(rgb[2] / 255);
+              const a = L(parts(ink));
+              const b = L(parts(paper));
+              return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+            };
+            const signatures = [];
+            for (const id of pocketSurface.machines()) {
+              pocketSurface.setMachine(id);
+              const chassis = document.querySelector(".duo-pocket");
+              const key = chassis?.querySelector(".duo-pocket-key");
+              const palmBox = chassis?.querySelector(".duo-pocket-palm")?.getBoundingClientRect();
+              const sideways = chassis?.dataset.axis === "landscape";
+              if (!key) failed.push("pocket-palm-" + id);
+              else {
+                const paint = getComputedStyle(key);
+                if (contrastOf(paint.color, paint.backgroundColor) < 4.5) failed.push("pocket-contrast-" + id);
+                if (sideways) {
+                  if (palmBox && palmBox.height > 1) failed.push("pocket-palm-shown-" + id);
+                } else if (!palmBox || palmBox.height < ${MIN_HIT_SIZE}) failed.push("pocket-palm-" + id);
+              }
+              signatures.push([
+                chassis?.dataset.pointing, chassis?.dataset.badge, chassis?.dataset.speakers,
+                chassis?.dataset.wedge, chassis?.dataset.notch, chassis?.dataset.well,
+                chassis?.dataset.hinge,
+                chassis?.querySelector(".is-function-row") ? "fn" : "",
+                getComputedStyle(chassis).getPropertyValue("--duo-radius").trim(),
+              ].join("|"));
+            }
+            detail.machines = signatures.length;
+            for (let i = 1; i < signatures.length; i += 1) {
+              if (signatures[i] === signatures[i - 1]) failed.push("pocket-machines-identical");
+            }
+            document.body.dataset.colorMode = "dark";
+            const darkKey = document.querySelector(".duo-pocket-key");
+            if (darkKey) {
+              const paint = getComputedStyle(darkKey);
+              if (contrastOf(paint.color, paint.backgroundColor) < 4.5) failed.push("pocket-contrast-dark");
+            }
+            delete document.body.dataset.colorMode;
+            pocketSurface.setMachine("portable");
+          }
+          ` : ""}
+          ${viewport.book ? `
+          // One page, and it ends at the crease.
+          const pageWidth = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--duo-page-w"));
+          detail.pageWidth = pageWidth;
+          if (win) {
+            const box = win.getBoundingClientRect();
+            detail.pageWindow = [box.left, box.right, box.width].map(Math.round);
+            if (box.right > pageWidth + 1) failed.push("page-crosses-the-crease");
+            if (Math.round(box.left) !== 0) failed.push("page-not-in-the-primary-segment");
+          }
+          ` : ""}
           return { failed, detail };
         })()`);
           return { viewport: viewport.name, result };

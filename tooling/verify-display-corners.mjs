@@ -66,6 +66,10 @@ const SHAPES = [
   { name: "iphone-13mini-portrait", width: 375, height: 812, insets: { top: "50px", bottom: "34px", left: "0px", right: "0px" } },
   { name: "iphone-13mini-landscape", width: 812, height: 375, insets: { top: "0px", bottom: "21px", left: "50px", right: "50px" } },
   { name: "iphone-duo-outer-portrait", width: 466, height: 678, insets: { top: "47px", bottom: "0px", left: "0px", right: "83px" } },
+  // The inner display folded like a laptop, with Pocket Desk on: the chassis
+  // crosses the fold and its deck reaches the bottom edge, so this is the shape
+  // where a machine drawing its own radius would be the finding.
+  { name: "iphone-duo-inner-laptop", width: 890, height: 626, insets: {}, pocket: true },
   // A watch is the smallest glass this desk has ever been asked to fill, and it
   // reports no safe area: the display's curve is the whole margin. It runs the
   // one-page flow, so the same shells reach the same edges.
@@ -104,6 +108,11 @@ try {
         ));
       });
     }, shape.insets);
+    if (shape.pocket) {
+      await context.addInitScript(() => {
+        try { localStorage.setItem("ais6-pocket-desk", "on"); } catch {}
+      });
+    }
     const page = await context.newPage();
     await page.goto(server.url, { waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => document.body?.dataset.appReady === "ready", undefined, { timeout: 60_000 });

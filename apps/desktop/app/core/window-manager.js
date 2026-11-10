@@ -635,6 +635,11 @@ function controlStripPlacementReserve() {
 // Only system placement reads it; a window the writer drags may sit over the
 // Dock, as on the Mac.
 function deskDockReserve() {
+  // The Duo's deck owns the flat half: the work area stops at the fold.
+  if (document.body?.classList.contains("duo-pocket-desk")) {
+    const fold = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--duo-fold-y"));
+    if (Number.isFinite(fold)) return Math.max(0, (window.innerHeight || 0) - fold);
+  }
   if (!document.body?.classList.contains("desk-dock-shown")) return 0;
   const value = Number.parseFloat(getComputedStyle(document.body).getPropertyValue("--desk-dock-reserve"));
   return Number.isFinite(value) && value > 0 ? value : 0;
@@ -2292,7 +2297,71 @@ function syncMobileAppForeground() {
     !!target && isMobileImmersiveWindow(target)
   );
   repairPortraitDeskAccessoryGeometry();
+  syncPocketDesk();
 }
+
+// iPhone Duo folded: the deck, the book page and the shut lid. All of it lives
+// in app/features/duo-pocket-desk.js; this side only decides whether to ask.
+const pocketDeskQuery = "(device-posture: folded) and (vertical-viewport-segments: 2)";
+const pocketBookQuery = "(device-posture: folded) and (horizontal-viewport-segments: 2)";
+let pocketDeskPreference = null;
+let duoLidPreference = false;
+try {
+  pocketDeskPreference = localStorage.getItem("ais6-pocket-desk");
+  duoLidPreference = localStorage.getItem("ais6-duo-lid") === "on";
+} catch {}
+let pocketDeskEngaged = false;
+let pocketDeskWatchingPosture = false;
+
+function pocketDeskMatches(query) {
+  return typeof matchMedia === "function" && matchMedia(query).matches;
+}
+
+function pocketDeskIsOn() {
+  return pocketDeskPreference !== "off"
+    && (pocketDeskMatches(pocketDeskQuery) || pocketDeskPreference === "on");
+}
+
+function pocketMenuRow(selector, shown, checked) {
+  const row = document.querySelector(selector);
+  if (!row) return;
+  row.classList.toggle("is-hidden", !shown);
+  row.classList.toggle("is-checked", checked);
+  row.setAttribute("aria-pressed", checked ? "true" : "false");
+}
+
+function syncPocketDesk() {
+  if (!pocketDeskWatchingPosture) {
+    pocketDeskWatchingPosture = true;
+    navigator.devicePosture?.addEventListener?.("change", () => syncPocketDesk());
+  }
+  const on = pocketDeskIsOn() || pocketDeskMatches(pocketBookQuery) || duoLidPreference;
+  pocketMenuRow("[data-pocket-desk-menu]", on || pocketDeskMatches("(pointer: coarse)"), pocketDeskIsOn());
+  if (!on) {
+    pocketDeskEngaged = false;
+    // sync, not unmount: leaving a pose has to clear whichever class the pose
+    // set, including the book's, which no deck ever owned.
+    window.AISystem6PocketDeskSurface?.sync?.();
+    return;
+  }
+  const first = !pocketDeskEngaged;
+  pocketDeskEngaged = true;
+  const apply = () => { if (pocketDeskEngaged) window.AISystem6PocketDeskSurface?.sync?.(); };
+  if (first) ensurePocketDeskModule().then(apply).catch(() => console.warn("Pocket Desk unavailable"));
+  else apply();
+}
+
+function setPocketDesk(force) {
+  pocketDeskPreference = (typeof force === "boolean" ? force : !pocketDeskIsOn()) ? "on" : "off";
+  try { localStorage.setItem("ais6-pocket-desk", pocketDeskPreference); } catch {}
+  syncPocketDesk();
+}
+
+window.AISystem6PocketDesk = Object.freeze({
+  toggle: () => setPocketDesk(!pocketDeskIsOn()),
+  set: setPocketDesk,
+  isOn: pocketDeskIsOn,
+});
 
 // A phone has one stable Desk Accessory axis. Reflow every visible accessory
 // together so a newly opened DA cannot cover an older one; leaving portrait

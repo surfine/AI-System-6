@@ -958,6 +958,8 @@ function ensureFinderOpsModule() { return ensureLazySystemModule("app/core/finde
 function ensureFinderMenusModule() { return ensureLazySystemModule("app/core/finder-menus.js", "AISystem6FinderMenusLoaded"); }
 const ensureFinderDeskModule = createLazyModuleLoader("AISystem6FinderDeskLoaded", ["app/core/finder-desk.js"], false, ["styles.finder-spatial.css"]);
 const ensureFinderDragModule = createLazyModuleLoader("AISystem6FinderDragLoaded", ["app/core/finder-drag.js"], false, ["styles.finder-spatial.css"]);
+// The Duo's laptop posture: its sheet travels with the module, so no boot pays.
+const ensurePocketDeskModule = createLazyModuleLoader("AISystem6PocketDeskLoaded", ["app/features/duo-pocket-desk.js"], false, ["styles.pocket-desk.css"]);
 // Full screen's move between spaces (window-fullscreen.js asks for it).
 function ensureFullscreenSpaceModule() { return ensureLazySystemModule("app/core/window-fullscreen-space.js", "AISystem6FullscreenSpaceLoaded"); }
 function ensureDesktopMaintenanceModule() { return ensureLazySystemModule("app/core/desktop-maintenance.js", "AISystem6DesktopMaintenanceLoaded"); }

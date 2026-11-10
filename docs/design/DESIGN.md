@@ -455,6 +455,14 @@ Avoid:
 - New JS inline styles for layout decisions.
 - Layout animation on `top`, `left`, `width`, `height`, `padding`, or `margin`.
 
+A device that changes its own shape gets one body class and one geometry
+token, not a second layout system. The Duo folded like a laptop is the worked
+example: `body.duo-pocket-desk` plus `--duo-fold-y` put the desk in the upper
+segment and the deck in the lower one, the chassis crosses the crease as
+decoration that takes no pointer, only the working surfaces obey safe areas,
+and the appearance supplies the machine's material as tokens (see
+[FORM-FACTORS.md](FORM-FACTORS.md), *The Duo's laptop posture*).
+
 Dense tool surfaces should use panes, rows, dividers, and object lists. Cards
 are reserved for repeated items, modals, and genuinely framed tools.
 

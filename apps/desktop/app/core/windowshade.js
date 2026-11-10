@@ -532,7 +532,8 @@
         event.preventDefault();
         separatorDrag = { pair, area, plan, pointerId: event.pointerId,
           states: pair.wins.map(snapshot), histories: pair.wins.map((win) => recordFor(win)), relations: relationState(), start: plan.vertical ? event.clientY : event.clientX, next: plan.ratio };
-        pair.wins.forEach(forget); grip.setPointerCapture?.(event.pointerId);
+        pair.wins.forEach(forget);
+        try { grip.setPointerCapture?.(event.pointerId); } catch {}
       });
       grip.addEventListener("keydown", (event) => {
         const axisKeys = plan.vertical ? ["ArrowUp", "ArrowDown"] : ["ArrowLeft", "ArrowRight"];

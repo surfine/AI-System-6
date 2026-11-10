@@ -307,7 +307,7 @@
       event.preventDefault();
       source = palette.source || context();
       gesture = { kind: "drag", palette, id: event.pointerId, x: event.clientX, y: event.clientY, left: palette.x, top: palette.y };
-      header.setPointerCapture(event.pointerId);
+      try { header.setPointerCapture(event.pointerId); } catch {}
     });
     header.addEventListener("pointermove", (event) => {
       if (gesture?.kind !== "drag" || gesture.id !== event.pointerId) return;

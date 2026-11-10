@@ -256,6 +256,11 @@ export const lazyRuntimePaths = [
   "app/core/chat-context-capabilities.js",
   "app/core/device-model-client.js",
   "app/core/web-app-shell.js",
+  // The Duo's laptop posture: chassis and keyboard. Sideways the keys are the
+  // trackpad when pressed; upright a palm-rest pad is drawn too. Loaded
+  // by ensurePocketDeskModule with its own sheet. The eager side is the posture
+  // read, the geometry tokens and the Apple-menu row.
+  "app/features/duo-pocket-desk.js",
   "app/core/liquid-glass-overlay.js",
   "app/core/launch-intent.js",
   "app/core/embed-in-browser.js",

@@ -50,6 +50,7 @@ const requiredAssets = [
   "styles.cliotalk-agent.css",
   "styles.cliotalk-shell.css",
   "styles.chooser-book.css",
+  "styles.pocket-desk.css",
   "styles.big-sur.css",
   "styles.tiger.css",
   "styles.system-7.css",

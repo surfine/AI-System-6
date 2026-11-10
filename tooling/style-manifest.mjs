@@ -376,6 +376,15 @@ export const lazyStyleBundles = [
     loader: "app/core/config.js",
     sources: ["styles/99-chooser-book.css"],
   },
+  // iPhone Duo held like a laptop: the chassis, keyboard and palm rest. Loaded
+  // by ensurePocketDeskModule, only while the mode is on, and every selector is
+  // scoped to .duo-pocket* or body.duo-pocket-desk.
+  {
+    id: "pocket-desk",
+    output: "styles.pocket-desk.css",
+    loader: "app/core/config.js",
+    sources: ["styles/62-duo-pocket-desk.css"],
+  },
 ];
 
 // Every stylesheet the product ships, eager or lazy. Checks that reason about
@@ -461,6 +470,7 @@ export const styleLayerByPath = Object.freeze({
   "styles/99-cliotalk-agent.css": "cliotalk-agent",
   "styles/99-cliotalk-shell.css": "cliotalk-shell",
   "styles/99-chooser-book.css": "chooser-book",
+  "styles/62-duo-pocket-desk.css": "pocket-desk",
 });
 
 // Layer order = eager files in bundle order, then lazy sheets in declaration

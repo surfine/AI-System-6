@@ -82,6 +82,7 @@ const exactPublicFiles = new Set([
   "styles.joyride.css",
   "styles.project-disks.css",
   "styles.clio-project.css", "styles.edit-kernel.css", "styles.about.css", "styles.about-this-mac.css", "styles.extensions.css", "styles.cliotalk-agent.css", "styles.cliotalk-shell.css", "styles.chooser-book.css",
+  "styles.pocket-desk.css",
   "styles.big-sur.css",
   "styles.tiger.css",
   "styles.system-7.css",

@@ -249,7 +249,9 @@
     event.preventDefault();
     const rect = panel().getBoundingClientRect();
     drag = { id: event.pointerId, bar, x: event.clientX, y: event.clientY, left: rect.left, top: rect.top, moved: false };
-    bar.setPointerCapture(event.pointerId);
+    // The Duo's palm rest sends synthetic pointers, which have no live capture
+    // target; the drag lives on the document listeners below either way.
+    try { bar.setPointerCapture(event.pointerId); } catch {}
   });
   document.addEventListener("pointermove", (event) => {
     if (drag?.id !== event.pointerId) return;

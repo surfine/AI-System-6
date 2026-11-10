@@ -1378,6 +1378,12 @@ window.AISystem6TranslationsEn = {
     trash_restored: (name) => `Restored from Trash: ${name}.`,
     trash_restored_to_root: (name) => `Restored to Project Hard Disk root because the original folder was missing: ${name}.`,
     control_panel: "Control Panel",
+    pocket_desk: "Pocket Desk",
+    duo_lid: "Lid when closed",
+    duo_lid_open: "Tap to open",
+    pocket_desk_keys: "Pocket Desk keyboard",
+    pocket_desk_trackpad: "Palm rest trackpad",
+    pocket_desk_globe: "Hand typing to the system keyboard",
     mount_text_disk: "Insert File Floppy",
     // Menu row, so it carries the real ellipsis: the command asks which files
     // to insert before anything is mounted.

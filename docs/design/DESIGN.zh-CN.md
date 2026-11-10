@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/design/DESIGN.md -->
-<!-- source-sha256: d6184b9abf0aeb73cba2ce00d2034d9519e864a47674ab38eb3fefedb9a74a5b -->
+<!-- source-sha256: 7d8412142db7763e50fcf6c281a78de2f10acca54194468aae57544c19ac7040 -->
 
 # AI System 6 设计合约
 
@@ -357,6 +357,8 @@ small、mini）保留为语义 token；不要重新引入固定的原生像素�
 - 新的 layout `!important`。
 - JS 为布局决策新增 inline style。
 - 在 `top`、`left`、`width`、`height`、`padding` 或 `margin` 上做布局动画。
+
+会改变自身形状的设备，只得到一个 body class 和一个几何 token，不是第二套布局系统。Duo 折成笔电就是现成的例子：`body.duo-pocket-desk` 加 `--duo-fold-y` 把桌面放进上段、机身在折线下段，机身作为装饰跨过折线且不接收指针，只有工作表面遵守安全区，材质由外观以 token 提供（见 [FORM-FACTORS.zh-CN.md](FORM-FACTORS.zh-CN.md)「Duo 的笔电姿势」）。
 
 稠密工具表面应使用 pane、row、divider 和对象列表。Card 只用于重复条目、modal 和确实需要框定的工具。
 

@@ -1544,6 +1544,12 @@ window.AISystem6TranslationsZh = {
     trash_restored: (name) => `已从废纸篓恢复：${name}。`,
     trash_restored_to_root: (name) => `原文件夹已不存在，已恢复到项目硬盘根目录：${name}。`,
     control_panel: "控制面板",
+    pocket_desk: "口袋桌面",
+    duo_lid: "合盖显示盖面",
+    duo_lid_open: "轻点打开",
+    pocket_desk_keys: "口袋桌面键盘",
+    pocket_desk_trackpad: "掌托触控板",
+    pocket_desk_globe: "交给系统键盘打字",
     mount_text_disk: "插入文件软盘",
     // 菜单项，所以带真省略号：命令会先问插入哪些文件，再挂载。
     insert_file_floppy_menu: "插入文件软盘…",
