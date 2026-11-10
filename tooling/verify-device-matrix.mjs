@@ -110,19 +110,18 @@ export const DESK_VIEWPORTS = Object.freeze([
   // desk geometry rather than paying another full sweep.
   { name: "iphone-duo-outer-landscape", width: 678, height: 466, touch: true },
   { name: "iphone-duo-inner-portrait", width: 626, height: 890, touch: true },
-  // The inner display folded like a laptop, with Pocket Desk forced on: the desk
-  // lives in the upper segment (261px under the menu bar, 250 after the hinge),
-  // so this is the shortest screen the product is asked to put a window on. It
-  // is a desk cell rather than a sweep because the window roles are the same as
-  // the Duo's landscape cell; what changes is how much room the desk has.
-  { name: "iphone-duo-pocket", width: 890, height: 626, touch: true, pocket: true },
-  // The same inner panel upright: 626×890, the 1878×2670 panel the other way.
-  // Height is no longer the scarce edge, so the separate pad comes back.
-  { name: "iphone-duo-pocket-portrait", width: 626, height: 890, touch: true, pocket: true },
-  // The same screen folded like a book. The posture itself cannot be emulated
-  // (Playwright has no hinge), so this cell stands the class, the token and the
-  // sheet up by hand and measures the one thing the block promises: an app page
-  // sits in the primary segment and does not reach the crease.
+  // The inner display folded like a laptop, with Pocket Desk forced on. The
+  // fold runs along the panel's 117.8 mm edge, so the upright viewport is 626
+  // wide (1878 px at 3x) and the two halves stack: 626x445 each. That is the
+  // laptop pose, and it is the shortest screen the product puts a window on.
+  // It is a desk cell rather than a sweep because the window roles are the same
+  // as the Duo's landscape cell; what changes is how much room the desk has.
+  { name: "iphone-duo-pocket", width: 626, height: 890, touch: true, pocket: true },
+  // The same panel the other way: 890x626 folded like a book, a page either
+  // side of a vertical crease. The posture cannot be emulated (Playwright has
+  // no hinge), so this cell stands the class, the token and the sheet up by
+  // hand and measures one thing: an app page sits in the primary segment and
+  // does not reach the crease.
   { name: "iphone-duo-book", width: 890, height: 626, touch: true, book: true },
   // The same two phones upright sit inside the band the swept portrait cells
   // already bracket (393 to 466 wide), so they take the desk checks only.
@@ -1236,6 +1235,16 @@ async function run() {
           }
           // The crease is a reserved region: nothing interactive may sit on it.
           const foldY = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--duo-fold-y"));
+          // The laptop pose is the upright viewport, and the deck's own width is
+          // the panel's short edge. A deck that does not span it is the bug this
+          // cell exists to catch: the keys once shrank to their content width in
+          // a row, leaving half the machine blank.
+          if (Math.round(foldY) !== Math.round(innerHeight / 2)) failed.push("pocket-fold-not-half");
+          const boardBox = document.querySelector(".duo-pocket-board")?.getBoundingClientRect();
+          const keysBox = document.querySelector(".duo-pocket-keys")?.getBoundingClientRect();
+          if (boardBox && keysBox && keysBox.width < boardBox.width * 0.9) failed.push("pocket-keys-not-full-width");
+          detail.deckFit = document.querySelector(".duo-pocket")?.dataset.deck;
+          if (detail.deckFit !== "roomy") failed.push("pocket-deck-fit");
           const deckUi = document.querySelector(".duo-pocket-deck-ui");
           if (!deckUi) failed.push("pocket-deck-missing");
           else if (foldY && Math.round(deckUi.getBoundingClientRect().top) < Math.ceil(foldY)) failed.push("pocket-deck-on-the-crease");
@@ -1257,14 +1266,11 @@ async function run() {
               const chassis = document.querySelector(".duo-pocket");
               const key = chassis?.querySelector(".duo-pocket-key");
               const palmBox = chassis?.querySelector(".duo-pocket-palm")?.getBoundingClientRect();
-              const sideways = chassis?.dataset.axis === "landscape";
               if (!key) failed.push("pocket-palm-" + id);
               else {
                 const paint = getComputedStyle(key);
                 if (contrastOf(paint.color, paint.backgroundColor) < 4.5) failed.push("pocket-contrast-" + id);
-                if (sideways) {
-                  if (palmBox && palmBox.height > 1) failed.push("pocket-palm-shown-" + id);
-                } else if (!palmBox || palmBox.height < ${MIN_HIT_SIZE}) failed.push("pocket-palm-" + id);
+                if (!palmBox || palmBox.height < ${MIN_HIT_SIZE}) failed.push("pocket-palm-" + id);
               }
               signatures.push([
                 chassis?.dataset.pointing, chassis?.dataset.badge, chassis?.dataset.speakers,

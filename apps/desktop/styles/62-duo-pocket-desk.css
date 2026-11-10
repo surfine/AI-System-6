@@ -19,10 +19,10 @@
    with an unresolved var() is invalid at computed-value time — the frame then
    falls back to auto and the screen stops being the screen. */
 body.duo-pocket-desk {
-  --duo-bezel-top: 18px;
-  --duo-bezel-x: 16px;
-  --duo-bezel-bottom: 14px;
-  --duo-hinge: 9px;
+  --duo-bezel-top: 12px;
+  --duo-bezel-x: 11px;
+  --duo-bezel-bottom: 10px;
+  --duo-hinge: 8px;
   --duo-screen-radius: 0px;
 }
 
@@ -311,93 +311,93 @@ body.duo-pocket-desk {
 
 /* B-side frame. The live desk sits in the hole, so these lengths live on the
    body: a window is not a descendant of the chassis and cannot see a variable
-   declared there. Two side figures are derived from a published diagonal and
-   the published body width, times the 890px deck. Every other bezel is a
-   signature class (thick, medium, hairline), written down as such, not a
-   millimetre the spec never gave. Each total is kept so the live rect stays
-   between about 222 and 247 of the segment's 261, because a chin is worth
-   nothing if it eats the page. */
+   declared there. The unit is the deck the laptop pose actually gives: 626
+   wide (the panel's 1878 px edge at 3x), not the panel's long edge. Two side
+   figures are derived from a published diagonal and the published body width;
+   every other bezel is a signature class (thick, medium, hairline), written
+   down as such, not a millimetre the spec never gave. The two halves are 445
+   tall each, so a chin costs nothing a page needs. */
 body.duo-pocket-desk:has(.duo-pocket[data-duo-machine="portable"]) {
   --duo-bezel-top: 14px;
-  --duo-bezel-x: 46px;
-  --duo-bezel-bottom: 22px;
+  --duo-bezel-x: 32px;
+  --duo-bezel-bottom: 24px;
   --duo-hinge: 14px;
 }
 body.duo-pocket-desk:has(.duo-pocket[data-duo-machine="powerbook-170"]) {
-  --duo-bezel-top: 14px;
-  --duo-bezel-x: 30px;
-  --duo-bezel-bottom: 18px;
+  --duo-bezel-top: 12px;
+  --duo-bezel-x: 21px;
+  --duo-bezel-bottom: 20px;
   --duo-hinge: 10px;
   --duo-screen-radius: 4px;
 }
 body.duo-pocket-desk:has(.duo-pocket[data-duo-machine="powerbook-5300"]) {
   --duo-bezel-top: 12px;
-  --duo-bezel-x: 26px;
+  --duo-bezel-x: 18px;
   --duo-bezel-bottom: 16px;
   --duo-hinge: 10px;
   --duo-screen-radius: 4px;
 }
 body.duo-pocket-desk:has(.duo-pocket[data-duo-machine="wallstreet"]) {
   --duo-bezel-top: 11px;
-  --duo-bezel-x: 24px;
+  --duo-bezel-x: 17px;
   --duo-bezel-bottom: 15px;
   --duo-hinge: 11px;
   --duo-screen-radius: 3px;
 }
 body.duo-pocket-desk:has(.duo-pocket[data-duo-machine="lombard"]) {
   --duo-bezel-top: 10px;
-  --duo-bezel-x: 24px;
+  --duo-bezel-x: 17px;
   --duo-bezel-bottom: 16px;
   --duo-hinge: 11px;
   --duo-screen-radius: 4px;
 }
 body.duo-pocket-desk:has(.duo-pocket[data-duo-machine="titanium"]) {
   --duo-bezel-top: 8px;
-  --duo-bezel-x: 12px;
+  --duo-bezel-x: 8px;
   --duo-bezel-bottom: 14px;
   --duo-hinge: 12px;
   --duo-screen-radius: 2px;
 }
 body.duo-pocket-desk:has(.duo-pocket[data-duo-machine="aluminum"]) {
-  /* 15.2 in 1440×960 in a 348 mm body: panel 321 mm, 13.4 mm a side, 34px. */
+  /* 15.2 in 1440×960 in a 348 mm body: panel 321 mm, 13.4 mm a side, 24px. */
   --duo-bezel-top: 12px;
-  --duo-bezel-x: 34px;
+  --duo-bezel-x: 24px;
   --duo-bezel-bottom: 13px;
   --duo-hinge: 9px;
   --duo-screen-radius: 3px;
 }
 body.duo-pocket-desk:has(.duo-pocket[data-duo-machine="unibody"]) {
   --duo-bezel-top: 9px;
-  --duo-bezel-x: 16px;
+  --duo-bezel-x: 11px;
   --duo-bezel-bottom: 11px;
   --duo-hinge: 8px;
   --duo-screen-radius: 4px;
 }
 body.duo-pocket-desk:has(.duo-pocket[data-duo-machine="air-2011"]) {
   --duo-bezel-top: 8px;
-  --duo-bezel-x: 12px;
+  --duo-bezel-x: 8px;
   --duo-bezel-bottom: 9px;
   --duo-hinge: 7px;
   --duo-screen-radius: 5px;
 }
 body.duo-pocket-desk:has(.duo-pocket[data-duo-machine="retina-2014"]) {
   --duo-bezel-top: 7px;
-  --duo-bezel-x: 11px;
+  --duo-bezel-x: 8px;
   --duo-bezel-bottom: 8px;
   --duo-hinge: 7px;
   --duo-screen-radius: 5px;
 }
 body.duo-pocket-desk:has(.duo-pocket[data-duo-machine="air-m1"]) {
   --duo-bezel-top: 7px;
-  --duo-bezel-x: 10px;
+  --duo-bezel-x: 7px;
   --duo-bezel-bottom: 8px;
   --duo-hinge: 6px;
   --duo-screen-radius: 6px;
 }
 body.duo-pocket-desk:has(.duo-pocket[data-duo-machine="macbook-pro-14"]) {
-  /* 14.2 in 3024×1964 in a 312.6 mm body: panel 302.5 mm, 5.1 mm a side, 14px. */
+  /* 14.2 in 3024×1964 in a 312.6 mm body: panel 302.5 mm, 5.1 mm a side, 10px. */
   --duo-bezel-top: 9px;
-  --duo-bezel-x: 10px;
+  --duo-bezel-x: 7px;
   --duo-bezel-bottom: 7px;
   --duo-hinge: 6px;
   --duo-screen-radius: 8px;
@@ -720,12 +720,18 @@ body[data-color-mode="dark"] .duo-pocket {
 
 /* Upright the palm is deep enough for the published ball, which the sideways
    deck is not. */
-.duo-pocket[data-axis="portrait"][data-pointing="center-ball"] .duo-pocket-pointing {
+.duo-pocket[data-deck="roomy"][data-pointing="center-ball"] .duo-pocket-pointing {
   width: min(var(--duo-ball, 64px), 72px);
   height: min(var(--duo-ball, 64px), 72px);
   margin-left: calc(min(var(--duo-ball, 64px), 72px) / -2);
   bottom: 50%;
   transform: translateY(50%);
+}
+
+/* The side module stays in the row; with room to spare it has room to grow. */
+.duo-pocket[data-deck="roomy"][data-pointing="side"] .duo-pocket-pointing {
+  flex-basis: min(var(--duo-ball, 64px), 88px);
+  height: min(var(--duo-ball, 64px), 88px);
 }
 
 .duo-pocket[data-pointing="center-ball"] .duo-pocket-pointing::before,
@@ -741,8 +747,8 @@ body[data-color-mode="dark"] .duo-pocket {
   border: 1px solid var(--duo-key-edge);
 }
 
-.duo-pocket[data-axis="portrait"][data-pointing="center-ball"] .duo-pocket-pointing::before,
-.duo-pocket[data-axis="portrait"][data-pointing="center-ball"] .duo-pocket-pointing::after {
+.duo-pocket[data-deck="roomy"][data-pointing="center-ball"] .duo-pocket-pointing::before,
+.duo-pocket[data-deck="roomy"][data-pointing="center-ball"] .duo-pocket-pointing::after {
   width: 34px;
   height: 16px;
   margin-top: -8px;
@@ -984,7 +990,7 @@ body[data-color-mode="dark"] .duo-pocket {
 
 /* The drawn key is 40px; the HIT AREA is 44. This is the same figure the phone
    shell already keeps for window chrome -- the System 6 glyph keeps its size and
-   the region around it grows -- and it is what lets five rows fit a 313px deck
+   the region around it grows -- and it is what lets five rows sit in a deck
    without asking a thumb to find a 28px target. */
 .duo-pocket-key {
   position: relative;
@@ -1070,9 +1076,12 @@ body[data-color-mode="dark"] .duo-pocket {
 
 /* The pad is the whole palm rest; the drawn ball is only a hint of where a
    1989 trackball sat. A finger anywhere on the material moves the pointer.
-   Sideways the inner panel is 890×626 and the deck is about half of that, so
-   the separate pad steps aside and a press on the keys is the pad. */
-.duo-pocket[data-axis="landscape"] .duo-pocket-palm {
+   When the fold leaves the flat half short there is no room for a separate
+   pad: the keys become it and the legends blank on a press, the way QuickType
+   worked. That is decided by the measured deck height, not by the window's
+   orientation, because the laptop pose is a portrait viewport -- the hinge
+   runs along the panel's 117.8 mm edge, so the two halves stack. */
+.duo-pocket[data-deck="short"] .duo-pocket-palm {
   display: none;
 }
 
@@ -1080,31 +1089,34 @@ body[data-color-mode="dark"] .duo-pocket {
   opacity: 0;
 }
 
-/* Upright there is height to spare, so the keyboard keeps a real key height
-   instead of stretching into slabs, and the pad below grows to the size the
-   machine actually had. Sideways the palm is absent and the rows share the
-   deck; upright they are fixed and the palm takes the slack. */
-.duo-pocket[data-axis="portrait"] .duo-pocket-keys {
+/* With room to spare the keyboard keeps a real key height instead of
+   stretching into slabs, and the pad below grows to the depth the machine
+   actually had. The BOARD is what stops absorbing slack: putting flex: 0 0
+   auto on the keys column was a horizontal no-op that shrank it to its content
+   width and left the right half of the deck empty. */
+.duo-pocket[data-deck="roomy"] .duo-pocket-board {
   flex: 0 0 auto;
 }
 
-.duo-pocket[data-axis="portrait"] .duo-pocket-key-row {
+.duo-pocket[data-deck="roomy"] .duo-pocket-key-row {
   flex: 0 0 44px;
   min-height: 44px;
 }
 
-.duo-pocket[data-axis="portrait"] .duo-pocket-palm {
+/* A machine whose pointer was a ball has no pad to draw, but its palm rest is
+   still the deepest part of the deck: the pad takes the slack either way and
+   the hardware inside it is what differs. */
+.duo-pocket[data-deck="roomy"] .duo-pocket-palm {
   flex: 1 1 auto;
-  min-height: 96px;
-  max-height: 150px;
+  min-height: 56px;
 }
 
 .duo-pocket-palm {
   position: relative;
   flex: 0 0 auto;
-  /* 54, not 56: two more pixels of keys is what makes five rows fit a 313px
-     deck without the last row sitting under the pad. The pad is 54 tall across
-     the full width, so the target is still far past the touch floor. */
+  /* 54, not 56: two more pixels of keys is what makes five rows sit in a deck
+     without the last row being clipped. The pad spans the full width, so the
+     target is still far past the touch floor. */
   height: 54px;
   border-radius: max(0px, calc(var(--duo-radius) / 2));
   background-color: var(--duo-deck);

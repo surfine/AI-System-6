@@ -290,15 +290,17 @@ async function runBootStep(label, fn, notify = defaultBootStepNotify) {
     return await fn();
   } catch (error) {
     console.error(`AI System 6 boot: "${label}" failed and was skipped.`, error);
-    notify(t("lazy_load_failed", label, error?.message || String(error)));
+    // The front door's notice offers its own command again, so a slow-link
+    // timeout is not a dead end (2026-11-10 funnel test).
+    notify(t("lazy_load_failed", label, error?.message || String(error)), label === "Startup items" ? { actionId: "replay-clio-introduction", actionLabelKey: "boot_retry" } : null);
     return undefined;
   } finally {
     markBootProgress(label);
   }
 }
 
-function defaultBootStepNotify(message) {
-  if (typeof pushSystemNotification === "function") pushSystemNotification(message, { state: "failed" });
+function defaultBootStepNotify(message, options = {}) {
+  if (typeof pushSystemNotification === "function") pushSystemNotification(message, { state: "failed", ...options });
 }
 
 // Tells the boot safety net (boot-safety-net.js) that boot is still moving.

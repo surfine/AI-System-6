@@ -41,7 +41,7 @@ display. Every cell reports zero findings.
 | iPad, sideways | The desk with a finger: the same windows, reachable by touch, split view and Stage Manager | Everything; windows are insets and can be arranged | Nothing by policy | Device matrix `ipad-11-landscape`; display corners |
 | iPad, upright | The one-page flow (820px is inside the 860px band) | Every application, one at a time, full screen | The desktop launcher's second dimension, the MultiFinder stack | Device matrix `ipad-11-portrait`, `ipad-mini-portrait` |
 | iPhone | The desk as a pocket device: one application at a time, the phone flow, the strip under the notch | Every application; the desk's launcher and MultiFinder on demand | Windows side by side | Device matrix phone cells; `tests/e2e/probe-one-more-tune-phone.spec.mjs`; `npm run verify:ios-standalone` for the home-screen web app |
-| iPhone Duo, folded like a laptop | A small desk over a keyboard, the way a portable Mac folds: the upper half is the screen, the lower half is the keyboard; sideways a press on the keys is the trackpad, and upright a palm-rest pad is drawn, with the machine's chassis crossing the crease | The menu bar, one application at a time, the MultiFinder switcher, the running-app list, and every key the desk already answers (⌘S, ⌘Z, arrows, Esc). The whole flat half is a relative pointing surface: it moves a pointer inside the screen and clicks where that pointer is | The Dock, the desktop icons and the writing spine (the screen is 261px); free window dragging by title bar; the system keyboard, until the globe key asks for it | Device matrix `iphone-duo-pocket`; display corners `iphone-duo-inner-laptop`; `tests/features/device-matrix.test.mjs` |
+| iPhone Duo, folded like a laptop | A small desk over a keyboard, the way a portable Mac folds: the upright half is the screen, the lower half is the deck, with the machine's chassis crossing the crease | The menu bar, one application at a time, the MultiFinder switcher, the running-app list, and every key the desk already answers (⌘S, ⌘Z, arrows, Esc). The whole flat half is a relative pointing surface: it moves a pointer inside the screen and clicks where that pointer is | The Dock, the desktop icons and the writing spine; free window dragging by title bar; the system keyboard, until the globe key asks for it | Device matrix `iphone-duo-pocket` (626×890); display corners `iphone-duo-inner-laptop`; `tests/features/device-matrix.test.mjs` |
 | Apple Watch | A glance, not a desk | One question, one recording, three answers, the round's score | See *The wrist* below | Display corners (`watch-45mm`, `watch-41mm`, `watch-ultra`) |
 
 ## The Duo's laptop posture
@@ -53,10 +53,10 @@ the lower, and the two do not share a pixel. When the flags are off the Apple
 menu offers the same mode by hand.
 
 A finger gets a target even where the drawing cannot afford one. The deck's key
-is drawn at about 40px, which is what lets five rows fit a 313px deck; the key
-grows its own hit area 2px into the 4px gap, so the measured target is 44.5px
-(`iphone-duo-pocket` in the device matrix reads it by asking the page which key
-a point belongs to). The Chrome glyph rule already says the same thing for title
+is drawn at about 40px tall, and the key grows its own hit area 2px into the
+4px gap, so the measured target is 44.5px (`iphone-duo-pocket` in the device
+matrix reads it by asking the page which key a point belongs to). The Chrome
+glyph rule already says the same thing for title
 bars: the drawn control keeps its size, the region around it grows.
 
 The same posture, folded the other way, is a **book**: two pages side by side.
@@ -75,14 +75,20 @@ Three rules are the design:
 - **One machine, drawn across the crease.** The chassis is decoration and takes
   no pointer. Only the working surfaces obey safe areas. The B side is the
   lid: its border is that machine's bezel, and the desk sits in the hole.
-  The C side is the deck. The inner panel is 1878×2670 px, ratio 445:313;
-  sideways that is 890×626 CSS px and upright it is 626×890. Sideways the
-  deck is only the keyboard, and a press on it is the trackpad, with the
-  legends blanking first. Upright, a separate pad sits on the palm rest.
-  The frame is square where it meets the hinge.
-- **The keys stay put.** Upright, a status rail, the keys and the palm rest
-  stack, and only the keys scroll. Sideways the palm rest is not drawn; a
-  press on the keys is the trackpad, and a tap is still a key.
+  The C side is the deck.
+
+  The Duo is a book fold: 84.1 × 117.8 mm shut, 164.6 × 117.8 open, so the
+  hinge runs along the 117.8 mm edge. Stood up as a laptop the hinge lies
+  across the desk, which puts that edge — 1878 px, 626 CSS px — across the
+  screen and stacks the two halves at 626 × 445 each. The upright viewport is
+  the laptop pose; 890 × 626 is the book, a page either side of a vertical
+  crease. What the deck does with its height is measured from the fold, not
+  assumed from the window: with less than 380 px the separate pad steps aside
+  and a press on the keys is the pad, legends blanking first. The frame is
+  square where it meets the hinge.
+- **The keys stay put.** A status rail, the keys and the palm rest stack, and
+  only the keys scroll. A deck too short for a separate pad trades it for a
+  press on the keys, and a tap is still a key.
 - **The material is the machine, and each appearance has its own.** System 6 is the Macintosh Portable, System 7 the PowerBook 170, NeXTSTEP a PowerBook 5300 in NeXT's own grey (NeXT never shipped a portable), Drawing Board the Wallstreet, Platinum the Lombard, Aqua the Titanium PowerBook, Tiger the last 15-inch aluminum PowerBook, Snow Leopard the 13-inch Unibody, Lion the 2011 Air, Yosemite the 2014 Retina 13, Big Sur the M1 Air, and Liquid Glass the 14-inch MacBook Pro. A published body width is the unit: the PowerBook 170's 18.63 mm key is that fraction of 286 mm, not a shared pitch. The fold fixes the deck's height, so the vertical scale is compressed and the ratio is written down per machine. Each one also carries the parts you recognise: the model name printed under the display (every generation but the 14-inch, which has none on the inside face), its keycap shape and colour, its pointing hardware, its hinge, and the black glass bezel that arrives in 2009. Materials are our own generated grain tile and 1px brushing folded into the sheet as a data URI, never a photograph of the hardware; the colour still comes from tokens, so a dark color mode, more contrast and forced colors restyle every machine.
 - **The launcher stays.** The Dock and the Control Strip step aside — no
   portable Mac draws its Dock over the keyboard — but the desktop's icon column
@@ -100,13 +106,13 @@ gives the phone back. The switch is inserted by the lazy module beside the mode
 it belongs to, because the boot budget pays only for what every desk needs.
 
 The pad is a trackpad, not a touch layer: the finger never touches what it
-points at. Sideways, a press on the keyboard blanks the legends and moves the
-pointer; a tap still types, and the legends return when the finger lifts.
-Upright, the pad is the palm rest: a tap clicks at the pointer, two fingers
-that stay put is a right-click, and two fingers that move scroll without ever
-also clicking. The pointer stays inside the screen segment. A key reached with
-Tab and activated with Return, and a finger tap on that same key, are one
-action each, and the caret is back in the field before either types.
+points at. It moves a drawn pointer inside the screen (clamped there, so it
+cannot be walked onto the keys), a tap clicks at that pointer, two fingers that
+stay put is a right-click, and two fingers that move scroll without ever also
+clicking. On a deck too short for the pad, a press on the keys blanks the
+legends and moves the pointer instead. A key reached with Tab and activated
+with Return, and a finger tap on that same key, are one action each, and the
+caret is back in the field before either types.
 
 Known limits, stated rather than hidden: the keys are a US layout with a globe
 key to the system keyboard (an IME cannot be rebuilt here); the pad cannot drag

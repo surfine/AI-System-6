@@ -4,5 +4,5 @@
 window.AISystem6BuildInfo = Object.freeze({
   "version": "2.0.0-beta.3",
   "build": "20261109.2",
-  "sourceCommit": "44869205dea22f6c72ee57be32a2bc977dac587e"
+  "sourceCommit": "cae362eba4e1468d72ab6182e3fe4271ab06a08a"
 });

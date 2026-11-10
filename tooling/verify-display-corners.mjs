@@ -68,8 +68,10 @@ const SHAPES = [
   { name: "iphone-duo-outer-portrait", width: 466, height: 678, insets: { top: "47px", bottom: "0px", left: "0px", right: "83px" } },
   // The inner display folded like a laptop, with Pocket Desk on: the chassis
   // crosses the fold and its deck reaches the bottom edge, so this is the shape
-  // where a machine drawing its own radius would be the finding.
-  { name: "iphone-duo-inner-laptop", width: 890, height: 626, insets: {}, pocket: true },
+  // where a machine drawing its own radius would be the finding. The laptop pose
+  // is the upright viewport -- the fold runs along the panel's 117.8 mm edge, so
+  // it is 626 wide, not the panel's long edge.
+  { name: "iphone-duo-inner-laptop", width: 626, height: 890, insets: {}, pocket: true },
   // A watch is the smallest glass this desk has ever been asked to fill, and it
   // reports no safe area: the display's curve is the whole margin. It runs the
   // one-page flow, so the same shells reach the same edges.

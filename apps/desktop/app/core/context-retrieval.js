@@ -1,3 +1,7 @@
+// The mounted project as retrieval reads it, in one place.
+function ctxProject() {
+  return typeof getActiveProject === "function" ? getActiveProject() : null;
+}
 
 
 const ragRankCache = new Map();
@@ -564,7 +568,7 @@ function buildProjectSourceRegistry() {
     if (!seen.has(item.key)) seen.set(item.key, item);
   });
 
-  const project = typeof getActiveProject === "function" ? getActiveProject() : null;
+  const project = ctxProject();
   if (!project) {
     return Array.from(seen.values()).map((item, index) => ({
       ...item,
@@ -618,7 +622,7 @@ function getCitingDraftsForReference(referenceId) {
 
 function getCitingDraftsForSource(stableKey) {
   if (!isProjectMounted || !activeProjectId || !stableKey) return [];
-  const project = typeof getActiveProject === "function" ? getActiveProject() : null;
+  const project = ctxProject();
   if (!project) return [];
   buildProjectSourceRegistry();
   const allocations = project.sourceRegistry?.allocations || {};
@@ -724,7 +728,7 @@ function collectCitedSourceIds(markdown) {
 function buildSourceBibliography(markdown) {
   const ids = collectCitedSourceIds(markdown);
   if (!ids.size) return [];
-  const project = typeof getActiveProject === "function" ? getActiveProject() : null;
+  const project = ctxProject();
   if (!project) return [];
   const allocations = project.sourceRegistry?.allocations || {};
   const keyById = new Map();

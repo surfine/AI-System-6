@@ -10,10 +10,11 @@
 // class of failure (a throw from a dependency boot() calls) to prove the
 // degraded-boot behavior actually holds at runtime, not just in the diff.
 
-import { createFeatureTest } from "../helpers/feature-test-harness.mjs";
+import { createFeatureTest, read } from "../helpers/feature-test-harness.mjs";
 import { createBootContext } from "../helpers/boot-vm.mjs";
 
 const test = createFeatureTest("boot-resilience");
+const actions = read("app/core/actions.js");
 
 function tdzError(name) {
   // The exact shape of the incident this contract exists for: a `let`/`const`
@@ -49,6 +50,20 @@ function tdzError(name) {
     notifications.some((n) => n.message.includes("alarm_clock") && n.message.includes("before initialization")),
     "the failure reaches Notification Center naming what failed (user trace)"
   );
+}
+
+// 3. A skipped startup step is recoverable: its notice carries a Retry that
+// runs the existing replay command, so a slow-link timeout that left a first
+// visit on a bare desk has a way back (2026-11-10 funnel test).
+{
+  const { context, notifications } = createBootContext({
+    openStartupItems: () => { throw tdzError("aboutStartup"); },
+  });
+  await context.boot();
+  const failure = notifications.find((n) => n.message.includes("Startup items"));
+  test.assert(failure?.options?.actionId === "replay-clio-introduction", "the notice's Retry runs the door's own command");
+  test.assert(failure?.options?.actionLabelKey === "boot_retry", "the Retry label is a key, so it follows a language change");
+  test.assert(actions.includes('registerCommand?.("replay-clio-introduction"'), "the command the Retry names is registered");
 }
 
 // A step that fails before loadDeskState() runs (Clock, the Alarm Clock

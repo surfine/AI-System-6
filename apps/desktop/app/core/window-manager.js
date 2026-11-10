@@ -3,9 +3,14 @@
 // Loaded before app.js as a classic script; shares the AI System 6 global scope.
 
 
+// The mounted project as this module reads it, in one place.
+function windowManagerProject() {
+  return typeof getActiveProject === "function" ? getActiveProject() : null;
+}
+
 function shouldPromptForTeachTextFileSave() {
   if (teachTextStatusEl?.dataset.statusKey !== "modified") return false;
-  const project = typeof getActiveProject === "function" ? getActiveProject() : null;
+  const project = windowManagerProject();
   const isLinkedManuscript = project?.manuscriptLinkedToOutline
     && typeof teachTextPipelineLabel === "function"
     && teachTextPipelineLabel();
@@ -1579,7 +1584,7 @@ function getFinderVolumeDefinition(windowName) {
 function getFinderVolumeRootItem(windowName) {
   const volume = getFinderVolumeDefinition(windowName);
   if (!volume) return null;
-  const project = typeof getActiveProject === "function" ? getActiveProject() : null;
+  const project = windowManagerProject();
   const itemCount = windowName === "projects"
     ? ((typeof getProjectFiles === "function" ? getProjectFiles().length : 0)
       + (typeof getProjectFolders === "function" ? getProjectFolders().length : 0))
@@ -4569,7 +4574,7 @@ function writingSpineStopHoldsPen(name) {
 function renderWritingSpineState() {
   const buttons = document.querySelectorAll(".spine-section-main button[data-action]");
   if (!buttons.length) return;
-  const project = typeof getActiveProject === "function" ? getActiveProject() : null;
+  const project = windowManagerProject();
   const activeName = currentWritingRouteStop()
     || document.querySelector(".window.is-active:not(.is-hidden)")?.dataset.window
     || "";

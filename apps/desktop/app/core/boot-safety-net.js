@@ -166,6 +166,12 @@
   // ends on the failure screen.
   var STALL_MS = 20000;
   var CEILING_MS = 120000;
+
+  // While the boot bundle owns the link a lazy module queues behind it, and the
+  // app's 15 s cap expired before the About front door's turn came on a slow
+  // connection (2026-11-10 funnel test). Boot-time loads get patience; the
+  // short cap returns once the desk is up (check()).
+  window.AISystem6LazyScriptTimeoutMs = 120000;
   var now = function () {
     return window.performance && typeof window.performance.now === "function" ? window.performance.now() : Date.now();
   };
@@ -189,7 +195,10 @@
   };
 
   function check() {
-    if (settled()) return;
+    if (settled()) {
+      if (window.AISystem6LazyScriptTimeoutMs !== 15000) window.AISystem6LazyScriptTimeoutMs = 15000;
+      return;
+    }
     var at = now();
     var quiet = at - lastProgressAt;
     var elapsed = at - startedAt;

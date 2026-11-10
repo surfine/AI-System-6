@@ -48,7 +48,11 @@
   // surface. Without a force reading, a press that stays is that press, and a
   // tap that ends first is still a key.
   const PRESS_MS = 220;
-  const DECK_PX = 890;
+  // The deck is half of the inner panel in the laptop pose: the fold is along
+  // the 117.8 mm edge, so the upright viewport is 626 wide (1878 px at 3x) and
+  // each half is 626 x 445. Every published millimetre is normalized to that
+  // 626, not to the panel's long edge.
+  const DECK_PX = 626;
 
   // One portable per appearance. Millimetres are copied from machines.json;
   // a null pitch is unpublished and the keys keep the shared flex instead of
@@ -86,18 +90,27 @@
   }
 
   // Where the fold is, and which half is the page. The segments EXCLUDE the
-  // crease, so the hinge is the gap between the two rects; without the flag
-  // there is no second segment and the split is half the height.
+  // crease, so the hinge is the gap between the two rects.
+  //
+  // The Duo is a book fold: closed it is 84.1 x 117.8 mm, open 164.6 x 117.8,
+  // so the hinge runs along the 117.8 mm edge. Stood up like a laptop the
+  // hinge lies across the desk, which puts that 117.8 mm edge (1878 px, 626
+  // CSS px) across the screen and stacks the two halves. Side by side is the
+  // book: 890 x 626, one page each. A landscape window with no segments is not
+  // a laptop -- no hinge can lie horizontal there -- so the manual mode reads
+  // it as the book instead of drawing a deck on a fold that cannot exist.
   function posture() {
     const segments = window.viewport?.segments?.length === 2 ? window.viewport.segments : null;
-    const book = matches(BOOK_QUERY);
+    const landscape = (window.innerWidth || 0) > (window.innerHeight || 0);
+    const manual = window.AISystem6PocketDesk?.isOn?.() ?? true;
     // Shut, the device reports the fold but has one display to lay out. That is
     // the A side: the outside face, which is the only place it is ever seen.
-    const closed = !segments && !book && matches("(device-posture: folded)");
+    const closed = !segments && !landscape && matches("(device-posture: folded)") && !manual;
+    const book = !closed && (matches(BOOK_QUERY) || (!segments && manual && landscape));
     return {
       book,
       closed,
-      pocket: !book && !closed && (window.AISystem6PocketDesk?.isOn?.() ?? true),
+      pocket: !book && !closed && manual && (segments ? true : !landscape),
       fold: segments ? segments[1].top : Math.round((window.innerHeight || 0) / 2),
       page: segments ? segments[0].width : (window.innerWidth || 0) / 2,
     };
@@ -158,12 +171,20 @@
   let scroll = null;
   let keyGesture = null;
 
-  // The inner panel is 1878×2670 px, 445:313. At 3x that is 626×890 upright
-  // and 890×626 sideways. Sideways has no height for a separate pad.
+  // The inner panel is 1878x2670 px, 445:313. Stood up as a laptop the upright
+  // viewport is 626x890 and each half 626x445; the panel's other orientation,
+  // 890x626, is the book, with a page either side of a vertical crease. What
+  // the deck does with its height is decided by measuring that height, not by
+  // which way the window happens to be: a fold held at an angle that leaves the
+  // flat half short loses the separate pad and the keys become it, the way
+  // QuickType worked.
   function applyAxis() {
-    const axis = (window.innerWidth || 0) >= (window.innerHeight || 1) ? "landscape" : "portrait";
-    document.body.dataset.duoAxis = axis;
-    if (root) root.dataset.axis = axis;
+    const fold = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--duo-fold-y")) || 0;
+    const hinge = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--duo-hinge")) || 0;
+    const deck = fold ? (window.innerHeight || 0) - fold - hinge / 2 : 0;
+    const fit = deck && deck < 380 ? "short" : "roomy";
+    document.body.dataset.duoDeck = fit;
+    if (root) root.dataset.deck = fit;
   }
 
   function label(key) {
@@ -639,7 +660,7 @@
     button.addEventListener("pointerdown", (event) => {
       event.preventDefault();
       event.stopPropagation();
-      if (root?.dataset.axis === "landscape" && event.pointerType !== "mouse" && !keyGesture) {
+      if (root?.dataset.deck === "short" && event.pointerType !== "mouse" && !keyGesture) {
         armKeyPress(button, event, activate);
         return;
       }
@@ -993,7 +1014,7 @@
     Object.keys(latched).forEach((name) => { latched[name] = false; locked[name] = false; });
     capsLocked = false;
     document.body.classList.remove("duo-pocket-desk");
-    delete document.body.dataset.duoAxis;
+    delete document.body.dataset.duoDeck;
     releaseAllFields();
     status?.remove();
     status = null;

@@ -351,7 +351,7 @@ async function switchProject(projectId, options = {}) {
     // when this disk has no scene of its own yet.
     if (options.resumeScene !== false && typeof restoreWorkingSession === "function") {
       const resumed = await restoreWorkingSession({ projectId: project.id, mounted: true });
-      if (!resumed) openStartupItems();
+      if (!resumed) openStartupItems().catch(console.error);
     }
     saveDeskState();
     scheduleDesktopMaintenance("project");
@@ -835,18 +835,21 @@ function openStartupItems() {
   if (!clioOnboardingCompleted && aboutStartup.show === null && aboutStartup.shows >= 2) {
     completeClioOnboarding("seen-twice");
   }
-  if (aboutStartup.show === true || (aboutStartup.show === null && !clioOnboardingCompleted)) {
-    // One window on the desk: About, not ClioTalk behind it.
+  // Both of the desk-only starts show one window: About, not ClioTalk behind it.
+  const hideAssistant = () => {
     const assistant = getWindow("assistant");
     assistant?.classList.add("is-hidden");
     if (assistant) forgetWindowFromRunningApps("assistant");
-    openAboutFirstTime({ startup: true });
-    return;
+  };
+  if (aboutStartup.show === true || (aboutStartup.show === null && !clioOnboardingCompleted)) {
+    hideAssistant();
+    // Returned, not fired and forgotten: a failed front-door load must reach
+    // runBootStep's catch (notice with Retry), not die as an unhandled
+    // rejection that leaves a first visit on a bare desk.
+    return openAboutFirstTime({ startup: true });
   }
   if (workspaceProfile === workspaceProfileDesktop) {
-    const assistant = getWindow("assistant");
-    assistant?.classList.add("is-hidden");
-    if (assistant) forgetWindowFromRunningApps("assistant");
+    hideAssistant();
     openWindow("disk");
     return;
   }

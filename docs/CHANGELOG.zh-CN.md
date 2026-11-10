@@ -1,5 +1,5 @@
 <!-- canonical-source: docs/CHANGELOG.md -->
-<!-- source-sha256: e62e8179a8d75cf9f768d4a8eda7336a1659b1c02e2d1190ba803b009d1a0b04 -->
+<!-- source-sha256: fc72301c4a219f566e6d18f43882caddfcf783a3dbb80421e0d4b763cb4f1916 -->
 
 # AI System 6 中文更新日志
 
@@ -15,7 +15,7 @@
 
 ## 公开测试版 2.0.0-beta.3 — 2026-11-09
 
-- **口袋桌面把 Duo 折成一台笔电。** 上半是一张小桌子，下半是机身，机身跨过折线，只作装饰、不接收指针。一个 body class 加一个几何 token 承载这个姿势；机身、十二台机器和合盖的盖面全都 lazy 加载，启动只付一次姿势读取。内屏 1878×2670 像素（445:313），横过来是 890×626 CSS 点，竖过来是 626×890：横屏下段只有键盘，按住键盘就是触控板，字先隐去，像 QuickType 那样；竖屏另有掌托触控板。每套外观各有一台便携机——Macintosh Portable、PowerBook 170、借给 NeXTSTEP 的 5300（用 NeXT 的灰）、Wallstreet、Lombard、钛合金、末代 15 吋铝合金、13 吋一体成型、2011 年 Air、2014 年 13 吋 Retina、M1 Air、14 吋 MacBook Pro——各有那台机器的屏幕框、键帽形状与颜色、点指装置、铰链和型号字。左右边框只有两台能从公布的对角线与机身宽算出来（34px 与 14px），其余是厚、中、窄三档签名，压缩比记录在案而不估。材质是自家生成的颗粒贴图与 1px 拉丝，折进样式表当 data URI，不是硬件照片；颜色仍走 token，所以深色、更高对比和强制颜色照样逐台重配。合盖时外屏可以显示同一台机器的外面——那几代有的睡眠灯或前扣，不画标志——默认关闭，由 Apple 菜单打开。
+- **口袋桌面把 Duo 折成一台笔电。** 上半是一张小桌子，下半是机身，机身跨过折线，只作装饰、不接收指针。一个 body class 加一个几何 token 承载这个姿势；机身、十二台机器和合盖的盖面全都 lazy 加载，启动只付一次姿势读取。Duo 是书式折叠——合上 84.1 × 117.8 mm，展开 164.6 × 117.8 mm——所以铰链沿 117.8 mm 那条边；把它当笔电立起来时，这条边横跨屏幕，也就是说笔电姿势是竖着的视窗：1878 像素除以 3 是 626 CSS 点宽，两半上下相叠，各 626 × 445。另一个方向 890 × 626 是书本姿势，折线竖直，两边各一页。每套外观各有一台便携机——Macintosh Portable、PowerBook 170、借给 NeXTSTEP 的 5300（用 NeXT 的灰）、Wallstreet、Lombard、钛合金、末代 15 吋铝合金、13 吋一体成型、2011 年 Air、2014 年 13 吋 Retina、M1 Air、14 吋 MacBook Pro——各有那台机器的屏幕框、键帽形状与颜色、点指装置、铰链和型号字。公布的机身宽度都归一化到这 626 点，纵向比例逐台量：170 约为真实的 0.87，深宽比接近 0.70 的那两台几乎 1:1。材质是自家生成的颗粒贴图与 1px 拉丝，折进样式表当 data URI，不是硬件照片；颜色仍走 token，所以深色、更高对比和强制颜色照样逐台重配。合盖时外屏可以显示同一台机器的外面——那几代有的睡眠灯或前扣，不画标志——默认关闭，由 Apple 菜单打开。
 - **文思泉涌是一扇博客窗口，也是本版首次带上它。** 一个站点由数据描述，不由代码写死：`apps/server/server/site-descriptions/*.json` 声明每种内容类型的字段、存储、网址规则与草稿规则，窗口（`apps/desktop/app/features/wensi-quanyong.js`，服务端在 `/api/wensi-quanyong`）照这份描述渲染自己。日更保留 front-matter 草稿规则，Hexo 文章用 `_drafts/` 目录。发布走 `git-static` 通道（提交进站点仓库，再探测线上网址）或 app-scope 的 Micropub 端点；已发布文章改了 slug 或分类，会补一条 301 并更新站点的 slug 索引。检查是分级的：引文对不上原话、说话人写错是拦截项，推测句与 AI 腔只是提示。公开树带上通用 Hexo 模板和应用本体，但不带站主自己的两份内置描述（它们写着这台机器的家目录与检出路径）；读者自己的站点由精灵建立。
 - **公开桌面搬到了 Cloudflare Pages。** `system6.aaronlau.me` CNAME 到 `boot-system6` Pages 项目，送出与 Mac 客户端同一份构建；`boot-system6.pages.dev` 回答同一批文件。Pages 函数同时认得这两个主机名来做 Turnstile siteverify（`functions/_lib/public-hosts.mjs`），在任一个名字上验证的会话都会被接受。One More Tune 的中继不再把 `system6.aaronlau.me` 当出题权威——那个地址现在就是这个项目，转过去只会打转。网页桌面上的答题器会报 `quiz_authority_unavailable`，直到 `AI_SYSTEM6_QUIZ_ORIGIN` 指向一个活的权威；Mac 客户端与从本仓库跑起来的桌面仍有完整答题器。
 - **Safari 的 HTTP 本机入口退役。** `local.system6.aaronlau.me` 与 `AI_SYSTEM6_HTTP_LOCAL_ORIGIN` 一并移除，`isSafariHttpLocalMode`、`httpLocalEntryUrl` 以及把 Safari 访客从 HTTPS 带到明文桌面的“复制地址再开空白页”流程也删掉了。托管桌面在 Safari 里到不了 Mac 上的服务，剩下的界面把这件事说清楚：控制面板的连接按钮禁用并写明原因，创作声景在自己的状态行里说同一件事。为此打开控制面板的启动步骤也去掉了，实测启动载荷从 2,959,236 降到 2,956,862 字节。

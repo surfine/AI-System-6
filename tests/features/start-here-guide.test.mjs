@@ -31,7 +31,7 @@ test.assertMatches(
 );
 test.assertMatches(
   desktopRuntime,
-  /if \(aboutStartup\.show === true \|\| \(aboutStartup\.show === null && !clioOnboardingCompleted\)\) \{[\s\S]{0,260}?assistant\?\.classList\.add\("is-hidden"\);[\s\S]{0,160}?openAboutFirstTime\(\{ startup: true \}\);\s*\n\s*return;/,
+  /if \(aboutStartup\.show === true \|\| \(aboutStartup\.show === null && !clioOnboardingCompleted\)\) \{[\s\S]{0,400}?return openAboutFirstTime\(\{ startup: true \}\);/,
   "a true first launch, or a writer who asked for it, opens About's first-time face and nothing else"
 );
 test.assertMatches(
